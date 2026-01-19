@@ -1,0 +1,60 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Earth 3
+  m_Shader: {fileID: 4800000, guid: 073e34441d042db4e93a0b8dd34f5cc5, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 1
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _CloudAndNightTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _DiffuseTex:
+        m_Texture: {fileID: 2800000, guid: 08a2c522f1f3dd44c9b835555e250e55, type: 3}
+        m_Scale: {x: 1.08, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MainTex:
+        m_Texture: {fileID: 2800000, guid: 08a2c522f1f3dd44c9b835555e250e55, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _NormalAndSpecularTex:
+        m_Texture: {fileID: 2800000, guid: 3070d0b18ee1303498b4a16fe6066ad0, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _AtmosphereMultiply: 2.27
+    - _AtmospherePow: 6.61
+    - _BumpScale: 1
+    - _RimIntensity: 10
+    - _RimPower: 4.03
+    - _Smoothness: 0.2
+    - _SunsetIntensity: 0.7464286
+    m_Colors:
+    - _AtmosphereColor: {r: 0.14625129, g: 0.5234467, b: 0.6301887, a: 1}
+    - _Color: {r: 1, g: 1, b: 1, a: 1}
+    - _LightDir: {r: -1, g: 0, b: 0, a: 1}
+    - _RimColor: {r: 0.19496846, g: 0.0556204, b: 0.049661756, a: 1}
+    - _SkyColor: {r: 0.08235294, g: 0.18431373, b: 0.3529412, a: 1}
+    - _SpecularColor: {r: 0.19999996, g: 0.19999996, b: 0.19999996, a: 1}
+    - _SunsetColor: {r: 0.8980392, g: 0.4117647, b: 0.14509805, a: 1}
+  m_BuildTextureStacks: []
+  m_AllowLocking: 1

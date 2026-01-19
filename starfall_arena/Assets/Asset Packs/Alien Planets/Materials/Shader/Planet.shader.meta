@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: 47553668624f3744d859ccb59772ffb3
+timeCreated: 1447260483
+licenseType: Store
+ShaderImporter:
+  defaultTextures: []
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 291485
+  packageName: Sci-fi Exo Planets and Nebula
+  packageVersion: 1.0
+  assetPath: Assets/Alien Planets/Materials/Shader/Planet.shader
+  uploadId: 685476
