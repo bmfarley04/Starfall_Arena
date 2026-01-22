@@ -18,6 +18,13 @@ public class PlayerScript : ShipBase
     [Tooltip("Amount of shield restored per second")]
     public float shieldRegenRate = 10f;
 
+    [Header("Controller Settings")]
+    [Tooltip("Deadzone threshold for controller look input (0-1)")]
+    [Range(0f, 0.5f)]
+    public float controllerLookDeadzone = 0.1f;
+    [Tooltip("Minimum mouse movement (pixels) to detect mouse input")]
+    public float mouseMovementThreshold = 5f;
+
     [Header("Friction Settings")]
     [Tooltip("how long (seconds) after thrust ends before friction starts")]
     public float frictionDelay = 0.25f;
@@ -496,6 +503,11 @@ public class PlayerScript : ShipBase
     private PlayerInput _playerInput;
     private InputAction _moveAction;
     private bool _frictionEnabled = false;
+    private Vector2 _lookInput;
+    private bool _usingControllerLook = false;
+    private float _lastControllerLookTime = 0f;
+    private Vector2 _lastMousePosition;
+    private float _lastMouseMoveTime = 0f;
 
     private LaserBeam _activeBeam;
     private float _lastFireTime = -999f;
@@ -542,6 +554,10 @@ public class PlayerScript : ShipBase
 
         // Initialize beam capacity to empty (fills when beam is used)
         _currentBeamCapacity = 0f;
+
+        // Initialize mouse position to current position to avoid initial snap
+        _lastMousePosition = Mouse.current.position.ReadValue();
+        _lastMouseMoveTime = Time.time;
 
         if (sceneManager == null)
         {
@@ -828,6 +844,19 @@ public class PlayerScript : ShipBase
         // we read the move action state directly in FixedUpdate.
     }
 
+    void OnLook(InputValue value)
+    {
+        // Store the look input from controller (Vector2 from left stick)
+        _lookInput = value.Get<Vector2>();
+
+        // Track if controller is being actively used
+        if (_lookInput.magnitude > controllerLookDeadzone)
+        {
+            _usingControllerLook = true;
+            _lastControllerLookTime = Time.time;
+        }
+    }
+
     void OnToggleFriction()
     {
         _frictionEnabled = !_frictionEnabled;
@@ -839,7 +868,7 @@ public class PlayerScript : ShipBase
     protected override void Update()
     {
         base.Update();
-        RotateTowardMouse();
+        HandleRotation();
 
         // Calculate and update Cooldown UI animations (Clock Wipe)
         UpdateCooldownUI();
@@ -1815,12 +1844,70 @@ public class PlayerScript : ShipBase
         }
     }
 
-    void RotateTowardMouse()
+    void HandleRotation()
     {
         // Skip rotation while paused
         if (sceneManager != null && sceneManager.IsPaused())
             return;
 
+        // Detect mouse movement
+        Vector2 currentMousePosition = Mouse.current.position.ReadValue();
+        if (Vector2.Distance(currentMousePosition, _lastMousePosition) > mouseMovementThreshold)
+        {
+            _lastMousePosition = currentMousePosition;
+            _lastMouseMoveTime = Time.time;
+        }
+
+        // Check which input was used most recently
+        bool controllerUsedRecently = _lookInput.magnitude > controllerLookDeadzone;
+        bool mouseUsedMoreRecently = _lastMouseMoveTime > _lastControllerLookTime;
+
+        if (controllerUsedRecently)
+        {
+            // Actively using controller - rotate with stick
+            RotateWithController();
+        }
+        else if (mouseUsedMoreRecently)
+        {
+            // Mouse was moved more recently than controller - use mouse rotation
+            RotateTowardMouse();
+        }
+        // Else: neither input is active - maintain current rotation
+    }
+
+    void RotateWithController()
+    {
+        // Calculate target angle from look input
+        float targetAngle = Mathf.Atan2(_lookInput.y, _lookInput.x) * Mathf.Rad2Deg;
+        float currentAngle = transform.eulerAngles.z;
+
+        // Apply rotation speed penalty when beam is active or charging GigaBlast
+        float effectiveRotationSpeed = rotationSpeed;
+        if (_activeBeam != null)
+        {
+            effectiveRotationSpeed *= beamRotationMultiplier;
+        }
+        else if (_isCharging)
+        {
+            float chargeTime = Time.time - _chargeStartTime;
+            int tier = GetChargeTier(chargeTime);
+            float rotationMultiplier = tier switch
+            {
+                1 => gigaBlastAbility.tier1RotationMultiplier,
+                2 => gigaBlastAbility.tier2RotationMultiplier,
+                3 => gigaBlastAbility.tier3RotationMultiplier,
+                4 => gigaBlastAbility.tier4RotationMultiplier,
+                _ => 1f
+            };
+            effectiveRotationSpeed *= rotationMultiplier;
+        }
+
+        float newAngle = Mathf.MoveTowardsAngle(currentAngle, targetAngle + ROTATION_OFFSET, effectiveRotationSpeed * Time.deltaTime);
+        transform.rotation = Quaternion.Euler(0, 0, newAngle);
+    }
+
+    void RotateTowardMouse()
+    {
         Vector2 mouseScreenPosition = Mouse.current.position.ReadValue();
         Vector3 mouseWorldPosition = Camera.main.ScreenToWorldPoint(mouseScreenPosition);
 
