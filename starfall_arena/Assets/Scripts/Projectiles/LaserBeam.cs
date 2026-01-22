@@ -33,7 +33,7 @@ public class LaserBeam : MonoBehaviour
     private CinemachineImpulseSource _impulseSource;
     private float _timeSinceLastLaserHit = 0f;
     private ShieldController _currentTargetShield = null;
-    private ShipBase _shooter;
+    private Entity _shooter;
     private bool _hasBeenReflected = false;
 
     void Awake()
@@ -54,7 +54,7 @@ public class LaserBeam : MonoBehaviour
     /// <summary>
     /// Initialize the beam with target tag and weapon stats
     /// </summary>
-    public void Initialize(string targetTag, float damagePerSecond, float maxBeamDistance, float recoilForcePerSecond, float impactForce, ShipBase shooter = null)
+    public void Initialize(string targetTag, float damagePerSecond, float maxBeamDistance, float recoilForcePerSecond, float impactForce, Entity shooter = null)
     {
         _targetTag = targetTag;
         _damagePerSecond = damagePerSecond;
@@ -69,7 +69,7 @@ public class LaserBeam : MonoBehaviour
         return _recoilForcePerSecond;
     }
 
-    public ShipBase GetShooter()
+    public Entity GetShooter()
     {
         return _shooter;
     }
@@ -200,7 +200,7 @@ public class LaserBeam : MonoBehaviour
             // Deal damage if we hit a valid target
             if (validHit.Value.collider.CompareTag(_targetTag))
             {
-                ShipBase damageable = validHit.Value.collider.GetComponent<ShipBase>();
+                Entity damageable = validHit.Value.collider.GetComponent<Entity>();
                 if (damageable != null)
                 {
                     float damageThisFrame = _damagePerSecond * Time.deltaTime;

@@ -16,7 +16,7 @@ public class ProjectileScript : MonoBehaviour
     private Vector2 _direction;
     private ProjectileVisualController _visualController;
     private CinemachineImpulseSource _impulseSource;
-    private ShipBase _shooter;
+    private Entity _shooter;
 
     // Pierce mechanics
     private bool _canPierce = false;
@@ -38,7 +38,7 @@ public class ProjectileScript : MonoBehaviour
         Destroy(gameObject, _lifetime);
     }
 
-    public void Initialize(Vector3 direction, Vector2 shipVelocity, float speed, float damage, float lifetime, float impactForce, ShipBase shooter = null)
+    public void Initialize(Vector3 direction, Vector2 shipVelocity, float speed, float damage, float lifetime, float impactForce, Entity shooter = null)
     {
         _damage = damage;
         _lifetime = lifetime;
@@ -59,7 +59,7 @@ public class ProjectileScript : MonoBehaviour
         }
     }
 
-    public ShipBase GetShooter()
+    public Entity GetShooter()
     {
         return _shooter;
     }
@@ -89,7 +89,7 @@ public class ProjectileScript : MonoBehaviour
         return _impactForce;
     }
 
-    public void Reflect(string newTargetTag, Color reflectColor, ShipBase newShooter)
+    public void Reflect(string newTargetTag, Color reflectColor, Entity newShooter)
     {
         targetTag = newTargetTag;
         _shooter = newShooter;
@@ -139,14 +139,14 @@ public class ProjectileScript : MonoBehaviour
         if (collider.CompareTag(targetTag))
         {
             // Check if player has active reflect shield
-            PlayerScript player = collider.GetComponent<PlayerScript>();
+            Class1 player = collider.GetComponent<Class1>();
             if (player != null && player.reflectAbility.shield != null && player.reflectAbility.shield.IsActive())
             {
-                // Let PlayerScript handle the reflection
+                // Let Class1 handle the reflection
                 return;
             }
 
-            var damageable = collider.GetComponent<ShipBase>();
+            var damageable = collider.GetComponent<Entity>();
             if (damageable != null)
             {
                 // Check if target is a boss and this is a reflected projectile

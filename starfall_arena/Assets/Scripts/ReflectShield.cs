@@ -6,7 +6,7 @@ public class ReflectShield : MonoBehaviour
 {
     private MeshRenderer _shieldRenderer;
     private MaterialPropertyBlock _propBlock;
-    private PlayerScript _player;
+    private Class1 _player;
 
     // Shader Property IDs
     private int _hitEffectID;
@@ -50,7 +50,7 @@ public class ReflectShield : MonoBehaviour
     {
         if (_shieldRenderer != null) return; // Already initialized
 
-        _player = GetComponentInParent<PlayerScript>();
+        _player = GetComponentInParent<Class1>();
         _shieldRenderer = GetComponent<MeshRenderer>();
         _propBlock = new MaterialPropertyBlock();
 
