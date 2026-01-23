@@ -1,12 +1,10 @@
 using UnityEngine;
-using Unity.Cinemachine;
 
 [RequireComponent(typeof(Rigidbody2D))]
 public class ProjectileScript : MonoBehaviour
 {
     [Header("Settings")]
     public string targetTag;
-    public float forceMultiplier = 1f;
     private const float ROTATION_OFFSET = -90f;
 
     private Rigidbody2D _rb;
@@ -15,7 +13,6 @@ public class ProjectileScript : MonoBehaviour
     private float _impactForce;
     private Vector2 _direction;
     private ProjectileVisualController _visualController;
-    private CinemachineImpulseSource _impulseSource;
     private Entity _shooter;
 
     // Pierce mechanics
@@ -34,7 +31,6 @@ public class ProjectileScript : MonoBehaviour
 
     void Start()
     {
-        _impulseSource = GetComponent<CinemachineImpulseSource>();
         Destroy(gameObject, _lifetime);
     }
 
@@ -140,7 +136,7 @@ public class ProjectileScript : MonoBehaviour
         {
             // Check if player has active reflect shield
             Class1 player = collider.GetComponent<Class1>();
-            if (player != null && player.reflectAbility.shield != null && player.reflectAbility.shield.IsActive())
+            if (player != null && player.abilities.reflect.shield != null && player.abilities.reflect.shield.IsActive())
             {
                 // Let Class1 handle the reflection
                 return;
@@ -149,30 +145,13 @@ public class ProjectileScript : MonoBehaviour
             var damageable = collider.GetComponent<Entity>();
             if (damageable != null)
             {
-                // Check if target is a boss and this is a reflected projectile
-                var boss = collider.GetComponent<BossBulletHellScript>();
-                if (boss != null && _isReflected)
-                {
-                    // Use boss-specific reflected damage method
-                    boss.TakeDamageFromProjectile(_damage, _impactForce, transform.position, true);
-                }
-                else
-                {
-                    damageable.TakeDamage(_damage, _impactForce, transform.position);
-                }
+                // Deal damage to the entity
+                damageable.TakeDamage(_damage, _impactForce, transform.position);
                 ApplyImpactForce(collider);
 
                 if (_visualController != null)
                 {
                     _visualController.OnProjectileImpact(transform.position, _direction);
-                }
-
-                // Only trigger screen shake when player is hit, not when enemies are hit
-                if (_impulseSource != null && targetTag == "Player")
-                {
-                    float shakeForce = _damage * forceMultiplier;
-                    Vector3 impactVelocity = _direction.normalized * shakeForce;
-                    _impulseSource.GenerateImpulse(impactVelocity);
                 }
 
                 // If piercing is enabled, reduce damage and continue; otherwise destroy
@@ -188,30 +167,31 @@ public class ProjectileScript : MonoBehaviour
             }
         }
         // Check for asteroid collision
-        else if (collider.CompareTag("Asteroid"))
-        {
-            var asteroid = collider.GetComponent<AsteroidScript>();
-            if (asteroid != null)
-            {
-                asteroid.TakeDamage(_damage, _impactForce, transform.position);
-            }
-
-            if (_visualController != null)
-            {
-                _visualController.OnProjectileImpact(transform.position, _direction);
-            }
-
-            // If piercing is enabled, reduce damage and continue; otherwise destroy
-            if (_canPierce && _pierceMultiplier > 0)
-            {
-                _damage *= _pierceMultiplier;
-                // Continue traveling through the asteroid
-            }
-            else
-            {
-                Destroy(gameObject);
-            }
-        }
+        // TODO: Re-enable when AsteroidScript is implemented
+        // else if (collider.CompareTag("Asteroid"))
+        // {
+        //     var asteroid = collider.GetComponent<AsteroidScript>();
+        //     if (asteroid != null)
+        //     {
+        //         asteroid.TakeDamage(_damage, _impactForce, transform.position);
+        //     }
+        //
+        //     if (_visualController != null)
+        //     {
+        //         _visualController.OnProjectileImpact(transform.position, _direction);
+        //     }
+        //
+        //     // If piercing is enabled, reduce damage and continue; otherwise destroy
+        //     if (_canPierce && _pierceMultiplier > 0)
+        //     {
+        //         _damage *= _pierceMultiplier;
+        //         // Continue traveling through the asteroid
+        //     }
+        //     else
+        //     {
+        //         Destroy(gameObject);
+        //     }
+        // }
     }
 
     private void ApplyImpactForce(Collider2D collider)

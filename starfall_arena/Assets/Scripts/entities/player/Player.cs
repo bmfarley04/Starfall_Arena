@@ -3,94 +3,105 @@ using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 
+[System.Serializable]
+public struct ShieldRegenConfig
+{
+    [Tooltip("Time in seconds without taking damage before shields start regenerating")]
+    public float regenDelay;
+    [Tooltip("Amount of shield restored per second")]
+    public float regenRate;
+}
+
+[System.Serializable]
+public struct InputConfig
+{
+    [Tooltip("Deadzone threshold for controller look input (0-1)")]
+    [Range(0f, 1f)]
+    public float controllerLookDeadzone;
+    [Tooltip("Minimum mouse movement (pixels) to detect mouse input")]
+    public float mouseMovementThreshold;
+}
+
+[System.Serializable]
+public struct FrictionConfig
+{
+    [Tooltip("How long (seconds) after thrust ends before friction starts")]
+    public float frictionDelay;
+    [Tooltip("How fast velocity is reduced (units per second) once friction is active")]
+    public float frictionDeceleration;
+    [Tooltip("If true, prints friction debug logs")]
+    public bool debugMode;
+}
+
+[System.Serializable]
+public struct VisualFeedbackConfig
+{
+    [Header("Chromatic Aberration")]
+    [Tooltip("Enable/disable chromatic aberration on taking damage")]
+    public bool enableChromaticAberration;
+    [Tooltip("Max chromatic aberration intensity")]
+    public float maxChromaticIntensity;
+    [Tooltip("Intensity increase per damage point")]
+    public float chromaticIntensityPerDamage;
+    [Tooltip("How fast chromatic aberration fades (units per second)")]
+    public float chromaticFadeSpeed;
+
+    [Header("Detection")]
+    [Tooltip("Time window to detect beam hits (seconds)")]
+    public float beamDetectionWindow;
+    public float projectileMultiplier;
+}
+
+[System.Serializable]
+public struct ScreenShakeConfig
+{
+    [Tooltip("Enable/disable screen shake on taking damage")]
+    public bool enableScreenShake;
+    [Tooltip("Screen shake intensity multiplier for projectile hits")]
+    public float projectileShakeMultiplier;
+    [Tooltip("Screen shake intensity multiplier for laser beam hits")]
+    public float laserShakeMultiplier;
+}
+
 public abstract class Player : Entity
 {
-    // ===== CONTROLLER & INPUT =====
-    [Header("Controller Settings")]
-    [Tooltip("Deadzone threshold for controller look input (0-1)")]
-    [Range(0f, 0.5f)]
-    public float controllerLookDeadzone = 0.1f;
-    [Tooltip("Minimum mouse movement (pixels) to detect mouse input")]
-    public float mouseMovementThreshold = 5f;
-
-    // ===== FRICTION =====
-    [Header("Friction Settings")]
-    [Tooltip("how long (seconds) after thrust ends before friction starts")]
-    public float frictionDelay = 0.25f;
-    [Tooltip("how fast velocity is reduced (units per second) once friction is active")]
-    public float frictionDeceleration = 6f;
-    [Tooltip("if true, prints friction debug logs")]
-    public bool frictionDebug = false;
-
-    // ===== COMBAT =====
-    [Header("Combat Settings")]
-    [Tooltip("cooldown between normal fire shots (seconds)")]
-    public float fireCooldown = 0.5f;
-
     // ===== SHIELD REGENERATION =====
     [Header("Shield Regeneration")]
-    [Tooltip("Time in seconds without taking damage before shields start regenerating")]
-    public float shieldRegenDelay = 3f;
-    [Tooltip("Amount of shield restored per second")]
-    public float shieldRegenRate = 10f;
+    public ShieldRegenConfig shieldRegen;
+
+    // ===== INPUT SETTINGS =====
+    [Header("Input Settings")]
+    public InputConfig input;
+
+    // ===== FRICTION =====
+    [Header("Friction System")]
+    public FrictionConfig friction;
 
     // ===== VISUAL FEEDBACK =====
     [Header("Visual Feedback")]
-    [Tooltip("enable/disable chromatic aberration on taking damage")]
-    public bool enableChromaticAberration = true;
-    [Tooltip("max chromatic aberration intensity")]
-    public float maxChromaticIntensity = 1f;
-    [Tooltip("intensity increase per damage point")]
-    public float chromaticIntensityPerDamage = 0.05f;
-    [Tooltip("how fast chromatic aberration fades (units per second)")]
-    public float chromaticFadeSpeed = 2f;
-    [Tooltip("time window to detect beam hits (seconds)")]
-    public float beamDetectionWindow = 0.2f;
-    public float _projectileMultiplier = 2f;
+    public VisualFeedbackConfig visualFeedback;
+
+    // ===== SCREEN SHAKE =====
+    [Header("Screen Shake")]
+    public ScreenShakeConfig screenShake;
 
     // ===== SOUND EFFECTS =====
     [Header("Sound Effects")]
     [Tooltip("Basic projectile fire sound")]
-    public AudioClip projectileFireSound;
+    public SoundEffect projectileFireSound;
     [Tooltip("Shield damage sound")]
-    public AudioClip shieldDamageSound;
+    public SoundEffect shieldDamageSound;
     [Tooltip("Hull damage sound")]
-    public AudioClip hullDamageSound;
+    public SoundEffect hullDamageSound;
     [Tooltip("Beam hit loop sound (loops while taking beam damage)")]
-    public AudioClip beamHitLoopSound;
+    public SoundEffect beamHitLoopSound;
 
     [Header("Audio System")]
     [Tooltip("Number of AudioSources in the pool for overlapping sounds")]
     public int audioSourcePoolSize = 10;
 
-    [System.Serializable]
-    public struct AudioVolumeConfig
-    {
-        [Header("Weapon Sounds")]
-        [Range(0f, 3f)]
-        [Tooltip("Volume for projectile fire sound")]
-        public float projectileFireVolume;
-
-        [Header("Damage Sounds")]
-        [Range(0f, 3f)]
-        [Tooltip("Volume for shield damage sound")]
-        public float shieldDamageVolume;
-        [Range(0f, 3f)]
-        [Tooltip("Volume for hull damage sound")]
-        public float hullDamageVolume;
-        [Range(0f, 3f)]
-        [Tooltip("Volume for beam hit loop sound")]
-        public float beamHitLoopVolume;
-    }
-
-    [Header("Audio Volume Controls")]
-    public AudioVolumeConfig audioVolume = new AudioVolumeConfig
-    {
-        projectileFireVolume = 0.7f,
-        shieldDamageVolume = 0.7f,
-        hullDamageVolume = 0.7f,
-        beamHitLoopVolume = 0.7f
-    };
+    // ===== PROTECTED STATE (for derived classes) =====
+    protected float fireCooldown = 0.5f;  // Can be overridden in derived classes
 
     // ===== PRIVATE STATE =====
     private PlayerInput _playerInput;
@@ -119,7 +130,7 @@ public abstract class Player : Entity
     {
         base.Awake();
 
-        _lastShieldHitTime = -shieldRegenDelay;
+        _lastShieldHitTime = -shieldRegen.regenDelay;
         _lastMousePosition = Mouse.current.position.ReadValue();
         _lastMouseMoveTime = Time.time;
 
@@ -184,36 +195,6 @@ public abstract class Player : Entity
         return _audioSourcePool[0];
     }
 
-    protected void PlayOneShotSound(AudioClip clip, float volume = 1f, AudioClipType clipType = AudioClipType.Default)
-    {
-        if (clip == null) return;
-
-        float volumeMultiplier = GetVolumeMultiplier(clipType);
-        AudioSource source = GetAvailableAudioSource();
-        source.PlayOneShot(clip, volume * volumeMultiplier);
-    }
-
-    protected enum AudioClipType
-    {
-        Default,
-        ProjectileFire,
-        ShieldDamage,
-        HullDamage,
-        BeamHitLoop
-    }
-
-    private float GetVolumeMultiplier(AudioClipType clipType)
-    {
-        return clipType switch
-        {
-            AudioClipType.ProjectileFire => audioVolume.projectileFireVolume,
-            AudioClipType.ShieldDamage => audioVolume.shieldDamageVolume,
-            AudioClipType.HullDamage => audioVolume.hullDamageVolume,
-            AudioClipType.BeamHitLoop => audioVolume.beamHitLoopVolume,
-            _ => 1f
-        };
-    }
-
     // ===== UPDATE LOOPS =====
     protected override void Update()
     {
@@ -224,7 +205,7 @@ public abstract class Player : Entity
         if (_beamHitLoopSource != null && _beamHitLoopSource.isPlaying)
         {
             float timeSinceLastHit = Time.time - _lastDamageTime;
-            if (timeSinceLastHit > beamDetectionWindow)
+            if (timeSinceLastHit > visualFeedback.beamDetectionWindow)
             {
                 _beamHitLoopSource.Stop();
             }
@@ -246,7 +227,7 @@ public abstract class Player : Entity
         {
             _isThrusting = true;
             Vector2 thrustDirection = transform.up;
-            _rb.AddForce(thrustDirection * thrustForce);
+            _rb.AddForce(thrustDirection * movement.thrustForce);
             ApplyLateralDamping();
             _frictionTimer = 0f;
         }
@@ -258,13 +239,13 @@ public abstract class Player : Entity
             {
                 _frictionTimer += Time.fixedDeltaTime;
 
-                if (_frictionTimer >= frictionDelay)
+                if (_frictionTimer >= friction.frictionDelay)
                 {
                     ApplyFriction();
                 }
-                else if (frictionDebug)
+                else if (friction.debugMode)
                 {
-                    Debug.Log($"friction waiting: {_frictionTimer:F2}/{frictionDelay:F2}");
+                    Debug.Log($"friction waiting: {_frictionTimer:F2}/{friction.frictionDelay:F2}");
                 }
             }
         }
@@ -276,10 +257,10 @@ public abstract class Player : Entity
     void ApplyFriction()
     {
         Vector2 currentVel = _rb.linearVelocity;
-        Vector2 newVel = Vector2.MoveTowards(currentVel, Vector2.zero, frictionDeceleration * Time.fixedDeltaTime);
+        Vector2 newVel = Vector2.MoveTowards(currentVel, Vector2.zero, friction.frictionDeceleration * Time.fixedDeltaTime);
         _rb.linearVelocity = newVel;
 
-        if (frictionDebug)
+        if (friction.debugMode)
         {
             Debug.Log($"applying friction: vel {currentVel.magnitude:F2} -> {newVel.magnitude:F2}");
         }
@@ -294,7 +275,7 @@ public abstract class Player : Entity
     {
         _lookInput = value.Get<Vector2>();
 
-        if (_lookInput.magnitude > controllerLookDeadzone)
+        if (_lookInput.magnitude > input.controllerLookDeadzone)
         {
             _usingControllerLook = true;
             _lastControllerLookTime = Time.time;
@@ -313,28 +294,18 @@ public abstract class Player : Entity
         _isFiring = value.Get<float>() > 0f;
     }
 
-    void OnPause()
-    {
-        if (sceneManager != null)
-        {
-            sceneManager.TogglePause();
-        }
-    }
 
     // ===== ROTATION =====
     protected virtual void HandleRotation()
     {
-        if (sceneManager != null && sceneManager.IsPaused())
-            return;
-
         Vector2 currentMousePosition = Mouse.current.position.ReadValue();
-        if (Vector2.Distance(currentMousePosition, _lastMousePosition) > mouseMovementThreshold)
+        if (Vector2.Distance(currentMousePosition, _lastMousePosition) > input.mouseMovementThreshold)
         {
             _lastMousePosition = currentMousePosition;
             _lastMouseMoveTime = Time.time;
         }
 
-        bool controllerUsedRecently = _lookInput.magnitude > controllerLookDeadzone;
+        bool controllerUsedRecently = _lookInput.magnitude > input.controllerLookDeadzone;
         bool mouseUsedMoreRecently = _lastMouseMoveTime > _lastControllerLookTime;
 
         if (controllerUsedRecently)
@@ -351,7 +322,7 @@ public abstract class Player : Entity
     {
         float targetAngle = Mathf.Atan2(_lookInput.y, _lookInput.x) * Mathf.Rad2Deg;
         float currentAngle = transform.eulerAngles.z;
-        float newAngle = Mathf.MoveTowardsAngle(currentAngle, targetAngle + ROTATION_OFFSET, rotationSpeed * Time.deltaTime);
+        float newAngle = Mathf.MoveTowardsAngle(currentAngle, targetAngle + ROTATION_OFFSET, movement.rotationSpeed * Time.deltaTime);
         transform.rotation = Quaternion.Euler(0, 0, newAngle);
     }
 
@@ -364,16 +335,13 @@ public abstract class Player : Entity
         float targetAngle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
 
         float currentAngle = transform.eulerAngles.z;
-        float newAngle = Mathf.MoveTowardsAngle(currentAngle, targetAngle + ROTATION_OFFSET, rotationSpeed * Time.deltaTime);
+        float newAngle = Mathf.MoveTowardsAngle(currentAngle, targetAngle + ROTATION_OFFSET, movement.rotationSpeed * Time.deltaTime);
         transform.rotation = Quaternion.Euler(0, 0, newAngle);
     }
 
     // ===== COMBAT =====
     void TryFireProjectile()
     {
-        if (sceneManager != null && sceneManager.IsPaused())
-            return;
-
         if (projectileWeapon.prefab == null)
             return;
 
@@ -382,7 +350,7 @@ public abstract class Player : Entity
 
         foreach (var turret in turrets)
         {
-            GameObject projectile = Instantiate(projectileWeapon.prefab, turret.transform.position, transform.rotation);
+            GameObject projectile = Instantiate(projectileWeapon.prefab, turret.position, transform.rotation);
 
             if (projectile.TryGetComponent<ProjectileScript>(out var projectileScript))
             {
@@ -400,7 +368,10 @@ public abstract class Player : Entity
         }
         ApplyRecoil(projectileWeapon.recoilForce);
 
-        PlayOneShotSound(projectileFireSound, 1f, AudioClipType.ProjectileFire);
+        if (projectileFireSound != null)
+        {
+            projectileFireSound.Play(GetAvailableAudioSource());
+        }
 
         _lastFireTime = Time.time;
     }
@@ -414,22 +385,17 @@ public abstract class Player : Entity
             return;
         }
 
-        if (Time.time < _lastShieldHitTime + shieldRegenDelay)
+        if (Time.time < _lastShieldHitTime + shieldRegen.regenDelay)
         {
             if (shieldController != null) shieldController.SetRegeneration(false);
             return;
         }
 
-        currentShield += shieldRegenRate * Time.deltaTime;
+        currentShield += shieldRegen.regenRate * Time.deltaTime;
 
         if (currentShield > maxShield)
         {
             currentShield = maxShield;
-        }
-
-        if (currentShield > 0 && !hasShield)
-        {
-            hasShield = true;
         }
 
         OnShieldChanged();
@@ -449,26 +415,35 @@ public abstract class Player : Entity
         {
             if (beamHitLoopSound != null && _beamHitLoopSource != null && !_beamHitLoopSource.isPlaying)
             {
-                _beamHitLoopSource.clip = beamHitLoopSound;
-                _beamHitLoopSource.volume = audioVolume.beamHitLoopVolume;
-                _beamHitLoopSource.Play();
+                beamHitLoopSound.Play(_beamHitLoopSource);
             }
         }
         else
         {
             if (previousShield > 0f)
             {
-                PlayOneShotSound(shieldDamageSound, 1f, AudioClipType.ShieldDamage);
+                if (shieldDamageSound != null)
+                {
+                    shieldDamageSound.Play(GetAvailableAudioSource());
+                }
             }
             else
             {
-                PlayOneShotSound(hullDamageSound, 1f, AudioClipType.HullDamage);
+                if (hullDamageSound != null)
+                {
+                    hullDamageSound.Play(GetAvailableAudioSource());
+                }
             }
         }
 
-        if (enableChromaticAberration && _chromaticAberration != null)
+        if (visualFeedback.enableChromaticAberration && _chromaticAberration != null)
         {
             HandleChromaticAberration(impactForce);
+        }
+
+        if (screenShake.enableScreenShake && _impulseSource != null)
+        {
+            HandleScreenShake(damage, impactForce, source);
         }
     }
 
@@ -479,16 +454,6 @@ public abstract class Player : Entity
             _beamHitLoopSource.Stop();
         }
 
-        if (sceneManager != null)
-        {
-            sceneManager.PlayPlayerExplosionSound();
-            sceneManager.OnPlayerDestroyed();
-        }
-        else
-        {
-            Debug.LogError("sceneManagerScript reference missing! Cannot notify of player destruction.", this);
-        }
-
         base.Die();
     }
 
@@ -497,19 +462,18 @@ public abstract class Player : Entity
     {
         float timeSinceLastHit = Time.time - _lastDamageTime;
 
-        bool isBeamHit = timeSinceLastHit < beamDetectionWindow;
+        bool isBeamHit = timeSinceLastHit < visualFeedback.beamDetectionWindow;
 
         if (isBeamHit)
         {
             _damageAccumulator += impactForce;
-            float targetIntensity = Mathf.Min(_damageAccumulator * chromaticIntensityPerDamage, maxChromaticIntensity);
+            float targetIntensity = Mathf.Min(_damageAccumulator * visualFeedback.chromaticIntensityPerDamage, visualFeedback.maxChromaticIntensity);
             _currentChromaticIntensity = Mathf.Lerp(_currentChromaticIntensity, targetIntensity, Time.deltaTime * 5f);
         }
         else
         {
             _damageAccumulator = impactForce;
-            _projectileMultiplier = 2f;
-            _currentChromaticIntensity = Mathf.Min(impactForce * chromaticIntensityPerDamage * _projectileMultiplier, maxChromaticIntensity);
+            _currentChromaticIntensity = Mathf.Min(impactForce * visualFeedback.chromaticIntensityPerDamage * visualFeedback.projectileMultiplier, visualFeedback.maxChromaticIntensity);
         }
 
         _chromaticAberration.intensity.value = _currentChromaticIntensity;
@@ -526,15 +490,15 @@ public abstract class Player : Entity
     {
         yield return null;
 
-        while (Time.time - _lastDamageTime < beamDetectionWindow)
+        while (Time.time - _lastDamageTime < visualFeedback.beamDetectionWindow)
         {
             yield return null;
         }
 
         while (_currentChromaticIntensity > 0.01f)
         {
-            _damageAccumulator = Mathf.Max(0f, _damageAccumulator - chromaticFadeSpeed * Time.deltaTime);
-            _currentChromaticIntensity = Mathf.Max(0f, _currentChromaticIntensity - chromaticFadeSpeed * Time.deltaTime);
+            _damageAccumulator = Mathf.Max(0f, _damageAccumulator - visualFeedback.chromaticFadeSpeed * Time.deltaTime);
+            _currentChromaticIntensity = Mathf.Max(0f, _currentChromaticIntensity - visualFeedback.chromaticFadeSpeed * Time.deltaTime);
 
             if (_chromaticAberration != null)
             {
@@ -556,7 +520,7 @@ public abstract class Player : Entity
     {
         if (_chromaticAberration != null)
         {
-            _chromaticAberration.intensity.value = Mathf.Clamp(intensity, 0f, maxChromaticIntensity * 2f);
+            _chromaticAberration.intensity.value = Mathf.Clamp(intensity, 0f, visualFeedback.maxChromaticIntensity * 2f);
         }
     }
 
@@ -567,6 +531,28 @@ public abstract class Player : Entity
             return _chromaticAberration.intensity.value;
         }
         return 0f;
+    }
+
+    // ===== SCREEN SHAKE =====
+    private void HandleScreenShake(float damage, float impactForce, DamageSource source)
+    {
+        float shakeIntensity = 0f;
+
+        if (source == DamageSource.LaserBeam)
+        {
+            // For laser beams, use a constant multiplier (continuous damage)
+            shakeIntensity = screenShake.laserShakeMultiplier;
+        }
+        else
+        {
+            // For projectiles and other sources, scale by damage
+            shakeIntensity = damage * screenShake.projectileShakeMultiplier;
+        }
+
+        if (shakeIntensity > 0f)
+        {
+            _impulseSource.GenerateImpulse(shakeIntensity);
+        }
     }
 
     protected override void OnHealthChanged()

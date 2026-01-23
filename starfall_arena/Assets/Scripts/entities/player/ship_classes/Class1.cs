@@ -2,93 +2,59 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
-public class Class1 : Player
-{
-    // ===== BEAM WEAPON =====
-    [Header("Beam Weapon Settings")]
-    public float beamOffsetDistance = 1f;
-    [Tooltip("rotation speed multiplier when beam is active (0.3 = 70% slower)")]
-    public float beamRotationMultiplier = 0.3f;
-    [Tooltip("Duration for beam line renderer to fade in (seconds)")]
-    public float beamFadeInDuration = 0.3f;
+// ===== ABILITY CONFIGURATION STRUCTS =====
 
-    // ===== BEAM CAPACITY =====
+[System.Serializable]
+public struct BeamAbilityConfig
+{
+    [Header("Beam Settings")]
+    public BeamWeaponConfig stats;
+    public float offsetDistance;
+    [Tooltip("Rotation speed multiplier when beam is active (0.3 = 70% slower)")]
+    public float rotationMultiplier;
+    [Tooltip("Duration for beam line renderer to fade in (seconds)")]
+    public float fadeInDuration;
+
     [Header("Beam Capacity")]
     [Tooltip("Maximum beam capacity (100 units)")]
-    public float beamCapacity = 100f;
+    public float capacity;
     [Tooltip("How fast beam drains (units per second)")]
-    public float beamCapacityDrainRate = 20f;
+    public float drainRate;
     [Tooltip("How fast beam capacity regenerates when not firing (units per second)")]
-    public float beamCapacityRegenRate = 5f;
+    public float regenRate;
 
-    // ===== ABILITY SOUND EFFECTS =====
-    [Header("Ability Sounds - Beam")]
-    [Tooltip("Laser beam sound (loops while beam is active)")]
-    public AudioClip laserBeamSound;
+    [Header("Sound Effects")]
+    public SoundEffect beamLoopSound;
     [Tooltip("Fade in duration for beam sound (seconds)")]
-    public float beamSoundFadeDuration = 0.1f;
+    public float soundFadeDuration;
+}
 
-    [Header("Ability Sounds - Teleport")]
+[System.Serializable]
+public struct TeleportAbilityConfig
+{
+    [Header("Timing")]
+    [Tooltip("Cooldown between uses (seconds)")]
+    public float cooldown;
+    [Tooltip("Delay before teleport executes (seconds)")]
+    public float preTeleportDelay;
+    [Tooltip("Distance to teleport in the direction player is facing")]
+    public float teleportDistance;
+
+    [Header("Animation")]
+    public AnimationConfig animation;
+
+    [Header("Visual Effects")]
+    public VisualConfig visual;
+
+    [Header("Sound Effects")]
     [Tooltip("Teleport exit sound (at origin)")]
-    public AudioClip teleportExitSound;
+    public SoundEffect exitSound;
     [Tooltip("Teleport arrival sound (at destination)")]
-    public AudioClip teleportArrivalSound;
-
-    [Header("Ability Sounds - GigaBlast")]
-    [Tooltip("Charging sound (plays during charge, stops on release)")]
-    public AudioClip gigaBlastChargeSound;
-    [Tooltip("Tier 1 fire sound")]
-    public AudioClip gigaBlastTier1FireSound;
-    [Tooltip("Tier 2 fire sound")]
-    public AudioClip gigaBlastTier2FireSound;
-    [Tooltip("Tier 3 fire sound")]
-    public AudioClip gigaBlastTier3FireSound;
-    [Tooltip("Tier 4 fire sound")]
-    public AudioClip gigaBlastTier4FireSound;
-    [Tooltip("Fade in duration for GigaBlast charge sound (seconds)")]
-    public float gigaBlastChargeSoundFadeDuration = 0.1f;
-
-    [Header("Ability Sounds - Reflect")]
-    [Tooltip("Reflect shield duration sound (loops while active)")]
-    public AudioClip reflectShieldLoopSound;
-    [Tooltip("Bullet reflection impact sound")]
-    public AudioClip bulletReflectionSound;
-
-    // ===== ABILITY CONFIGS =====
-    [System.Serializable]
-    public struct ReflectAbilityConfig
-    {
-        [Header("Cooldown & Duration")]
-        [Tooltip("Cooldown between uses (seconds)")]
-        public float cooldown;
-        [Tooltip("Shield active duration (seconds)")]
-        public float activeDuration;
-
-        [Header("Visual Settings")]
-        [Tooltip("ReflectShield component on player (drag from Hierarchy)")]
-        public ReflectShield shield;
-        [Tooltip("Color of reflected projectiles")]
-        public Color reflectedProjectileColor;
-
-        [Header("Damage Multiplier")]
-        [Tooltip("Damage multiplier for reflected projectiles (1.0 = same damage, 2.0 = double damage)")]
-        [Range(0.5f, 5f)]
-        public float reflectedProjectileDamageMultiplier;
-    }
-
-    [Header("Reflect Ability")]
-    public ReflectAbilityConfig reflectAbility;
+    public SoundEffect arrivalSound;
 
     [System.Serializable]
-    public struct TeleportAbilityConfig
+    public struct AnimationConfig
     {
-        [Header("Cooldown & Timing")]
-        [Tooltip("Cooldown between uses (seconds)")]
-        public float cooldown;
-        [Tooltip("Delay before teleport executes (seconds)")]
-        public float preTeleportDelay;
-
-        [Header("Scale Animation")]
         [Tooltip("Shrink duration at origin (seconds)")]
         public float shrinkDuration;
         [Tooltip("Grow duration at destination (seconds)")]
@@ -101,17 +67,11 @@ public class Class1 : Player
         public float destinationOvershootScale;
         [Tooltip("Normal scale (usually 1.0)")]
         public float normalScale;
+    }
 
-        [Header("Physics")]
-        [Tooltip("Reset velocity after teleport")]
-        public bool resetVelocity;
-        [Tooltip("Preserve momentum but reduce magnitude")]
-        public bool dampVelocity;
-        [Tooltip("Velocity multiplier if dampVelocity true")]
-        [Range(0f, 1f)]
-        public float velocityDampFactor;
-
-        [Header("Visual Effects")]
+    [System.Serializable]
+    public struct VisualConfig
+    {
         [Tooltip("Enable chromatic aberration flash on teleport")]
         public bool enableChromaticFlash;
         [Tooltip("Chromatic aberration intensity on teleport")]
@@ -121,27 +81,58 @@ public class Class1 : Player
         public bool enableScreenShake;
         [Tooltip("Screen shake strength (force)")]
         public float screenShakeStrength;
-        [Tooltip("Optional particle effect at origin (leave null for none)")]
-        public GameObject teleportOriginEffect;
-        [Tooltip("Optional particle effect at destination (leave null for none)")]
-        public GameObject teleportDestinationEffect;
+        [Tooltip("Particle effects at origin and destination")]
+        public GameObject[] effects;
     }
+}
 
-    [Header("Teleport Ability")]
-    public TeleportAbilityConfig teleportAbility;
+[System.Serializable]
+public struct GigaBlastAbilityConfig
+{
+    [Header("Cooldown & Timing")]
+    public TimingConfig timing;
+
+    [Header("Charge Tier Thresholds")]
+    public TierThresholdsConfig tierThresholds;
+
+    [Header("Movement Penalties per Tier")]
+    public MovementPenaltiesConfig movementPenalties;
+
+    [Header("Projectile Scaling per Tier")]
+    public ProjectileScalingConfig projectileScaling;
+
+    [Header("Pierce Behavior (Tier 3 & 4)")]
+    public PierceConfig pierce;
+
+    [Header("Visual Effects")]
+    public VisualConfig visual;
+
+    [Header("Sound Effects")]
+    [Tooltip("Charging sound (plays during charge, stops on release)")]
+    public SoundEffect chargeSound;
+    [Tooltip("Fade in duration for GigaBlast charge sound (seconds)")]
+    public float chargeSoundFadeDuration;
+    public SoundEffect tier1FireSound;
+    public SoundEffect tier2FireSound;
+    public SoundEffect tier3FireSound;
+    public SoundEffect tier4FireSound;
 
     [System.Serializable]
-    public struct GigaBlastAbilityConfig
+    public struct TimingConfig
     {
-        [Header("Cooldown & Timing")]
         [Tooltip("Cooldown between uses (seconds)")]
         public float cooldown;
         [Tooltip("Minimum charge time before shot can be released (seconds)")]
         public float minChargeTime;
         [Tooltip("Maximum charge time cap (seconds)")]
         public float maxChargeTime;
+        [Tooltip("Projectile lifetime (seconds)")]
+        public float projectileLifetime;
+    }
 
-        [Header("Charge Tier Thresholds")]
+    [System.Serializable]
+    public struct TierThresholdsConfig
+    {
         [Tooltip("Time to reach Tier 1 (seconds)")]
         public float tier1Time;
         [Tooltip("Time to reach Tier 2 (seconds)")]
@@ -150,18 +141,11 @@ public class Class1 : Player
         public float tier3Time;
         [Tooltip("Time to reach Tier 4 (seconds)")]
         public float tier4Time;
+    }
 
-        [Header("Particle Colors per Tier")]
-        [Tooltip("Particle color at Tier 1 (0.5-1s)")]
-        public Color tier1Color;
-        [Tooltip("Particle color at Tier 2 (1-2s)")]
-        public Color tier2Color;
-        [Tooltip("Particle color at Tier 3 (2-3s)")]
-        public Color tier3Color;
-        [Tooltip("Particle color at Tier 4 (3s+)")]
-        public Color tier4Color;
-
-        [Header("Movement Penalties per Tier")]
+    [System.Serializable]
+    public struct MovementPenaltiesConfig
+    {
         [Tooltip("Thrust speed multiplier for Tier 1")]
         [Range(0f, 1f)]
         public float tier1ThrustMultiplier;
@@ -186,48 +170,48 @@ public class Class1 : Player
         [Tooltip("Rotation speed multiplier for Tier 4")]
         [Range(0f, 1f)]
         public float tier4RotationMultiplier;
+    }
 
-        [Header("Projectile Scaling - Tier Multipliers")]
-        [Tooltip("Tier 1 speed multiplier (base projectile speed * this)")]
+    [System.Serializable]
+    public struct ProjectileScalingConfig
+    {
+        [Header("Tier 1")]
         public float tier1SpeedMultiplier;
-        [Tooltip("Tier 2 speed multiplier")]
-        public float tier2SpeedMultiplier;
-        [Tooltip("Tier 3 speed multiplier")]
-        public float tier3SpeedMultiplier;
-        [Tooltip("Tier 4 speed multiplier")]
-        public float tier4SpeedMultiplier;
-        [Tooltip("Tier 1 damage multiplier (base projectile damage * this)")]
         public float tier1DamageMultiplier;
-        [Tooltip("Tier 2 damage multiplier")]
-        public float tier2DamageMultiplier;
-        [Tooltip("Tier 3 damage multiplier")]
-        public float tier3DamageMultiplier;
-        [Tooltip("Tier 4 damage multiplier")]
-        public float tier4DamageMultiplier;
-        [Tooltip("Tier 1 recoil force multiplier (base recoil * this)")]
         public float tier1RecoilMultiplier;
-        [Tooltip("Tier 2 recoil force multiplier")]
-        public float tier2RecoilMultiplier;
-        [Tooltip("Tier 3 recoil force multiplier")]
-        public float tier3RecoilMultiplier;
-        [Tooltip("Tier 4 recoil force multiplier")]
-        public float tier4RecoilMultiplier;
-        [Tooltip("Tier 1 impact force multiplier (base impact * this)")]
         public float tier1ImpactMultiplier;
-        [Tooltip("Tier 2 impact force multiplier")]
+
+        [Header("Tier 2")]
+        public float tier2SpeedMultiplier;
+        public float tier2DamageMultiplier;
+        public float tier2RecoilMultiplier;
         public float tier2ImpactMultiplier;
-        [Tooltip("Tier 3 impact force multiplier")]
+
+        [Header("Tier 3")]
+        public float tier3SpeedMultiplier;
+        public float tier3DamageMultiplier;
+        public float tier3RecoilMultiplier;
         public float tier3ImpactMultiplier;
-        [Tooltip("Tier 4 impact force multiplier")]
+
+        [Header("Tier 4")]
+        public float tier4SpeedMultiplier;
+        public float tier4DamageMultiplier;
+        public float tier4RecoilMultiplier;
         public float tier4ImpactMultiplier;
+    }
 
-        [Header("Pierce Behavior")]
-        [Tooltip("Damage multiplier for Tier 3 pierce (0 = no pierce)")]
-        public float tier3PierceMultiplier;
-        [Tooltip("Damage multiplier for Tier 4 pierce (0 = no pierce)")]
-        public float tier4PierceMultiplier;
+    [System.Serializable]
+    public struct PierceConfig
+    {
+        [Tooltip("Damage multiplier per pierce for Tier 3 (e.g. 0.8 = 20% reduction per pierce)")]
+        public float tier3DamageMultiplierPerPierce;
+        [Tooltip("Damage multiplier per pierce for Tier 4 (e.g. 0.9 = 10% reduction per pierce)")]
+        public float tier4DamageMultiplierPerPierce;
+    }
 
-        [Header("Visual Effects")]
+    [System.Serializable]
+    public struct VisualConfig
+    {
         [Tooltip("Tier 1 charged projectile prefab (0.5-1s)")]
         public GameObject tier1ProjectilePrefab;
         [Tooltip("Tier 2 charged projectile prefab (1-2s)")]
@@ -236,86 +220,73 @@ public class Class1 : Player
         public GameObject tier3ProjectilePrefab;
         [Tooltip("Tier 4 charged projectile prefab (3s+)")]
         public GameObject tier4ProjectilePrefab;
+
         [Tooltip("Tier 1 particle system at ship tip (0.5-1s)")]
-        public ParticleSystem tier1ParticleEffect;
+        public ParticleSystem tier1ParticleSystem;
         [Tooltip("Tier 2 particle system at ship tip (1-2s)")]
-        public ParticleSystem tier2ParticleEffect;
+        public ParticleSystem tier2ParticleSystem;
         [Tooltip("Tier 3 particle system at ship tip (2-3s)")]
-        public ParticleSystem tier3ParticleEffect;
+        public ParticleSystem tier3ParticleSystem;
         [Tooltip("Tier 4 particle system at ship tip (3s+)")]
-        public ParticleSystem tier4ParticleEffect;
-        [Tooltip("Projectile lifetime (seconds)")]
-        public float projectileLifetime;
+        public ParticleSystem tier4ParticleSystem;
     }
+}
 
-    [Header("GigaBlast Ability")]
-    public GigaBlastAbilityConfig gigaBlastAbility;
+[System.Serializable]
+public struct ReflectAbilityConfig
+{
+    [Header("Timing")]
+    [Tooltip("Cooldown between uses (seconds)")]
+    public float cooldown;
+    [Tooltip("Shield active duration (seconds)")]
+    public float activeDuration;
 
-    // ===== AUDIO VOLUME =====
-    [System.Serializable]
-    public struct AbilityAudioVolumeConfig
-    {
-        [Header("Beam")]
-        [Range(0f, 3f)]
-        [Tooltip("Volume for laser beam sound")]
-        public float laserBeamVolume;
+    [Header("Shield")]
+    [Tooltip("ReflectShield component (drag from Hierarchy)")]
+    public ReflectShield shield;
 
-        [Header("Teleport")]
-        [Range(0f, 3f)]
-        [Tooltip("Volume for teleport exit sound")]
-        public float teleportExitVolume;
-        [Range(0f, 3f)]
-        [Tooltip("Volume for teleport arrival sound")]
-        public float teleportArrivalVolume;
+    [Header("Reflection")]
+    [Tooltip("Color of reflected projectiles")]
+    public Color reflectedProjectileColor;
+    [Tooltip("Damage multiplier for reflected projectiles (1.0 = same damage, 2.0 = double damage)")]
+    [Range(0.5f, 5f)]
+    public float reflectedProjectileDamageMultiplier;
 
-        [Header("GigaBlast")]
-        [Range(0f, 3f)]
-        [Tooltip("Volume for GigaBlast charge sound")]
-        public float gigaBlastChargeVolume;
-        [Range(0f, 3f)]
-        [Tooltip("Volume for GigaBlast Tier 1 fire sound")]
-        public float gigaBlastTier1FireVolume;
-        [Range(0f, 3f)]
-        [Tooltip("Volume for GigaBlast Tier 2 fire sound")]
-        public float gigaBlastTier2FireVolume;
-        [Range(0f, 3f)]
-        [Tooltip("Volume for GigaBlast Tier 3 fire sound")]
-        public float gigaBlastTier3FireVolume;
-        [Range(0f, 3f)]
-        [Tooltip("Volume for GigaBlast Tier 4 fire sound")]
-        public float gigaBlastTier4FireVolume;
-        [Range(0.5f, 2f)]
-        [Tooltip("Pitch multiplier for GigaBlast Tier 3 charge sound")]
-        public float gigaBlastTier3ChargePitch;
-        [Range(0.5f, 2f)]
-        [Tooltip("Pitch multiplier for GigaBlast Tier 4 charge sound")]
-        public float gigaBlastTier4ChargePitch;
+    [Header("Sound Effects")]
+    [Tooltip("Reflect shield duration sound (loops while active)")]
+    public SoundEffect shieldLoopSound;
+    [Tooltip("Bullet reflection impact sound")]
+    public SoundEffect bulletReflectionSound;
+}
 
-        [Header("Reflect")]
-        [Range(0f, 3f)]
-        [Tooltip("Volume for reflect shield loop sound")]
-        public float reflectShieldLoopVolume;
-        [Range(0f, 3f)]
-        [Tooltip("Volume for bullet reflection impact sound")]
-        public float bulletReflectionVolume;
-    }
+[System.Serializable]
+public struct AbilitiesConfig
+{
+    [Header("Ability 1 - Beam Weapon")]
+    public BeamAbilityConfig beam;
 
-    [Header("Ability Audio Volume Controls")]
-    public AbilityAudioVolumeConfig abilityAudioVolume = new AbilityAudioVolumeConfig
-    {
-        laserBeamVolume = 0.7f,
-        teleportExitVolume = 0.7f,
-        teleportArrivalVolume = 0.7f,
-        gigaBlastChargeVolume = 0.7f,
-        gigaBlastTier1FireVolume = 0.7f,
-        gigaBlastTier2FireVolume = 0.7f,
-        gigaBlastTier3FireVolume = 0.7f,
-        gigaBlastTier4FireVolume = 0.7f,
-        reflectShieldLoopVolume = 0.7f,
-        bulletReflectionVolume = 0.7f,
-        gigaBlastTier3ChargePitch = 1f,
-        gigaBlastTier4ChargePitch = 1f
-    };
+    [Header("Ability 2 - Reflect Shield (Parry)")]
+    public ReflectAbilityConfig reflect;
+
+    [Header("Ability 3 - Teleport")]
+    public TeleportAbilityConfig teleport;
+
+    [Header("Ability 4 - Giga Blast")]
+    public GigaBlastAbilityConfig gigaBlast;
+}
+
+// ===== CLASS1 IMPLEMENTATION =====
+
+public class Class1 : Player
+{
+    // ===== PRIMARY WEAPON =====
+    [Header("Primary Weapon Settings")]
+    [Tooltip("Cooldown between normal fire shots (seconds)")]
+    public new float fireCooldown = 0.5f;
+
+    // ===== ABILITIES =====
+    [Header("Abilities")]
+    public AbilitiesConfig abilities;
 
     // ===== PRIVATE STATE =====
     private LaserBeam _activeBeam;
@@ -377,7 +348,7 @@ public class Class1 : Player
 
         if (_activeBeam == null && _currentBeamCapacity > 0f)
         {
-            _currentBeamCapacity = Mathf.Max(_currentBeamCapacity - beamCapacityRegenRate * Time.deltaTime, 0f);
+            _currentBeamCapacity = Mathf.Max(_currentBeamCapacity - abilities.beam.regenRate * Time.deltaTime, 0f);
         }
 
         if (_isCharging)
@@ -402,35 +373,35 @@ public class Class1 : Player
         }
 
         // Apply movement penalty for charging GigaBlast
-        float originalThrustForce = thrustForce;
+        float originalThrustForce = movement.thrustForce;
         if (_isCharging)
         {
             float chargeTime = Time.time - _chargeStartTime;
             int tier = GetChargeTier(chargeTime);
             float thrustMultiplier = tier switch
             {
-                1 => gigaBlastAbility.tier1ThrustMultiplier,
-                2 => gigaBlastAbility.tier2ThrustMultiplier,
-                3 => gigaBlastAbility.tier3ThrustMultiplier,
-                4 => gigaBlastAbility.tier4ThrustMultiplier,
+                1 => abilities.gigaBlast.movementPenalties.tier1ThrustMultiplier,
+                2 => abilities.gigaBlast.movementPenalties.tier2ThrustMultiplier,
+                3 => abilities.gigaBlast.movementPenalties.tier3ThrustMultiplier,
+                4 => abilities.gigaBlast.movementPenalties.tier4ThrustMultiplier,
                 _ => 1f
             };
-            thrustForce *= thrustMultiplier;
+            movement.thrustForce *= thrustMultiplier;
         }
 
         base.FixedUpdate();
 
         // Restore original thrust force
-        thrustForce = originalThrustForce;
+        movement.thrustForce = originalThrustForce;
 
         if (_activeBeam != null)
         {
             float recoilForceThisFrame = _activeBeam.GetRecoilForcePerSecond() * Time.fixedDeltaTime;
             ApplyRecoil(recoilForceThisFrame);
 
-            _currentBeamCapacity = Mathf.Min(_currentBeamCapacity + beamCapacityDrainRate * Time.fixedDeltaTime, beamCapacity);
+            _currentBeamCapacity = Mathf.Min(_currentBeamCapacity + abilities.beam.drainRate * Time.fixedDeltaTime, abilities.beam.capacity);
 
-            if (_currentBeamCapacity >= beamCapacity)
+            if (_currentBeamCapacity >= abilities.beam.capacity)
             {
                 Debug.Log("Beam capacity full! Stopping beam.");
                 _activeBeam.StopFiring();
@@ -458,9 +429,6 @@ public class Class1 : Player
     {
         Debug.Log($"Fire Beam input received - isPressed: {value.isPressed}");
 
-        if (sceneManager != null && sceneManager.IsPaused() && value.isPressed)
-            return;
-
         if (value.isPressed)
         {
             if (_isCharging)
@@ -469,41 +437,40 @@ public class Class1 : Player
                 return;
             }
 
-            if (_currentBeamCapacity >= beamCapacity)
+            if (_currentBeamCapacity >= abilities.beam.capacity)
             {
                 Debug.Log("Cannot fire beam: capacity full (overheated)");
                 return;
             }
 
-            if (_activeBeam == null && beamWeapon.prefab != null)
+            if (_activeBeam == null && abilities.beam.stats.prefab != null)
             {
                 Debug.Log("Creating and starting beam");
 
-                Vector3 spawnPosition = transform.position + transform.up * beamOffsetDistance;
+                Vector3 spawnPosition = transform.position + transform.up * abilities.beam.offsetDistance;
 
-                GameObject beamObj = Instantiate(beamWeapon.prefab, spawnPosition, transform.rotation, transform);
+                GameObject beamObj = Instantiate(abilities.beam.stats.prefab, spawnPosition, transform.rotation, transform);
                 _activeBeam = beamObj.GetComponent<LaserBeam>();
                 _activeBeam.Initialize(
                     "Enemy",
-                    beamWeapon.damagePerSecond,
-                    beamWeapon.maxDistance,
-                    beamWeapon.recoilForcePerSecond,
-                    beamWeapon.impactForce,
+                    abilities.beam.stats.damagePerSecond,
+                    abilities.beam.stats.maxDistance,
+                    abilities.beam.stats.recoilForcePerSecond,
+                    abilities.beam.stats.impactForce,
                     this
                 );
                 _activeBeam.StartFiring();
 
-                if (laserBeamSound != null && _laserBeamSource != null)
+                if (abilities.beam.beamLoopSound != null && _laserBeamSource != null)
                 {
-                    _laserBeamSource.clip = laserBeamSound;
                     _laserBeamSource.volume = 0f;
-                    _laserBeamSource.Play();
+                    abilities.beam.beamLoopSound.Play(_laserBeamSource);
 
                     if (_beamFadeCoroutine != null)
                     {
                         StopCoroutine(_beamFadeCoroutine);
                     }
-                    _beamFadeCoroutine = StartCoroutine(FadeBeamVolume(abilityAudioVolume.laserBeamVolume));
+                    _beamFadeCoroutine = StartCoroutine(FadeBeamVolume(abilities.beam.beamLoopSound.volume));
                 }
             }
         }
@@ -534,16 +501,13 @@ public class Class1 : Player
 
     void OnReflect()
     {
-        if (sceneManager != null && sceneManager.IsPaused())
-            return;
-
-        if (Time.time < _lastReflectTime + reflectAbility.cooldown)
+        if (Time.time < _lastReflectTime + abilities.reflect.cooldown)
         {
-            Debug.Log($"Reflect on cooldown: {(_lastReflectTime + reflectAbility.cooldown - Time.time):F1}s remaining");
+            Debug.Log($"Reflect on cooldown: {(_lastReflectTime + abilities.reflect.cooldown - Time.time):F1}s remaining");
             return;
         }
 
-        if (reflectAbility.shield == null)
+        if (abilities.reflect.shield == null)
         {
             Debug.LogWarning("Reflect shield not assigned!");
             return;
@@ -560,12 +524,9 @@ public class Class1 : Player
 
     void OnTeleport()
     {
-        if (sceneManager != null && sceneManager.IsPaused())
-            return;
-
-        if (Time.time < _lastTeleportTime + teleportAbility.cooldown)
+        if (Time.time < _lastTeleportTime + abilities.teleport.cooldown)
         {
-            Debug.Log($"Teleport on cooldown: {(_lastTeleportTime + teleportAbility.cooldown - Time.time):F1}s remaining");
+            Debug.Log($"Teleport on cooldown: {(_lastTeleportTime + abilities.teleport.cooldown - Time.time):F1}s remaining");
             return;
         }
 
@@ -574,8 +535,8 @@ public class Class1 : Player
             return;
         }
 
-        Vector2 mouseScreenPosition = Mouse.current.position.ReadValue();
-        Vector3 targetWorldPosition = Camera.main.ScreenToWorldPoint(mouseScreenPosition);
+        Vector3 teleportDirection = transform.up;
+        Vector3 targetWorldPosition = transform.position + teleportDirection * abilities.teleport.teleportDistance;
         targetWorldPosition.z = transform.position.z;
 
         _lastTeleportTime = Time.time;
@@ -591,15 +552,12 @@ public class Class1 : Player
     {
         Debug.Log($"GigaBlast input received - isPressed: {value.isPressed}");
 
-        if (sceneManager != null && sceneManager.IsPaused() && value.isPressed)
-            return;
-
         if (value.isPressed)
         {
-            if (!_isCharging && Time.time >= _lastGigaBlastTime + gigaBlastAbility.cooldown)
+            if (!_isCharging && Time.time >= _lastGigaBlastTime + abilities.gigaBlast.timing.cooldown)
             {
                 if (_activeBeam != null || _isTeleporting ||
-                    (reflectAbility.shield != null && reflectAbility.shield.IsActive()))
+                    (abilities.reflect.shield != null && abilities.reflect.shield.IsActive()))
                 {
                     Debug.Log("Cannot charge GigaBlast: other abilities active");
                     return;
@@ -611,17 +569,16 @@ public class Class1 : Player
 
                 PlayChargeParticleForTier(1);
 
-                if (gigaBlastChargeSound != null && _gigaBlastChargeSource != null)
+                if (abilities.gigaBlast.chargeSound != null && _gigaBlastChargeSource != null)
                 {
-                    _gigaBlastChargeSource.clip = gigaBlastChargeSound;
                     _gigaBlastChargeSource.volume = 0f;
-                    _gigaBlastChargeSource.Play();
+                    abilities.gigaBlast.chargeSound.Play(_gigaBlastChargeSource);
 
                     if (_gigaBlastChargeFadeCoroutine != null)
                     {
                         StopCoroutine(_gigaBlastChargeFadeCoroutine);
                     }
-                    _gigaBlastChargeFadeCoroutine = StartCoroutine(FadeGigaBlastChargeVolume(abilityAudioVolume.gigaBlastChargeVolume));
+                    _gigaBlastChargeFadeCoroutine = StartCoroutine(FadeGigaBlastChargeVolume(abilities.gigaBlast.chargeSound.volume));
                 }
 
                 Debug.Log("GigaBlast charging started");
@@ -633,14 +590,14 @@ public class Class1 : Player
             {
                 float chargeTime = Time.time - _chargeStartTime;
 
-                if (chargeTime >= gigaBlastAbility.minChargeTime)
+                if (chargeTime >= abilities.gigaBlast.timing.minChargeTime)
                 {
                     FireChargedShot(chargeTime);
                     _lastGigaBlastTime = Time.time;
                 }
                 else
                 {
-                    Debug.Log($"GigaBlast released too early: {chargeTime:F2}s < {gigaBlastAbility.minChargeTime:F2}s");
+                    Debug.Log($"GigaBlast released too early: {chargeTime:F2}s < {abilities.gigaBlast.timing.minChargeTime:F2}s");
                 }
 
                 _isCharging = false;
@@ -662,18 +619,16 @@ public class Class1 : Player
     // ===== REFLECT ABILITY =====
     private System.Collections.IEnumerator ActivateReflectShield()
     {
-        reflectAbility.shield.Activate(reflectAbility.reflectedProjectileColor);
+        abilities.reflect.shield.Activate(abilities.reflect.reflectedProjectileColor);
 
-        if (reflectShieldLoopSound != null && _reflectShieldSource != null)
+        if (abilities.reflect.shieldLoopSound != null && _reflectShieldSource != null)
         {
-            _reflectShieldSource.clip = reflectShieldLoopSound;
-            _reflectShieldSource.volume = abilityAudioVolume.reflectShieldLoopVolume;
-            _reflectShieldSource.Play();
+            abilities.reflect.shieldLoopSound.Play(_reflectShieldSource);
         }
 
-        yield return new WaitForSeconds(reflectAbility.activeDuration);
+        yield return new WaitForSeconds(abilities.reflect.activeDuration);
 
-        reflectAbility.shield.Deactivate();
+        abilities.reflect.shield.Deactivate();
 
         if (_reflectShieldSource != null && _reflectShieldSource.isPlaying)
         {
@@ -687,15 +642,15 @@ public class Class1 : Player
         _isTeleporting = true;
 
         Vector3 originalScale = transform.localScale;
-        Vector3 normalScale = originalScale * teleportAbility.normalScale;
+        Vector3 normalScale = originalScale * abilities.teleport.animation.normalScale;
 
         Vector3 originSqueezeScale = new Vector3(
-            originalScale.x * teleportAbility.originScaleX,
-            originalScale.y * teleportAbility.originScaleY,
+            originalScale.x * abilities.teleport.animation.originScaleX,
+            originalScale.y * abilities.teleport.animation.originScaleY,
             originalScale.z
         );
 
-        Vector3 destinationPopScale = originalScale * teleportAbility.destinationOvershootScale;
+        Vector3 destinationPopScale = originalScale * abilities.teleport.animation.destinationOvershootScale;
 
         Collider2D playerCollider = GetComponent<Collider2D>();
         bool colliderWasEnabled = false;
@@ -705,27 +660,31 @@ public class Class1 : Player
             playerCollider.enabled = false;
         }
 
-        if (teleportAbility.preTeleportDelay > 0)
+        if (abilities.teleport.preTeleportDelay > 0)
         {
-            yield return new WaitForSeconds(teleportAbility.preTeleportDelay);
+            yield return new WaitForSeconds(abilities.teleport.preTeleportDelay);
         }
 
         float elapsed = 0f;
-        while (elapsed < teleportAbility.shrinkDuration)
+        while (elapsed < abilities.teleport.animation.shrinkDuration)
         {
             elapsed += Time.deltaTime;
-            float t = elapsed / teleportAbility.shrinkDuration;
+            float t = elapsed / abilities.teleport.animation.shrinkDuration;
             transform.localScale = Vector3.Lerp(originalScale, originSqueezeScale, t);
             yield return null;
         }
         transform.localScale = originSqueezeScale;
 
-        if (teleportAbility.teleportOriginEffect != null)
+        if (abilities.teleport.visual.effects != null && abilities.teleport.visual.effects.Length > 0 &&
+            abilities.teleport.visual.effects[0] != null)
         {
-            Instantiate(teleportAbility.teleportOriginEffect, transform.position, Quaternion.identity);
+            Instantiate(abilities.teleport.visual.effects[0], transform.position, Quaternion.identity);
         }
 
-        PlayAbilitySound(teleportExitSound, 1f, AbilityAudioClipType.TeleportExit);
+        if (abilities.teleport.exitSound != null)
+        {
+            abilities.teleport.exitSound.Play(GetAvailableAudioSource());
+        }
 
         SpriteRenderer spriteRenderer = GetComponentInChildren<SpriteRenderer>();
         bool spriteWasEnabled = false;
@@ -747,35 +706,30 @@ public class Class1 : Player
             }
         }
 
-        if (teleportAbility.resetVelocity)
+        if (abilities.teleport.visual.enableChromaticFlash)
         {
-            _rb.linearVelocity = Vector2.zero;
-        }
-        else if (teleportAbility.dampVelocity)
-        {
-            _rb.linearVelocity *= teleportAbility.velocityDampFactor;
+            SetChromaticAberrationIntensity(GetChromaticAberrationIntensity() + abilities.teleport.visual.chromaticFlashIntensity);
         }
 
-        if (teleportAbility.enableChromaticFlash)
-        {
-            SetChromaticAberrationIntensity(GetChromaticAberrationIntensity() + teleportAbility.chromaticFlashIntensity);
-        }
-
-        if (teleportAbility.enableScreenShake)
+        if (abilities.teleport.visual.enableScreenShake)
         {
             var impulseSource = GetComponent<Unity.Cinemachine.CinemachineImpulseSource>();
             if (impulseSource != null)
             {
-                impulseSource.GenerateImpulse(teleportAbility.screenShakeStrength);
+                impulseSource.GenerateImpulse(abilities.teleport.visual.screenShakeStrength);
             }
         }
 
-        if (teleportAbility.teleportDestinationEffect != null)
+        if (abilities.teleport.visual.effects != null && abilities.teleport.visual.effects.Length > 1 &&
+            abilities.teleport.visual.effects[1] != null)
         {
-            Instantiate(teleportAbility.teleportDestinationEffect, transform.position, Quaternion.identity);
+            Instantiate(abilities.teleport.visual.effects[1], transform.position, Quaternion.identity);
         }
 
-        PlayAbilitySound(teleportArrivalSound, 1f, AbilityAudioClipType.TeleportArrival);
+        if (abilities.teleport.arrivalSound != null)
+        {
+            abilities.teleport.arrivalSound.Play(GetAvailableAudioSource());
+        }
 
         if (spriteRenderer != null && spriteWasEnabled)
         {
@@ -783,10 +737,10 @@ public class Class1 : Player
         }
 
         elapsed = 0f;
-        while (elapsed < teleportAbility.growDuration)
+        while (elapsed < abilities.teleport.animation.growDuration)
         {
             elapsed += Time.deltaTime;
-            float t = elapsed / teleportAbility.growDuration;
+            float t = elapsed / abilities.teleport.animation.growDuration;
             transform.localScale = Vector3.Lerp(destinationPopScale, normalScale, t);
             yield return null;
         }
@@ -805,10 +759,10 @@ public class Class1 : Player
     {
         ParticleSystem particleToPlay = tier switch
         {
-            1 => gigaBlastAbility.tier1ParticleEffect,
-            2 => gigaBlastAbility.tier2ParticleEffect,
-            3 => gigaBlastAbility.tier3ParticleEffect,
-            4 => gigaBlastAbility.tier4ParticleEffect,
+            1 => abilities.gigaBlast.visual.tier1ParticleSystem,
+            2 => abilities.gigaBlast.visual.tier2ParticleSystem,
+            3 => abilities.gigaBlast.visual.tier3ParticleSystem,
+            4 => abilities.gigaBlast.visual.tier4ParticleSystem,
             _ => null
         };
 
@@ -827,10 +781,10 @@ public class Class1 : Player
     {
         ParticleSystem particleToStop = _currentChargeTier switch
         {
-            1 => gigaBlastAbility.tier1ParticleEffect,
-            2 => gigaBlastAbility.tier2ParticleEffect,
-            3 => gigaBlastAbility.tier3ParticleEffect,
-            4 => gigaBlastAbility.tier4ParticleEffect,
+            1 => abilities.gigaBlast.visual.tier1ParticleSystem,
+            2 => abilities.gigaBlast.visual.tier2ParticleSystem,
+            3 => abilities.gigaBlast.visual.tier3ParticleSystem,
+            4 => abilities.gigaBlast.visual.tier4ParticleSystem,
             _ => null
         };
 
@@ -844,24 +798,24 @@ public class Class1 : Player
     private void StopAllChargeParticles()
     {
         Debug.Log("Stopping all GigaBlast charge particles");
-        if (gigaBlastAbility.tier1ParticleEffect != null) gigaBlastAbility.tier1ParticleEffect.Stop(true, ParticleSystemStopBehavior.StopEmitting);
-        if (gigaBlastAbility.tier2ParticleEffect != null) gigaBlastAbility.tier2ParticleEffect.Stop(true, ParticleSystemStopBehavior.StopEmitting);
-        if (gigaBlastAbility.tier3ParticleEffect != null) gigaBlastAbility.tier3ParticleEffect.Stop(true, ParticleSystemStopBehavior.StopEmitting);
-        if (gigaBlastAbility.tier4ParticleEffect != null) gigaBlastAbility.tier4ParticleEffect.Stop(true, ParticleSystemStopBehavior.StopEmitting);
+        if (abilities.gigaBlast.visual.tier1ParticleSystem != null) abilities.gigaBlast.visual.tier1ParticleSystem.Stop(true, ParticleSystemStopBehavior.StopEmitting);
+        if (abilities.gigaBlast.visual.tier2ParticleSystem != null) abilities.gigaBlast.visual.tier2ParticleSystem.Stop(true, ParticleSystemStopBehavior.StopEmitting);
+        if (abilities.gigaBlast.visual.tier3ParticleSystem != null) abilities.gigaBlast.visual.tier3ParticleSystem.Stop(true, ParticleSystemStopBehavior.StopEmitting);
+        if (abilities.gigaBlast.visual.tier4ParticleSystem != null) abilities.gigaBlast.visual.tier4ParticleSystem.Stop(true, ParticleSystemStopBehavior.StopEmitting);
     }
 
     private int GetChargeTier(float chargeTime)
     {
-        if (chargeTime >= gigaBlastAbility.tier4Time) return 4;
-        if (chargeTime >= gigaBlastAbility.tier3Time) return 3;
-        if (chargeTime >= gigaBlastAbility.tier2Time) return 2;
-        if (chargeTime >= gigaBlastAbility.tier1Time) return 1;
+        if (chargeTime >= abilities.gigaBlast.tierThresholds.tier4Time) return 4;
+        if (chargeTime >= abilities.gigaBlast.tierThresholds.tier3Time) return 3;
+        if (chargeTime >= abilities.gigaBlast.tierThresholds.tier2Time) return 2;
+        if (chargeTime >= abilities.gigaBlast.tierThresholds.tier1Time) return 1;
         return 1;
     }
 
     private void FireChargedShot(float chargeTime)
     {
-        chargeTime = Mathf.Min(chargeTime, gigaBlastAbility.maxChargeTime);
+        chargeTime = Mathf.Min(chargeTime, abilities.gigaBlast.timing.maxChargeTime);
 
         int tier = GetChargeTier(chargeTime);
 
@@ -872,37 +826,37 @@ public class Class1 : Player
 
         float speedMultiplier = tier switch
         {
-            1 => gigaBlastAbility.tier1SpeedMultiplier,
-            2 => gigaBlastAbility.tier2SpeedMultiplier,
-            3 => gigaBlastAbility.tier3SpeedMultiplier,
-            4 => gigaBlastAbility.tier4SpeedMultiplier,
+            1 => abilities.gigaBlast.projectileScaling.tier1SpeedMultiplier,
+            2 => abilities.gigaBlast.projectileScaling.tier2SpeedMultiplier,
+            3 => abilities.gigaBlast.projectileScaling.tier3SpeedMultiplier,
+            4 => abilities.gigaBlast.projectileScaling.tier4SpeedMultiplier,
             _ => 1f
         };
 
         float damageMultiplier = tier switch
         {
-            1 => gigaBlastAbility.tier1DamageMultiplier,
-            2 => gigaBlastAbility.tier2DamageMultiplier,
-            3 => gigaBlastAbility.tier3DamageMultiplier,
-            4 => gigaBlastAbility.tier4DamageMultiplier,
+            1 => abilities.gigaBlast.projectileScaling.tier1DamageMultiplier,
+            2 => abilities.gigaBlast.projectileScaling.tier2DamageMultiplier,
+            3 => abilities.gigaBlast.projectileScaling.tier3DamageMultiplier,
+            4 => abilities.gigaBlast.projectileScaling.tier4DamageMultiplier,
             _ => 1f
         };
 
         float recoilMultiplier = tier switch
         {
-            1 => gigaBlastAbility.tier1RecoilMultiplier,
-            2 => gigaBlastAbility.tier2RecoilMultiplier,
-            3 => gigaBlastAbility.tier3RecoilMultiplier,
-            4 => gigaBlastAbility.tier4RecoilMultiplier,
+            1 => abilities.gigaBlast.projectileScaling.tier1RecoilMultiplier,
+            2 => abilities.gigaBlast.projectileScaling.tier2RecoilMultiplier,
+            3 => abilities.gigaBlast.projectileScaling.tier3RecoilMultiplier,
+            4 => abilities.gigaBlast.projectileScaling.tier4RecoilMultiplier,
             _ => 1f
         };
 
         float impactMultiplier = tier switch
         {
-            1 => gigaBlastAbility.tier1ImpactMultiplier,
-            2 => gigaBlastAbility.tier2ImpactMultiplier,
-            3 => gigaBlastAbility.tier3ImpactMultiplier,
-            4 => gigaBlastAbility.tier4ImpactMultiplier,
+            1 => abilities.gigaBlast.projectileScaling.tier1ImpactMultiplier,
+            2 => abilities.gigaBlast.projectileScaling.tier2ImpactMultiplier,
+            3 => abilities.gigaBlast.projectileScaling.tier3ImpactMultiplier,
+            4 => abilities.gigaBlast.projectileScaling.tier4ImpactMultiplier,
             _ => 1f
         };
 
@@ -913,10 +867,10 @@ public class Class1 : Player
 
         GameObject projectilePrefab = tier switch
         {
-            1 => gigaBlastAbility.tier1ProjectilePrefab,
-            2 => gigaBlastAbility.tier2ProjectilePrefab,
-            3 => gigaBlastAbility.tier3ProjectilePrefab,
-            4 => gigaBlastAbility.tier4ProjectilePrefab,
+            1 => abilities.gigaBlast.visual.tier1ProjectilePrefab,
+            2 => abilities.gigaBlast.visual.tier2ProjectilePrefab,
+            3 => abilities.gigaBlast.visual.tier3ProjectilePrefab,
+            4 => abilities.gigaBlast.visual.tier4ProjectilePrefab,
             _ => null
         };
 
@@ -926,7 +880,7 @@ public class Class1 : Player
             return;
         }
 
-        Vector3 spawnPosition = transform.position + transform.up * beamOffsetDistance;
+        Vector3 spawnPosition = transform.position + transform.up * abilities.beam.offsetDistance;
         GameObject projectile = Instantiate(projectilePrefab, spawnPosition, transform.rotation);
 
         if (projectile.TryGetComponent<ProjectileScript>(out var projectileScript))
@@ -937,82 +891,38 @@ public class Class1 : Player
                 Vector2.zero,
                 finalSpeed,
                 finalDamage,
-                gigaBlastAbility.projectileLifetime,
+                abilities.gigaBlast.timing.projectileLifetime,
                 finalImpact,
                 this
             );
 
             if (tier >= 3)
             {
-                float pierceMultiplier = (tier == 3) ? gigaBlastAbility.tier3PierceMultiplier : gigaBlastAbility.tier4PierceMultiplier;
+                float pierceMultiplier = (tier == 3) ? abilities.gigaBlast.pierce.tier3DamageMultiplierPerPierce : abilities.gigaBlast.pierce.tier4DamageMultiplierPerPierce;
                 projectileScript.EnablePiercing(pierceMultiplier);
             }
         }
 
         ApplyRecoil(finalRecoil);
 
-        AudioClip fireSound = tier switch
+        SoundEffect fireSound = tier switch
         {
-            1 => gigaBlastTier1FireSound,
-            2 => gigaBlastTier2FireSound,
-            3 => gigaBlastTier3FireSound,
-            4 => gigaBlastTier4FireSound,
+            1 => abilities.gigaBlast.tier1FireSound,
+            2 => abilities.gigaBlast.tier2FireSound,
+            3 => abilities.gigaBlast.tier3FireSound,
+            4 => abilities.gigaBlast.tier4FireSound,
             _ => null
         };
-        AbilityAudioClipType fireSoundType = tier switch
+
+        if (fireSound != null)
         {
-            1 => AbilityAudioClipType.GigaBlastTier1Fire,
-            2 => AbilityAudioClipType.GigaBlastTier2Fire,
-            3 => AbilityAudioClipType.GigaBlastTier3Fire,
-            4 => AbilityAudioClipType.GigaBlastTier4Fire,
-            _ => AbilityAudioClipType.LaserBeam
-        };
-        float fireSoundPitch = tier switch
-        {
-            3 => abilityAudioVolume.gigaBlastTier3ChargePitch,
-            4 => abilityAudioVolume.gigaBlastTier4ChargePitch,
-            _ => 1f
-        };
-        PlayAbilitySound(fireSound, 1f, fireSoundType, fireSoundPitch);
+            fireSound.Play(GetAvailableAudioSource());
+        }
 
         Debug.Log($"GigaBlast fired! Tier: {tier}, Charge: {chargeTime:F2}s, Damage: {finalDamage:F1}, Speed: {finalSpeed:F1}");
     }
 
     // ===== AUDIO =====
-    protected enum AbilityAudioClipType
-    {
-        LaserBeam,
-        TeleportExit,
-        TeleportArrival,
-        GigaBlastTier1Fire,
-        GigaBlastTier2Fire,
-        GigaBlastTier3Fire,
-        GigaBlastTier4Fire,
-        BulletReflection
-    }
-
-    private void PlayAbilitySound(AudioClip clip, float volume = 1f, AbilityAudioClipType clipType = AbilityAudioClipType.LaserBeam, float pitch = 1f)
-    {
-        if (clip == null) return;
-
-        float volumeMultiplier = clipType switch
-        {
-            AbilityAudioClipType.LaserBeam => abilityAudioVolume.laserBeamVolume,
-            AbilityAudioClipType.TeleportExit => abilityAudioVolume.teleportExitVolume,
-            AbilityAudioClipType.TeleportArrival => abilityAudioVolume.teleportArrivalVolume,
-            AbilityAudioClipType.GigaBlastTier1Fire => abilityAudioVolume.gigaBlastTier1FireVolume,
-            AbilityAudioClipType.GigaBlastTier2Fire => abilityAudioVolume.gigaBlastTier2FireVolume,
-            AbilityAudioClipType.GigaBlastTier3Fire => abilityAudioVolume.gigaBlastTier3FireVolume,
-            AbilityAudioClipType.GigaBlastTier4Fire => abilityAudioVolume.gigaBlastTier4FireVolume,
-            AbilityAudioClipType.BulletReflection => abilityAudioVolume.bulletReflectionVolume,
-            _ => 1f
-        };
-
-        AudioSource source = GetAvailableAudioSource();
-        source.pitch = pitch;
-        source.PlayOneShot(clip, volume * volumeMultiplier);
-    }
-
     private System.Collections.IEnumerator FadeBeamVolume(float targetVolume, bool stopAfterFade = false)
     {
         if (_laserBeamSource == null) yield break;
@@ -1020,7 +930,7 @@ public class Class1 : Player
         float startVolume = _laserBeamSource.volume;
         float elapsed = 0f;
 
-        while (elapsed < beamSoundFadeDuration)
+        while (elapsed < abilities.beam.soundFadeDuration)
         {
             if (_laserBeamSource == null || (!_laserBeamSource.isPlaying && targetVolume > 0f))
             {
@@ -1028,7 +938,7 @@ public class Class1 : Player
             }
 
             elapsed += Time.deltaTime;
-            float t = elapsed / beamSoundFadeDuration;
+            float t = elapsed / abilities.beam.soundFadeDuration;
             _laserBeamSource.volume = Mathf.Lerp(startVolume, targetVolume, t);
             yield return null;
         }
@@ -1050,10 +960,10 @@ public class Class1 : Player
         float startVolume = _gigaBlastChargeSource.volume;
         float elapsed = 0f;
 
-        while (elapsed < gigaBlastChargeSoundFadeDuration)
+        while (elapsed < abilities.gigaBlast.chargeSoundFadeDuration)
         {
             elapsed += Time.deltaTime;
-            float t = elapsed / gigaBlastChargeSoundFadeDuration;
+            float t = elapsed / abilities.gigaBlast.chargeSoundFadeDuration;
             _gigaBlastChargeSource.volume = Mathf.Lerp(startVolume, targetVolume, t);
             yield return null;
         }
@@ -1069,11 +979,11 @@ public class Class1 : Player
     // ===== ROTATION OVERRIDES =====
     protected override void RotateWithController()
     {
-        float originalRotationSpeed = rotationSpeed;
+        float originalRotationSpeed = movement.rotationSpeed;
 
         if (_activeBeam != null)
         {
-            rotationSpeed *= beamRotationMultiplier;
+            movement.rotationSpeed *= abilities.beam.rotationMultiplier;
         }
         else if (_isCharging)
         {
@@ -1081,27 +991,27 @@ public class Class1 : Player
             int tier = GetChargeTier(chargeTime);
             float rotationMultiplier = tier switch
             {
-                1 => gigaBlastAbility.tier1RotationMultiplier,
-                2 => gigaBlastAbility.tier2RotationMultiplier,
-                3 => gigaBlastAbility.tier3RotationMultiplier,
-                4 => gigaBlastAbility.tier4RotationMultiplier,
+                1 => abilities.gigaBlast.movementPenalties.tier1RotationMultiplier,
+                2 => abilities.gigaBlast.movementPenalties.tier2RotationMultiplier,
+                3 => abilities.gigaBlast.movementPenalties.tier3RotationMultiplier,
+                4 => abilities.gigaBlast.movementPenalties.tier4RotationMultiplier,
                 _ => 1f
             };
-            rotationSpeed *= rotationMultiplier;
+            movement.rotationSpeed *= rotationMultiplier;
         }
 
         base.RotateWithController();
 
-        rotationSpeed = originalRotationSpeed;
+        movement.rotationSpeed = originalRotationSpeed;
     }
 
     protected override void RotateTowardMouse()
     {
-        float originalRotationSpeed = rotationSpeed;
+        float originalRotationSpeed = movement.rotationSpeed;
 
         if (_activeBeam != null)
         {
-            rotationSpeed *= beamRotationMultiplier;
+            movement.rotationSpeed *= abilities.beam.rotationMultiplier;
         }
         else if (_isCharging)
         {
@@ -1109,24 +1019,24 @@ public class Class1 : Player
             int tier = GetChargeTier(chargeTime);
             float rotationMultiplier = tier switch
             {
-                1 => gigaBlastAbility.tier1RotationMultiplier,
-                2 => gigaBlastAbility.tier2RotationMultiplier,
-                3 => gigaBlastAbility.tier3RotationMultiplier,
-                4 => gigaBlastAbility.tier4RotationMultiplier,
+                1 => abilities.gigaBlast.movementPenalties.tier1RotationMultiplier,
+                2 => abilities.gigaBlast.movementPenalties.tier2RotationMultiplier,
+                3 => abilities.gigaBlast.movementPenalties.tier3RotationMultiplier,
+                4 => abilities.gigaBlast.movementPenalties.tier4RotationMultiplier,
                 _ => 1f
             };
-            rotationSpeed *= rotationMultiplier;
+            movement.rotationSpeed *= rotationMultiplier;
         }
 
         base.RotateTowardMouse();
 
-        rotationSpeed = originalRotationSpeed;
+        movement.rotationSpeed = originalRotationSpeed;
     }
 
     // ===== OVERRIDES =====
     public override void TakeDamage(float damage, float impactForce = 0f, Vector3 hitPoint = default, DamageSource source = DamageSource.Projectile)
     {
-        if (reflectAbility.shield != null && reflectAbility.shield.IsActive())
+        if (abilities.reflect.shield != null && abilities.reflect.shield.IsActive())
         {
             return;
         }
@@ -1163,20 +1073,23 @@ public class Class1 : Player
 
     void OnTriggerEnter2D(Collider2D collider)
     {
-        if (reflectAbility.shield != null && reflectAbility.shield.IsActive())
+        if (abilities.reflect.shield != null && abilities.reflect.shield.IsActive())
         {
             ProjectileScript projectile = collider.GetComponent<ProjectileScript>();
             if (projectile != null && projectile.targetTag == "Player")
             {
                 Vector3 hitPoint = collider.ClosestPoint(transform.position);
-                reflectAbility.shield.OnReflectHit(hitPoint);
-                reflectAbility.shield.ReflectProjectile(projectile);
+                abilities.reflect.shield.OnReflectHit(hitPoint);
+                abilities.reflect.shield.ReflectProjectile(projectile);
 
                 projectile.MarkAsReflected();
 
-                projectile.ApplyDamageMultiplier(reflectAbility.reflectedProjectileDamageMultiplier);
+                projectile.ApplyDamageMultiplier(abilities.reflect.reflectedProjectileDamageMultiplier);
 
-                PlayAbilitySound(bulletReflectionSound, 1f, AbilityAudioClipType.BulletReflection);
+                if (abilities.reflect.bulletReflectionSound != null)
+                {
+                    abilities.reflect.bulletReflectionSound.Play(GetAvailableAudioSource());
+                }
             }
         }
     }

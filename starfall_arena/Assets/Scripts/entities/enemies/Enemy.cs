@@ -204,7 +204,7 @@ public abstract class Enemy : Entity
         switch (damageSource)
         {
             case DamageSource.Projectile:
-                bool shieldActive = hasShield && currentShield > 0f;
+                bool shieldActive = currentShield > 0f;
 
                 AudioClip projectileClip;
                 float projectileVolume;
@@ -322,14 +322,14 @@ public abstract class Enemy : Entity
     protected virtual void MovePatrol()
     {
         UpdateWanderDirection();
-        _rb.AddForce(_wanderDirection * thrustForce * 0.7f);
+        _rb.AddForce(_wanderDirection * movement.thrustForce * 0.7f);
         _isThrusting = true;
     }
 
     protected virtual void MovePursuit()
     {
         Vector2 directionToTarget = (_target.position - transform.position).normalized;
-        _rb.AddForce(directionToTarget * thrustForce);
+        _rb.AddForce(directionToTarget * movement.thrustForce);
         _isThrusting = true;
     }
 
@@ -340,13 +340,13 @@ public abstract class Enemy : Entity
 
         if (distanceToLastKnown > 1f)
         {
-            _rb.AddForce(directionToLastKnown * thrustForce);
+            _rb.AddForce(directionToLastKnown * movement.thrustForce);
             _isThrusting = true;
         }
         else
         {
             UpdateWanderDirection();
-            _rb.AddForce(_wanderDirection * thrustForce * 0.5f);
+            _rb.AddForce(_wanderDirection * movement.thrustForce * 0.5f);
             _isThrusting = true;
         }
     }
@@ -376,7 +376,7 @@ public abstract class Enemy : Entity
         float targetAngle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
 
         float currentAngle = transform.eulerAngles.z;
-        float newAngle = Mathf.MoveTowardsAngle(currentAngle, targetAngle + ROTATION_OFFSET, rotationSpeed * Time.deltaTime);
+        float newAngle = Mathf.MoveTowardsAngle(currentAngle, targetAngle + ROTATION_OFFSET, movement.rotationSpeed * Time.deltaTime);
         transform.rotation = Quaternion.Euler(0, 0, newAngle);
     }
 
@@ -416,11 +416,11 @@ public abstract class Enemy : Entity
         Vector3 targetPosition = CalculateTargetPosition();
         Vector2 fireDirection = (targetPosition - transform.position).normalized;
 
-        if (turrets != null && turrets.Count > 0)
+        if (turrets != null && turrets.Length > 0)
         {
             foreach (var turret in turrets)
             {
-                GameObject projectile = Instantiate(projectileWeapon.prefab, turret.transform.position, transform.rotation);
+                GameObject projectile = Instantiate(projectileWeapon.prefab, turret.position, transform.rotation);
 
                 if (projectile.TryGetComponent<ProjectileScript>(out var projectileScript))
                 {

@@ -1,5 +1,4 @@
 using UnityEngine;
-using Unity.Cinemachine;
 
 /// <summary>
 /// Continuous laser beam weapon with particle effects
@@ -8,9 +7,6 @@ using Unity.Cinemachine;
 [RequireComponent(typeof(LineRenderer))]
 public class LaserBeam : MonoBehaviour
 {
-    [Header("Screen Shake")]
-    public float _shakeMultiplier = 0.2f;
-
     [Header("Components")]
     [SerializeField] private LineRenderer lineRenderer;
 
@@ -30,7 +26,6 @@ public class LaserBeam : MonoBehaviour
     private float _impactForce;
     private ParticleSystem _activeMuzzleFlash;
     private ParticleSystem _activeImpactEffect;
-    private CinemachineImpulseSource _impulseSource;
     private float _timeSinceLastLaserHit = 0f;
     private ShieldController _currentTargetShield = null;
     private Entity _shooter;
@@ -46,10 +41,6 @@ public class LaserBeam : MonoBehaviour
             lineRenderer.enabled = false;
     }
 
-    void Start()
-    {
-        _impulseSource = GetComponent<CinemachineImpulseSource>();
-    }
     
     /// <summary>
     /// Initialize the beam with target tag and weapon stats
@@ -157,11 +148,11 @@ public class LaserBeam : MonoBehaviour
                     continue;
 
                 // Check if we hit a player with active reflect shield
-                PlayerScript player = hit.collider.GetComponent<PlayerScript>();
-                if (player != null && player.reflectAbility.shield != null && player.reflectAbility.shield.IsActive())
+                Class1 player = hit.collider.GetComponent<Class1>();
+                if (player != null && player.abilities.reflect.shield != null && player.abilities.reflect.shield.IsActive())
                 {
                     // Trigger visual ripple effect
-                    player.reflectAbility.shield.OnReflectHit(hit.point);
+                    player.abilities.reflect.shield.OnReflectHit(hit.point);
 
                     // Stop the beam at the shield (no damage due to player immunity)
                     validHit = hit;
@@ -171,9 +162,10 @@ public class LaserBeam : MonoBehaviour
 
                 // Check if this is a valid target (stops the beam)
                 bool isTargetTag = hit.collider.CompareTag(_targetTag);
-                bool isAsteroid = hit.collider.CompareTag("Asteroid");
+                // TODO: Re-enable asteroid check when AsteroidScript is implemented
+                // bool isAsteroid = hit.collider.CompareTag("Asteroid");
 
-                if (isTargetTag || isAsteroid)
+                if (isTargetTag) // || isAsteroid)
                 {
                     validHit = hit;
                     hitSomething = true;
@@ -189,13 +181,6 @@ public class LaserBeam : MonoBehaviour
 
             // Update or spawn impact effect at hit point
             UpdateImpactEffect(validHit.Value.point, fireDirection);
-
-            // Only trigger screen shake when player is hit, not when enemies are hit
-            if (_impulseSource != null && validHit.Value.collider.CompareTag("Player"))
-            {
-                // Optional: Scale shake by damage, or just keep it constant for the beam
-                _impulseSource.GenerateImpulse(_shakeMultiplier);
-            }
 
             // Deal damage if we hit a valid target
             if (validHit.Value.collider.CompareTag(_targetTag))
@@ -218,7 +203,7 @@ public class LaserBeam : MonoBehaviour
 
                     // Call OnLaserHit on shield at specified interval (only if shield is active)
                     ShieldController shieldController = damageable.shieldController;
-                    if (shieldController != null && damageable.hasShield)
+                    if (shieldController != null && damageable.currentShield > 0)
                     {
                         // Trigger instant ripple on first hit of this shield
                         if (_currentTargetShield != shieldController)
@@ -240,16 +225,17 @@ public class LaserBeam : MonoBehaviour
                 }
             }
             // Deal damage if we hit an asteroid
-            else if (validHit.Value.collider.CompareTag("Asteroid"))
-            {
-                AsteroidScript asteroid = validHit.Value.collider.GetComponent<AsteroidScript>();
-                if (asteroid != null)
-                {
-                    float damageThisFrame = _damagePerSecond * Time.deltaTime;
-                    float impactForceThisFrame = _impactForce * Time.deltaTime;
-                    asteroid.TakeDamage(damageThisFrame, impactForceThisFrame, validHit.Value.point);
-                }
-            }
+            // TODO: Re-enable when AsteroidScript is implemented
+            // else if (validHit.Value.collider.CompareTag("Asteroid"))
+            // {
+            //     AsteroidScript asteroid = validHit.Value.collider.GetComponent<AsteroidScript>();
+            //     if (asteroid != null)
+            //     {
+            //         float damageThisFrame = _damagePerSecond * Time.deltaTime;
+            //         float impactForceThisFrame = _impactForce * Time.deltaTime;
+            //         asteroid.TakeDamage(damageThisFrame, impactForceThisFrame, validHit.Value.point);
+            //     }
+            // }
         }
         else
         {

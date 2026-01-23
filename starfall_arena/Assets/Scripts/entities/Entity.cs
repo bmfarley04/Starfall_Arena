@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 public enum DamageSource
 {
@@ -32,92 +33,99 @@ public struct BeamWeaponConfig
     public float impactForce;
 }
 
+[System.Serializable]
+public struct MovementConfig
+{
+    public float thrustForce;
+    public float maxSpeed;
+    public float rotationSpeed;
+    public float lateralDamping;
+}
+
+[System.Serializable]
+public struct VisualEffectsConfig
+{
+    [Header("Visual Model")]
+    public Transform visualModel;
+
+    [Header("Banking (Roll) Effects")]
+    public float maxBankAngle;
+    public float bankSensitivity;
+    public float bankSmoothing;
+
+    [Header("Pitching Effects")]
+    public float maxPitchAngle;
+    public float pitchSensitivity;
+    public float pitchSmoothing;
+
+    [Header("Recoil & Explosions")]
+    [Tooltip("Multiplier for how much recoil/impulse affects pitch (independent of thrust pitch)")]
+    public float impulseRecoilSensitivity;
+    public GameObject explosionEffectPrefab;
+    public float explosionScale;
+}
+
+[System.Serializable]
+public struct ThrusterConfig
+{
+    [Tooltip("List of thruster particle systems attached to this ship")]
+    public ParticleSystem[] thrusters;
+    [Tooltip("Time to ramp thruster emission up/down (seconds)")]
+    public float rampTime;
+}
+
 [RequireComponent(typeof(Rigidbody2D))]
 public abstract class Entity : MonoBehaviour
 {
-    // ===== HEALTH & SHIELD =====
-    [Header("Shield Settings")]
-    public ShieldController shieldController;
-
-    [Header("Health Settings")]
+    // ===== CORE COMBAT STATS =====
+    [Header("Core Combat Stats")]
     public float maxHealth = 100f;
     public float maxShield = 50f;
-    public bool hasShield = true;
+    public ShieldController shieldController;
 
     // ===== MOVEMENT =====
-    [Header("Movement Settings")]
-    public float thrustForce = 10f;
-    public float maxSpeed = 15f;
-    public float rotationSpeed = 200f;
-    public float lateralDamping = 0.92f;
+    [Header("Movement")]
+    public MovementConfig movement;
 
-    // ===== COMBAT =====
-    [Header("Combat Settings")]
-    public List<GameObject> turrets = new();
+    // ===== TURRETS =====
+    [Header("Turrets")]
+    public Transform[] turrets;
+
+    // ===== PRIMARY WEAPON =====
+    [Header("Primary Weapon")]
     public ProjectileWeaponConfig projectileWeapon;
-    public BeamWeaponConfig beamWeapon;
 
     // ===== VISUAL EFFECTS =====
     [Header("Visual Effects")]
-    public Transform visualModel;
-    public float maxBankAngle = 45f;
-    public float bankSensitivity = 0.1f;
-    public float bankSmoothing = 5f;
-    public float maxPitchAngle = 10f;
-    public float pitchSensitivity = 0.5f;
-    public float pitchSmoothing = 5f;
+    public VisualEffectsConfig visualEffects;
 
-    [Tooltip("Multiplier for how much recoil/impulse affects pitch (independent of thrust pitch)")]
-    public float impulseRecoilSensitivity = 1f;
+    // ===== THRUSTER EFFECTS =====
+    [Header("Thruster Effects")]
+    public ThrusterConfig thrusters;
 
-    public GameObject explosionEffectPrefab;
-    public float explosionScale = 1f;
-
-    [Header("Thruster Settings")]
-    [Tooltip("List of thruster particle systems attached to this ship")]
-    public List<ParticleSystem> thrusters = new();
-
-    [Tooltip("Time to ramp thruster emission up/down (seconds)")]
-    public float thrusterRampTime = 0.3f;
-
-    [Tooltip("Maximum emission rate when fully thrusting")]
-    public float maxEmissionRate = 50f;
-
-    [Tooltip("Minimum emission rate when not thrusting")]
-    public float minEmissionRate = 0f;
-
-    [Tooltip("Particle speed multiplier when fully thrusting")]
-    public float thrustingSpeedMultiplier = 1f;
-
-    [Tooltip("Particle speed multiplier when not thrusting")]
-    public float idleSpeedMultiplier = 0f;
-
-    [Tooltip("Particle lifetime multiplier when fully thrusting")]
-    public float thrustingLifetimeMultiplier = 1f;
-
-    [Tooltip("Particle lifetime multiplier when not thrusting")]
-    public float idleLifetimeMultiplier = 0f;
-
-    // ===== PROTECTED STATE =====
+    // ===== RUNTIME STATE - COMBAT =====
     protected float currentHealth;
-    protected float currentShield;
+    public float currentShield;  // Public so projectiles can check shield status
+    protected Vector2 _lastDamageDirection;
+    private bool _isDead = false;
+
+    // ===== RUNTIME STATE - PHYSICS & MOVEMENT =====
     protected Rigidbody2D _rb;
     protected bool _isThrusting = false;
-    protected Vector2 _lastDamageDirection;
-    protected SceneManager sceneManager;
-
-    private bool _isDead = false;
-    private float _previousRotationZ;
     private Vector2 _previousVelocity;
     private Vector2 _acceleration;
+    private Vector2 _recentImpulse = Vector2.zero;
+    private float _impulseDecayRate = 5f;
+
+    // ===== RUNTIME STATE - VISUAL =====
+    private float _previousRotationZ;
     private float _currentBankAngle;
     private float _currentPitchAngle;
     private Quaternion _visualBaseLocalRotation;
     private float _currentThrusterIntensity = 0f;
     private Dictionary<ParticleSystem, (ParticleSystem.MinMaxCurve speed, ParticleSystem.MinMaxCurve lifetime)> _thrusterOriginalValues = new();
-    private Vector2 _recentImpulse = Vector2.zero;
-    private float _impulseDecayRate = 5f;
 
+    // ===== CONSTANTS =====
     protected const float ROTATION_OFFSET = -90f;
 
     // ===== INITIALIZATION =====
@@ -135,9 +143,9 @@ public abstract class Entity : MonoBehaviour
 
         _rb.constraints = RigidbodyConstraints2D.FreezeRotation;
 
-        if (visualModel != null)
+        if (visualEffects.visualModel != null)
         {
-            _visualBaseLocalRotation = visualModel.localRotation;
+            _visualBaseLocalRotation = visualEffects.visualModel.localRotation;
         }
         else
         {
@@ -145,19 +153,16 @@ public abstract class Entity : MonoBehaviour
             Debug.LogWarning($"Visual model not assigned on {gameObject.name}. Visual banking/pitching will not work. Please assign the ship's visual mesh/sprite as a child object.");
         }
 
-        foreach (var thruster in thrusters)
+        if (thrusters.thrusters != null)
         {
-            if (thruster != null)
+            foreach (var thruster in thrusters.thrusters)
             {
-                var main = thruster.main;
-                _thrusterOriginalValues[thruster] = (main.startSpeed, main.startLifetime);
+                if (thruster != null)
+                {
+                    var main = thruster.main;
+                    _thrusterOriginalValues[thruster] = (main.startSpeed, main.startLifetime);
+                }
             }
-        }
-
-        sceneManager = FindObjectOfType<SceneManager>();
-        if (sceneManager == null)
-        {
-            Debug.LogError("SceneManagerScript not found in scene!", this);
         }
     }
 
@@ -191,16 +196,16 @@ public abstract class Entity : MonoBehaviour
         Vector2 forwardVelocity = forwardDirection * forwardSpeed;
         Vector2 lateralVelocity = currentVelocity - forwardVelocity;
 
-        lateralVelocity *= lateralDamping;
+        lateralVelocity *= movement.lateralDamping;
 
         _rb.linearVelocity = forwardVelocity + lateralVelocity;
     }
 
     protected void ClampVelocity()
     {
-        if (_rb.linearVelocity.magnitude > maxSpeed)
+        if (_rb.linearVelocity.magnitude > movement.maxSpeed)
         {
-            _rb.linearVelocity = _rb.linearVelocity.normalized * maxSpeed;
+            _rb.linearVelocity = _rb.linearVelocity.normalized * movement.maxSpeed;
         }
     }
 
@@ -217,6 +222,8 @@ public abstract class Entity : MonoBehaviour
         {
             _lastDamageDirection = Vector2.zero;
         }
+
+        bool hasShield = currentShield > 0;
 
         if (hasShield)
         {
@@ -239,11 +246,6 @@ public abstract class Entity : MonoBehaviour
                 }
             }
 
-            if (currentShield <= 0)
-            {
-                hasShield = false;
-            }
-
             if (shieldDamage >= damage) return;
 
             damage -= shieldDamage;
@@ -260,9 +262,9 @@ public abstract class Entity : MonoBehaviour
 
     protected virtual void ScatterShipParts()
     {
-        if (visualModel == null) return;
+        if (visualEffects.visualModel == null) return;
 
-        ShipPartScatter[] parts = visualModel.GetComponentsInChildren<ShipPartScatter>();
+        ShipPartScatter[] parts = visualEffects.visualModel.GetComponentsInChildren<ShipPartScatter>();
         if (parts.Length == 0) return;
 
         Vector2 scatterDirection = _lastDamageDirection != Vector2.zero
@@ -285,18 +287,18 @@ public abstract class Entity : MonoBehaviour
 
         ScatterShipParts();
 
-        // if (explosionEffectPrefab != null)
+        // if (visualEffects.explosionEffectPrefab != null)
         // {
         //     if (ExplosionPool.Instance != null)
         //     {
         //         Vector2? impactDir = _lastDamageDirection != Vector2.zero ? _lastDamageDirection : (Vector2?)null;
-        //         ExplosionPool.Instance.GetExplosion(transform.position, transform.rotation, explosionScale, impactDir);
+        //         ExplosionPool.Instance.GetExplosion(transform.position, transform.rotation, visualEffects.explosionScale, impactDir);
         //     }
         //     else
         //     {
-        //         GameObject explosion = Instantiate(explosionEffectPrefab, transform.position, transform.rotation);
-        //         explosion.transform.localScale = Vector3.one * explosionScale;
-
+        //         GameObject explosion = Instantiate(visualEffects.explosionEffectPrefab, transform.position, transform.rotation);
+        //         explosion.transform.localScale = Vector3.one * visualEffects.explosionScale;
+        //
         //         if (_lastDamageDirection != Vector2.zero)
         //         {
         //             ExplosionScript explosionScript = explosion.GetComponent<ExplosionScript>();
@@ -324,7 +326,7 @@ public abstract class Entity : MonoBehaviour
 
     private void UpdateVisualRotation()
     {
-        if (visualModel == null) return;
+        if (visualEffects.visualModel == null) return;
         if (Time.deltaTime <= 0f) return;
 
         float currentZRotation = transform.eulerAngles.z;
@@ -333,22 +335,22 @@ public abstract class Entity : MonoBehaviour
         _previousRotationZ = currentZRotation;
 
         float targetBankAngle = Mathf.Clamp(
-            -angularVelocity * bankSensitivity,
-            -maxBankAngle,
-            maxBankAngle
+            -angularVelocity * visualEffects.bankSensitivity,
+            -visualEffects.maxBankAngle,
+            visualEffects.maxBankAngle
         );
 
         float forwardAcceleration = Vector2.Dot(_acceleration, new Vector2(transform.up.x, transform.up.y));
         float impulseContribution = Vector2.Dot(_recentImpulse, new Vector2(transform.up.x, transform.up.y));
 
         float targetPitchAngle = Mathf.Clamp(
-            (forwardAcceleration * pitchSensitivity) + (impulseContribution * impulseRecoilSensitivity),
-            -maxPitchAngle,
-            maxPitchAngle
+            (forwardAcceleration * visualEffects.pitchSensitivity) + (impulseContribution * visualEffects.impulseRecoilSensitivity),
+            -visualEffects.maxPitchAngle,
+            visualEffects.maxPitchAngle
         );
 
-        _currentBankAngle = Mathf.Lerp(_currentBankAngle, targetBankAngle, Time.deltaTime * bankSmoothing);
-        _currentPitchAngle = Mathf.Lerp(_currentPitchAngle, targetPitchAngle, Time.deltaTime * pitchSmoothing);
+        _currentBankAngle = Mathf.Lerp(_currentBankAngle, targetBankAngle, Time.deltaTime * visualEffects.bankSmoothing);
+        _currentPitchAngle = Mathf.Lerp(_currentPitchAngle, targetPitchAngle, Time.deltaTime * visualEffects.pitchSmoothing);
 
         _recentImpulse = Vector2.Lerp(_recentImpulse, Vector2.zero, Time.deltaTime * _impulseDecayRate);
 
@@ -356,70 +358,42 @@ public abstract class Entity : MonoBehaviour
         Quaternion bankQuat = Quaternion.AngleAxis(_currentBankAngle, Vector3.forward);
         Quaternion finalRot = _visualBaseLocalRotation * pitchQuat * bankQuat;
 
-        visualModel.localRotation = finalRot;
+        visualEffects.visualModel.localRotation = finalRot;
     }
 
     private void UpdateThrusters()
     {
         if (Time.deltaTime <= 0f) return;
+        if (thrusters.thrusters == null || thrusters.thrusters.Length == 0) return;
 
         float targetIntensity = _isThrusting ? 1f : 0f;
+        
+        // Ensure rampTime isn't 0 to avoid division by zero
+        float rampStep = (thrusters.rampTime > 0) ? (1f / thrusters.rampTime) * Time.deltaTime : 1f;
+        
         _currentThrusterIntensity = Mathf.MoveTowards(
             _currentThrusterIntensity,
             targetIntensity,
-            (1f / thrusterRampTime) * Time.deltaTime
+            rampStep
         );
 
-        foreach (var thruster in thrusters)
+        foreach (var thruster in thrusters.thrusters)
         {
             if (thruster == null || !_thrusterOriginalValues.ContainsKey(thruster))
                 continue;
 
             var emission = thruster.emission;
             var main = thruster.main;
-            var originalValues = _thrusterOriginalValues[thruster];
+            var originals = _thrusterOriginalValues[thruster];
 
-            emission.rateOverTime = Mathf.Lerp(
-                minEmissionRate,
-                maxEmissionRate,
-                _currentThrusterIntensity
-            );
+            // 1. Fix Emission: Always multiply against a constant base value, not the current value
+            // Assuming a base rate of 50 if you don't have it stored, 
+            // OR better: use a fixed variable or the original rate if you store it in Awake.
+            emission.rateOverTime = 50f * _currentThrusterIntensity; 
 
-            float speedMultiplier = Mathf.Lerp(
-                idleSpeedMultiplier,
-                thrustingSpeedMultiplier,
-                _currentThrusterIntensity
-            );
-
-            if (originalValues.speed.mode == ParticleSystemCurveMode.Constant)
-            {
-                main.startSpeed = originalValues.speed.constant * speedMultiplier;
-            }
-            else if (originalValues.speed.mode == ParticleSystemCurveMode.TwoConstants)
-            {
-                main.startSpeed = new ParticleSystem.MinMaxCurve(
-                    originalValues.speed.constantMin * speedMultiplier,
-                    originalValues.speed.constantMax * speedMultiplier
-                );
-            }
-
-            float lifetimeMultiplier = Mathf.Lerp(
-                idleLifetimeMultiplier,
-                thrustingLifetimeMultiplier,
-                _currentThrusterIntensity
-            );
-
-            if (originalValues.lifetime.mode == ParticleSystemCurveMode.Constant)
-            {
-                main.startLifetime = originalValues.lifetime.constant * lifetimeMultiplier;
-            }
-            else if (originalValues.lifetime.mode == ParticleSystemCurveMode.TwoConstants)
-            {
-                main.startLifetime = new ParticleSystem.MinMaxCurve(
-                    originalValues.lifetime.constantMin * lifetimeMultiplier,
-                    originalValues.lifetime.constantMax * lifetimeMultiplier
-                );
-            }
+            // 2. Restore Speed and Lifetime: These were missing in your provided script
+            main.startSpeed = new ParticleSystem.MinMaxCurve(originals.speed.constant * _currentThrusterIntensity);
+            main.startLifetime = new ParticleSystem.MinMaxCurve(originals.lifetime.constant * _currentThrusterIntensity);
         }
     }
 
