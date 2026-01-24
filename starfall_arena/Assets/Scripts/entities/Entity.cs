@@ -72,6 +72,7 @@ public struct ThrusterConfig
     public ParticleSystem[] thrusters;
     [Tooltip("Time to ramp thruster emission up/down (seconds)")]
     public float rampTime;
+    public bool invertColors;
 }
 
 [RequireComponent(typeof(Rigidbody2D))]
@@ -124,6 +125,7 @@ public abstract class Entity : MonoBehaviour
     private Quaternion _visualBaseLocalRotation;
     private float _currentThrusterIntensity = 0f;
     private Dictionary<ParticleSystem, (ParticleSystem.MinMaxCurve speed, ParticleSystem.MinMaxCurve lifetime)> _thrusterOriginalValues = new();
+    private Dictionary<ParticleSystem, Color> _thrusterOriginalColors = new();
 
     // ===== CONSTANTS =====
     protected const float ROTATION_OFFSET = -90f;
@@ -161,6 +163,7 @@ public abstract class Entity : MonoBehaviour
                 {
                     var main = thruster.main;
                     _thrusterOriginalValues[thruster] = (main.startSpeed, main.startLifetime);
+                    _thrusterOriginalColors[thruster] = main.startColor.color;
                 }
             }
         }
@@ -389,11 +392,26 @@ public abstract class Entity : MonoBehaviour
             // 1. Fix Emission: Always multiply against a constant base value, not the current value
             // Assuming a base rate of 50 if you don't have it stored, 
             // OR better: use a fixed variable or the original rate if you store it in Awake.
-            emission.rateOverTime = 50f * _currentThrusterIntensity; 
+            emission.rateOverTime = 50f * _currentThrusterIntensity;
 
             // 2. Restore Speed and Lifetime: These were missing in your provided script
             main.startSpeed = new ParticleSystem.MinMaxCurve(originals.speed.constant * _currentThrusterIntensity);
             main.startLifetime = new ParticleSystem.MinMaxCurve(originals.lifetime.constant * _currentThrusterIntensity);
+
+            // Handle color inversion
+            if (_thrusterOriginalColors.ContainsKey(thruster))
+            {
+                if (thrusters.invertColors)
+                {
+                    Color orig = _thrusterOriginalColors[thruster];
+                    Color inv = new Color(1f - orig.r, 1f - orig.g, 1f - orig.b, orig.a);
+                    main.startColor = inv;
+                }
+                else
+                {
+                    main.startColor = _thrusterOriginalColors[thruster];
+                }
+            }
         }
     }
 

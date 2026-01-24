@@ -957,6 +957,7 @@ MonoBehaviour:
     thrusters:
     - {fileID: 5230714889375272226}
     rampTime: 0
+    invertColors: 0
   currentShield: 0
   shieldRegen:
     regenDelay: 0
@@ -984,7 +985,8 @@ MonoBehaviour:
   hullDamageSound: {fileID: 0}
   beamHitLoopSound: {fileID: 0}
   audioSourcePoolSize: 10
-  fireCooldown: 1
+  anchor: {fileID: 0}
+  fireCooldown: 0.15
   abilities:
     ability1Stats:
       cooldown: 0

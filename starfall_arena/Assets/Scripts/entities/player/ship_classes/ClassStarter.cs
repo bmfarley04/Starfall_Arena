@@ -87,19 +87,19 @@ public class ClassStarter : Player
         Debug.Log("Primary Fire Activated");
     }
 
-    void Ability1(InputValue value)
+    void OnAbility1(InputValue value)
     {
         Debug.Log("Ability 1 Activated");
     }
-    void Ability2(InputValue value)
+    void OnAbility2(InputValue value)
     {
         Debug.Log("Ability 2 Activated");
     }
-    void Ability3(InputValue value)
+    void OnAbility3(InputValue value)
     {
         Debug.Log("Ability 3 Activated");
     }
-    void Ability4(InputValue value)
+    void OnAbility4(InputValue value)
     {
         Debug.Log("Ability 4 Activated");
     }

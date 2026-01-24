@@ -131,6 +131,15 @@
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": true
+                },
+                {
+                    "name": "Anchor",
+                    "type": "Button",
+                    "id": "25ed24a1-8e61-487d-91d6-d971252410f2",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
                 }
             ],
             "bindings": [
@@ -163,17 +172,6 @@
                     "interactions": "",
                     "processors": "",
                     "groups": ";key+mouse",
-                    "action": "ToggleFriction",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
-                    "id": "5717b57a-08a2-404c-91a5-d617bb928e39",
-                    "path": "<Gamepad>/leftShoulder",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": ";controller",
                     "action": "ToggleFriction",
                     "isComposite": false,
                     "isPartOfComposite": false
@@ -428,6 +426,28 @@
                     "processors": "",
                     "groups": "",
                     "action": "Look",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "d487a0b4-e34e-41a7-99a8-99b72225de89",
+                    "path": "<Gamepad>/rightShoulder",
+                    "interactions": "Press(behavior=2)",
+                    "processors": "",
+                    "groups": ";controller",
+                    "action": "Anchor",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "7acd93dc-9e7b-40e6-8308-53cefb121026",
+                    "path": "<Gamepad>/leftShoulder",
+                    "interactions": "Press(behavior=2)",
+                    "processors": "",
+                    "groups": ";controller",
+                    "action": "Anchor",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }
