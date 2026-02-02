@@ -425,7 +425,7 @@ public class Class1 : Player
     }
 
     // ===== ABILITY INPUT CALLBACKS =====
-    void OnFireBeam(InputValue value)
+    void OnAbility3(InputValue value)
     {
         Debug.Log($"Fire Beam input received - isPressed: {value.isPressed}");
 
@@ -499,7 +499,7 @@ public class Class1 : Player
         }
     }
 
-    void OnReflect()
+    void OnAbility4()
     {
         if (Time.time < _lastReflectTime + abilities.reflect.cooldown)
         {
@@ -522,7 +522,7 @@ public class Class1 : Player
         _reflectCoroutine = StartCoroutine(ActivateReflectShield());
     }
 
-    void OnTeleport()
+    void OnAbility2()
     {
         if (Time.time < _lastTeleportTime + abilities.teleport.cooldown)
         {
@@ -548,7 +548,7 @@ public class Class1 : Player
         _teleportCoroutine = StartCoroutine(ExecuteTeleport(targetWorldPosition));
     }
 
-    void OnGigaBlast(InputValue value)
+    void OnAbility1(InputValue value)
     {
         Debug.Log($"GigaBlast input received - isPressed: {value.isPressed}");
 
