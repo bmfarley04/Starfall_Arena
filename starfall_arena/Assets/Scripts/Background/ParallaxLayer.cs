@@ -11,7 +11,7 @@ public class ParallaxLayer : MonoBehaviour
     [SerializeField] private float parallaxFactor = 0.2f;
 
     [Tooltip("Reference to main camera. Will auto-find if not set")]
-    private Camera mainCamera;
+    [SerializeField] private Camera mainCamera;
 
     [Header("Infinite Scrolling (Optional)")]
     [Tooltip("Enable infinite horizontal wrapping for this layer")]
@@ -23,6 +23,11 @@ public class ParallaxLayer : MonoBehaviour
     public void SetMainCamera(Camera camera)
     {
         mainCamera = camera;
+    }
+
+    public Camera GetMainCamera()
+    {
+        return mainCamera;
     }
 
     void Start()

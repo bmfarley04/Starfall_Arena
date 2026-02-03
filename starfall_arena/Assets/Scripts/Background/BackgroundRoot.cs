@@ -11,7 +11,10 @@ public class BackgroundRoot : MonoBehaviour
         List<ParallaxLayer> layers = new List<ParallaxLayer>(GetComponentsInChildren<ParallaxLayer>());
         foreach (ParallaxLayer layer in layers)
         {
-            layer.SetMainCamera(connectedCamera);
+            if (layer.GetMainCamera() == null)
+            {
+                layer.SetMainCamera(connectedCamera);
+            }
         }
     }
 
