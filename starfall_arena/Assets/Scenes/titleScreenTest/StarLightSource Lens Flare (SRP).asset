@@ -16,7 +16,7 @@ MonoBehaviour:
   - lensFlareDataSRP: {fileID: 0}
     visible: 1
     position: 0
-    positionOffset: {x: -0.05, y: 0.32}
+    positionOffset: {x: -0.33, y: 0.47}
     angularOffset: 0
     translationScale: {x: 1, y: 1}
     ringThickness: 0.25
@@ -220,7 +220,7 @@ MonoBehaviour:
   - lensFlareDataSRP: {fileID: 0}
     visible: 1
     position: 0
-    positionOffset: {x: -0.04, y: 0.32}
+    positionOffset: {x: -0.33, y: 0.47}
     angularOffset: 0
     translationScale: {x: 1, y: 1}
     ringThickness: 0.25
@@ -278,7 +278,7 @@ MonoBehaviour:
     autoRotate: 0
     flareType: 1
     modulateByLightColor: 1
-    isFoldOpened: 1
+    isFoldOpened: 0
     distribution: 0
     lengthSpread: 1
     positionCurve:
@@ -424,7 +424,7 @@ MonoBehaviour:
   - lensFlareDataSRP: {fileID: 0}
     visible: 1
     position: 0
-    positionOffset: {x: -0.04, y: 0.32}
+    positionOffset: {x: -0.33, y: 0.47}
     angularOffset: 0
     translationScale: {x: 1, y: 1}
     ringThickness: 0.25
@@ -482,7 +482,7 @@ MonoBehaviour:
     autoRotate: 0
     flareType: 1
     modulateByLightColor: 0
-    isFoldOpened: 1
+    isFoldOpened: 0
     distribution: 0
     lengthSpread: 1
     positionCurve:
@@ -628,7 +628,7 @@ MonoBehaviour:
   - lensFlareDataSRP: {fileID: 0}
     visible: 1
     position: 0
-    positionOffset: {x: -0.04, y: 0.32}
+    positionOffset: {x: -0.33, y: 0.47}
     angularOffset: 0
     translationScale: {x: 1, y: 1}
     ringThickness: 0.25
@@ -832,7 +832,7 @@ MonoBehaviour:
   - lensFlareDataSRP: {fileID: 0}
     visible: 1
     position: 0
-    positionOffset: {x: -0.04, y: 0.32}
+    positionOffset: {x: -0.33, y: 0.47}
     angularOffset: 0
     translationScale: {x: 1, y: 1}
     ringThickness: 0.25
