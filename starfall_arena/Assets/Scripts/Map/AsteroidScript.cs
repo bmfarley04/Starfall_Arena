@@ -36,6 +36,11 @@ public class AsteroidScript : MonoBehaviour
     public float collisionImpactForce = 10f;
     [Tooltip("Cooldown in seconds between damage instances from the same asteroid")]
     public float collisionCooldown = 1.0f;
+    [Tooltip("Sound played when asteroid impacts and damages a player")]
+    public AudioClip impactSound;
+    [Range(0f, 3f)]
+    [Tooltip("Volume for impact sound")]
+    public float impactVolume = 1f;
 
     [Header("Debug")]
     [Tooltip("Enable debug logging for collision and damage events")]
@@ -145,6 +150,12 @@ public class AsteroidScript : MonoBehaviour
 
         // Deal damage to the player
         player.TakeDamage(damage, collisionImpactForce, collisionPoint, DamageSource.Other);
+
+        // Play impact sound
+        if (impactSound != null)
+        {
+            Play2DAudioAtPoint(impactSound, collisionPoint, impactVolume);
+        }
 
         // Apply knockback force to the player
         Rigidbody2D playerRb = player.GetComponent<Rigidbody2D>();
