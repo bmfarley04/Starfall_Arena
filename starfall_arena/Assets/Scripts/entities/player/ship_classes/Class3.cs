@@ -40,16 +40,6 @@ public class Class3 : Player
             [Tooltip("Duration of ability effect (seconds)")]
             public float duration;
         }
-        [Header("Ability 4")]
-        public Ability4Stats ability4Stats;
-        [System.Serializable]
-        public struct Ability4Stats
-        {
-            [Tooltip("Cooldown time between uses (seconds)")]
-            public float cooldown;
-            [Tooltip("Duration of ability effect (seconds)")]
-            public float duration;
-        }
     }
 
     // ===== PRIMARY WEAPON =====
@@ -60,6 +50,7 @@ public class Class3 : Player
     // ===== ABILITIES =====
     [Header("Abilities")]
     public AbilitiesConfigStarter abilities;
+    private Invisibility invisibilityScript;
 
     // ===== PRIVATE STATE =====
     private string exampleVar;
@@ -68,6 +59,7 @@ public class Class3 : Player
     protected override void Awake()
     {
         base.Awake();
+        invisibilityScript = GetComponent<Invisibility>();
     }
 
     // ===== UPDATE LOOP =====
@@ -103,6 +95,7 @@ public class Class3 : Player
     void OnAbility4(InputValue value)
     {
         Debug.Log("Ability 4 Activated");
+        invisibilityScript.TryUseAbility();
     }
 
     // ===== ABILITY 1 =====
