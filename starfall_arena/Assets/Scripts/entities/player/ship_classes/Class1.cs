@@ -447,7 +447,7 @@ public class Class1 : Player
                 GameObject beamObj = Instantiate(abilities.beam.stats.prefab, spawnPosition, transform.rotation, transform);
                 _activeBeam = beamObj.GetComponent<LaserBeam>();
                 _activeBeam.Initialize(
-                    "Enemy",
+                    enemyTag,
                     abilities.beam.stats.damagePerSecond,
                     abilities.beam.stats.maxDistance,
                     abilities.beam.stats.recoilForcePerSecond,
@@ -880,7 +880,7 @@ public class Class1 : Player
 
         if (projectile.TryGetComponent<ProjectileScript>(out var projectileScript))
         {
-            projectileScript.targetTag = "Enemy";
+            projectileScript.targetTag = enemyTag;
             projectileScript.Initialize(
                 transform.up,
                 Vector2.zero,
