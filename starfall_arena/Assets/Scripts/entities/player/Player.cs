@@ -102,6 +102,8 @@ public abstract class Player : Entity
 
     // ===== PROTECTED STATE (for derived classes) =====
     protected float fireCooldown = 0.5f;  // Can be overridden in derived classes
+    protected string thisPlayerTag;
+    protected string enemyTag;
 
     // ===== PRIVATE STATE =====
     private PlayerInput _playerInput;
@@ -126,8 +128,6 @@ public abstract class Player : Entity
     private AudioSource _beamHitLoopSource;
     private float _originalRotationSpeed;
     private bool _isAnchored = false;
-    private string thisPlayerTag;
-    private string enemyTag;
 
     // ===== INITIALIZATION =====
     protected override void Awake()

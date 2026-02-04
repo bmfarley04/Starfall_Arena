@@ -1071,7 +1071,7 @@ public class Class1 : Player
         if (abilities.reflect.shield != null && abilities.reflect.shield.IsActive())
         {
             ProjectileScript projectile = collider.GetComponent<ProjectileScript>();
-            if (projectile != null && projectile.targetTag == "Player")
+            if (projectile != null && projectile.targetTag == thisPlayerTag)
             {
                 Vector3 hitPoint = collider.ClosestPoint(transform.position);
                 abilities.reflect.shield.OnReflectHit(hitPoint);
