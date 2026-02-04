@@ -138,7 +138,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e22878777703242b593ddb63bd7a7bbe, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AsteroidScript
-  maxHealth: 500
+  maxHealth: 200
   visualObject: {fileID: 8451262681813226219}
   minRotationSpeed: 10
   maxRotationSpeed: 20
@@ -151,6 +151,7 @@ MonoBehaviour:
   damagePerVelocity: 1
   collisionImpactForce: 200
   collisionCooldown: 2
+  knockbackDuration: 0.15
   impactSound: {fileID: 8300000, guid: 77fa99d786e289644a3016aa4fd360c6, type: 3}
   impactVolume: 1
   debugCollisionDamage: 0
