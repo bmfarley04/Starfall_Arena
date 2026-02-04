@@ -3,131 +3,146 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public enum AsteroidPattern
+public enum AsteroidPattern { Scattered, Clustered, Falling }
+
+[System.Serializable]
+public struct AsteroidPrefabConfig
 {
-    Scattered,
-    Clustered,
-    Falling
+    [Tooltip("Primary asteroid variant")]
+    public GameObject prefab1;
+    [Tooltip("Secondary asteroid variant")]
+    public GameObject prefab2;
+    [Range(0f, 1f)]
+    [Tooltip("Chance to spawn prefab1 (0.6 = 60%)")]
+    public float prefab1Chance;
+}
+
+[System.Serializable]
+public struct AreaConfig
+{
+    public Vector2 size;
+    public Vector2 center;
+
+    public AreaConfig(float width, float height)
+    {
+        size = new Vector2(width, height);
+        center = Vector2.zero;
+    }
+}
+
+[System.Serializable]
+public struct ClusterConfig
+{
+    public AreaConfig area;
+    public int clusterCount;
+    public float clusterRadius;
+    public float minSpacing;
+}
+
+[System.Serializable]
+public struct FallingConfig
+{
+    public AreaConfig area;
+    [Tooltip("Extra distance above play area to spawn asteroids")]
+    public float spawnMargin;
+    [Tooltip("Velocity range (downward)")]
+    public Vector2 velocityRange;
+    [Tooltip("Horizontal drift range")]
+    public Vector2 driftRange;
+    [Tooltip("Angular velocity range in degrees/sec")]
+    public float maxAngularVelocity;
+    public float spawnDelay;
+    public bool recycle;
+}
+
+[System.Serializable]
+public struct AsteroidVariationConfig
+{
+    [Range(0f, 1f)]
+    public float positionJitter;
+    public Vector2 scaleMin;
+    public Vector2 scaleMax;
+    public float rotationRange;
+    public bool uniformScale;
+}
+
+[System.Serializable]
+public struct AnimationConfig
+{
+    public float growDuration;
+    public float shrinkDuration;
 }
 
 public class MapManagerScript : MonoBehaviour
 {
-    #region Asteroid Prefabs
-    [Header("Asteroid Prefabs")]
-    [Tooltip("Primary asteroid variant")]
-    public GameObject asteroidPrefab1;
-    [Tooltip("Secondary asteroid variant")]
-    public GameObject asteroidPrefab2;
-    [Range(0f, 1f)]
-    [Tooltip("Chance to spawn asteroidPrefab1 (0.6 = 60%)")]
-    public float asteroidPrefab1SpawnChance = 0.6f;
-    #endregion
-
-    #region Pattern Selection
     [Header("Pattern Selection")]
     public AsteroidPattern pattern = AsteroidPattern.Scattered;
     public int asteroidCount = 50;
-    #endregion
-
-    #region Random Seed
-    [Header("Random Seed")]
     public bool useSeed = true;
     public int seed = 12345;
-    #endregion
 
-    #region Scattered Pattern Settings
+    [Header("Prefabs")]
+    public AsteroidPrefabConfig prefabs = new AsteroidPrefabConfig { prefab1Chance = 0.6f };
+
     [Header("Scattered Pattern")]
-    [Tooltip("Size of the rectangular spawn area")]
-    public Vector2 scatteredAreaSize = new Vector2(18f, 10f);
-    [Tooltip("Center offset for scattered spawning")]
-    public Vector2 scatteredCenter = Vector2.zero;
-    #endregion
+    public AreaConfig scattered = new AreaConfig(18f, 10f);
 
-    #region Clustered Pattern Settings
     [Header("Clustered Pattern")]
-    [Tooltip("Size of the area where clusters can spawn")]
-    public Vector2 clusteredAreaSize = new Vector2(18f, 10f);
-    [Tooltip("Center offset for clustered spawning")]
-    public Vector2 clusteredCenter = Vector2.zero;
-    [Tooltip("Number of cluster centers to generate")]
-    public int clusterCount = 5;
-    [Tooltip("Radius of each cluster")]
-    public float clusterRadius = 2f;
-    [Tooltip("Minimum distance between cluster centers")]
-    public float minClusterSpacing = 3f;
-    #endregion
+    public ClusterConfig clustered = new ClusterConfig
+    {
+        area = new AreaConfig(18f, 10f),
+        clusterCount = 5,
+        clusterRadius = 2f,
+        minSpacing = 3f
+    };
 
-    #region Falling Pattern Settings
     [Header("Falling Pattern")]
-    [Tooltip("Size of the horizontal play area")]
-    public Vector2 fallingAreaSize = new Vector2(18f, 10f);
-    [Tooltip("Center offset for falling spawning")]
-    public Vector2 fallingCenter = Vector2.zero;
-    [Tooltip("Extra distance outside the play area to spawn asteroids (top only)")]
-    public float fallingSpawnMargin = 2f;
-    [Tooltip("Minimum falling velocity (downward, negative Y)")]
-    public float fallingMinVelocity = 2f;
-    [Tooltip("Maximum falling velocity (downward, negative Y)")]
-    public float fallingMaxVelocity = 8f;
-    [Tooltip("Minimum horizontal drift velocity (X axis)")]
-    public float fallingMinDrift = -1f;
-    [Tooltip("Maximum horizontal drift velocity (X axis)")]
-    public float fallingMaxDrift = 1f;
-    [Tooltip("Time delay between spawning each asteroid (in seconds)")]
-    public float fallingSpawnDelay = 0.1f;
-    [Tooltip("Enable asteroid recycling when they reach the bottom")]
-    public bool recycleFallingAsteroids = true;
-    #endregion
+    public FallingConfig falling = new FallingConfig
+    {
+        area = new AreaConfig(18f, 10f),
+        spawnMargin = 2f,
+        velocityRange = new Vector2(2f, 8f),
+        driftRange = new Vector2(-1f, 1f),
+        maxAngularVelocity = 90f,
+        spawnDelay = 0.1f,
+        recycle = true
+    };
 
-    #region Asteroid Variation
-    [Header("Asteroid Variation")]
-    [Range(0f, 1f)]
-    [Tooltip("Random position offset as fraction of spacing")]
-    public float positionJitter = 0.2f;
-    public Vector2 scaleMin = Vector2.one * 0.5f;
-    public Vector2 scaleMax = Vector2.one * 1.5f;
-    [Tooltip("Random rotation range in degrees")]
-    public float rotationRange = 180f;
-    [Tooltip("Use uniform scale for circular asteroids")]
-    public bool uniformScale = true;
-    #endregion
+    [Header("Variation")]
+    public AsteroidVariationConfig variation = new AsteroidVariationConfig
+    {
+        positionJitter = 0.2f,
+        scaleMin = Vector2.one * 0.5f,
+        scaleMax = Vector2.one * 1.5f,
+        rotationRange = 180f,
+        uniformScale = true
+    };
 
-    #region Animation Settings
     [Header("Animation")]
-    [Tooltip("Time for asteroids to grow from zero to full size")]
-    public float growDuration = 0.5f;
-    [Tooltip("Time for asteroids to shrink before destruction")]
-    public float shrinkDuration = 0.3f;
-    #endregion
+    public AnimationConfig animation = new AnimationConfig { growDuration = 0.5f, shrinkDuration = 0.3f };
 
     private Transform asteroidsParent;
     private List<GameObject> fallingAsteroids = new List<GameObject>();
     private System.Random fallingRng;
 
-    void OnEnable()
-    {
-        SpawnAsteroids();
-    }
+    void OnEnable() => SpawnAsteroids();
 
     void Update()
     {
-        if (pattern == AsteroidPattern.Falling && recycleFallingAsteroids)
-        {
+        if (pattern == AsteroidPattern.Falling && falling.recycle)
             RecycleFallingAsteroids();
-        }
     }
 
     [ContextMenu("Spawn Asteroids")]
     public void SpawnAsteroids()
     {
-        if (asteroidPrefab1 == null && asteroidPrefab2 == null)
+        if (prefabs.prefab1 == null && prefabs.prefab2 == null)
         {
             Debug.LogWarning("No asteroid prefabs assigned.");
             return;
         }
 
         ClearAsteroids();
-
         asteroidsParent = new GameObject("Asteroids").transform;
         asteroidsParent.SetParent(transform, false);
 
@@ -135,12 +150,8 @@ public class MapManagerScript : MonoBehaviour
 
         switch (pattern)
         {
-            case AsteroidPattern.Scattered:
-                SpawnScattered(rng);
-                break;
-            case AsteroidPattern.Clustered:
-                SpawnClustered(rng);
-                break;
+            case AsteroidPattern.Scattered: SpawnScattered(rng); break;
+            case AsteroidPattern.Clustered: SpawnClustered(rng); break;
             case AsteroidPattern.Falling:
                 fallingRng = rng;
                 StartCoroutine(SpawnFallingStaggered(rng));
@@ -152,27 +163,21 @@ public class MapManagerScript : MonoBehaviour
     public void ClearAsteroids()
     {
         fallingAsteroids.Clear();
-
         var existing = transform.Find("Asteroids");
-        if (existing != null)
-        {
+        if (existing == null) return;
+
 #if UNITY_EDITOR
-            if (!Application.isPlaying)
-                DestroyImmediate(existing.gameObject);
-            else
-                Destroy(existing.gameObject);
+        if (!Application.isPlaying) DestroyImmediate(existing.gameObject);
+        else Destroy(existing.gameObject);
 #else
-            Destroy(existing.gameObject);
+        Destroy(existing.gameObject);
 #endif
-        }
     }
 
     public void ShrinkAndDestroy()
     {
         if (asteroidsParent != null)
-        {
             StartCoroutine(ShrinkAllAsteroids());
-        }
     }
 
     #region Spawn Patterns
@@ -180,214 +185,159 @@ public class MapManagerScript : MonoBehaviour
     {
         for (int i = 0; i < asteroidCount; i++)
         {
-            float x = (float)(rng.NextDouble() - 0.5) * scatteredAreaSize.x;
-            float y = (float)(rng.NextDouble() - 0.5) * scatteredAreaSize.y;
-            Vector3 pos = new Vector3(scatteredCenter.x + x, scatteredCenter.y + y, 0f);
-
+            Vector3 pos = RandomPointInArea(rng, scattered);
             CreateAsteroid(pos, rng);
         }
     }
 
     private void SpawnClustered(System.Random rng)
     {
-        // Generate cluster centers with minimum spacing
-        List<Vector2> clusterCenters = new List<Vector2>();
-        int maxAttempts = 100;
-
-        for (int i = 0; i < clusterCount; i++)
+        var centers = GenerateClusterCenters(rng);
+        if (centers.Count == 0)
         {
-            Vector2 candidate = Vector2.zero;
-            bool valid = false;
-
-            for (int attempt = 0; attempt < maxAttempts; attempt++)
-            {
-                float x = (float)(rng.NextDouble() - 0.5) * clusteredAreaSize.x + clusteredCenter.x;
-                float y = (float)(rng.NextDouble() - 0.5) * clusteredAreaSize.y + clusteredCenter.y;
-                candidate = new Vector2(x, y);
-
-                valid = true;
-                foreach (var center in clusterCenters)
-                {
-                    if (Vector2.Distance(candidate, center) < minClusterSpacing)
-                    {
-                        valid = false;
-                        break;
-                    }
-                }
-
-                if (valid) break;
-            }
-
-            if (valid)
-                clusterCenters.Add(candidate);
-        }
-
-        if (clusterCenters.Count == 0)
-        {
-            Debug.LogWarning("Could not place any clusters. Try reducing minClusterSpacing or increasing clusteredAreaSize.");
+            Debug.LogWarning("Could not place any clusters. Try reducing minSpacing or increasing area size.");
             return;
         }
 
-        // Distribute asteroids among clusters
-        int asteroidsPerCluster = asteroidCount / clusterCenters.Count;
-        int remainder = asteroidCount % clusterCenters.Count;
+        int perCluster = asteroidCount / centers.Count;
+        int remainder = asteroidCount % centers.Count;
 
-        for (int c = 0; c < clusterCenters.Count; c++)
+        for (int c = 0; c < centers.Count; c++)
         {
-            int count = asteroidsPerCluster + (c < remainder ? 1 : 0);
-            Vector2 center = clusterCenters[c];
+            int count = perCluster + (c < remainder ? 1 : 0);
+            Vector2 center = centers[c];
 
             for (int i = 0; i < count; i++)
             {
-                // Random position within cluster radius using polar coordinates for even distribution
-                float angle = (float)(rng.NextDouble() * Math.PI * 2.0);
-                float dist = (float)Math.Sqrt(rng.NextDouble()) * clusterRadius;
-
-                float x = center.x + Mathf.Cos(angle) * dist;
-                float y = center.y + Mathf.Sin(angle) * dist;
-                Vector3 pos = new Vector3(x, y, 0f);
-
-                // Add jitter
-                pos += GetJitter(rng, positionJitter * clusterRadius * 0.5f);
-
+                // Polar coordinates for even distribution within cluster
+                float angle = RandomRange(rng, 0f, Mathf.PI * 2f);
+                float dist = Mathf.Sqrt((float)rng.NextDouble()) * clustered.clusterRadius;
+                Vector3 pos = new Vector3(
+                    center.x + Mathf.Cos(angle) * dist,
+                    center.y + Mathf.Sin(angle) * dist, 0f);
+                pos += GetJitter(rng, variation.positionJitter * clustered.clusterRadius * 0.5f);
                 CreateAsteroid(pos, rng);
             }
         }
     }
 
+    private List<Vector2> GenerateClusterCenters(System.Random rng)
+    {
+        var centers = new List<Vector2>();
+        const int maxAttempts = 100;
+
+        for (int i = 0; i < clustered.clusterCount; i++)
+        {
+            for (int attempt = 0; attempt < maxAttempts; attempt++)
+            {
+                Vector2 candidate = RandomPointInArea(rng, clustered.area);
+                if (IsValidClusterPosition(candidate, centers))
+                {
+                    centers.Add(candidate);
+                    break;
+                }
+            }
+        }
+        return centers;
+    }
+
+    private bool IsValidClusterPosition(Vector2 candidate, List<Vector2> existing)
+    {
+        foreach (var center in existing)
+            if (Vector2.Distance(candidate, center) < clustered.minSpacing)
+                return false;
+        return true;
+    }
+
     private IEnumerator SpawnFallingStaggered(System.Random rng)
     {
+        var wait = falling.spawnDelay > 0f ? new WaitForSeconds(falling.spawnDelay) : null;
         for (int i = 0; i < asteroidCount; i++)
         {
-            SpawnSingleFallingAsteroid(rng);
-
-            if (fallingSpawnDelay > 0f && i < asteroidCount - 1)
-            {
-                yield return new WaitForSeconds(fallingSpawnDelay);
-            }
+            SpawnFallingAsteroid(rng);
+            if (wait != null && i < asteroidCount - 1)
+                yield return wait;
         }
     }
 
-    private void SpawnSingleFallingAsteroid(System.Random rng)
+    private void SpawnFallingAsteroid(System.Random rng)
     {
-        float spawnY = fallingCenter.y + (fallingAreaSize.y * 0.5f) + fallingSpawnMargin;
+        float spawnY = falling.area.center.y + falling.area.size.y * 0.5f + falling.spawnMargin;
+        float x = RandomRange(rng, -0.5f, 0.5f) * falling.area.size.x + falling.area.center.x;
 
-        // Random X position across the horizontal area
-        float x = (float)(rng.NextDouble() - 0.5) * fallingAreaSize.x + fallingCenter.x;
-        Vector3 pos = new Vector3(x, spawnY, 0f);
+        GameObject asteroid = CreateAsteroid(new Vector3(x, spawnY, 0f), rng, returnObject: true);
+        if (asteroid == null) return;
 
-        // Create the asteroid and get its GameObject
-        GameObject asteroid = CreateFallingAsteroid(pos, rng);
+        SetupFallingRigidbody(asteroid, rng);
+        fallingAsteroids.Add(asteroid);
+    }
 
-        if (asteroid != null)
-        {
-            // Add Rigidbody2D if it doesn't exist
-            Rigidbody2D rb = asteroid.GetComponent<Rigidbody2D>();
-            if (rb == null)
-            {
-                rb = asteroid.AddComponent<Rigidbody2D>();
-            }
+    private void SetupFallingRigidbody(GameObject asteroid, System.Random rng)
+    {
+        Rigidbody2D rb = asteroid.GetComponent<Rigidbody2D>() ?? asteroid.AddComponent<Rigidbody2D>();
+        rb.bodyType = RigidbodyType2D.Dynamic;
+        rb.gravityScale = 0f;
+        rb.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
+        ApplyFallingVelocity(rb, rng);
+    }
 
-            // Configure Rigidbody2D for falling motion
-            rb.bodyType = RigidbodyType2D.Dynamic; // Ensure it's dynamic, not kinematic/static
-            rb.gravityScale = 0f; // No gravity in space
-            rb.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
-
-            // Set falling velocity
-            float verticalVelocity = -(float)(rng.NextDouble() * (fallingMaxVelocity - fallingMinVelocity) + fallingMinVelocity);
-            float horizontalDrift = (float)(rng.NextDouble() * (fallingMaxDrift - fallingMinDrift) + fallingMinDrift);
-            rb.linearVelocity = new Vector2(horizontalDrift, verticalVelocity);
-
-            // Set angular velocity for rotation while falling
-            float angularVelocity = (float)(rng.NextDouble() * 2 - 1) * 90f; // -90 to 90 degrees per second
-            rb.angularVelocity = angularVelocity;
-
-            // Track this asteroid for recycling
-            fallingAsteroids.Add(asteroid);
-        }
+    private void ApplyFallingVelocity(Rigidbody2D rb, System.Random rng)
+    {
+        float vy = -RandomRange(rng, falling.velocityRange.x, falling.velocityRange.y);
+        float vx = RandomRange(rng, falling.driftRange.x, falling.driftRange.y);
+        rb.linearVelocity = new Vector2(vx, vy);
+        rb.angularVelocity = RandomRange(rng, -falling.maxAngularVelocity, falling.maxAngularVelocity);
     }
 
     private void RecycleFallingAsteroids()
     {
         if (fallingAsteroids.Count == 0 || fallingRng == null) return;
 
-        float despawnY = fallingCenter.y - (fallingAreaSize.y * 0.5f) - fallingSpawnMargin;
-        float spawnY = fallingCenter.y + (fallingAreaSize.y * 0.5f) + fallingSpawnMargin;
+        float halfHeight = falling.area.size.y * 0.5f;
+        float despawnY = falling.area.center.y - halfHeight - falling.spawnMargin;
+        float spawnY = falling.area.center.y + halfHeight + falling.spawnMargin;
 
         for (int i = fallingAsteroids.Count - 1; i >= 0; i--)
         {
-            GameObject asteroid = fallingAsteroids[i];
-
-            // Remove null references (destroyed asteroids)
+            var asteroid = fallingAsteroids[i];
             if (asteroid == null)
             {
                 fallingAsteroids.RemoveAt(i);
                 continue;
             }
 
-            // Check if asteroid has fallen below the bottom
             if (asteroid.transform.position.y < despawnY)
             {
-                // Reposition at top with new random X
-                float x = (float)(fallingRng.NextDouble() - 0.5) * fallingAreaSize.x + fallingCenter.x;
+                float x = RandomRange(fallingRng, -0.5f, 0.5f) * falling.area.size.x + falling.area.center.x;
                 asteroid.transform.position = new Vector3(x, spawnY, asteroid.transform.position.z);
 
-                // Reset velocity
-                Rigidbody2D rb = asteroid.GetComponent<Rigidbody2D>();
-                if (rb != null)
-                {
-                    float verticalVelocity = -(float)(fallingRng.NextDouble() * (fallingMaxVelocity - fallingMinVelocity) + fallingMinVelocity);
-                    float horizontalDrift = (float)(fallingRng.NextDouble() * (fallingMaxDrift - fallingMinDrift) + fallingMinDrift);
-                    rb.linearVelocity = new Vector2(horizontalDrift, verticalVelocity);
-
-                    float angularVelocity = (float)(fallingRng.NextDouble() * 2 - 1) * 90f;
-                    rb.angularVelocity = angularVelocity;
-                }
+                var rb = asteroid.GetComponent<Rigidbody2D>();
+                if (rb != null) ApplyFallingVelocity(rb, fallingRng);
             }
         }
     }
     #endregion
 
     #region Asteroid Creation
-    private void CreateAsteroid(Vector3 position, System.Random rng)
-    {
-        GameObject prefab = SelectPrefab(rng);
-        if (prefab == null) return;
-
-        var asteroid = Instantiate(prefab, asteroidsParent);
-        asteroid.transform.position = new Vector3(position.x, position.y, prefab.transform.position.z);
-        asteroid.transform.rotation = Quaternion.Euler(0f, 0f, (float)(rng.NextDouble() * 2 - 1) * rotationRange);
-
-        Vector3 targetScale = CalculateScale(prefab, rng);
-        asteroid.transform.localScale = Vector3.zero;
-
-        StartCoroutine(GrowAsteroid(asteroid.transform, targetScale));
-    }
-
-    private GameObject CreateFallingAsteroid(Vector3 position, System.Random rng)
+    private GameObject CreateAsteroid(Vector3 position, System.Random rng, bool returnObject = false)
     {
         GameObject prefab = SelectPrefab(rng);
         if (prefab == null) return null;
 
         var asteroid = Instantiate(prefab, asteroidsParent);
         asteroid.transform.position = new Vector3(position.x, position.y, prefab.transform.position.z);
-        asteroid.transform.rotation = Quaternion.Euler(0f, 0f, (float)(rng.NextDouble() * 2 - 1) * rotationRange);
-
-        Vector3 targetScale = CalculateScale(prefab, rng);
+        asteroid.transform.rotation = Quaternion.Euler(0f, 0f, RandomRange(rng, -variation.rotationRange, variation.rotationRange));
         asteroid.transform.localScale = Vector3.zero;
 
-        StartCoroutine(GrowAsteroid(asteroid.transform, targetScale));
-
-        return asteroid;
+        StartCoroutine(GrowAsteroid(asteroid.transform, CalculateScale(prefab, rng)));
+        return returnObject ? asteroid : null;
     }
 
     private GameObject SelectPrefab(System.Random rng)
     {
-        if (asteroidPrefab1 != null && asteroidPrefab2 != null)
-        {
-            return rng.NextDouble() < asteroidPrefab1SpawnChance ? asteroidPrefab1 : asteroidPrefab2;
-        }
-        return asteroidPrefab1 ?? asteroidPrefab2;
+        if (prefabs.prefab1 != null && prefabs.prefab2 != null)
+            return rng.NextDouble() < prefabs.prefab1Chance ? prefabs.prefab1 : prefabs.prefab2;
+        return prefabs.prefab1 ?? prefabs.prefab2;
     }
 
     private Vector3 CalculateScale(GameObject prefab, System.Random rng)
@@ -395,74 +345,65 @@ public class MapManagerScript : MonoBehaviour
         Vector3 baseScale = prefab.transform.localScale;
         float t = (float)rng.NextDouble();
 
-        if (uniformScale)
+        if (variation.uniformScale)
         {
-            float multiplier = Mathf.Lerp((scaleMin.x + scaleMin.y) * 0.5f, (scaleMax.x + scaleMax.y) * 0.5f, t);
+            float multiplier = Mathf.Lerp(
+                (variation.scaleMin.x + variation.scaleMin.y) * 0.5f,
+                (variation.scaleMax.x + variation.scaleMax.y) * 0.5f, t);
             return baseScale * multiplier;
         }
-        else
-        {
-            float mx = Mathf.Lerp(scaleMin.x, scaleMax.x, t);
-            float my = Mathf.Lerp(scaleMin.y, scaleMax.y, t);
-            return new Vector3(baseScale.x * mx, baseScale.y * my, baseScale.z);
-        }
+
+        return new Vector3(
+            baseScale.x * Mathf.Lerp(variation.scaleMin.x, variation.scaleMax.x, t),
+            baseScale.y * Mathf.Lerp(variation.scaleMin.y, variation.scaleMax.y, t),
+            baseScale.z);
     }
     #endregion
 
     #region Helpers
+    private static float RandomRange(System.Random rng, float min, float max) =>
+        (float)(rng.NextDouble() * (max - min) + min);
+
+    private static Vector3 RandomPointInArea(System.Random rng, AreaConfig area) =>
+        new Vector3(
+            RandomRange(rng, -0.5f, 0.5f) * area.size.x + area.center.x,
+            RandomRange(rng, -0.5f, 0.5f) * area.size.y + area.center.y, 0f);
+
     private Vector3 GetJitter(System.Random rng, float magnitude)
     {
         if (magnitude <= 0f) return Vector3.zero;
-        float jx = (float)(rng.NextDouble() * 2 - 1) * magnitude;
-        float jy = (float)(rng.NextDouble() * 2 - 1) * magnitude;
-        return new Vector3(jx, jy, 0f);
+        return new Vector3(
+            RandomRange(rng, -magnitude, magnitude),
+            RandomRange(rng, -magnitude, magnitude), 0f);
     }
     #endregion
 
     #region Animations
     private IEnumerator GrowAsteroid(Transform asteroid, Vector3 targetScale)
     {
-        float elapsed = 0f;
-        while (elapsed < growDuration)
+        for (float t = 0f; t < animation.growDuration; t += Time.deltaTime)
         {
             if (asteroid == null) yield break;
-
-            elapsed += Time.deltaTime;
-            float t = Mathf.Clamp01(elapsed / growDuration);
-            float eased = 1f - Mathf.Pow(1f - t, 2f); // Ease out
+            float eased = 1f - Mathf.Pow(1f - t / animation.growDuration, 2f);
             asteroid.localScale = Vector3.Lerp(Vector3.zero, targetScale, eased);
             yield return null;
         }
-
-        if (asteroid != null)
-            asteroid.localScale = targetScale;
+        if (asteroid != null) asteroid.localScale = targetScale;
     }
 
     private IEnumerator ShrinkAllAsteroids()
     {
         if (asteroidsParent == null) yield break;
 
-        List<Transform> asteroids = new List<Transform>();
-        List<Vector3> originalScales = new List<Vector3>();
-
+        var asteroids = new List<(Transform t, Vector3 scale)>();
         foreach (Transform child in asteroidsParent)
-        {
-            asteroids.Add(child);
-            originalScales.Add(child.localScale);
-        }
+            asteroids.Add((child, child.localScale));
 
-        float elapsed = 0f;
-        while (elapsed < shrinkDuration)
+        for (float t = 0f; t < animation.shrinkDuration; t += Time.deltaTime)
         {
-            elapsed += Time.deltaTime;
-            float t = Mathf.Clamp01(elapsed / shrinkDuration);
-            float eased = Mathf.Pow(t, 2f); // Ease in
-
-            for (int i = 0; i < asteroids.Count; i++)
-            {
-                if (asteroids[i] != null)
-                    asteroids[i].localScale = Vector3.Lerp(originalScales[i], Vector3.zero, eased);
-            }
+            float eased = Mathf.Pow(t / animation.shrinkDuration, 2f);
+            foreach (var (asteroid, scale) in asteroids)
+                if (asteroid != null) asteroid.localScale = Vector3.Lerp(scale, Vector3.zero, eased);
             yield return null;
         }
 
