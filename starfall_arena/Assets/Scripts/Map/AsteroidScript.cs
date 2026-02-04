@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections;
 
 public class AsteroidScript : MonoBehaviour
 {
@@ -28,12 +29,25 @@ public class AsteroidScript : MonoBehaviour
     [Header("Collision Damage")]
     [Tooltip("Enable collision damage to players")]
     public bool enableCollisionDamage = true;
-    [Tooltip("Minimum momentum (mass * velocity magnitude) required to deal damage")]
-    public float minimumMomentumThreshold = 2f;
-    [Tooltip("Damage multiplier per unit of momentum")]
-    public float damagePerMomentum = 5f;
+    [Tooltip("Minimum velocity magnitude required to deal damage")]
+    public float minimumVelocityThreshold = 2f;
+    [Tooltip("Damage multiplier per unit of velocity (ignores mass)")]
+    public float damagePerVelocity = 5f;
     [Tooltip("Impact force multiplier for collision damage")]
     public float collisionImpactForce = 10f;
+    [Tooltip("Cooldown in seconds between damage instances from the same asteroid")]
+    public float collisionCooldown = 1.0f;
+    [Tooltip("Duration over which knockback is applied (helps overcome player movement resistance)")]
+    public float knockbackDuration = 0.15f;
+    [Tooltip("Sound played when asteroid impacts and damages a player")]
+    public AudioClip impactSound;
+    [Range(0f, 3f)]
+    [Tooltip("Volume for impact sound")]
+    public float impactVolume = 1f;
+
+    [Header("Debug")]
+    [Tooltip("Enable debug logging for collision and damage events")]
+    public bool debugCollisionDamage = false;
 
     private Rigidbody2D _rb;
     private float parentZRotationSpeed;
@@ -42,6 +56,7 @@ public class AsteroidScript : MonoBehaviour
     private float originalChildZ;
     private float currentChildY;
     private Vector2 _lastDamageDirection;
+    private float _lastCollisionTime = -999f;
 
     void Start()
     {
@@ -106,26 +121,84 @@ public class AsteroidScript : MonoBehaviour
         // Check if collision damage is enabled
         if (!enableCollisionDamage) return;
 
+        // Check cooldown to prevent rapid successive hits
+        if (Time.time - _lastCollisionTime < collisionCooldown)
+        {
+            if (debugCollisionDamage)
+                Debug.Log($"[Asteroid] Collision blocked by cooldown. Time since last hit: {Time.time - _lastCollisionTime:F2}s");
+            return;
+        }
+
         // Check if we hit a player
         Player player = collision.gameObject.GetComponent<Player>();
         if (player == null) return;
 
-        // Calculate momentum (mass * velocity)
+        // Calculate velocity magnitude (ignores mass)
         if (_rb == null) return;
 
-        float momentum = _rb.mass * _rb.linearVelocity.magnitude;
+        Vector2 asteroidVelocity = _rb.linearVelocity;
+        float velocity = asteroidVelocity.magnitude;
 
-        // Only deal damage if momentum exceeds threshold
-        if (momentum < minimumMomentumThreshold) return;
-
-        // Calculate damage based on momentum
-        float damage = momentum * damagePerMomentum;
+        // Only deal damage if velocity exceeds threshold
+        if (velocity < minimumVelocityThreshold) return;
 
         // Get collision point for hit direction
         Vector3 collisionPoint = collision.contacts.Length > 0 ? collision.contacts[0].point : transform.position;
 
+        // Check if player was hit by the traveling side of the asteroid
+        // Direction from asteroid center to collision point
+        Vector2 toCollisionPoint = ((Vector2)collisionPoint - (Vector2)transform.position).normalized;
+        // Direction the asteroid is traveling
+        Vector2 velocityDirection = asteroidVelocity.normalized;
+
+        // Dot product: positive means collision is on the front/traveling side
+        float alignment = Vector2.Dot(velocityDirection, toCollisionPoint);
+
+        // Only damage if hit from the traveling side (dot > 0 means collision point is in front)
+        if (alignment <= 0f)
+        {
+            if (debugCollisionDamage)
+                Debug.Log($"[Asteroid] Collision ignored - player hit non-traveling side. Alignment: {alignment:F2}");
+            return;
+        }
+
+        // Calculate damage based on velocity only (mass-independent)
+        float damage = velocity * damagePerVelocity;
+
+        // DEBUG: Log damage details
+        if (debugCollisionDamage)
+            Debug.Log($"[Asteroid] HIT PLAYER! Velocity: {velocity:F1}, Damage: {damage:F1}");
+
         // Deal damage to the player
         player.TakeDamage(damage, collisionImpactForce, collisionPoint, DamageSource.Other);
+
+        // Play impact sound
+        if (impactSound != null)
+        {
+            Play2DAudioAtPoint(impactSound, collisionPoint, impactVolume);
+        }
+
+        // Apply knockback force to the player
+        Rigidbody2D playerRb = player.GetComponent<Rigidbody2D>();
+        if (playerRb != null)
+        {
+            // Calculate knockback direction (from asteroid to player)
+            Vector2 knockbackDirection = ((Vector2)player.transform.position - (Vector2)collisionPoint).normalized;
+
+            // Scale knockback by velocity for more dynamic impacts
+            // Divide by mass to get velocity change (impulse = mass * velocity change)
+            float knockbackSpeed = (collisionImpactForce * velocity) / playerRb.mass;
+
+            // Start coroutine on the PLAYER object so it survives if asteroid is destroyed
+            // Apply knockback over multiple frames to overcome player movement resistance
+            player.StartCoroutine(ApplyKnockbackOverTime(playerRb, knockbackDirection, knockbackSpeed, knockbackDuration, debugCollisionDamage));
+
+            if (debugCollisionDamage)
+                Debug.Log($"[Asteroid] Starting knockback coroutine: Direction={knockbackDirection}, TotalSpeed={knockbackSpeed:F1}, Duration={knockbackDuration:F2}s");
+        }
+
+        // Update last collision time
+        _lastCollisionTime = Time.time;
     }
 
     private void DestroyAsteroid()
@@ -200,5 +273,32 @@ public class AsteroidScript : MonoBehaviour
 
         audioSource.Play();
         Object.Destroy(tempAudio, clip.length);
+    }
+
+    // Coroutine to apply knockback over multiple frames
+    // This overcomes player movement code that might reset velocity each frame
+    private static IEnumerator ApplyKnockbackOverTime(Rigidbody2D rb, Vector2 direction, float totalSpeed, float duration, bool debug)
+    {
+        if (rb == null || duration <= 0f) yield break;
+
+        float elapsed = 0f;
+        // Apply velocity additively each fixed update
+        float speedPerSecond = totalSpeed / duration;
+
+        while (elapsed < duration)
+        {
+            if (rb == null) yield break; // Player might be destroyed
+
+            rb.linearVelocity += direction * speedPerSecond * Time.fixedDeltaTime;
+            elapsed += Time.fixedDeltaTime;
+
+            if (debug && elapsed <= Time.fixedDeltaTime)
+                Debug.Log($"[Asteroid Knockback] Frame velocity add: {direction * speedPerSecond * Time.fixedDeltaTime}, Current velocity: {rb.linearVelocity}");
+
+            yield return new WaitForFixedUpdate();
+        }
+
+        if (debug)
+            Debug.Log($"[Asteroid Knockback] Complete. Final velocity: {rb?.linearVelocity}");
     }
 }
