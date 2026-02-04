@@ -2,6 +2,7 @@ using UnityEngine.InputSystem;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
+using System.Collections.Generic;
 
 [System.Serializable]
 public struct ShieldRegenConfig
@@ -65,6 +66,81 @@ public struct ScreenShakeConfig
 
 public abstract class Player : Entity
 {
+    // ===== AUGMENTS =====
+    public List<Augment> augments = new List<Augment>();
+
+    // ===== DAMAGE MULTIPLIER SYSTEM =====
+    [Header("Damage Multiplier System")]
+    [Tooltip("Tracks all active damage multiplier sources. Multipliers are added together (1.5 + 2.0 = 3.5x total).")]
+    private Dictionary<string, float> _damageMultipliers = new Dictionary<string, float>();
+    
+    /// <summary>
+    /// Gets the total damage multiplier (sum of all sources).
+    /// Multipliers are additive: 1.5x + 2.0x = 3.5x total.
+    /// </summary>
+    public float TotalDamageMultiplier
+    {
+        get
+        {
+            if (_damageMultipliers.Count == 0)
+            {
+                return 1.0f; // No multipliers, return base 1.0x
+            }
+            float total = 0f;
+            foreach (var mult in _damageMultipliers.Values)
+            {
+                total += mult;
+            }
+            return total; // Minimum 1.0x damage
+        }
+    }
+    
+    /// <summary>
+    /// Adds a damage multiplier from a specific source (e.g., "BlazeOfGlory", "Augment_DamageBoost").
+    /// If the source already exists, it will be updated.
+    /// Multipliers stack additively: 1.5x + 2.0x = 3.5x total damage.
+    /// Example: AddDamageMultiplier("BlazeOfGlory", 1.5f) adds 1.5x to total.
+    /// </summary>
+    public void AddDamageMultiplier(string source, float multiplier)
+    {
+        if (string.IsNullOrEmpty(source))
+        {
+            Debug.LogWarning("Cannot add damage multiplier with null or empty source name.");
+            return;
+        }
+        
+        _damageMultipliers[source] = multiplier;
+        Debug.Log($"[DamageMultiplier] Added '{source}': {multiplier}x (Total: {TotalDamageMultiplier}x)");
+    }
+    
+    /// <summary>
+    /// Removes a damage multiplier from a specific source.
+    /// </summary>
+    public void RemoveDamageMultiplier(string source)
+    {
+        if (_damageMultipliers.Remove(source))
+        {
+            Debug.Log($"[DamageMultiplier] Removed '{source}' (Total: {TotalDamageMultiplier}x)");
+        }
+    }
+    
+    /// <summary>
+    /// Checks if a specific damage multiplier source exists.
+    /// </summary>
+    public bool HasDamageMultiplier(string source)
+    {
+        return _damageMultipliers.ContainsKey(source);
+    }
+    
+    /// <summary>
+    /// Clears all damage multipliers (resets to base 1.0x).
+    /// </summary>
+    public void ClearAllDamageMultipliers()
+    {
+        _damageMultipliers.Clear();
+        Debug.Log("[DamageMultiplier] Cleared all multipliers (Total: 1.0x)");
+    }
+
     // ===== SHIELD REGENERATION =====
     [Header("Shield Regeneration")]
     public ShieldRegenConfig shieldRegen;
@@ -397,12 +473,15 @@ public abstract class Player : Entity
 
             if (projectile.TryGetComponent<ProjectileScript>(out var projectileScript))
             {
+                // Apply damage multiplier to projectile damage
+                float finalDamage = projectileWeapon.damage * TotalDamageMultiplier;
+                
                 projectileScript.targetTag = enemyTag;
                 projectileScript.Initialize(
                     GetFireDirection(turret),
                     Vector2.zero,
                     projectileWeapon.speed,
-                    projectileWeapon.damage,
+                    finalDamage,
                     projectileWeapon.lifetime,
                     projectileWeapon.impactForce,
                     this

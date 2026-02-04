@@ -106,6 +106,7 @@ public abstract class Entity : MonoBehaviour
 
     // ===== RUNTIME STATE - COMBAT =====
     protected float currentHealth;
+    public float CurrentHealth => currentHealth; // Public getter for health
     public float currentShield;  // Public so projectiles can check shield status
     protected Vector2 _lastDamageDirection;
     private bool _isDead = false;
