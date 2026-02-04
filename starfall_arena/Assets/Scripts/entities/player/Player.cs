@@ -102,6 +102,8 @@ public abstract class Player : Entity
 
     // ===== PROTECTED STATE (for derived classes) =====
     protected float fireCooldown = 0.5f;  // Can be overridden in derived classes
+    protected string thisPlayerTag;
+    protected string enemyTag;
 
     // ===== PRIVATE STATE =====
     private PlayerInput _playerInput;
@@ -124,11 +126,29 @@ public abstract class Player : Entity
     private Unity.Cinemachine.CinemachineImpulseSource _impulseSource;
     private AudioSource[] _audioSourcePool;
     private AudioSource _beamHitLoopSource;
+    private float _originalRotationSpeed;
+    private bool _isAnchored = false;
 
     // ===== INITIALIZATION =====
     protected override void Awake()
     {
         base.Awake();
+        _originalRotationSpeed = movement.rotationSpeed;
+        if(gameObject.CompareTag("Player1"))
+        {
+            thisPlayerTag = "Player1";
+            enemyTag = "Player2";
+        }
+        else if (gameObject.CompareTag("Player2"))
+        {
+            thisPlayerTag = "Player2";
+            enemyTag = "Player1";
+        }
+        else
+        {
+            thisPlayerTag = "Player";
+            enemyTag = "Enemy";
+        }
 
         _lastShieldHitTime = -shieldRegen.regenDelay;
         _lastMousePosition = Mouse.current.position.ReadValue();
@@ -249,7 +269,10 @@ public abstract class Player : Entity
                 }
             }
         }
-
+        if (_isAnchored)
+        {
+            _rb.linearDamping += .1f;
+        }
         ClampVelocity();
     }
 
@@ -339,6 +362,26 @@ public abstract class Player : Entity
         transform.rotation = Quaternion.Euler(0, 0, newAngle);
     }
 
+    // Anchor
+    void OnAnchor(InputValue value)
+    {
+        if (value.isPressed)
+        {
+            thrusters.invertColors = true;
+            Debug.Log("Anchor Activated: Rotate " + movement.rotationSpeed);
+            movement.rotationSpeed *= 3;
+            _isAnchored = true;
+        }
+        else
+        {
+            thrusters.invertColors = false;
+            _isAnchored = false;
+            _rb.linearDamping = 0f;
+            movement.rotationSpeed = _originalRotationSpeed;
+            Debug.Log("Anchor Deactivated: Rotate " + _originalRotationSpeed);
+        }
+    }
+
     // ===== COMBAT =====
     void TryFireProjectile()
     {
@@ -354,7 +397,7 @@ public abstract class Player : Entity
 
             if (projectile.TryGetComponent<ProjectileScript>(out var projectileScript))
             {
-                projectileScript.targetTag = "Enemy";
+                projectileScript.targetTag = enemyTag;
                 projectileScript.Initialize(
                     transform.up,
                     Vector2.zero,

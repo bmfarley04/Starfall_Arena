@@ -43,15 +43,6 @@
                     "initialStateCheck": true
                 },
                 {
-                    "name": "FireBeam",
-                    "type": "Value",
-                    "id": "4810fea6-57f0-4ebf-95eb-a048ae87a7f8",
-                    "expectedControlType": "",
-                    "processors": "",
-                    "interactions": "",
-                    "initialStateCheck": true
-                },
-                {
                     "name": "Ability3",
                     "type": "Value",
                     "id": "c4443985-4b29-45fa-bc71-6e2ed35951af",
@@ -61,27 +52,9 @@
                     "initialStateCheck": true
                 },
                 {
-                    "name": "Reflect",
-                    "type": "Button",
-                    "id": "9093af07-f891-4f76-a261-c045e9a01a5c",
-                    "expectedControlType": "",
-                    "processors": "",
-                    "interactions": "",
-                    "initialStateCheck": false
-                },
-                {
                     "name": "Ability4",
                     "type": "Button",
                     "id": "f64484b7-ceb5-40d8-9bb5-acd3def2ff6f",
-                    "expectedControlType": "",
-                    "processors": "",
-                    "interactions": "",
-                    "initialStateCheck": false
-                },
-                {
-                    "name": "Teleport",
-                    "type": "Button",
-                    "id": "288ce301-7d21-4432-8054-084cbc6708d7",
                     "expectedControlType": "",
                     "processors": "",
                     "interactions": "",
@@ -95,15 +68,6 @@
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": false
-                },
-                {
-                    "name": "GigaBlast",
-                    "type": "Value",
-                    "id": "d168d3f1-94ff-45a5-8e68-38fbefe806a5",
-                    "expectedControlType": "",
-                    "processors": "",
-                    "interactions": "",
-                    "initialStateCheck": true
                 },
                 {
                     "name": "Ability1",
@@ -222,28 +186,6 @@
                 },
                 {
                     "name": "",
-                    "id": "fe34f6af-63e1-4398-a420-d1b51e982085",
-                    "path": "<Keyboard>/q",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": ";key+mouse",
-                    "action": "FireBeam",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
-                    "id": "5a5c8328-055f-4ec5-9fe9-1e31d3ca31d5",
-                    "path": "<Gamepad>/buttonWest",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": ";controller",
-                    "action": "FireBeam",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
                     "id": "f61d1f1a-369a-482f-906c-d6862d74e687",
                     "path": "<Keyboard>/q",
                     "interactions": "",
@@ -261,28 +203,6 @@
                     "processors": "",
                     "groups": ";controller",
                     "action": "Ability3",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
-                    "id": "8ca4b70f-eaec-4a6e-a908-c4f2d3e0fbbd",
-                    "path": "<Keyboard>/w",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": ";key+mouse",
-                    "action": "Reflect",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
-                    "id": "8917d074-a07f-4543-a9cf-0ab6f2c6ee7f",
-                    "path": "<Gamepad>/buttonNorth",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": ";controller",
-                    "action": "Reflect",
                     "isComposite": false,
                     "isPartOfComposite": false
                 },
@@ -310,28 +230,6 @@
                 },
                 {
                     "name": "",
-                    "id": "647a1156-ffdc-42d0-b11b-a54d25ed2bb2",
-                    "path": "<Keyboard>/e",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": ";key+mouse",
-                    "action": "Teleport",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
-                    "id": "458e7359-eb1d-408c-bf69-53174ef9f09c",
-                    "path": "<Gamepad>/buttonEast",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": ";controller",
-                    "action": "Teleport",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
                     "id": "42404130-7dfb-4d07-ac1e-85a96159b78d",
                     "path": "<Keyboard>/e",
                     "interactions": "",
@@ -349,28 +247,6 @@
                     "processors": "",
                     "groups": ";controller",
                     "action": "Ability2",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
-                    "id": "a4f45c8d-96ad-4713-a32a-14b07855c611",
-                    "path": "<Keyboard>/r",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": ";key+mouse",
-                    "action": "GigaBlast",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
-                    "id": "513e94c8-fde4-4828-bff8-108dcac9394c",
-                    "path": "<Gamepad>/buttonSouth",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": ";controller",
-                    "action": "GigaBlast",
                     "isComposite": false,
                     "isPartOfComposite": false
                 },

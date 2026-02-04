@@ -420,7 +420,7 @@ public class Class1 : Player
     }
 
     // ===== ABILITY INPUT CALLBACKS =====
-    void OnFireBeam(InputValue value)
+    void OnAbility3(InputValue value)
     {
         Debug.Log($"Fire Beam input received - isPressed: {value.isPressed}");
 
@@ -447,7 +447,7 @@ public class Class1 : Player
                 GameObject beamObj = Instantiate(abilities.beam.stats.prefab, spawnPosition, transform.rotation, transform);
                 _activeBeam = beamObj.GetComponent<LaserBeam>();
                 _activeBeam.Initialize(
-                    "Enemy",
+                    enemyTag,
                     abilities.beam.stats.damagePerSecond,
                     abilities.beam.stats.maxDistance,
                     abilities.beam.stats.recoilForcePerSecond,
@@ -494,7 +494,7 @@ public class Class1 : Player
         }
     }
 
-    void OnReflect()
+    void OnAbility4()
     {
         if (Time.time < _lastReflectTime + abilities.reflect.cooldown)
         {
@@ -517,7 +517,7 @@ public class Class1 : Player
         _reflectCoroutine = StartCoroutine(ActivateReflectShield());
     }
 
-    void OnTeleport()
+    void OnAbility2()
     {
         if (Time.time < _lastTeleportTime + abilities.teleport.cooldown)
         {
@@ -543,7 +543,7 @@ public class Class1 : Player
         _teleportCoroutine = StartCoroutine(ExecuteTeleport(targetWorldPosition));
     }
 
-    void OnGigaBlast(InputValue value)
+    void OnAbility1(InputValue value)
     {
         Debug.Log($"GigaBlast input received - isPressed: {value.isPressed}");
 
@@ -880,7 +880,7 @@ public class Class1 : Player
 
         if (projectile.TryGetComponent<ProjectileScript>(out var projectileScript))
         {
-            projectileScript.targetTag = "Enemy";
+            projectileScript.targetTag = enemyTag;
             projectileScript.Initialize(
                 transform.up,
                 Vector2.zero,
@@ -1071,7 +1071,7 @@ public class Class1 : Player
         if (abilities.reflect.shield != null && abilities.reflect.shield.IsActive())
         {
             ProjectileScript projectile = collider.GetComponent<ProjectileScript>();
-            if (projectile != null && projectile.targetTag == "Player")
+            if (projectile != null && projectile.targetTag == thisPlayerTag)
             {
                 Vector3 hitPoint = collider.ClosestPoint(transform.position);
                 abilities.reflect.shield.OnReflectHit(hitPoint);
