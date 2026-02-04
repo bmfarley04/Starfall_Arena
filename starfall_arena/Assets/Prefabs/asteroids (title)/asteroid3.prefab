@@ -67,5 +67,32 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 100000, guid: d03e1c06d40b4044d901f37c881b6823, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 7496312438675514511}
   m_SourcePrefab: {fileID: 100100000, guid: d03e1c06d40b4044d901f37c881b6823, type: 3}
+--- !u!1 &1662243930232310542 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 100000, guid: d03e1c06d40b4044d901f37c881b6823, type: 3}
+  m_PrefabInstance: {fileID: 1662243930232212910}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &7496312438675514511
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1662243930232310542}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8f0e66bbd7c78f14cbb24d6b25aefc40, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SimpleRotator
+  rotateX: 1
+  xSpeed: 1
+  rotateY: 1
+  ySpeed: 1
+  rotateZ: 1
+  zSpeed: 1
+  useUnscaledTime: 1

@@ -16,7 +16,7 @@ MonoBehaviour:
   - lensFlareDataSRP: {fileID: 0}
     visible: 1
     position: 0
-    positionOffset: {x: -0.33, y: 0.47}
+    positionOffset: {x: -0.5, y: 0.6}
     angularOffset: 0
     translationScale: {x: 1, y: 1}
     ringThickness: 0.25
@@ -220,7 +220,7 @@ MonoBehaviour:
   - lensFlareDataSRP: {fileID: 0}
     visible: 1
     position: 0
-    positionOffset: {x: -0.33, y: 0.47}
+    positionOffset: {x: -0.5, y: 0.6}
     angularOffset: 0
     translationScale: {x: 1, y: 1}
     ringThickness: 0.25
@@ -424,7 +424,7 @@ MonoBehaviour:
   - lensFlareDataSRP: {fileID: 0}
     visible: 1
     position: 0
-    positionOffset: {x: -0.33, y: 0.47}
+    positionOffset: {x: -0.5, y: 0.6}
     angularOffset: 0
     translationScale: {x: 1, y: 1}
     ringThickness: 0.25
@@ -628,7 +628,7 @@ MonoBehaviour:
   - lensFlareDataSRP: {fileID: 0}
     visible: 1
     position: 0
-    positionOffset: {x: -0.33, y: 0.47}
+    positionOffset: {x: -0.5, y: 0.6}
     angularOffset: 0
     translationScale: {x: 1, y: 1}
     ringThickness: 0.25
@@ -638,7 +638,7 @@ MonoBehaviour:
     noiseSpeed: 0
     shapeCutOffSpeed: 100
     shapeCutOffRadius: 100
-    m_LocalIntensity: 0.003
+    m_LocalIntensity: 0.005
     lensFlareTexture: {fileID: 0}
     uniformScale: 3
     sizeXY: {x: 1, y: 1}
@@ -832,7 +832,7 @@ MonoBehaviour:
   - lensFlareDataSRP: {fileID: 0}
     visible: 1
     position: 0
-    positionOffset: {x: -0.33, y: 0.47}
+    positionOffset: {x: -0.5, y: 0.6}
     angularOffset: 0
     translationScale: {x: 1, y: 1}
     ringThickness: 0.25
@@ -842,7 +842,7 @@ MonoBehaviour:
     noiseSpeed: 0
     shapeCutOffSpeed: 0
     shapeCutOffRadius: 100
-    m_LocalIntensity: 0.003
+    m_LocalIntensity: 0.008
     lensFlareTexture: {fileID: 0}
     uniformScale: 10
     sizeXY: {x: 1, y: 1}
@@ -890,7 +890,7 @@ MonoBehaviour:
     autoRotate: 0
     flareType: 1
     modulateByLightColor: 1
-    isFoldOpened: 0
+    isFoldOpened: 1
     distribution: 0
     lengthSpread: 1
     positionCurve:
@@ -1003,8 +1003,8 @@ MonoBehaviour:
       m_PostInfinity: 2
       m_RotationOrder: 4
     distortionRelativeToCenter: 0
-    m_FallOff: 0.091
-    m_EdgeOffset: 0.101
+    m_FallOff: 0.919
+    m_EdgeOffset: 0.536
     m_SideCount: 6
     m_SdfRoundness: 0
     inverseSDF: 0

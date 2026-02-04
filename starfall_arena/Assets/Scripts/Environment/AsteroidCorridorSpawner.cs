@@ -6,14 +6,9 @@ using UnityEditor;
 #endif
 
 /// <summary>
-/// Spawns asteroids in a belt/arc pattern - a curved band of asteroids
-/// where the camera views a portion of the belt.
-///
-/// Pattern Description:
-/// - Asteroids form a curved belt/arc in 3D space
-/// - Camera sees a section of this belt
-/// - Perspective camera naturally handles size based on distance
-/// - Dense clustering with natural randomness
+/// Spawns asteroids in a cone/frustum pattern matching perspective camera view.
+/// Asteroids spread wider at far distances, narrower at close distances,
+/// creating an even screen-space distribution.
 /// </summary>
 [ExecuteAlways]
 public class AsteroidCorridorSpawner : MonoBehaviour
@@ -26,27 +21,29 @@ public class AsteroidCorridorSpawner : MonoBehaviour
     [Tooltip("Seed for deterministic spawning - same seed produces exact same layout")]
     [SerializeField] private int seed = 12345;
 
-    [Header("Belt Shape")]
+    [Header("Cone Shape")]
     [Tooltip("Total number of asteroids to spawn")]
     [SerializeField] private int asteroidCount = 150;
 
-    [Tooltip("Center point of the belt arc")]
-    [SerializeField] private Vector3 beltCenter = new Vector3(0, 0, 50);
+    [Tooltip("Near distance from spawner (cone tip)")]
+    [SerializeField] private float nearDistance = 10f;
 
-    [Tooltip("Radius of the belt arc from center")]
-    [SerializeField] private float beltRadius = 60f;
+    [Tooltip("Far distance from spawner (cone base)")]
+    [SerializeField] private float farDistance = 120f;
 
-    [Tooltip("Thickness of the belt (radial spread)")]
-    [SerializeField] private float beltThickness = 30f;
+    [Tooltip("Horizontal spread angle in degrees (similar to camera FOV)")]
+    [SerializeField] private float horizontalSpread = 70f;
 
-    [Tooltip("Vertical spread of the belt")]
-    [SerializeField] private float beltHeight = 25f;
+    [Tooltip("Vertical spread angle in degrees")]
+    [SerializeField] private float verticalSpread = 45f;
 
-    [Tooltip("Start angle of the arc (degrees)")]
-    [SerializeField] private float arcStartAngle = -60f;
+    [Tooltip("Offset the cone center (e.g., shift left/right/up/down)")]
+    [SerializeField] private Vector3 coneOffset = Vector3.zero;
 
-    [Tooltip("End angle of the arc (degrees)")]
-    [SerializeField] private float arcEndAngle = 60f;
+    [Header("Depth Distribution")]
+    [Tooltip("Bias toward far (>0.5) or near (<0.5). 0.5 = uniform, 0.7 = more far asteroids")]
+    [Range(0.1f, 0.9f)]
+    [SerializeField] private float depthBias = 0.6f;
 
     [Header("Asteroid Size")]
     [Tooltip("Minimum asteroid scale")]
@@ -91,22 +88,6 @@ public class AsteroidCorridorSpawner : MonoBehaviour
         if (asteroidPrefabs == null || asteroidPrefabs.Length == 0)
             return;
 
-        // Check if any prefabs are valid
-        bool hasValidPrefab = false;
-        foreach (var prefab in asteroidPrefabs)
-        {
-            if (prefab != null)
-            {
-                hasValidPrefab = true;
-                break;
-            }
-        }
-        if (!hasValidPrefab)
-            return;
-
-        ClearAsteroids();
-        CreateContainer();
-
         // Build list of valid prefabs
         List<GameObject> validPrefabs = new List<GameObject>();
         foreach (var prefab in asteroidPrefabs)
@@ -114,32 +95,42 @@ public class AsteroidCorridorSpawner : MonoBehaviour
             if (prefab != null)
                 validPrefabs.Add(prefab);
         }
+        if (validPrefabs.Count == 0)
+            return;
+
+        ClearAsteroids();
+        CreateContainer();
 
         Random.InitState(seed);
 
-        // Spawn asteroids in belt pattern
+        // Spawn asteroids in cone pattern
         for (int i = 0; i < asteroidCount; i++)
         {
-            // Random angle within the arc
-            float angle = Random.Range(arcStartAngle, arcEndAngle) * Mathf.Deg2Rad;
+            // Depth with bias (power function shifts distribution)
+            // depthBias > 0.5 = more asteroids far away
+            float t = Random.Range(0f, 1f);
+            float biasedT = Mathf.Pow(t, 1f / (depthBias * 2f));
+            float depth = Mathf.Lerp(nearDistance, farDistance, biasedT);
 
-            // Random distance from belt center (with thickness)
-            float radius = beltRadius + Random.Range(-beltThickness / 2f, beltThickness / 2f);
+            // Calculate spread at this depth (cone gets wider with distance)
+            float depthRatio = depth / farDistance;
+            float hSpreadAtDepth = Mathf.Tan(horizontalSpread * 0.5f * Mathf.Deg2Rad) * depth;
+            float vSpreadAtDepth = Mathf.Tan(verticalSpread * 0.5f * Mathf.Deg2Rad) * depth;
 
-            // Calculate position on the arc (XZ plane, with Y variation)
-            float x = Mathf.Sin(angle) * radius;
-            float z = Mathf.Cos(angle) * radius;
-            float y = Random.Range(-beltHeight / 2f, beltHeight / 2f);
+            // Random position within the cone cross-section at this depth
+            float x = Random.Range(-hSpreadAtDepth, hSpreadAtDepth);
+            float y = Random.Range(-vSpreadAtDepth, vSpreadAtDepth);
 
-            Vector3 position = beltCenter + new Vector3(x, y, z);
+            Vector3 localPos = new Vector3(x, y, depth) + coneOffset;
+            Vector3 worldPos = transform.TransformPoint(localPos);
 
-            // Random scale (perspective handles depth-based sizing)
+            // Random scale
             float scale = Random.Range(minScale, maxScale);
 
-            // Random prefab selection
+            // Random prefab
             GameObject prefab = validPrefabs[Random.Range(0, validPrefabs.Count)];
 
-            SpawnAsteroid(prefab, position, scale);
+            SpawnAsteroid(prefab, worldPos, scale);
         }
     }
 
@@ -165,7 +156,7 @@ public class AsteroidCorridorSpawner : MonoBehaviour
         asteroidContainer = containerObj.transform;
     }
 
-    private void SpawnAsteroid(GameObject prefab, Vector3 position, float scale)
+    private void SpawnAsteroid(GameObject prefab, Vector3 worldPosition, float scale)
     {
         if (prefab == null)
             return;
@@ -185,12 +176,12 @@ public class AsteroidCorridorSpawner : MonoBehaviour
         asteroid = Instantiate(prefab, asteroidContainer);
         #endif
 
-        asteroid.transform.localPosition = position;
+        asteroid.transform.position = worldPosition;
         asteroid.transform.localScale = Vector3.one * scale;
 
         if (randomizeRotation)
         {
-            asteroid.transform.localRotation = Random.rotation;
+            asteroid.transform.rotation = Random.rotation;
         }
     }
 
@@ -199,60 +190,63 @@ public class AsteroidCorridorSpawner : MonoBehaviour
         if (!showGizmos)
             return;
 
-        // Draw belt center
-        Gizmos.color = Color.yellow;
-        Gizmos.DrawWireSphere(transform.position + beltCenter, 2f);
+        // Draw cone outline
+        Vector3 origin = transform.position + transform.TransformDirection(coneOffset);
 
-        // Draw belt arc outline
-        Gizmos.color = Color.cyan;
-        int segments = 32;
-        float angleStep = (arcEndAngle - arcStartAngle) / segments;
+        // Calculate corners at near and far planes
+        float nearH = Mathf.Tan(horizontalSpread * 0.5f * Mathf.Deg2Rad) * nearDistance;
+        float nearV = Mathf.Tan(verticalSpread * 0.5f * Mathf.Deg2Rad) * nearDistance;
+        float farH = Mathf.Tan(horizontalSpread * 0.5f * Mathf.Deg2Rad) * farDistance;
+        float farV = Mathf.Tan(verticalSpread * 0.5f * Mathf.Deg2Rad) * farDistance;
 
-        // Inner edge
-        Vector3 prevInner = Vector3.zero;
-        Vector3 prevOuter = Vector3.zero;
-        for (int i = 0; i <= segments; i++)
+        // Near plane corners (local space)
+        Vector3[] nearCorners = new Vector3[]
         {
-            float angle = (arcStartAngle + angleStep * i) * Mathf.Deg2Rad;
-            float innerRadius = beltRadius - beltThickness / 2f;
-            float outerRadius = beltRadius + beltThickness / 2f;
+            new Vector3(-nearH, -nearV, nearDistance),
+            new Vector3(nearH, -nearV, nearDistance),
+            new Vector3(nearH, nearV, nearDistance),
+            new Vector3(-nearH, nearV, nearDistance)
+        };
 
-            Vector3 inner = transform.position + beltCenter + new Vector3(
-                Mathf.Sin(angle) * innerRadius,
-                0,
-                Mathf.Cos(angle) * innerRadius
-            );
+        // Far plane corners (local space)
+        Vector3[] farCorners = new Vector3[]
+        {
+            new Vector3(-farH, -farV, farDistance),
+            new Vector3(farH, -farV, farDistance),
+            new Vector3(farH, farV, farDistance),
+            new Vector3(-farH, farV, farDistance)
+        };
 
-            Vector3 outer = transform.position + beltCenter + new Vector3(
-                Mathf.Sin(angle) * outerRadius,
-                0,
-                Mathf.Cos(angle) * outerRadius
-            );
-
-            if (i > 0)
-            {
-                Gizmos.DrawLine(prevInner, inner);
-                Gizmos.DrawLine(prevOuter, outer);
-            }
-
-            // Draw connecting lines at start and end
-            if (i == 0 || i == segments)
-            {
-                Gizmos.DrawLine(inner, outer);
-            }
-
-            prevInner = inner;
-            prevOuter = outer;
+        // Transform to world space
+        for (int i = 0; i < 4; i++)
+        {
+            nearCorners[i] = transform.TransformPoint(nearCorners[i] + coneOffset);
+            farCorners[i] = transform.TransformPoint(farCorners[i] + coneOffset);
         }
 
-        // Draw height bounds
-        Gizmos.color = new Color(0, 1, 1, 0.3f);
-        float midAngle = ((arcStartAngle + arcEndAngle) / 2f) * Mathf.Deg2Rad;
-        Vector3 midPoint = transform.position + beltCenter + new Vector3(
-            Mathf.Sin(midAngle) * beltRadius,
-            0,
-            Mathf.Cos(midAngle) * beltRadius
-        );
-        Gizmos.DrawLine(midPoint + Vector3.up * beltHeight / 2f, midPoint + Vector3.down * beltHeight / 2f);
+        // Draw near plane
+        Gizmos.color = Color.green;
+        for (int i = 0; i < 4; i++)
+        {
+            Gizmos.DrawLine(nearCorners[i], nearCorners[(i + 1) % 4]);
+        }
+
+        // Draw far plane
+        Gizmos.color = Color.cyan;
+        for (int i = 0; i < 4; i++)
+        {
+            Gizmos.DrawLine(farCorners[i], farCorners[(i + 1) % 4]);
+        }
+
+        // Draw connecting edges
+        Gizmos.color = Color.yellow;
+        for (int i = 0; i < 4; i++)
+        {
+            Gizmos.DrawLine(nearCorners[i], farCorners[i]);
+        }
+
+        // Draw origin
+        Gizmos.color = Color.red;
+        Gizmos.DrawWireSphere(origin, 1f);
     }
 }
