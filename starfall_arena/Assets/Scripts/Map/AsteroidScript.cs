@@ -133,20 +133,38 @@ public class AsteroidScript : MonoBehaviour
         // Calculate velocity magnitude (ignores mass)
         if (_rb == null) return;
 
-        float velocity = _rb.linearVelocity.magnitude;
+        Vector2 asteroidVelocity = _rb.linearVelocity;
+        float velocity = asteroidVelocity.magnitude;
 
         // Only deal damage if velocity exceeds threshold
         if (velocity < minimumVelocityThreshold) return;
+
+        // Get collision point for hit direction
+        Vector3 collisionPoint = collision.contacts.Length > 0 ? collision.contacts[0].point : transform.position;
+
+        // Check if player was hit by the traveling side of the asteroid
+        // Direction from asteroid center to collision point
+        Vector2 toCollisionPoint = ((Vector2)collisionPoint - (Vector2)transform.position).normalized;
+        // Direction the asteroid is traveling
+        Vector2 velocityDirection = asteroidVelocity.normalized;
+
+        // Dot product: positive means collision is on the front/traveling side
+        float alignment = Vector2.Dot(velocityDirection, toCollisionPoint);
+
+        // Only damage if hit from the traveling side (dot > 0 means collision point is in front)
+        if (alignment <= 0f)
+        {
+            if (debugCollisionDamage)
+                Debug.Log($"[Asteroid] Collision ignored - player hit non-traveling side. Alignment: {alignment:F2}");
+            return;
+        }
 
         // Calculate damage based on velocity only (mass-independent)
         float damage = velocity * damagePerVelocity;
 
         // DEBUG: Log damage details
         if (debugCollisionDamage)
-            Debug.Log($"[Asteroid] HIT PLAYER! Velocity: {velocity:F1}, Damage: {damage:F1}, Mass: {_rb.mass:F1}");
-
-        // Get collision point for hit direction
-        Vector3 collisionPoint = collision.contacts.Length > 0 ? collision.contacts[0].point : transform.position;
+            Debug.Log($"[Asteroid] HIT PLAYER! Velocity: {velocity:F1}, Damage: {damage:F1}");
 
         // Deal damage to the player
         player.TakeDamage(damage, collisionImpactForce, collisionPoint, DamageSource.Other);

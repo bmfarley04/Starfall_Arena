@@ -151,6 +151,8 @@ MonoBehaviour:
   damagePerVelocity: 1
   collisionImpactForce: 50
   collisionCooldown: 2
+  impactSound: {fileID: 8300000, guid: 77fa99d786e289644a3016aa4fd360c6, type: 3}
+  impactVolume: 1
   debugCollisionDamage: 0
 --- !u!50 &176159384499902249
 Rigidbody2D:
