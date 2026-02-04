@@ -201,36 +201,43 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b2c308072ea1af54fa7cc41148419955, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MapManagerScript
-  asteroidPrefab1: {fileID: 281602037788047727, guid: 89e47e3dfd1c4ca4db8281832c513da1, type: 3}
-  asteroidPrefab2: {fileID: 8918075630754091426, guid: 35b3f4e24d9bbad42a751bcddc6dbd8d, type: 3}
-  asteroidPrefab1SpawnChance: 0.6
   pattern: 1
-  asteroidCount: 30
+  asteroidCount: 50
   useSeed: 1
   seed: 12345
-  scatteredAreaSize: {x: 200, y: 150}
-  scatteredCenter: {x: 0, y: 0}
-  clusteredAreaSize: {x: 200, y: 150}
-  clusteredCenter: {x: 0, y: 0}
-  clusterCount: 5
-  clusterRadius: 20
-  minClusterSpacing: 5
-  fallingAreaSize: {x: 18, y: 10}
-  fallingCenter: {x: 0, y: 0}
-  fallingSpawnMargin: 2
-  fallingMinVelocity: 2
-  fallingMaxVelocity: 8
-  fallingMinDrift: -1
-  fallingMaxDrift: 1
-  fallingSpawnDelay: 0.1
-  recycleFallingAsteroids: 1
-  positionJitter: 0.2
-  scaleMin: {x: 0.5, y: 0.5}
-  scaleMax: {x: 1.5, y: 1.5}
-  rotationRange: 180
-  uniformScale: 1
-  growDuration: 0.5
-  shrinkDuration: 0.3
+  prefabs:
+    prefab1: {fileID: 281602037788047727, guid: 89e47e3dfd1c4ca4db8281832c513da1, type: 3}
+    prefab2: {fileID: 8918075630754091426, guid: 35b3f4e24d9bbad42a751bcddc6dbd8d, type: 3}
+    prefab1Chance: 0.6
+  scattered:
+    size: {x: 200, y: 150}
+    center: {x: 0, y: 0}
+  clustered:
+    area:
+      size: {x: 200, y: 150}
+      center: {x: 0, y: 0}
+    clusterCount: 5
+    clusterRadius: 40
+    minSpacing: 8
+  falling:
+    area:
+      size: {x: 200, y: 150}
+      center: {x: 0, y: 0}
+    spawnMargin: 15
+    velocityRange: {x: 20, y: 40}
+    driftRange: {x: -1, y: 1}
+    maxAngularVelocity: 90
+    spawnDelay: 0.8
+    recycle: 1
+  variation:
+    positionJitter: 0.2
+    scaleMin: {x: 0.5, y: 0.5}
+    scaleMax: {x: 1.2, y: 1.2}
+    rotationRange: 180
+    uniformScale: 1
+  animation:
+    growDuration: 0.5
+    shrinkDuration: 0.3
 --- !u!4 &561246497
 Transform:
   m_ObjectHideFlags: 0
@@ -633,36 +640,43 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b2c308072ea1af54fa7cc41148419955, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MapManagerScript
-  asteroidPrefab1: {fileID: 281602037788047727, guid: 89e47e3dfd1c4ca4db8281832c513da1, type: 3}
-  asteroidPrefab2: {fileID: 8918075630754091426, guid: 35b3f4e24d9bbad42a751bcddc6dbd8d, type: 3}
-  asteroidPrefab1SpawnChance: 0.6
   pattern: 2
-  asteroidCount: 30
+  asteroidCount: 50
   useSeed: 1
   seed: 12345
-  scatteredAreaSize: {x: 200, y: 150}
-  scatteredCenter: {x: 0, y: 0}
-  clusteredAreaSize: {x: 200, y: 150}
-  clusteredCenter: {x: 0, y: 0}
-  clusterCount: 5
-  clusterRadius: 20
-  minClusterSpacing: 5
-  fallingAreaSize: {x: 200, y: 150}
-  fallingCenter: {x: 0, y: 0}
-  fallingSpawnMargin: 2
-  fallingMinVelocity: 20
-  fallingMaxVelocity: 40
-  fallingMinDrift: -1
-  fallingMaxDrift: 1
-  fallingSpawnDelay: 0.5
-  recycleFallingAsteroids: 1
-  positionJitter: 0.2
-  scaleMin: {x: 0.25, y: 0.25}
-  scaleMax: {x: 1, y: 1}
-  rotationRange: 180
-  uniformScale: 1
-  growDuration: 0.5
-  shrinkDuration: 0.3
+  prefabs:
+    prefab1: {fileID: 281602037788047727, guid: 89e47e3dfd1c4ca4db8281832c513da1, type: 3}
+    prefab2: {fileID: 8918075630754091426, guid: 35b3f4e24d9bbad42a751bcddc6dbd8d, type: 3}
+    prefab1Chance: 0.6
+  scattered:
+    size: {x: 200, y: 150}
+    center: {x: 0, y: 0}
+  clustered:
+    area:
+      size: {x: 200, y: 150}
+      center: {x: 0, y: 0}
+    clusterCount: 5
+    clusterRadius: 40
+    minSpacing: 8
+  falling:
+    area:
+      size: {x: 200, y: 150}
+      center: {x: 0, y: 0}
+    spawnMargin: 15
+    velocityRange: {x: 20, y: 25}
+    driftRange: {x: -1, y: 1}
+    maxAngularVelocity: 90
+    spawnDelay: 1
+    recycle: 1
+  variation:
+    positionJitter: 0.2
+    scaleMin: {x: 0.8, y: 0.8}
+    scaleMax: {x: 0.8, y: 0.8}
+    rotationRange: 180
+    uniformScale: 1
+  animation:
+    growDuration: 0.5
+    shrinkDuration: 0.3
 --- !u!4 &1478112842
 Transform:
   m_ObjectHideFlags: 0
@@ -1087,7 +1101,7 @@ Transform:
   m_GameObject: {fileID: 1855590637}
   serializedVersion: 2
   m_LocalRotation: {x: -0.49107283, y: 0.15467498, z: 0.09426339, w: 0.8520784}
-  m_LocalPosition: {x: 46.4584, y: -38.55754, z: 0}
+  m_LocalPosition: {x: 46.4584, y: -55, z: 0}
   m_LocalScale: {x: 0.6000001, y: 0.6, z: 0.6}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -1350,36 +1364,43 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b2c308072ea1af54fa7cc41148419955, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MapManagerScript
-  asteroidPrefab1: {fileID: 281602037788047727, guid: 89e47e3dfd1c4ca4db8281832c513da1, type: 3}
-  asteroidPrefab2: {fileID: 8918075630754091426, guid: 35b3f4e24d9bbad42a751bcddc6dbd8d, type: 3}
-  asteroidPrefab1SpawnChance: 0.6
   pattern: 0
-  asteroidCount: 30
+  asteroidCount: 50
   useSeed: 1
   seed: 12345
-  scatteredAreaSize: {x: 200, y: 150}
-  scatteredCenter: {x: 0, y: 0}
-  clusteredAreaSize: {x: 200, y: 150}
-  clusteredCenter: {x: 0, y: 0}
-  clusterCount: 5
-  clusterRadius: 20
-  minClusterSpacing: 5
-  fallingAreaSize: {x: 18, y: 10}
-  fallingCenter: {x: 0, y: 0}
-  fallingSpawnMargin: 2
-  fallingMinVelocity: 2
-  fallingMaxVelocity: 8
-  fallingMinDrift: -1
-  fallingMaxDrift: 1
-  fallingSpawnDelay: 0.1
-  recycleFallingAsteroids: 1
-  positionJitter: 0.2
-  scaleMin: {x: 0.5, y: 0.5}
-  scaleMax: {x: 1.5, y: 1.5}
-  rotationRange: 180
-  uniformScale: 1
-  growDuration: 0.5
-  shrinkDuration: 0.3
+  prefabs:
+    prefab1: {fileID: 281602037788047727, guid: 89e47e3dfd1c4ca4db8281832c513da1, type: 3}
+    prefab2: {fileID: 8918075630754091426, guid: 35b3f4e24d9bbad42a751bcddc6dbd8d, type: 3}
+    prefab1Chance: 0.6
+  scattered:
+    size: {x: 200, y: 150}
+    center: {x: 0, y: 0}
+  clustered:
+    area:
+      size: {x: 200, y: 150}
+      center: {x: 0, y: 0}
+    clusterCount: 5
+    clusterRadius: 40
+    minSpacing: 8
+  falling:
+    area:
+      size: {x: 200, y: 150}
+      center: {x: 0, y: 0}
+    spawnMargin: 15
+    velocityRange: {x: 20, y: 40}
+    driftRange: {x: -1, y: 1}
+    maxAngularVelocity: 90
+    spawnDelay: 0.8
+    recycle: 1
+  variation:
+    positionJitter: 0.2
+    scaleMin: {x: 0.5, y: 0.5}
+    scaleMax: {x: 1.2, y: 1.2}
+    rotationRange: 180
+    uniformScale: 1
+  animation:
+    growDuration: 0.5
+    shrinkDuration: 0.3
 --- !u!4 &1934339509
 Transform:
   m_ObjectHideFlags: 0

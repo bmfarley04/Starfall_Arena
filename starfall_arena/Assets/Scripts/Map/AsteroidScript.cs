@@ -28,12 +28,18 @@ public class AsteroidScript : MonoBehaviour
     [Header("Collision Damage")]
     [Tooltip("Enable collision damage to players")]
     public bool enableCollisionDamage = true;
-    [Tooltip("Minimum momentum (mass * velocity magnitude) required to deal damage")]
-    public float minimumMomentumThreshold = 2f;
-    [Tooltip("Damage multiplier per unit of momentum")]
-    public float damagePerMomentum = 5f;
+    [Tooltip("Minimum velocity magnitude required to deal damage")]
+    public float minimumVelocityThreshold = 2f;
+    [Tooltip("Damage multiplier per unit of velocity (ignores mass)")]
+    public float damagePerVelocity = 5f;
     [Tooltip("Impact force multiplier for collision damage")]
     public float collisionImpactForce = 10f;
+    [Tooltip("Cooldown in seconds between damage instances from the same asteroid")]
+    public float collisionCooldown = 1.0f;
+
+    [Header("Debug")]
+    [Tooltip("Enable debug logging for collision and damage events")]
+    public bool debugCollisionDamage = false;
 
     private Rigidbody2D _rb;
     private float parentZRotationSpeed;
@@ -42,6 +48,7 @@ public class AsteroidScript : MonoBehaviour
     private float originalChildZ;
     private float currentChildY;
     private Vector2 _lastDamageDirection;
+    private float _lastCollisionTime = -999f;
 
     void Start()
     {
@@ -106,26 +113,41 @@ public class AsteroidScript : MonoBehaviour
         // Check if collision damage is enabled
         if (!enableCollisionDamage) return;
 
+        // Check cooldown to prevent rapid successive hits
+        if (Time.time - _lastCollisionTime < collisionCooldown)
+        {
+            if (debugCollisionDamage)
+                Debug.Log($"[Asteroid] Collision blocked by cooldown. Time since last hit: {Time.time - _lastCollisionTime:F2}s");
+            return;
+        }
+
         // Check if we hit a player
         Player player = collision.gameObject.GetComponent<Player>();
         if (player == null) return;
 
-        // Calculate momentum (mass * velocity)
+        // Calculate velocity magnitude (ignores mass)
         if (_rb == null) return;
 
-        float momentum = _rb.mass * _rb.linearVelocity.magnitude;
+        float velocity = _rb.linearVelocity.magnitude;
 
-        // Only deal damage if momentum exceeds threshold
-        if (momentum < minimumMomentumThreshold) return;
+        // Only deal damage if velocity exceeds threshold
+        if (velocity < minimumVelocityThreshold) return;
 
-        // Calculate damage based on momentum
-        float damage = momentum * damagePerMomentum;
+        // Calculate damage based on velocity only (mass-independent)
+        float damage = velocity * damagePerVelocity;
+
+        // DEBUG: Log damage details
+        if (debugCollisionDamage)
+            Debug.Log($"[Asteroid] HIT PLAYER! Velocity: {velocity:F1}, Damage: {damage:F1}, Mass: {_rb.mass:F1}");
 
         // Get collision point for hit direction
         Vector3 collisionPoint = collision.contacts.Length > 0 ? collision.contacts[0].point : transform.position;
 
         // Deal damage to the player
         player.TakeDamage(damage, collisionImpactForce, collisionPoint, DamageSource.Other);
+
+        // Update last collision time
+        _lastCollisionTime = Time.time;
     }
 
     private void DestroyAsteroid()

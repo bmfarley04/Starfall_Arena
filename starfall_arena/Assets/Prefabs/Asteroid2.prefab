@@ -88,6 +88,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!1 &8918075630754091426
 GameObject:
@@ -145,6 +146,12 @@ MonoBehaviour:
   explosionScaleMultiplier: 1
   explosionSound: {fileID: 8300000, guid: bd3ea9f6174113c42b0317e541791dee, type: 3}
   explosionVolume: 1
+  enableCollisionDamage: 1
+  minimumVelocityThreshold: 18
+  damagePerVelocity: 1
+  collisionImpactForce: 25
+  collisionCooldown: 2
+  debugCollisionDamage: 0
 --- !u!50 &176159384499902249
 Rigidbody2D:
   serializedVersion: 5
