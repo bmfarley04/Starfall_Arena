@@ -2328,7 +2328,7 @@ PrefabInstance:
       objectReference: {fileID: 1867909032}
     - target: {fileID: 1732132673403547521, guid: dab56be66f149c34fbedb1fc28a943e6, type: 3}
       propertyPath: m_DefaultControlScheme
-      value: key+mouse
+      value: controller
       objectReference: {fileID: 0}
     - target: {fileID: 3550827916854919345, guid: dab56be66f149c34fbedb1fc28a943e6, type: 3}
       propertyPath: 'turrets.Array.data[0]'

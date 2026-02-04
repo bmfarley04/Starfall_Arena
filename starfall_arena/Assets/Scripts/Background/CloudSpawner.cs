@@ -299,6 +299,9 @@ public class CloudSpawner : MonoBehaviour
         // Create GameObject
         GameObject cloud = new GameObject($"Cloud_{index}");
         cloud.transform.SetParent(cloudContainer.transform);
+        
+        // Set cloud layer to match spawner
+        cloud.layer = gameObject.layer;
 
         // Position - grid or random
         Vector2 position;
