@@ -124,11 +124,14 @@ public abstract class Player : Entity
     private Unity.Cinemachine.CinemachineImpulseSource _impulseSource;
     private AudioSource[] _audioSourcePool;
     private AudioSource _beamHitLoopSource;
+    float _originalRotationSpeed;
+    bool _isAnchored = false;
 
     // ===== INITIALIZATION =====
     protected override void Awake()
     {
         base.Awake();
+        _originalRotationSpeed = movement.rotationSpeed;
 
         _lastShieldHitTime = -shieldRegen.regenDelay;
         _lastMousePosition = Mouse.current.position.ReadValue();
@@ -249,7 +252,10 @@ public abstract class Player : Entity
                 }
             }
         }
-
+        if (_isAnchored)
+        {
+            _rb.linearDamping += .1f;
+        }
         ClampVelocity();
     }
 
@@ -337,6 +343,26 @@ public abstract class Player : Entity
         float currentAngle = transform.eulerAngles.z;
         float newAngle = Mathf.MoveTowardsAngle(currentAngle, targetAngle + ROTATION_OFFSET, movement.rotationSpeed * Time.deltaTime);
         transform.rotation = Quaternion.Euler(0, 0, newAngle);
+    }
+
+    // Anchor
+    void OnAnchor(InputValue value)
+    {
+        if (value.isPressed)
+        {
+            thrusters.invertColors = true;
+            Debug.Log("Anchor Activated: Rotate " + movement.rotationSpeed);
+            movement.rotationSpeed *= 3;
+            _isAnchored = true;
+        }
+        else
+        {
+            thrusters.invertColors = false;
+            _isAnchored = false;
+            _rb.linearDamping = 0f;
+            movement.rotationSpeed = _originalRotationSpeed;
+            Debug.Log("Anchor Deactivated: Rotate " + _originalRotationSpeed);
+        }
     }
 
     // ===== COMBAT =====
