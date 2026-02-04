@@ -122,4 +122,9 @@ public class Class3 : Player
     {
         base.Die();
     }
+
+    protected override Vector3 GetFireDirection(Transform turret)
+    {
+        return turret.up;
+    }
 }
