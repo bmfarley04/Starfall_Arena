@@ -168,30 +168,30 @@ public class ProjectileScript : MonoBehaviour
         }
         // Check for asteroid collision
         // TODO: Re-enable when AsteroidScript is implemented
-        // else if (collider.CompareTag("Asteroid"))
-        // {
-        //     var asteroid = collider.GetComponent<AsteroidScript>();
-        //     if (asteroid != null)
-        //     {
-        //         asteroid.TakeDamage(_damage, _impactForce, transform.position);
-        //     }
-        //
-        //     if (_visualController != null)
-        //     {
-        //         _visualController.OnProjectileImpact(transform.position, _direction);
-        //     }
-        //
-        //     // If piercing is enabled, reduce damage and continue; otherwise destroy
-        //     if (_canPierce && _pierceMultiplier > 0)
-        //     {
-        //         _damage *= _pierceMultiplier;
-        //         // Continue traveling through the asteroid
-        //     }
-        //     else
-        //     {
-        //         Destroy(gameObject);
-        //     }
-        // }
+        else if (collider.CompareTag("Asteroid"))
+        {
+            var asteroid = collider.GetComponent<AsteroidScript>();
+            if (asteroid != null)
+            {
+                asteroid.TakeDamage(_damage, _impactForce, transform.position);
+            }
+
+            if (_visualController != null)
+            {
+                _visualController.OnProjectileImpact(transform.position, _direction);
+            }
+
+            // If piercing is enabled, reduce damage and continue; otherwise destroy
+            if (_canPierce && _pierceMultiplier > 0)
+            {
+                _damage *= _pierceMultiplier;
+                // Continue traveling through the asteroid
+            }
+            else
+            {
+                Destroy(gameObject);
+            }
+        }
     }
 
     private void ApplyImpactForce(Collider2D collider)
