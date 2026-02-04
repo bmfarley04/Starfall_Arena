@@ -268,9 +268,9 @@ MonoBehaviour:
   TargetOffset: {x: 0, y: 0, z: 0}
   Damping: {x: 2, y: 2, z: 1}
   Lookahead:
-    Enabled: 0
-    Time: 0
-    Smoothing: 0
+    Enabled: 1
+    Time: 0.3
+    Smoothing: 10
     IgnoreY: 0
 --- !u!114 &773417013
 MonoBehaviour:
@@ -2080,9 +2080,9 @@ MonoBehaviour:
   TargetOffset: {x: 0, y: 0, z: 0}
   Damping: {x: 2, y: 2, z: 1}
   Lookahead:
-    Enabled: 0
-    Time: 0
-    Smoothing: 0
+    Enabled: 1
+    Time: 0.3
+    Smoothing: 10
     IgnoreY: 0
 --- !u!114 &1997948848
 MonoBehaviour:
