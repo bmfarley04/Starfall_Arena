@@ -356,7 +356,7 @@ public abstract class Player : Entity
             {
                 projectileScript.targetTag = "Enemy";
                 projectileScript.Initialize(
-                    transform.up,
+                    turret.up,
                     Vector2.zero,
                     projectileWeapon.speed,
                     projectileWeapon.damage,
