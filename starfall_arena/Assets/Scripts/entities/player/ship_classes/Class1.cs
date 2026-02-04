@@ -279,11 +279,6 @@ public struct AbilitiesConfig
 
 public class Class1 : Player
 {
-    // ===== PRIMARY WEAPON =====
-    [Header("Primary Weapon Settings")]
-    [Tooltip("Cooldown between normal fire shots (seconds)")]
-    public new float fireCooldown = 0.5f;
-
     // ===== ABILITIES =====
     [Header("Abilities")]
     public AbilitiesConfig abilities;
