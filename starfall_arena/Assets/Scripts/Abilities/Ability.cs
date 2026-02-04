@@ -40,7 +40,7 @@ public class Ability : MonoBehaviour
     {
         if (Time.time < lastUsedAbility + stats.cooldown)
         {
-            Debug.Log($"Reflect on cooldown: {(lastUsedAbility + stats.cooldown - Time.time):F1}s remaining");
+            Debug.Log($"Ability on cooldown: {(lastUsedAbility + stats.cooldown - Time.time):F1}s remaining");
             return false;
         }
         return true;
