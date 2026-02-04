@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections;
 
 public class AsteroidScript : MonoBehaviour
 {
@@ -36,6 +37,8 @@ public class AsteroidScript : MonoBehaviour
     public float collisionImpactForce = 10f;
     [Tooltip("Cooldown in seconds between damage instances from the same asteroid")]
     public float collisionCooldown = 1.0f;
+    [Tooltip("Duration over which knockback is applied (helps overcome player movement resistance)")]
+    public float knockbackDuration = 0.15f;
     [Tooltip("Sound played when asteroid impacts and damages a player")]
     public AudioClip impactSound;
     [Range(0f, 3f)]
@@ -183,13 +186,15 @@ public class AsteroidScript : MonoBehaviour
             Vector2 knockbackDirection = ((Vector2)player.transform.position - (Vector2)collisionPoint).normalized;
 
             // Scale knockback by velocity for more dynamic impacts
-            float knockbackMagnitude = collisionImpactForce * velocity;
+            // Divide by mass to get velocity change (impulse = mass * velocity change)
+            float knockbackSpeed = (collisionImpactForce * velocity) / playerRb.mass;
 
-            // Apply impulse force
-            playerRb.AddForce(knockbackDirection * knockbackMagnitude, ForceMode2D.Impulse);
+            // Start coroutine on the PLAYER object so it survives if asteroid is destroyed
+            // Apply knockback over multiple frames to overcome player movement resistance
+            player.StartCoroutine(ApplyKnockbackOverTime(playerRb, knockbackDirection, knockbackSpeed, knockbackDuration, debugCollisionDamage));
 
             if (debugCollisionDamage)
-                Debug.Log($"[Asteroid] Applied knockback: Direction={knockbackDirection}, Magnitude={knockbackMagnitude:F1}");
+                Debug.Log($"[Asteroid] Starting knockback coroutine: Direction={knockbackDirection}, TotalSpeed={knockbackSpeed:F1}, Duration={knockbackDuration:F2}s");
         }
 
         // Update last collision time
@@ -268,5 +273,32 @@ public class AsteroidScript : MonoBehaviour
 
         audioSource.Play();
         Object.Destroy(tempAudio, clip.length);
+    }
+
+    // Coroutine to apply knockback over multiple frames
+    // This overcomes player movement code that might reset velocity each frame
+    private static IEnumerator ApplyKnockbackOverTime(Rigidbody2D rb, Vector2 direction, float totalSpeed, float duration, bool debug)
+    {
+        if (rb == null || duration <= 0f) yield break;
+
+        float elapsed = 0f;
+        // Apply velocity additively each fixed update
+        float speedPerSecond = totalSpeed / duration;
+
+        while (elapsed < duration)
+        {
+            if (rb == null) yield break; // Player might be destroyed
+
+            rb.linearVelocity += direction * speedPerSecond * Time.fixedDeltaTime;
+            elapsed += Time.fixedDeltaTime;
+
+            if (debug && elapsed <= Time.fixedDeltaTime)
+                Debug.Log($"[Asteroid Knockback] Frame velocity add: {direction * speedPerSecond * Time.fixedDeltaTime}, Current velocity: {rb.linearVelocity}");
+
+            yield return new WaitForFixedUpdate();
+        }
+
+        if (debug)
+            Debug.Log($"[Asteroid Knockback] Complete. Final velocity: {rb?.linearVelocity}");
     }
 }
