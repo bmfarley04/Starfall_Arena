@@ -124,14 +124,31 @@ public abstract class Player : Entity
     private Unity.Cinemachine.CinemachineImpulseSource _impulseSource;
     private AudioSource[] _audioSourcePool;
     private AudioSource _beamHitLoopSource;
-    float _originalRotationSpeed;
-    bool _isAnchored = false;
+    private float _originalRotationSpeed;
+    private bool _isAnchored = false;
+    private string thisPlayerTag;
+    private string enemyTag;
 
     // ===== INITIALIZATION =====
     protected override void Awake()
     {
         base.Awake();
         _originalRotationSpeed = movement.rotationSpeed;
+        if(gameObject.CompareTag("Player1"))
+        {
+            thisPlayerTag = "Player1";
+            enemyTag = "Player2";
+        }
+        else if (gameObject.CompareTag("Player2"))
+        {
+            thisPlayerTag = "Player2";
+            enemyTag = "Player1";
+        }
+        else
+        {
+            thisPlayerTag = "Player";
+            enemyTag = "Enemy";
+        }
 
         _lastShieldHitTime = -shieldRegen.regenDelay;
         _lastMousePosition = Mouse.current.position.ReadValue();
@@ -380,7 +397,7 @@ public abstract class Player : Entity
 
             if (projectile.TryGetComponent<ProjectileScript>(out var projectileScript))
             {
-                projectileScript.targetTag = "Enemy";
+                projectileScript.targetTag = enemyTag;
                 projectileScript.Initialize(
                     transform.up,
                     Vector2.zero,
