@@ -149,7 +149,7 @@ MonoBehaviour:
   enableCollisionDamage: 1
   minimumVelocityThreshold: 18
   damagePerVelocity: 1
-  collisionImpactForce: 25
+  collisionImpactForce: 50
   collisionCooldown: 2
   debugCollisionDamage: 0
 --- !u!50 &176159384499902249

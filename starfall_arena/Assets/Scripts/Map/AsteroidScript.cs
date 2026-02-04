@@ -146,6 +146,23 @@ public class AsteroidScript : MonoBehaviour
         // Deal damage to the player
         player.TakeDamage(damage, collisionImpactForce, collisionPoint, DamageSource.Other);
 
+        // Apply knockback force to the player
+        Rigidbody2D playerRb = player.GetComponent<Rigidbody2D>();
+        if (playerRb != null)
+        {
+            // Calculate knockback direction (from asteroid to player)
+            Vector2 knockbackDirection = ((Vector2)player.transform.position - (Vector2)collisionPoint).normalized;
+
+            // Scale knockback by velocity for more dynamic impacts
+            float knockbackMagnitude = collisionImpactForce * velocity;
+
+            // Apply impulse force
+            playerRb.AddForce(knockbackDirection * knockbackMagnitude, ForceMode2D.Impulse);
+
+            if (debugCollisionDamage)
+                Debug.Log($"[Asteroid] Applied knockback: Direction={knockbackDirection}, Magnitude={knockbackMagnitude:F1}");
+        }
+
         // Update last collision time
         _lastCollisionTime = Time.time;
     }
