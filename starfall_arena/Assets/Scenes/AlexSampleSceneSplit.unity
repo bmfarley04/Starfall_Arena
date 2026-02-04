@@ -119,6 +119,87 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
+--- !u!1 &87102318
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 87102320}
+  - component: {fileID: 87102319}
+  m_Layer: 0
+  m_Name: MapManager3
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 0
+--- !u!114 &87102319
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 87102318}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b2c308072ea1af54fa7cc41148419955, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MapManagerScript
+  pattern: 1
+  asteroidCount: 30
+  useSeed: 1
+  seed: 123456
+  prefabs:
+    prefab1: {fileID: 281602037788047727, guid: 89e47e3dfd1c4ca4db8281832c513da1, type: 3}
+    prefab2: {fileID: 8918075630754091426, guid: 35b3f4e24d9bbad42a751bcddc6dbd8d, type: 3}
+    prefab1Chance: 0.6
+  scattered:
+    size: {x: 200, y: 150}
+    center: {x: 0, y: 0}
+  clustered:
+    area:
+      size: {x: 200, y: 150}
+      center: {x: 0, y: 0}
+    clusterCount: 5
+    clusterRadius: 40
+    minSpacing: 8
+  falling:
+    area:
+      size: {x: 200, y: 150}
+      center: {x: 0, y: 0}
+    spawnMargin: 15
+    velocityRange: {x: 20, y: 40}
+    driftRange: {x: -1, y: 1}
+    maxAngularVelocity: 90
+    spawnDelay: 0.8
+    recycle: 1
+  variation:
+    positionJitter: 0.2
+    scaleMin: {x: 0.5, y: 0.5}
+    scaleMax: {x: 1.2, y: 1.2}
+    rotationRange: 180
+    uniformScale: 1
+  animation:
+    growDuration: 0.5
+    shrinkDuration: 0.3
+--- !u!4 &87102320
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 87102318}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -6.9776, y: -5.06356, z: -10}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &561246495
 GameObject:
   m_ObjectHideFlags: 0
@@ -426,7 +507,7 @@ GameObject:
   - component: {fileID: 1478112842}
   - component: {fileID: 1478112841}
   m_Layer: 0
-  m_Name: MapManager3
+  m_Name: MapManager4
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -445,7 +526,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MapManagerScript
   pattern: 2
-  asteroidCount: 50
+  asteroidCount: 30
   useSeed: 1
   seed: 12345
   prefabs:
@@ -474,8 +555,8 @@ MonoBehaviour:
     recycle: 1
   variation:
     positionJitter: 0.2
-    scaleMin: {x: 0.8, y: 0.8}
-    scaleMax: {x: 0.8, y: 0.8}
+    scaleMin: {x: 0.4, y: 0.4}
+    scaleMax: {x: 0.6, y: 0.6}
     rotationRange: 180
     uniformScale: 1
   animation:
@@ -1690,4 +1771,5 @@ SceneRoots:
   - {fileID: 1597838755}
   - {fileID: 1934339509}
   - {fileID: 561246497}
+  - {fileID: 87102320}
   - {fileID: 1478112842}
