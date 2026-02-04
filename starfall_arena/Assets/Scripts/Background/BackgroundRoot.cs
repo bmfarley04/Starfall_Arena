@@ -5,13 +5,12 @@ using UnityEngine;
 public class BackgroundRoot : MonoBehaviour
 {
     public Camera connectedCamera;
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
+    void Awake()
     {
         List<ParallaxLayer> layers = new List<ParallaxLayer>(GetComponentsInChildren<ParallaxLayer>());
         foreach (ParallaxLayer layer in layers)
         {
-            if (layer.GetMainCamera() == null)
+            if (connectedCamera != null)
             {
                 layer.SetMainCamera(connectedCamera);
             }
