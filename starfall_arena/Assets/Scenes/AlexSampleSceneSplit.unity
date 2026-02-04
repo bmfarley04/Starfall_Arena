@@ -548,7 +548,7 @@ MonoBehaviour:
       size: {x: 200, y: 150}
       center: {x: 0, y: 0}
     spawnMargin: 15
-    velocityRange: {x: 20, y: 25}
+    velocityRange: {x: 15, y: 15}
     driftRange: {x: -1, y: 1}
     maxAngularVelocity: 90
     spawnDelay: 1

@@ -147,8 +147,8 @@ MonoBehaviour:
   explosionSound: {fileID: 8300000, guid: bd3ea9f6174113c42b0317e541791dee, type: 3}
   explosionVolume: 1
   enableCollisionDamage: 1
-  minimumVelocityThreshold: 18
-  damagePerVelocity: 1
+  minimumVelocityThreshold: 14
+  damagePerVelocity: 2
   collisionImpactForce: 200
   collisionCooldown: 2
   knockbackDuration: 0.15
