@@ -3,6 +3,7 @@ using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 using System.Collections.Generic;
+using System;
 
 [System.Serializable]
 public struct ShieldRegenConfig
@@ -67,7 +68,8 @@ public struct ScreenShakeConfig
 public abstract class Player : Entity
 {
     // ===== AUGMENTS =====
-    public List<Augment> augments = new List<Augment>();
+    [Header("Augments")]
+    public List<Type> augments = new List<Type>();
 
     // ===== DAMAGE MULTIPLIER SYSTEM =====
     [Header("Damage Multiplier System")]
@@ -455,6 +457,22 @@ public abstract class Player : Entity
             _rb.linearDamping = 0f;
             movement.rotationSpeed = _originalRotationSpeed;
             Debug.Log("Anchor Deactivated: Rotate " + _originalRotationSpeed);
+        }
+    }
+
+    // ===== AUGMENTS =====
+    public void SetAugment()
+    {
+        foreach (var augmentType in augments)
+        {
+            if (!augmentType.IsSubclassOf(typeof(Augment)))
+            {
+                Debug.LogWarning($"[Augment] Type {augmentType.Name} is not a subclass of Augment. Skipping.");
+                continue;
+            }
+            Augment augmentInstance = (Augment)gameObject.AddComponent(augmentType);
+            augmentInstance.AcquireAugment();
+            Debug.Log($"[Augment] Added augment: {augmentType.Name}");
         }
     }
 

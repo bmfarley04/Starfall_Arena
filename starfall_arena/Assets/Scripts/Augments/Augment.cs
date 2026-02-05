@@ -19,16 +19,16 @@ public class Augment : MonoBehaviour
         public int rounds;
     }
     public AugmentSettings augmentSettings;
+    public GameObject augmentedObject;
 
-    protected Component augmentComponent;
     protected int roundAcquired = 0;
     protected LayerMask originalLayer;
     protected LayerMask thisPlayerLayer;
     protected Player player;
     protected virtual void Awake()
     {
-        originalLayer = gameObject.layer;
-        player = gameObject.GetComponent<Player>();
+        originalLayer = augmentedObject.layer;
+        player = augmentedObject.GetComponent<Player>();
     }
 
     protected virtual void FixedUpdate()
@@ -36,24 +36,14 @@ public class Augment : MonoBehaviour
 
     }
 
-    public void AcquireAugment(int roundAcquired, Component augment)
+    public void AcquireAugment(int roundAcquired)
     {
         this.roundAcquired = roundAcquired;
-
-        // Add the component type to the gameObject if it's not already present
-        if (augment != null)
-        {
-            Type componentType = augment.GetType();
-            if (gameObject.GetComponent(componentType) == null)
-            {
-                augmentComponent = gameObject.AddComponent(componentType);
-            }
-        }
     }
 
     public void AcquireAugment()
     {
-        this.AcquireAugment(0, this);
+        AcquireAugment(0);
     }
 
     public bool AugmentActivated(int roundAcquired, int currentRound)

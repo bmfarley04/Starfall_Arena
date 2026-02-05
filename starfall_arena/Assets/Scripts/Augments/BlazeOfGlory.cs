@@ -2,9 +2,9 @@ using UnityEngine;
 
 public class BlazeOfGlory : Augment
 {
+    public GameObject bogEffect;
     private const string DAMAGE_MULTIPLIER_SOURCE = "BlazeOfGlory";
     private bool _isActive = false;
-
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     protected override void Awake()
     {
@@ -24,7 +24,7 @@ public class BlazeOfGlory : Augment
             if (AugmentActivated(true))
             {
                 bool shouldBeActive = player.CurrentHealth / player.maxHealth < 0.15f;
-                
+                bogEffect.SetActive(shouldBeActive);
                 // Only update if state changed (avoids spamming logs)
                 if (shouldBeActive && !_isActive)
                 {
