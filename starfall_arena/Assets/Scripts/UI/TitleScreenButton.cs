@@ -29,6 +29,11 @@ public class TitleScreenButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
 
         [Tooltip("Fade-out duration for all hover elements in seconds")]
         public float fadeOutDuration;
+
+        [Header("Alpha Values")]
+        [Tooltip("Target alpha for hover elements when visible (0-1)")]
+        [Range(0f, 1f)]
+        public float targetHoverAlpha;
     }
 
     [System.Serializable]
@@ -67,6 +72,7 @@ public class TitleScreenButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
     private CanvasGroup _parentCanvasGroup;
     private Coroutine[] _circleCoroutines;
     private Coroutine _overlayCoroutine;
+    private bool _isInitialSelection = true;
 
     private void Awake()
     {
@@ -142,10 +148,13 @@ public class TitleScreenButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
 
     private void ShowHover()
     {
-        if (sounds.hoverSound != null)
+        // Don't play sound on initial auto-selection, only on actual user interaction
+        if (!_isInitialSelection && sounds.hoverSound != null)
             sounds.hoverSound.Play(_audioSource);
 
-        FadeHoverElements(1f, hoverEffects.circleFadeInDuration, hoverEffects.overlayFadeInDuration);
+        _isInitialSelection = false;
+
+        FadeHoverElements(hoverEffects.targetHoverAlpha, hoverEffects.circleFadeInDuration, hoverEffects.overlayFadeInDuration);
     }
 
     private void HideHover()
@@ -234,6 +243,7 @@ public class TitleScreenButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
         hoverEffects.circleFadeInDuration = 0.2f;
         hoverEffects.overlayFadeInDuration = 0.1f;
         hoverEffects.fadeOutDuration = 0.15f;
+        hoverEffects.targetHoverAlpha = 1f;
         click.sceneLoadDelay = 0.15f;
     }
 }
