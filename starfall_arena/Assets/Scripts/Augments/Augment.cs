@@ -1,5 +1,4 @@
 using System;
-using Unity.VisualScripting;
 using UnityEngine;
 
 public class Augment : MonoBehaviour
@@ -7,6 +6,8 @@ public class Augment : MonoBehaviour
     [System.Serializable]
     public struct AugmentInfo
     {
+        [Tooltip("Unique identifier for the augment. Should be the name of the class.")]
+        public string augmentID; // Unique identifier for the augment. Should be the name of the class.
         public string augmentName;
         public string description;
     }
@@ -19,7 +20,6 @@ public class Augment : MonoBehaviour
         public int rounds;
     }
     public AugmentSettings augmentSettings;
-    public GameObject augmentedObject;
 
     protected int roundAcquired = 0;
     protected LayerMask originalLayer;
@@ -27,8 +27,8 @@ public class Augment : MonoBehaviour
     protected Player player;
     protected virtual void Awake()
     {
-        originalLayer = augmentedObject.layer;
-        player = augmentedObject.GetComponent<Player>();
+        originalLayer = gameObject.layer;
+        player = gameObject.GetComponent<Player>();
     }
 
     protected virtual void FixedUpdate()

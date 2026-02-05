@@ -3,16 +3,17 @@ using UnityEngine;
 public class BlazeOfGlory : Augment
 {
     public GameObject bogEffect;
-    private const string DAMAGE_MULTIPLIER_SOURCE = "BlazeOfGlory";
-    private bool _isActive = false;
+    public float damageMultiplier = 1.5f;
+    public float healthThreshold = 0.25f;
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     protected override void Awake()
     {
         base.Awake();
         augmentInfo = new AugmentInfo
         {
+            augmentID = "BlazeOfGlory",
             augmentName = "Blaze of Glory",
-            description = "Deal 50% more damage when below 15% health."
+            description = "Deal 50% more damage when below 25% health."
         };
     }
 
@@ -21,27 +22,25 @@ public class BlazeOfGlory : Augment
         base.FixedUpdate();
         if (player != null)
         {
-            if (AugmentActivated(true))
+            if (AugmentActivated(true)) // Always active augment. Could be changed to round-based if desired, here for consistency among augments.
             {
-                bool shouldBeActive = player.CurrentHealth / player.maxHealth < 0.15f;
-                bogEffect.SetActive(shouldBeActive);
+                Debug.Log("Blaze of Glory FixedUpdate: Checking health status.");
+                bool shouldBeActive = player.CurrentHealth / player.maxHealth < healthThreshold;
+                if (bogEffect != null)
+                {
+                    bogEffect.SetActive(shouldBeActive);
+                }
                 // Only update if state changed (avoids spamming logs)
-                if (shouldBeActive && !_isActive)
+                if (shouldBeActive && !player.damageMultipliers.ContainsKey(augmentInfo.augmentID))
                 {
-                    player.AddDamageMultiplier(DAMAGE_MULTIPLIER_SOURCE, 1.5f);
-                    _isActive = true;
+                    player.damageMultipliers.Add(augmentInfo.augmentID, damageMultiplier);
+                    Debug.Log("Blaze of Glory activated: Damage increased.");
                 }
-                else if (!shouldBeActive && _isActive)
+                else if (!shouldBeActive && player.damageMultipliers.ContainsKey(augmentInfo.augmentID))
                 {
-                    player.RemoveDamageMultiplier(DAMAGE_MULTIPLIER_SOURCE);
-                    _isActive = false;
+                    player.damageMultipliers.Remove(augmentInfo.augmentID);
+                    Debug.Log("Blaze of Glory deactivated: Damage returned to normal.");
                 }
-            }
-            else if (_isActive)
-            {
-                // Augment was deactivated, remove bonus
-                player.RemoveDamageMultiplier(DAMAGE_MULTIPLIER_SOURCE);
-                _isActive = false;
             }
         }
     }

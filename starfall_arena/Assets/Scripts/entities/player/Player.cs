@@ -69,79 +69,12 @@ public abstract class Player : Entity
 {
     // ===== AUGMENTS =====
     [Header("Augments")]
-    public List<Type> augments = new List<Type>();
+    public List<string> augmentIDs = new List<string>();
+    public List<Type> augments = new List<Type>(); // Unfortunately, Unity doesn't show "Types" in editor directly. So add a list of strings to the inspector and convert them to Types in Awake.
 
-    // ===== DAMAGE MULTIPLIER SYSTEM =====
-    [Header("Damage Multiplier System")]
-    [Tooltip("Tracks all active damage multiplier sources. Multipliers are added together (1.5 + 2.0 = 3.5x total).")]
-    private Dictionary<string, float> _damageMultipliers = new Dictionary<string, float>();
-    
-    /// <summary>
-    /// Gets the total damage multiplier (sum of all sources).
-    /// Multipliers are additive: 1.5x + 2.0x = 3.5x total.
-    /// </summary>
-    public float TotalDamageMultiplier
-    {
-        get
-        {
-            if (_damageMultipliers.Count == 0)
-            {
-                return 1.0f; // No multipliers, return base 1.0x
-            }
-            float total = 0f;
-            foreach (var mult in _damageMultipliers.Values)
-            {
-                total += mult;
-            }
-            return total; // Minimum 1.0x damage
-        }
-    }
-    
-    /// <summary>
-    /// Adds a damage multiplier from a specific source (e.g., "BlazeOfGlory", "Augment_DamageBoost").
-    /// If the source already exists, it will be updated.
-    /// Multipliers stack additively: 1.5x + 2.0x = 3.5x total damage.
-    /// Example: AddDamageMultiplier("BlazeOfGlory", 1.5f) adds 1.5x to total.
-    /// </summary>
-    public void AddDamageMultiplier(string source, float multiplier)
-    {
-        if (string.IsNullOrEmpty(source))
-        {
-            Debug.LogWarning("Cannot add damage multiplier with null or empty source name.");
-            return;
-        }
-        
-        _damageMultipliers[source] = multiplier;
-        Debug.Log($"[DamageMultiplier] Added '{source}': {multiplier}x (Total: {TotalDamageMultiplier}x)");
-    }
-    
-    /// <summary>
-    /// Removes a damage multiplier from a specific source.
-    /// </summary>
-    public void RemoveDamageMultiplier(string source)
-    {
-        if (_damageMultipliers.Remove(source))
-        {
-            Debug.Log($"[DamageMultiplier] Removed '{source}' (Total: {TotalDamageMultiplier}x)");
-        }
-    }
-    
-    /// <summary>
-    /// Checks if a specific damage multiplier source exists.
-    /// </summary>
-    public bool HasDamageMultiplier(string source)
-    {
-        return _damageMultipliers.ContainsKey(source);
-    }
-    
-    /// <summary>
-    /// Clears all damage multipliers (resets to base 1.0x).
-    /// </summary>
-    public void ClearAllDamageMultipliers()
-    {
-        _damageMultipliers.Clear();
-        Debug.Log("[DamageMultiplier] Cleared all multipliers (Total: 1.0x)");
-    }
+    // ===== AUGMENT VARIABLES =====
+    public Dictionary<string, float> damageMultipliers = new Dictionary<string, float>();
+    public float totalDamageMultiplier { get; private set; }// TODO: use this in damage calculations in all abilities 
 
     // ===== SHIELD REGENERATION =====
     [Header("Shield Regeneration")]
@@ -255,6 +188,9 @@ public abstract class Player : Entity
         }
 
         InitializeAudioSystem();
+        SetStringAugments();
+        SetTypeAugments();
+        SetAugmentVariables();
     }
 
     private void InitializeAudioSystem()
@@ -461,19 +397,62 @@ public abstract class Player : Entity
     }
 
     // ===== AUGMENTS =====
-    public void SetAugment()
+    public void SetStringAugments()
     {
-        foreach (var augmentType in augments)
+        foreach (var augmentID in augmentIDs)
         {
-            if (!augmentType.IsSubclassOf(typeof(Augment)))
+            Type augmentType = Type.GetType(augmentID);
+            Debug.Log($"[Augment] Setting augment from ID: {augmentID}, resolved Type: {augmentType}");
+            if (augmentType != null)
             {
-                Debug.LogWarning($"[Augment] Type {augmentType.Name} is not a subclass of Augment. Skipping.");
-                continue;
+                SetAugment(augmentType);
             }
-            Augment augmentInstance = (Augment)gameObject.AddComponent(augmentType);
-            augmentInstance.AcquireAugment();
-            Debug.Log($"[Augment] Added augment: {augmentType.Name}");
+            else
+            {
+                Debug.LogWarning($"[Augment] Could not find Type for augment name: {augmentID}. Skipping.");
+            }
         }
+    }
+    public void SetTypeAugments()
+    {
+        foreach (var augment in augments)
+        {
+            SetAugment(augment);
+        }
+    }
+
+    // Set damage multiplier from augment
+    void SetDamageMultiplier()
+    {
+        float total = 1.0f;
+        foreach (var mult in damageMultipliers.Values)
+        {
+            total *= mult;
+        }
+        totalDamageMultiplier = total;
+    }
+
+    public void SetAugment(Type augment)
+    {
+        // If the scriptable object is not an Augment, skip it
+        Debug.Log($"[Augment] Attempting to add augment of type: {augment.Name}");
+        if (!typeof(Augment).IsAssignableFrom(augment))
+        {
+            Debug.LogWarning($"[Augment] ScriptableObject {augment.Name} is not of type Augment. Skipping.");
+        } // if you already have the augment, skip it
+        else if (gameObject.GetComponent(augment) != null)
+        {
+            Debug.LogWarning($"[Augment] Player already has augment {augment.Name}. Skipping.");
+        } else
+        {
+            Debug.Log($"[Augment] Adding augment of type: {augment.FullName}");
+            gameObject.AddComponent(augment);
+        }
+    }
+
+    public void SetAugmentVariables()
+    {
+        SetDamageMultiplier();
     }
 
     // ===== COMBAT =====
@@ -492,7 +471,7 @@ public abstract class Player : Entity
             if (projectile.TryGetComponent<ProjectileScript>(out var projectileScript))
             {
                 // Apply damage multiplier to projectile damage
-                float finalDamage = projectileWeapon.damage * TotalDamageMultiplier;
+                float finalDamage = projectileWeapon.damage * totalDamageMultiplier;
                 
                 projectileScript.targetTag = enemyTag;
                 projectileScript.Initialize(
