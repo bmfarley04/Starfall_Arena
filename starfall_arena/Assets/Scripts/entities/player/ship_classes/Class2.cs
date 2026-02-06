@@ -38,10 +38,33 @@ public struct EmpoweredShotAbilityConfig
 }
 
 [System.Serializable]
+public struct ShieldAbilityConfig
+{
+    [Header("Timing")]
+    [Tooltip("Cooldown between uses (seconds)")]
+    public float cooldown;
+    [Tooltip("Shield active duration (seconds)")]
+    public float activeDuration;
+
+    [Header("Shield")]
+    [Tooltip("ReflectShield component (drag from Hierarchy)")]
+    public ReflectShield shield;
+
+    [Header("Sound Effects")]
+    [Tooltip("Shield duration sound (loops while active)")]
+    public SoundEffect shieldLoopSound;
+    [Tooltip("Sound when projectile hits the shield")]
+    public SoundEffect shieldHitSound;
+}
+
+[System.Serializable]
 public struct Class2AbilitiesConfig
 {
     [Header("Ability 1 - Empowered Shot")]
     public EmpoweredShotAbilityConfig empoweredShot;
+
+    [Header("Ability 2 - Shield")]
+    public ShieldAbilityConfig shield;
 }
 
 public class Class2 : Player
@@ -61,12 +84,24 @@ public class Class2 : Player
 
     // ===== PRIVATE STATE =====
     private float _lastEmpoweredShotTime = -999f;
+    private float _lastShieldTime = -999f;
+    private Coroutine _shieldCoroutine;
+    private AudioSource _shieldSource;
 
     protected override void Awake()
     {
         base.Awake();
         // Sync Inspector value to parent's protected field
         fireCooldown = _fireCooldown;
+
+        _shieldSource = gameObject.AddComponent<AudioSource>();
+        _shieldSource.playOnAwake = false;
+        _shieldSource.loop = true;
+        _shieldSource.spatialBlend = 1f;
+        _shieldSource.rolloffMode = AudioRolloffMode.Linear;
+        _shieldSource.minDistance = 10f;
+        _shieldSource.maxDistance = 50f;
+        _shieldSource.dopplerLevel = 0f;
     }
 
     protected override void Update()
@@ -185,5 +220,89 @@ public class Class2 : Player
         }
 
         Debug.Log($"Empowered Shot fired! Damage: {damage:F1}, Speed: {speed:F1}, Slow: {abilities.empoweredShot.slowMultiplier * 100}% for {abilities.empoweredShot.slowDuration}s");
+    }
+
+    // ===== SHIELD ABILITY =====
+    void OnAbility2()
+    {
+        if (Time.time < _lastShieldTime + abilities.shield.cooldown)
+        {
+            Debug.Log($"Shield on cooldown: {(_lastShieldTime + abilities.shield.cooldown - Time.time):F1}s remaining");
+            return;
+        }
+
+        if (abilities.shield.shield == null)
+        {
+            Debug.LogWarning("Shield not assigned!");
+            return;
+        }
+
+        _lastShieldTime = Time.time;
+
+        if (_shieldCoroutine != null)
+        {
+            StopCoroutine(_shieldCoroutine);
+        }
+        _shieldCoroutine = StartCoroutine(ActivateShield());
+    }
+
+    private System.Collections.IEnumerator ActivateShield()
+    {
+        abilities.shield.shield.Activate(Color.white);
+
+        if (abilities.shield.shieldLoopSound != null && _shieldSource != null)
+        {
+            abilities.shield.shieldLoopSound.Play(_shieldSource);
+        }
+
+        yield return new WaitForSeconds(abilities.shield.activeDuration);
+
+        abilities.shield.shield.Deactivate();
+
+        if (_shieldSource != null && _shieldSource.isPlaying)
+        {
+            _shieldSource.Stop();
+        }
+    }
+
+    // ===== DAMAGE OVERRIDE =====
+    public override void TakeDamage(float damage, float impactForce = 0f, Vector3 hitPoint = default, DamageSource source = DamageSource.Projectile)
+    {
+        if (abilities.shield.shield != null && abilities.shield.shield.IsActive())
+        {
+            return;
+        }
+
+        base.TakeDamage(damage, impactForce, hitPoint, source);
+    }
+
+    protected override void Die()
+    {
+        if (_shieldSource != null && _shieldSource.isPlaying)
+        {
+            _shieldSource.Stop();
+        }
+
+        base.Die();
+    }
+
+    void OnTriggerEnter2D(Collider2D collider)
+    {
+        if (abilities.shield.shield != null && abilities.shield.shield.IsActive())
+        {
+            ProjectileScript projectile = collider.GetComponent<ProjectileScript>();
+            if (projectile != null && projectile.targetTag == thisPlayerTag)
+            {
+                Vector3 hitPoint = collider.ClosestPoint(transform.position);
+                abilities.shield.shield.OnReflectHit(hitPoint);
+
+                if (abilities.shield.shieldHitSound != null)
+                {
+                    abilities.shield.shieldHitSound.Play(GetAvailableAudioSource());
+                }
+
+                Destroy(projectile.gameObject);
+            }
+        }
     }
 }

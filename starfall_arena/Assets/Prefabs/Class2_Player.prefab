@@ -16370,11 +16370,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a75776b40fdb2be439b128ee1464738f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ReflectShield
-  shieldColor: {r: 1, g: 1, b: 1, a: 1}
-  inflationAmount: 0.1
-  maxAlpha: 2
-  fadeInDuration: 0.1
-  fadeOutDuration: 0.1
+  shieldColor: {r: 0.19576955, g: 1, b: 0, a: 1}
+  inflationAmount: 0.2
+  maxAlpha: 0.6
+  fadeInDuration: 0.2
+  fadeOutDuration: 0.5
   rippleDuration: 0.5
 --- !u!1 &4719792316467568891
 GameObject:
@@ -18388,6 +18388,12 @@ MonoBehaviour:
       slowMultiplier: 0.25
       slowDuration: 2
       fireSound: {fileID: 11400000, guid: 24862794776e6b34daca8bf8af7518f7, type: 2}
+    shield:
+      cooldown: 7
+      activeDuration: 2
+      shield: {fileID: 8024714333940929033}
+      shieldLoopSound: {fileID: 0}
+      shieldHitSound: {fileID: 11400000, guid: 6a5f04ee6bc536848a1d144945dd48e8, type: 2}
   _fireCooldown: 1
   convergenceDistance: 20
 --- !u!1 &6183319790727871496
