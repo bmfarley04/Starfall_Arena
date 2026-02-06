@@ -75,6 +75,14 @@ public struct ThrusterConfig
     public bool invertColors;
 }
 
+[System.Serializable]
+public struct SlowEffectVisualConfig
+{
+    [Header("Particle Effect")]
+    [Tooltip("Particle system to play when slowed (should be a child of this entity)")]
+    public ParticleSystem slowParticleSystem;
+}
+
 [RequireComponent(typeof(Rigidbody2D))]
 public abstract class Entity : MonoBehaviour
 {
@@ -104,6 +112,10 @@ public abstract class Entity : MonoBehaviour
     [Header("Thruster Effects")]
     public ThrusterConfig thrusters;
 
+    // ===== SLOW EFFECT VISUALS =====
+    [Header("Slow Effect Visuals")]
+    public SlowEffectVisualConfig slowEffectVisuals;
+
     // ===== RUNTIME STATE - COMBAT =====
     protected float currentHealth;
     public float currentShield;  // Public so projectiles can check shield status
@@ -121,6 +133,7 @@ public abstract class Entity : MonoBehaviour
     // ===== RUNTIME STATE - SLOW EFFECT =====
     private float _slowMultiplier = 1f;
     private float _slowEndTime = 0f;
+    private bool _slowVisualsActive = false;
 
     // ===== RUNTIME STATE - VISUAL =====
     private float _previousRotationZ;
@@ -171,6 +184,7 @@ public abstract class Entity : MonoBehaviour
                 }
             }
         }
+
     }
 
     // ===== UPDATE LOOPS =====
@@ -186,6 +200,7 @@ public abstract class Entity : MonoBehaviour
     protected virtual void Update()
     {
         UpdateThrusters();
+        UpdateSlowVisuals();
     }
 
     protected virtual void LateUpdate()
@@ -430,11 +445,19 @@ public abstract class Entity : MonoBehaviour
     // ===== SLOW EFFECT SYSTEM =====
     public void ApplySlow(float slowMultiplier, float duration)
     {
+        bool wasSlowed = IsSlowed();
+
         // Only apply if this slow is stronger or refreshes duration
         if (slowMultiplier < _slowMultiplier || Time.time + duration > _slowEndTime)
         {
             _slowMultiplier = slowMultiplier;
             _slowEndTime = Time.time + duration;
+        }
+
+        // Start visuals if not already active
+        if (!wasSlowed && IsSlowed())
+        {
+            StartSlowVisuals();
         }
     }
 
@@ -451,5 +474,36 @@ public abstract class Entity : MonoBehaviour
     public bool IsSlowed()
     {
         return Time.time < _slowEndTime && _slowMultiplier < 1f;
+    }
+
+    private void StartSlowVisuals()
+    {
+        _slowVisualsActive = true;
+
+        if (slowEffectVisuals.slowParticleSystem != null)
+        {
+            slowEffectVisuals.slowParticleSystem.Play();
+        }
+    }
+
+    private void StopSlowVisuals()
+    {
+        _slowVisualsActive = false;
+
+        if (slowEffectVisuals.slowParticleSystem != null)
+        {
+            slowEffectVisuals.slowParticleSystem.Stop();
+        }
+    }
+
+    private void UpdateSlowVisuals()
+    {
+        if (slowEffectVisuals.slowParticleSystem == null) return;
+
+        // Check if slow just ended
+        if (_slowVisualsActive && !IsSlowed())
+        {
+            StopSlowVisuals();
+        }
     }
 }

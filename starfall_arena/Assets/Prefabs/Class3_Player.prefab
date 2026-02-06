@@ -236,6 +236,73 @@ Transform:
   m_Children: []
   m_Father: {fileID: 8447593613203198634}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1001 &1583529772260481141
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 8447593613203198634}
+    m_Modifications:
+    - target: {fileID: 1484346061533768113, guid: 7017a01347321c64cb59b716d41f528f, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0.00001
+      objectReference: {fileID: 0}
+    - target: {fileID: 1484346061533768113, guid: 7017a01347321c64cb59b716d41f528f, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0.00009
+      objectReference: {fileID: 0}
+    - target: {fileID: 1484346061533768113, guid: 7017a01347321c64cb59b716d41f528f, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1484346061533768113, guid: 7017a01347321c64cb59b716d41f528f, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1484346061533768113, guid: 7017a01347321c64cb59b716d41f528f, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1484346061533768113, guid: 7017a01347321c64cb59b716d41f528f, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1484346061533768113, guid: 7017a01347321c64cb59b716d41f528f, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1484346061533768113, guid: 7017a01347321c64cb59b716d41f528f, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: -90
+      objectReference: {fileID: 0}
+    - target: {fileID: 1484346061533768113, guid: 7017a01347321c64cb59b716d41f528f, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1484346061533768113, guid: 7017a01347321c64cb59b716d41f528f, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8595475238803380239, guid: 7017a01347321c64cb59b716d41f528f, type: 3}
+      propertyPath: m_Name
+      value: SlowEffect
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 7017a01347321c64cb59b716d41f528f, type: 3}
+--- !u!4 &99262883118920132 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 1484346061533768113, guid: 7017a01347321c64cb59b716d41f528f, type: 3}
+  m_PrefabInstance: {fileID: 1583529772260481141}
+  m_PrefabAsset: {fileID: 0}
+--- !u!198 &541853997494829686 stripped
+ParticleSystem:
+  m_CorrespondingSourceObject: {fileID: 1332184399140706819, guid: 7017a01347321c64cb59b716d41f528f, type: 3}
+  m_PrefabInstance: {fileID: 1583529772260481141}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &2136083934358844030
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -996,9 +1063,13 @@ PrefabInstance:
     - {fileID: 3550827916854919345, guid: dab56be66f149c34fbedb1fc28a943e6, type: 3}
     m_RemovedGameObjects:
     - {fileID: 1430474855004661297, guid: dab56be66f149c34fbedb1fc28a943e6, type: 3}
+    - {fileID: 6594958231872705545, guid: dab56be66f149c34fbedb1fc28a943e6, type: 3}
     m_AddedGameObjects:
     - targetCorrespondingSourceObject: {fileID: 1213109017606901483, guid: dab56be66f149c34fbedb1fc28a943e6, type: 3}
       insertIndex: 0
+      addedObject: {fileID: 99262883118920132}
+    - targetCorrespondingSourceObject: {fileID: 1213109017606901483, guid: dab56be66f149c34fbedb1fc28a943e6, type: 3}
+      insertIndex: 1
       addedObject: {fileID: 4287523133036908992}
     - targetCorrespondingSourceObject: {fileID: 1213109017606901483, guid: dab56be66f149c34fbedb1fc28a943e6, type: 3}
       insertIndex: -1
@@ -1073,6 +1144,8 @@ MonoBehaviour:
     - {fileID: 5230714889375272226}
     rampTime: 0
     invertColors: 0
+  slowEffectVisuals:
+    slowParticleSystem: {fileID: 541853997494829686}
   currentShield: 0
   shieldRegen:
     regenDelay: 0
@@ -1099,6 +1172,7 @@ MonoBehaviour:
   shieldDamageSound: {fileID: 0}
   hullDamageSound: {fileID: 0}
   beamHitLoopSound: {fileID: 0}
+  explosionSound: {fileID: 0}
   audioSourcePoolSize: 10
   fireCooldown: 0.15
   abilities:
