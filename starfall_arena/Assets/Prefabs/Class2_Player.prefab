@@ -17752,6 +17752,18 @@ MonoBehaviour:
   beamHitLoopSound: {fileID: 11400000, guid: c2635de459d5fd44594ecb3e303fa4b5, type: 2}
   explosionSound: {fileID: 11400000, guid: 52e8c58e387b89849affa74c78d6d899, type: 2}
   audioSourcePoolSize: 10
+  abilities:
+    empoweredShot:
+      cooldown: 3
+      projectilePrefab: {fileID: 7408310672554650858, guid: b70f92a21ddd6224ca6109894d3ea756, type: 3}
+      damageMultiplier: 1.2
+      speedMultiplier: 1.5
+      impactMultiplier: 1
+      recoilMultiplier: 1
+      lifetime: 2
+      slowMultiplier: 0.25
+      slowDuration: 2
+      fireSound: {fileID: 11400000, guid: 24862794776e6b34daca8bf8af7518f7, type: 2}
   _fireCooldown: 1
   convergenceDistance: 20
 --- !u!1 &6183319790727871496

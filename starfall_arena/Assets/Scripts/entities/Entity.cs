@@ -118,6 +118,10 @@ public abstract class Entity : MonoBehaviour
     private Vector2 _recentImpulse = Vector2.zero;
     private float _impulseDecayRate = 5f;
 
+    // ===== RUNTIME STATE - SLOW EFFECT =====
+    private float _slowMultiplier = 1f;
+    private float _slowEndTime = 0f;
+
     // ===== RUNTIME STATE - VISUAL =====
     private float _previousRotationZ;
     private float _currentBankAngle;
@@ -421,5 +425,31 @@ public abstract class Entity : MonoBehaviour
 
     protected virtual void OnShieldChanged()
     {
+    }
+
+    // ===== SLOW EFFECT SYSTEM =====
+    public void ApplySlow(float slowMultiplier, float duration)
+    {
+        // Only apply if this slow is stronger or refreshes duration
+        if (slowMultiplier < _slowMultiplier || Time.time + duration > _slowEndTime)
+        {
+            _slowMultiplier = slowMultiplier;
+            _slowEndTime = Time.time + duration;
+        }
+    }
+
+    public float GetSlowMultiplier()
+    {
+        if (Time.time >= _slowEndTime)
+        {
+            _slowMultiplier = 1f;
+            return 1f;
+        }
+        return _slowMultiplier;
+    }
+
+    public bool IsSlowed()
+    {
+        return Time.time < _slowEndTime && _slowMultiplier < 1f;
     }
 }

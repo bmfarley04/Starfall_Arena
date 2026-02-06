@@ -22,6 +22,11 @@ public class ProjectileScript : MonoBehaviour
     // Reflection tracking
     private bool _isReflected = false;
 
+    // Slow effect
+    private bool _appliesSlow = false;
+    private float _slowMultiplier = 1f;
+    private float _slowDuration = 0f;
+
     void Awake()
     {
         _rb = GetComponent<Rigidbody2D>();
@@ -108,6 +113,13 @@ public class ProjectileScript : MonoBehaviour
         _pierceMultiplier = damageMultiplierPerHit;
     }
 
+    public void EnableSlow(float slowMultiplier, float slowDuration)
+    {
+        _appliesSlow = true;
+        _slowMultiplier = slowMultiplier;
+        _slowDuration = slowDuration;
+    }
+
     public void ApplyDamageMultiplier(float multiplier)
     {
         _damage *= multiplier;
@@ -148,6 +160,12 @@ public class ProjectileScript : MonoBehaviour
                 // Deal damage to the entity
                 damageable.TakeDamage(_damage, _impactForce, transform.position);
                 ApplyImpactForce(collider);
+
+                // Apply slow effect if enabled
+                if (_appliesSlow)
+                {
+                    damageable.ApplySlow(_slowMultiplier, _slowDuration);
+                }
 
                 if (_visualController != null)
                 {

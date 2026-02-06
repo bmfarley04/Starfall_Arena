@@ -244,12 +244,13 @@ public abstract class Player : Entity
         base.FixedUpdate();
 
         bool movePressed = _moveAction != null && _moveAction.IsPressed();
+        float slowMult = GetSlowMultiplier();
 
         if (movePressed)
         {
             _isThrusting = true;
             Vector2 thrustDirection = transform.up;
-            _rb.AddForce(thrustDirection * movement.thrustForce);
+            _rb.AddForce(thrustDirection * movement.thrustForce * slowMult);
             ApplyLateralDamping();
             _frictionTimer = 0f;
         }
@@ -275,7 +276,13 @@ public abstract class Player : Entity
         {
             _rb.linearDamping += .1f;
         }
-        ClampVelocity();
+
+        // Apply slow to max speed
+        float effectiveMaxSpeed = movement.maxSpeed * slowMult;
+        if (_rb.linearVelocity.magnitude > effectiveMaxSpeed)
+        {
+            _rb.linearVelocity = _rb.linearVelocity.normalized * effectiveMaxSpeed;
+        }
     }
 
     // ===== MOVEMENT =====
