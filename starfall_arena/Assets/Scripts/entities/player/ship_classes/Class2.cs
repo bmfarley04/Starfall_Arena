@@ -49,6 +49,8 @@ public struct ShieldAbilityConfig
     [Header("Shield")]
     [Tooltip("ReflectShield component (drag from Hierarchy)")]
     public ReflectShield shield;
+    [Tooltip("Color of the shield when active")]
+    public Color shieldColor;
 
     [Header("Sound Effects")]
     [Tooltip("Shield duration sound (loops while active)")]
@@ -60,10 +62,10 @@ public struct ShieldAbilityConfig
 [System.Serializable]
 public struct Class2AbilitiesConfig
 {
-    [Header("Ability 1 - Empowered Shot")]
+    [Header("Ability 3 - Empowered Shot")]
     public EmpoweredShotAbilityConfig empoweredShot;
 
-    [Header("Ability 2 - Shield")]
+    [Header("Ability 4 - Shield")]
     public ShieldAbilityConfig shield;
 }
 
@@ -155,7 +157,7 @@ public class Class2 : Player
     }
 
     // ===== ABILITY INPUT CALLBACKS =====
-    void OnAbility1()
+    void OnAbility3()
     {
         if (Time.time < _lastEmpoweredShotTime + abilities.empoweredShot.cooldown)
         {
@@ -223,7 +225,7 @@ public class Class2 : Player
     }
 
     // ===== SHIELD ABILITY =====
-    void OnAbility2()
+    void OnAbility4()
     {
         if (Time.time < _lastShieldTime + abilities.shield.cooldown)
         {
@@ -248,7 +250,7 @@ public class Class2 : Player
 
     private System.Collections.IEnumerator ActivateShield()
     {
-        abilities.shield.shield.Activate(Color.white);
+        abilities.shield.shield.Activate(abilities.shield.shieldColor);
 
         if (abilities.shield.shieldLoopSound != null && _shieldSource != null)
         {

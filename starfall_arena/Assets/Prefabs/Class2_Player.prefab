@@ -18392,6 +18392,7 @@ MonoBehaviour:
       cooldown: 7
       activeDuration: 2
       shield: {fileID: 8024714333940929033}
+      shieldColor: {r: 0.31764707, g: 0.8235294, b: 0.1254902, a: 0}
       shieldLoopSound: {fileID: 0}
       shieldHitSound: {fileID: 11400000, guid: 6a5f04ee6bc536848a1d144945dd48e8, type: 2}
   _fireCooldown: 1
