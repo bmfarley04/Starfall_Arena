@@ -64,6 +64,15 @@ public class TitleScreenManager : MonoBehaviour
     [Tooltip("First selected button on the controls screen (for controller navigation)")]
     [SerializeField] private GameObject controlsFirstSelected;
 
+    [Tooltip("Ship select screen canvas")]
+    [SerializeField] private CanvasGroup shipSelectCanvas;
+
+    [Tooltip("Ship select manager (controls ship selection logic)")]
+    [SerializeField] private ShipSelectManager shipSelectManager;
+
+    [Tooltip("First selected button on the ship select screen (for controller navigation)")]
+    [SerializeField] private GameObject shipSelectFirstSelected;
+
     [Header("Intro: Scene Fade In")]
     [SerializeField] private SceneFadeConfig sceneFade;
 
@@ -84,6 +93,7 @@ public class TitleScreenManager : MonoBehaviour
         // Hide all canvases at start
         SetCanvasHidden(mainMenuCanvas);
         SetCanvasHidden(controlsCanvas);
+        SetCanvasHidden(shipSelectCanvas);
 
         // Phase 1: Scene fades from black
         yield return new WaitForSecondsRealtime(sceneFade.delay);
@@ -158,6 +168,20 @@ public class TitleScreenManager : MonoBehaviour
             RunTransition(controlsCanvas, mainMenuCanvas, mainMenuFirstSelected));
     }
 
+    public void TransitionToShipSelect()
+    {
+        if (_activeTransition != null) return;
+        _activeTransition = StartCoroutine(
+            RunTransition(mainMenuCanvas, shipSelectCanvas, shipSelectFirstSelected));
+    }
+
+    public void TransitionToMainMenuFromShipSelect()
+    {
+        if (_activeTransition != null) return;
+        _activeTransition = StartCoroutine(
+            RunTransition(shipSelectCanvas, mainMenuCanvas, mainMenuFirstSelected));
+    }
+
     private IEnumerator RunTransition(CanvasGroup from, CanvasGroup to, GameObject selectAfter)
     {
         // Clear selection BEFORE disabling interactable so OnDeselect/HideHover runs
@@ -167,6 +191,21 @@ public class TitleScreenManager : MonoBehaviour
         from.blocksRaycasts = false;
         to.interactable = false;
         to.blocksRaycasts = false;
+
+        // Disable ShipSelectManager when leaving ship select screen
+        if (from == shipSelectCanvas && shipSelectManager != null)
+        {
+            shipSelectManager.enabled = false;
+        }
+
+        // PRELOAD: Load ship data EARLY (before transition) for seamless experience
+        if (to == shipSelectCanvas && shipSelectManager != null)
+        {
+            shipSelectManager.gameObject.SetActive(true);
+            shipSelectManager.enabled = true;
+            shipSelectManager.PreloadShipData();
+            shipSelectManager.enabled = false; // Disable until transition completes
+        }
 
         RectTransform fromRect = (RectTransform)from.transform;
         RectTransform toRect = (RectTransform)to.transform;
@@ -216,6 +255,16 @@ public class TitleScreenManager : MonoBehaviour
         to.blocksRaycasts = true;
 
         _activeCanvas = to;
+
+        // Enable ShipSelectManager when entering ship select screen (AFTER setting active canvas)
+        if (to == shipSelectCanvas && shipSelectManager != null)
+        {
+            // Ensure GameObject is active
+            shipSelectManager.gameObject.SetActive(true);
+            // Enable component
+            shipSelectManager.enabled = true;
+        }
+
         RefreshSelection(selectAfter);
         _activeTransition = null;
     }
@@ -234,7 +283,13 @@ public class TitleScreenManager : MonoBehaviour
             cancelPressed = Keyboard.current.escapeKey.wasPressedThisFrame;
 
         if (cancelPressed)
-            TransitionToMainMenu();
+        {
+            // Return to main menu from different screens
+            if (_activeCanvas == shipSelectCanvas)
+                TransitionToMainMenuFromShipSelect();
+            else
+                TransitionToMainMenu();
+        }
     }
 
     private void RefreshSelection(GameObject target)

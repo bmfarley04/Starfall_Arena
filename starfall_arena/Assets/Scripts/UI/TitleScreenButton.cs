@@ -39,17 +39,38 @@ public class TitleScreenButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
     [System.Serializable]
     public struct ClickConfig
     {
+        [Header("Action Type")]
+        [Tooltip("If true, uses menu transition instead of scene load")]
+        public bool useMenuTransition;
+
+        [Tooltip("TitleScreenManager reference (required if using menu transition)")]
+        public TitleScreenManager titleScreenManager;
+
+        [Header("Menu Transition (if useMenuTransition = true)")]
+        [Tooltip("Which menu to transition to: ShipSelect, Controls, MainMenu")]
+        public MenuTransitionType menuTransitionType;
+
+        [Header("Scene Load (if useMenuTransition = false)")]
         [Tooltip("Scene to load on click (leave empty for no scene transition)")]
         public string sceneName;
-
-        [Tooltip("If true, this button quits the application on click")]
-        public bool quitsGame;
 
         [Tooltip("Delay before scene load so the click sound can play")]
         public float sceneLoadDelay;
 
+        [Header("Other Actions")]
+        [Tooltip("If true, this button quits the application on click")]
+        public bool quitsGame;
+
         [Tooltip("Additional effects triggered on click (e.g., enable a panel, play animation)")]
         public UnityEvent onClickEffects;
+    }
+
+    public enum MenuTransitionType
+    {
+        ShipSelect,
+        Controls,
+        MainMenu,
+        MainMenuFromShipSelect
     }
 
     [System.Serializable]
@@ -169,8 +190,30 @@ public class TitleScreenButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
 
         click.onClickEffects?.Invoke();
 
-        if (!string.IsNullOrEmpty(click.sceneName))
+        // Menu transition (stays in same scene, transitions between canvases)
+        if (click.useMenuTransition && click.titleScreenManager != null)
+        {
+            switch (click.menuTransitionType)
+            {
+                case MenuTransitionType.ShipSelect:
+                    click.titleScreenManager.TransitionToShipSelect();
+                    break;
+                case MenuTransitionType.Controls:
+                    click.titleScreenManager.TransitionToControls();
+                    break;
+                case MenuTransitionType.MainMenu:
+                    click.titleScreenManager.TransitionToMainMenu();
+                    break;
+                case MenuTransitionType.MainMenuFromShipSelect:
+                    click.titleScreenManager.TransitionToMainMenuFromShipSelect();
+                    break;
+            }
+        }
+        // Scene load (loads a new scene)
+        else if (!string.IsNullOrEmpty(click.sceneName))
+        {
             StartCoroutine(LoadSceneDelayed(click.sceneName, click.sceneLoadDelay));
+        }
 
         if (click.quitsGame)
             Application.Quit();

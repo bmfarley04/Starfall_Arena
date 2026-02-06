@@ -75,6 +75,14 @@ public struct ThrusterConfig
     public bool invertColors;
 }
 
+[System.Serializable]
+public struct SlowEffectVisualConfig
+{
+    [Header("Particle Effect")]
+    [Tooltip("Particle system to play when slowed (should be a child of this entity)")]
+    public ParticleSystem slowParticleSystem;
+}
+
 [RequireComponent(typeof(Rigidbody2D))]
 public abstract class Entity : MonoBehaviour
 {
@@ -104,6 +112,10 @@ public abstract class Entity : MonoBehaviour
     [Header("Thruster Effects")]
     public ThrusterConfig thrusters;
 
+    // ===== SLOW EFFECT VISUALS =====
+    [Header("Slow Effect Visuals")]
+    public SlowEffectVisualConfig slowEffectVisuals;
+
     // ===== RUNTIME STATE - COMBAT =====
     protected float currentHealth;
     public float currentShield;  // Public so projectiles can check shield status
@@ -117,6 +129,11 @@ public abstract class Entity : MonoBehaviour
     private Vector2 _acceleration;
     private Vector2 _recentImpulse = Vector2.zero;
     private float _impulseDecayRate = 5f;
+
+    // ===== RUNTIME STATE - SLOW EFFECT =====
+    private float _slowMultiplier = 1f;
+    private float _slowEndTime = 0f;
+    private bool _slowVisualsActive = false;
 
     // ===== RUNTIME STATE - VISUAL =====
     private float _previousRotationZ;
@@ -167,6 +184,7 @@ public abstract class Entity : MonoBehaviour
                 }
             }
         }
+
     }
 
     // ===== UPDATE LOOPS =====
@@ -182,6 +200,7 @@ public abstract class Entity : MonoBehaviour
     protected virtual void Update()
     {
         UpdateThrusters();
+        UpdateSlowVisuals();
     }
 
     protected virtual void LateUpdate()
@@ -283,6 +302,32 @@ public abstract class Entity : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Deals damage directly to health, bypassing shields entirely.
+    /// Used by physical projectiles that ignore shields.
+    /// </summary>
+    public virtual void TakeDirectDamage(float damage, float impactForce = 0f, Vector3 hitPoint = default, DamageSource source = DamageSource.Projectile)
+    {
+        if (_isDead) return;
+
+        if (hitPoint != Vector3.zero)
+        {
+            _lastDamageDirection = ((Vector2)transform.position - (Vector2)hitPoint).normalized;
+        }
+        else
+        {
+            _lastDamageDirection = Vector2.zero;
+        }
+
+        currentHealth -= damage;
+        OnHealthChanged();
+
+        if (currentHealth <= 0)
+        {
+            Die();
+        }
+    }
+
     protected virtual void Die()
     {
         if (_isDead) return;
@@ -290,28 +335,28 @@ public abstract class Entity : MonoBehaviour
 
         ScatterShipParts();
 
-        // if (visualEffects.explosionEffectPrefab != null)
-        // {
-        //     if (ExplosionPool.Instance != null)
-        //     {
-        //         Vector2? impactDir = _lastDamageDirection != Vector2.zero ? _lastDamageDirection : (Vector2?)null;
-        //         ExplosionPool.Instance.GetExplosion(transform.position, transform.rotation, visualEffects.explosionScale, impactDir);
-        //     }
-        //     else
-        //     {
-        //         GameObject explosion = Instantiate(visualEffects.explosionEffectPrefab, transform.position, transform.rotation);
-        //         explosion.transform.localScale = Vector3.one * visualEffects.explosionScale;
-        //
-        //         if (_lastDamageDirection != Vector2.zero)
-        //         {
-        //             ExplosionScript explosionScript = explosion.GetComponent<ExplosionScript>();
-        //             if (explosionScript != null)
-        //             {
-        //                 explosionScript.SetImpactDirection(_lastDamageDirection);
-        //             }
-        //         }
-        //     }
-        // }
+        if (visualEffects.explosionEffectPrefab != null)
+        {
+            if (ExplosionPool.Instance != null)
+            {
+                Vector2? impactDir = _lastDamageDirection != Vector2.zero ? _lastDamageDirection : (Vector2?)null;
+                ExplosionPool.Instance.GetExplosion(transform.position, transform.rotation, visualEffects.explosionScale, impactDir);
+            }
+            else
+            {
+                GameObject explosion = Instantiate(visualEffects.explosionEffectPrefab, transform.position, transform.rotation);
+                explosion.transform.localScale = Vector3.one * visualEffects.explosionScale;
+
+                if (_lastDamageDirection != Vector2.zero)
+                {
+                    ExplosionScript explosionScript = explosion.GetComponent<ExplosionScript>();
+                    if (explosionScript != null)
+                    {
+                        explosionScript.SetImpactDirection(_lastDamageDirection);
+                    }
+                }
+            }
+        }
 
         Destroy(gameObject);
     }
@@ -421,5 +466,70 @@ public abstract class Entity : MonoBehaviour
 
     protected virtual void OnShieldChanged()
     {
+    }
+
+    // ===== SLOW EFFECT SYSTEM =====
+    public void ApplySlow(float slowMultiplier, float duration)
+    {
+        bool wasSlowed = IsSlowed();
+
+        // Only apply if this slow is stronger or refreshes duration
+        if (slowMultiplier < _slowMultiplier || Time.time + duration > _slowEndTime)
+        {
+            _slowMultiplier = slowMultiplier;
+            _slowEndTime = Time.time + duration;
+        }
+
+        // Start visuals if not already active
+        if (!wasSlowed && IsSlowed())
+        {
+            StartSlowVisuals();
+        }
+    }
+
+    public float GetSlowMultiplier()
+    {
+        if (Time.time >= _slowEndTime)
+        {
+            _slowMultiplier = 1f;
+            return 1f;
+        }
+        return _slowMultiplier;
+    }
+
+    public bool IsSlowed()
+    {
+        return Time.time < _slowEndTime && _slowMultiplier < 1f;
+    }
+
+    private void StartSlowVisuals()
+    {
+        _slowVisualsActive = true;
+
+        if (slowEffectVisuals.slowParticleSystem != null)
+        {
+            slowEffectVisuals.slowParticleSystem.Play();
+        }
+    }
+
+    private void StopSlowVisuals()
+    {
+        _slowVisualsActive = false;
+
+        if (slowEffectVisuals.slowParticleSystem != null)
+        {
+            slowEffectVisuals.slowParticleSystem.Stop();
+        }
+    }
+
+    private void UpdateSlowVisuals()
+    {
+        if (slowEffectVisuals.slowParticleSystem == null) return;
+
+        // Check if slow just ended
+        if (_slowVisualsActive && !IsSlowed())
+        {
+            StopSlowVisuals();
+        }
     }
 }

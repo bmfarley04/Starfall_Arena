@@ -1075,7 +1075,7 @@ public class Class1 : Player
             {
                 Vector3 hitPoint = collider.ClosestPoint(transform.position);
                 abilities.reflect.shield.OnReflectHit(hitPoint);
-                abilities.reflect.shield.ReflectProjectile(projectile);
+                abilities.reflect.shield.ReflectProjectile(projectile, enemyTag);
 
                 projectile.MarkAsReflected();
 
