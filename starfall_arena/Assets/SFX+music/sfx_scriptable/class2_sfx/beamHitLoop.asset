@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: acb65756bd07131419e0a32a68f94510, type: 3}
   m_Name: beamHitLoop
   m_EditorClassIdentifier: Assembly-CSharp::SoundEffect
-  clip: {fileID: 8300000, guid: 640d865d6c6b71247a565a40473821b1, type: 3}
-  volume: 1
-  minPitch: 0.95
-  maxPitch: 1.05
+  clip: {fileID: 8300000, guid: 3fe0ae2f70e9b944f8282019fa85a118, type: 3}
+  volume: 0.2
+  minPitch: 0.8
+  maxPitch: 0.85

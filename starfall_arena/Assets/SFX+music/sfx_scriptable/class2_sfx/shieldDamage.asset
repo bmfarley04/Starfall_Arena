@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: acb65756bd07131419e0a32a68f94510, type: 3}
   m_Name: shieldDamage
   m_EditorClassIdentifier: Assembly-CSharp::SoundEffect
-  clip: {fileID: 8300000, guid: 2179b55f8434e4730a6a50b24a747491, type: 3}
-  volume: 1
-  minPitch: 0.95
-  maxPitch: 1.05
+  clip: {fileID: 8300000, guid: 03ef611d9c7fa4d61ad3b5603fb6cdb4, type: 3}
+  volume: 0.15
+  minPitch: 0.7
+  maxPitch: 0.72

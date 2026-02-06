@@ -13,6 +13,6 @@ MonoBehaviour:
   m_Name: projectile_fire_sound
   m_EditorClassIdentifier: Assembly-CSharp::SoundEffect
   clip: {fileID: 8300000, guid: d3b08de41108d154b83f1fba126cc359, type: 3}
-  volume: 1
-  minPitch: 0.95
-  maxPitch: 1.05
+  volume: 0.5
+  minPitch: 0.7
+  maxPitch: 0.75
