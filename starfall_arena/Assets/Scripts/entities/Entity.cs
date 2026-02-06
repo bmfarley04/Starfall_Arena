@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -15,6 +16,8 @@ public struct ProjectileWeaponConfig
 {
     [Header("Projectile Settings")]
     public GameObject prefab;
+    public float baseDamage;
+    [HideInInspector]
     public float damage;
     public float speed;
     public float recoilForce;
@@ -78,6 +81,11 @@ public struct ThrusterConfig
 [RequireComponent(typeof(Rigidbody2D))]
 public abstract class Entity : MonoBehaviour
 {
+    // ===== AUGMENT LISTS =====
+    [Header("Augments")]
+    public List<string> augmentIDs = new List<string>();
+    public List<Type> augments = new List<Type>(); // Unfortunately, Unity doesn't show "Types" in editor directly. So add a list of strings to the inspector and convert them to Types in Awake.
+
     // ===== CORE COMBAT STATS =====
     [Header("Core Combat Stats")]
     public float maxHealth = 100f;
@@ -103,6 +111,9 @@ public abstract class Entity : MonoBehaviour
     // ===== THRUSTER EFFECTS =====
     [Header("Thruster Effects")]
     public ThrusterConfig thrusters;
+
+    // ===== RUNTIME STATE - AUGMENTS =====
+    public Dictionary<string, float> damageMultipliers = new Dictionary<string, float>();
 
     // ===== RUNTIME STATE - COMBAT =====
     protected float currentHealth;
@@ -168,6 +179,8 @@ public abstract class Entity : MonoBehaviour
                 }
             }
         }
+
+        projectileWeapon.damage = projectileWeapon.baseDamage;
     }
 
     // ===== UPDATE LOOPS =====
@@ -273,11 +286,11 @@ public abstract class Entity : MonoBehaviour
 
         Vector2 scatterDirection = _lastDamageDirection != Vector2.zero
             ? _lastDamageDirection
-            : Random.insideUnitCircle.normalized;
+            : UnityEngine.Random.insideUnitCircle.normalized;
 
         foreach (ShipPartScatter part in parts)
         {
-            if (Random.value < 0.75f)
+            if (UnityEngine.Random.value < 0.75f)
             {
                 part.Scatter(scatterDirection);
             }
@@ -422,5 +435,70 @@ public abstract class Entity : MonoBehaviour
 
     protected virtual void OnShieldChanged()
     {
+    }
+
+    // ===== AUGMENTS =====
+    public void SetStringAugments()
+    {
+        foreach (var augmentID in augmentIDs)
+        {
+            Type augmentType = Type.GetType(augmentID);
+            Debug.Log($"[Augment] Setting augment from ID: {augmentID}, resolved Type: {augmentType}");
+            if (augmentType != null)
+            {
+                SetAugment(augmentType);
+            }
+            else
+            {
+                Debug.LogWarning($"[Augment] Could not find Type for augment name: {augmentID}. Skipping.");
+            }
+        }
+    }
+    public void SetTypeAugments()
+    {
+        foreach (var augment in augments)
+        {
+            SetAugment(augment);
+        }
+    }
+
+    // Set damage multiplier from augment
+    void SetDamageMultiplier()
+    {
+        float total = 1.0f;
+        foreach (var mult in damageMultipliers.Values)
+        {
+            total *= mult;
+        }
+        projectileWeapon.damage = projectileWeapon.baseDamage * total;
+    }
+
+    void SetDamageMultiplier(float multiplier)
+    {
+        projectileWeapon.damage *= multiplier; // This is not safe in case it is called multiple times incorrectly
+    }
+
+    public void SetAugment(Type augment)
+    {
+        // If the scriptable object is not an Augment, skip it
+        Debug.Log($"[Augment] Attempting to add augment of type: {augment.Name}");
+        if (!typeof(Augment).IsAssignableFrom(augment))
+        {
+            Debug.LogWarning($"[Augment] ScriptableObject {augment.Name} is not of type Augment. Skipping.");
+        } // if you already have the augment, skip it
+        else if (gameObject.GetComponent(augment) != null)
+        {
+            Debug.LogWarning($"[Augment] Player already has augment {augment.Name}. Skipping.");
+        }
+        else
+        {
+            Debug.Log($"[Augment] Adding augment of type: {augment.FullName}");
+            gameObject.AddComponent(augment);
+        }
+    }
+
+    public void SetAugmentVariables()
+    {
+        SetDamageMultiplier();
     }
 }

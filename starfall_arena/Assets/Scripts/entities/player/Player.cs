@@ -67,15 +67,6 @@ public struct ScreenShakeConfig
 
 public abstract class Player : Entity
 {
-    // ===== AUGMENTS =====
-    [Header("Augments")]
-    public List<string> augmentIDs = new List<string>();
-    public List<Type> augments = new List<Type>(); // Unfortunately, Unity doesn't show "Types" in editor directly. So add a list of strings to the inspector and convert them to Types in Awake.
-
-    // ===== AUGMENT VARIABLES =====
-    public Dictionary<string, float> damageMultipliers = new Dictionary<string, float>();
-    public float totalDamageMultiplier { get; private set; }// TODO: use this in damage calculations in all abilities 
-
     // ===== SHIELD REGENERATION =====
     [Header("Shield Regeneration")]
     public ShieldRegenConfig shieldRegen;
@@ -396,65 +387,6 @@ public abstract class Player : Entity
         }
     }
 
-    // ===== AUGMENTS =====
-    public void SetStringAugments()
-    {
-        foreach (var augmentID in augmentIDs)
-        {
-            Type augmentType = Type.GetType(augmentID);
-            Debug.Log($"[Augment] Setting augment from ID: {augmentID}, resolved Type: {augmentType}");
-            if (augmentType != null)
-            {
-                SetAugment(augmentType);
-            }
-            else
-            {
-                Debug.LogWarning($"[Augment] Could not find Type for augment name: {augmentID}. Skipping.");
-            }
-        }
-    }
-    public void SetTypeAugments()
-    {
-        foreach (var augment in augments)
-        {
-            SetAugment(augment);
-        }
-    }
-
-    // Set damage multiplier from augment
-    void SetDamageMultiplier()
-    {
-        float total = 1.0f;
-        foreach (var mult in damageMultipliers.Values)
-        {
-            total *= mult;
-        }
-        totalDamageMultiplier = total;
-    }
-
-    public void SetAugment(Type augment)
-    {
-        // If the scriptable object is not an Augment, skip it
-        Debug.Log($"[Augment] Attempting to add augment of type: {augment.Name}");
-        if (!typeof(Augment).IsAssignableFrom(augment))
-        {
-            Debug.LogWarning($"[Augment] ScriptableObject {augment.Name} is not of type Augment. Skipping.");
-        } // if you already have the augment, skip it
-        else if (gameObject.GetComponent(augment) != null)
-        {
-            Debug.LogWarning($"[Augment] Player already has augment {augment.Name}. Skipping.");
-        } else
-        {
-            Debug.Log($"[Augment] Adding augment of type: {augment.FullName}");
-            gameObject.AddComponent(augment);
-        }
-    }
-
-    public void SetAugmentVariables()
-    {
-        SetDamageMultiplier();
-    }
-
     // ===== COMBAT =====
     void TryFireProjectile()
     {
@@ -470,15 +402,12 @@ public abstract class Player : Entity
 
             if (projectile.TryGetComponent<ProjectileScript>(out var projectileScript))
             {
-                // Apply damage multiplier to projectile damage
-                float finalDamage = projectileWeapon.damage * totalDamageMultiplier;
-                
                 projectileScript.targetTag = enemyTag;
                 projectileScript.Initialize(
                     GetFireDirection(turret),
                     Vector2.zero,
                     projectileWeapon.speed,
-                    finalDamage,
+                    projectileWeapon.damage,
                     projectileWeapon.lifetime,
                     projectileWeapon.impactForce,
                     this
