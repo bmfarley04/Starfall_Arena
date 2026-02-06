@@ -95,6 +95,8 @@ public abstract class Player : Entity
     public SoundEffect hullDamageSound;
     [Tooltip("Beam hit loop sound (loops while taking beam damage)")]
     public SoundEffect beamHitLoopSound;
+    [Tooltip("Explosion sound on death")]
+    public SoundEffect explosionSound;
 
     [Header("Audio System")]
     [Tooltip("Number of AudioSources in the pool for overlapping sounds")]
@@ -495,6 +497,11 @@ public abstract class Player : Entity
         if (_beamHitLoopSource != null && _beamHitLoopSource.isPlaying)
         {
             _beamHitLoopSource.Stop();
+        }
+
+        if (explosionSound != null)
+        {
+            explosionSound.PlayAtPoint(transform.position);
         }
 
         base.Die();

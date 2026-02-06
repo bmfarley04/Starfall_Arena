@@ -1066,7 +1066,7 @@ MonoBehaviour:
     pitchSensitivity: 0
     pitchSmoothing: 0
     impulseRecoilSensitivity: 0
-    explosionEffectPrefab: {fileID: 0}
+    explosionEffectPrefab: {fileID: 6449558077517977558, guid: b2d6631e832473b418da4138ddc33bee, type: 3}
     explosionScale: 0
   thrusters:
     thrusters:

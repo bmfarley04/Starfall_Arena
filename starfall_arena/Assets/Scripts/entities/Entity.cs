@@ -290,28 +290,28 @@ public abstract class Entity : MonoBehaviour
 
         ScatterShipParts();
 
-        // if (visualEffects.explosionEffectPrefab != null)
-        // {
-        //     if (ExplosionPool.Instance != null)
-        //     {
-        //         Vector2? impactDir = _lastDamageDirection != Vector2.zero ? _lastDamageDirection : (Vector2?)null;
-        //         ExplosionPool.Instance.GetExplosion(transform.position, transform.rotation, visualEffects.explosionScale, impactDir);
-        //     }
-        //     else
-        //     {
-        //         GameObject explosion = Instantiate(visualEffects.explosionEffectPrefab, transform.position, transform.rotation);
-        //         explosion.transform.localScale = Vector3.one * visualEffects.explosionScale;
-        //
-        //         if (_lastDamageDirection != Vector2.zero)
-        //         {
-        //             ExplosionScript explosionScript = explosion.GetComponent<ExplosionScript>();
-        //             if (explosionScript != null)
-        //             {
-        //                 explosionScript.SetImpactDirection(_lastDamageDirection);
-        //             }
-        //         }
-        //     }
-        // }
+        if (visualEffects.explosionEffectPrefab != null)
+        {
+            if (ExplosionPool.Instance != null)
+            {
+                Vector2? impactDir = _lastDamageDirection != Vector2.zero ? _lastDamageDirection : (Vector2?)null;
+                ExplosionPool.Instance.GetExplosion(transform.position, transform.rotation, visualEffects.explosionScale, impactDir);
+            }
+            else
+            {
+                GameObject explosion = Instantiate(visualEffects.explosionEffectPrefab, transform.position, transform.rotation);
+                explosion.transform.localScale = Vector3.one * visualEffects.explosionScale;
+
+                if (_lastDamageDirection != Vector2.zero)
+                {
+                    ExplosionScript explosionScript = explosion.GetComponent<ExplosionScript>();
+                    if (explosionScript != null)
+                    {
+                        explosionScript.SetImpactDirection(_lastDamageDirection);
+                    }
+                }
+            }
+        }
 
         Destroy(gameObject);
     }
