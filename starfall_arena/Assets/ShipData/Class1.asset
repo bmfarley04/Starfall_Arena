@@ -23,7 +23,7 @@ MonoBehaviour:
     abilityName: 'LASER BEAM:'
     abilityDescription: Fires a continuous laser beam for high damage, but reduces
       rotation speed
-    abilityIcon: {fileID: 21300000, guid: ba79acef2f126784cb47ee9111effa4f, type: 3}
+    abilityIcon: {fileID: 21300000, guid: 3e88feea92fb0e240ba21e4e90aba1fb, type: 3}
   ability2:
     abilityName: 'SHIELD REFLECT:'
     abilityDescription: Makes you invulnerable and reflects projectiles back at your

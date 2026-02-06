@@ -57,6 +57,22 @@ public class ShipSelectManager : MonoBehaviour
     }
 
     [System.Serializable]
+    public struct AbilityIconReferences
+    {
+        [Tooltip("Ability 1 icons (one per ship, in order matching availableShips array)")]
+        public Image[] ability1Icons;
+
+        [Tooltip("Ability 2 icons (one per ship, in order matching availableShips array)")]
+        public Image[] ability2Icons;
+
+        [Tooltip("Ability 3 icons (one per ship, in order matching availableShips array)")]
+        public Image[] ability3Icons;
+
+        [Tooltip("Ability 4 icons (one per ship, in order matching availableShips array)")]
+        public Image[] ability4Icons;
+    }
+
+    [System.Serializable]
     public struct StatMaxValues
     {
         [Tooltip("Maximum damage value for stat bar scaling (typically 50)")]
@@ -118,6 +134,40 @@ public class ShipSelectManager : MonoBehaviour
     }
 
     [System.Serializable]
+    public struct AbilityHoverConfig
+    {
+        [Header("Icon Materials")]
+        [Tooltip("Normal material for ability icons (when not hovered)")]
+        public Material iconNormalMaterial;
+
+        [Tooltip("Hover material for ability icons (when selected/hovered)")]
+        public Material iconHoverMaterial;
+
+        [Header("Circle Outline Materials")]
+        [Tooltip("Normal material for circle outline (when not hovered)")]
+        public Material circleNormalMaterial;
+
+        [Tooltip("Hover material for circle outline (when selected/hovered)")]
+        public Material circleHoverMaterial;
+    }
+
+    [System.Serializable]
+    public struct NavigationButtonEffects
+    {
+        [Header("Button Materials")]
+        [Tooltip("Normal material for navigation buttons")]
+        public Material buttonNormalMaterial;
+
+        [Tooltip("Material briefly applied when button is pressed")]
+        public Material buttonPressedMaterial;
+
+        [Header("Flash Timing")]
+        [Tooltip("Duration in seconds the pressed material is shown")]
+        [Range(0.05f, 0.5f)]
+        public float flashDuration;
+    }
+
+    [System.Serializable]
     public struct ShipRotationConfig
     {
         [Header("Rotation Sensitivity")]
@@ -158,12 +208,22 @@ public class ShipSelectManager : MonoBehaviour
     [SerializeField] private AbilityButtonReferences ability3;
     [SerializeField] private AbilityButtonReferences ability4;
 
+    [Header("Ability Icons")]
+    [Tooltip("Pre-placed ability icon images (one per ship per ability). Arrays should match length of availableShips.")]
+    [SerializeField] private AbilityIconReferences abilityIcons;
+
     [Header("Navigation Buttons")]
     [Tooltip("Left arrow button for previous ship")]
     [SerializeField] private Button leftButton;
 
     [Tooltip("Right arrow button for next ship")]
     [SerializeField] private Button rightButton;
+
+    [Tooltip("Left button's Image component (for material effects)")]
+    [SerializeField] private Image leftButtonImage;
+
+    [Tooltip("Right button's Image component (for material effects)")]
+    [SerializeField] private Image rightButtonImage;
 
     [Tooltip("Default selected button for controller navigation (e.g., first ability button)")]
     [SerializeField] private GameObject defaultSelectedButton;
@@ -188,6 +248,13 @@ public class ShipSelectManager : MonoBehaviour
     [Tooltip("Ship rotation controls and sensitivity")]
     [SerializeField] private ShipRotationConfig shipRotation;
 
+    [Header("Hover & Press Effects")]
+    [Tooltip("Ability button hover effects (icon materials and circle colors)")]
+    [SerializeField] private AbilityHoverConfig abilityHover;
+
+    [Tooltip("Navigation button press effects (material flash on press)")]
+    [SerializeField] private NavigationButtonEffects navigationEffects;
+
     private int _currentShipIndex = 0;
     private GameObject[] _shipModelInstances;
     private AudioSource _audioSource;
@@ -197,6 +264,7 @@ public class ShipSelectManager : MonoBehaviour
     private bool _isPreloaded = false;
     private InputSystemUIInputModule _uiInputModule;
     private bool _wasNavigationEnabled;
+    private int _lastHoveredAbilityIndex = -1; // -1 = none, 0-3 = ability 1-4
 
     private void Awake()
     {
@@ -214,8 +282,92 @@ public class ShipSelectManager : MonoBehaviour
         // Hide all tooltips initially
         HideAllTooltips();
 
+        // Ensure all ability icons start disabled
+        DisableAllAbilityIcons();
+
         // Ships are now spawned by TitleScreenManager at scene load
         // This keeps ShipSelectManager completely independent
+    }
+
+    private void OnValidate()
+    {
+        // Validate that icon arrays match ship count
+        if (availableShips != null && availableShips.Length > 0)
+        {
+            int expectedCount = availableShips.Length;
+
+            ValidateIconArray(abilityIcons.ability1Icons, "Ability 1", expectedCount);
+            ValidateIconArray(abilityIcons.ability2Icons, "Ability 2", expectedCount);
+            ValidateIconArray(abilityIcons.ability3Icons, "Ability 3", expectedCount);
+            ValidateIconArray(abilityIcons.ability4Icons, "Ability 4", expectedCount);
+        }
+
+        // Validate circle materials
+        if (abilityHover.circleNormalMaterial == null)
+        {
+            Debug.LogWarning("ShipSelectManager: Circle Normal Material is not assigned. Circles may not display correctly.");
+        }
+
+        if (abilityHover.circleHoverMaterial == null)
+        {
+            Debug.LogWarning("ShipSelectManager: Circle Hover Material is not assigned. Hover effect won't work.");
+        }
+
+        // Validate navigation button references
+        if (leftButton != null && leftButtonImage == null)
+        {
+            Debug.LogWarning("ShipSelectManager: Left Button is assigned but Left Button Image is not. Material flash won't work.");
+        }
+
+        if (rightButton != null && rightButtonImage == null)
+        {
+            Debug.LogWarning("ShipSelectManager: Right Button is assigned but Right Button Image is not. Material flash won't work.");
+        }
+    }
+
+    private void ValidateIconArray(Image[] iconArray, string abilityName, int expectedCount)
+    {
+        if (iconArray == null || iconArray.Length == 0)
+        {
+            Debug.LogWarning($"ShipSelectManager: {abilityName} icons array is empty! Expected {expectedCount} icons (one per ship).");
+            return;
+        }
+
+        if (iconArray.Length != expectedCount)
+        {
+            Debug.LogWarning($"ShipSelectManager: {abilityName} icons array has {iconArray.Length} entries, but there are {expectedCount} ships. These should match!");
+        }
+
+        // Check for null entries
+        for (int i = 0; i < iconArray.Length; i++)
+        {
+            if (iconArray[i] == null)
+            {
+                Debug.LogWarning($"ShipSelectManager: {abilityName} icons array has null entry at index {i}!");
+            }
+        }
+    }
+
+    /// <summary>
+    /// Disable all ability icons at startup.
+    /// </summary>
+    private void DisableAllAbilityIcons()
+    {
+        DisableIconArray(abilityIcons.ability1Icons);
+        DisableIconArray(abilityIcons.ability2Icons);
+        DisableIconArray(abilityIcons.ability3Icons);
+        DisableIconArray(abilityIcons.ability4Icons);
+    }
+
+    private void DisableIconArray(Image[] iconArray)
+    {
+        if (iconArray == null) return;
+
+        foreach (var icon in iconArray)
+        {
+            if (icon != null)
+                icon.gameObject.SetActive(false);
+        }
     }
 
     private void OnEnable()
@@ -322,6 +474,9 @@ public class ShipSelectManager : MonoBehaviour
 
         // Smooth rotate the ship model
         UpdateShipRotation();
+
+        // Update ability hover effects based on selection
+        UpdateAbilityHoverEffects();
     }
 
     /// <summary>
@@ -368,6 +523,123 @@ public class ShipSelectManager : MonoBehaviour
         {
             _currentRotation = Quaternion.Slerp(_currentRotation, _targetRotation, shipRotation.rotationSmoothing);
             currentShip.transform.rotation = _currentRotation;
+        }
+    }
+
+    /// <summary>
+    /// Update ability hover effects based on currently selected button.
+    /// Changes icon materials and circle outline colors.
+    /// </summary>
+    private void UpdateAbilityHoverEffects()
+    {
+        if (EventSystem.current == null) return;
+
+        GameObject selected = EventSystem.current.currentSelectedGameObject;
+        int currentHoveredIndex = GetAbilityIndexFromButton(selected);
+
+        // Only update if hover state changed
+        if (currentHoveredIndex != _lastHoveredAbilityIndex)
+        {
+            // Revert previous ability to normal state
+            if (_lastHoveredAbilityIndex >= 0)
+                ApplyAbilityNormalState(_lastHoveredAbilityIndex);
+
+            // Apply hover state to newly selected ability
+            if (currentHoveredIndex >= 0)
+                ApplyAbilityHoverState(currentHoveredIndex);
+
+            _lastHoveredAbilityIndex = currentHoveredIndex;
+        }
+    }
+
+    /// <summary>
+    /// Get ability index (0-3) from a GameObject, or -1 if not an ability button.
+    /// </summary>
+    private int GetAbilityIndexFromButton(GameObject button)
+    {
+        if (button == null) return -1;
+
+        if (ability1.circleButton != null && button == ability1.circleButton.gameObject) return 0;
+        if (ability2.circleButton != null && button == ability2.circleButton.gameObject) return 1;
+        if (ability3.circleButton != null && button == ability3.circleButton.gameObject) return 2;
+        if (ability4.circleButton != null && button == ability4.circleButton.gameObject) return 3;
+
+        return -1;
+    }
+
+    /// <summary>
+    /// Apply hover state to an ability: hover material on icon and circle.
+    /// </summary>
+    private void ApplyAbilityHoverState(int abilityIndex)
+    {
+        AbilityButtonReferences abilityRef = GetAbilityReference(abilityIndex);
+        Image[] iconArray = GetAbilityIconArray(abilityIndex);
+
+        // Update icon material (only the currently active icon for this ship)
+        if (iconArray != null && _currentShipIndex >= 0 && _currentShipIndex < iconArray.Length)
+        {
+            Image currentIcon = iconArray[_currentShipIndex];
+            if (currentIcon != null && abilityHover.iconHoverMaterial != null)
+                currentIcon.material = abilityHover.iconHoverMaterial;
+        }
+
+        // Update circle outline material
+        if (abilityRef.circleButton != null && abilityHover.circleHoverMaterial != null)
+        {
+            abilityRef.circleButton.material = abilityHover.circleHoverMaterial;
+        }
+    }
+
+    /// <summary>
+    /// Apply normal state to an ability: normal material on icon and circle.
+    /// </summary>
+    private void ApplyAbilityNormalState(int abilityIndex)
+    {
+        AbilityButtonReferences abilityRef = GetAbilityReference(abilityIndex);
+        Image[] iconArray = GetAbilityIconArray(abilityIndex);
+
+        // Update icon material (only the currently active icon for this ship)
+        if (iconArray != null && _currentShipIndex >= 0 && _currentShipIndex < iconArray.Length)
+        {
+            Image currentIcon = iconArray[_currentShipIndex];
+            if (currentIcon != null && abilityHover.iconNormalMaterial != null)
+                currentIcon.material = abilityHover.iconNormalMaterial;
+        }
+
+        // Update circle outline material
+        if (abilityRef.circleButton != null && abilityHover.circleNormalMaterial != null)
+        {
+            abilityRef.circleButton.material = abilityHover.circleNormalMaterial;
+        }
+    }
+
+    /// <summary>
+    /// Get AbilityButtonReferences by index (0-3).
+    /// </summary>
+    private AbilityButtonReferences GetAbilityReference(int index)
+    {
+        switch (index)
+        {
+            case 0: return ability1;
+            case 1: return ability2;
+            case 2: return ability3;
+            case 3: return ability4;
+            default: return default;
+        }
+    }
+
+    /// <summary>
+    /// Get icon array for a specific ability by index (0-3).
+    /// </summary>
+    private Image[] GetAbilityIconArray(int index)
+    {
+        switch (index)
+        {
+            case 0: return abilityIcons.ability1Icons;
+            case 1: return abilityIcons.ability2Icons;
+            case 2: return abilityIcons.ability3Icons;
+            case 3: return abilityIcons.ability4Icons;
+            default: return null;
         }
     }
 
@@ -492,6 +764,7 @@ public class ShipSelectManager : MonoBehaviour
 
         LoadShip(_currentShipIndex);
         PlayNavigationSound();
+        FlashNavigationButton(leftButtonImage);
         _lastNavigationTime = Time.unscaledTime;
     }
 
@@ -508,7 +781,56 @@ public class ShipSelectManager : MonoBehaviour
 
         LoadShip(_currentShipIndex);
         PlayNavigationSound();
+        FlashNavigationButton(rightButtonImage);
         _lastNavigationTime = Time.unscaledTime;
+    }
+
+    /// <summary>
+    /// Briefly flash a navigation button with the pressed material.
+    /// </summary>
+    private void FlashNavigationButton(Image buttonImage)
+    {
+        if (buttonImage != null)
+            StartCoroutine(FlashNavigationButtonCoroutine(buttonImage));
+    }
+
+    /// <summary>
+    /// Coroutine to flash a navigation button material.
+    /// Unity UI Images require instantiated materials for runtime changes.
+    /// </summary>
+    private IEnumerator FlashNavigationButtonCoroutine(Image buttonImage)
+    {
+        if (buttonImage == null)
+        {
+            Debug.LogWarning("ShipSelectManager: FlashNavigationButton called with null Image");
+            yield break;
+        }
+
+        if (navigationEffects.buttonPressedMaterial == null)
+        {
+            Debug.LogWarning("ShipSelectManager: No pressed material assigned for navigation button flash");
+            yield break;
+        }
+
+        // Store original material
+        Material originalMaterial = buttonImage.material;
+
+        // Apply pressed material (instantiate to avoid modifying the asset)
+        buttonImage.material = new Material(navigationEffects.buttonPressedMaterial);
+
+        // Wait for flash duration
+        yield return new WaitForSecondsRealtime(navigationEffects.flashDuration);
+
+        // Revert to normal material
+        if (navigationEffects.buttonNormalMaterial != null)
+        {
+            buttonImage.material = new Material(navigationEffects.buttonNormalMaterial);
+        }
+        else
+        {
+            // Fallback: restore original material
+            buttonImage.material = originalMaterial;
+        }
     }
 
     /// <summary>
@@ -582,11 +904,29 @@ public class ShipSelectManager : MonoBehaviour
         UpdateStatBar(statBars.shieldFill, statBars.shieldText, ship.stats.shield, statMaxValues.maxShield);
         UpdateStatBar(statBars.speedFill, statBars.speedText, ship.stats.speed, statMaxValues.maxSpeed);
 
-        // Update abilities
-        UpdateAbility(ability1, ship.ability1);
-        UpdateAbility(ability2, ship.ability2);
-        UpdateAbility(ability3, ship.ability3);
-        UpdateAbility(ability4, ship.ability4);
+        // Update abilities (pass icon arrays and current ship index)
+        UpdateAbility(ability1, ship.ability1, abilityIcons.ability1Icons, index);
+        UpdateAbility(ability2, ship.ability2, abilityIcons.ability2Icons, index);
+        UpdateAbility(ability3, ship.ability3, abilityIcons.ability3Icons, index);
+        UpdateAbility(ability4, ship.ability4, abilityIcons.ability4Icons, index);
+
+        // Initialize all abilities to normal state (no hover)
+        InitializeAbilityStates();
+    }
+
+    /// <summary>
+    /// Initialize all abilities to their normal (non-hovered) state.
+    /// Sets normal materials and colors on all abilities.
+    /// </summary>
+    private void InitializeAbilityStates()
+    {
+        for (int i = 0; i < 4; i++)
+        {
+            ApplyAbilityNormalState(i);
+        }
+
+        // Reset hover tracking
+        _lastHoveredAbilityIndex = -1;
     }
 
     /// <summary>
@@ -642,61 +982,32 @@ public class ShipSelectManager : MonoBehaviour
 
     /// <summary>
     /// Update an ability button's icon and tooltip data.
+    /// Enables the correct pre-placed icon for the current ship, disables others.
     /// </summary>
-    private void UpdateAbility(AbilityButtonReferences abilityRef, ShipData.AbilityData abilityData)
+    private void UpdateAbility(AbilityButtonReferences abilityRef, ShipData.AbilityData abilityData, Image[] iconArray, int shipIndex)
     {
-        // Find or create icon image as child of circle button (skip tooltip-related images)
-        if (abilityRef.circleButton != null && abilityData.abilityIcon != null)
+        // Enable/disable the correct icon from the pre-placed array
+        if (iconArray != null && iconArray.Length > 0)
         {
-            Transform circleTransform = abilityRef.circleButton.transform;
-            Image iconImage = null;
-
-            // Look for existing icon image (skip any Images that are part of the tooltip hierarchy)
-            foreach (Transform child in circleTransform)
+            // Disable all icons for this ability
+            for (int i = 0; i < iconArray.Length; i++)
             {
-                // Skip the tooltip and its children
-                if (abilityRef.tooltip != null && (child.gameObject == abilityRef.tooltip || child.IsChildOf(abilityRef.tooltip.transform)))
-                    continue;
-
-                Image childImage = child.GetComponent<Image>();
-                if (childImage != null && childImage != abilityRef.circleButton)
-                {
-                    iconImage = childImage;
-                    break;
-                }
+                if (iconArray[i] != null)
+                    iconArray[i].gameObject.SetActive(false);
             }
 
-            // If no child image exists, create one
-            if (iconImage == null)
+            // Enable only the icon for the current ship
+            if (shipIndex >= 0 && shipIndex < iconArray.Length && iconArray[shipIndex] != null)
             {
-                GameObject iconObj = new GameObject("AbilityIcon");
-                iconObj.transform.SetParent(circleTransform, false);
-                iconImage = iconObj.AddComponent<Image>();
-
-                // Set up the icon rect transform
-                RectTransform iconRect = iconImage.rectTransform;
-                iconRect.anchorMin = new Vector2(0.5f, 0.5f);
-                iconRect.anchorMax = new Vector2(0.5f, 0.5f);
-                iconRect.pivot = new Vector2(0.5f, 0.5f);
-                iconRect.anchoredPosition = Vector2.zero;
-
-                // Size the icon to fit within the circle (80% of circle size for padding)
-                RectTransform circleRect = abilityRef.circleButton.rectTransform;
-                float circleSize = Mathf.Min(circleRect.rect.width, circleRect.rect.height);
-                float iconSize = circleSize * 0.8f;
-                iconRect.sizeDelta = new Vector2(iconSize, iconSize);
-
-                // Preserve aspect ratio
-                iconImage.preserveAspect = true;
+                iconArray[shipIndex].gameObject.SetActive(true);
             }
-
-            // Set the sprite (don't modify transform if it already exists)
-            iconImage.sprite = abilityData.abilityIcon;
-            iconImage.enabled = true;
-            iconImage.color = Color.white;
+            else
+            {
+                Debug.LogWarning($"ShipSelectManager: Icon array index {shipIndex} out of bounds (array length: {iconArray.Length})");
+            }
         }
 
-        // Update tooltip text ONLY (don't touch tooltip transform/layout)
+        // Update tooltip text
         if (abilityRef.tooltipTitle != null)
         {
             abilityRef.tooltipTitle.text = abilityData.abilityName;
@@ -711,7 +1022,7 @@ public class ShipSelectManager : MonoBehaviour
             abilityRef.tooltipDescription.fontSize = textSizes.tooltipDescriptionSize;
         }
 
-        // Ensure tooltip starts hidden (just visibility, don't modify layout)
+        // Ensure tooltip starts hidden
         if (abilityRef.tooltip != null)
             abilityRef.tooltip.SetActive(false);
     }
@@ -950,5 +1261,8 @@ public class ShipSelectManager : MonoBehaviour
         shipRotation.rollSensitivity = 1f;
         shipRotation.rotationSmoothing = 0.15f;
         shipRotation.inputDeadzone = 0.1f;
+
+        // Navigation button effect defaults
+        navigationEffects.flashDuration = 0.15f;
     }
 }
