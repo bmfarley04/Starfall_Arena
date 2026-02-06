@@ -114,7 +114,7 @@ public abstract class Player : Entity
     private float _lastControllerLookTime = 0f;
     private Vector2 _lastMousePosition;
     private float _lastMouseMoveTime = 0f;
-    private float _lastFireTime = -999f;
+    protected float _lastFireTime = -999f;
     private bool _isFiring = false;
     private float _frictionTimer = 0f;
     private float _lastShieldHitTime;
@@ -383,7 +383,7 @@ public abstract class Player : Entity
     }
 
     // ===== COMBAT =====
-    void TryFireProjectile()
+    protected virtual void TryFireProjectile()
     {
         if (projectileWeapon.prefab == null)
             return;
