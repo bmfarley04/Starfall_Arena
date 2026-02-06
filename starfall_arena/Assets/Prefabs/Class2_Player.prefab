@@ -17746,10 +17746,10 @@ MonoBehaviour:
     enableScreenShake: 1
     projectileShakeMultiplier: 0.1
     laserShakeMultiplier: 0.1
-  projectileFireSound: {fileID: 0}
-  shieldDamageSound: {fileID: 0}
-  hullDamageSound: {fileID: 0}
-  beamHitLoopSound: {fileID: 0}
+  projectileFireSound: {fileID: 11400000, guid: 0f50595e413d8184e8aabe486091f954, type: 2}
+  shieldDamageSound: {fileID: 11400000, guid: 2f2e5dd7bfaf6da4282d7da4314d259d, type: 2}
+  hullDamageSound: {fileID: 11400000, guid: 18762420ea09f2f4389ca449b1119bf0, type: 2}
+  beamHitLoopSound: {fileID: 11400000, guid: c2635de459d5fd44594ecb3e303fa4b5, type: 2}
   audioSourcePoolSize: 10
   _fireCooldown: 1
   convergenceDistance: 20
