@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: acb65756bd07131419e0a32a68f94510, type: 3}
   m_Name: tractorBeam
   m_EditorClassIdentifier: Assembly-CSharp::SoundEffect
-  clip: {fileID: 0}
-  volume: 1
+  clip: {fileID: 8300000, guid: 78549bbe35b546d44a15321858c241f0, type: 3}
+  volume: 0.5
   minPitch: 0.95
   maxPitch: 1.05

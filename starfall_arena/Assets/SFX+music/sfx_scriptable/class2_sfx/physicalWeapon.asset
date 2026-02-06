@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: acb65756bd07131419e0a32a68f94510, type: 3}
   m_Name: physicalWeapon
   m_EditorClassIdentifier: Assembly-CSharp::SoundEffect
-  clip: {fileID: 0}
-  volume: 1
+  clip: {fileID: 8300000, guid: 0fc8936ede4d4c94cbc04ad25b442ebf, type: 3}
+  volume: 0.8
   minPitch: 0.95
   maxPitch: 1.05
