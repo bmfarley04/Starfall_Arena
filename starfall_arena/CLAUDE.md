@@ -6,6 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Starfall Arena** is a 2.5D space shooter game built with Unity. Players control a ship defending against waves of enemies with various AI behaviors, featuring shield mechanics, weapon systems, and special abilities.
 
+THIS IS A CONTROLLER FIRST GAME - ALL INPUT SHOULD BE PRIMARILY DESIGNED AROUND CONTROLLER INPUT.
+
 ## Development Environment
 
 **Engine:** Unity 6 (2023.x LTS)
