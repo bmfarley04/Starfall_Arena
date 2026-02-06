@@ -214,26 +214,44 @@ public class ShipSelectManager : MonoBehaviour
 
     private void Start()
     {
+        Debug.Log("[Start] ShipSelectManager Start called");
+
         // Spawn all ship models (deactivated) after scene setup
         SpawnAllShipModels();
-        HideAllShipModels(); // Ensure all ships are hidden at start
+
+        // DON'T hide ships here - OnEnable/OnDisable handles visibility
+        // Hiding here would hide ships that OnEnable just showed!
+        Debug.Log("[Start] Ships spawned, not hiding (OnEnable handles visibility)");
     }
 
     private void OnEnable()
     {
+        Debug.Log("[OnEnable] ShipSelectManager enabled!");
+
         // Ensure ships are spawned
         if (_shipModelInstances == null || _shipModelInstances.Length == 0)
         {
+            Debug.Log("[OnEnable] Ships not spawned, spawning now...");
             SpawnAllShipModels();
+        }
+        else
+        {
+            Debug.Log($"[OnEnable] Ships already spawned: {_shipModelInstances.Length} instances");
         }
 
         // If not preloaded, load data now
         if (!_isPreloaded)
         {
+            Debug.Log("[OnEnable] Not preloaded, loading ship data...");
             LoadShipDataOnly(_currentShipIndex);
+        }
+        else
+        {
+            Debug.Log("[OnEnable] Already preloaded, skipping data load");
         }
 
         // ALWAYS show the current ship model
+        Debug.Log($"[OnEnable] About to show ship model {_currentShipIndex}");
         ShowShipModel(_currentShipIndex);
 
         HideAllTooltips(); // Ensure tooltips are hidden when screen opens
@@ -244,6 +262,8 @@ public class ShipSelectManager : MonoBehaviour
 
         // Reset flag for next time
         _isPreloaded = false;
+
+        Debug.Log("[OnEnable] Complete!");
     }
 
     private IEnumerator ClearSelectionNextFrame()
@@ -255,6 +275,7 @@ public class ShipSelectManager : MonoBehaviour
 
     private void OnDisable()
     {
+        Debug.Log("[OnDisable] ShipSelectManager disabled!");
         HideAllShipModels();
         HideAllTooltips();
 
@@ -327,7 +348,8 @@ public class ShipSelectManager : MonoBehaviour
 
     /// <summary>
     /// Handle D-pad navigation for UI.
-    /// Manually handles D-pad input to navigate between ability buttons.
+    /// Only handles Down (to enter UI) and Up (to exit UI).
+    /// Left/Right navigation is handled automatically by Unity EventSystem using explicit button navigation.
     /// </summary>
     private void HandleDPadNavigation()
     {
@@ -335,70 +357,34 @@ public class ShipSelectManager : MonoBehaviour
 
         GameObject selected = EventSystem.current.currentSelectedGameObject;
 
-        // D-pad down: select first ability if nothing selected, OR navigate down
-        if (Gamepad.current.dpad.down.wasPressedThisFrame)
+        // D-pad down: select first ability if nothing selected
+        // Unity EventSystem handles Down navigation between buttons automatically
+        if (Gamepad.current.dpad.down.wasPressedThisFrame && selected == null)
         {
-            if (selected == null)
-            {
-                // Nothing selected - select first ability
-                if (defaultSelectedButton != null)
-                    EventSystem.current.SetSelectedGameObject(defaultSelectedButton);
-            }
-            else
-            {
-                // Something selected - navigate down
-                Selectable selectable = selected.GetComponent<Selectable>();
-                if (selectable != null)
-                {
-                    Selectable downNeighbor = selectable.FindSelectableOnDown();
-                    if (downNeighbor != null)
-                        EventSystem.current.SetSelectedGameObject(downNeighbor.gameObject);
-                }
-            }
+            // Nothing selected - select first ability
+            if (defaultSelectedButton != null)
+                EventSystem.current.SetSelectedGameObject(defaultSelectedButton);
         }
 
-        // D-pad up: navigate up or deselect from top row
+        // D-pad up: deselect if on top row (no neighbor above)
+        // Unity EventSystem handles Up navigation between buttons automatically
         if (Gamepad.current.dpad.up.wasPressedThisFrame && selected != null)
         {
             Selectable selectable = selected.GetComponent<Selectable>();
             if (selectable != null)
             {
                 Selectable upNeighbor = selectable.FindSelectableOnUp();
-                if (upNeighbor != null)
-                {
-                    EventSystem.current.SetSelectedGameObject(upNeighbor.gameObject);
-                }
-                else
+                if (upNeighbor == null)
                 {
                     // No neighbor above - deselect to return to ship rotation mode
                     EventSystem.current.SetSelectedGameObject(null);
                 }
+                // If there IS a neighbor above, let EventSystem handle it automatically
             }
         }
 
-        // D-pad left: navigate left
-        if (Gamepad.current.dpad.left.wasPressedThisFrame && selected != null)
-        {
-            Selectable selectable = selected.GetComponent<Selectable>();
-            if (selectable != null)
-            {
-                Selectable leftNeighbor = selectable.FindSelectableOnLeft();
-                if (leftNeighbor != null)
-                    EventSystem.current.SetSelectedGameObject(leftNeighbor.gameObject);
-            }
-        }
-
-        // D-pad right: navigate right
-        if (Gamepad.current.dpad.right.wasPressedThisFrame && selected != null)
-        {
-            Selectable selectable = selected.GetComponent<Selectable>();
-            if (selectable != null)
-            {
-                Selectable rightNeighbor = selectable.FindSelectableOnRight();
-                if (rightNeighbor != null)
-                    EventSystem.current.SetSelectedGameObject(rightNeighbor.gameObject);
-            }
-        }
+        // Left/Right navigation: Let Unity EventSystem handle it automatically
+        // This uses the explicit Navigation settings you configured on the buttons
     }
 
     /// <summary>
@@ -690,29 +676,45 @@ public class ShipSelectManager : MonoBehaviour
     /// </summary>
     private void ShowShipModel(int index)
     {
+        Debug.Log($"[ShowShipModel] Called with index {index}. Current ship index: {_currentShipIndex}");
+        Debug.Log($"[ShowShipModel] Stack trace: {System.Environment.StackTrace}");
+
         if (_shipModelInstances == null || index < 0 || index >= _shipModelInstances.Length)
         {
-            Debug.LogWarning($"ShipSelectManager: Cannot show ship {index} - invalid index or no ships spawned");
+            Debug.LogWarning($"[ShowShipModel] Cannot show ship {index} - instances null: {_shipModelInstances == null}, length: {_shipModelInstances?.Length ?? 0}");
             return;
         }
+
+        Debug.Log($"[ShowShipModel] Total ship instances: {_shipModelInstances.Length}");
 
         // Hide all ship models
         for (int i = 0; i < _shipModelInstances.Length; i++)
         {
             if (_shipModelInstances[i] != null)
+            {
+                bool wasActive = _shipModelInstances[i].activeSelf;
                 _shipModelInstances[i].SetActive(false);
+                Debug.Log($"[ShowShipModel] Ship {i} ({_shipModelInstances[i].name}) - was active: {wasActive}, now deactivated");
+            }
         }
 
         // Show and position the selected ship
         GameObject selectedShip = _shipModelInstances[index];
         if (selectedShip != null)
         {
+            Debug.Log($"[ShowShipModel] BEFORE SetActive - Ship {index} active state: {selectedShip.activeSelf}, activeInHierarchy: {selectedShip.activeInHierarchy}");
+
             // CRITICAL: Activate the ship GameObject
             selectedShip.SetActive(true);
 
+            Debug.Log($"[ShowShipModel] AFTER SetActive - Ship {index} active state: {selectedShip.activeSelf}, activeInHierarchy: {selectedShip.activeInHierarchy}");
+
             // Ensure parent is also active (in case ship is child of inactive parent)
             if (selectedShip.transform.parent != null)
+            {
+                Debug.Log($"[ShowShipModel] Parent: {selectedShip.transform.parent.name}, parent active: {selectedShip.transform.parent.gameObject.activeSelf}");
                 selectedShip.transform.parent.gameObject.SetActive(true);
+            }
 
             // Set position, scale, and rotation
             selectedShip.transform.position = shipModel.displayPosition;
@@ -723,11 +725,11 @@ public class ShipSelectManager : MonoBehaviour
             _currentRotation = _targetRotation;
             selectedShip.transform.rotation = _currentRotation;
 
-            Debug.Log($"Ship {index} ({selectedShip.name}) activated at position {shipModel.displayPosition}");
+            Debug.Log($"[ShowShipModel] Ship {index} ({selectedShip.name}) FINAL STATE: activeSelf={selectedShip.activeSelf}, position={selectedShip.transform.position}, scale={selectedShip.transform.localScale}");
         }
         else
         {
-            Debug.LogError($"ShipSelectManager: Ship {index} is null!");
+            Debug.LogError($"[ShowShipModel] Ship {index} is null!");
         }
     }
 
@@ -736,12 +738,23 @@ public class ShipSelectManager : MonoBehaviour
     /// </summary>
     private void HideAllShipModels()
     {
-        if (_shipModelInstances == null) return;
+        Debug.Log($"[HideAllShipModels] Called! Stack trace: {System.Environment.StackTrace}");
+
+        if (_shipModelInstances == null)
+        {
+            Debug.Log("[HideAllShipModels] Ship instances array is null");
+            return;
+        }
+
+        Debug.Log($"[HideAllShipModels] Hiding {_shipModelInstances.Length} ships");
 
         foreach (var model in _shipModelInstances)
         {
             if (model != null)
+            {
+                Debug.Log($"[HideAllShipModels] Deactivating {model.name}, was active: {model.activeSelf}");
                 model.SetActive(false);
+            }
         }
     }
 
