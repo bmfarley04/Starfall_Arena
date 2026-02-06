@@ -20,4 +20,27 @@ public class SoundEffect : ScriptableObject
         source.pitch = Random.Range(minPitch, maxPitch);
         source.Play();
     }
+
+    /// <summary>
+    /// Plays the sound at a world position (creates a temporary AudioSource that auto-destroys).
+    /// Use this when the original object is being destroyed.
+    /// </summary>
+    public void PlayAtPoint(Vector3 position)
+    {
+        if (clip == null) return;
+
+        // Create temp GameObject with AudioSource
+        GameObject tempAudio = new GameObject("TempAudio_" + clip.name);
+        tempAudio.transform.position = position;
+
+        AudioSource source = tempAudio.AddComponent<AudioSource>();
+        source.clip = clip;
+        source.volume = volume;
+        source.pitch = Random.Range(minPitch, maxPitch);
+        source.spatialBlend = 0f; // 2D sound
+        source.Play();
+
+        // Destroy after clip finishes
+        Object.Destroy(tempAudio, clip.length / source.pitch);
+    }
 }
