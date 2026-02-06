@@ -1,5 +1,6 @@
-using UnityEngine.InputSystem;
+using UnityEditor;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 
@@ -65,6 +66,15 @@ public struct ScreenShakeConfig
 
 public abstract class Player : Entity
 {
+    // ===== ABILITIES =====
+    [HideInInspector]
+    public Ability ability1,ability2,ability3,ability4;
+#if UNITY_EDITOR
+    [Tooltip("Drag your Ability script here")]
+    public MonoScript[] abilitySlots = new MonoScript[4];
+#endif
+
+
     // ===== SHIELD REGENERATION =====
     [Header("Shield Regeneration")]
     public ShieldRegenConfig shieldRegen;
@@ -180,7 +190,6 @@ public abstract class Player : Entity
 
         InitializeAudioSystem();
     }
-
     private void InitializeAudioSystem()
     {
         _audioSourcePool = new AudioSource[audioSourcePoolSize];

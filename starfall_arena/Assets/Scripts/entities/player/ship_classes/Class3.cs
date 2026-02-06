@@ -1,56 +1,16 @@
+using System;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.InputSystem;
-using UnityEngine.UI;
 
 
 // ===== CLASS3 IMPLEMENTATION =====
 public class Class3 : Player
 {
-    // ===== ABILITY CONFIGURATION STRUCTS =====
-    [System.Serializable]
-    public struct AbilitiesConfigStarter
-    {
-        [Header("Ability 1")]
-        public Ability1Stats ability1Stats;
-        [System.Serializable]
-        public struct Ability1Stats
-        {
-            [Tooltip("Cooldown time between uses (seconds)")]
-            public float cooldown;
-            [Tooltip("Duration of ability effect (seconds)")]
-            public float duration;
-        }
-        [Header("Ability 2")]
-        public Ability2Stats ability2Stats;
-        [System.Serializable]
-        public struct Ability2Stats
-        {
-            [Tooltip("Cooldown time between uses (seconds)")]
-            public float cooldown;
-            [Tooltip("Duration of ability effect (seconds)")]
-            public float duration;
-        }
-        [Header("Ability 3")]
-        public Ability3Stats ability3Stats;
-        [System.Serializable]
-        public struct Ability3Stats
-        {
-            [Tooltip("Cooldown time between uses (seconds)")]
-            public float cooldown;
-            [Tooltip("Duration of ability effect (seconds)")]
-            public float duration;
-        }
-    }
-
     // ===== PRIMARY WEAPON =====
     [Header("Primary Weapon Settings")]
     [Tooltip("Cooldown between normal fire shots (seconds)")]
     public new float fireCooldown = 0.5f;
-
-    // ===== ABILITIES =====
-    [Header("Abilities")]
-    public AbilitiesConfigStarter abilities;
-    private Invisibility invisibilityScript;
 
     // ===== PRIVATE STATE =====
     private string exampleVar;
@@ -59,7 +19,6 @@ public class Class3 : Player
     protected override void Awake()
     {
         base.Awake();
-        invisibilityScript = GetComponent<Invisibility>();
     }
 
     // ===== UPDATE LOOP =====

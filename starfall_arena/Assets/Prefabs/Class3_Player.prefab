@@ -1090,9 +1090,6 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 1578230554132079418, guid: dab56be66f149c34fbedb1fc28a943e6, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1730841359903112306}
-    - targetCorrespondingSourceObject: {fileID: 1578230554132079418, guid: dab56be66f149c34fbedb1fc28a943e6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 2744154220739591308}
   m_SourcePrefab: {fileID: 100100000, guid: dab56be66f149c34fbedb1fc28a943e6, type: 3}
 --- !u!1 &8073042944126910331 stripped
 GameObject:
@@ -1150,6 +1147,18 @@ MonoBehaviour:
   slowEffectVisuals:
     slowParticleSystem: {fileID: 541853997494829686}
   currentShield: 0
+  ability1ClassName: 
+  ability2ClassName: 
+  ability3ClassName: 
+  ability4ClassName: 
+  ability1: {fileID: 0}
+  ability2: {fileID: 0}
+  ability3: {fileID: 0}
+  ability4: {fileID: 0}
+  ability1ScriptFile: {fileID: 0}
+  ability2ScriptFile: {fileID: 0}
+  ability3ScriptFile: {fileID: 0}
+  ability4ScriptFile: {fileID: 0}
   shieldRegen:
     regenDelay: 0
     regenRate: 0
@@ -1178,34 +1187,6 @@ MonoBehaviour:
   explosionSound: {fileID: 0}
   audioSourcePoolSize: 10
   fireCooldown: 0.15
-  abilities:
-    ability1Stats:
-      cooldown: 0
-      duration: 0
-    ability2Stats:
-      cooldown: 0
-      duration: 0
-    ability3Stats:
-      cooldown: 0
-      duration: 0
-    ability4Stats:
-      cooldown: 0
-      duration: 0
---- !u!114 &2744154220739591308
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8073042944126910331}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e80a4986b0af08647b9a0c65c4b462e0, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Invisibility
-  stats:
-    cooldown: 0
-    duration: 5
 --- !u!4 &8447593613203198634 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 1213109017606901483, guid: dab56be66f149c34fbedb1fc28a943e6, type: 3}
