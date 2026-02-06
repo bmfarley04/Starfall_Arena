@@ -89779,6 +89779,7 @@ MonoBehaviour:
   availableShips:
   - {fileID: 11400000, guid: 181f1725c458b3047a025d212cf88177, type: 2}
   - {fileID: 11400000, guid: 9e0b8049ba8e9804c989ba9a8132db9d, type: 2}
+  - {fileID: 11400000, guid: 635dd57ea0bf73840a19e65e9f919224, type: 2}
   shipNameText: {fileID: 179079464}
   statBars:
     damageFill: {fileID: 328335991}

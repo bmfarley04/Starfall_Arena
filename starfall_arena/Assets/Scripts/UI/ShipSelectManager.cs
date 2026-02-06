@@ -213,18 +213,9 @@ public class ShipSelectManager : MonoBehaviour
 
         // Hide all tooltips initially
         HideAllTooltips();
-    }
 
-    private void Start()
-    {
-        Debug.Log("[Start] ShipSelectManager Start called");
-
-        // Spawn all ship models (deactivated) after scene setup
-        SpawnAllShipModels();
-
-        // DON'T hide ships here - OnEnable/OnDisable handles visibility
-        // Hiding here would hide ships that OnEnable just showed!
-        Debug.Log("[Start] Ships spawned, not hiding (OnEnable handles visibility)");
+        // Ships are now spawned by TitleScreenManager at scene load
+        // This keeps ShipSelectManager completely independent
     }
 
     private void OnEnable()
@@ -234,31 +225,14 @@ public class ShipSelectManager : MonoBehaviour
         // Disable EventSystem's automatic navigation (stick input) - we handle navigation manually
         DisableEventSystemNavigation();
 
-        // Ensure ships are spawned
-        if (_shipModelInstances == null || _shipModelInstances.Length == 0)
-        {
-            Debug.Log("[OnEnable] Ships not spawned, spawning now...");
-            SpawnAllShipModels();
-        }
-        else
-        {
-            Debug.Log($"[OnEnable] Ships already spawned: {_shipModelInstances.Length} instances");
-        }
-
-        // If not preloaded, load data now
+        // If not preloaded, load UI data first
         if (!_isPreloaded)
         {
             Debug.Log("[OnEnable] Not preloaded, loading ship data...");
             LoadShipDataOnly(_currentShipIndex);
+            // Will show ship when TitleScreenManager calls ActivateShipWhenVisible
         }
-        else
-        {
-            Debug.Log("[OnEnable] Already preloaded, skipping data load");
-        }
-
-        // ALWAYS show the current ship model
-        Debug.Log($"[OnEnable] About to show ship model {_currentShipIndex}");
-        ShowShipModel(_currentShipIndex);
+        // If preloaded, ship will be activated by TitleScreenManager when canvas is visible
 
         HideAllTooltips(); // Ensure tooltips are hidden when screen opens
 
@@ -266,10 +240,18 @@ public class ShipSelectManager : MonoBehaviour
         // Do this on next frame to ensure EventSystem doesn't auto-select
         StartCoroutine(ClearSelectionNextFrame());
 
-        // Reset flag for next time
-        _isPreloaded = false;
+        Debug.Log("[OnEnable] Complete (ship will activate when canvas is visible)!");
+    }
 
-        Debug.Log("[OnEnable] Complete!");
+    /// <summary>
+    /// PUBLIC: Called by TitleScreenManager when canvas is fully visible.
+    /// Activates the ship model so it appears at the right time.
+    /// </summary>
+    public void ActivateShipWhenVisible()
+    {
+        Debug.Log($"[ActivateShipWhenVisible] Activating ship {_currentShipIndex} NOW!");
+        ShowShipModel(_currentShipIndex);
+        _isPreloaded = false; // Reset flag
     }
 
     private IEnumerator ClearSelectionNextFrame()
@@ -531,19 +513,46 @@ public class ShipSelectManager : MonoBehaviour
 
     /// <summary>
     /// Preload ship data before the screen is visible (called early in transition).
+    /// Ships are already spawned, so this just loads UI data.
+    /// Ship will be activated when canvas is fully visible (in OnEnable).
     /// </summary>
     public void PreloadShipData()
     {
-        // Spawn ships if not already spawned
-        if (_shipModelInstances == null || _shipModelInstances.Length == 0)
-        {
-            SpawnAllShipModels();
-        }
+        Debug.Log("[PreloadShipData] Loading ship UI data (ship will activate when canvas is visible)");
 
-        // Load current ship data (but don't show the model yet)
+        // Load UI data (text, stats, abilities)
         LoadShipDataOnly(_currentShipIndex);
 
+        // Prepare ship position/rotation but DON'T activate yet
+        PrepareShipTransform(_currentShipIndex);
+
         _isPreloaded = true;
+    }
+
+    /// <summary>
+    /// Prepare ship transform (position, rotation, scale) without activating it.
+    /// This sets everything up so activation is instant later.
+    /// </summary>
+    private void PrepareShipTransform(int index)
+    {
+        if (_shipModelInstances == null || index < 0 || index >= _shipModelInstances.Length)
+            return;
+
+        GameObject selectedShip = _shipModelInstances[index];
+        if (selectedShip != null)
+        {
+            Debug.Log($"[PrepareShipTransform] Preparing ship {index} transform (still inactive)");
+
+            // Set position, scale, rotation while ship is inactive
+            selectedShip.transform.position = shipModel.displayPosition;
+            selectedShip.transform.localScale = Vector3.one * shipModel.displayScale;
+
+            _targetRotation = Quaternion.Euler(shipModel.displayRotation);
+            _currentRotation = _targetRotation;
+            selectedShip.transform.rotation = _currentRotation;
+
+            // Ship stays inactive - will be activated in OnEnable
+        }
     }
 
     /// <summary>
@@ -708,7 +717,17 @@ public class ShipSelectManager : MonoBehaviour
     }
 
     /// <summary>
-    /// Spawn all ship models at start (deactivated).
+    /// PUBLIC: Called by TitleScreenManager at scene load to spawn ships early.
+    /// This eliminates any loading delay when entering ship select.
+    /// </summary>
+    public void SpawnShipsAtSceneLoad()
+    {
+        Debug.Log("[SpawnShipsAtSceneLoad] Called by TitleScreenManager at scene start");
+        SpawnAllShipModels();
+    }
+
+    /// <summary>
+    /// Spawn all ship models (deactivated).
     /// Only spawns once - subsequent calls are ignored.
     /// </summary>
     private void SpawnAllShipModels()
