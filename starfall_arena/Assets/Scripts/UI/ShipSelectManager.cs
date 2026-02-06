@@ -265,6 +265,7 @@ public class ShipSelectManager : MonoBehaviour
     private InputSystemUIInputModule _uiInputModule;
     private bool _wasNavigationEnabled;
     private int _lastHoveredAbilityIndex = -1; // -1 = none, 0-3 = ability 1-4
+    private Class1PreviewController _currentPreviewController;
 
     private void Awake()
     {
@@ -417,6 +418,13 @@ public class ShipSelectManager : MonoBehaviour
     {
         Debug.Log("[OnDisable] ShipSelectManager disabled!");
 
+        // Stop active preview before leaving ship select
+        if (_currentPreviewController != null)
+        {
+            _currentPreviewController.StopPreview();
+            _currentPreviewController = null;
+        }
+
         // Re-enable EventSystem's automatic navigation
         RestoreEventSystemNavigation();
 
@@ -485,6 +493,10 @@ public class ShipSelectManager : MonoBehaviour
     /// </summary>
     private void HandleShipRotation()
     {
+        // Skip stick rotation when preview controller has lock
+        if (_currentPreviewController != null && _currentPreviewController.IsRotationLocked)
+            return;
+
         if (Gamepad.current == null) return;
 
         // Read stick input
@@ -521,6 +533,14 @@ public class ShipSelectManager : MonoBehaviour
         GameObject currentShip = _shipModelInstances[_currentShipIndex];
         if (currentShip != null && currentShip.activeSelf)
         {
+            // When preview controller is driving rotation, sync our tracking to prevent snap
+            if (_currentPreviewController != null && _currentPreviewController.IsRotationLocked)
+            {
+                _currentRotation = currentShip.transform.rotation;
+                _targetRotation = _currentRotation;
+                return;
+            }
+
             _currentRotation = Quaternion.Slerp(_currentRotation, _targetRotation, shipRotation.rotationSmoothing);
             currentShip.transform.rotation = _currentRotation;
         }
@@ -549,7 +569,34 @@ public class ShipSelectManager : MonoBehaviour
                 ApplyAbilityHoverState(currentHoveredIndex);
 
             _lastHoveredAbilityIndex = currentHoveredIndex;
+
+            // Notify preview controller of hover change
+            NotifyPreviewController(currentHoveredIndex);
         }
+    }
+
+    /// <summary>
+    /// Notify the current ship's preview controller of ability hover changes.
+    /// </summary>
+    private void NotifyPreviewController(int abilityIndex)
+    {
+        // Get/cache preview controller from current ship
+        if (_shipModelInstances != null && _currentShipIndex >= 0 && _currentShipIndex < _shipModelInstances.Length)
+        {
+            GameObject currentShip = _shipModelInstances[_currentShipIndex];
+            if (currentShip != null)
+                _currentPreviewController = currentShip.GetComponent<Class1PreviewController>();
+            else
+                _currentPreviewController = null;
+        }
+
+        if (_currentPreviewController == null)
+            return;
+
+        if (abilityIndex >= 0)
+            _currentPreviewController.StartPreview(abilityIndex);
+        else
+            _currentPreviewController.StopPreview();
     }
 
     /// <summary>
@@ -1076,6 +1123,11 @@ public class ShipSelectManager : MonoBehaviour
             foreach (var script in scripts)
                 script.enabled = false;
 
+            // Re-enable preview controller (it's designed to work independently)
+            Class1PreviewController previewController = instance.GetComponent<Class1PreviewController>();
+            if (previewController != null)
+                previewController.enabled = true;
+
             _shipModelInstances[i] = instance;
         }
     }
@@ -1095,6 +1147,13 @@ public class ShipSelectManager : MonoBehaviour
         }
 
         Debug.Log($"[ShowShipModel] Total ship instances: {_shipModelInstances.Length}");
+
+        // Stop active preview before switching ships
+        if (_currentPreviewController != null)
+        {
+            _currentPreviewController.StopPreview();
+            _currentPreviewController = null;
+        }
 
         // Hide all ship models
         for (int i = 0; i < _shipModelInstances.Length; i++)

@@ -390,6 +390,10 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 5386924367371987336, guid: 9f50449675dfe174fbc61d630be106b0, type: 3}
+      propertyPath: m_RenderingLayerMask
+      value: 128
+      objectReference: {fileID: 0}
     - target: {fileID: 5891499256391780445, guid: 9f50449675dfe174fbc61d630be106b0, type: 3}
       propertyPath: m_Name
       value: ProtonLegacy17
@@ -1187,9 +1191,6 @@ MonoBehaviour:
       cooldown: 0
       duration: 0
     ability3Stats:
-      cooldown: 0
-      duration: 0
-    ability4Stats:
       cooldown: 0
       duration: 0
 --- !u!4 &8447593613203198634 stripped
