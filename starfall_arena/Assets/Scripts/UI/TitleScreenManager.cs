@@ -337,6 +337,11 @@ public class TitleScreenManager : MonoBehaviour
     {
         if (target != null)
         {
+            // Mark button as programmatic selection to prevent hover sound
+            TitleScreenButton button = target.GetComponent<TitleScreenButton>();
+            if (button != null)
+                button.MarkAsProgrammaticSelection();
+
             EventSystem.current.SetSelectedGameObject(null);
             EventSystem.current.SetSelectedGameObject(target);
         }

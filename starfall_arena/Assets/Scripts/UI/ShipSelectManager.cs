@@ -149,6 +149,10 @@ public class ShipSelectManager : MonoBehaviour
 
         [Tooltip("Hover material for circle outline (when selected/hovered)")]
         public Material circleHoverMaterial;
+
+        [Header("Sound Effects")]
+        [Tooltip("Sound played when hovering over ability buttons (D-pad navigation)")]
+        public SoundEffect hoverSound;
     }
 
     [System.Serializable]
@@ -706,7 +710,7 @@ public class ShipSelectManager : MonoBehaviour
         {
             if (selected == null)
             {
-                // Nothing selected - select first ability
+                // Nothing selected - select first ability (no sound on initial selection)
                 if (defaultSelectedButton != null)
                     EventSystem.current.SetSelectedGameObject(defaultSelectedButton);
             }
@@ -718,7 +722,12 @@ public class ShipSelectManager : MonoBehaviour
                 {
                     Selectable downNeighbor = selectable.FindSelectableOnDown();
                     if (downNeighbor != null)
+                    {
                         EventSystem.current.SetSelectedGameObject(downNeighbor.gameObject);
+                        // Play hover sound on successful navigation
+                        if (abilityHover.hoverSound != null)
+                            abilityHover.hoverSound.Play(_audioSource);
+                    }
                 }
             }
         }
@@ -733,10 +742,13 @@ public class ShipSelectManager : MonoBehaviour
                 if (upNeighbor != null)
                 {
                     EventSystem.current.SetSelectedGameObject(upNeighbor.gameObject);
+                    // Play hover sound on successful navigation
+                    if (abilityHover.hoverSound != null)
+                        abilityHover.hoverSound.Play(_audioSource);
                 }
                 else
                 {
-                    // No neighbor above - deselect to return to ship rotation mode
+                    // No neighbor above - deselect to return to ship rotation mode (no sound)
                     EventSystem.current.SetSelectedGameObject(null);
                 }
             }
@@ -750,7 +762,12 @@ public class ShipSelectManager : MonoBehaviour
             {
                 Selectable leftNeighbor = selectable.FindSelectableOnLeft();
                 if (leftNeighbor != null)
+                {
                     EventSystem.current.SetSelectedGameObject(leftNeighbor.gameObject);
+                    // Play hover sound on successful navigation
+                    if (abilityHover.hoverSound != null)
+                        abilityHover.hoverSound.Play(_audioSource);
+                }
             }
         }
 
@@ -762,7 +779,12 @@ public class ShipSelectManager : MonoBehaviour
             {
                 Selectable rightNeighbor = selectable.FindSelectableOnRight();
                 if (rightNeighbor != null)
+                {
                     EventSystem.current.SetSelectedGameObject(rightNeighbor.gameObject);
+                    // Play hover sound on successful navigation
+                    if (abilityHover.hoverSound != null)
+                        abilityHover.hoverSound.Play(_audioSource);
+                }
             }
         }
     }
