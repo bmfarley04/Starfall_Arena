@@ -12,26 +12,26 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4126ca0ce3c78694f95eed711408a84b, type: 3}
   m_Name: Class2
   m_EditorClassIdentifier: Assembly-CSharp::ShipData
-  shipName: 
-  shipModelPrefab: {fileID: 0}
+  shipName: HELLHAMMER
+  shipModelPrefab: {fileID: 6103655459887012557, guid: 50eff087d99df9343b7a3be5c8bade09, type: 3}
   stats:
-    damage: 0
-    hull: 0
-    shield: 0
-    speed: 0
+    damage: 32
+    hull: 100
+    shield: 100
+    speed: 30
   ability1:
-    abilityName: 
-    abilityDescription: 
+    abilityName: DECISIVE STRIKE
+    abilityDescription: Empowered base attack which slows enemies
     abilityIcon: {fileID: 0}
   ability2:
-    abilityName: 
-    abilityDescription: 
+    abilityName: COURAGE
+    abilityDescription: Makes you invulernable for a short duration
     abilityIcon: {fileID: 0}
   ability3:
-    abilityName: 
-    abilityDescription: 
+    abilityName: APPREHEND
+    abilityDescription: Drags enemies towards you with a tractor beam
     abilityIcon: {fileID: 0}
   ability4:
-    abilityName: 
-    abilityDescription: 
+    abilityName: JUDGEMENT
+    abilityDescription: Fires a rail gun which pierces all shields
     abilityIcon: {fileID: 0}

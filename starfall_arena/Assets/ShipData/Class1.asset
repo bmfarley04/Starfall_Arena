@@ -15,7 +15,7 @@ MonoBehaviour:
   shipName: VX-ATLAS
   shipModelPrefab: {fileID: 1578230554132079418, guid: f81809c87c380914eaab5f42e5ab6b69, type: 3}
   stats:
-    damage: 10
+    damage: 20
     hull: 100
     shield: 100
     speed: 30
