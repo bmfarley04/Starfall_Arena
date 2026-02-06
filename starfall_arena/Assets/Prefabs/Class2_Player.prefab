@@ -23267,7 +23267,7 @@ MonoBehaviour:
   inflationAmount: 0.1
   shieldVisibleDuration: 0.6
   rippleDuration: 0.5
-  regenMaxAlpha: 0.2
+  regenMaxAlpha: 0.4
   regenPulseSpeed: 3
   breakDuration: 0.5
   autoCalculateSize: 1
