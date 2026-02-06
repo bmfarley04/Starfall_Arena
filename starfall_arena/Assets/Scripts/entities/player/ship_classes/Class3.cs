@@ -54,7 +54,7 @@ public class Class3 : Player
     void OnAbility4(InputValue value)
     {
         Debug.Log("Ability 4 Activated");
-        invisibilityScript.TryUseAbility();
+        ability4.TryUseAbility();
     }
 
     // ===== ABILITY 1 =====

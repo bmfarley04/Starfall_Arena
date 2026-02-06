@@ -46,12 +46,21 @@ public class PlayerEditor : Editor
                 EditorGUILayout.LabelField($"Slot {i + 1}: {script.name} (Not Attached)");
                 if (GUILayout.Button("Attach to Player"))
                 {
-                    Undo.AddComponent(player.gameObject, scriptType);
+                    Component newComp = Undo.AddComponent(player.gameObject, scriptType);
+                    SetAbilityField(player, i, newComp as Ability);
+                    EditorUtility.SetDirty(player);
                 }
             }
             else
             {
                 EditorGUILayout.LabelField($"Slot {i + 1}: {script.name}", EditorStyles.miniBoldLabel);
+
+                // Ensure the ability field is set
+                if (!IsAbilityFieldSet(player, i, existingComp as Ability))
+                {
+                    SetAbilityField(player, i, existingComp as Ability);
+                    EditorUtility.SetDirty(player);
+                }
 
                 // Embed the actual component editor
                 Editor editor = CreateEditor(existingComp);
@@ -59,12 +68,50 @@ public class PlayerEditor : Editor
 
                 if (GUILayout.Button("Detach Component", GUILayout.Width(130)))
                 {
+                    SetAbilityField(player, i, null);
                     Undo.DestroyObjectImmediate(existingComp);
+                    EditorUtility.SetDirty(player);
                 }
             }
 
             EditorGUILayout.EndVertical();
             EditorGUILayout.Space(5);
+        }
+    }
+
+    private void SetAbilityField(Player player, int slotIndex, Ability ability)
+    {
+        switch (slotIndex)
+        {
+            case 0:
+                player.ability1 = ability;
+                break;
+            case 1:
+                player.ability2 = ability;
+                break;
+            case 2:
+                player.ability3 = ability;
+                break;
+            case 3:
+                player.ability4 = ability;
+                break;
+        }
+    }
+
+    private bool IsAbilityFieldSet(Player player, int slotIndex, Ability ability)
+    {
+        switch (slotIndex)
+        {
+            case 0:
+                return player.ability1 == ability;
+            case 1:
+                return player.ability2 == ability;
+            case 2:
+                return player.ability3 == ability;
+            case 3:
+                return player.ability4 == ability;
+            default:
+                return false;
         }
     }
 }
