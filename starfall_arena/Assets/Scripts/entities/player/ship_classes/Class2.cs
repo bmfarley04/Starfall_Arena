@@ -62,10 +62,10 @@ public struct ShieldAbilityConfig
 [System.Serializable]
 public struct Class2AbilitiesConfig
 {
-    [Header("Ability 3 - Empowered Shot")]
+    [Header("Ability 1 - Empowered Shot")]
     public EmpoweredShotAbilityConfig empoweredShot;
 
-    [Header("Ability 4 - Shield")]
+    [Header("Ability 2 - Shield")]
     public ShieldAbilityConfig shield;
 }
 
