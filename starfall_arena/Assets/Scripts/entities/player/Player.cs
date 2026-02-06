@@ -408,7 +408,7 @@ public abstract class Player : Entity
             {
                 projectileScript.targetTag = enemyTag;
                 projectileScript.Initialize(
-                    transform.up,
+                    GetFireDirection(turret),
                     Vector2.zero,
                     projectileWeapon.speed,
                     projectileWeapon.damage,
@@ -426,6 +426,11 @@ public abstract class Player : Entity
         }
 
         _lastFireTime = Time.time;
+    }
+
+    protected virtual Vector3 GetFireDirection(Transform turret)
+    {
+        return transform.up;
     }
 
     // ===== SHIELD REGENERATION =====
