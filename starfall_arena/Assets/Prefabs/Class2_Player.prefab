@@ -23276,7 +23276,7 @@ MonoBehaviour:
       coneSegments: 8
       coneOffset: {x: 0, y: 0, z: 5}
       suctionParticles: {fileID: 7803267935673130348}
-      beamLoopSound: {fileID: 0}
+      beamLoopSound: {fileID: 11400000, guid: 6f42d3b3662519e4b8d7879cc5c73f94, type: 2}
     physicalProjectile:
       cooldown: 14
       spawnPoint: {fileID: 873564872842125562}
@@ -23286,7 +23286,7 @@ MonoBehaviour:
       lifetime: 3
       impactForce: 15
       recoilForce: 8
-      fireSound: {fileID: 0}
+      fireSound: {fileID: 11400000, guid: 1c6219777ed08db40ba3595ac35e0b2d, type: 2}
   _fireCooldown: 1
   convergenceDistance: 20
 --- !u!1 &6183319790727871496
