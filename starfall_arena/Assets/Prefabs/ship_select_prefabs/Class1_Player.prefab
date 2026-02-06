@@ -4961,6 +4961,7 @@ GameObject:
   - component: {fileID: 9213498189382806680}
   - component: {fileID: 678256140099594092}
   - component: {fileID: 3550827916854919345}
+  - component: {fileID: 8356135311889824002}
   m_Layer: 0
   m_Name: Class1_Player
   m_TagString: Player
@@ -5370,6 +5371,8 @@ MonoBehaviour:
     - {fileID: 2308016962109353126}
     rampTime: 0.3
     invertColors: 0
+  slowEffectVisuals:
+    slowParticleSystem: {fileID: 0}
   currentShield: 0
   shieldRegen:
     regenDelay: 5
@@ -5396,6 +5399,7 @@ MonoBehaviour:
   shieldDamageSound: {fileID: 0}
   hullDamageSound: {fileID: 0}
   beamHitLoopSound: {fileID: 0}
+  explosionSound: {fileID: 0}
   audioSourcePoolSize: 10
   abilities:
     beam:
@@ -5497,6 +5501,25 @@ MonoBehaviour:
       tier2FireSound: {fileID: 0}
       tier3FireSound: {fileID: 0}
       tier4FireSound: {fileID: 0}
+--- !u!114 &8356135311889824002
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1578230554132079418}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8f0e66bbd7c78f14cbb24d6b25aefc40, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SimpleRotator
+  rotateX: 0
+  xSpeed: 10
+  rotateY: 1
+  ySpeed: 3
+  rotateZ: 0
+  zSpeed: 10
+  useUnscaledTime: 0
 --- !u!1 &3501154216763360000
 GameObject:
   m_ObjectHideFlags: 0

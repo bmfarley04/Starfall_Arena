@@ -20,21 +20,21 @@ MonoBehaviour:
     shield: 100
     speed: 30
   ability1:
-    abilityName: 'LASER BEAM:'
+    abilityName: LASER BEAM
     abilityDescription: Fires a continuous laser beam for high damage, but reduces
       rotation speed
-    abilityIcon: {fileID: 21300000, guid: ba79acef2f126784cb47ee9111effa4f, type: 3}
+    abilityIcon: {fileID: 21300000, guid: 3e88feea92fb0e240ba21e4e90aba1fb, type: 3}
   ability2:
-    abilityName: 'SHIELD REFLECT:'
+    abilityName: SHIELD REFLECT
     abilityDescription: Makes you invulnerable and reflects projectiles back at your
       opponent
     abilityIcon: {fileID: 21300000, guid: ba79acef2f126784cb47ee9111effa4f, type: 3}
   ability3:
-    abilityName: 'TELEPORT:'
+    abilityName: TELEPORT
     abilityDescription: Teleports you a short distance in the direction you're facing
     abilityIcon: {fileID: 21300000, guid: ba79acef2f126784cb47ee9111effa4f, type: 3}
   ability4:
-    abilityName: 'ATLAS CANNON:'
-    abilityDescription: Allows you to charge your cannon continuously for massively
-      increased damage
+    abilityName: ATLAS CANNON
+    abilityDescription: Allows you to charge your cannon for massively increased
+      damage
     abilityIcon: {fileID: 21300000, guid: ba79acef2f126784cb47ee9111effa4f, type: 3}

@@ -24,13 +24,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1043948038149671778}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0.026176924, w: 0.99965733}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0.55, y: 0.075, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 8447593613203198634}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 3}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2047777602417335607
 GameObject:
   m_ObjectHideFlags: 0
@@ -198,13 +198,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6459063611578365934}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: -0.026176924, w: 0.99965733}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: -0.55, y: 0.075, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 8447593613203198634}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: -3}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &7052868711672259623
 GameObject:
   m_ObjectHideFlags: 0
@@ -390,6 +390,10 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 5386924367371987336, guid: 9f50449675dfe174fbc61d630be106b0, type: 3}
+      propertyPath: m_RenderingLayerMask
+      value: 128
+      objectReference: {fileID: 0}
     - target: {fileID: 5891499256391780445, guid: 9f50449675dfe174fbc61d630be106b0, type: 3}
       propertyPath: m_Name
       value: ProtonLegacy17
@@ -510,6 +514,10 @@ PrefabInstance:
     - target: {fileID: 1578230554132079418, guid: dab56be66f149c34fbedb1fc28a943e6, type: 3}
       propertyPath: m_Name
       value: Class3_Player
+      objectReference: {fileID: 0}
+    - target: {fileID: 1732132673403547521, guid: dab56be66f149c34fbedb1fc28a943e6, type: 3}
+      propertyPath: m_Enabled
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4830817012399286850, guid: dab56be66f149c34fbedb1fc28a943e6, type: 3}
       propertyPath: m_LocalPosition.y
@@ -1061,7 +1069,6 @@ PrefabInstance:
       objectReference: {fileID: 0}
     m_RemovedComponents:
     - {fileID: 3550827916854919345, guid: dab56be66f149c34fbedb1fc28a943e6, type: 3}
-    - {fileID: 6469070531932084261, guid: dab56be66f149c34fbedb1fc28a943e6, type: 3}
     m_RemovedGameObjects:
     - {fileID: 1430474855004661297, guid: dab56be66f149c34fbedb1fc28a943e6, type: 3}
     - {fileID: 6594958231872705545, guid: dab56be66f149c34fbedb1fc28a943e6, type: 3}
@@ -1093,10 +1100,7 @@ PrefabInstance:
       addedObject: {fileID: 1730841359903112306}
     - targetCorrespondingSourceObject: {fileID: 1578230554132079418, guid: dab56be66f149c34fbedb1fc28a943e6, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 2744154220739591308}
-    - targetCorrespondingSourceObject: {fileID: 1578230554132079418, guid: dab56be66f149c34fbedb1fc28a943e6, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 4120815541869784891}
+      addedObject: {fileID: -5416718075314668237}
   m_SourcePrefab: {fileID: 100100000, guid: dab56be66f149c34fbedb1fc28a943e6, type: 3}
 --- !u!1 &8073042944126910331 stripped
 GameObject:
@@ -1110,7 +1114,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8073042944126910331}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 16bdaa66010651b4e92d58d8484b9ac2, type: 3}
   m_Name: 
@@ -1192,22 +1196,7 @@ MonoBehaviour:
     ability3Stats:
       cooldown: 0
       duration: 0
---- !u!114 &2744154220739591308
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8073042944126910331}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e80a4986b0af08647b9a0c65c4b462e0, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Invisibility
-  stats:
-    cooldown: 0
-    duration: 5
---- !u!114 &4120815541869784891
+--- !u!114 &-5416718075314668237
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -1221,8 +1210,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::SimpleRotator
   rotateX: 0
   xSpeed: 10
-  rotateY: 0
-  ySpeed: 10
+  rotateY: 1
+  ySpeed: 3
   rotateZ: 0
   zSpeed: 10
   useUnscaledTime: 0
