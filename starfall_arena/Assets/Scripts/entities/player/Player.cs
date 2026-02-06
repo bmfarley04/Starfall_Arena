@@ -95,6 +95,8 @@ public abstract class Player : Entity
     public SoundEffect hullDamageSound;
     [Tooltip("Beam hit loop sound (loops while taking beam damage)")]
     public SoundEffect beamHitLoopSound;
+    [Tooltip("Explosion sound on death")]
+    public SoundEffect explosionSound;
 
     [Header("Audio System")]
     [Tooltip("Number of AudioSources in the pool for overlapping sounds")]
@@ -102,6 +104,8 @@ public abstract class Player : Entity
 
     // ===== PROTECTED STATE (for derived classes) =====
     protected float fireCooldown = 0.5f;  // Can be overridden in derived classes
+    protected string thisPlayerTag;
+    protected string enemyTag;
 
     // ===== PRIVATE STATE =====
     private PlayerInput _playerInput;
@@ -112,7 +116,7 @@ public abstract class Player : Entity
     private float _lastControllerLookTime = 0f;
     private Vector2 _lastMousePosition;
     private float _lastMouseMoveTime = 0f;
-    private float _lastFireTime = -999f;
+    protected float _lastFireTime = -999f;
     private bool _isFiring = false;
     private float _frictionTimer = 0f;
     private float _lastShieldHitTime;
@@ -124,11 +128,29 @@ public abstract class Player : Entity
     private Unity.Cinemachine.CinemachineImpulseSource _impulseSource;
     private AudioSource[] _audioSourcePool;
     private AudioSource _beamHitLoopSource;
+    private float _originalRotationSpeed;
+    private bool _isAnchored = false;
 
     // ===== INITIALIZATION =====
     protected override void Awake()
     {
         base.Awake();
+        _originalRotationSpeed = movement.rotationSpeed;
+        if(gameObject.CompareTag("Player1"))
+        {
+            thisPlayerTag = "Player1";
+            enemyTag = "Player2";
+        }
+        else if (gameObject.CompareTag("Player2"))
+        {
+            thisPlayerTag = "Player2";
+            enemyTag = "Player1";
+        }
+        else
+        {
+            thisPlayerTag = "Player";
+            enemyTag = "Enemy";
+        }
 
         _lastShieldHitTime = -shieldRegen.regenDelay;
         _lastMousePosition = Mouse.current.position.ReadValue();
@@ -222,12 +244,13 @@ public abstract class Player : Entity
         base.FixedUpdate();
 
         bool movePressed = _moveAction != null && _moveAction.IsPressed();
+        float slowMult = GetSlowMultiplier();
 
         if (movePressed)
         {
             _isThrusting = true;
             Vector2 thrustDirection = transform.up;
-            _rb.AddForce(thrustDirection * movement.thrustForce);
+            _rb.AddForce(thrustDirection * movement.thrustForce * slowMult);
             ApplyLateralDamping();
             _frictionTimer = 0f;
         }
@@ -249,8 +272,17 @@ public abstract class Player : Entity
                 }
             }
         }
+        if (_isAnchored)
+        {
+            _rb.linearDamping += .1f;
+        }
 
-        ClampVelocity();
+        // Apply slow to max speed
+        float effectiveMaxSpeed = movement.maxSpeed * slowMult;
+        if (_rb.linearVelocity.magnitude > effectiveMaxSpeed)
+        {
+            _rb.linearVelocity = _rb.linearVelocity.normalized * effectiveMaxSpeed;
+        }
     }
 
     // ===== MOVEMENT =====
@@ -339,8 +371,28 @@ public abstract class Player : Entity
         transform.rotation = Quaternion.Euler(0, 0, newAngle);
     }
 
+    // Anchor
+    void OnAnchor(InputValue value)
+    {
+        if (value.isPressed)
+        {
+            thrusters.invertColors = true;
+            Debug.Log("Anchor Activated: Rotate " + movement.rotationSpeed);
+            movement.rotationSpeed *= 3;
+            _isAnchored = true;
+        }
+        else
+        {
+            thrusters.invertColors = false;
+            _isAnchored = false;
+            _rb.linearDamping = 0f;
+            movement.rotationSpeed = _originalRotationSpeed;
+            Debug.Log("Anchor Deactivated: Rotate " + _originalRotationSpeed);
+        }
+    }
+
     // ===== COMBAT =====
-    void TryFireProjectile()
+    protected virtual void TryFireProjectile()
     {
         if (projectileWeapon.prefab == null)
             return;
@@ -354,7 +406,7 @@ public abstract class Player : Entity
 
             if (projectile.TryGetComponent<ProjectileScript>(out var projectileScript))
             {
-                projectileScript.targetTag = "Enemy";
+                projectileScript.targetTag = enemyTag;
                 projectileScript.Initialize(
                     transform.up,
                     Vector2.zero,
@@ -452,6 +504,11 @@ public abstract class Player : Entity
         if (_beamHitLoopSource != null && _beamHitLoopSource.isPlaying)
         {
             _beamHitLoopSource.Stop();
+        }
+
+        if (explosionSound != null)
+        {
+            explosionSound.PlayAtPoint(transform.position);
         }
 
         base.Die();

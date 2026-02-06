@@ -15,7 +15,7 @@ GameObject:
   - component: {fileID: 4258917949002873141}
   - component: {fileID: 7974070810635484610}
   - component: {fileID: 4020504764991200222}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: Class3Projectile_Basic
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -31,7 +31,7 @@ Transform:
   m_GameObject: {fileID: 1778989562205518720}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -12.11785, y: 2.07064, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 0.1, y: 0.3, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

@@ -6,8 +6,6 @@ using UnityEngine.UI;
 // ===== CLASS3 IMPLEMENTATION =====
 public class Class3 : Player
 {
-    float originalRotationSpeed;
-    bool isAnchored = false;
     // ===== ABILITY CONFIGURATION STRUCTS =====
     [System.Serializable]
     public struct AbilitiesConfigStarter
@@ -70,7 +68,6 @@ public class Class3 : Player
     protected override void Awake()
     {
         base.Awake();
-        originalRotationSpeed = movement.rotationSpeed;
     }
 
     // ===== UPDATE LOOP =====
@@ -82,10 +79,7 @@ public class Class3 : Player
     protected override void FixedUpdate()
     {
         base.FixedUpdate();
-        if (isAnchored)
-        {
-            _rb.linearDamping+=.1f;
-        }
+
     }
 
     // ===== ABILITY INPUT CALLBACKS =====
@@ -109,26 +103,6 @@ public class Class3 : Player
     void OnAbility4(InputValue value)
     {
         Debug.Log("Ability 4 Activated");
-    }
-
-    // Anchor
-    void OnAnchor(InputValue value)
-    {
-        if (value.isPressed)
-        {
-            thrusters.invertColors = true;
-            Debug.Log("Anchor Activated: Rotate " + movement.rotationSpeed);
-            movement.rotationSpeed*=3;
-            isAnchored = true;
-        }
-        else
-        {
-            thrusters.invertColors = false;
-            isAnchored = false;
-            _rb.linearDamping = 0f;
-            movement.rotationSpeed = originalRotationSpeed;
-            Debug.Log("Anchor Deactivated: Rotate "+originalRotationSpeed);
-        }
     }
 
     // ===== ABILITY 1 =====

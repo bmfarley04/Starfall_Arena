@@ -20,6 +20,16 @@ public class ParallaxLayer : MonoBehaviour
     private Vector3 previousCameraPosition;
     private float spriteWidth;
 
+    public void SetMainCamera(Camera camera)
+    {
+        mainCamera = camera;
+    }
+
+    public Camera GetMainCamera()
+    {
+        return mainCamera;
+    }
+
     void Start()
     {
         // Auto-find camera if not assigned
