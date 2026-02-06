@@ -116,6 +116,30 @@ public class ShipSelectManager : MonoBehaviour
         public SoundEffect confirmSound;
     }
 
+    [System.Serializable]
+    public struct ShipRotationConfig
+    {
+        [Header("Rotation Sensitivity")]
+        [Tooltip("Sensitivity for Y-axis rotation (left/right spin)")]
+        public float yawSensitivity;
+
+        [Tooltip("Sensitivity for X-axis rotation (up/down tilt)")]
+        public float pitchSensitivity;
+
+        [Tooltip("Sensitivity for Z-axis rotation (roll)")]
+        public float rollSensitivity;
+
+        [Header("Rotation Smoothing")]
+        [Tooltip("How smoothly the ship rotates (lower = smoother)")]
+        [Range(0.01f, 0.5f)]
+        public float rotationSmoothing;
+
+        [Header("Input Deadzone")]
+        [Tooltip("Minimum stick input to register (prevents drift)")]
+        [Range(0f, 0.3f)]
+        public float inputDeadzone;
+    }
+
     [Header("Ship Data")]
     [Tooltip("List of all available ships")]
     [SerializeField] private ShipData[] availableShips;
@@ -159,10 +183,17 @@ public class ShipSelectManager : MonoBehaviour
     [Tooltip("Font size configuration for UI text elements")]
     [SerializeField] private TextSizeConfig textSizes;
 
+    [Header("Ship Rotation")]
+    [Tooltip("Ship rotation controls and sensitivity")]
+    [SerializeField] private ShipRotationConfig shipRotation;
+
     private int _currentShipIndex = 0;
     private GameObject[] _shipModelInstances;
     private AudioSource _audioSource;
     private float _lastNavigationTime = 0f;
+    private Quaternion _targetRotation;
+    private Quaternion _currentRotation;
+    private bool _isPreloaded = false;
 
     private void Awake()
     {
@@ -190,16 +221,36 @@ public class ShipSelectManager : MonoBehaviour
 
     private void OnEnable()
     {
-        // Spawn ships if not already spawned (in case Start hasn't run yet)
+        // Ensure ships are spawned
         if (_shipModelInstances == null || _shipModelInstances.Length == 0)
         {
             SpawnAllShipModels();
         }
 
-        // Load and show the current ship
-        LoadShip(_currentShipIndex);
-        SetDefaultSelection();
+        // If not preloaded, load data now
+        if (!_isPreloaded)
+        {
+            LoadShipDataOnly(_currentShipIndex);
+        }
+
+        // ALWAYS show the current ship model
+        ShowShipModel(_currentShipIndex);
+
         HideAllTooltips(); // Ensure tooltips are hidden when screen opens
+
+        // CRITICAL: Start with NO button selected (ship rotation mode)
+        // Do this on next frame to ensure EventSystem doesn't auto-select
+        StartCoroutine(ClearSelectionNextFrame());
+
+        // Reset flag for next time
+        _isPreloaded = false;
+    }
+
+    private IEnumerator ClearSelectionNextFrame()
+    {
+        yield return null; // Wait one frame
+        if (EventSystem.current != null)
+            EventSystem.current.SetSelectedGameObject(null);
     }
 
     private void OnDisable()
@@ -214,30 +265,146 @@ public class ShipSelectManager : MonoBehaviour
 
     private void Update()
     {
-        HandleControllerInput();
-        EnsureEventSystemSelection();
+        // STICKS ALWAYS rotate ship (separated from D-pad navigation)
+        HandleShipRotation();
+
+        // D-pad navigates UI (EventSystem handles automatically)
+        HandleDPadNavigation();
+
+        // Shoulder buttons switch ships
+        HandleShipNavigation();
+
+        // Smooth rotate the ship model
+        UpdateShipRotation();
     }
 
     /// <summary>
-    /// Ensure EventSystem always has a selected GameObject for controller navigation.
-    /// Fixes bug where navigation stops working after a few seconds.
+    /// Handle ship rotation with controller sticks.
+    /// STICKS ALWAYS rotate ship, regardless of UI selection.
     /// </summary>
-    private void EnsureEventSystemSelection()
+    private void HandleShipRotation()
     {
-        if (EventSystem.current != null && EventSystem.current.currentSelectedGameObject == null)
+        if (Gamepad.current == null) return;
+
+        // Read stick input
+        Vector2 leftStick = Gamepad.current.leftStick.ReadValue();
+        Vector2 rightStick = Gamepad.current.rightStick.ReadValue();
+
+        // Apply deadzone
+        if (leftStick.magnitude < shipRotation.inputDeadzone)
+            leftStick = Vector2.zero;
+        if (rightStick.magnitude < shipRotation.inputDeadzone)
+            rightStick = Vector2.zero;
+
+        // Calculate rotation delta (INTUITIVE: stick right = rotate right)
+        float yaw = leftStick.x * shipRotation.yawSensitivity;    // Left stick X = spin left/right
+        float pitch = -leftStick.y * shipRotation.pitchSensitivity; // Left stick Y = tilt up/down (inverted)
+        float roll = rightStick.x * shipRotation.rollSensitivity;  // Right stick X = roll left/right
+
+        // Apply rotation (Time.unscaledDeltaTime for frame-independent rotation)
+        _targetRotation *= Quaternion.Euler(
+            pitch * Time.unscaledDeltaTime * 60f,
+            yaw * Time.unscaledDeltaTime * 60f,
+            roll * Time.unscaledDeltaTime * 60f
+        );
+    }
+
+    /// <summary>
+    /// Smoothly interpolate ship rotation.
+    /// </summary>
+    private void UpdateShipRotation()
+    {
+        if (_shipModelInstances == null || _currentShipIndex >= _shipModelInstances.Length)
+            return;
+
+        GameObject currentShip = _shipModelInstances[_currentShipIndex];
+        if (currentShip != null && currentShip.activeSelf)
         {
-            // Re-select default button if nothing is selected
-            if (defaultSelectedButton != null)
-                EventSystem.current.SetSelectedGameObject(defaultSelectedButton);
+            _currentRotation = Quaternion.Slerp(_currentRotation, _targetRotation, shipRotation.rotationSmoothing);
+            currentShip.transform.rotation = _currentRotation;
         }
     }
 
     /// <summary>
-    /// Handle gamepad/keyboard navigation input (controller-first design).
-    /// Uses shoulder buttons (LB/RB) for ship navigation.
-    /// D-pad/stick used for UI navigation on screen.
+    /// Handle D-pad navigation for UI.
+    /// Manually handles D-pad input to navigate between ability buttons.
     /// </summary>
-    private void HandleControllerInput()
+    private void HandleDPadNavigation()
+    {
+        if (Gamepad.current == null || EventSystem.current == null) return;
+
+        GameObject selected = EventSystem.current.currentSelectedGameObject;
+
+        // D-pad down: select first ability if nothing selected, OR navigate down
+        if (Gamepad.current.dpad.down.wasPressedThisFrame)
+        {
+            if (selected == null)
+            {
+                // Nothing selected - select first ability
+                if (defaultSelectedButton != null)
+                    EventSystem.current.SetSelectedGameObject(defaultSelectedButton);
+            }
+            else
+            {
+                // Something selected - navigate down
+                Selectable selectable = selected.GetComponent<Selectable>();
+                if (selectable != null)
+                {
+                    Selectable downNeighbor = selectable.FindSelectableOnDown();
+                    if (downNeighbor != null)
+                        EventSystem.current.SetSelectedGameObject(downNeighbor.gameObject);
+                }
+            }
+        }
+
+        // D-pad up: navigate up or deselect from top row
+        if (Gamepad.current.dpad.up.wasPressedThisFrame && selected != null)
+        {
+            Selectable selectable = selected.GetComponent<Selectable>();
+            if (selectable != null)
+            {
+                Selectable upNeighbor = selectable.FindSelectableOnUp();
+                if (upNeighbor != null)
+                {
+                    EventSystem.current.SetSelectedGameObject(upNeighbor.gameObject);
+                }
+                else
+                {
+                    // No neighbor above - deselect to return to ship rotation mode
+                    EventSystem.current.SetSelectedGameObject(null);
+                }
+            }
+        }
+
+        // D-pad left: navigate left
+        if (Gamepad.current.dpad.left.wasPressedThisFrame && selected != null)
+        {
+            Selectable selectable = selected.GetComponent<Selectable>();
+            if (selectable != null)
+            {
+                Selectable leftNeighbor = selectable.FindSelectableOnLeft();
+                if (leftNeighbor != null)
+                    EventSystem.current.SetSelectedGameObject(leftNeighbor.gameObject);
+            }
+        }
+
+        // D-pad right: navigate right
+        if (Gamepad.current.dpad.right.wasPressedThisFrame && selected != null)
+        {
+            Selectable selectable = selected.GetComponent<Selectable>();
+            if (selectable != null)
+            {
+                Selectable rightNeighbor = selectable.FindSelectableOnRight();
+                if (rightNeighbor != null)
+                    EventSystem.current.SetSelectedGameObject(rightNeighbor.gameObject);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Handle ship navigation (shoulder buttons to switch between ships).
+    /// </summary>
+    private void HandleShipNavigation()
     {
         if (Time.unscaledTime - _lastNavigationTime < navigation.navigationCooldown)
             return;
@@ -252,13 +419,11 @@ public class ShipSelectManager : MonoBehaviour
             navigateRight = Gamepad.current.rightShoulder.wasPressedThisFrame;
         }
 
-        // Keyboard fallback (Q/E for shoulders, or arrow keys)
+        // Keyboard fallback (Q/E for shoulders)
         if (!navigateLeft && !navigateRight && Keyboard.current != null)
         {
-            navigateLeft = Keyboard.current.qKey.wasPressedThisFrame ||
-                          Keyboard.current.leftArrowKey.wasPressedThisFrame;
-            navigateRight = Keyboard.current.eKey.wasPressedThisFrame ||
-                           Keyboard.current.rightArrowKey.wasPressedThisFrame;
+            navigateLeft = Keyboard.current.qKey.wasPressedThisFrame;
+            navigateRight = Keyboard.current.eKey.wasPressedThisFrame;
         }
 
         if (navigateLeft)
@@ -300,9 +465,26 @@ public class ShipSelectManager : MonoBehaviour
     }
 
     /// <summary>
-    /// Load and display the specified ship's data.
+    /// Preload ship data before the screen is visible (called early in transition).
     /// </summary>
-    private void LoadShip(int index)
+    public void PreloadShipData()
+    {
+        // Spawn ships if not already spawned
+        if (_shipModelInstances == null || _shipModelInstances.Length == 0)
+        {
+            SpawnAllShipModels();
+        }
+
+        // Load current ship data (but don't show the model yet)
+        LoadShipDataOnly(_currentShipIndex);
+
+        _isPreloaded = true;
+    }
+
+    /// <summary>
+    /// Load ship data without showing the model (for preloading).
+    /// </summary>
+    private void LoadShipDataOnly(int index)
     {
         if (availableShips == null || index < 0 || index >= availableShips.Length)
         {
@@ -331,8 +513,14 @@ public class ShipSelectManager : MonoBehaviour
         UpdateAbility(ability2, ship.ability2);
         UpdateAbility(ability3, ship.ability3);
         UpdateAbility(ability4, ship.ability4);
+    }
 
-        // Show the correct ship model
+    /// <summary>
+    /// Load and display the specified ship's data.
+    /// </summary>
+    private void LoadShip(int index)
+    {
+        LoadShipDataOnly(index);
         ShowShipModel(index);
     }
 
@@ -456,9 +644,14 @@ public class ShipSelectManager : MonoBehaviour
 
     /// <summary>
     /// Spawn all ship models at start (deactivated).
+    /// Only spawns once - subsequent calls are ignored.
     /// </summary>
     private void SpawnAllShipModels()
     {
+        // ONLY spawn once - prevent duplicate spawning
+        if (_shipModelInstances != null && _shipModelInstances.Length > 0)
+            return;
+
         if (availableShips == null || availableShips.Length == 0)
         {
             Debug.LogWarning("ShipSelectManager: No ships available to spawn");
@@ -498,7 +691,10 @@ public class ShipSelectManager : MonoBehaviour
     private void ShowShipModel(int index)
     {
         if (_shipModelInstances == null || index < 0 || index >= _shipModelInstances.Length)
+        {
+            Debug.LogWarning($"ShipSelectManager: Cannot show ship {index} - invalid index or no ships spawned");
             return;
+        }
 
         // Hide all ship models
         for (int i = 0; i < _shipModelInstances.Length; i++)
@@ -511,10 +707,27 @@ public class ShipSelectManager : MonoBehaviour
         GameObject selectedShip = _shipModelInstances[index];
         if (selectedShip != null)
         {
+            // CRITICAL: Activate the ship GameObject
             selectedShip.SetActive(true);
+
+            // Ensure parent is also active (in case ship is child of inactive parent)
+            if (selectedShip.transform.parent != null)
+                selectedShip.transform.parent.gameObject.SetActive(true);
+
+            // Set position, scale, and rotation
             selectedShip.transform.position = shipModel.displayPosition;
-            selectedShip.transform.rotation = Quaternion.Euler(shipModel.displayRotation);
             selectedShip.transform.localScale = Vector3.one * shipModel.displayScale;
+
+            // Initialize rotation from config
+            _targetRotation = Quaternion.Euler(shipModel.displayRotation);
+            _currentRotation = _targetRotation;
+            selectedShip.transform.rotation = _currentRotation;
+
+            Debug.Log($"Ship {index} ({selectedShip.name}) activated at position {shipModel.displayPosition}");
+        }
+        else
+        {
+            Debug.LogError($"ShipSelectManager: Ship {index} is null!");
         }
     }
 
@@ -549,17 +762,6 @@ public class ShipSelectManager : MonoBehaviour
             navigation.navigationSound.Play(_audioSource);
     }
 
-    /// <summary>
-    /// Set the default selected button for controller navigation.
-    /// </summary>
-    private void SetDefaultSelection()
-    {
-        if (defaultSelectedButton != null && EventSystem.current != null)
-        {
-            EventSystem.current.SetSelectedGameObject(null);
-            EventSystem.current.SetSelectedGameObject(defaultSelectedButton);
-        }
-    }
 
     /// <summary>
     /// Public method to show a specific ability tooltip (for testing or external calls).
@@ -631,5 +833,11 @@ public class ShipSelectManager : MonoBehaviour
         textSizes.shipNameSize = 48f;
         textSizes.tooltipTitleSize = 24f;
         textSizes.tooltipDescriptionSize = 18f;
+
+        shipRotation.yawSensitivity = 2f;
+        shipRotation.pitchSensitivity = 2f;
+        shipRotation.rollSensitivity = 1f;
+        shipRotation.rotationSmoothing = 0.15f;
+        shipRotation.inputDeadzone = 0.1f;
     }
 }

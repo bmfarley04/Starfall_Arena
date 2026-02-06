@@ -198,6 +198,15 @@ public class TitleScreenManager : MonoBehaviour
             shipSelectManager.enabled = false;
         }
 
+        // PRELOAD: Load ship data EARLY (before transition) for seamless experience
+        if (to == shipSelectCanvas && shipSelectManager != null)
+        {
+            shipSelectManager.gameObject.SetActive(true);
+            shipSelectManager.enabled = true;
+            shipSelectManager.PreloadShipData();
+            shipSelectManager.enabled = false; // Disable until transition completes
+        }
+
         RectTransform fromRect = (RectTransform)from.transform;
         RectTransform toRect = (RectTransform)to.transform;
 
