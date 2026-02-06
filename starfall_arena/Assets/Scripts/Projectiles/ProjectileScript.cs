@@ -7,25 +7,25 @@ public class ProjectileScript : MonoBehaviour
     public string targetTag;
     private const float ROTATION_OFFSET = -90f;
 
-    private Rigidbody2D _rb;
-    private float _damage;
-    private float _lifetime;
-    private float _impactForce;
-    private Vector2 _direction;
-    private ProjectileVisualController _visualController;
-    private Entity _shooter;
+    protected Rigidbody2D _rb;
+    protected float _damage;
+    protected float _lifetime;
+    protected float _impactForce;
+    protected Vector2 _direction;
+    protected ProjectileVisualController _visualController;
+    protected Entity _shooter;
 
     // Pierce mechanics
-    private bool _canPierce = false;
-    private float _pierceMultiplier = 1f;
+    protected bool _canPierce = false;
+    protected float _pierceMultiplier = 1f;
 
     // Reflection tracking
-    private bool _isReflected = false;
+    protected bool _isReflected = false;
 
     // Slow effect
-    private bool _appliesSlow = false;
-    private float _slowMultiplier = 1f;
-    private float _slowDuration = 0f;
+    protected bool _appliesSlow = false;
+    protected float _slowMultiplier = 1f;
+    protected float _slowDuration = 0f;
 
     void Awake()
     {
@@ -141,7 +141,7 @@ public class ProjectileScript : MonoBehaviour
         return _isReflected;
     }
 
-    void OnTriggerEnter2D(Collider2D collider)
+    protected virtual void OnTriggerEnter2D(Collider2D collider)
     {
         // Check for ship collision
         if (collider.CompareTag(targetTag))

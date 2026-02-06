@@ -302,6 +302,32 @@ public abstract class Entity : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Deals damage directly to health, bypassing shields entirely.
+    /// Used by physical projectiles that ignore shields.
+    /// </summary>
+    public virtual void TakeDirectDamage(float damage, float impactForce = 0f, Vector3 hitPoint = default, DamageSource source = DamageSource.Projectile)
+    {
+        if (_isDead) return;
+
+        if (hitPoint != Vector3.zero)
+        {
+            _lastDamageDirection = ((Vector2)transform.position - (Vector2)hitPoint).normalized;
+        }
+        else
+        {
+            _lastDamageDirection = Vector2.zero;
+        }
+
+        currentHealth -= damage;
+        OnHealthChanged();
+
+        if (currentHealth <= 0)
+        {
+            Die();
+        }
+    }
+
     protected virtual void Die()
     {
         if (_isDead) return;

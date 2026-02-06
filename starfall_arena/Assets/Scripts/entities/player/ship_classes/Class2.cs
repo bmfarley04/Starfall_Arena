@@ -100,6 +100,36 @@ public struct TractorBeamAbilityConfig
 }
 
 [System.Serializable]
+public struct PhysicalProjectileAbilityConfig
+{
+    [Header("Timing")]
+    [Tooltip("Cooldown between shots (seconds)")]
+    public float cooldown;
+
+    [Header("Spawn Point")]
+    [Tooltip("Transform where the projectile spawns (drag from Hierarchy)")]
+    public Transform spawnPoint;
+
+    [Header("Projectile")]
+    [Tooltip("Physical projectile prefab (should use PhysicalProjectile script)")]
+    public GameObject projectilePrefab;
+    [Tooltip("Damage dealt by the projectile")]
+    public float damage;
+    [Tooltip("Speed of the projectile")]
+    public float speed;
+    [Tooltip("Projectile lifetime (seconds)")]
+    public float lifetime;
+    [Tooltip("Impact force applied to target on hit")]
+    public float impactForce;
+    [Tooltip("Recoil force applied to ship when firing")]
+    public float recoilForce;
+
+    [Header("Sound Effects")]
+    [Tooltip("Sound played when firing")]
+    public SoundEffect fireSound;
+}
+
+[System.Serializable]
 public struct Class2AbilitiesConfig
 {
     [Header("Ability 1 - Empowered Shot")]
@@ -110,6 +140,9 @@ public struct Class2AbilitiesConfig
 
     [Header("Ability 3 - Tractor Beam")]
     public TractorBeamAbilityConfig tractorBeam;
+
+    [Header("Ability 4 - Physical Projectile")]
+    public PhysicalProjectileAbilityConfig physicalProjectile;
 }
 
 public class Class2 : Player
@@ -128,6 +161,7 @@ public class Class2 : Player
     [SerializeField] private float convergenceDistance = 20f;
 
     // ===== PRIVATE STATE =====
+    private float _lastPhysicalProjectileTime = -999f;
     private float _lastEmpoweredShotTime = -999f;
     private float _lastShieldTime = -999f;
     private Coroutine _shieldCoroutine;
@@ -243,6 +277,68 @@ public class Class2 : Player
     }
 
     // ===== ABILITY INPUT CALLBACKS =====
+
+    // Ability 4 - Physical Projectile (same binding as Class1 Giga Blast)
+    void OnAbility1()
+    {
+        if (Time.time < _lastPhysicalProjectileTime + abilities.physicalProjectile.cooldown)
+        {
+            Debug.Log($"Physical Projectile on cooldown: {(_lastPhysicalProjectileTime + abilities.physicalProjectile.cooldown - Time.time):F1}s remaining");
+            return;
+        }
+
+        if (abilities.physicalProjectile.projectilePrefab == null)
+        {
+            Debug.LogWarning("Physical Projectile prefab not assigned!");
+            return;
+        }
+
+        if (abilities.physicalProjectile.spawnPoint == null)
+        {
+            Debug.LogWarning("Physical Projectile spawn point not assigned!");
+            return;
+        }
+
+        FirePhysicalProjectile();
+        _lastPhysicalProjectileTime = Time.time;
+    }
+
+    private void FirePhysicalProjectile()
+    {
+        Transform spawnPoint = abilities.physicalProjectile.spawnPoint;
+
+        // Use ship's forward direction, not spawn point's rotation
+        GameObject projectile = Instantiate(
+            abilities.physicalProjectile.projectilePrefab,
+            spawnPoint.position,
+            transform.rotation
+        );
+
+        if (projectile.TryGetComponent<ProjectileScript>(out var projectileScript))
+        {
+            projectileScript.targetTag = enemyTag;
+            projectileScript.Initialize(
+                transform.up,  // Ship's forward direction
+                Vector2.zero,
+                abilities.physicalProjectile.speed,
+                abilities.physicalProjectile.damage,
+                abilities.physicalProjectile.lifetime,
+                abilities.physicalProjectile.impactForce,
+                this
+            );
+        }
+
+        ApplyRecoil(abilities.physicalProjectile.recoilForce);
+
+        if (abilities.physicalProjectile.fireSound != null)
+        {
+            abilities.physicalProjectile.fireSound.Play(GetAvailableAudioSource());
+        }
+
+        Debug.Log($"Physical Projectile fired! Damage: {abilities.physicalProjectile.damage:F1}, Speed: {abilities.physicalProjectile.speed:F1}");
+    }
+
+    // Ability 3 - Empowered Shot
     void OnAbility3()
     {
         if (Time.time < _lastEmpoweredShotTime + abilities.empoweredShot.cooldown)

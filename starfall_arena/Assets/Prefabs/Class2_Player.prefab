@@ -10608,6 +10608,37 @@ MonoBehaviour:
   mass: 0.5
   drag: 0.5
   angularDrag: 0.3
+--- !u!1 &2961250759611497613
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 873564872842125562}
+  m_Layer: 0
+  m_Name: physicalCanon
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &873564872842125562
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2961250759611497613}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: -0, z: 8}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 7020441445794620648}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2982307353416435227
 GameObject:
   m_ObjectHideFlags: 0
@@ -21467,6 +21498,7 @@ Transform:
   m_LocalScale: {x: 0.35, y: 0.35, z: 0.35}
   m_ConstrainProportionsScale: 0
   m_Children:
+  - {fileID: 873564872842125562}
   - {fileID: 8801375264252431459}
   - {fileID: 4069400133257366367}
   - {fileID: 7840912572345311910}
@@ -23245,6 +23277,16 @@ MonoBehaviour:
       coneOffset: {x: 0, y: 0, z: 5}
       suctionParticles: {fileID: 7803267935673130348}
       beamLoopSound: {fileID: 0}
+    physicalProjectile:
+      cooldown: 14
+      spawnPoint: {fileID: 873564872842125562}
+      projectilePrefab: {fileID: 8799755727349527462, guid: 6a4cfca68788048498cc8ddfee032389, type: 3}
+      damage: 60
+      speed: 60
+      lifetime: 3
+      impactForce: 15
+      recoilForce: 8
+      fireSound: {fileID: 0}
   _fireCooldown: 1
   convergenceDistance: 20
 --- !u!1 &6183319790727871496
