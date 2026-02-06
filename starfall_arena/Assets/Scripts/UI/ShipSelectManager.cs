@@ -2,6 +2,7 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.UI;
 using UnityEngine.EventSystems;
 using TMPro;
 
@@ -194,6 +195,8 @@ public class ShipSelectManager : MonoBehaviour
     private Quaternion _targetRotation;
     private Quaternion _currentRotation;
     private bool _isPreloaded = false;
+    private InputSystemUIInputModule _uiInputModule;
+    private bool _wasNavigationEnabled;
 
     private void Awake()
     {
@@ -227,6 +230,9 @@ public class ShipSelectManager : MonoBehaviour
     private void OnEnable()
     {
         Debug.Log("[OnEnable] ShipSelectManager enabled!");
+
+        // Disable EventSystem's automatic navigation (stick input) - we handle navigation manually
+        DisableEventSystemNavigation();
 
         // Ensure ships are spawned
         if (_shipModelInstances == null || _shipModelInstances.Length == 0)
@@ -276,12 +282,49 @@ public class ShipSelectManager : MonoBehaviour
     private void OnDisable()
     {
         Debug.Log("[OnDisable] ShipSelectManager disabled!");
+
+        // Re-enable EventSystem's automatic navigation
+        RestoreEventSystemNavigation();
+
         HideAllShipModels();
         HideAllTooltips();
 
         // Clear EventSystem selection when leaving ship select
         if (EventSystem.current != null)
             EventSystem.current.SetSelectedGameObject(null);
+    }
+
+    /// <summary>
+    /// Disable EventSystem's automatic navigation so sticks don't control UI.
+    /// We handle D-pad navigation manually.
+    /// </summary>
+    private void DisableEventSystemNavigation()
+    {
+        if (EventSystem.current == null) return;
+
+        _uiInputModule = EventSystem.current.GetComponent<InputSystemUIInputModule>();
+        if (_uiInputModule != null)
+        {
+            Debug.Log("[DisableEventSystemNavigation] Disabling automatic navigation");
+            // Store original state
+            // Disable move action so EventSystem doesn't respond to stick/D-pad automatically
+            if (_uiInputModule.move != null)
+            {
+                _uiInputModule.move.action.Disable();
+            }
+        }
+    }
+
+    /// <summary>
+    /// Re-enable EventSystem's automatic navigation when leaving ship select.
+    /// </summary>
+    private void RestoreEventSystemNavigation()
+    {
+        if (_uiInputModule != null && _uiInputModule.move != null)
+        {
+            Debug.Log("[RestoreEventSystemNavigation] Re-enabling automatic navigation");
+            _uiInputModule.move.action.Enable();
+        }
     }
 
     private void Update()
@@ -348,8 +391,8 @@ public class ShipSelectManager : MonoBehaviour
 
     /// <summary>
     /// Handle D-pad navigation for UI.
-    /// Only handles Down (to enter UI) and Up (to exit UI).
-    /// Left/Right navigation is handled automatically by Unity EventSystem using explicit button navigation.
+    /// Manually handles ALL D-pad directions to prevent stick input from controlling UI.
+    /// STICKS ONLY rotate ship, D-PAD ONLY navigates UI.
     /// </summary>
     private void HandleDPadNavigation()
     {
@@ -357,34 +400,70 @@ public class ShipSelectManager : MonoBehaviour
 
         GameObject selected = EventSystem.current.currentSelectedGameObject;
 
-        // D-pad down: select first ability if nothing selected
-        // Unity EventSystem handles Down navigation between buttons automatically
-        if (Gamepad.current.dpad.down.wasPressedThisFrame && selected == null)
+        // D-pad DOWN
+        if (Gamepad.current.dpad.down.wasPressedThisFrame)
         {
-            // Nothing selected - select first ability
-            if (defaultSelectedButton != null)
-                EventSystem.current.SetSelectedGameObject(defaultSelectedButton);
+            if (selected == null)
+            {
+                // Nothing selected - select first ability
+                if (defaultSelectedButton != null)
+                    EventSystem.current.SetSelectedGameObject(defaultSelectedButton);
+            }
+            else
+            {
+                // Navigate down using explicit navigation
+                Selectable selectable = selected.GetComponent<Selectable>();
+                if (selectable != null)
+                {
+                    Selectable downNeighbor = selectable.FindSelectableOnDown();
+                    if (downNeighbor != null)
+                        EventSystem.current.SetSelectedGameObject(downNeighbor.gameObject);
+                }
+            }
         }
 
-        // D-pad up: deselect if on top row (no neighbor above)
-        // Unity EventSystem handles Up navigation between buttons automatically
+        // D-pad UP
         if (Gamepad.current.dpad.up.wasPressedThisFrame && selected != null)
         {
             Selectable selectable = selected.GetComponent<Selectable>();
             if (selectable != null)
             {
                 Selectable upNeighbor = selectable.FindSelectableOnUp();
-                if (upNeighbor == null)
+                if (upNeighbor != null)
+                {
+                    EventSystem.current.SetSelectedGameObject(upNeighbor.gameObject);
+                }
+                else
                 {
                     // No neighbor above - deselect to return to ship rotation mode
                     EventSystem.current.SetSelectedGameObject(null);
                 }
-                // If there IS a neighbor above, let EventSystem handle it automatically
             }
         }
 
-        // Left/Right navigation: Let Unity EventSystem handle it automatically
-        // This uses the explicit Navigation settings you configured on the buttons
+        // D-pad LEFT
+        if (Gamepad.current.dpad.left.wasPressedThisFrame && selected != null)
+        {
+            Selectable selectable = selected.GetComponent<Selectable>();
+            if (selectable != null)
+            {
+                Selectable leftNeighbor = selectable.FindSelectableOnLeft();
+                if (leftNeighbor != null)
+                    EventSystem.current.SetSelectedGameObject(leftNeighbor.gameObject);
+            }
+        }
+
+        // D-pad RIGHT
+        if (Gamepad.current.dpad.right.wasPressedThisFrame && selected != null)
+        {
+            Selectable selectable = selected.GetComponent<Selectable>();
+            if (selectable != null)
+            {
+                Selectable rightNeighbor = selectable.FindSelectableOnRight();
+                if (rightNeighbor != null)
+                    EventSystem.current.SetSelectedGameObject(rightNeighbor.gameObject);
+            }
+        }
     }
 
     /// <summary>
