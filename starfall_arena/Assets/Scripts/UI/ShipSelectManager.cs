@@ -179,25 +179,57 @@ public class ShipSelectManager : MonoBehaviour
 
         // Hide all tooltips initially
         HideAllTooltips();
+    }
 
-        // Spawn all ship models at start (deactivated)
+    private void Start()
+    {
+        // Spawn all ship models (deactivated) after scene setup
         SpawnAllShipModels();
+        HideAllShipModels(); // Ensure all ships are hidden at start
     }
 
     private void OnEnable()
     {
+        // Spawn ships if not already spawned (in case Start hasn't run yet)
+        if (_shipModelInstances == null || _shipModelInstances.Length == 0)
+        {
+            SpawnAllShipModels();
+        }
+
+        // Load and show the current ship
         LoadShip(_currentShipIndex);
         SetDefaultSelection();
+        HideAllTooltips(); // Ensure tooltips are hidden when screen opens
     }
 
     private void OnDisable()
     {
         HideAllShipModels();
+        HideAllTooltips();
+
+        // Clear EventSystem selection when leaving ship select
+        if (EventSystem.current != null)
+            EventSystem.current.SetSelectedGameObject(null);
     }
 
     private void Update()
     {
         HandleControllerInput();
+        EnsureEventSystemSelection();
+    }
+
+    /// <summary>
+    /// Ensure EventSystem always has a selected GameObject for controller navigation.
+    /// Fixes bug where navigation stops working after a few seconds.
+    /// </summary>
+    private void EnsureEventSystemSelection()
+    {
+        if (EventSystem.current != null && EventSystem.current.currentSelectedGameObject == null)
+        {
+            // Re-select default button if nothing is selected
+            if (defaultSelectedButton != null)
+                EventSystem.current.SetSelectedGameObject(defaultSelectedButton);
+        }
     }
 
     /// <summary>
