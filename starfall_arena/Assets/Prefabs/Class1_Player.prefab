@@ -4961,7 +4961,6 @@ GameObject:
   - component: {fileID: 9213498189382806680}
   - component: {fileID: 678256140099594092}
   - component: {fileID: 3550827916854919345}
-  - component: {fileID: -1802509990396755088}
   m_Layer: 0
   m_Name: Class1_Player
   m_TagString: Player
@@ -5502,63 +5501,6 @@ MonoBehaviour:
       tier2FireSound: {fileID: 0}
       tier3FireSound: {fileID: 0}
       tier4FireSound: {fileID: 0}
---- !u!114 &-1802509990396755088
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1578230554132079418}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1d20c4609a6a9c447895885cf4969905, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Class1PreviewController
-  beamPreview:
-    beamPrefab: {fileID: 0}
-    offsetDistance: 0
-    maxDistance: 0
-    activeDuration: 0
-    pauseDuration: 0
-    beamLoopSound: {fileID: 0}
-    soundFadeDuration: 0
-  reflectPreview:
-    shield: {fileID: 0}
-    shieldColor: {r: 0, g: 0, b: 0, a: 0}
-    activeDuration: 0
-    rippleInterval: 0
-    rippleCount: 0
-    pauseDuration: 0
-    shieldLoopSound: {fileID: 0}
-  teleportPreview:
-    shrinkDuration: 0
-    growDuration: 0
-    squeezeScaleX: 0
-    squeezeScaleY: 0
-    overshootScale: 0
-    invisibleDuration: 0
-    pauseDuration: 0
-    exitEffectPrefab: {fileID: 0}
-    arrivalEffectPrefab: {fileID: 0}
-    exitSound: {fileID: 0}
-    arrivalSound: {fileID: 0}
-  gigaBlastPreview:
-    tier1Particles: {fileID: 0}
-    tier2Particles: {fileID: 0}
-    tier3Particles: {fileID: 0}
-    tier4Particles: {fileID: 0}
-    fireProjectilePrefab: {fileID: 0}
-    offsetDistance: 0
-    projectileSpeed: 0
-    projectileLifetime: 0
-    tierDuration: 0
-    pauseAfterFire: 0
-    chargeSound: {fileID: 0}
-    chargeSoundFadeDuration: 0
-    fireSound: {fileID: 0}
-  rotation:
-    lockSmoothing: 0
-    unlockSmoothing: 0
 --- !u!1 &3501154216763360000
 GameObject:
   m_ObjectHideFlags: 0
