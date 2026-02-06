@@ -1098,6 +1098,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 1578230554132079418, guid: dab56be66f149c34fbedb1fc28a943e6, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1730841359903112306}
+    - targetCorrespondingSourceObject: {fileID: 1578230554132079418, guid: dab56be66f149c34fbedb1fc28a943e6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: -5416718075314668237}
   m_SourcePrefab: {fileID: 100100000, guid: dab56be66f149c34fbedb1fc28a943e6, type: 3}
 --- !u!1 &8073042944126910331 stripped
 GameObject:
@@ -1193,6 +1196,25 @@ MonoBehaviour:
     ability3Stats:
       cooldown: 0
       duration: 0
+--- !u!114 &-5416718075314668237
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8073042944126910331}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8f0e66bbd7c78f14cbb24d6b25aefc40, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SimpleRotator
+  rotateX: 0
+  xSpeed: 10
+  rotateY: 1
+  ySpeed: 3
+  rotateZ: 0
+  zSpeed: 10
+  useUnscaledTime: 0
 --- !u!4 &8447593613203198634 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 1213109017606901483, guid: dab56be66f149c34fbedb1fc28a943e6, type: 3}
