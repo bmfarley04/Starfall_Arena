@@ -1,0 +1,37 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4126ca0ce3c78694f95eed711408a84b, type: 3}
+  m_Name: Class2
+  m_EditorClassIdentifier: Assembly-CSharp::ShipData
+  shipName: HELLHAMMER
+  shipModelPrefab: {fileID: 6103655459887012557, guid: 50eff087d99df9343b7a3be5c8bade09, type: 3}
+  stats:
+    damage: 32
+    hull: 100
+    shield: 100
+    speed: 30
+  ability1:
+    abilityName: DECISIVE STRIKE
+    abilityDescription: Empowered base attack which slows enemies
+    abilityIcon: {fileID: 0}
+  ability2:
+    abilityName: COURAGE
+    abilityDescription: Makes you invulernable for a short duration
+    abilityIcon: {fileID: 0}
+  ability3:
+    abilityName: APPREHEND
+    abilityDescription: Drags enemies towards you with a tractor beam
+    abilityIcon: {fileID: 0}
+  ability4:
+    abilityName: JUDGEMENT
+    abilityDescription: Fires a rail gun which pierces all shields
+    abilityIcon: {fileID: 0}
