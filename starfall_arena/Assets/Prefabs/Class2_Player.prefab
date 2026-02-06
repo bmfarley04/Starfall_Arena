@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 6396637374471623370}
   - component: {fileID: 916495625088858016}
   - component: {fileID: 4104580386557967307}
+  - component: {fileID: 1023743917486400459}
   m_Layer: 0
   m_Name: GalaxyRaptor_Engine
   m_TagString: Untagged
@@ -90,6 +91,28 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &1023743917486400459
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 162699983941240017}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 212a6c747614c0f43925f04a185b9883, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShipPartScatter
+  minScatterForce: 5
+  maxScatterForce: 10
+  scatterConeAngle: 45
+  minAngularVelocity: 90
+  maxAngularVelocity: 360
+  lifetime: 8
+  shrinkStartTime: 0.95
+  mass: 0.5
+  drag: 0.5
+  angularDrag: 0.3
 --- !u!1 &612518137750445935
 GameObject:
   m_ObjectHideFlags: 0
@@ -101,6 +124,7 @@ GameObject:
   - component: {fileID: 6815961772427513207}
   - component: {fileID: 1186509832910045998}
   - component: {fileID: 9125566949751814364}
+  - component: {fileID: 401294648805389957}
   m_Layer: 0
   m_Name: GalaxyRaptor_ThrustCover
   m_TagString: Untagged
@@ -180,6 +204,28 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &401294648805389957
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 612518137750445935}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 212a6c747614c0f43925f04a185b9883, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShipPartScatter
+  minScatterForce: 5
+  maxScatterForce: 10
+  scatterConeAngle: 45
+  minAngularVelocity: 90
+  maxAngularVelocity: 360
+  lifetime: 8
+  shrinkStartTime: 0.95
+  mass: 0.5
+  drag: 0.5
+  angularDrag: 0.3
 --- !u!1 &1303043520680420677
 GameObject:
   m_ObjectHideFlags: 0
@@ -5027,6 +5073,7 @@ GameObject:
   - component: {fileID: 474926162344463815}
   - component: {fileID: 1332658332793954025}
   - component: {fileID: 6465081641784381818}
+  - component: {fileID: 5306303809941802053}
   m_Layer: 0
   m_Name: GalaxyRaptor_MainBody4
   m_TagString: Untagged
@@ -5106,6 +5153,28 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &5306303809941802053
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1581558962888060266}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 212a6c747614c0f43925f04a185b9883, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShipPartScatter
+  minScatterForce: 5
+  maxScatterForce: 10
+  scatterConeAngle: 45
+  minAngularVelocity: 90
+  maxAngularVelocity: 360
+  lifetime: 8
+  shrinkStartTime: 0.95
+  mass: 0.5
+  drag: 0.5
+  angularDrag: 0.3
 --- !u!1 &1763455987582687928
 GameObject:
   m_ObjectHideFlags: 0
@@ -5117,6 +5186,7 @@ GameObject:
   - component: {fileID: 3398958466178907258}
   - component: {fileID: 4476694900708037677}
   - component: {fileID: 6875995201424638735}
+  - component: {fileID: 8459190720915095976}
   m_Layer: 0
   m_Name: GalaxyRaptor_Engine
   m_TagString: Untagged
@@ -5197,6 +5267,28 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &8459190720915095976
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1763455987582687928}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 212a6c747614c0f43925f04a185b9883, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShipPartScatter
+  minScatterForce: 5
+  maxScatterForce: 10
+  scatterConeAngle: 45
+  minAngularVelocity: 90
+  maxAngularVelocity: 360
+  lifetime: 8
+  shrinkStartTime: 0.95
+  mass: 0.5
+  drag: 0.5
+  angularDrag: 0.3
 --- !u!1 &1852009354753930684
 GameObject:
   m_ObjectHideFlags: 0
@@ -5208,6 +5300,7 @@ GameObject:
   - component: {fileID: 521802451765493882}
   - component: {fileID: 3466602371068569815}
   - component: {fileID: 3477141980089673367}
+  - component: {fileID: 8345566554121501753}
   m_Layer: 0
   m_Name: GalaxyRaptor_Acc_Mirrored
   m_TagString: Untagged
@@ -5287,6 +5380,28 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &8345566554121501753
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1852009354753930684}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 212a6c747614c0f43925f04a185b9883, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShipPartScatter
+  minScatterForce: 5
+  maxScatterForce: 10
+  scatterConeAngle: 45
+  minAngularVelocity: 90
+  maxAngularVelocity: 360
+  lifetime: 8
+  shrinkStartTime: 0.95
+  mass: 0.5
+  drag: 0.5
+  angularDrag: 0.3
 --- !u!1 &1909235538883996221
 GameObject:
   m_ObjectHideFlags: 0
@@ -5298,6 +5413,7 @@ GameObject:
   - component: {fileID: 6890427715847537567}
   - component: {fileID: 5491763819713710881}
   - component: {fileID: 5972126163908130146}
+  - component: {fileID: 7849507833834346480}
   m_Layer: 0
   m_Name: GalaxyRaptor_WingHolder
   m_TagString: Untagged
@@ -5377,6 +5493,28 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &7849507833834346480
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1909235538883996221}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 212a6c747614c0f43925f04a185b9883, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShipPartScatter
+  minScatterForce: 5
+  maxScatterForce: 10
+  scatterConeAngle: 45
+  minAngularVelocity: 90
+  maxAngularVelocity: 360
+  lifetime: 8
+  shrinkStartTime: 0.95
+  mass: 0.5
+  drag: 0.5
+  angularDrag: 0.3
 --- !u!1 &2344444089445367392
 GameObject:
   m_ObjectHideFlags: 0
@@ -5419,6 +5557,7 @@ GameObject:
   - component: {fileID: 5532857685882965136}
   - component: {fileID: 1561015333883055566}
   - component: {fileID: 8651051527920519834}
+  - component: {fileID: 820219197921841764}
   m_Layer: 0
   m_Name: GalaxyRaptor_Cockpit
   m_TagString: Untagged
@@ -5498,6 +5637,28 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &820219197921841764
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2513298040494904539}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 212a6c747614c0f43925f04a185b9883, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShipPartScatter
+  minScatterForce: 5
+  maxScatterForce: 10
+  scatterConeAngle: 45
+  minAngularVelocity: 90
+  maxAngularVelocity: 360
+  lifetime: 8
+  shrinkStartTime: 0.95
+  mass: 0.5
+  drag: 0.5
+  angularDrag: 0.3
 --- !u!1 &2618530944325296413
 GameObject:
   m_ObjectHideFlags: 0
@@ -5509,6 +5670,7 @@ GameObject:
   - component: {fileID: 2131668408109033491}
   - component: {fileID: 1704403904533094898}
   - component: {fileID: 1689436241493452226}
+  - component: {fileID: 6607958069892939362}
   m_Layer: 0
   m_Name: GalaxyRaptor_MainBody2
   m_TagString: Untagged
@@ -5588,6 +5750,28 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &6607958069892939362
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2618530944325296413}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 212a6c747614c0f43925f04a185b9883, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShipPartScatter
+  minScatterForce: 5
+  maxScatterForce: 10
+  scatterConeAngle: 45
+  minAngularVelocity: 90
+  maxAngularVelocity: 360
+  lifetime: 8
+  shrinkStartTime: 0.95
+  mass: 0.5
+  drag: 0.5
+  angularDrag: 0.3
 --- !u!1 &2982307353416435227
 GameObject:
   m_ObjectHideFlags: 0
@@ -5599,6 +5783,7 @@ GameObject:
   - component: {fileID: 6124671327844591811}
   - component: {fileID: 6712592230394126960}
   - component: {fileID: 4306254286549676222}
+  - component: {fileID: 4354532375003865133}
   m_Layer: 0
   m_Name: GalaxyRaptor_MainBody1
   m_TagString: Untagged
@@ -5678,6 +5863,28 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &4354532375003865133
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2982307353416435227}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 212a6c747614c0f43925f04a185b9883, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShipPartScatter
+  minScatterForce: 5
+  maxScatterForce: 10
+  scatterConeAngle: 45
+  minAngularVelocity: 90
+  maxAngularVelocity: 360
+  lifetime: 8
+  shrinkStartTime: 0.95
+  mass: 0.5
+  drag: 0.5
+  angularDrag: 0.3
 --- !u!1 &2989003523824484978
 GameObject:
   m_ObjectHideFlags: 0
@@ -5689,6 +5896,7 @@ GameObject:
   - component: {fileID: 5957345238312689420}
   - component: {fileID: 4351068296012852451}
   - component: {fileID: 5096945485168545101}
+  - component: {fileID: 7585561753845046132}
   m_Layer: 0
   m_Name: GalaxyRaptor_MainBody2
   m_TagString: Untagged
@@ -5768,6 +5976,28 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &7585561753845046132
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2989003523824484978}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 212a6c747614c0f43925f04a185b9883, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShipPartScatter
+  minScatterForce: 5
+  maxScatterForce: 10
+  scatterConeAngle: 45
+  minAngularVelocity: 90
+  maxAngularVelocity: 360
+  lifetime: 8
+  shrinkStartTime: 0.95
+  mass: 0.5
+  drag: 0.5
+  angularDrag: 0.3
 --- !u!1 &3048181216569666821
 GameObject:
   m_ObjectHideFlags: 0
@@ -5810,6 +6040,7 @@ GameObject:
   - component: {fileID: 7840912572345311910}
   - component: {fileID: 1661681634626785690}
   - component: {fileID: 6999649148756126976}
+  - component: {fileID: 2474148348112295264}
   m_Layer: 0
   m_Name: GalaxyRaptor_Acc
   m_TagString: Untagged
@@ -5889,6 +6120,28 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &2474148348112295264
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3689913979535096031}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 212a6c747614c0f43925f04a185b9883, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShipPartScatter
+  minScatterForce: 5
+  maxScatterForce: 10
+  scatterConeAngle: 45
+  minAngularVelocity: 90
+  maxAngularVelocity: 360
+  lifetime: 8
+  shrinkStartTime: 0.95
+  mass: 0.5
+  drag: 0.5
+  angularDrag: 0.3
 --- !u!1 &3818677964087118626
 GameObject:
   m_ObjectHideFlags: 0
@@ -5900,6 +6153,7 @@ GameObject:
   - component: {fileID: 1427084860233964067}
   - component: {fileID: 5724432719800522925}
   - component: {fileID: 6325383535601932887}
+  - component: {fileID: 3963941594506136929}
   m_Layer: 0
   m_Name: GalaxyRaptor_ThrustCover
   m_TagString: Untagged
@@ -5979,6 +6233,28 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &3963941594506136929
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3818677964087118626}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 212a6c747614c0f43925f04a185b9883, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShipPartScatter
+  minScatterForce: 5
+  maxScatterForce: 10
+  scatterConeAngle: 45
+  minAngularVelocity: 90
+  maxAngularVelocity: 360
+  lifetime: 8
+  shrinkStartTime: 0.95
+  mass: 0.5
+  drag: 0.5
+  angularDrag: 0.3
 --- !u!1 &3942208290338586566
 GameObject:
   m_ObjectHideFlags: 0
@@ -5990,6 +6266,7 @@ GameObject:
   - component: {fileID: 4418288728688784687}
   - component: {fileID: 1619181302723683542}
   - component: {fileID: 6735084267389511673}
+  - component: {fileID: 5948281010405516698}
   m_Layer: 0
   m_Name: GalaxyRaptor_ThrustCover
   m_TagString: Untagged
@@ -6069,6 +6346,28 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &5948281010405516698
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3942208290338586566}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 212a6c747614c0f43925f04a185b9883, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShipPartScatter
+  minScatterForce: 5
+  maxScatterForce: 10
+  scatterConeAngle: 45
+  minAngularVelocity: 90
+  maxAngularVelocity: 360
+  lifetime: 8
+  shrinkStartTime: 0.95
+  mass: 0.5
+  drag: 0.5
+  angularDrag: 0.3
 --- !u!1 &3999788076937099145
 GameObject:
   m_ObjectHideFlags: 0
@@ -10916,6 +11215,7 @@ GameObject:
   - component: {fileID: 4313625725375178877}
   - component: {fileID: 699338159838586680}
   - component: {fileID: 3503334338201740522}
+  - component: {fileID: 3895373147854900704}
   m_Layer: 0
   m_Name: GalaxyRaptor_Wing4
   m_TagString: Untagged
@@ -10995,6 +11295,28 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &3895373147854900704
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4013848314232199678}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 212a6c747614c0f43925f04a185b9883, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShipPartScatter
+  minScatterForce: 5
+  maxScatterForce: 10
+  scatterConeAngle: 45
+  minAngularVelocity: 90
+  maxAngularVelocity: 360
+  lifetime: 8
+  shrinkStartTime: 0.95
+  mass: 0.5
+  drag: 0.5
+  angularDrag: 0.3
 --- !u!1 &4596288468977418747
 GameObject:
   m_ObjectHideFlags: 0
@@ -11006,6 +11328,7 @@ GameObject:
   - component: {fileID: 4327327960351987344}
   - component: {fileID: 4231600389515076823}
   - component: {fileID: 3612584070302038800}
+  - component: {fileID: 7074752137132677526}
   m_Layer: 0
   m_Name: GalaxyRaptor_Gun
   m_TagString: Untagged
@@ -11086,6 +11409,28 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &7074752137132677526
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4596288468977418747}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 212a6c747614c0f43925f04a185b9883, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShipPartScatter
+  minScatterForce: 5
+  maxScatterForce: 10
+  scatterConeAngle: 45
+  minAngularVelocity: 90
+  maxAngularVelocity: 360
+  lifetime: 8
+  shrinkStartTime: 0.95
+  mass: 0.5
+  drag: 0.5
+  angularDrag: 0.3
 --- !u!1 &4610440478347593950
 GameObject:
   m_ObjectHideFlags: 0
@@ -16042,6 +16387,7 @@ GameObject:
   - component: {fileID: 4338212372601914026}
   - component: {fileID: 4969037014415121803}
   - component: {fileID: 8699117653021644229}
+  - component: {fileID: 1293533216936822348}
   m_Layer: 0
   m_Name: GalaxyRaptor_Wing3
   m_TagString: Untagged
@@ -16121,6 +16467,28 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &1293533216936822348
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4719792316467568891}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 212a6c747614c0f43925f04a185b9883, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShipPartScatter
+  minScatterForce: 5
+  maxScatterForce: 10
+  scatterConeAngle: 45
+  minAngularVelocity: 90
+  maxAngularVelocity: 360
+  lifetime: 8
+  shrinkStartTime: 0.95
+  mass: 0.5
+  drag: 0.5
+  angularDrag: 0.3
 --- !u!1 &4873048200056391085
 GameObject:
   m_ObjectHideFlags: 0
@@ -16132,6 +16500,7 @@ GameObject:
   - component: {fileID: 8803110159738581729}
   - component: {fileID: 7125523045891951145}
   - component: {fileID: 632784390261243726}
+  - component: {fileID: 7238286278778360334}
   m_Layer: 0
   m_Name: GalaxyRaptor_MainBody4
   m_TagString: Untagged
@@ -16211,6 +16580,28 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &7238286278778360334
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4873048200056391085}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 212a6c747614c0f43925f04a185b9883, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShipPartScatter
+  minScatterForce: 5
+  maxScatterForce: 10
+  scatterConeAngle: 45
+  minAngularVelocity: 90
+  maxAngularVelocity: 360
+  lifetime: 8
+  shrinkStartTime: 0.95
+  mass: 0.5
+  drag: 0.5
+  angularDrag: 0.3
 --- !u!1 &4910110171736700510
 GameObject:
   m_ObjectHideFlags: 0
@@ -16294,6 +16685,7 @@ GameObject:
   - component: {fileID: 5672555982384753554}
   - component: {fileID: 8536531382653895867}
   - component: {fileID: 7818912581894041192}
+  - component: {fileID: 2878052727186073733}
   m_Layer: 0
   m_Name: GalaxyRaptor_MainBody3
   m_TagString: Untagged
@@ -16373,6 +16765,28 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &2878052727186073733
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4964968414498458526}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 212a6c747614c0f43925f04a185b9883, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShipPartScatter
+  minScatterForce: 5
+  maxScatterForce: 10
+  scatterConeAngle: 45
+  minAngularVelocity: 90
+  maxAngularVelocity: 360
+  lifetime: 8
+  shrinkStartTime: 0.95
+  mass: 0.5
+  drag: 0.5
+  angularDrag: 0.3
 --- !u!1 &5068137999477897307
 GameObject:
   m_ObjectHideFlags: 0
@@ -16384,6 +16798,7 @@ GameObject:
   - component: {fileID: 5384805379397395770}
   - component: {fileID: 325310880739546990}
   - component: {fileID: 6878739919320743587}
+  - component: {fileID: 6993599752421948899}
   m_Layer: 0
   m_Name: GalaxyRaptor_Gun
   m_TagString: Untagged
@@ -16464,6 +16879,28 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &6993599752421948899
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5068137999477897307}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 212a6c747614c0f43925f04a185b9883, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShipPartScatter
+  minScatterForce: 5
+  maxScatterForce: 10
+  scatterConeAngle: 45
+  minAngularVelocity: 90
+  maxAngularVelocity: 360
+  lifetime: 8
+  shrinkStartTime: 0.95
+  mass: 0.5
+  drag: 0.5
+  angularDrag: 0.3
 --- !u!1 &5191219120904003671
 GameObject:
   m_ObjectHideFlags: 0
@@ -16475,6 +16912,7 @@ GameObject:
   - component: {fileID: 445520728202558630}
   - component: {fileID: 8597894367450119610}
   - component: {fileID: 6095996647088791966}
+  - component: {fileID: 4966993208334656182}
   m_Layer: 0
   m_Name: GalaxyRaptor_Wing4
   m_TagString: Untagged
@@ -16554,6 +16992,28 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &4966993208334656182
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5191219120904003671}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 212a6c747614c0f43925f04a185b9883, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShipPartScatter
+  minScatterForce: 5
+  maxScatterForce: 10
+  scatterConeAngle: 45
+  minAngularVelocity: 90
+  maxAngularVelocity: 360
+  lifetime: 8
+  shrinkStartTime: 0.95
+  mass: 0.5
+  drag: 0.5
+  angularDrag: 0.3
 --- !u!1 &5218291920888315693
 GameObject:
   m_ObjectHideFlags: 0
@@ -16565,6 +17025,7 @@ GameObject:
   - component: {fileID: 6790559224736209611}
   - component: {fileID: 43415099300828452}
   - component: {fileID: 4250910967013384598}
+  - component: {fileID: 3151439188563940030}
   m_Layer: 0
   m_Name: GalaxyRaptor_Wing3
   m_TagString: Untagged
@@ -16644,6 +17105,28 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &3151439188563940030
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5218291920888315693}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 212a6c747614c0f43925f04a185b9883, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShipPartScatter
+  minScatterForce: 5
+  maxScatterForce: 10
+  scatterConeAngle: 45
+  minAngularVelocity: 90
+  maxAngularVelocity: 360
+  lifetime: 8
+  shrinkStartTime: 0.95
+  mass: 0.5
+  drag: 0.5
+  angularDrag: 0.3
 --- !u!1 &5224947576677915051
 GameObject:
   m_ObjectHideFlags: 0
@@ -16687,6 +17170,7 @@ GameObject:
   - component: {fileID: 642600349720177509}
   - component: {fileID: 1026384161762395527}
   - component: {fileID: 6563559496403086674}
+  - component: {fileID: 1456368096994445278}
   m_Layer: 0
   m_Name: GalaxyRaptor_Wing2
   m_TagString: Untagged
@@ -16766,6 +17250,28 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &1456368096994445278
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5317006915785534808}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 212a6c747614c0f43925f04a185b9883, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShipPartScatter
+  minScatterForce: 5
+  maxScatterForce: 10
+  scatterConeAngle: 45
+  minAngularVelocity: 90
+  maxAngularVelocity: 360
+  lifetime: 8
+  shrinkStartTime: 0.95
+  mass: 0.5
+  drag: 0.5
+  angularDrag: 0.3
 --- !u!1 &5381905082683951334
 GameObject:
   m_ObjectHideFlags: 0
@@ -16777,6 +17283,7 @@ GameObject:
   - component: {fileID: 8908890427549580291}
   - component: {fileID: 3778850671811197690}
   - component: {fileID: 6819760264200835168}
+  - component: {fileID: 9223140943313999682}
   m_Layer: 0
   m_Name: GalaxyRaptor_Wing1
   m_TagString: Untagged
@@ -16856,6 +17363,28 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &9223140943313999682
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5381905082683951334}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 212a6c747614c0f43925f04a185b9883, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShipPartScatter
+  minScatterForce: 5
+  maxScatterForce: 10
+  scatterConeAngle: 45
+  minAngularVelocity: 90
+  maxAngularVelocity: 360
+  lifetime: 8
+  shrinkStartTime: 0.95
+  mass: 0.5
+  drag: 0.5
+  angularDrag: 0.3
 --- !u!1 &5426829860845671795
 GameObject:
   m_ObjectHideFlags: 0
@@ -16867,6 +17396,7 @@ GameObject:
   - component: {fileID: 8940111015457870965}
   - component: {fileID: 2656878145168630461}
   - component: {fileID: 6312406859691562466}
+  - component: {fileID: 2764093881431691602}
   m_Layer: 0
   m_Name: GalaxyRaptor_Acc
   m_TagString: Untagged
@@ -16946,6 +17476,28 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &2764093881431691602
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5426829860845671795}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 212a6c747614c0f43925f04a185b9883, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShipPartScatter
+  minScatterForce: 5
+  maxScatterForce: 10
+  scatterConeAngle: 45
+  minAngularVelocity: 90
+  maxAngularVelocity: 360
+  lifetime: 8
+  shrinkStartTime: 0.95
+  mass: 0.5
+  drag: 0.5
+  angularDrag: 0.3
 --- !u!1 &5615143532730130082
 GameObject:
   m_ObjectHideFlags: 0
@@ -16957,6 +17509,7 @@ GameObject:
   - component: {fileID: 8910820492568365738}
   - component: {fileID: 7994922702100986788}
   - component: {fileID: 446327122564709393}
+  - component: {fileID: 5174890636231722402}
   m_Layer: 0
   m_Name: GalaxyRaptor_Wing2
   m_TagString: Untagged
@@ -17036,6 +17589,28 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &5174890636231722402
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5615143532730130082}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 212a6c747614c0f43925f04a185b9883, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShipPartScatter
+  minScatterForce: 5
+  maxScatterForce: 10
+  scatterConeAngle: 45
+  minAngularVelocity: 90
+  maxAngularVelocity: 360
+  lifetime: 8
+  shrinkStartTime: 0.95
+  mass: 0.5
+  drag: 0.5
+  angularDrag: 0.3
 --- !u!1 &5686710707088098037
 GameObject:
   m_ObjectHideFlags: 0
@@ -17047,6 +17622,7 @@ GameObject:
   - component: {fileID: 442482763903795884}
   - component: {fileID: 3264447311486904574}
   - component: {fileID: 1384879098633701786}
+  - component: {fileID: 3501832716901189456}
   m_Layer: 0
   m_Name: GalaxyRaptor_Gun
   m_TagString: Untagged
@@ -17127,6 +17703,28 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &3501832716901189456
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5686710707088098037}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 212a6c747614c0f43925f04a185b9883, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShipPartScatter
+  minScatterForce: 5
+  maxScatterForce: 10
+  scatterConeAngle: 45
+  minAngularVelocity: 90
+  maxAngularVelocity: 360
+  lifetime: 8
+  shrinkStartTime: 0.95
+  mass: 0.5
+  drag: 0.5
+  angularDrag: 0.3
 --- !u!1 &5815514544180538957
 GameObject:
   m_ObjectHideFlags: 0
@@ -17169,6 +17767,7 @@ GameObject:
   - component: {fileID: 7291364401775792919}
   - component: {fileID: 8811184578227041156}
   - component: {fileID: 6323386806090498504}
+  - component: {fileID: 974289111600380014}
   m_Layer: 0
   m_Name: GalaxyRaptor_Detail
   m_TagString: Untagged
@@ -17248,6 +17847,28 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &974289111600380014
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6029689012322664476}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 212a6c747614c0f43925f04a185b9883, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShipPartScatter
+  minScatterForce: 5
+  maxScatterForce: 10
+  scatterConeAngle: 45
+  minAngularVelocity: 90
+  maxAngularVelocity: 360
+  lifetime: 8
+  shrinkStartTime: 0.95
+  mass: 0.5
+  drag: 0.5
+  angularDrag: 0.3
 --- !u!1 &6103655459887012557
 GameObject:
   m_ObjectHideFlags: 0
@@ -17780,6 +18401,7 @@ GameObject:
   - component: {fileID: 3772512446738551768}
   - component: {fileID: 249172684854020902}
   - component: {fileID: 8759292633929930567}
+  - component: {fileID: 2057333825352896357}
   m_Layer: 0
   m_Name: GalaxyRaptor_MainBody4
   m_TagString: Untagged
@@ -17859,6 +18481,28 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &2057333825352896357
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6183319790727871496}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 212a6c747614c0f43925f04a185b9883, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShipPartScatter
+  minScatterForce: 5
+  maxScatterForce: 10
+  scatterConeAngle: 45
+  minAngularVelocity: 90
+  maxAngularVelocity: 360
+  lifetime: 8
+  shrinkStartTime: 0.95
+  mass: 0.5
+  drag: 0.5
+  angularDrag: 0.3
 --- !u!1 &6305705521934506916
 GameObject:
   m_ObjectHideFlags: 0
@@ -17870,6 +18514,7 @@ GameObject:
   - component: {fileID: 4964647243558711145}
   - component: {fileID: 9140408943774374085}
   - component: {fileID: 5239300346354245311}
+  - component: {fileID: 7314185165521519003}
   m_Layer: 0
   m_Name: GalaxyRaptor_MainBody3
   m_TagString: Untagged
@@ -17949,6 +18594,28 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &7314185165521519003
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6305705521934506916}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 212a6c747614c0f43925f04a185b9883, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShipPartScatter
+  minScatterForce: 5
+  maxScatterForce: 10
+  scatterConeAngle: 45
+  minAngularVelocity: 90
+  maxAngularVelocity: 360
+  lifetime: 8
+  shrinkStartTime: 0.95
+  mass: 0.5
+  drag: 0.5
+  angularDrag: 0.3
 --- !u!1 &6441262617201529769
 GameObject:
   m_ObjectHideFlags: 0
@@ -22796,6 +23463,7 @@ GameObject:
   - component: {fileID: 8992274801795380579}
   - component: {fileID: 734842753761851589}
   - component: {fileID: 8938801738731596957}
+  - component: {fileID: 2856398678112326602}
   m_Layer: 0
   m_Name: GalaxyRaptor_Wing1
   m_TagString: Untagged
@@ -22875,6 +23543,28 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &2856398678112326602
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6641301566931029827}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 212a6c747614c0f43925f04a185b9883, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShipPartScatter
+  minScatterForce: 5
+  maxScatterForce: 10
+  scatterConeAngle: 45
+  minAngularVelocity: 90
+  maxAngularVelocity: 360
+  lifetime: 8
+  shrinkStartTime: 0.95
+  mass: 0.5
+  drag: 0.5
+  angularDrag: 0.3
 --- !u!1 &6667084368791252043
 GameObject:
   m_ObjectHideFlags: 0
@@ -22886,6 +23576,7 @@ GameObject:
   - component: {fileID: 7850793853169811764}
   - component: {fileID: 7639746819903132350}
   - component: {fileID: 2181950984279208513}
+  - component: {fileID: 3637560901763346204}
   m_Layer: 0
   m_Name: GalaxyRaptor_Detail
   m_TagString: Untagged
@@ -22965,6 +23656,28 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &3637560901763346204
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6667084368791252043}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 212a6c747614c0f43925f04a185b9883, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShipPartScatter
+  minScatterForce: 5
+  maxScatterForce: 10
+  scatterConeAngle: 45
+  minAngularVelocity: 90
+  maxAngularVelocity: 360
+  lifetime: 8
+  shrinkStartTime: 0.95
+  mass: 0.5
+  drag: 0.5
+  angularDrag: 0.3
 --- !u!1 &6906697291343688110
 GameObject:
   m_ObjectHideFlags: 0
@@ -22976,6 +23689,7 @@ GameObject:
   - component: {fileID: 4521329349593331735}
   - component: {fileID: 3485836540507723390}
   - component: {fileID: 3428648772149680705}
+  - component: {fileID: 7724639729808175850}
   m_Layer: 0
   m_Name: GalaxyRaptor_ThrustCover
   m_TagString: Untagged
@@ -23055,6 +23769,28 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &7724639729808175850
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6906697291343688110}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 212a6c747614c0f43925f04a185b9883, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShipPartScatter
+  minScatterForce: 5
+  maxScatterForce: 10
+  scatterConeAngle: 45
+  minAngularVelocity: 90
+  maxAngularVelocity: 360
+  lifetime: 8
+  shrinkStartTime: 0.95
+  mass: 0.5
+  drag: 0.5
+  angularDrag: 0.3
 --- !u!1 &7207503403923897983
 GameObject:
   m_ObjectHideFlags: 0
@@ -23066,6 +23802,7 @@ GameObject:
   - component: {fileID: 8224859846469892409}
   - component: {fileID: 5869559090846236210}
   - component: {fileID: 4678247935348473696}
+  - component: {fileID: 2187246771609102657}
   m_Layer: 0
   m_Name: GalaxyRaptor_Engine
   m_TagString: Untagged
@@ -23145,6 +23882,28 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &2187246771609102657
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7207503403923897983}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 212a6c747614c0f43925f04a185b9883, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShipPartScatter
+  minScatterForce: 5
+  maxScatterForce: 10
+  scatterConeAngle: 45
+  minAngularVelocity: 90
+  maxAngularVelocity: 360
+  lifetime: 8
+  shrinkStartTime: 0.95
+  mass: 0.5
+  drag: 0.5
+  angularDrag: 0.3
 --- !u!1 &7500626016826990164
 GameObject:
   m_ObjectHideFlags: 0
@@ -23331,6 +24090,7 @@ GameObject:
   - component: {fileID: 6884293496084269515}
   - component: {fileID: 3736083077526081119}
   - component: {fileID: 4589437982079180651}
+  - component: {fileID: 8645044676099301062}
   m_Layer: 0
   m_Name: GalaxyRaptor_WingHolder
   m_TagString: Untagged
@@ -23410,6 +24170,28 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &8645044676099301062
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8413155476504290459}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 212a6c747614c0f43925f04a185b9883, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShipPartScatter
+  minScatterForce: 5
+  maxScatterForce: 10
+  scatterConeAngle: 45
+  minAngularVelocity: 90
+  maxAngularVelocity: 360
+  lifetime: 8
+  shrinkStartTime: 0.95
+  mass: 0.5
+  drag: 0.5
+  angularDrag: 0.3
 --- !u!1 &8585379362865873201
 GameObject:
   m_ObjectHideFlags: 0
@@ -23421,6 +24203,7 @@ GameObject:
   - component: {fileID: 5680118518215440254}
   - component: {fileID: 8937485009174879098}
   - component: {fileID: 365189775270350705}
+  - component: {fileID: 4560281952163919608}
   m_Layer: 0
   m_Name: GalaxyRaptor_Gun
   m_TagString: Untagged
@@ -23501,6 +24284,28 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &4560281952163919608
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8585379362865873201}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 212a6c747614c0f43925f04a185b9883, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShipPartScatter
+  minScatterForce: 5
+  maxScatterForce: 10
+  scatterConeAngle: 45
+  minAngularVelocity: 90
+  maxAngularVelocity: 360
+  lifetime: 8
+  shrinkStartTime: 0.95
+  mass: 0.5
+  drag: 0.5
+  angularDrag: 0.3
 --- !u!1 &8656387077319392285
 GameObject:
   m_ObjectHideFlags: 0
@@ -23512,6 +24317,7 @@ GameObject:
   - component: {fileID: 7755044443942482881}
   - component: {fileID: 543624270549009436}
   - component: {fileID: 4740887676752684858}
+  - component: {fileID: 382704676716320636}
   m_Layer: 0
   m_Name: GalaxyRaptor_Acc_Mirrored
   m_TagString: Untagged
@@ -23591,6 +24397,28 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &382704676716320636
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8656387077319392285}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 212a6c747614c0f43925f04a185b9883, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShipPartScatter
+  minScatterForce: 5
+  maxScatterForce: 10
+  scatterConeAngle: 45
+  minAngularVelocity: 90
+  maxAngularVelocity: 360
+  lifetime: 8
+  shrinkStartTime: 0.95
+  mass: 0.5
+  drag: 0.5
+  angularDrag: 0.3
 --- !u!1 &9213809946962032196
 GameObject:
   m_ObjectHideFlags: 0
@@ -23602,6 +24430,7 @@ GameObject:
   - component: {fileID: 1868756513889778216}
   - component: {fileID: 8787551021642251700}
   - component: {fileID: 7121813625142885386}
+  - component: {fileID: 8174660763573534585}
   m_Layer: 0
   m_Name: GalaxyRaptor_Engine
   m_TagString: Untagged
@@ -23682,6 +24511,28 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &8174660763573534585
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9213809946962032196}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 212a6c747614c0f43925f04a185b9883, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShipPartScatter
+  minScatterForce: 5
+  maxScatterForce: 10
+  scatterConeAngle: 45
+  minAngularVelocity: 90
+  maxAngularVelocity: 360
+  lifetime: 8
+  shrinkStartTime: 0.95
+  mass: 0.5
+  drag: 0.5
+  angularDrag: 0.3
 --- !u!1001 &1622602237536191846
 PrefabInstance:
   m_ObjectHideFlags: 0
