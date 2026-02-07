@@ -1,4 +1,23 @@
+using System.Collections.Generic;
 using UnityEngine;
+
+[System.Serializable]
+public struct FighterDifficultyLevel
+{
+    public string levelName;
+
+    [Tooltip("Use flanking/positioning AI instead of charging directly at the player")]
+    public bool useAdvancedMovement;
+
+    [Tooltip("Predict player movement when aiming projectiles")]
+    public bool useLeadShots;
+
+    [Tooltip("Allow beam weapon usage at range")]
+    public bool useBeamWeapon;
+
+    [Tooltip("Detect and dodge incoming projectiles and beams")]
+    public bool useDodging;
+}
 
 public enum FighterState
 {
@@ -91,6 +110,15 @@ public class FighterEnemyScript : Enemy
     [Tooltip("Player velocity threshold to consider them 'pursuing' us")]
     public float pursuitVelocityThreshold = 5f;
 
+    [Header("Difficulty")]
+    public List<FighterDifficultyLevel> difficultyLevels = new List<FighterDifficultyLevel>();
+    public int currentDifficultyLevel = 0;
+
+    private FighterDifficultyLevel CurrentLevel =>
+        difficultyLevels != null && currentDifficultyLevel >= 0 && currentDifficultyLevel < difficultyLevels.Count
+            ? difficultyLevels[currentDifficultyLevel]
+            : new FighterDifficultyLevel { useAdvancedMovement = true, useLeadShots = true, useBeamWeapon = true, useDodging = true };
+
     // Fighter state
     private FighterState _fighterState = FighterState.Flanking;
     private float _stateEnterTime;
@@ -122,10 +150,25 @@ public class FighterEnemyScript : Enemy
         _stateEnterTime = Time.time;
         _strafeDirection = Random.value > 0.5f ? 1 : -1;
 
+        // Apply lead targeting from current difficulty level
+        useLeadTargeting = CurrentLevel.useLeadShots;
+
         // Cache player script for beam detection
         if (_target != null)
         {
             _Player = _target.GetComponent<Player>();
+        }
+    }
+
+    public void SetDifficultyLevel(int level)
+    {
+        currentDifficultyLevel = Mathf.Clamp(level, 0, difficultyLevels.Count - 1);
+        useLeadTargeting = CurrentLevel.useLeadShots;
+
+        // Stop beam if beam weapon is now disabled
+        if (!CurrentLevel.useBeamWeapon)
+        {
+            StopBeam();
         }
     }
 
@@ -135,8 +178,11 @@ public class FighterEnemyScript : Enemy
 
         if (_target == null) return;
 
-        // Check for threats (projectiles and beams)
-        CheckForThreats();
+        // Check for threats (projectiles and beams) only if dodging is enabled
+        if (CurrentLevel.useDodging)
+        {
+            CheckForThreats();
+        }
 
         // Check re-engage distance in all states
         float distanceToPlayer = Vector2.Distance(transform.position, _target.position);
@@ -154,8 +200,8 @@ public class FighterEnemyScript : Enemy
             }
         }
 
-        // Update fighter-specific state machine when pursuing
-        if (_currentState == EnemyState.Pursuing)
+        // Update fighter-specific state machine when pursuing (only with advanced movement)
+        if (_currentState == EnemyState.Pursuing && CurrentLevel.useAdvancedMovement)
         {
             UpdateFighterState();
         }
@@ -220,6 +266,12 @@ public class FighterEnemyScript : Enemy
 
     private bool DetermineIfShouldThrustInPursuit()
     {
+        // Without advanced movement, always thrust toward player
+        if (!CurrentLevel.useAdvancedMovement)
+        {
+            return true;
+        }
+
         // Fighter sub-states determine thrust
         switch (_fighterState)
         {
@@ -476,6 +528,12 @@ public class FighterEnemyScript : Enemy
         // Determine where the fighter should be facing based on sub-state
         Vector2 toPlayer = (Vector2)_target.position - (Vector2)transform.position;
 
+        // Without advanced movement, always face the player directly
+        if (!CurrentLevel.useAdvancedMovement)
+        {
+            return toPlayer.normalized;
+        }
+
         switch (_fighterState)
         {
             case FighterState.Flanking:
@@ -552,19 +610,20 @@ public class FighterEnemyScript : Enemy
     {
         if (_target == null) return;
 
-        // Fire in most states (Flanking, Attacking, CoastAndTurn) - risk taking hits for offense
-        // Only skip firing when actively disengaging
-        if (_fighterState == FighterState.Disengaging)
+        // With advanced movement: skip firing when actively disengaging
+        // Without advanced movement: no disengaging state, so always allow firing
+        if (CurrentLevel.useAdvancedMovement && _fighterState == FighterState.Disengaging)
         {
             return;
         }
 
-        // Relaxed aim requirement - fire even if not perfectly aimed (spray and pray style)
-        // This allows firing while dodging and moving aggressively
+        // With advanced movement: relaxed aim (spray and pray while dodging)
+        // Without advanced movement: normal aim tolerance (charging directly at player)
         float angleToTarget = Mathf.Abs(GetAngleToTarget());
-        if (angleToTarget > aimTolerance * 2f) return; // Double the tolerance
+        float effectiveAimTolerance = CurrentLevel.useAdvancedMovement ? aimTolerance * 2f : aimTolerance;
+        if (angleToTarget > effectiveAimTolerance) return;
 
-        // Weapon selection based on range
+        // Weapon selection based on range (beam gated by difficulty)
         float distanceToPlayer = Vector2.Distance(transform.position, _target.position);
         bool useBeam = SelectWeapon(distanceToPlayer);
 
@@ -598,6 +657,9 @@ public class FighterEnemyScript : Enemy
 
     private bool SelectWeapon(float distance)
     {
+        // Beam weapon disabled at this difficulty level
+        if (!CurrentLevel.useBeamWeapon) return false;
+
         // If beam is already active, keep using it
         if (_activeBeam != null) return true;
 
@@ -785,6 +847,7 @@ public class FighterEnemyScript : Enemy
 
     private void CheckForThreats()
     {
+        if (!CurrentLevel.useDodging) return;
         if (Time.time < _lastThreatCheckTime + threatCheckInterval) return;
         _lastThreatCheckTime = Time.time;
 

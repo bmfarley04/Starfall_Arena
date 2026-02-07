@@ -424,6 +424,23 @@ MonoBehaviour:
   dodgeCooldown: 0.5
   dodgeChance: 0.8
   pursuitVelocityThreshold: 5
+  difficultyLevels:
+  - levelName: cake
+    useAdvancedMovement: 0
+    useLeadShots: 0
+    useBeamWeapon: 0
+    useDodging: 0
+  - levelName: smarts
+    useAdvancedMovement: 1
+    useLeadShots: 1
+    useBeamWeapon: 0
+    useDodging: 1
+  - levelName: beam
+    useAdvancedMovement: 1
+    useLeadShots: 1
+    useBeamWeapon: 1
+    useDodging: 1
+  currentDifficultyLevel: 0
 --- !u!1 &4482544328887165937
 GameObject:
   m_ObjectHideFlags: 0
