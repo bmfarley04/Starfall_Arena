@@ -216,7 +216,7 @@ public abstract class Player : Entity
         _beamHitLoopSource.dopplerLevel = 0f;
     }
 
-    protected AudioSource GetAvailableAudioSource()
+    public AudioSource GetAvailableAudioSource()
     {
         foreach (var source in _audioSourcePool)
         {

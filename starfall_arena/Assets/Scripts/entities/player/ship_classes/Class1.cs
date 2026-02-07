@@ -7,63 +7,6 @@ using UnityEngine.UI;
 // ===== ABILITY CONFIGURATION STRUCTS =====
 
 [System.Serializable]
-public struct TeleportAbilityConfig
-{
-    [Header("Timing")]
-    [Tooltip("Cooldown between uses (seconds)")]
-    public float cooldown;
-    [Tooltip("Delay before teleport executes (seconds)")]
-    public float preTeleportDelay;
-    [Tooltip("Distance to teleport in the direction player is facing")]
-    public float teleportDistance;
-
-    [Header("Animation")]
-    public AnimationConfig animation;
-
-    [Header("Visual Effects")]
-    public VisualConfig visual;
-
-    [Header("Sound Effects")]
-    [Tooltip("Teleport exit sound (at origin)")]
-    public SoundEffect exitSound;
-    [Tooltip("Teleport arrival sound (at destination)")]
-    public SoundEffect arrivalSound;
-
-    [System.Serializable]
-    public struct AnimationConfig
-    {
-        [Tooltip("Shrink duration at origin (seconds)")]
-        public float shrinkDuration;
-        [Tooltip("Grow duration at destination (seconds)")]
-        public float growDuration;
-        [Tooltip("Target X scale at origin (squeeze width, e.g. 0.1)")]
-        public float originScaleX;
-        [Tooltip("Target Y scale at origin (stretch height, e.g. 2.0)")]
-        public float originScaleY;
-        [Tooltip("Overshoot scale at destination (pop effect, e.g. 1.2)")]
-        public float destinationOvershootScale;
-        [Tooltip("Normal scale (usually 1.0)")]
-        public float normalScale;
-    }
-
-    [System.Serializable]
-    public struct VisualConfig
-    {
-        [Tooltip("Enable chromatic aberration flash on teleport")]
-        public bool enableChromaticFlash;
-        [Tooltip("Chromatic aberration intensity on teleport")]
-        [Range(0f, 1f)]
-        public float chromaticFlashIntensity;
-        [Tooltip("Enable screen shake on teleport")]
-        public bool enableScreenShake;
-        [Tooltip("Screen shake strength (force)")]
-        public float screenShakeStrength;
-        [Tooltip("Particle effects at origin and destination")]
-        public GameObject[] effects;
-    }
-}
-
-[System.Serializable]
 public struct GigaBlastAbilityConfig
 {
     public float offsetDistance;
@@ -244,9 +187,6 @@ public struct AbilitiesConfig
     [Header("Ability 2 - Reflect Shield (Parry)")]
     public ReflectAbilityConfig reflect;
 
-    [Header("Ability 3 - Teleport")]
-    public TeleportAbilityConfig teleport;
-
     [Header("Ability 4 - Giga Blast")]
     public GigaBlastAbilityConfig gigaBlast;
 }
@@ -265,9 +205,6 @@ public class Class1 : Player
     // ===== PRIVATE STATE =====
     private float _lastReflectTime = -999f;
     private Coroutine _reflectCoroutine;
-    private float _lastTeleportTime = -999f;
-    private Coroutine _teleportCoroutine;
-    private bool _isTeleporting = false;
     private float _lastGigaBlastTime = -999f;
     private float _chargeStartTime = 0f;
     private int _currentChargeTier = 0;
@@ -320,7 +257,7 @@ public class Class1 : Player
 
     protected override void FixedUpdate()
     {
-        if (_isTeleporting)
+        if (ability2.IsAbilityActive()) // This assumes ability2 is the teleport ability; adjust if needed
         {
             return;
         }
@@ -379,28 +316,7 @@ public class Class1 : Player
 
     void OnAbility2()
     {
-        if (Time.time < _lastTeleportTime + abilities.teleport.cooldown)
-        {
-            Debug.Log($"Teleport on cooldown: {(_lastTeleportTime + abilities.teleport.cooldown - Time.time):F1}s remaining");
-            return;
-        }
-
-        if (_isTeleporting)
-        {
-            return;
-        }
-
-        Vector3 teleportDirection = transform.up;
-        Vector3 targetWorldPosition = transform.position + teleportDirection * abilities.teleport.teleportDistance;
-        targetWorldPosition.z = transform.position.z;
-
-        _lastTeleportTime = Time.time;
-
-        if (_teleportCoroutine != null)
-        {
-            StopCoroutine(_teleportCoroutine);
-        }
-        _teleportCoroutine = StartCoroutine(ExecuteTeleport(targetWorldPosition));
+        ability2.TryUseAbility();
     }
 
     void OnAbility1(InputValue value)
@@ -411,7 +327,7 @@ public class Class1 : Player
         {
             if (!_isCharging && Time.time >= _lastGigaBlastTime + abilities.gigaBlast.timing.cooldown)
             {
-                if (ability3.IsAbilityActive() || _isTeleporting ||
+                if (ability3.IsAbilityActive() || ability2.IsAbilityActive() ||
                     (abilities.reflect.shield != null && abilities.reflect.shield.IsActive()))
                 {
                     Debug.Log("Cannot charge GigaBlast: other abilities active");
@@ -489,124 +405,6 @@ public class Class1 : Player
         {
             _reflectShieldSource.Stop();
         }
-    }
-
-    // ===== TELEPORT ABILITY =====
-    private System.Collections.IEnumerator ExecuteTeleport(Vector3 targetPosition)
-    {
-        _isTeleporting = true;
-
-        Vector3 originalScale = transform.localScale;
-        Vector3 normalScale = originalScale * abilities.teleport.animation.normalScale;
-
-        Vector3 originSqueezeScale = new Vector3(
-            originalScale.x * abilities.teleport.animation.originScaleX,
-            originalScale.y * abilities.teleport.animation.originScaleY,
-            originalScale.z
-        );
-
-        Vector3 destinationPopScale = originalScale * abilities.teleport.animation.destinationOvershootScale;
-
-        Collider2D playerCollider = GetComponent<Collider2D>();
-        bool colliderWasEnabled = false;
-        if (playerCollider != null)
-        {
-            colliderWasEnabled = playerCollider.enabled;
-            playerCollider.enabled = false;
-        }
-
-        if (abilities.teleport.preTeleportDelay > 0)
-        {
-            yield return new WaitForSeconds(abilities.teleport.preTeleportDelay);
-        }
-
-        float elapsed = 0f;
-        while (elapsed < abilities.teleport.animation.shrinkDuration)
-        {
-            elapsed += Time.deltaTime;
-            float t = elapsed / abilities.teleport.animation.shrinkDuration;
-            transform.localScale = Vector3.Lerp(originalScale, originSqueezeScale, t);
-            yield return null;
-        }
-        transform.localScale = originSqueezeScale;
-
-        if (abilities.teleport.visual.effects != null && abilities.teleport.visual.effects.Length > 0 &&
-            abilities.teleport.visual.effects[0] != null)
-        {
-            Instantiate(abilities.teleport.visual.effects[0], transform.position, Quaternion.identity);
-        }
-
-        if (abilities.teleport.exitSound != null)
-        {
-            abilities.teleport.exitSound.Play(GetAvailableAudioSource());
-        }
-
-        SpriteRenderer spriteRenderer = GetComponentInChildren<SpriteRenderer>();
-        bool spriteWasEnabled = false;
-        if (spriteRenderer != null)
-        {
-            spriteWasEnabled = spriteRenderer.enabled;
-            spriteRenderer.enabled = false;
-        }
-
-        Vector3 previousPosition = transform.position;
-        transform.position = targetPosition;
-
-        var cinemachineCameras = FindObjectsByType<Unity.Cinemachine.CinemachineCamera>(FindObjectsSortMode.None);
-        foreach (var cam in cinemachineCameras)
-        {
-            if (cam.Target.TrackingTarget == transform)
-            {
-                cam.OnTargetObjectWarped(transform, targetPosition - previousPosition);
-            }
-        }
-
-        if (abilities.teleport.visual.enableChromaticFlash)
-        {
-            SetChromaticAberrationIntensity(GetChromaticAberrationIntensity() + abilities.teleport.visual.chromaticFlashIntensity);
-        }
-
-        if (abilities.teleport.visual.enableScreenShake)
-        {
-            var impulseSource = GetComponent<Unity.Cinemachine.CinemachineImpulseSource>();
-            if (impulseSource != null)
-            {
-                impulseSource.GenerateImpulse(abilities.teleport.visual.screenShakeStrength);
-            }
-        }
-
-        if (abilities.teleport.visual.effects != null && abilities.teleport.visual.effects.Length > 1 &&
-            abilities.teleport.visual.effects[1] != null)
-        {
-            Instantiate(abilities.teleport.visual.effects[1], transform.position, Quaternion.identity);
-        }
-
-        if (abilities.teleport.arrivalSound != null)
-        {
-            abilities.teleport.arrivalSound.Play(GetAvailableAudioSource());
-        }
-
-        if (spriteRenderer != null && spriteWasEnabled)
-        {
-            spriteRenderer.enabled = true;
-        }
-
-        elapsed = 0f;
-        while (elapsed < abilities.teleport.animation.growDuration)
-        {
-            elapsed += Time.deltaTime;
-            float t = elapsed / abilities.teleport.animation.growDuration;
-            transform.localScale = Vector3.Lerp(destinationPopScale, normalScale, t);
-            yield return null;
-        }
-        transform.localScale = normalScale;
-
-        if (playerCollider != null && colliderWasEnabled)
-        {
-            playerCollider.enabled = true;
-        }
-
-        _isTeleporting = false;
     }
 
     // ===== GIGABLAST ABILITY =====
