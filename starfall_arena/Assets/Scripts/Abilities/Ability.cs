@@ -1,5 +1,4 @@
 using UnityEngine;
-
 public class Ability : MonoBehaviour
 {
     [System.Serializable]
@@ -31,7 +30,23 @@ public class Ability : MonoBehaviour
         return false;
     }
 
+    public virtual bool TryUseAbility(object inputVar)
+    {
+        if (CanUseAbility())
+        {
+            lastUsedAbility = Time.time;
+            UseAbility(inputVar);
+            return true;
+        }
+        return false;
+    }
+
     public virtual void UseAbility()
+    {
+        Debug.Log("Ability activated for " + stats.duration + " seconds.");
+    }
+
+    public virtual void UseAbility(object inputVar)
     {
         Debug.Log("Ability activated for " + stats.duration + " seconds.");
     }
