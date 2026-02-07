@@ -12,13 +12,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4126ca0ce3c78694f95eed711408a84b, type: 3}
   m_Name: Class3
   m_EditorClassIdentifier: Assembly-CSharp::ShipData
-  shipName: 
-  shipModelPrefab: {fileID: 0}
+  shipName: AXIOM WRAITH
+  shipModelPrefab: {fileID: 8073042944126910331, guid: e5b8894645814004a95883e7078d128b, type: 3}
   stats:
-    damage: 0
-    hull: 0
-    shield: 0
-    speed: 0
+    damage: 26
+    hull: 100
+    shield: 50
+    speed: 40
   ability1:
     abilityName: 
     abilityDescription: 
