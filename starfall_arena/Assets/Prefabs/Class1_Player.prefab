@@ -4963,6 +4963,7 @@ GameObject:
   - component: {fileID: 3550827916854919345}
   - component: {fileID: -1802509990396755088}
   - component: {fileID: 5044949934575203889}
+  - component: {fileID: 6728863805914282109}
   m_Layer: 0
   m_Name: Class1_Player
   m_TagString: Player
@@ -5377,12 +5378,12 @@ MonoBehaviour:
     slowParticleSystem: {fileID: 4517218207347267077}
   currentShield: 0
   ability1: {fileID: 0}
-  ability2: {fileID: 0}
+  ability2: {fileID: 6728863805914282109}
   ability3: {fileID: 5044949934575203889}
   ability4: {fileID: 0}
   abilitySlots:
   - {fileID: 0}
-  - {fileID: 0}
+  - {fileID: 11500000, guid: 947c60145480efe4da5c2b90cf85194b, type: 3}
   - {fileID: 11500000, guid: 908cc72dae50f93469c58280dd7ce4ef, type: 3}
   - {fileID: 0}
   shieldRegen:
@@ -5421,27 +5422,6 @@ MonoBehaviour:
       reflectedProjectileDamageMultiplier: 1
       shieldLoopSound: {fileID: 0}
       bulletReflectionSound: {fileID: 0}
-    teleport:
-      cooldown: 5
-      preTeleportDelay: 0.1
-      teleportDistance: 20
-      animation:
-        shrinkDuration: 0.2
-        growDuration: 0.1
-        originScaleX: 0.5
-        originScaleY: 1.5
-        destinationOvershootScale: 1.2
-        normalScale: 1
-      visual:
-        enableChromaticFlash: 1
-        chromaticFlashIntensity: 0.3
-        enableScreenShake: 1
-        screenShakeStrength: 0.1
-        effects:
-        - {fileID: 6844924702641111991, guid: d5d5ad029b642c5479372fc91f7c70cd, type: 3}
-        - {fileID: 7990418082684036425, guid: 0510e735713d119488183d4948cbedb0, type: 3}
-      exitSound: {fileID: 0}
-      arrivalSound: {fileID: 0}
     gigaBlast:
       offsetDistance: 0
       timing:
@@ -5573,18 +5553,54 @@ MonoBehaviour:
   beam:
     stats:
       prefab: {fileID: 2153662200343534273, guid: 83a72cb419d844b64b498b2b7eb5f252, type: 3}
-      damagePerSecond: 10
-      maxDistance: 100
+      damagePerSecond: 50
+      maxDistance: 60
       recoilForcePerSecond: 1
-      impactForce: 2
-    offsetDistance: 1
-    rotationMultiplier: 0
-    fadeInDuration: 1
+      impactForce: 10
+    offsetDistance: 1.7
+    rotationMultiplier: 0.2
+    fadeInDuration: 0.3
     capacity: 100
-    drainRate: 10
-    regenRate: 15
+    drainRate: 25
+    regenRate: 4
     beamLoopSound: {fileID: 0}
-    soundFadeDuration: 1
+    soundFadeDuration: 0
+--- !u!114 &6728863805914282109
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1578230554132079418}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 947c60145480efe4da5c2b90cf85194b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Teleport
+  stats:
+    cooldown: 0
+    duration: 0
+  teleport:
+    cooldown: 5
+    preTeleportDelay: 0.1
+    teleportDistance: 20
+    animation:
+      shrinkDuration: 0.2
+      growDuration: 0.1
+      originScaleX: 0.5
+      originScaleY: 1.5
+      destinationOvershootScale: 1.2
+      normalScale: 1
+    visual:
+      enableChromaticFlash: 1
+      chromaticFlashIntensity: 0.3
+      enableScreenShake: 1
+      screenShakeStrength: 0.1
+      effects:
+      - {fileID: 6844924702641111991, guid: d5d5ad029b642c5479372fc91f7c70cd, type: 3}
+      - {fileID: 7990418082684036425, guid: 0510e735713d119488183d4948cbedb0, type: 3}
+    exitSound: {fileID: 0}
+    arrivalSound: {fileID: 0}
 --- !u!1 &3501154216763360000
 GameObject:
   m_ObjectHideFlags: 0
