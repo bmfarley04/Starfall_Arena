@@ -72,6 +72,20 @@ public class Ability : MonoBehaviour
     {
     }
 
+    public virtual bool HasDamageMitigation()
+    {
+        return false;
+    }
+
+    public virtual bool HasCollisionModification()
+    {
+        return false;
+    }
+
+    public virtual void ProcessCollisionModification(Collider2D collider)
+    {
+    }
+
     public virtual void Magic(object obj)
     {
     }

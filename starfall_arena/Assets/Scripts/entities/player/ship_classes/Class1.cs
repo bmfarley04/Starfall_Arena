@@ -154,39 +154,11 @@ public struct GigaBlastAbilityConfig
     }
 }
 
-[System.Serializable]
-public struct ReflectAbilityConfig
-{
-    [Header("Timing")]
-    [Tooltip("Cooldown between uses (seconds)")]
-    public float cooldown;
-    [Tooltip("Shield active duration (seconds)")]
-    public float activeDuration;
 
-    [Header("Shield")]
-    [Tooltip("ReflectShield component (drag from Hierarchy)")]
-    public ReflectShield shield;
-
-    [Header("Reflection")]
-    [Tooltip("Color of reflected projectiles")]
-    public Color reflectedProjectileColor;
-    [Tooltip("Damage multiplier for reflected projectiles (1.0 = same damage, 2.0 = double damage)")]
-    [Range(0.5f, 5f)]
-    public float reflectedProjectileDamageMultiplier;
-
-    [Header("Sound Effects")]
-    [Tooltip("Reflect shield duration sound (loops while active)")]
-    public SoundEffect shieldLoopSound;
-    [Tooltip("Bullet reflection impact sound")]
-    public SoundEffect bulletReflectionSound;
-}
 
 [System.Serializable]
 public struct AbilitiesConfig
 {
-    [Header("Ability 2 - Reflect Shield (Parry)")]
-    public ReflectAbilityConfig reflect;
-
     [Header("Ability 4 - Giga Blast")]
     public GigaBlastAbilityConfig gigaBlast;
 }
@@ -203,12 +175,9 @@ public class Class1 : Player
     public bool _isCharging { get; private set; } = false;
 
     // ===== PRIVATE STATE =====
-    private float _lastReflectTime = -999f;
-    private Coroutine _reflectCoroutine;
     private float _lastGigaBlastTime = -999f;
     private float _chargeStartTime = 0f;
     private int _currentChargeTier = 0;
-    private AudioSource _reflectShieldSource;
     private AudioSource _gigaBlastChargeSource;
     private Coroutine _gigaBlastChargeFadeCoroutine;
 
@@ -216,15 +185,6 @@ public class Class1 : Player
     protected override void Awake()
     {
         base.Awake();
-
-        _reflectShieldSource = gameObject.AddComponent<AudioSource>();
-        _reflectShieldSource.playOnAwake = false;
-        _reflectShieldSource.loop = true;
-        _reflectShieldSource.spatialBlend = 1f;
-        _reflectShieldSource.rolloffMode = AudioRolloffMode.Linear;
-        _reflectShieldSource.minDistance = 10f;
-        _reflectShieldSource.maxDistance = 50f;
-        _reflectShieldSource.dopplerLevel = 0f;
 
         _gigaBlastChargeSource = gameObject.AddComponent<AudioSource>();
         _gigaBlastChargeSource.playOnAwake = false;
@@ -293,25 +253,7 @@ public class Class1 : Player
 
     void OnAbility4()
     {
-        if (Time.time < _lastReflectTime + abilities.reflect.cooldown)
-        {
-            Debug.Log($"Reflect on cooldown: {(_lastReflectTime + abilities.reflect.cooldown - Time.time):F1}s remaining");
-            return;
-        }
 
-        if (abilities.reflect.shield == null)
-        {
-            Debug.LogWarning("Reflect shield not assigned!");
-            return;
-        }
-
-        _lastReflectTime = Time.time;
-
-        if (_reflectCoroutine != null)
-        {
-            StopCoroutine(_reflectCoroutine);
-        }
-        _reflectCoroutine = StartCoroutine(ActivateReflectShield());
     }
 
     void OnAbility2()
@@ -328,7 +270,7 @@ public class Class1 : Player
             if (!_isCharging && Time.time >= _lastGigaBlastTime + abilities.gigaBlast.timing.cooldown)
             {
                 if (ability3.IsAbilityActive() || ability2.IsAbilityActive() ||
-                    (abilities.reflect.shield != null && abilities.reflect.shield.IsActive()))
+                    ability4.IsAbilityActive())
                 {
                     Debug.Log("Cannot charge GigaBlast: other abilities active");
                     return;
@@ -384,26 +326,6 @@ public class Class1 : Player
                     _gigaBlastChargeFadeCoroutine = StartCoroutine(FadeGigaBlastChargeVolume(0f, stopAfterFade: true));
                 }
             }
-        }
-    }
-
-    // ===== REFLECT ABILITY =====
-    private System.Collections.IEnumerator ActivateReflectShield()
-    {
-        abilities.reflect.shield.Activate(abilities.reflect.reflectedProjectileColor);
-
-        if (abilities.reflect.shieldLoopSound != null && _reflectShieldSource != null)
-        {
-            abilities.reflect.shieldLoopSound.Play(_reflectShieldSource);
-        }
-
-        yield return new WaitForSeconds(abilities.reflect.activeDuration);
-
-        abilities.reflect.shield.Deactivate();
-
-        if (_reflectShieldSource != null && _reflectShieldSource.isPlaying)
-        {
-            _reflectShieldSource.Stop();
         }
     }
 
@@ -666,7 +588,9 @@ public class Class1 : Player
     // ===== OVERRIDES =====
     public override void TakeDamage(float damage, float impactForce = 0f, Vector3 hitPoint = default, DamageSource source = DamageSource.Projectile)
     {
-        if (abilities.reflect.shield != null && abilities.reflect.shield.IsActive())
+        List<Ability> abilityScripts = new List<Ability> { ability1, ability2, ability3, ability4 };
+
+        if (abilityScripts.Any(a => a.HasDamageMitigation()))
         {
             return;
         }
@@ -676,12 +600,12 @@ public class Class1 : Player
 
     protected override void Die()
     {
+        ability1.Die();
+        ability2.Die();
         ability3.Die();
+        ability4.Die();
 
-        if (_reflectShieldSource != null && _reflectShieldSource.isPlaying)
-        {
-            _reflectShieldSource.Stop();
-        }
+
         if (_gigaBlastChargeSource != null && _gigaBlastChargeSource.isPlaying)
         {
             _gigaBlastChargeSource.Stop();
@@ -697,23 +621,13 @@ public class Class1 : Player
 
     void OnTriggerEnter2D(Collider2D collider)
     {
-        if (abilities.reflect.shield != null && abilities.reflect.shield.IsActive())
+        List<Ability> abilityScripts = new List<Ability> { ability1, ability2, ability3, ability4 };
+
+        if (abilityScripts.Any(a => a.HasCollisionModification()))
         {
-            ProjectileScript projectile = collider.GetComponent<ProjectileScript>();
-            if (projectile != null && projectile.targetTag == thisPlayerTag)
+            foreach (var ability in abilityScripts.Where(a => a.HasCollisionModification()))
             {
-                Vector3 hitPoint = collider.ClosestPoint(transform.position);
-                abilities.reflect.shield.OnReflectHit(hitPoint);
-                abilities.reflect.shield.ReflectProjectile(projectile, enemyTag);
-
-                projectile.MarkAsReflected();
-
-                projectile.ApplyDamageMultiplier(abilities.reflect.reflectedProjectileDamageMultiplier);
-
-                if (abilities.reflect.bulletReflectionSound != null)
-                {
-                    abilities.reflect.bulletReflectionSound.Play(GetAvailableAudioSource());
-                }
+                ability.ProcessCollisionModification(collider);
             }
         }
     }
