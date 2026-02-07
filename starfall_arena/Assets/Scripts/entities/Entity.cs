@@ -362,7 +362,7 @@ public abstract class Entity : MonoBehaviour
     }
 
     // ===== RECOIL & VISUAL EFFECTS =====
-    protected void ApplyRecoil(float recoilForce)
+    public void ApplyRecoil(float recoilForce)
     {
         if (_rb != null)
         {

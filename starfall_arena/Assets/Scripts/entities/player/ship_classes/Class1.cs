@@ -1,33 +1,10 @@
+using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 // ===== ABILITY CONFIGURATION STRUCTS =====
-
-[System.Serializable]
-public struct BeamAbilityConfig
-{
-    [Header("Beam Settings")]
-    public BeamWeaponConfig stats;
-    public float offsetDistance;
-    [Tooltip("Rotation speed multiplier when beam is active (0.3 = 70% slower)")]
-    public float rotationMultiplier;
-    [Tooltip("Duration for beam line renderer to fade in (seconds)")]
-    public float fadeInDuration;
-
-    [Header("Beam Capacity")]
-    [Tooltip("Maximum beam capacity (100 units)")]
-    public float capacity;
-    [Tooltip("How fast beam drains (units per second)")]
-    public float drainRate;
-    [Tooltip("How fast beam capacity regenerates when not firing (units per second)")]
-    public float regenRate;
-
-    [Header("Sound Effects")]
-    public SoundEffect beamLoopSound;
-    [Tooltip("Fade in duration for beam sound (seconds)")]
-    public float soundFadeDuration;
-}
 
 [System.Serializable]
 public struct TeleportAbilityConfig
@@ -89,6 +66,8 @@ public struct TeleportAbilityConfig
 [System.Serializable]
 public struct GigaBlastAbilityConfig
 {
+    public float offsetDistance;
+
     [Header("Cooldown & Timing")]
     public TimingConfig timing;
 
@@ -262,9 +241,6 @@ public struct ReflectAbilityConfig
 [System.Serializable]
 public struct AbilitiesConfig
 {
-    [Header("Ability 1 - Beam Weapon")]
-    public BeamAbilityConfig beam;
-
     [Header("Ability 2 - Reflect Shield (Parry)")]
     public ReflectAbilityConfig reflect;
 
@@ -283,39 +259,26 @@ public class Class1 : Player
     [Header("Abilities")]
     public AbilitiesConfig abilities;
 
+    // ===== PRIVATE SET STATE =====
+    public bool _isCharging { get; private set; } = false;
+
     // ===== PRIVATE STATE =====
-    private LaserBeam _activeBeam;
-    private float _currentBeamCapacity;
     private float _lastReflectTime = -999f;
     private Coroutine _reflectCoroutine;
     private float _lastTeleportTime = -999f;
     private Coroutine _teleportCoroutine;
     private bool _isTeleporting = false;
     private float _lastGigaBlastTime = -999f;
-    private bool _isCharging = false;
     private float _chargeStartTime = 0f;
     private int _currentChargeTier = 0;
-    private AudioSource _laserBeamSource;
     private AudioSource _reflectShieldSource;
     private AudioSource _gigaBlastChargeSource;
-    private Coroutine _beamFadeCoroutine;
     private Coroutine _gigaBlastChargeFadeCoroutine;
 
     // ===== INITIALIZATION =====
     protected override void Awake()
     {
         base.Awake();
-
-        _currentBeamCapacity = 0f;
-
-        _laserBeamSource = gameObject.AddComponent<AudioSource>();
-        _laserBeamSource.playOnAwake = false;
-        _laserBeamSource.loop = true;
-        _laserBeamSource.spatialBlend = 1f;
-        _laserBeamSource.rolloffMode = AudioRolloffMode.Linear;
-        _laserBeamSource.minDistance = 10f;
-        _laserBeamSource.maxDistance = 50f;
-        _laserBeamSource.dopplerLevel = 0f;
 
         _reflectShieldSource = gameObject.AddComponent<AudioSource>();
         _reflectShieldSource.playOnAwake = false;
@@ -340,11 +303,6 @@ public class Class1 : Player
     protected override void Update()
     {
         base.Update();
-
-        if (_activeBeam == null && _currentBeamCapacity > 0f)
-        {
-            _currentBeamCapacity = Mathf.Max(_currentBeamCapacity - abilities.beam.regenRate * Time.deltaTime, 0f);
-        }
 
         if (_isCharging)
         {
@@ -388,110 +346,12 @@ public class Class1 : Player
 
         // Restore original thrust force
         movement.thrustForce = originalThrustForce;
-
-        if (_activeBeam != null)
-        {
-            float recoilForceThisFrame = _activeBeam.GetRecoilForcePerSecond() * Time.fixedDeltaTime;
-            ApplyRecoil(recoilForceThisFrame);
-
-            _currentBeamCapacity = Mathf.Min(_currentBeamCapacity + abilities.beam.drainRate * Time.fixedDeltaTime, abilities.beam.capacity);
-
-            if (_currentBeamCapacity >= abilities.beam.capacity)
-            {
-                Debug.Log("Beam capacity full! Stopping beam.");
-                _activeBeam.StopFiring();
-                Destroy(_activeBeam.gameObject);
-                _activeBeam = null;
-
-                if (_laserBeamSource != null && _laserBeamSource.isPlaying)
-                {
-                    if (_beamFadeCoroutine != null)
-                    {
-                        StopCoroutine(_beamFadeCoroutine);
-                    }
-                    _beamFadeCoroutine = StartCoroutine(FadeBeamVolume(0f, stopAfterFade: true));
-                }
-                else if (_laserBeamSource != null && !_laserBeamSource.isPlaying)
-                {
-                    _laserBeamSource.Stop();
-                }
-            }
-        }
     }
 
     // ===== ABILITY INPUT CALLBACKS =====
     void OnAbility3(InputValue value)
     {
-        Debug.Log($"Fire Beam input received - isPressed: {value.isPressed}");
-
-        if (value.isPressed)
-        {
-            if (_isCharging)
-            {
-                Debug.Log("Cannot fire beam while charging GigaBlast");
-                return;
-            }
-
-            if (_currentBeamCapacity >= abilities.beam.capacity)
-            {
-                Debug.Log("Cannot fire beam: capacity full (overheated)");
-                return;
-            }
-
-            if (_activeBeam == null && abilities.beam.stats.prefab != null)
-            {
-                Debug.Log("Creating and starting beam");
-
-                Vector3 spawnPosition = transform.position + transform.up * abilities.beam.offsetDistance;
-
-                GameObject beamObj = Instantiate(abilities.beam.stats.prefab, spawnPosition, transform.rotation, transform);
-                _activeBeam = beamObj.GetComponent<LaserBeam>();
-                _activeBeam.Initialize(
-                    enemyTag,
-                    abilities.beam.stats.damagePerSecond,
-                    abilities.beam.stats.maxDistance,
-                    abilities.beam.stats.recoilForcePerSecond,
-                    abilities.beam.stats.impactForce,
-                    this
-                );
-                _activeBeam.StartFiring();
-
-                if (abilities.beam.beamLoopSound != null && _laserBeamSource != null)
-                {
-                    _laserBeamSource.volume = 0f;
-                    abilities.beam.beamLoopSound.Play(_laserBeamSource);
-
-                    if (_beamFadeCoroutine != null)
-                    {
-                        StopCoroutine(_beamFadeCoroutine);
-                    }
-                    _beamFadeCoroutine = StartCoroutine(FadeBeamVolume(abilities.beam.beamLoopSound.volume));
-                }
-            }
-        }
-        else
-        {
-            if (_activeBeam != null)
-            {
-                Debug.Log("Stopping and destroying beam");
-                _activeBeam.StopFiring();
-                Destroy(_activeBeam.gameObject);
-                _activeBeam = null;
-
-                if (_laserBeamSource != null && _laserBeamSource.isPlaying)
-                {
-                    if (_beamFadeCoroutine != null)
-                    {
-                        StopCoroutine(_beamFadeCoroutine);
-                    }
-                    _beamFadeCoroutine = StartCoroutine(FadeBeamVolume(0f, stopAfterFade: true));
-                }
-                else if (_laserBeamSource != null && !_laserBeamSource.isPlaying)
-                {
-                    _laserBeamSource.Stop();
-                }
-            }
-        }
+        ability3.TryUseAbility(value);
     }
 
     void OnAbility4()
@@ -551,7 +411,7 @@ public class Class1 : Player
         {
             if (!_isCharging && Time.time >= _lastGigaBlastTime + abilities.gigaBlast.timing.cooldown)
             {
-                if (_activeBeam != null || _isTeleporting ||
+                if (ability3.IsAbilityActive() || _isTeleporting ||
                     (abilities.reflect.shield != null && abilities.reflect.shield.IsActive()))
                 {
                     Debug.Log("Cannot charge GigaBlast: other abilities active");
@@ -875,7 +735,7 @@ public class Class1 : Player
             return;
         }
 
-        Vector3 spawnPosition = transform.position + transform.up * abilities.beam.offsetDistance;
+        Vector3 spawnPosition = transform.position + transform.up * abilities.gigaBlast.offsetDistance;
         GameObject projectile = Instantiate(projectilePrefab, spawnPosition, transform.rotation);
 
         if (projectile.TryGetComponent<ProjectileScript>(out var projectileScript))
@@ -918,35 +778,6 @@ public class Class1 : Player
     }
 
     // ===== AUDIO =====
-    private System.Collections.IEnumerator FadeBeamVolume(float targetVolume, bool stopAfterFade = false)
-    {
-        if (_laserBeamSource == null) yield break;
-
-        float startVolume = _laserBeamSource.volume;
-        float elapsed = 0f;
-
-        while (elapsed < abilities.beam.soundFadeDuration)
-        {
-            if (_laserBeamSource == null || (!_laserBeamSource.isPlaying && targetVolume > 0f))
-            {
-                yield break;
-            }
-
-            elapsed += Time.deltaTime;
-            float t = elapsed / abilities.beam.soundFadeDuration;
-            _laserBeamSource.volume = Mathf.Lerp(startVolume, targetVolume, t);
-            yield return null;
-        }
-
-        if (_laserBeamSource == null) yield break;
-
-        _laserBeamSource.volume = targetVolume;
-
-        if (targetVolume <= 0f && stopAfterFade && _laserBeamSource.isPlaying)
-        {
-            _laserBeamSource.Stop();
-        }
-    }
 
     private System.Collections.IEnumerator FadeGigaBlastChargeVolume(float targetVolume, bool stopAfterFade = false)
     {
@@ -976,11 +807,14 @@ public class Class1 : Player
     {
         float originalRotationSpeed = movement.rotationSpeed;
 
-        if (_activeBeam != null)
+        List<Ability> abilityScripts = new List<Ability> { ability1, ability2, ability3, ability4 };
+        var activeAbility = abilityScripts.FirstOrDefault(a => a.IsAbilityActive());
+        if (activeAbility != null)
         {
-            movement.rotationSpeed *= abilities.beam.rotationMultiplier;
+            activeAbility.ApplyRotationMultiplier();
         }
-        else if (_isCharging)
+        else 
+        if (_isCharging)
         {
             float chargeTime = Time.time - _chargeStartTime;
             int tier = GetChargeTier(chargeTime);
@@ -1004,11 +838,14 @@ public class Class1 : Player
     {
         float originalRotationSpeed = movement.rotationSpeed;
 
-        if (_activeBeam != null)
+        List<Ability> abilityScripts = new List<Ability> {ability1,ability2,ability3,ability4};
+        var activeAbility = abilityScripts.FirstOrDefault(a => a.IsAbilityActive());
+        if (activeAbility != null)
         {
-            movement.rotationSpeed *= abilities.beam.rotationMultiplier;
+            activeAbility.ApplyRotationMultiplier();
         }
-        else if (_isCharging)
+        else
+        if (_isCharging)
         {
             float chargeTime = Time.time - _chargeStartTime;
             int tier = GetChargeTier(chargeTime);
@@ -1041,10 +878,8 @@ public class Class1 : Player
 
     protected override void Die()
     {
-        if (_laserBeamSource != null && _laserBeamSource.isPlaying)
-        {
-            _laserBeamSource.Stop();
-        }
+        ability3.Die();
+
         if (_reflectShieldSource != null && _reflectShieldSource.isPlaying)
         {
             _reflectShieldSource.Stop();
@@ -1054,10 +889,6 @@ public class Class1 : Player
             _gigaBlastChargeSource.Stop();
         }
 
-        if (_beamFadeCoroutine != null)
-        {
-            StopCoroutine(_beamFadeCoroutine);
-        }
         if (_gigaBlastChargeFadeCoroutine != null)
         {
             StopCoroutine(_gigaBlastChargeFadeCoroutine);

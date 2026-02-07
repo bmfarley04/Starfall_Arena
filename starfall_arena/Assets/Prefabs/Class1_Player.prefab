@@ -5375,6 +5375,15 @@ MonoBehaviour:
   slowEffectVisuals:
     slowParticleSystem: {fileID: 4517218207347267077}
   currentShield: 0
+  ability1: {fileID: 0}
+  ability2: {fileID: 0}
+  ability3: {fileID: 0}
+  ability4: {fileID: 0}
+  abilitySlots:
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 11500000, guid: 908cc72dae50f93469c58280dd7ce4ef, type: 3}
+  - {fileID: 0}
   shieldRegen:
     regenDelay: 5
     regenRate: 20
@@ -5403,21 +5412,6 @@ MonoBehaviour:
   explosionSound: {fileID: 0}
   audioSourcePoolSize: 10
   abilities:
-    beam:
-      stats:
-        prefab: {fileID: 2153662200343534273, guid: 83a72cb419d844b64b498b2b7eb5f252, type: 3}
-        damagePerSecond: 50
-        maxDistance: 60
-        recoilForcePerSecond: 1
-        impactForce: 10
-      offsetDistance: 1.7
-      rotationMultiplier: 0.2
-      fadeInDuration: 0.3
-      capacity: 100
-      drainRate: 25
-      regenRate: 4
-      beamLoopSound: {fileID: 0}
-      soundFadeDuration: 0
     reflect:
       cooldown: 7
       activeDuration: 1
@@ -5448,6 +5442,7 @@ MonoBehaviour:
       exitSound: {fileID: 0}
       arrivalSound: {fileID: 0}
     gigaBlast:
+      offsetDistance: 0
       timing:
         cooldown: 3
         minChargeTime: 0.5

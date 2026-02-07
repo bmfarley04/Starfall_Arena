@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 public class Ability : MonoBehaviour
 {
     [System.Serializable]
@@ -11,11 +12,13 @@ public class Ability : MonoBehaviour
     }
     public AbilityStats stats;
 
+    protected Player player;
     protected LayerMask originalLayer;
     protected LayerMask thisPlayerLayer;
     protected float lastUsedAbility = 0;
     protected virtual void Awake()
     {
+        player = GetComponent<Player>();
         originalLayer = gameObject.layer;
     }
 
@@ -30,12 +33,12 @@ public class Ability : MonoBehaviour
         return false;
     }
 
-    public virtual bool TryUseAbility(object inputVar)
+    public virtual bool TryUseAbility(InputValue value)
     {
         if (CanUseAbility())
         {
             lastUsedAbility = Time.time;
-            UseAbility(inputVar);
+            UseAbility(value);
             return true;
         }
         return false;
@@ -46,7 +49,7 @@ public class Ability : MonoBehaviour
         Debug.Log("Ability activated for " + stats.duration + " seconds.");
     }
 
-    public virtual void UseAbility(object inputVar)
+    public virtual void UseAbility(InputValue value)
     {
         Debug.Log("Ability activated for " + stats.duration + " seconds.");
     }
@@ -59,5 +62,21 @@ public class Ability : MonoBehaviour
             return false;
         }
         return true;
+    }
+    public virtual bool IsAbilityActive()
+    {
+        return Time.time < lastUsedAbility + stats.duration;
+    }
+
+    public virtual void ApplyRotationMultiplier()
+    {
+    }
+
+    public virtual void Magic(object obj)
+    {
+    }
+
+    public virtual void Die()
+    {
     }
 }

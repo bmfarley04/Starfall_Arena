@@ -114,8 +114,10 @@ public abstract class Player : Entity
 
     // ===== PROTECTED STATE (for derived classes) =====
     protected float fireCooldown = 0.5f;  // Can be overridden in derived classes
-    protected string thisPlayerTag;
-    protected string enemyTag;
+
+    // PUBLIC GET PROTECTED SET
+    public string thisPlayerTag { get; protected set; }
+    public string enemyTag { get; protected set; }
 
     // ===== PRIVATE STATE =====
     private PlayerInput _playerInput;
