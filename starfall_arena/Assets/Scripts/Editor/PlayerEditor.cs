@@ -47,6 +47,7 @@ public class PlayerEditor : Editor
                 if (GUILayout.Button("Attach to Player"))
                 {
                     Component newComp = Undo.AddComponent(player.gameObject, scriptType);
+                    newComp.hideFlags = HideFlags.HideInInspector;
                     SetAbilityField(player, i, newComp as Ability);
                     EditorUtility.SetDirty(player);
                 }

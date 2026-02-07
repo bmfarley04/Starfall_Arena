@@ -808,7 +808,7 @@ public class Class1 : Player
         float originalRotationSpeed = movement.rotationSpeed;
 
         List<Ability> abilityScripts = new List<Ability> { ability1, ability2, ability3, ability4 };
-        var activeAbility = abilityScripts.FirstOrDefault(a => a.IsAbilityActive());
+        var activeAbility = abilityScripts.FirstOrDefault(a => a?.IsAbilityActive() == true);
         if (activeAbility != null)
         {
             activeAbility.ApplyRotationMultiplier();

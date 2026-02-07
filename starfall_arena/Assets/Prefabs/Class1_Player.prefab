@@ -4962,6 +4962,7 @@ GameObject:
   - component: {fileID: 678256140099594092}
   - component: {fileID: 3550827916854919345}
   - component: {fileID: -1802509990396755088}
+  - component: {fileID: 5044949934575203889}
   m_Layer: 0
   m_Name: Class1_Player
   m_TagString: Player
@@ -5377,7 +5378,7 @@ MonoBehaviour:
   currentShield: 0
   ability1: {fileID: 0}
   ability2: {fileID: 0}
-  ability3: {fileID: 0}
+  ability3: {fileID: 5044949934575203889}
   ability4: {fileID: 0}
   abilitySlots:
   - {fileID: 0}
@@ -5554,6 +5555,36 @@ MonoBehaviour:
   rotation:
     lockSmoothing: 0
     unlockSmoothing: 0
+--- !u!114 &5044949934575203889
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1578230554132079418}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 908cc72dae50f93469c58280dd7ce4ef, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Beam
+  stats:
+    cooldown: 0
+    duration: 5
+  beam:
+    stats:
+      prefab: {fileID: 2153662200343534273, guid: 83a72cb419d844b64b498b2b7eb5f252, type: 3}
+      damagePerSecond: 10
+      maxDistance: 100
+      recoilForcePerSecond: 1
+      impactForce: 2
+    offsetDistance: 1
+    rotationMultiplier: 0
+    fadeInDuration: 1
+    capacity: 100
+    drainRate: 10
+    regenRate: 15
+    beamLoopSound: {fileID: 0}
+    soundFadeDuration: 1
 --- !u!1 &3501154216763360000
 GameObject:
   m_ObjectHideFlags: 0
