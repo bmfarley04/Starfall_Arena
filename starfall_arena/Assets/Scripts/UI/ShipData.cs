@@ -47,6 +47,19 @@ public class ShipData : ScriptableObject
 
     [Tooltip("Ship model prefab spawned for preview")]
     public GameObject shipModelPrefab;
+    [Tooltip("Ship model prefab spawned for preview")]
+    public GameObject player1VSPrefab;
+    [Tooltip("JUST USED IN VS SCREEN")]
+    public GameObject player2VSPrefab;
+    [Tooltip("JUST USED IN VS SCREEN")]
+    public GameObject shipPrefab;
+
+    [Header("VS Screen Position Offsets")]
+    [Tooltip("Additive position offset when this ship is displayed on the Player 1 VS card")]
+    public Vector3 player1VSPositionOffset;
+
+    [Tooltip("Additive position offset when this ship is displayed on the Player 2 VS card")]
+    public Vector3 player2VSPositionOffset;
 
     [Header("Ship Stats")]
     [Tooltip("Stat values displayed as bars (0-100 range)")]
