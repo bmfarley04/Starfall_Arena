@@ -148,7 +148,8 @@ public class ProjectileScript : MonoBehaviour
         {
             // Check if player has active reflect shield
             Class1 player = collider.GetComponent<Class1>();
-            if (player != null && player.abilities.reflect.shield != null && player.abilities.reflect.shield.IsActive())
+            player.TryGetComponent<Reflector>(out var reflectScript);
+            if (player != null && reflectScript.IsAbilityActive())
             {
                 // Let Class1 handle the reflection
                 return;
