@@ -1,6 +1,6 @@
 using UnityEngine;
 using UnityEditor;
-
+// Heavily written with AI
 [CustomEditor(typeof(Player), true)]
 public class PlayerEditor : Editor
 {
