@@ -117,6 +117,11 @@ public class Teleport : Ability
         return _isTeleporting;
     }
 
+    public override bool HasThrustMitigation()
+    {
+        return _isTeleporting;
+    }
+
     public override void Die()
     {
 

@@ -22,11 +22,12 @@ public class Class1 : Player
 
     protected override void FixedUpdate()
     {
-        if (ability2.IsAbilityActive()) // This assumes ability2 is the teleport ability; adjust if needed
+        var activeAbility = abilities.FirstOrDefault(a => a?.IsAbilityActive() == true);
+
+        if (activeAbility.HasThrustMitigation()) 
         {
             return;
         }
-        var activeAbility = abilities.FirstOrDefault(a => a.IsAbilityActive());
         if (activeAbility != null)
         {
             activeAbility.ApplyThrustMultiplier();
@@ -80,7 +81,7 @@ public class Class1 : Player
     {
         float originalRotationSpeed = movement.rotationSpeed;
 
-        var activeAbility = abilities.FirstOrDefault(a => a.IsAbilityActive());
+        var activeAbility = abilities.FirstOrDefault(a => a?.IsAbilityActive() == true);
         if (activeAbility != null)
         {
             activeAbility.ApplyRotationMultiplier();
@@ -94,7 +95,7 @@ public class Class1 : Player
     // ===== OVERRIDES =====
     public override void TakeDamage(float damage, float impactForce = 0f, Vector3 hitPoint = default, DamageSource source = DamageSource.Projectile)
     {
-        if (abilities.Any(a => a.HasDamageMitigation()))
+        if (abilities.Any(a => a?.HasDamageMitigation() == true))
         {
             return;
         }
@@ -114,9 +115,9 @@ public class Class1 : Player
 
     void OnTriggerEnter2D(Collider2D collider)
     {
-        if (abilities.Any(a => a.HasCollisionModification()))
+        if (abilities.Any(a => a?.HasCollisionModification() == true))
         {
-            foreach (var ability in abilities.Where(a => a.HasCollisionModification()))
+            foreach (var ability in abilities.Where(a => a?.HasCollisionModification() == true))
             {
                 ability.ProcessCollisionModification(collider);
             }

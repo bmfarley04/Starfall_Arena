@@ -97,6 +97,11 @@ public class Ability : MonoBehaviour
         return false;
     }
 
+    public virtual bool HasThrustMitigation()
+    {
+        return false;
+    }
+
     public virtual bool HasCollisionModification()
     {
         return false;
