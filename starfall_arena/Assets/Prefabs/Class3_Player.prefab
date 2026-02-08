@@ -20420,8 +20420,8 @@ MonoBehaviour:
     fireDuration: 10
     impactForce: 1
     spawnOffset: -1
-    spawnInterval: 0
-    maxActiveHazards: 0
+    spawnInterval: 0.25
+    maxActiveHazards: 25
     capacity: 100
     drainRate: 5
     regenRate: 5
