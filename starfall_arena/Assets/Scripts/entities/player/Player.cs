@@ -120,9 +120,9 @@ public abstract class Player : Entity
     // PUBLIC GET PROTECTED SET
     public string thisPlayerTag { get; protected set; }
     public string enemyTag { get; protected set; }
-    public List<Ability> abilities; 
 
     // ===== PRIVATE STATE =====
+    private List<Ability> abilities;
     private PlayerInput _playerInput;
     private InputAction _moveAction;
     private bool _frictionEnabled = false;

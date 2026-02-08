@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 public class Ability : MonoBehaviour
@@ -54,7 +55,8 @@ public class Ability : MonoBehaviour
 
     protected virtual bool IsAnyOtherAbilityActive()
     {
-        foreach (var ability in player.abilities)
+        List<Ability> abilities = new List<Ability> { player.ability1, player.ability2, player.ability3, player.ability4 };
+        foreach (var ability in abilities)
         {
             if (ability != null && ability != this && ability.IsAbilityActive())
             {
