@@ -98,45 +98,50 @@ Material:
     - _BoltSegments: 12
     - _BoltSpeed: 1
     - _BoltThickness: 0.004
-    - _BoltsPerEdge: 1.7
+    - _BoltsPerEdge: 2.5
     - _BorderGlowIntensity: 1.2
     - _BorderGlowWidth: 0.035
     - _BorderWidth: 0.012
-    - _BranchAngleSpread: 0.695
-    - _BranchChance: 1
-    - _BranchGlowRadius: 3
-    - _BranchLength: 40.6
+    - _BranchAngleSpread: 0.4
+    - _BranchChance: 0.702
+    - _BranchForwardBias: 0.73
+    - _BranchGlowRadius: 28.7
+    - _BranchLength: 81
+    - _BranchLengthMax: 80
+    - _BranchLengthMin: 15
     - _BranchLengthMult: 0.8
-    - _BranchOutwardBias: 0.737
+    - _BranchOutwardBias: 0.383
     - _BranchSpread: 1.5
-    - _BranchThickness: 0.41
-    - _BranchesPerBolt: 8
+    - _BranchThickness: 0.47
+    - _BranchThicknessMax: 1.2
+    - _BranchThicknessMin: 0.3
+    - _BranchesPerBolt: 2
     - _BumpScale: 1
     - _ClearCoatMask: 0
     - _ClearCoatSmoothness: 0
     - _ColorMask: 15
     - _CoreIntensity: 5
-    - _CoreThickness: 1.07
+    - _CoreThickness: 1
     - _CornerRadius: 0.06
     - _Cull: 2
     - _Cutoff: 0.5
     - _DetailAlbedoMapScale: 1
-    - _DetailAmp: 0.78
-    - _DetailFreq: 23.7
+    - _DetailAmp: 0.3
+    - _DetailFreq: 15
     - _DetailNormalMapScale: 1
     - _DstBlend: 0
     - _DstBlendAlpha: 0
-    - _EdgeBottom: 0.155
+    - _EdgeBottom: 0.181
     - _EdgeExtend: 0
     - _EdgeInset: 0.01
-    - _EdgeLeft: 0.138
-    - _EdgeRight: 0.85
-    - _EdgeTop: 0.84
-    - _EndFadeWidth: 0.1
+    - _EdgeLeft: 0.194
+    - _EdgeRight: 0.8
+    - _EdgeTop: 0.82
+    - _EndFadeWidth: 0.069
     - _EnvironmentReflections: 1
     - _FineDetail: 0.0196
     - _FineDetailFreq: 80
-    - _Flicker: 0.4
+    - _Flicker: 0.324
     - _FrameCoreIntensity: 1.5
     - _FrameCoreWidth: 0.5
     - _FrameGlowIntensity: 1.26
@@ -148,12 +153,12 @@ Material:
     - _GlowRadius: 3
     - _LargeWander: 0.15
     - _LargeWanderFreq: 6
-    - _MaxDisplacement: 80
+    - _MaxDisplacement: 90
     - _MediumZigzag: 0.06
     - _MediumZigzagFreq: 25
     - _Metallic: 0
-    - _MicroAmp: 1
-    - _MicroFreq: 71.5
+    - _MicroAmp: 1.7
+    - _MicroFreq: 52.8
     - _OcclusionStrength: 1
     - _Octave1Amp: 5
     - _Octave1Freq: 1
@@ -168,10 +173,10 @@ Material:
     - _Parallax: 0.005
     - _QueueOffset: 0
     - _ReceiveShadows: 1
-    - _RectHeight: 600
-    - _RectWidth: 400
-    - _RefEdgeLength: 200
-    - _ReseedRate: 2
+    - _RectHeight: 980
+    - _RectWidth: 620
+    - _RefEdgeLength: 706
+    - _ReseedRate: 0.54
     - _Smoothness: 0.5
     - _SmoothnessTextureChannel: 0
     - _SparsityDensity: 0.8
@@ -186,21 +191,23 @@ Material:
     - _StencilOp: 0
     - _StencilReadMask: 255
     - _StencilWriteMask: 255
-    - _SubBranchChance: 1
+    - _SubBranchChance: 0.534
     - _SubBranchLength: 20.5
+    - _SubBranchLengthMax: 35
+    - _SubBranchLengthMin: 8
     - _Surface: 0
     - _UseUIAlphaClip: 0
-    - _WanderAmp: 22.9
-    - _WanderFreq: 2.42
+    - _WanderAmp: 10
+    - _WanderFreq: 5
     - _WorkflowMode: 1
     - _XRMotionVectorsPass: 1
     - _ZWrite: 1
-    - _ZigzagAmp: 5.1
-    - _ZigzagFreq: 11.6
+    - _ZigzagAmp: 6.9
+    - _ZigzagFreq: 23.4
     m_Colors:
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
     - _BoltColor: {r: 1, g: 0.655914, b: 0, a: 1}
-    - _BoltGlowColor: {r: 1, g: 0.52181095, b: 0.09803921, a: 1}
+    - _BoltGlowColor: {r: 1, g: 0.73555124, b: 0.27358478, a: 1}
     - _BorderColor: {r: 1, g: 0.65, b: 0.14999998, a: 1}
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}

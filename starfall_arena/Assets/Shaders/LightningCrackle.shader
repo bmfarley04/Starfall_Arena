@@ -25,16 +25,16 @@ Shader "UI/LightningCrackle"
 
         [Header(Lightning Shape)]
         _BoltsPerEdge ("Bolts Per Edge", Range(1, 5)) = 3
-        _RefEdgeLength ("Reference Edge Length (px)", Range(200, 1200)) = 600.0
-        _WanderAmp ("Wander Amplitude (px)", Range(2.0, 40.0)) = 15.0
+        _RefEdgeLength ("Reference Edge Length (px)", Range(0, 1200)) = 600.0
+        _WanderAmp ("Wander Amplitude (px)", Range(2.0, 150.0)) = 40.0
         _WanderFreq ("Wander Frequency", Range(1.0, 5.0)) = 2.5
-        _ZigzagAmp ("Zigzag Amplitude (px)", Range(1.0, 20.0)) = 7.0
+        _ZigzagAmp ("Zigzag Amplitude (px)", Range(1.0, 60.0)) = 18.0
         _ZigzagFreq ("Zigzag Frequency", Range(6.0, 25.0)) = 13.0
-        _DetailAmp ("Detail Amplitude (px)", Range(0.3, 8.0)) = 3.0
+        _DetailAmp ("Detail Amplitude (px)", Range(0.3, 25.0)) = 8.0
         _DetailFreq ("Detail Frequency", Range(15.0, 50.0)) = 30.0
-        _MicroAmp ("Micro Crackle Amplitude (px)", Range(0.1, 4.0)) = 1.5
+        _MicroAmp ("Micro Crackle Amplitude (px)", Range(0.1, 12.0)) = 4.0
         _MicroFreq ("Micro Crackle Frequency", Range(30.0, 120.0)) = 65.0
-        _MaxDisplacement ("Max Displacement Clamp (px)", Range(10.0, 80.0)) = 35.0
+        _MaxDisplacement ("Max Displacement Clamp (px)", Range(10.0, 300.0)) = 120.0
 
         [Header(Animation)]
         _Speed ("Morph Speed", Range(0.1, 4.0)) = 1.2
@@ -44,17 +44,21 @@ Shader "UI/LightningCrackle"
         [Header(Branching)]
         _BranchesPerBolt ("Max Branches Per Bolt", Range(0, 8)) = 4
         _BranchChance ("Branch Probability", Range(0.0, 1.0)) = 0.55
-        _BranchLength ("Branch Length (px)", Range(8.0, 80.0)) = 35.0
-        _BranchThickness ("Branch Core Thickness (px)", Range(0.2, 3.0)) = 0.8
+        _BranchLengthMin ("Branch Length Min (px)", Range(4.0, 150.0)) = 15.0
+        _BranchLengthMax ("Branch Length Max (px)", Range(4.0, 150.0)) = 80.0
+        _BranchThicknessMin ("Branch Thickness Min (px)", Range(0.1, 3.0)) = 0.3
+        _BranchThicknessMax ("Branch Thickness Max (px)", Range(0.1, 3.0)) = 1.2
         _BranchGlowRadius ("Branch Glow Radius (px)", Range(2.0, 35.0)) = 14.0
         _BranchOutwardBias ("Outward Bias", Range(0.3, 1.0)) = 0.8
-        _BranchAngleSpread ("Angle Spread", Range(0.2, 1.2)) = 0.6
+        _BranchForwardBias ("Forward Bias (0=perpendicular 1=parallel)", Range(0.0, 1.0)) = 0.65
+        _BranchAngleSpread ("Angle Spread", Range(0.1, 1.2)) = 0.4
         _SubBranchChance ("Sub-branch Probability", Range(0.0, 1.0)) = 0.3
-        _SubBranchLength ("Sub-branch Length (px)", Range(4.0, 35.0)) = 15.0
+        _SubBranchLengthMin ("Sub-branch Length Min (px)", Range(2.0, 80.0)) = 8.0
+        _SubBranchLengthMax ("Sub-branch Length Max (px)", Range(2.0, 80.0)) = 35.0
 
         [Header(Corner Overlap)]
         _EdgeExtend ("Edge Extension Past Corners", Range(0.0, 0.1)) = 0.03
-        _EndFadeWidth ("End Fade Width", Range(0.01, 0.1)) = 0.04
+        _EndFadeWidth ("End Fade Width", Range(0.01, 0.4)) = 0.04
 
         // Unity UI stencil/masking support
         _StencilComp ("Stencil Comparison", Float) = 8
@@ -146,10 +150,12 @@ Shader "UI/LightningCrackle"
 
             float _Speed, _ReseedRate, _Flicker;
 
-            float _BranchesPerBolt, _BranchChance, _BranchLength;
-            float _BranchThickness, _BranchGlowRadius;
-            float _BranchOutwardBias, _BranchAngleSpread;
-            float _SubBranchChance, _SubBranchLength;
+            float _BranchesPerBolt, _BranchChance;
+            float _BranchLengthMin, _BranchLengthMax;
+            float _BranchThicknessMin, _BranchThicknessMax;
+            float _BranchGlowRadius;
+            float _BranchOutwardBias, _BranchForwardBias, _BranchAngleSpread;
+            float _SubBranchChance, _SubBranchLengthMin, _SubBranchLengthMax;
 
             float _EdgeExtend, _EndFadeWidth;
 
@@ -288,7 +294,7 @@ Shader "UI/LightningCrackle"
             }
 
             float2 evaluateBranch(float2 pixelPos, float2 brOriginPx, float2 brDirN,
-                                   float brLenPx, float seed, float time)
+                                   float brLenPx, float brThickness, float seed, float time)
             {
                 float2 brPerpN = float2(-brDirN.y, brDirN.x);
                 float2 toPixel = pixelPos - brOriginPx;
@@ -302,9 +308,9 @@ Shader "UI/LightningCrackle"
                 float boltOffset = branchDisplacement(t, seed, time);
                 float dist = abs(perp - boltOffset);
 
-                float core = saturate(1.0 - dist / _BranchThickness) * _CoreIntensity * 0.55;
+                float core = saturate(1.0 - dist / brThickness) * _CoreIntensity * 0.55;
 
-                float corePresence = saturate(1.0 - dist / (_BranchThickness * 3.0));
+                float corePresence = saturate(1.0 - dist / (brThickness * 3.0));
                 float glow = exp(-dist * dist / (_BranchGlowRadius * _BranchGlowRadius)) * 0.45;
                 glow *= smoothstep(0.0, 0.1, corePresence);
 
@@ -352,64 +358,94 @@ Shader "UI/LightningCrackle"
                     glow *= flicker;
 
                     int maxBranches = (int)_BranchesPerBolt;
-                    float branchTimeSeed = floor(time * _ReseedRate) * 7.13 + seed;
                     float edgeLenScale = edgePixelLen / _RefEdgeLength;
+
+                    // Reseed blend for branches (same technique as main bolts)
+                    float brReseedPhase = time * _ReseedRate;
+                    float brReseedA = floor(brReseedPhase) * 7.13 + seed;
+                    float brReseedB = brReseedA + 7.13;
+                    float brBlend = frac(brReseedPhase);
+                    brBlend = brBlend * brBlend * (3.0 - 2.0 * brBlend);
 
                     for (int br = 0; br < MAX_BRANCHES; br++)
                     {
                         if (br >= maxBranches) break;
 
                         float brSeed = seed * 71.3 + (float)br * 37.1;
-                        float brChance = hash11(branchTimeSeed + brSeed * 13.7);
-                        if (brChance > _BranchChance) continue;
 
-                        float brT = hash11(branchTimeSeed + brSeed * 51.3);
-                        float2 brOriginBase = lerp(extStart, extEnd, brT);
-                        float mainDisp = fractalDisplacement(brT, seed, time, edgeLenScale);
-                        float2 brOriginPx = brOriginBase + outwardN * mainDisp;
+                        // Evaluate branch for BOTH reseed phases and blend
+                        float brCoreBlended = 0.0;
+                        float brGlowBlended = 0.0;
 
-                        float outwardRoll = hash11(branchTimeSeed + brSeed * 61.0);
-                        float2 brBaseDir;
-                        if (outwardRoll < _BranchOutwardBias)
-                            brBaseDir = outwardN;
-                        else
-                            brBaseDir = -outwardN;
-
-                        float brAngle = (hash11(branchTimeSeed + brSeed * 91.0) - 0.5) * _BranchAngleSpread;
-                        float cs = cos(brAngle);
-                        float sn = sin(brAngle);
-                        float2 brDirN = normalize(float2(brBaseDir.x * cs - brBaseDir.y * sn,
-                                                          brBaseDir.x * sn + brBaseDir.y * cs));
-
-                        float brLen = _BranchLength * (0.3 + 0.7 * hash11(branchTimeSeed + brSeed * 67.0));
-
-                        float2 brResult = evaluateBranch(pixelPos, brOriginPx, brDirN, brLen, brSeed, time);
-                        core = max(core, brResult.x * flicker);
-                        glow = max(glow, brResult.y * flicker);
-
-                        float subChance = hash11(branchTimeSeed + brSeed * 113.0);
-                        if (subChance < _SubBranchChance)
+                        for (int phase = 0; phase < 2; phase++)
                         {
-                            float subT = hash11(branchTimeSeed + brSeed * 143.0) * 0.7;
-                            float2 subOrigin = brOriginPx + brDirN * brLen * subT;
-                            float subOffset = branchDisplacement(subT, brSeed, time);
-                            float2 subPerp = float2(-brDirN.y, brDirN.x);
-                            subOrigin += subPerp * subOffset;
+                            float phaseSeed = (phase == 0) ? brReseedA : brReseedB;
+                            float phaseWeight = (phase == 0) ? (1.0 - brBlend) : brBlend;
 
-                            float subAngle = (hash11(branchTimeSeed + brSeed * 179.0) - 0.5) * _BranchAngleSpread * 1.3;
-                            float2 subDir = brDirN;
-                            float scs = cos(subAngle);
-                            float ssn = sin(subAngle);
-                            subDir = normalize(float2(subDir.x * scs - subDir.y * ssn,
-                                                       subDir.x * ssn + subDir.y * scs));
+                            float brChance = hash11(phaseSeed + brSeed * 13.7);
+                            if (brChance > _BranchChance) continue;
 
-                            float subLen = _SubBranchLength * (0.3 + 0.7 * hash11(branchTimeSeed + brSeed * 197.0));
+                            float brT = hash11(phaseSeed + brSeed * 51.3);
+                            float2 brOriginBase = lerp(extStart, extEnd, brT);
+                            float mainDisp = fractalDisplacement(brT, seed, time, edgeLenScale);
+                            float2 brOriginPx = brOriginBase + outwardN * mainDisp;
 
-                            float2 subResult = evaluateBranch(pixelPos, subOrigin, subDir, subLen,
-                                                               brSeed + 500.0, time);
-                            core = max(core, subResult.x * flicker * 0.6);
-                            glow = max(glow, subResult.y * flicker * 0.5);
+                            // Branch direction: blend between bolt-parallel (edgeDir) and perpendicular (outwardN)
+                            // Forward bias 1.0 = branches follow the bolt, 0.0 = branches shoot perpendicular
+                            float dirRoll = hash11(phaseSeed + brSeed * 61.0);
+                            // Pick outward vs inward side
+                            float2 perpComponent = (dirRoll < _BranchOutwardBias) ? outwardN : -outwardN;
+                            // Pick forward vs backward along edge (random 50/50)
+                            float2 fwdComponent = (hash11(phaseSeed + brSeed * 53.0) < 0.5) ? edgeDir : -edgeDir;
+                            // Blend: mostly forward with some perpendicular kick
+                            float2 brBaseDir = normalize(fwdComponent * _BranchForwardBias + perpComponent * (1.0 - _BranchForwardBias));
+
+                            float brAngle = (hash11(phaseSeed + brSeed * 91.0) - 0.5) * _BranchAngleSpread;
+                            float cs = cos(brAngle);
+                            float sn = sin(brAngle);
+                            float2 brDirN = normalize(float2(brBaseDir.x * cs - brBaseDir.y * sn,
+                                                              brBaseDir.x * sn + brBaseDir.y * cs));
+
+                            float brLen = lerp(_BranchLengthMin, _BranchLengthMax, hash11(phaseSeed + brSeed * 67.0));
+                            float brThick = lerp(_BranchThicknessMin, _BranchThicknessMax, hash11(phaseSeed + brSeed * 79.0));
+
+                            float2 brResult = evaluateBranch(pixelPos, brOriginPx, brDirN, brLen, brThick, brSeed + phaseSeed, time);
+
+                            float brCore = brResult.x * phaseWeight;
+                            float brGlow = brResult.y * phaseWeight;
+
+                            // Sub-branch
+                            float subChance = hash11(phaseSeed + brSeed * 113.0);
+                            if (subChance < _SubBranchChance)
+                            {
+                                float subT = hash11(phaseSeed + brSeed * 143.0) * 0.7;
+                                float2 subOrigin = brOriginPx + brDirN * brLen * subT;
+                                float subOffset = branchDisplacement(subT, brSeed + phaseSeed, time);
+                                float2 subPerp = float2(-brDirN.y, brDirN.x);
+                                subOrigin += subPerp * subOffset;
+
+                                float subAngle = (hash11(phaseSeed + brSeed * 179.0) - 0.5) * _BranchAngleSpread * 1.3;
+                                float2 subDir = brDirN;
+                                float scs = cos(subAngle);
+                                float ssn = sin(subAngle);
+                                subDir = normalize(float2(subDir.x * scs - subDir.y * ssn,
+                                                           subDir.x * ssn + subDir.y * scs));
+
+                                float subLen = lerp(_SubBranchLengthMin, _SubBranchLengthMax, hash11(phaseSeed + brSeed * 197.0));
+                                float subThick = lerp(_BranchThicknessMin, _BranchThicknessMax, hash11(phaseSeed + brSeed * 209.0)) * 0.7;
+
+                                float2 subResult = evaluateBranch(pixelPos, subOrigin, subDir, subLen, subThick,
+                                                                   brSeed + phaseSeed + 500.0, time);
+                                brCore = max(brCore, subResult.x * 0.6 * phaseWeight);
+                                brGlow = max(brGlow, subResult.y * 0.5 * phaseWeight);
+                            }
+
+                            brCoreBlended += brCore;
+                            brGlowBlended += brGlow;
                         }
+
+                        core = max(core, brCoreBlended * flicker);
+                        glow = max(glow, brGlowBlended * flicker);
                     }
 
                     totalCore = max(totalCore, core);
