@@ -19865,6 +19865,7 @@ GameObject:
   - component: {fileID: 1730841359903112306}
   - component: {fileID: 4120815541869784891}
   - component: {fileID: 4483054902844542671}
+  - component: {fileID: 2132662891210618044}
   m_Layer: 0
   m_Name: Class3_Player
   m_TagString: Player
@@ -20328,12 +20329,12 @@ MonoBehaviour:
   currentShield: 0
   ability1: {fileID: 0}
   ability2: {fileID: 0}
-  ability3: {fileID: 0}
+  ability3: {fileID: 2132662891210618044}
   ability4: {fileID: 4483054902844542671}
   abilitySlots:
   - {fileID: 0}
   - {fileID: 0}
-  - {fileID: 0}
+  - {fileID: 11500000, guid: 4b733bc7ea7daa242836f59770870bbd, type: 3}
   - {fileID: 11500000, guid: e80a4986b0af08647b9a0c65c4b462e0, type: 3}
   shieldRegen:
     regenDelay: 0
@@ -20398,6 +20399,34 @@ MonoBehaviour:
   stats:
     cooldown: 3
     duration: 5
+--- !u!114 &2132662891210618044
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8073042944126910331}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4b733bc7ea7daa242836f59770870bbd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::FireWall
+  stats:
+    cooldown: 0
+    duration: 0
+  fireTrail:
+    firePrefab: {fileID: 9122628155286203966, guid: 54c48d3a7b1bbd34babdb5a1d098c782, type: 3}
+    damagePerSecond: 10
+    fireDuration: 10
+    impactForce: 1
+    spawnOffset: 0
+    spawnInterval: 0
+    maxActiveHazards: 0
+    capacity: 100
+    drainRate: 5
+    regenRate: 5
+    fireLoopSound: {fileID: 0}
+    soundFadeDuration: 0
 --- !u!1001 &1583529772260481141
 PrefabInstance:
   m_ObjectHideFlags: 0
