@@ -20419,7 +20419,7 @@ MonoBehaviour:
     damagePerSecond: 10
     fireDuration: 10
     impactForce: 1
-    spawnOffset: 0
+    spawnOffset: -1
     spawnInterval: 0
     maxActiveHazards: 0
     capacity: 100
