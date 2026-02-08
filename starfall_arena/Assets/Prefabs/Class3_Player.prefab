@@ -20417,13 +20417,13 @@ MonoBehaviour:
   fireTrail:
     firePrefab: {fileID: 9122628155286203966, guid: 54c48d3a7b1bbd34babdb5a1d098c782, type: 3}
     damagePerSecond: 10
-    fireDuration: 10
+    fireDuration: 4
     impactForce: 1
     spawnOffset: -1
     spawnInterval: 0.25
     maxActiveHazards: 25
     capacity: 100
-    drainRate: 5
+    drainRate: 25
     regenRate: 5
     fireLoopSound: {fileID: 0}
     soundFadeDuration: 0

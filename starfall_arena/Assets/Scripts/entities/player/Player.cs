@@ -319,19 +319,23 @@ public abstract class Player : Entity
     // ===== ABILITY INPUT CALLBACKS =====
     void OnAbility1(InputValue value)
     {
-        ability1.TryUseAbility(value);
+        if(ability1 != null)
+            ability1.TryUseAbility(value);
     }
     void OnAbility2(InputValue value)
     {
-        ability2.TryUseAbility(value);
+        if(ability2 != null)
+            ability2.TryUseAbility(value);
     }
     void OnAbility3(InputValue value)
     {
-        ability3.TryUseAbility(value);
+        if(ability3 != null)
+            ability3.TryUseAbility(value);
     }
     void OnAbility4(InputValue value)
     {
-        ability4.TryUseAbility(value);
+        if(ability4 != null)
+            ability4.TryUseAbility(value);
     }
 
     // ===== MOVEMENT =====
