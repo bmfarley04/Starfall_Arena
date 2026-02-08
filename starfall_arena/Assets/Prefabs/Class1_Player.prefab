@@ -4964,6 +4964,7 @@ GameObject:
   - component: {fileID: -1802509990396755088}
   - component: {fileID: 5044949934575203889}
   - component: {fileID: 6728863805914282109}
+  - component: {fileID: 8776768860507568998}
   m_Layer: 0
   m_Name: Class1_Player
   m_TagString: Player
@@ -5380,12 +5381,12 @@ MonoBehaviour:
   ability1: {fileID: 0}
   ability2: {fileID: 6728863805914282109}
   ability3: {fileID: 5044949934575203889}
-  ability4: {fileID: 0}
+  ability4: {fileID: 8776768860507568998}
   abilitySlots:
   - {fileID: 0}
   - {fileID: 11500000, guid: 947c60145480efe4da5c2b90cf85194b, type: 3}
   - {fileID: 11500000, guid: 908cc72dae50f93469c58280dd7ce4ef, type: 3}
-  - {fileID: 0}
+  - {fileID: 11500000, guid: 4271e562bc81ff844953f97f936e0a23, type: 3}
   shieldRegen:
     regenDelay: 5
     regenRate: 20
@@ -5414,14 +5415,6 @@ MonoBehaviour:
   explosionSound: {fileID: 0}
   audioSourcePoolSize: 10
   abilities:
-    reflect:
-      cooldown: 7
-      activeDuration: 1
-      shield: {fileID: 1692808081896564359}
-      reflectedProjectileColor: {r: 1, g: 0.8114376, b: 0.03459108, a: 0}
-      reflectedProjectileDamageMultiplier: 1
-      shieldLoopSound: {fileID: 0}
-      bulletReflectionSound: {fileID: 0}
     gigaBlast:
       offsetDistance: 0
       timing:
@@ -5601,6 +5594,29 @@ MonoBehaviour:
       - {fileID: 7990418082684036425, guid: 0510e735713d119488183d4948cbedb0, type: 3}
     exitSound: {fileID: 0}
     arrivalSound: {fileID: 0}
+--- !u!114 &8776768860507568998
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1578230554132079418}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4271e562bc81ff844953f97f936e0a23, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Reflector
+  stats:
+    cooldown: 0
+    duration: 0
+  reflect:
+    cooldown: 7
+    activeDuration: 1
+    shield: {fileID: 1692808081896564359}
+    reflectedProjectileColor: {r: 0.854902, g: 0.6470588, b: 0.1254902, a: 1}
+    reflectedProjectileDamageMultiplier: 1
+    shieldLoopSound: {fileID: 0}
+    bulletReflectionSound: {fileID: 0}
 --- !u!1 &3501154216763360000
 GameObject:
   m_ObjectHideFlags: 0

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -118,6 +119,7 @@ public abstract class Player : Entity
     // PUBLIC GET PROTECTED SET
     public string thisPlayerTag { get; protected set; }
     public string enemyTag { get; protected set; }
+    public List<Ability> abilities; 
 
     // ===== PRIVATE STATE =====
     private PlayerInput _playerInput;
@@ -147,6 +149,7 @@ public abstract class Player : Entity
     protected override void Awake()
     {
         base.Awake();
+        abilities = new List<Ability> { ability1, ability2, ability3, ability4 };
         _originalRotationSpeed = movement.rotationSpeed;
         if(gameObject.CompareTag("Player1"))
         {

@@ -68,7 +68,27 @@ public class Ability : MonoBehaviour
         return Time.time < lastUsedAbility + stats.duration;
     }
 
+    protected virtual bool IsAnyOtherAbilityActive()
+    {
+        foreach (var ability in player.abilities)
+        {
+            if (ability != null && ability.name != this.name && ability.IsAbilityActive())
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public virtual void ApplyRotationMultiplier()
+    {
+    }
+
+    public virtual void ApplyThrustMultiplier()
+    {
+    }
+
+    public virtual void RestoreThrustMultiplier()
     {
     }
 
