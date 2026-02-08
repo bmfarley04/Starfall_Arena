@@ -44,8 +44,12 @@ public class Ability : MonoBehaviour
         {
             Debug.Log($"Ability on cooldown: {(lastUsedAbility + stats.cooldown - Time.time):F1}s remaining");
             return false;
+        } else if (IsAnyOtherAbilityActive())
+        {
+            Debug.Log("Cannot use ability while another ability is active!");
+            return false;
         }
-        return true;
+            return true;
     }
     public virtual bool IsAbilityActive()
     {
@@ -56,7 +60,7 @@ public class Ability : MonoBehaviour
     {
         foreach (var ability in player.abilities)
         {
-            if (ability != null && ability.name != this.name && ability.IsAbilityActive())
+            if (ability != null && ability != this && ability.IsAbilityActive())
             {
                 return true;
             }

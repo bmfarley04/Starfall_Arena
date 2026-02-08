@@ -5487,7 +5487,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Beam
   stats:
     cooldown: 0
-    duration: 5
+    duration: 0
   beam:
     stats:
       prefab: {fileID: 2153662200343534273, guid: 83a72cb419d844b64b498b2b7eb5f252, type: 3}
