@@ -1,18 +1,5 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!114 &-625174736755334095
-MonoBehaviour:
-  m_ObjectHideFlags: 11
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d0353a89b1f911e48b9e16bdc9f2e058, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Editor::UnityEditor.Rendering.Universal.AssetVersion
-  version: 10
 --- !u!21 &2100000
 Material:
   serializedVersion: 8
@@ -20,8 +7,8 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: LightningBorder
-  m_Shader: {fileID: 4800000, guid: bb8048d0aa938f5488129a3d74d4f2b7, type: 3}
+  m_Name: icon_glow_gold
+  m_Shader: {fileID: 4800000, guid: bb40168fcd4c4f34b8254e55749d2405, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
@@ -98,47 +85,22 @@ Material:
     - _AddPrecomputedVelocity: 0
     - _AlphaClip: 0
     - _AlphaToMask: 0
-    - _ArcAmplitude: 0.08
-    - _ArcCount: 3
-    - _ArcFrequency: 26.2
-    - _ArcSpeed: 0.3
-    - _ArcThickness: 0.02
     - _Blend: 0
     - _BlendModePreserveSpecular: 1
-    - _BoltAmplitude: 0.045
-    - _BoltGlowIntensity: 2.11
-    - _BoltGlowRadius: 0.03
-    - _BoltSegments: 12
-    - _BoltSpeed: 2.5
-    - _BoltThickness: 0.004
-    - _BoltsPerEdge: 4
-    - _BorderGlow: 1
-    - _BorderGlowWidth: 0.06
-    - _BorderWidth: 0.0609
-    - _BranchChance: 0.5
-    - _BranchGlowRadius: 0.018
-    - _BranchLength: 0.05
-    - _BranchThickness: 0.003
     - _BumpScale: 1
     - _ClearCoatMask: 0
     - _ClearCoatSmoothness: 0
     - _ColorMask: 15
-    - _CornerRadius: 0.2
     - _Cull: 2
     - _Cutoff: 0.5
     - _DetailAlbedoMapScale: 1
     - _DetailNormalMapScale: 1
     - _DstBlend: 0
     - _DstBlendAlpha: 0
-    - _EdgeInset: 0.055
-    - _EdgeSoftness: 0.005
     - _EnvironmentReflections: 1
-    - _Flicker: 0.569
     - _GlossMapScale: 0
     - _Glossiness: 0
     - _GlossyReflections: 0
-    - _GlowIntensity: 3.13
-    - _GlowRadius: 0.005
     - _Metallic: 0
     - _OcclusionStrength: 1
     - _Parallax: 0.005
@@ -161,12 +123,21 @@ Material:
     - _ZWrite: 1
     m_Colors:
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
-    - _BoltColor: {r: 0.98043996, g: 0.8509804, b: 1, a: 1}
-    - _BoltGlowColor: {r: 0.88677365, g: 0.09803921, b: 1, a: 1}
-    - _Color: {r: 0.88162345, g: 0.51886785, b: 1, a: 1}
+    - _Color: {r: 4, g: 1.7939842, b: 0.36477947, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
-    - _GlowColor: {r: 0.77243763, g: 0.09803921, b: 1, a: 1}
-    - _LightningColor: {r: 0.9823847, g: 0.8, b: 1, a: 1}
     - _SpecColor: {r: 0.19999996, g: 0.19999996, b: 0.19999996, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1
+--- !u!114 &1855380860516813885
+MonoBehaviour:
+  m_ObjectHideFlags: 11
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0353a89b1f911e48b9e16bdc9f2e058, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Editor::UnityEditor.Rendering.Universal.AssetVersion
+  version: 10
