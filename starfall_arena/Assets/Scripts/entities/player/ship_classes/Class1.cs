@@ -22,12 +22,11 @@ public class Class1 : Player
 
     protected override void FixedUpdate()
     {
-        var activeAbility = abilities.FirstOrDefault(a => a?.IsAbilityActive() == true);
-
-        if (activeAbility.HasThrustMitigation()) 
+        if (abilities.Any(a => a != null && a.HasThrustMitigation() == true))
         {
             return;
         }
+        var activeAbility = abilities.FirstOrDefault(a => a != null && a.IsAbilityActive() == true);
         if (activeAbility != null)
         {
             activeAbility.ApplyThrustMultiplier();
@@ -35,7 +34,10 @@ public class Class1 : Player
 
         base.FixedUpdate();
         // Restore original thrust force
-        activeAbility.RestoreThrustMultiplier();
+        if (activeAbility != null)
+        {
+            activeAbility.RestoreThrustMultiplier();
+        }
     }
 
     // ===== ABILITY INPUT CALLBACKS =====
@@ -66,7 +68,7 @@ public class Class1 : Player
     {
         float originalRotationSpeed = movement.rotationSpeed;
 
-        var activeAbility = abilities.FirstOrDefault(a => a?.IsAbilityActive() == true);
+        var activeAbility = abilities.FirstOrDefault(a => a != null && a.IsAbilityActive() == true);
         if (activeAbility != null)
         {
             activeAbility.ApplyRotationMultiplier();
@@ -81,7 +83,7 @@ public class Class1 : Player
     {
         float originalRotationSpeed = movement.rotationSpeed;
 
-        var activeAbility = abilities.FirstOrDefault(a => a?.IsAbilityActive() == true);
+        var activeAbility = abilities.FirstOrDefault(a => a != null && a.IsAbilityActive() == true);
         if (activeAbility != null)
         {
             activeAbility.ApplyRotationMultiplier();
@@ -95,7 +97,7 @@ public class Class1 : Player
     // ===== OVERRIDES =====
     public override void TakeDamage(float damage, float impactForce = 0f, Vector3 hitPoint = default, DamageSource source = DamageSource.Projectile)
     {
-        if (abilities.Any(a => a?.HasDamageMitigation() == true))
+        if (abilities.Any(a => a != null && a.HasDamageMitigation() == true))
         {
             return;
         }
@@ -115,9 +117,9 @@ public class Class1 : Player
 
     void OnTriggerEnter2D(Collider2D collider)
     {
-        if (abilities.Any(a => a?.HasCollisionModification() == true))
+        if (abilities.Any(a => a != null && a.HasCollisionModification() == true))
         {
-            foreach (var ability in abilities.Where(a => a?.HasCollisionModification() == true))
+            foreach (var ability in abilities.Where(a => a != null && a.HasCollisionModification() == true))
             {
                 ability.ProcessCollisionModification(collider);
             }
