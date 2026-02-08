@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -255,6 +256,16 @@ public abstract class Player : Entity
 
     protected override void FixedUpdate()
     {
+        if (abilities.Any(a => a != null && a.HasThrustMitigation() == true))
+        {
+            return;
+        }
+        var activeAbility = abilities.FirstOrDefault(a => a != null && a.IsAbilityActive() == true);
+        if (activeAbility != null)
+        {
+            activeAbility.ApplyThrustMultiplier();
+        }
+
         base.FixedUpdate();
 
         bool movePressed = _moveAction != null && _moveAction.IsPressed();
@@ -297,6 +308,30 @@ public abstract class Player : Entity
         {
             _rb.linearVelocity = _rb.linearVelocity.normalized * effectiveMaxSpeed;
         }
+
+        // Restore original thrust force
+        if (activeAbility != null)
+        {
+            activeAbility.RestoreThrustMultiplier();
+        }
+    }
+
+    // ===== ABILITY INPUT CALLBACKS =====
+    void OnAbility1(InputValue value)
+    {
+        ability1.TryUseAbility(value);
+    }
+    void OnAbility2(InputValue value)
+    {
+        ability2.TryUseAbility(value);
+    }
+    void OnAbility3(InputValue value)
+    {
+        ability3.TryUseAbility(value);
+    }
+    void OnAbility4(InputValue value)
+    {
+        ability4.TryUseAbility(value);
     }
 
     // ===== MOVEMENT =====
@@ -366,14 +401,32 @@ public abstract class Player : Entity
 
     protected virtual void RotateWithController()
     {
+        float originalRotationSpeed = movement.rotationSpeed;
+
+        var activeAbility = abilities.FirstOrDefault(a => a != null && a.IsAbilityActive() == true);
+        if (activeAbility != null)
+        {
+            activeAbility.ApplyRotationMultiplier();
+        }
+
         float targetAngle = Mathf.Atan2(_lookInput.y, _lookInput.x) * Mathf.Rad2Deg;
         float currentAngle = transform.eulerAngles.z;
         float newAngle = Mathf.MoveTowardsAngle(currentAngle, targetAngle + ROTATION_OFFSET, movement.rotationSpeed * Time.deltaTime);
         transform.rotation = Quaternion.Euler(0, 0, newAngle);
+
+        movement.rotationSpeed = originalRotationSpeed;
     }
 
     protected virtual void RotateTowardMouse()
     {
+        float originalRotationSpeed = movement.rotationSpeed;
+
+        var activeAbility = abilities.FirstOrDefault(a => a != null && a.IsAbilityActive() == true);
+        if (activeAbility != null)
+        {
+            activeAbility.ApplyRotationMultiplier();
+        }
+
         Vector2 mouseScreenPosition = Mouse.current.position.ReadValue();
         Vector3 mouseWorldPosition = Camera.main.ScreenToWorldPoint(mouseScreenPosition);
 
@@ -383,6 +436,8 @@ public abstract class Player : Entity
         float currentAngle = transform.eulerAngles.z;
         float newAngle = Mathf.MoveTowardsAngle(currentAngle, targetAngle + ROTATION_OFFSET, movement.rotationSpeed * Time.deltaTime);
         transform.rotation = Quaternion.Euler(0, 0, newAngle);
+
+        movement.rotationSpeed = originalRotationSpeed;
     }
 
     // Anchor
@@ -476,6 +531,11 @@ public abstract class Player : Entity
     // ===== DAMAGE HANDLING =====
     public override void TakeDamage(float damage, float impactForce = 0f, Vector3 hitPoint = default, DamageSource source = DamageSource.Projectile)
     {
+        if (abilities.Any(a => a != null && a.HasDamageMitigation() == true))
+        {
+            return;
+        }
+
         float previousShield = currentShield;
 
         _lastShieldHitTime = Time.time;
@@ -528,6 +588,14 @@ public abstract class Player : Entity
         if (explosionSound != null)
         {
             explosionSound.PlayAtPoint(transform.position);
+        }
+
+        foreach(var ability in abilities)
+        {
+            if (ability != null)
+            {
+                ability.Die();
+            }
         }
 
         base.Die();
@@ -628,6 +696,17 @@ public abstract class Player : Entity
         if (shakeIntensity > 0f)
         {
             _impulseSource.GenerateImpulse(shakeIntensity);
+        }
+    }
+
+    void OnTriggerEnter2D(Collider2D collider)
+    {
+        if (abilities.Any(a => a != null && a.HasCollisionModification() == true))
+        {
+            foreach (var ability in abilities.Where(a => a != null && a.HasCollisionModification() == true))
+            {
+                ability.ProcessCollisionModification(collider);
+            }
         }
     }
 
