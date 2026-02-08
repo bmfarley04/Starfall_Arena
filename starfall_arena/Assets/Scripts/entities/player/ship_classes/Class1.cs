@@ -46,19 +46,19 @@ public class Class1 : Player
         ability3.TryUseAbility(value);
     }
 
-    void OnAbility4()
+    void OnAbility4(InputValue value)
     {
-        ability4.TryUseAbility();
+        ability4.TryUseAbility(value);
     }
 
-    void OnAbility2()
+    void OnAbility2(InputValue value)
     {
-        ability2.TryUseAbility();
+        ability2.TryUseAbility(value);
     }
 
     void OnAbility1(InputValue value)
     {
-        ability1.TryUseAbility();
+        ability1.TryUseAbility(value);
     }
 
     

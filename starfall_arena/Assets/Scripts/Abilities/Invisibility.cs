@@ -1,5 +1,6 @@
 using Unity.VisualScripting;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 public class Invisibility : Ability
 {
@@ -13,9 +14,9 @@ public class Invisibility : Ability
         
     }
 
-    public override void UseAbility()
+    public override void UseAbility(InputValue value)
     {
-        base.UseAbility();
+        base.UseAbility(value);
         if (gameObject.CompareTag("Player1"))
         {
             gameObject.layer = LayerMask.NameToLayer("Background1");

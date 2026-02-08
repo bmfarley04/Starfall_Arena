@@ -22,17 +22,6 @@ public class Ability : MonoBehaviour
         originalLayer = gameObject.layer;
     }
 
-    public virtual bool TryUseAbility()
-    {
-        if (CanUseAbility())
-        {
-            lastUsedAbility = Time.time;
-            UseAbility();
-            return true;
-        }
-        return false;
-    }
-
     public virtual bool TryUseAbility(InputValue value)
     {
         if (CanUseAbility())
@@ -42,11 +31,6 @@ public class Ability : MonoBehaviour
             return true;
         }
         return false;
-    }
-
-    public virtual void UseAbility()
-    {
-        Debug.Log("Ability activated for " + stats.duration + " seconds.");
     }
 
     public virtual void UseAbility(InputValue value)

@@ -62,9 +62,9 @@ public class Reflector : Ability
     {
 
     }
-    public override void UseAbility()
+    public override void UseAbility(InputValue value)
     {
-        base.UseAbility();
+        base.UseAbility(value);
         if (Time.time < _lastReflectTime + reflect.cooldown)
         {
             Debug.Log($"Reflect on cooldown: {(_lastReflectTime + reflect.cooldown - Time.time):F1}s remaining");

@@ -4965,6 +4965,7 @@ GameObject:
   - component: {fileID: 5044949934575203889}
   - component: {fileID: 6728863805914282109}
   - component: {fileID: 8776768860507568998}
+  - component: {fileID: 5355310619073323850}
   m_Layer: 0
   m_Name: Class1_Player
   m_TagString: Player
@@ -5378,12 +5379,12 @@ MonoBehaviour:
   slowEffectVisuals:
     slowParticleSystem: {fileID: 4517218207347267077}
   currentShield: 0
-  ability1: {fileID: 0}
+  ability1: {fileID: 5355310619073323850}
   ability2: {fileID: 6728863805914282109}
   ability3: {fileID: 5044949934575203889}
   ability4: {fileID: 8776768860507568998}
   abilitySlots:
-  - {fileID: 0}
+  - {fileID: 11500000, guid: 6b484fbf92d1f8a4c972f0c7584defa6, type: 3}
   - {fileID: 11500000, guid: 947c60145480efe4da5c2b90cf85194b, type: 3}
   - {fileID: 11500000, guid: 908cc72dae50f93469c58280dd7ce4ef, type: 3}
   - {fileID: 11500000, guid: 4271e562bc81ff844953f97f936e0a23, type: 3}
@@ -5414,63 +5415,7 @@ MonoBehaviour:
   beamHitLoopSound: {fileID: 0}
   explosionSound: {fileID: 0}
   audioSourcePoolSize: 10
-  abilities:
-    gigaBlast:
-      offsetDistance: 0
-      timing:
-        cooldown: 3
-        minChargeTime: 0.5
-        maxChargeTime: 3
-        projectileLifetime: 5
-      tierThresholds:
-        tier1Time: 0.5
-        tier2Time: 1
-        tier3Time: 2
-        tier4Time: 3
-      movementPenalties:
-        tier1ThrustMultiplier: 0.8
-        tier1RotationMultiplier: 0.8
-        tier2ThrustMultiplier: 0.6
-        tier2RotationMultiplier: 0.6
-        tier3ThrustMultiplier: 0.4
-        tier3RotationMultiplier: 0.4
-        tier4ThrustMultiplier: 0.2
-        tier4RotationMultiplier: 0.2
-      projectileScaling:
-        tier1SpeedMultiplier: 0.5
-        tier1DamageMultiplier: 1
-        tier1RecoilMultiplier: 1
-        tier1ImpactMultiplier: 1
-        tier2SpeedMultiplier: 1.5
-        tier2DamageMultiplier: 3
-        tier2RecoilMultiplier: 3
-        tier2ImpactMultiplier: 3
-        tier3SpeedMultiplier: 2
-        tier3DamageMultiplier: 5
-        tier3RecoilMultiplier: 5
-        tier3ImpactMultiplier: 5
-        tier4SpeedMultiplier: 3
-        tier4DamageMultiplier: 8
-        tier4RecoilMultiplier: 8
-        tier4ImpactMultiplier: 10
-      pierce:
-        tier3DamageMultiplierPerPierce: 0.5
-        tier4DamageMultiplierPerPierce: 1
-      visual:
-        tier1ProjectilePrefab: {fileID: 7408310672554650858, guid: df6f50ed071862a4482fbbbb8ed0c3ad, type: 3}
-        tier2ProjectilePrefab: {fileID: 7408310672554650858, guid: 51403cdaf016c034cbbc52510d7ecaef, type: 3}
-        tier3ProjectilePrefab: {fileID: 7408310672554650858, guid: 6b5d3c834e169584088a2e9222fcc625, type: 3}
-        tier4ProjectilePrefab: {fileID: 7408310672554650858, guid: d9aea8db2b172064eb4a64cf4b37f08b, type: 3}
-        tier1ParticleSystem: {fileID: 7111910598007728439}
-        tier2ParticleSystem: {fileID: 365551820481101173}
-        tier3ParticleSystem: {fileID: 5427583667433657938}
-        tier4ParticleSystem: {fileID: 6528417477677960060}
-      chargeSound: {fileID: 0}
-      chargeSoundFadeDuration: 0
-      tier1FireSound: {fileID: 0}
-      tier2FireSound: {fileID: 0}
-      tier3FireSound: {fileID: 0}
-      tier4FireSound: {fileID: 0}
+  abilities: []
 --- !u!114 &-1802509990396755088
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5617,6 +5562,77 @@ MonoBehaviour:
     reflectedProjectileDamageMultiplier: 1
     shieldLoopSound: {fileID: 0}
     bulletReflectionSound: {fileID: 0}
+--- !u!114 &5355310619073323850
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1578230554132079418}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6b484fbf92d1f8a4c972f0c7584defa6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GigaBlast
+  stats:
+    cooldown: 0
+    duration: 0
+  gigaBlast:
+    offsetDistance: 1.7
+    timing:
+      cooldown: 3
+      minChargeTime: 0.5
+      maxChargeTime: 3
+      projectileLifetime: 5
+    tierThresholds:
+      tier1Time: 0.5
+      tier2Time: 1
+      tier3Time: 2
+      tier4Time: 3
+    movementPenalties:
+      tier1ThrustMultiplier: 0.8
+      tier1RotationMultiplier: 0.8
+      tier2ThrustMultiplier: 0.6
+      tier2RotationMultiplier: 0.6
+      tier3ThrustMultiplier: 0.4
+      tier3RotationMultiplier: 0.4
+      tier4ThrustMultiplier: 0.2
+      tier4RotationMultiplier: 0.2
+    projectileScaling:
+      tier1SpeedMultiplier: 0.5
+      tier1DamageMultiplier: 1
+      tier1RecoilMultiplier: 1
+      tier1ImpactMultiplier: 1
+      tier2SpeedMultiplier: 1.5
+      tier2DamageMultiplier: 3
+      tier2RecoilMultiplier: 3
+      tier2ImpactMultiplier: 3
+      tier3SpeedMultiplier: 2
+      tier3DamageMultiplier: 5
+      tier3RecoilMultiplier: 5
+      tier3ImpactMultiplier: 5
+      tier4SpeedMultiplier: 3
+      tier4DamageMultiplier: 8
+      tier4RecoilMultiplier: 8
+      tier4ImpactMultiplier: 10
+    pierce:
+      tier3DamageMultiplierPerPierce: 0.5
+      tier4DamageMultiplierPerPierce: 1
+    visual:
+      tier1ProjectilePrefab: {fileID: 7408310672554650858, guid: df6f50ed071862a4482fbbbb8ed0c3ad, type: 3}
+      tier2ProjectilePrefab: {fileID: 7408310672554650858, guid: 51403cdaf016c034cbbc52510d7ecaef, type: 3}
+      tier3ProjectilePrefab: {fileID: 7408310672554650858, guid: 6b5d3c834e169584088a2e9222fcc625, type: 3}
+      tier4ProjectilePrefab: {fileID: 7408310672554650858, guid: d9aea8db2b172064eb4a64cf4b37f08b, type: 3}
+      tier1ParticleSystem: {fileID: 7111910598007728439}
+      tier2ParticleSystem: {fileID: 365551820481101173}
+      tier3ParticleSystem: {fileID: 5427583667433657938}
+      tier4ParticleSystem: {fileID: 6528417477677960060}
+    chargeSound: {fileID: 0}
+    chargeSoundFadeDuration: 0
+    tier1FireSound: {fileID: 0}
+    tier2FireSound: {fileID: 0}
+    tier3FireSound: {fileID: 0}
+    tier4FireSound: {fileID: 0}
 --- !u!1 &3501154216763360000
 GameObject:
   m_ObjectHideFlags: 0

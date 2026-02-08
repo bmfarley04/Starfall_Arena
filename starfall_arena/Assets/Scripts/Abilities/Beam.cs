@@ -94,7 +94,7 @@ public class Beam : Ability
     }
     public override void UseAbility(InputValue value)
     {
-        base.UseAbility();
+        base.UseAbility(value);
         Debug.Log($"Fire Beam input received - isPressed: {value.isPressed}");
 
         if (value.isPressed)

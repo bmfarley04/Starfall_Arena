@@ -1,4 +1,3 @@
-using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -151,14 +150,11 @@ public class GigaBlast : Ability
             public ParticleSystem tier4ParticleSystem;
         }
     }
-    [Header("Ability 4 - Giga Blast")]
     public GigaBlastAbilityConfig gigaBlast;
     
-    // ===== PRIVATE SET STATE =====
-    public bool _isCharging { get; private set; } = false;
-    float _originalThrustForce;
-
     // ===== PRIVATE STATE =====
+    private bool _isCharging = false;
+    float _originalThrustForce = 0;
     private float _lastGigaBlastTime = -999f;
     private float _chargeStartTime = 0f;
     private int _currentChargeTier = 0;
@@ -196,11 +192,14 @@ public class GigaBlast : Ability
 
     void FixedUpdate()
     {
-
+        if(_isCharging)
+        {
+            Debug.Log($"Charging GigaBlast - Charge Time: {(Time.time - _chargeStartTime):F2}s, Current Tier: {_currentChargeTier}");
+        }
     }
     public override void UseAbility(InputValue value)
     {
-        base.UseAbility();
+        base.UseAbility(value);
         Debug.Log($"GigaBlast input received - isPressed: {value.isPressed}");
 
         if (value.isPressed)
@@ -291,7 +290,7 @@ public class GigaBlast : Ability
         base.ApplyThrustMultiplier();
         // Apply movement penalty for charging GigaBlast
         _originalThrustForce = player.movement.thrustForce;
-        if (IsAnyOtherAbilityActive())
+        if (_isCharging)
         {
             float chargeTime = Time.time - _chargeStartTime;
             int tier = GetChargeTier(chargeTime);

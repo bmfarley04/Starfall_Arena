@@ -85,9 +85,9 @@ public class Teleport : Ability
     {
 
     }
-    public override void UseAbility()
+    public override void UseAbility(InputValue value)
     {
-        base.UseAbility();
+        base.UseAbility(value);
         if (Time.time < _lastTeleportTime + teleport.cooldown)
         {
             Debug.Log($"Teleport on cooldown: {(_lastTeleportTime + teleport.cooldown - Time.time):F1}s remaining");
