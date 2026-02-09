@@ -376,7 +376,11 @@ public abstract class Player : Entity
 
     void OnFire(InputValue value)
     {
-        _isFiring = value.Get<float>() > 0f;
+        var activeAbility = abilities.FirstOrDefault(a => a != null && a.IsAbilityActive() == true);
+        if (activeAbility == null || (activeAbility != null && !activeAbility.DisablePrimaryFire()))
+        {
+            _isFiring = value.Get<float>() > 0f;
+        }
     }
 
 

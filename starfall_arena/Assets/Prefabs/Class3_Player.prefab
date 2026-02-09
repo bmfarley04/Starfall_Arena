@@ -20475,9 +20475,9 @@ MonoBehaviour:
     cooldown: 0
     duration: 0
   config:
-    scaleMultiplier: 0.1
-    speedMultiplier: 10
-    rotationMultiplier: 10
+    scaleMultiplier: 0.5
+    speedMultiplier: 7
+    rotationMultiplier: 100
     takeDamageMultiplier: 10
     activateSound: {fileID: 0}
     deactivateSound: {fileID: 0}

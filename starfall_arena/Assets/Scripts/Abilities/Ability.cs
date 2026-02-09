@@ -13,6 +13,7 @@ public class Ability : MonoBehaviour
     }
     public AbilityStats stats;
 
+    protected bool isDisabledByOtherAbility = false;
     protected Player player;
     protected LayerMask originalLayer;
     protected LayerMask thisPlayerLayer;
@@ -45,7 +46,11 @@ public class Ability : MonoBehaviour
         {
             Debug.Log($"Ability on cooldown: {(lastUsedAbility + stats.cooldown - Time.time):F1}s remaining");
             return false;
-        } 
+        } else if (isDisabledByOtherAbility)
+        {
+            Debug.Log("Cannot use ability: another active ability is disabling this one.");
+            return false;
+        }
         return true;
     }
     public virtual bool IsAbilityActive()
@@ -65,6 +70,23 @@ public class Ability : MonoBehaviour
         }
         return false;
     }
+
+    protected virtual void DisableOtherAbilities(bool shouldDisable)
+    {
+        List<Ability> abilities = new List<Ability> { player.ability1, player.ability2, player.ability3, player.ability4 };
+        foreach (var ability in abilities)
+        {
+            if (ability != null && ability != this && shouldDisable)
+            {
+                ability.isDisabledByOtherAbility = true;
+            } else
+            {
+                ability.isDisabledByOtherAbility = false;
+            }
+        }
+    }
+
+
 
     public virtual void ApplyRotationMultiplier()
     {
@@ -93,6 +115,11 @@ public class Ability : MonoBehaviour
     }
 
     public virtual bool HasCollisionModification()
+    {
+        return false;
+    }
+
+    public virtual bool DisablePrimaryFire()
     {
         return false;
     }

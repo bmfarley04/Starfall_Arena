@@ -16,6 +16,10 @@ public class FaerieShift : Ability
         [Tooltip("Rotation speed multiplier when ability is active (10.0 = 10x faster)")]
         public float rotationMultiplier;
 
+        [Header("PrimaryFireDamageMultiplier")]
+        [Tooltip("Damage multiplier for primary fire when ability is active (0.5 = 50% damage)")]
+        public float primaryFireDamageMultiplier;
+
         [Header("Vulnerability")]
         [Tooltip("Damage multiplier when ability is active (10.0 = 10x damage taken)")]
         public float takeDamageMultiplier;
@@ -51,14 +55,11 @@ public class FaerieShift : Ability
         // Toggle on press
         if (value.isPressed)
         {
-            if (!_isActive)
-            {
-                ActivateShift();
-            }
-            else
-            {
-                DeactivateShift();
-            }
+            ActivateShift();
+        }
+        else
+        {
+            DeactivateShift();
         }
     }
 
@@ -76,6 +77,9 @@ public class FaerieShift : Ability
         {
             config.activateSound.Play(player.GetAvailableAudioSource());
         }
+
+        // Disable other abilities while active
+        DisableOtherAbilities(true);
 
         Debug.Log($"Faerie Shift activated! Scale: {config.scaleMultiplier}x, Speed: {config.speedMultiplier}x, Rotation: {config.rotationMultiplier}x, Damage: {config.takeDamageMultiplier}x");
     }
@@ -95,6 +99,9 @@ public class FaerieShift : Ability
             config.deactivateSound.Play(player.GetAvailableAudioSource());
         }
 
+        // Re-enable other abilities
+        DisableOtherAbilities(false);
+
         Debug.Log("Faerie Shift deactivated!");
     }
 
@@ -109,6 +116,11 @@ public class FaerieShift : Ability
         {
             player.movement.thrustForce *= config.speedMultiplier;
         }
+    }
+
+    public override bool DisablePrimaryFire()
+    {
+        return _isActive;
     }
 
     public override void RestoreThrustMultiplier()
