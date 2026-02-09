@@ -74,6 +74,10 @@ public class Ability : MonoBehaviour
     {
     }
 
+    public virtual void ApplyTakeDamageMultiplier(ref float damage)
+    {
+    }
+
     public virtual void RestoreThrustMultiplier()
     {
     }

@@ -540,6 +540,12 @@ public abstract class Player : Entity
             return;
         }
 
+        var activeAbility = abilities.FirstOrDefault(a => a != null && a.IsAbilityActive() == true);
+        if (activeAbility != null)
+        {
+            activeAbility.ApplyTakeDamageMultiplier(ref damage);
+        }
+
         float previousShield = currentShield;
 
         _lastShieldHitTime = Time.time;

@@ -19869,6 +19869,7 @@ GameObject:
   - component: {fileID: 4483054902844542671}
   - component: {fileID: 2132662891210618044}
   - component: {fileID: 9076574994160510604}
+  - component: {fileID: 4494098414829394601}
   m_Layer: 0
   m_Name: Class3_Player
   m_TagString: Player
@@ -20331,12 +20332,12 @@ MonoBehaviour:
     slowParticleSystem: {fileID: 541853997494829686}
   currentShield: 0
   ability1: {fileID: 9076574994160510604}
-  ability2: {fileID: 0}
+  ability2: {fileID: 4494098414829394601}
   ability3: {fileID: 2132662891210618044}
   ability4: {fileID: 4483054902844542671}
   abilitySlots:
   - {fileID: 11500000, guid: 3a6ee9153481bfc4f8a713bec9b17242, type: 3}
-  - {fileID: 0}
+  - {fileID: 11500000, guid: d5e9967bfa742ea46adae3a0d7dfca81, type: 3}
   - {fileID: 11500000, guid: 4b733bc7ea7daa242836f59770870bbd, type: 3}
   - {fileID: 11500000, guid: e80a4986b0af08647b9a0c65c4b462e0, type: 3}
   shieldRegen:
@@ -20458,6 +20459,28 @@ MonoBehaviour:
     explosionScale: 5
     launchSound: {fileID: 0}
     explosionSound: {fileID: 0}
+--- !u!114 &4494098414829394601
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8073042944126910331}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d5e9967bfa742ea46adae3a0d7dfca81, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::FaerieShift
+  stats:
+    cooldown: 0
+    duration: 0
+  config:
+    scaleMultiplier: 0.1
+    speedMultiplier: 10
+    rotationMultiplier: 10
+    takeDamageMultiplier: 10
+    activateSound: {fileID: 0}
+    deactivateSound: {fileID: 0}
 --- !u!1001 &1583529772260481141
 PrefabInstance:
   m_ObjectHideFlags: 0
