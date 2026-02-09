@@ -5374,6 +5374,15 @@ MonoBehaviour:
   slowEffectVisuals:
     slowParticleSystem: {fileID: 4517218207347267077}
   currentShield: 0
+  ability1: {fileID: 5355310619073323850}
+  ability2: {fileID: 6728863805914282109}
+  ability3: {fileID: 5044949934575203889}
+  ability4: {fileID: 8776768860507568998}
+  abilitySlots:
+  - {fileID: 11500000, guid: 6b484fbf92d1f8a4c972f0c7584defa6, type: 3}
+  - {fileID: 11500000, guid: 947c60145480efe4da5c2b90cf85194b, type: 3}
+  - {fileID: 11500000, guid: 908cc72dae50f93469c58280dd7ce4ef, type: 3}
+  - {fileID: 11500000, guid: 4271e562bc81ff844953f97f936e0a23, type: 3}
   shieldRegen:
     regenDelay: 5
     regenRate: 20

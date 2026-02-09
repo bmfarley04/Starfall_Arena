@@ -1,3 +1,4 @@
+using NUnit.Framework.Internal;
 using UnityEngine;
 
 /// <summary>
@@ -149,15 +150,19 @@ public class LaserBeam : MonoBehaviour
 
                 // Check if we hit a player with active reflect shield
                 Class1 player = hit.collider.GetComponent<Class1>();
-                if (player != null && player.abilities.reflect.shield != null && player.abilities.reflect.shield.IsActive())
+                if (player != null)
                 {
-                    // Trigger visual ripple effect
-                    player.abilities.reflect.shield.OnReflectHit(hit.point);
+                    player.TryGetComponent<Reflector>(out var reflectScript);
+                    if (reflectScript.IsAbilityActive())
+                    {
+                        // Trigger visual ripple effect
+                        reflectScript.reflect.shield.OnReflectHit(hit.point);
 
-                    // Stop the beam at the shield (no damage due to player immunity)
-                    validHit = hit;
-                    hitSomething = true;
-                    break;
+                        // Stop the beam at the shield (no damage due to player immunity)
+                        validHit = hit;
+                        hitSomething = true;
+                        break;
+                    }
                 }
 
                 // Check if this is a valid target (stops the beam)
