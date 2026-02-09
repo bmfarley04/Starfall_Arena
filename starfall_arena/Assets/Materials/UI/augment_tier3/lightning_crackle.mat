@@ -1,0 +1,230 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: lightning_crackle
+  m_Shader: {fileID: 4800000, guid: 39c64a0f3fbf44240ad4f43c7282e1e0, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses:
+  - MOTIONVECTORS
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _BaseMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _BumpMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _DetailAlbedoMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _DetailMask:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _DetailNormalMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _EmissionMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MainTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MetallicGlossMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _OcclusionMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _ParallaxMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _SpecGlossMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - unity_Lightmaps:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - unity_LightmapsInd:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - unity_ShadowMasks:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _AddPrecomputedVelocity: 0
+    - _AlphaClip: 0
+    - _AlphaToMask: 0
+    - _Blend: 0
+    - _BlendModePreserveSpecular: 1
+    - _BoltAmplitude: 0.0796
+    - _BoltCount: 30
+    - _BoltFlicker: 20
+    - _BoltGlowIntensity: 0.5
+    - _BoltGlowRadius: 0.01
+    - _BoltJaggedAmount: 0.06
+    - _BoltLength: 0.2
+    - _BoltSegmentLength: 0.04
+    - _BoltSegments: 12
+    - _BoltSpeed: 1
+    - _BoltThickness: 0.004
+    - _BoltsPerEdge: 2.5
+    - _BorderGlowIntensity: 1.2
+    - _BorderGlowWidth: 0.035
+    - _BorderWidth: 0.012
+    - _BranchAngleSpread: 0.4
+    - _BranchChance: 0.702
+    - _BranchForwardBias: 0.73
+    - _BranchGlowRadius: 28.7
+    - _BranchLength: 81
+    - _BranchLengthMax: 80
+    - _BranchLengthMin: 15
+    - _BranchLengthMult: 0.8
+    - _BranchOutwardBias: 0.383
+    - _BranchSpread: 1.5
+    - _BranchThickness: 0.47
+    - _BranchThicknessMax: 1.2
+    - _BranchThicknessMin: 0.3
+    - _BranchesPerBolt: 2
+    - _BumpScale: 1
+    - _ClearCoatMask: 0
+    - _ClearCoatSmoothness: 0
+    - _ColorMask: 15
+    - _CoreIntensity: 5
+    - _CoreThickness: 1
+    - _CornerRadius: 0.06
+    - _Cull: 2
+    - _Cutoff: 0.5
+    - _DetailAlbedoMapScale: 1
+    - _DetailAmp: 0.3
+    - _DetailFreq: 15
+    - _DetailNormalMapScale: 1
+    - _DstBlend: 0
+    - _DstBlendAlpha: 0
+    - _EdgeBottom: 0.181
+    - _EdgeExtend: 0
+    - _EdgeInset: 0.01
+    - _EdgeLeft: 0.194
+    - _EdgeRight: 0.8
+    - _EdgeTop: 0.82
+    - _EndFadeWidth: 0.069
+    - _EnvironmentReflections: 1
+    - _FineDetail: 0.0196
+    - _FineDetailFreq: 80
+    - _Flicker: 0.324
+    - _FrameCoreIntensity: 1.5
+    - _FrameCoreWidth: 0.5
+    - _FrameGlowIntensity: 1.26
+    - _FrameGlowWidth: 2
+    - _GlossMapScale: 0
+    - _Glossiness: 0
+    - _GlossyReflections: 0
+    - _GlowIntensity: 4
+    - _GlowRadius: 3
+    - _LargeWander: 0.15
+    - _LargeWanderFreq: 6
+    - _MaxDisplacement: 90
+    - _MediumZigzag: 0.06
+    - _MediumZigzagFreq: 25
+    - _Metallic: 0
+    - _MicroAmp: 1.7
+    - _MicroFreq: 52.8
+    - _OcclusionStrength: 1
+    - _Octave1Amp: 5
+    - _Octave1Freq: 1
+    - _Octave2Amp: 9.7
+    - _Octave2Freq: 3
+    - _Octave3Amp: 15
+    - _Octave3Freq: 8
+    - _Octave4Amp: 0.5
+    - _Octave4Freq: 20
+    - _Octave5Amp: 0.73
+    - _Octave5Freq: 40
+    - _Parallax: 0.005
+    - _QueueOffset: 0
+    - _ReceiveShadows: 1
+    - _RectHeight: 980
+    - _RectWidth: 620
+    - _RefEdgeLength: 706
+    - _ReseedRate: 0.54
+    - _Smoothness: 0.5
+    - _SmoothnessTextureChannel: 0
+    - _SparsityDensity: 0.8
+    - _SparsityFade: 0.02
+    - _SparsitySegments: 4
+    - _SpecularHighlights: 1
+    - _Speed: 4
+    - _SrcBlend: 1
+    - _SrcBlendAlpha: 1
+    - _Stencil: 0
+    - _StencilComp: 8
+    - _StencilOp: 0
+    - _StencilReadMask: 255
+    - _StencilWriteMask: 255
+    - _SubBranchChance: 0.534
+    - _SubBranchLength: 20.5
+    - _SubBranchLengthMax: 35
+    - _SubBranchLengthMin: 8
+    - _Surface: 0
+    - _UseUIAlphaClip: 0
+    - _WanderAmp: 10
+    - _WanderFreq: 5
+    - _WorkflowMode: 1
+    - _XRMotionVectorsPass: 1
+    - _ZWrite: 1
+    - _ZigzagAmp: 6.9
+    - _ZigzagFreq: 23.4
+    m_Colors:
+    - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
+    - _BoltColor: {r: 1, g: 0.655914, b: 0, a: 1}
+    - _BoltGlowColor: {r: 1, g: 0.73555124, b: 0.27358478, a: 1}
+    - _BorderColor: {r: 1, g: 0.65, b: 0.14999998, a: 1}
+    - _Color: {r: 1, g: 1, b: 1, a: 1}
+    - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
+    - _FrameColor: {r: 1, g: 0.6, b: 0.11999995, a: 1}
+    - _SpecColor: {r: 0.19999996, g: 0.19999996, b: 0.19999996, a: 1}
+  m_BuildTextureStacks: []
+  m_AllowLocking: 1
+--- !u!114 &594920907345215346
+MonoBehaviour:
+  m_ObjectHideFlags: 11
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0353a89b1f911e48b9e16bdc9f2e058, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Editor::UnityEditor.Rendering.Universal.AssetVersion
+  version: 10
