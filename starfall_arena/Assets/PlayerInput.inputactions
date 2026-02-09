@@ -53,21 +53,21 @@
                 },
                 {
                     "name": "Ability4",
-                    "type": "Button",
+                    "type": "Value",
                     "id": "f64484b7-ceb5-40d8-9bb5-acd3def2ff6f",
                     "expectedControlType": "",
                     "processors": "",
                     "interactions": "",
-                    "initialStateCheck": false
+                    "initialStateCheck": true
                 },
                 {
                     "name": "Ability2",
-                    "type": "Button",
+                    "type": "Value",
                     "id": "e0793368-62a9-4047-b300-9773beca77d1",
                     "expectedControlType": "",
                     "processors": "",
                     "interactions": "",
-                    "initialStateCheck": false
+                    "initialStateCheck": true
                 },
                 {
                     "name": "Ability1",
