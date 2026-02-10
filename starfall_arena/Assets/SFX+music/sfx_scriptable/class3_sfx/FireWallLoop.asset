@@ -10,9 +10,9 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: acb65756bd07131419e0a32a68f94510, type: 3}
-  m_Name: TriggerBombDetonate
+  m_Name: FireWallLoop
   m_EditorClassIdentifier: Assembly-CSharp::SoundEffect
-  clip: {fileID: 8300000, guid: bdc3f75c02ab0594fb6b66059190e6b2, type: 3}
+  clip: {fileID: 8300000, guid: af0e33a1b1f847f4f80e106592282d96, type: 3}
   volume: 0.1
-  minPitch: 0.9
-  maxPitch: 1.1
+  minPitch: 0.5
+  maxPitch: 0.6

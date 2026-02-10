@@ -13,6 +13,6 @@ MonoBehaviour:
   m_Name: TriggerBombLaunch
   m_EditorClassIdentifier: Assembly-CSharp::SoundEffect
   clip: {fileID: 8300000, guid: 94d60cdca9b990b4d8fb53dd99140898, type: 3}
-  volume: 0.5
+  volume: 0.1
   minPitch: 0.9
   maxPitch: 1.1

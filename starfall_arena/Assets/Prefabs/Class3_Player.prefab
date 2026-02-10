@@ -20402,6 +20402,10 @@ MonoBehaviour:
   stats:
     cooldown: 3
     duration: 3
+  invisibility:
+    becomeInvisibleSound: {fileID: 11400000, guid: e5e50206279a273459f7ced6514172e2, type: 2}
+    becomeVisibleSound: {fileID: 11400000, guid: 638df6836e82591409ab776cd8c9f495, type: 2}
+    soundFadeDuration: 0
 --- !u!114 &2132662891210618044
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -20428,8 +20432,9 @@ MonoBehaviour:
     capacity: 100
     drainRate: 25
     regenRate: 5
-    fireLoopSound: {fileID: 0}
-    soundFadeDuration: 0
+    fireLoopSound: {fileID: 11400000, guid: 923a682d573d75f45bfd3b5f976d1c63, type: 2}
+    fireWallsLoopSound: {fileID: 11400000, guid: 923a682d573d75f45bfd3b5f976d1c63, type: 2}
+    soundFadeDuration: 0.2
 --- !u!114 &9076574994160510604
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -20479,8 +20484,8 @@ MonoBehaviour:
     speedMultiplier: 7
     rotationMultiplier: 100
     takeDamageMultiplier: 10
-    activateSound: {fileID: 0}
-    deactivateSound: {fileID: 0}
+    activateSound: {fileID: 11400000, guid: 79ddafd807444ee47bb05273dff63a09, type: 2}
+    deactivateSound: {fileID: 11400000, guid: e437a51f42fde67478b75822738d22b4, type: 2}
 --- !u!1001 &1583529772260481141
 PrefabInstance:
   m_ObjectHideFlags: 0

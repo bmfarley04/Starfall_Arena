@@ -5,6 +5,26 @@ using System.Collections.Generic;
 public class FireWall : Ability
 {
     // AI was used heavily in designing this class
+    
+    // Class to manage a group of fire hazards spawned during a single activation
+    private class FireHazardGroup
+    {
+        public List<GameObject> hazards = new List<GameObject>();
+        public AudioSource audioSource;
+        public bool isFadingOut = false;
+        
+        public FireHazardGroup(AudioSource source)
+        {
+            audioSource = source;
+        }
+        
+        public bool HasActiveHazards()
+        {
+            hazards.RemoveAll(h => h == null);
+            return hazards.Count > 0;
+        }
+    }
+    
     [System.Serializable]
     public struct FireTrailConfig
     {
@@ -37,6 +57,8 @@ public class FireWall : Ability
         [Header("Sound Effects")]
         public SoundEffect fireLoopSound;
         [Tooltip("Fade in/out duration for fire sound (seconds)")]
+        public SoundEffect fireWallsLoopSound;
+        [Tooltip("Fade in/out duration for fire sound (seconds)")]
         public float soundFadeDuration;
     }
 
@@ -48,6 +70,8 @@ public class FireWall : Ability
     private float _currentCapacity;
     private Vector3 _lastSpawnPosition;
     private List<GameObject> _activeHazards = new List<GameObject>();
+    private List<FireHazardGroup> _hazardGroups = new List<FireHazardGroup>();
+    private FireHazardGroup _currentGroup;
     private AudioSource _fireLoopSource;
     private Coroutine _soundFadeCoroutine;
 
@@ -76,6 +100,39 @@ public class FireWall : Ability
 
         // Clean up destroyed hazards from tracking list
         _activeHazards.RemoveAll(h => h == null);
+
+        // Manage audio for each group
+        for (int i = _hazardGroups.Count - 1; i >= 0; i--)
+        {
+            FireHazardGroup group = _hazardGroups[i];
+            bool hasActiveHazards = group.HasActiveHazards();
+            
+            if (hasActiveHazards && group.audioSource != null && !group.audioSource.isPlaying && !group.isFadingOut)
+            {
+                // Start sound for this group
+                if (fireTrail.fireWallsLoopSound != null)
+                {
+                    group.audioSource.volume = 0f;
+                    fireTrail.fireWallsLoopSound.Play(group.audioSource);
+                    StartCoroutine(FadeGroupVolume(group, fireTrail.fireWallsLoopSound.volume));
+                }
+            }
+            else if (!hasActiveHazards && group.audioSource != null)
+            {
+                // All hazards in this group are gone
+                if (group.audioSource.isPlaying && !group.isFadingOut)
+                {
+                    // Fade out and cleanup
+                    StartCoroutine(FadeGroupVolume(group, 0f, stopAfterFade: true, removeGroup: true));
+                }
+                else if (!group.audioSource.isPlaying)
+                {
+                    // Audio already stopped, just cleanup
+                    Destroy(group.audioSource);
+                    _hazardGroups.RemoveAt(i);
+                }
+            }
+        }
     }
 
     void FixedUpdate()
@@ -135,37 +192,28 @@ public class FireWall : Ability
         _isActive = true;
         _lastSpawnPosition = transform.position;
 
+        // Create a new group for this activation
+        AudioSource groupAudioSource = gameObject.AddComponent<AudioSource>();
+        groupAudioSource.playOnAwake = false;
+        groupAudioSource.loop = true;
+        groupAudioSource.spatialBlend = 1f;
+        groupAudioSource.rolloffMode = AudioRolloffMode.Linear;
+        groupAudioSource.minDistance = 10f;
+        groupAudioSource.maxDistance = 50f;
+        groupAudioSource.dopplerLevel = 0f;
+        
+        _currentGroup = new FireHazardGroup(groupAudioSource);
+        _hazardGroups.Add(_currentGroup);
+
         // Spawn initial fire hazard
         SpawnFireHazard();
-
-        // Start looping sound
-        if (fireTrail.fireLoopSound != null && _fireLoopSource != null)
-        {
-            _fireLoopSource.volume = 0f;
-            fireTrail.fireLoopSound.Play(_fireLoopSource);
-
-            if (_soundFadeCoroutine != null)
-            {
-                StopCoroutine(_soundFadeCoroutine);
-            }
-            _soundFadeCoroutine = StartCoroutine(FadeVolume(fireTrail.fireLoopSound.volume));
-        }
     }
 
     private void StopFireTrail()
     {
         Debug.Log("Stopping fire trail");
         _isActive = false;
-
-        // Fade out sound
-        if (_fireLoopSource != null && _fireLoopSource.isPlaying)
-        {
-            if (_soundFadeCoroutine != null)
-            {
-                StopCoroutine(_soundFadeCoroutine);
-            }
-            _soundFadeCoroutine = StartCoroutine(FadeVolume(0f, stopAfterFade: true));
-        }
+        _currentGroup = null;
     }
 
     private void SpawnFireHazard()
@@ -200,6 +248,12 @@ public class FireWall : Ability
         }
 
         _activeHazards.Add(hazard);
+        
+        // Add to current group if active
+        if (_currentGroup != null)
+        {
+            _currentGroup.hazards.Add(hazard);
+        }
     }
 
     public override bool IsAbilityActive()
@@ -219,6 +273,20 @@ public class FireWall : Ability
         {
             StopCoroutine(_soundFadeCoroutine);
         }
+
+        // Clean up all group audio sources
+        foreach (var group in _hazardGroups)
+        {
+            if (group.audioSource != null)
+            {
+                if (group.audioSource.isPlaying)
+                {
+                    group.audioSource.Stop();
+                }
+                Destroy(group.audioSource);
+            }
+        }
+        _hazardGroups.Clear();
 
         // Clean up active hazards
         foreach (var hazard in _activeHazards)
@@ -261,6 +329,47 @@ public class FireWall : Ability
         if (targetVolume <= 0f && stopAfterFade && _fireLoopSource.isPlaying)
         {
             _fireLoopSource.Stop();
+        }
+    }
+
+    private System.Collections.IEnumerator FadeGroupVolume(FireHazardGroup group, float targetVolume, bool stopAfterFade = false, bool removeGroup = false)
+    {
+        if (group.audioSource == null) yield break;
+
+        if (stopAfterFade)
+        {
+            group.isFadingOut = true;
+        }
+
+        float startVolume = group.audioSource.volume;
+        float elapsed = 0f;
+
+        while (elapsed < fireTrail.soundFadeDuration)
+        {
+            if (group.audioSource == null || (!group.audioSource.isPlaying && targetVolume > 0f))
+            {
+                yield break;
+            }
+
+            elapsed += Time.deltaTime;
+            float t = elapsed / fireTrail.soundFadeDuration;
+            group.audioSource.volume = Mathf.Lerp(startVolume, targetVolume, t);
+            yield return null;
+        }
+
+        if (group.audioSource == null) yield break;
+
+        group.audioSource.volume = targetVolume;
+
+        if (targetVolume <= 0f && stopAfterFade && group.audioSource.isPlaying)
+        {
+            group.audioSource.Stop();
+        }
+
+        if (removeGroup)
+        {
+            Destroy(group.audioSource);
+            _hazardGroups.Remove(group);
         }
     }
 

@@ -10,9 +10,9 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: acb65756bd07131419e0a32a68f94510, type: 3}
-  m_Name: TriggerBombDetonate
+  m_Name: InvisibilityEnter
   m_EditorClassIdentifier: Assembly-CSharp::SoundEffect
-  clip: {fileID: 8300000, guid: bdc3f75c02ab0594fb6b66059190e6b2, type: 3}
-  volume: 0.1
+  clip: {fileID: 8300000, guid: 77d9fa81f8dfc4c47bc72d0318e8747e, type: 3}
+  volume: 0.05
   minPitch: 0.9
   maxPitch: 1.1
