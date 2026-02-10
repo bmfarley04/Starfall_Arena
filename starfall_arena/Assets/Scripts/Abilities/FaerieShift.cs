@@ -16,10 +16,6 @@ public class FaerieShift : Ability
         [Tooltip("Rotation speed multiplier when ability is active (10.0 = 10x faster)")]
         public float rotationMultiplier;
 
-        [Header("PrimaryFireDamageMultiplier")]
-        [Tooltip("Damage multiplier for primary fire when ability is active (0.5 = 50% damage)")]
-        public float primaryFireDamageMultiplier;
-
         [Header("Vulnerability")]
         [Tooltip("Damage multiplier when ability is active (10.0 = 10x damage taken)")]
         public float takeDamageMultiplier;

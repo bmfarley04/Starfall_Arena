@@ -20307,7 +20307,7 @@ MonoBehaviour:
   - {fileID: 307486612009446285}
   projectileWeapon:
     prefab: {fileID: 1778989562205518720, guid: c1883d15da3eace4faf2638f38c358d2, type: 3}
-    damage: 0.1
+    damage: 7
     speed: 30
     recoilForce: 0.02
     lifetime: 0.5
@@ -20401,7 +20401,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Invisibility
   stats:
     cooldown: 3
-    duration: 5
+    duration: 3
 --- !u!114 &2132662891210618044
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -20453,7 +20453,7 @@ MonoBehaviour:
     maxLifetime: 0.6
     recoilForce: 0.5
     explosionPrefab: {fileID: 7483046475079507926, guid: 416ce9d21f5cb624cb8eb70b8c7647ac, type: 3}
-    explosionDamage: 10
+    explosionDamage: 40
     explosionRadius: 3
     explosionImpactForce: 5
     explosionScale: 5
@@ -20478,6 +20478,7 @@ MonoBehaviour:
     scaleMultiplier: 0.5
     speedMultiplier: 7
     rotationMultiplier: 100
+    primaryFireDamageMultiplier: 0
     takeDamageMultiplier: 10
     activateSound: {fileID: 0}
     deactivateSound: {fileID: 0}
