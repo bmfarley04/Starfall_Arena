@@ -20457,8 +20457,8 @@ MonoBehaviour:
     explosionRadius: 3
     explosionImpactForce: 5
     explosionScale: 5
-    launchSound: {fileID: 0}
-    explosionSound: {fileID: 0}
+    launchSound: {fileID: 11400000, guid: 881ae851a22efd248b197be9db76b58a, type: 2}
+    explosionSound: {fileID: 11400000, guid: b32cb18d090c88c44883bf4802d339d8, type: 2}
 --- !u!114 &4494098414829394601
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -20478,7 +20478,6 @@ MonoBehaviour:
     scaleMultiplier: 0.5
     speedMultiplier: 7
     rotationMultiplier: 100
-    primaryFireDamageMultiplier: 0
     takeDamageMultiplier: 10
     activateSound: {fileID: 0}
     deactivateSound: {fileID: 0}
