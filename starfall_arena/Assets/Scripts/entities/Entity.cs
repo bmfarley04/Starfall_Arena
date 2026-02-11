@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -16,8 +15,6 @@ public struct ProjectileWeaponConfig
 {
     [Header("Projectile Settings")]
     public GameObject prefab;
-    public float baseDamage;
-    [HideInInspector]
     public float damage;
     public float speed;
     public float recoilForce;
@@ -78,14 +75,17 @@ public struct ThrusterConfig
     public bool invertColors;
 }
 
+[System.Serializable]
+public struct SlowEffectVisualConfig
+{
+    [Header("Particle Effect")]
+    [Tooltip("Particle system to play when slowed (should be a child of this entity)")]
+    public ParticleSystem slowParticleSystem;
+}
+
 [RequireComponent(typeof(Rigidbody2D))]
 public abstract class Entity : MonoBehaviour
 {
-    // ===== AUGMENT LISTS =====
-    [Header("Augments")]
-    public List<string> augmentIDs = new List<string>();
-    public List<Type> augments = new List<Type>(); // Unfortunately, Unity doesn't show "Types" in editor directly. So add a list of strings to the inspector and convert them to Types in Awake.
-
     // ===== CORE COMBAT STATS =====
     [Header("Core Combat Stats")]
     public float maxHealth = 100f;
@@ -112,12 +112,12 @@ public abstract class Entity : MonoBehaviour
     [Header("Thruster Effects")]
     public ThrusterConfig thrusters;
 
-    // ===== RUNTIME STATE - AUGMENTS =====
-    public Dictionary<string, float> damageMultipliers = new Dictionary<string, float>();
+    // ===== SLOW EFFECT VISUALS =====
+    [Header("Slow Effect Visuals")]
+    public SlowEffectVisualConfig slowEffectVisuals;
 
     // ===== RUNTIME STATE - COMBAT =====
     protected float currentHealth;
-    public float CurrentHealth => currentHealth; // Public getter for health
     public float currentShield;  // Public so projectiles can check shield status
     protected Vector2 _lastDamageDirection;
     private bool _isDead = false;
@@ -129,6 +129,11 @@ public abstract class Entity : MonoBehaviour
     private Vector2 _acceleration;
     private Vector2 _recentImpulse = Vector2.zero;
     private float _impulseDecayRate = 5f;
+
+    // ===== RUNTIME STATE - SLOW EFFECT =====
+    private float _slowMultiplier = 1f;
+    private float _slowEndTime = 0f;
+    private bool _slowVisualsActive = false;
 
     // ===== RUNTIME STATE - VISUAL =====
     private float _previousRotationZ;
@@ -180,7 +185,6 @@ public abstract class Entity : MonoBehaviour
             }
         }
 
-        projectileWeapon.damage = projectileWeapon.baseDamage;
     }
 
     // ===== UPDATE LOOPS =====
@@ -196,6 +200,7 @@ public abstract class Entity : MonoBehaviour
     protected virtual void Update()
     {
         UpdateThrusters();
+        UpdateSlowVisuals();
     }
 
     protected virtual void LateUpdate()
@@ -286,14 +291,40 @@ public abstract class Entity : MonoBehaviour
 
         Vector2 scatterDirection = _lastDamageDirection != Vector2.zero
             ? _lastDamageDirection
-            : UnityEngine.Random.insideUnitCircle.normalized;
+            : Random.insideUnitCircle.normalized;
 
         foreach (ShipPartScatter part in parts)
         {
-            if (UnityEngine.Random.value < 0.75f)
+            if (Random.value < 0.75f)
             {
                 part.Scatter(scatterDirection);
             }
+        }
+    }
+
+    /// <summary>
+    /// Deals damage directly to health, bypassing shields entirely.
+    /// Used by physical projectiles that ignore shields.
+    /// </summary>
+    public virtual void TakeDirectDamage(float damage, float impactForce = 0f, Vector3 hitPoint = default, DamageSource source = DamageSource.Projectile)
+    {
+        if (_isDead) return;
+
+        if (hitPoint != Vector3.zero)
+        {
+            _lastDamageDirection = ((Vector2)transform.position - (Vector2)hitPoint).normalized;
+        }
+        else
+        {
+            _lastDamageDirection = Vector2.zero;
+        }
+
+        currentHealth -= damage;
+        OnHealthChanged();
+
+        if (currentHealth <= 0)
+        {
+            Die();
         }
     }
 
@@ -304,34 +335,34 @@ public abstract class Entity : MonoBehaviour
 
         ScatterShipParts();
 
-        // if (visualEffects.explosionEffectPrefab != null)
-        // {
-        //     if (ExplosionPool.Instance != null)
-        //     {
-        //         Vector2? impactDir = _lastDamageDirection != Vector2.zero ? _lastDamageDirection : (Vector2?)null;
-        //         ExplosionPool.Instance.GetExplosion(transform.position, transform.rotation, visualEffects.explosionScale, impactDir);
-        //     }
-        //     else
-        //     {
-        //         GameObject explosion = Instantiate(visualEffects.explosionEffectPrefab, transform.position, transform.rotation);
-        //         explosion.transform.localScale = Vector3.one * visualEffects.explosionScale;
-        //
-        //         if (_lastDamageDirection != Vector2.zero)
-        //         {
-        //             ExplosionScript explosionScript = explosion.GetComponent<ExplosionScript>();
-        //             if (explosionScript != null)
-        //             {
-        //                 explosionScript.SetImpactDirection(_lastDamageDirection);
-        //             }
-        //         }
-        //     }
-        // }
+        if (visualEffects.explosionEffectPrefab != null)
+        {
+            if (ExplosionPool.Instance != null)
+            {
+                Vector2? impactDir = _lastDamageDirection != Vector2.zero ? _lastDamageDirection : (Vector2?)null;
+                ExplosionPool.Instance.GetExplosion(transform.position, transform.rotation, visualEffects.explosionScale, impactDir);
+            }
+            else
+            {
+                GameObject explosion = Instantiate(visualEffects.explosionEffectPrefab, transform.position, transform.rotation);
+                explosion.transform.localScale = Vector3.one * visualEffects.explosionScale;
+
+                if (_lastDamageDirection != Vector2.zero)
+                {
+                    ExplosionScript explosionScript = explosion.GetComponent<ExplosionScript>();
+                    if (explosionScript != null)
+                    {
+                        explosionScript.SetImpactDirection(_lastDamageDirection);
+                    }
+                }
+            }
+        }
 
         Destroy(gameObject);
     }
 
     // ===== RECOIL & VISUAL EFFECTS =====
-    protected void ApplyRecoil(float recoilForce)
+    public void ApplyRecoil(float recoilForce)
     {
         if (_rb != null)
         {
@@ -437,68 +468,68 @@ public abstract class Entity : MonoBehaviour
     {
     }
 
-    // ===== AUGMENTS =====
-    public void SetStringAugments()
+    // ===== SLOW EFFECT SYSTEM =====
+    public void ApplySlow(float slowMultiplier, float duration)
     {
-        foreach (var augmentID in augmentIDs)
+        bool wasSlowed = IsSlowed();
+
+        // Only apply if this slow is stronger or refreshes duration
+        if (slowMultiplier < _slowMultiplier || Time.time + duration > _slowEndTime)
         {
-            Type augmentType = Type.GetType(augmentID);
-            Debug.Log($"[Augment] Setting augment from ID: {augmentID}, resolved Type: {augmentType}");
-            if (augmentType != null)
-            {
-                SetAugment(augmentType);
-            }
-            else
-            {
-                Debug.LogWarning($"[Augment] Could not find Type for augment name: {augmentID}. Skipping.");
-            }
+            _slowMultiplier = slowMultiplier;
+            _slowEndTime = Time.time + duration;
         }
-    }
-    public void SetTypeAugments()
-    {
-        foreach (var augment in augments)
+
+        // Start visuals if not already active
+        if (!wasSlowed && IsSlowed())
         {
-            SetAugment(augment);
+            StartSlowVisuals();
         }
     }
 
-    // Set damage multiplier from augment
-    void SetDamageMultiplier()
+    public float GetSlowMultiplier()
     {
-        float total = 1.0f;
-        foreach (var mult in damageMultipliers.Values)
+        if (Time.time >= _slowEndTime)
         {
-            total *= mult;
+            _slowMultiplier = 1f;
+            return 1f;
         }
-        projectileWeapon.damage = projectileWeapon.baseDamage * total;
+        return _slowMultiplier;
     }
 
-    void SetDamageMultiplier(float multiplier)
+    public bool IsSlowed()
     {
-        projectileWeapon.damage *= multiplier; // This is not safe in case it is called multiple times incorrectly
+        return Time.time < _slowEndTime && _slowMultiplier < 1f;
     }
 
-    public void SetAugment(Type augment)
+    private void StartSlowVisuals()
     {
-        // If the scriptable object is not an Augment, skip it
-        Debug.Log($"[Augment] Attempting to add augment of type: {augment.Name}");
-        if (!typeof(Augment).IsAssignableFrom(augment))
+        _slowVisualsActive = true;
+
+        if (slowEffectVisuals.slowParticleSystem != null)
         {
-            Debug.LogWarning($"[Augment] ScriptableObject {augment.Name} is not of type Augment. Skipping.");
-        } // if you already have the augment, skip it
-        else if (gameObject.GetComponent(augment) != null)
-        {
-            Debug.LogWarning($"[Augment] Player already has augment {augment.Name}. Skipping.");
-        }
-        else
-        {
-            Debug.Log($"[Augment] Adding augment of type: {augment.FullName}");
-            gameObject.AddComponent(augment);
+            slowEffectVisuals.slowParticleSystem.Play();
         }
     }
 
-    public void SetAugmentVariables()
+    private void StopSlowVisuals()
     {
-        SetDamageMultiplier();
+        _slowVisualsActive = false;
+
+        if (slowEffectVisuals.slowParticleSystem != null)
+        {
+            slowEffectVisuals.slowParticleSystem.Stop();
+        }
+    }
+
+    private void UpdateSlowVisuals()
+    {
+        if (slowEffectVisuals.slowParticleSystem == null) return;
+
+        // Check if slow just ended
+        if (_slowVisualsActive && !IsSlowed())
+        {
+            StopSlowVisuals();
+        }
     }
 }

@@ -6,6 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Starfall Arena** is a 2.5D space shooter game built with Unity. Players control a ship defending against waves of enemies with various AI behaviors, featuring shield mechanics, weapon systems, and special abilities.
 
+THIS IS A CONTROLLER FIRST GAME - ALL INPUT SHOULD BE PRIMARILY DESIGNED AROUND CONTROLLER INPUT.
+
 ## Development Environment
 
 **Engine:** Unity 6 (2023.x LTS)
@@ -378,9 +380,206 @@ Shields don't regenerate immediately after damage:
 - Each tier has unique projectile prefab and particle effects
 - Tier 3 & 4 projectiles pierce enemies with damage falloff
 
+## Title Screen & Menu System
+
+### Architecture Overview
+
+The title screen uses a **canvas-based transition system** with three main components working together:
+
+**Core Components:**
+- `TitleScreenManager.cs` - Orchestrates scene intro, canvas transitions, and component lifecycle
+- `TitleScreenButton.cs` - Button component with hover effects and configurable click actions
+- `ShipSelectManager.cs` - Manages ship selection screen with 3D model rotation and UI navigation
+
+### TitleScreenManager
+
+**Responsibilities:**
+- Scene intro sequence (fade from black → fade UI in)
+- Canvas transitions (scale + fade animations between menus)
+- Component lifecycle management (enabling/disabling managers at the right time)
+- EventSystem selection control
+- Ship model preloading
+
+**Canvas Structure:**
+```
+Scene:
+├─ MainMenuCanvas (title, buttons)
+├─ ControlsCanvas (control instructions)
+└─ ShipSelectCanvas (ship selection with 3D preview)
+```
+
+**Transition Flow:**
+1. Clear EventSystem selection
+2. Disable old canvas (interactable, raycasts, buttons)
+3. Activate new canvas GameObject (but non-interactable)
+4. **Preload content** (if going to ship select: load UI data, prepare ship)
+5. Exit animation (old canvas scales/fades out)
+6. Pause (background visible)
+7. Enter animation (new canvas scales/fades in)
+8. **Activate content** (ship model, if applicable)
+9. Enable new canvas (interactable, raycasts, buttons)
+10. Set EventSystem selection
+
+**Critical Timing:**
+- GameObjects activated early (before transition) but kept non-interactable
+- Buttons disabled during transitions to prevent premature EventSystem auto-selection
+- Ship models activated at the END of transition (when canvas is fully visible)
+
+### TitleScreenButton
+
+**Features:**
+- Fade-in hover effects (flanking circles, overlay highlight)
+- Configurable click actions: menu transitions OR scene loads
+- Controller and mouse support (IPointerEnter, ISelectHandler)
+- Canvas alpha check to prevent sounds during fade-in
+- `_isInitialSelection` flag to prevent hover sound on auto-selection
+
+**Click Config Options:**
+- **Menu Transition**: `TransitionToShipSelect()`, `TransitionToControls()`, etc.
+- **Scene Load**: Load a gameplay scene with delay (for sound)
+- **Quit Game**: Application.Quit()
+- **UnityEvent**: Custom effects (enable panels, trigger animations)
+
+### ShipSelectManager
+
+**Core Functionality:**
+- Ship model spawning and lifecycle management
+- 3D ship rotation with controller sticks
+- D-pad UI navigation (ability buttons)
+- Dynamic UI population from ShipData ScriptableObjects
+- Seamless preloading for instant transitions
+
+**Ship Selection Flow:**
+```
+Scene Load:
+  → TitleScreenManager spawns all ship models (inactive)
+  → Models ready before player can interact
+
+User clicks "Play Game":
+  → Transition starts
+  → PreloadShipData() called (loads UI text, prepares transform)
+  → Ship stays INACTIVE during transition
+  → Canvas fades in
+  → ActivateShipWhenVisible() called
+  → Ship appears instantly (no delay, not visible early)
+```
+
+**Controller Input Architecture:**
+
+**CRITICAL: Input Separation**
+- **Sticks (Left/Right)**: ONLY rotate ship (always active)
+- **D-pad**: ONLY navigate UI buttons
+- **Shoulders (LB/RB)**: Switch between ships
+- **B/Escape**: Back to main menu
+
+**Implementation:**
+- `HandleShipRotation()` - Reads stick input every frame, applies rotation
+- `HandleDPadNavigation()` - Manually handles D-pad, prevents stick from controlling UI
+- `DisableEventSystemNavigation()` - Disables Input Module's move action on enable
+- `RestoreEventSystemNavigation()` - Re-enables on disable
+
+**Ship Rotation:**
+- Left Stick X → Yaw (spin left/right)
+- Left Stick Y → Pitch (tilt up/down, inverted)
+- Right Stick X → Roll (barrel roll)
+- Quaternion slerp for smooth interpolation
+- Frame-independent with Time.unscaledDeltaTime
+
+**UI Navigation:**
+- Default state: No button selected (ship rotation mode)
+- D-pad Down (no selection) → Select first ability button
+- D-pad Left/Right/Up/Down (has selection) → Navigate between buttons using explicit navigation
+- D-pad Up (top row) → Deselect, return to ship rotation mode
+
+### ShipData ScriptableObject
+
+Stores all ship information for display in ship select:
+
+**Structure:**
+```csharp
+- shipName (string)
+- shipModelPrefab (GameObject)
+- stats (ShipStats struct):
+  - damage (0-50)
+  - hull (0-500)
+  - shield (0-500)
+  - speed (0-100)
+- ability1-4 (AbilityData struct):
+  - abilityName
+  - abilityDescription
+  - abilityIcon (Sprite)
+```
+
+**Usage:**
+1. Create: Right-click → Create → Starfall Arena → Ship Data
+2. Assign to ShipSelectManager's `availableShips` array
+3. Manager dynamically populates UI from this data
+
+### Component Lifecycle & Timing
+
+**CRITICAL: Why Timing Matters**
+- Components must be enabled/disabled at specific times to prevent:
+  - EventSystem auto-selection during transitions
+  - Ship models appearing during fade animations
+  - OnEnable/OnDisable firing at wrong times
+  - HideAllShipModels running after ShowShipModel
+
+**Ship Spawning Timeline:**
+```
+TitleScreenManager.Start():
+  → Calls ShipSelectManager.SpawnShipsAtSceneLoad()
+  → All ships instantiated (inactive)
+  → Happens during title screen fade-in (invisible to player)
+
+Transition to Ship Select:
+  → PreloadShipData() called early
+    → Loads UI data (text, stats, abilities)
+    → Prepares ship transform (position, rotation, scale)
+    → Ship STAYS INACTIVE
+  → Transition animation plays
+  → Canvas becomes visible
+  → ActivateShipWhenVisible() called
+    → Ship.SetActive(true)
+    → Appears instantly with no pop-in
+```
+
+**Component Enable/Disable:**
+- ShipSelectManager component starts DISABLED
+- Enabled during preload, stays enabled throughout
+- OnEnable runs once during preload
+- OnDisable only runs when leaving ship select
+- This prevents enable/disable cycling that would hide ships
+
+### Best Practices for Menu Systems
+
+**Controller-First Design:**
+- Always test with controller first
+- Separate stick and D-pad functionality clearly
+- Disable EventSystem navigation when manually handling input
+- Use `wasPressedThisFrame` for discrete button presses
+
+**Transition Smoothness:**
+- Preload heavy content during exit animation
+- Activate visuals only when fully visible
+- Use scale + fade for professional feel
+- Add pause between exit/enter for clarity
+
+**Button Selection Management:**
+- Disable buttons during transitions
+- Clear selection before disabling canvases
+- Set selection AFTER canvas is fully visible
+- Use `_isInitialSelection` flag to prevent sounds on auto-select
+
+**Component Lifecycle:**
+- Spawn heavy objects at scene load (during black screen)
+- Enable components early if needed for preload
+- Keep components enabled to avoid enable/disable cycling
+- Activate GameObjects at the exact right moment
+
 ## Testing & Iteration
 
 - **Main scene:** `Assets/Scenes/SampleScene.unity` - Full game with player ship
+- **Title screen scene:** `Assets/Scenes/MainMenu.unity` - Title screen with ship selection
 - **Inspector tweaking:** Most balance adjustments happen without recompiling via Inspector parameters
 - **Prefab variants:** Ship prefabs are configured per-type with different stats in the Inspector
 - **Struct organization:** Collapse all structs, then expand only what you're tuning

@@ -1,0 +1,40 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4126ca0ce3c78694f95eed711408a84b, type: 3}
+  m_Name: Class3
+  m_EditorClassIdentifier: Assembly-CSharp::ShipData
+  shipName: AXIOM WRAITH
+  shipModelPrefab: {fileID: 8073042944126910331, guid: e5b8894645814004a95883e7078d128b, type: 3}
+  player1VSPrefab: {fileID: 8073042944126910331, guid: d4f23823d93be524ab3ef760c8b9fdf6, type: 3}
+  player2VSPrefab: {fileID: 8073042944126910331, guid: 18f8767654481a44386a7f484454b5e0, type: 3}
+  shipPrefab: {fileID: 8073042944126910331, guid: b3d6e192d9b648a42977ef913b4a488a, type: 3}
+  stats:
+    damage: 26
+    hull: 100
+    shield: 50
+    speed: 40
+  ability1:
+    abilityName: 
+    abilityDescription: 
+    abilityIcon: {fileID: 0}
+  ability2:
+    abilityName: 
+    abilityDescription: 
+    abilityIcon: {fileID: 0}
+  ability3:
+    abilityName: 
+    abilityDescription: 
+    abilityIcon: {fileID: 0}
+  ability4:
+    abilityName: 
+    abilityDescription: 
+    abilityIcon: {fileID: 0}

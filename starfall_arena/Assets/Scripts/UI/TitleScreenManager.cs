@@ -64,6 +64,15 @@ public class TitleScreenManager : MonoBehaviour
     [Tooltip("First selected button on the controls screen (for controller navigation)")]
     [SerializeField] private GameObject controlsFirstSelected;
 
+    [Tooltip("Ship select screen canvas")]
+    [SerializeField] private CanvasGroup shipSelectCanvas;
+
+    [Tooltip("Ship select manager (controls ship selection logic)")]
+    [SerializeField] private ShipSelectManager shipSelectManager;
+
+    [Tooltip("First selected button on the ship select screen (for controller navigation)")]
+    [SerializeField] private GameObject shipSelectFirstSelected;
+
     [Header("Intro: Scene Fade In")]
     [SerializeField] private SceneFadeConfig sceneFade;
 
@@ -81,9 +90,25 @@ public class TitleScreenManager : MonoBehaviour
     {
         _overlayAlpha = 1f;
 
-        // Hide all canvases at start
+        // CRITICAL: Deactivate canvas GameObjects to prevent ANY events during intro
+        // This prevents EventSystem auto-selection and mouse hover events
+        mainMenuCanvas.gameObject.SetActive(false);
+        controlsCanvas.gameObject.SetActive(false);
+        shipSelectCanvas.gameObject.SetActive(false);
+
+        // Hide all canvases at start (when we activate them later)
         SetCanvasHidden(mainMenuCanvas);
         SetCanvasHidden(controlsCanvas);
+        SetCanvasHidden(shipSelectCanvas);
+
+        // PRELOAD: Spawn ship models NOW (at scene load) so they're ready instantly
+        // This eliminates any loading delay when entering ship select
+        if (shipSelectManager != null)
+        {
+            shipSelectManager.gameObject.SetActive(true); // Activate to allow method call
+            shipSelectManager.SpawnShipsAtSceneLoad();
+            shipSelectManager.gameObject.SetActive(true); // Keep active but component disabled
+        }
 
         // Phase 1: Scene fades from black
         yield return new WaitForSecondsRealtime(sceneFade.delay);
@@ -105,6 +130,14 @@ public class TitleScreenManager : MonoBehaviour
         canvas.blocksRaycasts = false;
     }
 
+    private void SetButtonsEnabled(CanvasGroup canvas, bool enabled)
+    {
+        if (canvas == null) return;
+        TitleScreenButton[] buttons = canvas.GetComponentsInChildren<TitleScreenButton>(true);
+        foreach (var button in buttons)
+            button.enabled = enabled;
+    }
+
     private IEnumerator RunSceneFade()
     {
         float elapsed = 0f;
@@ -122,6 +155,12 @@ public class TitleScreenManager : MonoBehaviour
 
     private IEnumerator RunUIFade()
     {
+        // Activate canvas NOW (right before fade) so it can be seen
+        mainMenuCanvas.gameObject.SetActive(true);
+
+        // Keep buttons disabled during fade to prevent premature EventSystem selection
+        SetButtonsEnabled(mainMenuCanvas, false);
+
         float elapsed = 0f;
 
         while (elapsed < uiFade.fadeDuration)
@@ -137,6 +176,9 @@ public class TitleScreenManager : MonoBehaviour
         mainMenuCanvas.blocksRaycasts = true;
 
         _activeCanvas = mainMenuCanvas;
+
+        // Enable buttons NOW (right before selection) to prevent premature auto-selection
+        SetButtonsEnabled(mainMenuCanvas, true);
 
         // Re-trigger the current selection so the default button shows its hover
         RefreshSelection(mainMenuFirstSelected);
@@ -158,6 +200,20 @@ public class TitleScreenManager : MonoBehaviour
             RunTransition(controlsCanvas, mainMenuCanvas, mainMenuFirstSelected));
     }
 
+    public void TransitionToShipSelect()
+    {
+        if (_activeTransition != null) return;
+        _activeTransition = StartCoroutine(
+            RunTransition(mainMenuCanvas, shipSelectCanvas, shipSelectFirstSelected));
+    }
+
+    public void TransitionToMainMenuFromShipSelect()
+    {
+        if (_activeTransition != null) return;
+        _activeTransition = StartCoroutine(
+            RunTransition(shipSelectCanvas, mainMenuCanvas, mainMenuFirstSelected));
+    }
+
     private IEnumerator RunTransition(CanvasGroup from, CanvasGroup to, GameObject selectAfter)
     {
         // Clear selection BEFORE disabling interactable so OnDeselect/HideHover runs
@@ -165,8 +221,29 @@ public class TitleScreenManager : MonoBehaviour
 
         from.interactable = false;
         from.blocksRaycasts = false;
+        SetButtonsEnabled(from, false);
+
+        // Activate target canvas NOW (before transition) but keep it non-interactable
+        to.gameObject.SetActive(true);
         to.interactable = false;
         to.blocksRaycasts = false;
+        SetButtonsEnabled(to, false); // Keep buttons disabled during transition
+
+        // Disable ShipSelectManager when leaving ship select screen
+        if (from == shipSelectCanvas && shipSelectManager != null)
+        {
+            shipSelectManager.enabled = false;
+        }
+
+        // PRELOAD: Load ship data EARLY (before transition) for seamless experience
+        if (to == shipSelectCanvas && shipSelectManager != null)
+        {
+            shipSelectManager.gameObject.SetActive(true);
+            shipSelectManager.enabled = true;
+            shipSelectManager.PreloadShipData();
+            // DON'T disable component - keep it enabled so ship stays active
+            // The canvas is hidden anyway, so component being enabled doesn't matter
+        }
 
         RectTransform fromRect = (RectTransform)from.transform;
         RectTransform toRect = (RectTransform)to.transform;
@@ -188,6 +265,9 @@ public class TitleScreenManager : MonoBehaviour
 
         from.alpha = 0f;
         fromRect.localScale = Vector3.one;
+
+        // Deactivate exited canvas to prevent any events
+        from.gameObject.SetActive(false);
 
         // --- Pause: background visible between menus ---
         yield return new WaitForSecondsRealtime(menuTransition.pauseDuration);
@@ -216,6 +296,16 @@ public class TitleScreenManager : MonoBehaviour
         to.blocksRaycasts = true;
 
         _activeCanvas = to;
+
+        // Activate ship NOW (canvas is fully visible)
+        if (to == shipSelectCanvas && shipSelectManager != null)
+        {
+            shipSelectManager.ActivateShipWhenVisible();
+        }
+
+        // Enable buttons NOW (right before selection) to prevent premature auto-selection
+        SetButtonsEnabled(to, true);
+
         RefreshSelection(selectAfter);
         _activeTransition = null;
     }
@@ -234,13 +324,24 @@ public class TitleScreenManager : MonoBehaviour
             cancelPressed = Keyboard.current.escapeKey.wasPressedThisFrame;
 
         if (cancelPressed)
-            TransitionToMainMenu();
+        {
+            // Return to main menu from different screens
+            if (_activeCanvas == shipSelectCanvas)
+                TransitionToMainMenuFromShipSelect();
+            else
+                TransitionToMainMenu();
+        }
     }
 
     private void RefreshSelection(GameObject target)
     {
         if (target != null)
         {
+            // Mark button as programmatic selection to prevent hover sound
+            TitleScreenButton button = target.GetComponent<TitleScreenButton>();
+            if (button != null)
+                button.MarkAsProgrammaticSelection();
+
             EventSystem.current.SetSelectedGameObject(null);
             EventSystem.current.SetSelectedGameObject(target);
         }

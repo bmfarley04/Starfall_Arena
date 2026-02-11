@@ -46,13 +46,21 @@ public class ShieldController : MonoBehaviour
 
     [Header("Break Effect")]
     [Tooltip("Total time for the break ripple to travel from center to edge")]
-    [SerializeField] private float breakDuration = 0.8f; 
-    
+    [SerializeField] private float breakDuration = 0.8f;
+
     [Tooltip("If true, calculates radius from the mesh bounds automatically.")]
     [SerializeField] private bool autoCalculateSize = true;
 
     [Tooltip("The size of the hole when the shield is fully gone. (Ignored if Auto Calculate is true)")]
-    [SerializeField] private float maxBreakRadius = 1.5f; 
+    [SerializeField] private float maxBreakRadius = 1.5f;
+
+    [Header("Always On Mode (HUD Effects)")]
+    [Tooltip("If true, shield stays permanently visible at a constant alpha (for HUD effects)")]
+    [SerializeField] private bool alwaysOn = false;
+
+    [Tooltip("Alpha value when always on mode is enabled (0-1)")]
+    [Range(0f, 1f)]
+    [SerializeField] private float alwaysOnAlpha = 0.3f; 
 
     void Start()
     {
@@ -89,7 +97,18 @@ public class ShieldController : MonoBehaviour
         _shieldRenderer.GetPropertyBlock(_propBlock);
         _propBlock.SetFloat(_inflationID, inflationAmount);
         _propBlock.SetColor(_colorID, shieldColor);
-        _propBlock.SetFloat(_hitEffectID, 0);
+
+        // Initialize alpha based on alwaysOn mode
+        if (alwaysOn)
+        {
+            _currentAlpha = alwaysOnAlpha;
+            _propBlock.SetFloat(_hitEffectID, alwaysOnAlpha);
+        }
+        else
+        {
+            _propBlock.SetFloat(_hitEffectID, 0);
+        }
+
         _propBlock.SetFloat(_breakRadiusID, -1f); 
         
         for (int i = 0; i < MAX_RIPPLES; i++)
@@ -145,13 +164,17 @@ public class ShieldController : MonoBehaviour
     public void SetRegeneration(bool active)
     {
         if (_isBreaking) return;
-        
+
+        // If alwaysOn is enabled, ignore regeneration state changes
+        // (shield should stay visible regardless)
+        if (alwaysOn) return;
+
         if (active)
         {
             // Reset the hole so the shield can fade back in visually
             _currentBreakRadius = -1f;
         }
-        
+
         _isRegenerating = active;
     }
 
@@ -164,26 +187,32 @@ public class ShieldController : MonoBehaviour
         }
 
         bool needsUpdate = false;
-        
+
         // --- REGEN & DECAY ---
         float targetPulseAlpha = 0f;
-        
+
         if (_isRegenerating)
         {
             float pulse = (Mathf.Sin(Time.time * regenPulseSpeed) + 1f) * 0.5f;
             targetPulseAlpha = pulse * regenMaxAlpha;
-            needsUpdate = true; 
+            needsUpdate = true;
+        }
+        else if (alwaysOn)
+        {
+            // Always On mode: maintain constant alpha
+            targetPulseAlpha = alwaysOnAlpha;
+            needsUpdate = true;
         }
 
         if (_currentAlpha > targetPulseAlpha)
         {
             float decayRate = 1.0f / Mathf.Max(shieldVisibleDuration, 0.001f);
             _currentAlpha -= Time.deltaTime * decayRate;
-            
+
             if (_currentAlpha < targetPulseAlpha) _currentAlpha = targetPulseAlpha;
             needsUpdate = true;
         }
-        else if (_isRegenerating)
+        else if (_isRegenerating || alwaysOn)
         {
             _currentAlpha = targetPulseAlpha;
             needsUpdate = true;

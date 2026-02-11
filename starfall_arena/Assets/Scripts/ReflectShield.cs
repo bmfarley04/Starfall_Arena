@@ -137,10 +137,10 @@ public class ReflectShield : MonoBehaviour
         _nextRippleIndex = (_nextRippleIndex + 1) % MAX_RIPPLES;
     }
 
-    public void ReflectProjectile(ProjectileScript projectile)
+    public void ReflectProjectile(ProjectileScript projectile, string newTargetTag)
     {
         if (!_isActive || _player == null) return;
-        projectile.Reflect("Enemy", shieldColor, _player);
+        projectile.Reflect(newTargetTag, shieldColor, _player);
     }
 
     void Update()
