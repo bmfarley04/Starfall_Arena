@@ -1,3 +1,4 @@
+using StarfallArena.UI;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -15,6 +16,8 @@ public struct ProjectileWeaponConfig
 {
     [Header("Projectile Settings")]
     public GameObject prefab;
+    public float baseDamage;
+    // [HideInInspector] comment this in after moving damage to baseDamage
     public float damage;
     public float speed;
     public float recoilForce;
@@ -86,6 +89,13 @@ public struct SlowEffectVisualConfig
 [RequireComponent(typeof(Rigidbody2D))]
 public abstract class Entity : MonoBehaviour
 {
+    // ===== MANAGER REFERENCES =====
+    public int currentRound;
+
+    // ===== AUGMENT LISTS =====
+    [Header("Augments")]
+    public List<Augment> augments = new List<Augment>();
+
     // ===== CORE COMBAT STATS =====
     [Header("Core Combat Stats")]
     public float maxHealth = 100f;
@@ -116,8 +126,12 @@ public abstract class Entity : MonoBehaviour
     [Header("Slow Effect Visuals")]
     public SlowEffectVisualConfig slowEffectVisuals;
 
+    // ===== RUNTIME STATE - AUGMENTS =====
+    public Dictionary<string, float> damageMultipliers = new Dictionary<string, float>();
+
     // ===== RUNTIME STATE - COMBAT =====
-    protected float currentHealth;
+    protected float currentHealth = 0;
+    public float CurrentHealth => currentHealth; // Public getter for health
     public float currentShield;  // Public so projectiles can check shield status
     protected Vector2 _lastDamageDirection;
     private bool _isDead = false;
@@ -184,7 +198,17 @@ public abstract class Entity : MonoBehaviour
                 }
             }
         }
-
+        projectileWeapon.damage = projectileWeapon.baseDamage;
+        if(augments.Count > 0)
+        {
+            foreach (var augment in augments)
+            {
+                if(augment != null)
+                {
+                    AcquireAugment(augment, currentRound); // handles setting player reference and setting augment variables
+                }
+            }
+        }
     }
 
     // ===== UPDATE LOOPS =====
@@ -195,6 +219,8 @@ public abstract class Entity : MonoBehaviour
         Vector2 currentVelocity = _rb.linearVelocity;
         _acceleration = (currentVelocity - _previousVelocity) / Time.fixedDeltaTime;
         _previousVelocity = currentVelocity;
+
+        AugmentFixedUpdate();
     }
 
     protected virtual void Update()
@@ -469,6 +495,7 @@ public abstract class Entity : MonoBehaviour
     }
 
     // ===== SLOW EFFECT SYSTEM =====
+    
     public void ApplySlow(float slowMultiplier, float duration)
     {
         bool wasSlowed = IsSlowed();
@@ -531,5 +558,50 @@ public abstract class Entity : MonoBehaviour
         {
             StopSlowVisuals();
         }
+    }
+
+    // ===== AUGMENTS =====
+    public void AcquireAugment(Augment augment, int currentRound)
+    {
+        if(!augments.Contains(augment))
+        {
+            augments.Add(augment);
+        }
+        augment.playerReference = gameObject;
+        augment.SetUpAugment(currentRound);
+        SetAugmentVariables();
+    }
+
+    protected void AugmentFixedUpdate()
+    {
+        // Call FixedUpdate on all augments to activate/deactivate effects and update variables as needed
+        foreach (var augment in augments)
+        {
+            if (augment != null)
+            {
+                augment.ExecuteEffects();
+            }
+        }
+    }
+
+    public void SetAugmentVariables()
+    {
+        SetDamageMultiplier();
+    }
+
+    // Set damage multiplier from augment
+    void SetDamageMultiplier()
+    {
+        float total = 1.0f;
+        foreach (var mult in damageMultipliers.Values)
+        {
+            total *= mult;
+        }
+        projectileWeapon.damage = projectileWeapon.baseDamage * total;
+    }
+
+    void SetDamageMultiplier(float multiplier)
+    {
+        projectileWeapon.damage *= multiplier; // This is not safe in case it is called multiple times incorrectly
     }
 }
