@@ -197,6 +197,19 @@ public class TriggerBomb : Ability
         return _activeBomb != null;
     }
 
+    // ===== HUD STATE =====
+    public override float GetHUDFillRatio()
+    {
+        if (bomb.cooldown <= 0f) return 0f;
+        float elapsed = Time.time - _lastBombTime;
+        if (elapsed >= bomb.cooldown) return 0f;
+        return 1f - (elapsed / bomb.cooldown);
+    }
+    public override bool IsOnCooldown()
+    {
+        return Time.time < _lastBombTime + bomb.cooldown;
+    }
+
     public override void Die()
     {
         base.Die();

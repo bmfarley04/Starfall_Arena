@@ -261,6 +261,11 @@ public class FireWall : Ability
         return _isActive;
     }
 
+    // ===== HUD STATE =====
+    public override bool IsResourceBased() => true;
+    public override float GetHUDFillRatio() => GetCapacityRatio();
+    public override bool IsOnCooldown() => false;
+
     public override void Die()
     {
         // Stop sound

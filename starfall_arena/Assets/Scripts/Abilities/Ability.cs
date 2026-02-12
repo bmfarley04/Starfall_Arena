@@ -135,4 +135,37 @@ public class Ability : MonoBehaviour
     public virtual void Die()
     {
     }
+
+    // ===== HUD STATE =====
+
+    /// <summary>
+    /// Returns fill ratio for HUD display. 0 = ready/full resource, 1 = fully on cooldown/depleted.
+    /// Override in subclasses with custom cooldown tracking.
+    /// </summary>
+    public virtual float GetHUDFillRatio()
+    {
+        if (stats.cooldown <= 0f) return 0f;
+        float elapsed = Time.time - lastUsedAbility;
+        if (elapsed >= stats.cooldown) return 0f;
+        return 1f - (elapsed / stats.cooldown);
+    }
+
+    /// <summary>
+    /// Returns true if ability uses a resource bar instead of cooldown.
+    /// Resource abilities only drive fill amount, no material swap.
+    /// </summary>
+    public virtual bool IsResourceBased()
+    {
+        return false;
+    }
+
+    /// <summary>
+    /// Returns true if ability is currently on cooldown (drives material swap).
+    /// Resource abilities should return false.
+    /// </summary>
+    public virtual bool IsOnCooldown()
+    {
+        if (stats.cooldown <= 0f) return false;
+        return Time.time < lastUsedAbility + stats.cooldown;
+    }
 }

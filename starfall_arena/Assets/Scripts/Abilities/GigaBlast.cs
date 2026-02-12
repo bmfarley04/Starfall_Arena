@@ -270,6 +270,19 @@ public class GigaBlast : Ability
         return _isCharging;
     }
 
+    // ===== HUD STATE =====
+    public override float GetHUDFillRatio()
+    {
+        if (gigaBlast.timing.cooldown <= 0f) return 0f;
+        float elapsed = Time.time - _lastGigaBlastTime;
+        if (elapsed >= gigaBlast.timing.cooldown) return 0f;
+        return 1f - (elapsed / gigaBlast.timing.cooldown);
+    }
+    public override bool IsOnCooldown()
+    {
+        return Time.time < _lastGigaBlastTime + gigaBlast.timing.cooldown;
+    }
+
     public override void ApplyRotationMultiplier()
     {
         base.ApplyRotationMultiplier();

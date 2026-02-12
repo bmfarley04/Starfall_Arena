@@ -177,6 +177,15 @@ public class Beam : Ability
         return _activeBeam != null;
     }
 
+    // ===== HUD STATE =====
+    public override bool IsResourceBased() => true;
+    public override float GetHUDFillRatio()
+    {
+        if (beam.capacity <= 0f) return 0f;
+        return _currentBeamCapacity / beam.capacity;
+    }
+    public override bool IsOnCooldown() => false;
+
     public override void Die()
     {
         if (_laserBeamSource != null && _laserBeamSource.isPlaying)
