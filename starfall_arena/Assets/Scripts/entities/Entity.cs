@@ -17,7 +17,7 @@ public struct ProjectileWeaponConfig
     [Header("Projectile Settings")]
     public GameObject prefab;
     public float baseDamage;
-    // [HideInInspector] comment this in after moving damage to baseDamage
+    [HideInInspector]
     public float damage;
     public float speed;
     public float recoilForce;
