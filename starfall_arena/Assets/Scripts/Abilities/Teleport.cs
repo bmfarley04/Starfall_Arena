@@ -69,6 +69,19 @@ public class Teleport : Ability
     private Coroutine _teleportCoroutine;
     private bool _isTeleporting = false;
 
+    // ===== HUD STATE =====
+    public override float GetHUDFillRatio()
+    {
+        if (teleport.cooldown <= 0f) return 0f;
+        float elapsed = Time.time - _lastTeleportTime;
+        if (elapsed >= teleport.cooldown) return 0f;
+        return 1f - (elapsed / teleport.cooldown);
+    }
+    public override bool IsOnCooldown()
+    {
+        return Time.time < _lastTeleportTime + teleport.cooldown;
+    }
+
     protected override void Awake()
     {
         base.Awake();

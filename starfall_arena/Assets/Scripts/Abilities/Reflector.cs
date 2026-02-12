@@ -123,6 +123,19 @@ public class Reflector : Ability
         }
     }
 
+    // ===== HUD STATE =====
+    public override float GetHUDFillRatio()
+    {
+        if (reflect.cooldown <= 0f) return 0f;
+        float elapsed = Time.time - _lastReflectTime;
+        if (elapsed >= reflect.cooldown) return 0f;
+        return 1f - (elapsed / reflect.cooldown);
+    }
+    public override bool IsOnCooldown()
+    {
+        return Time.time < _lastReflectTime + reflect.cooldown;
+    }
+
     public override void Die()
     {
         base.Die();

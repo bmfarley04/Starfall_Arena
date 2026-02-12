@@ -380,6 +380,39 @@ Shields don't regenerate immediately after damage:
 - Each tier has unique projectile prefab and particle effects
 - Tier 3 & 4 projectiles pierce enemies with damage falloff
 
+### Ability HUD System
+
+**Architecture: Poll-based UI driven by virtual methods on `Ability.cs`**
+
+Each ship class has a **unique ability canvas prefab** (`ShipData.abilityHUDPrefab`). At spawn time, the canvas is instantiated and bound to the player via `Player.BindAbilityHUD(panel)`.
+
+**Core Components:**
+- `Ability.cs` - Base class exposes 3 virtual HUD methods: `GetHUDFillRatio()`, `IsResourceBased()`, `IsOnCooldown()`
+- `AbilitySlotUI.cs` (`Assets/Scripts/UI/`) - Per-slot component that polls its ability every `Update()` and drives 3 UI elements
+- `AbilityHUDPanel.cs` (`Assets/Scripts/UI/`) - Groups 4 `AbilitySlotUI` slots, exposes `Bind(Player)`
+
+**Two ability display modes:**
+
+1. **Cooldown-based (default):** Circle background swaps material on cooldown start/end. Dark fill icon animates from fillAmount=1 (fully covered) to 0 (ready) as cooldown progresses.
+2. **Resource-based** (Beam, FireWall): Only dark fill icon is used. fillAmount = resource expenditure ratio (0=full, 1=depleted). No material swaps.
+
+**Per-slot UI elements:**
+- `circleBackground` (Image) - material swaps between `readyMaterial` and `cooldownMaterial`
+- Normal icon (Image) - always visible, unchanged, not referenced by script
+- `darkFillIcon` (Image) - filled image, vertical fill, top origin, driven by `GetHUDFillRatio()`
+
+**Adding ability HUD to a new ship class:**
+1. Create a canvas prefab with 4 `AbilitySlotUI` children (one per ability slot)
+2. Wire each slot's Image references and materials in Inspector
+3. Add an `AbilityHUDPanel` component to the canvas root, assign the 4 slots
+4. Set `abilityHUDPrefab` on the ship's `ShipData` ScriptableObject
+5. At spawn time, instantiate the prefab and call `player.BindAbilityHUD(panel)`
+
+**Overriding HUD state for custom abilities:**
+- Abilities using base class cooldown (`lastUsedAbility` + `stats.cooldown`): no override needed
+- Abilities with custom cooldown tracking: override `GetHUDFillRatio()` and `IsOnCooldown()`
+- Resource-based abilities: override all 3 methods (`IsResourceBased()` returns true, `IsOnCooldown()` returns false)
+
 ## Title Screen & Menu System
 
 ### Architecture Overview

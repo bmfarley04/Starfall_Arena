@@ -256,6 +256,18 @@ public abstract class Player : Entity
         return _audioSourcePool[0];
     }
 
+    // ===== ABILITY HUD =====
+    private StarfallArena.UI.AbilityHUDPanel _abilityHUDPanel;
+
+    public void BindAbilityHUD(StarfallArena.UI.AbilityHUDPanel panel)
+    {
+        _abilityHUDPanel = panel;
+        if (panel != null)
+        {
+            panel.Bind(this);
+        }
+    }
+
     // ===== UPDATE LOOPS =====
     protected override void Update()
     {

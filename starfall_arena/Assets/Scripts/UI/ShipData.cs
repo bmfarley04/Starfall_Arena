@@ -61,6 +61,10 @@ public class ShipData : ScriptableObject
     [Tooltip("Additive position offset when this ship is displayed on the Player 2 VS card")]
     public Vector3 player2VSPositionOffset;
 
+    [Header("Ability HUD")]
+    [Tooltip("Canvas prefab for this ship's ability HUD (unique per ship class)")]
+    public GameObject abilityHUDPrefab;
+
     [Header("Ship Stats")]
     [Tooltip("Stat values displayed as bars (0-100 range)")]
     public ShipStats stats;
