@@ -197,9 +197,6 @@ public abstract class Player : Entity
         }
 
         InitializeAudioSystem();
-        SetStringAugments();
-        SetTypeAugments();
-        SetAugmentVariables();
     }
     private void InitializeAudioSystem()
     {

@@ -512,14 +512,14 @@ namespace StarfallArena.UI
             Debug.Log($"Player selected augment: {selectedAugment.augmentName}");
 
             // Apply the augment effect
-            if (selectedAugment.effectScript != null)
-            {
-                selectedAugment.effectScript.ApplyEffect();
-            }
-            else
-            {
-                Debug.LogWarning($"Augment '{selectedAugment.augmentName}' has no effect script assigned!");
-            }
+            //if (selectedAugment.effectScript != null)
+            //{
+            //    selectedAugment.effectScript.ApplyEffect();
+            //}
+            //else
+            //{
+            //    Debug.LogWarning($"Augment '{selectedAugment.augmentName}' has no effect script assigned!");
+            //}
 
             // Hide the augment select screen
             HideAugmentSelect();

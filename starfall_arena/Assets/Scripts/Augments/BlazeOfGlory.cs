@@ -1,5 +1,7 @@
+using StarfallArena.UI;
 using UnityEngine;
 
+[CreateAssetMenu(fileName = "BlazeOfGlory", menuName = "Starfall Arena/Augments/BlazeOfGlory", order = 2)]
 public class BlazeOfGlory : Augment
 {
     public GameObject bogEffect;
@@ -8,40 +10,33 @@ public class BlazeOfGlory : Augment
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     protected override void Awake()
     {
-        base.Awake();
-        augmentInfo = new AugmentInfo
-        {
-            augmentID = "BlazeOfGlory",
-            augmentName = "Blaze of Glory",
-            description = "Deal 50% more damage when below 25% health."
-        };
+        augmentID = this.name; // Use the script name as the unique ID for simplicity
+        augmentName = "Blaze of Glory";
+        description = "Deal 50% more damage when below 25% health.";
     }
 
-    protected override void FixedUpdate()
+    public override void ExecuteEffects()
     {
-        base.FixedUpdate();
-        if (player != null)
+        base.ExecuteEffects();
+        if (bogEffect != null)
         {
-            if (AugmentActivated(true)) // Always active augment. Could be changed to round-based if desired, here for consistency among augments.
-            {
-                Debug.Log("Blaze of Glory FixedUpdate: Checking health status.");
-                bool shouldBeActive = player.CurrentHealth / player.maxHealth < healthThreshold;
-                if (bogEffect != null)
-                {
-                    bogEffect.SetActive(shouldBeActive);
-                }
-                // Only update if state changed (avoids spamming logs)
-                if (shouldBeActive && !player.damageMultipliers.ContainsKey(augmentInfo.augmentID))
-                {
-                    player.damageMultipliers.Add(augmentInfo.augmentID, damageMultiplier);
-                    Debug.Log("Blaze of Glory activated: Damage increased.");
-                }
-                else if (!shouldBeActive && player.damageMultipliers.ContainsKey(augmentInfo.augmentID))
-                {
-                    player.damageMultipliers.Remove(augmentInfo.augmentID);
-                    Debug.Log("Blaze of Glory deactivated: Damage returned to normal.");
-                }
-            }
+            bogEffect.SetActive(IsAugmentActive()); // Show visual effect when active
+            bogEffect.transform.position = player.transform.position; // Follow the player
         }
+
+        // Only update if state changed (avoids spamming logs)
+        if (IsAugmentActive() && !player.damageMultipliers.ContainsKey(augmentID))
+        {
+            AddDamageMultiplier(damageMultiplier);
+        }
+        else if (!IsAugmentActive() && player.damageMultipliers.ContainsKey(augmentID))
+        {
+            RemoveDamageMultiplier();
+        }
+    }
+
+    public override bool IsAugmentActive()
+    {
+        return player.CurrentHealth / player.maxHealth < healthThreshold;
     }
 }
