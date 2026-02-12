@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+// [Enum and Struct definitions]
 public enum AsteroidPattern { Scattered, Clustered, Falling }
 
 [System.Serializable]
@@ -77,6 +78,28 @@ public struct AnimationConfig
 public struct RingOfFireConfig
 {
     public List<Wave> waves;
+
+    [Header("Game Logic")]
+    [Tooltip("Damage per second dealt to entities outside the safe zone")]
+    public float fireDamage;
+    [Tooltip("How often to apply fire damage (seconds). Default: 0.5")]
+    public float damageTickInterval;
+    [Tooltip("Auto-start Ring of Fire when map is enabled")]
+    public bool autoStart;
+
+    [Header("Line Renderer Visuals")]
+    [Tooltip("Material for the line (Use Particles/Additive or similar)")]
+    public Material fireLineMaterial;
+    [Tooltip("Width of the fire line")]
+    public float lineWidth;
+
+    [Header("Unsafe Area Visuals")]
+    [Tooltip("Color applied to areas outside the safe zone")]
+    public Color outsideSafeAreaColor;
+    [Tooltip("Half-extent (in world units) from the safe zone center to use when drawing outside masks. Increase if your map is larger.")]
+    public float maskExtent;
+    [Tooltip("Material for the outside safe zone masks (optional, will use a default unlit color if not set)")]
+    public Material outsideMaskMaterial;
 }
 
 public class MapManagerScript : MonoBehaviour
@@ -130,16 +153,62 @@ public class MapManagerScript : MonoBehaviour
     [Header("Ring of Fire")]
     public RingOfFireConfig ringOfFire;
 
+    [Header("Ring of Fire Debug")]
+    public bool showRingOfFireGizmos = true;
+
     private Transform asteroidsParent;
     private List<GameObject> fallingAsteroids = new List<GameObject>();
     private System.Random fallingRng;
 
-    void OnEnable() => SpawnAsteroids();
+    // Ring of Fire state
+    private bool _ringOfFireActive = false;
+    private int _currentWaveIndex = 0;
+    private float _waveTimer = 0f;
+    private float _lastDamageTickTime;
+
+    // Interpolation vars
+    private Vector2 _currentSafeCenter;
+    private float _currentSafeWidth;
+    private float _currentSafeLength;
+    private Vector2 _targetSafeCenter;
+    private float _targetSafeWidth;
+    private float _targetSafeLength;
+    private Vector2 _startSafeCenter;
+    private float _startSafeWidth;
+    private float _startSafeLength;
+
+    // OPTIMIZATION: Replaced pool with LineRenderer
+    private LineRenderer _lineRenderer;
+    private GameObject _lineObj;
+
+    // OPTIMIZATION: Cached list of entities to damage
+    private List<Entity> _cachedEntities = new List<Entity>();
+    private float _lastCacheUpdateTime;
+    private const float CACHE_UPDATE_INTERVAL = 1.0f;
+
+    private WaveBox _currentSafeBox;
+
+    // Unsafe-area mask objects (4 quads)
+    private GameObject _maskParent;
+    private MeshRenderer[] _maskRenderers = new MeshRenderer[4];
+
+    void OnEnable()
+    {
+        SpawnAsteroids();
+
+        if (ringOfFire.autoStart && ringOfFire.waves != null && ringOfFire.waves.Count > 0)
+        {
+            StartRingOfFire();
+        }
+    }
 
     void Update()
     {
         if (pattern == AsteroidPattern.Falling && falling.recycle)
             RecycleFallingAsteroids();
+
+        if (_ringOfFireActive)
+            UpdateRingOfFire();
     }
 
     [ContextMenu("Spawn Asteroids")]
@@ -189,6 +258,409 @@ public class MapManagerScript : MonoBehaviour
             StartCoroutine(ShrinkAllAsteroids());
     }
 
+    #region Ring of Fire
+
+    [ContextMenu("Start Ring of Fire")]
+    public void StartRingOfFire()
+    {
+        if (ringOfFire.waves == null || ringOfFire.waves.Count == 0)
+        {
+            Debug.LogWarning("Cannot start Ring of Fire: No waves configured!");
+            return;
+        }
+
+        _currentWaveIndex = 0;
+        _waveTimer = 0f;
+        _ringOfFireActive = true;
+        _lastDamageTickTime = Time.time;
+        _lastCacheUpdateTime = -10f; // Force update immediately
+
+        Wave firstWave = ringOfFire.waves[0];
+        _currentSafeCenter = firstWave.safeBox.centerPoint;
+        _currentSafeWidth = firstWave.safeBox.width;
+        _currentSafeLength = firstWave.safeBox.length;
+
+        _currentSafeBox = new WaveBox(_currentSafeCenter, _currentSafeWidth, _currentSafeLength);
+
+        _startSafeCenter = _currentSafeCenter;
+        _startSafeWidth = _currentSafeWidth;
+        _startSafeLength = _currentSafeLength;
+
+        SetNextTargetSafeZone();
+        InitializeLineRenderer();
+        InitializeSafeZoneMask();
+
+        Debug.Log($"Ring of Fire started! Wave 1/{ringOfFire.waves.Count}");
+    }
+
+    [ContextMenu("Stop Ring of Fire")]
+    public void StopRingOfFire()
+    {
+        _ringOfFireActive = false;
+        if (_lineObj != null) _lineObj.SetActive(false);
+        if (_maskParent != null) _maskParent.SetActive(false);
+        Debug.Log("Ring of Fire stopped!");
+    }
+
+    private void UpdateRingOfFire()
+    {
+        _waveTimer += Time.deltaTime;
+
+        UpdateSafeZoneInterpolation();
+        _currentSafeBox = new WaveBox(_currentSafeCenter, _currentSafeWidth, _currentSafeLength);
+
+        // Update the visual line
+        UpdateLineRendererVisuals();
+
+        float tickInterval = ringOfFire.damageTickInterval > 0 ? ringOfFire.damageTickInterval : 0.5f;
+        if (Time.time - _lastDamageTickTime >= tickInterval)
+        {
+            ApplyFireDamage();
+            _lastDamageTickTime = Time.time;
+        }
+
+        CheckWaveTransition();
+    }
+
+    private void SetNextTargetSafeZone()
+    {
+        if (_currentWaveIndex >= ringOfFire.waves.Count) return;
+
+        Wave currentWave = ringOfFire.waves[_currentWaveIndex];
+        _targetSafeCenter = currentWave.endCenterBox.GetRandomPoint();
+        _targetSafeWidth = currentWave.safeBox.width;
+        _targetSafeLength = currentWave.safeBox.length;
+    }
+
+    private void UpdateSafeZoneInterpolation()
+    {
+        if (_currentWaveIndex >= ringOfFire.waves.Count) return;
+
+        Wave currentWave = ringOfFire.waves[_currentWaveIndex];
+        float progress = Mathf.Clamp01(_waveTimer / currentWave.duration);
+        float smoothProgress = Mathf.SmoothStep(0f, 1f, progress);
+
+        _currentSafeCenter = Vector2.Lerp(_startSafeCenter, _targetSafeCenter, smoothProgress);
+        _currentSafeWidth = Mathf.Lerp(_startSafeWidth, _targetSafeWidth, smoothProgress);
+        _currentSafeLength = Mathf.Lerp(_startSafeLength, _targetSafeLength, smoothProgress);
+    }
+
+    private void CheckWaveTransition()
+    {
+        if (_currentWaveIndex >= ringOfFire.waves.Count) return;
+
+        Wave currentWave = ringOfFire.waves[_currentWaveIndex];
+
+        if (_waveTimer >= currentWave.duration)
+        {
+            _currentWaveIndex++;
+            _waveTimer = 0f;
+
+            if (_currentWaveIndex < ringOfFire.waves.Count)
+            {
+                _startSafeCenter = _currentSafeCenter;
+                _startSafeWidth = _currentSafeWidth;
+                _startSafeLength = _currentSafeLength;
+                SetNextTargetSafeZone();
+            }
+        }
+    }
+
+    private void InitializeLineRenderer()
+    {
+        if (_lineObj == null)
+        {
+            _lineObj = new GameObject("FireRing_Line");
+            _lineObj.transform.SetParent(transform, false);
+            _lineRenderer = _lineObj.AddComponent<LineRenderer>();
+        }
+
+        _lineObj.SetActive(true);
+
+        // Set to world space so we don't have to worry about the MapManager's scale/rotation
+        _lineRenderer.useWorldSpace = true;
+        _lineRenderer.loop = true;
+        _lineRenderer.positionCount = 4;
+
+        // Use a basic unlit material if none is provided
+        if (ringOfFire.fireLineMaterial != null)
+        {
+            _lineRenderer.material = ringOfFire.fireLineMaterial;
+        }
+        else
+        {
+            _lineRenderer.material = new Material(Shader.Find("Sprites/Default"));
+        }
+
+        _lineRenderer.startWidth = ringOfFire.lineWidth > 0 ? ringOfFire.lineWidth : 0.2f;
+        _lineRenderer.endWidth = _lineRenderer.startWidth;
+
+        // Remove complex texture modes
+        _lineRenderer.textureMode = LineTextureMode.Stretch;
+        _lineRenderer.alignment = LineAlignment.View;
+    }
+
+    private void UpdateLineRendererVisuals()
+    {
+        if (_lineRenderer == null) return;
+
+        float hw = _currentSafeWidth / 2f;
+        float hl = _currentSafeLength / 2f;
+        float x = _currentSafeCenter.x;
+        float y = _currentSafeCenter.y;
+        float z = -0.1f; // Slightly in front of the map
+
+        // Simple rectangular boundary
+        _lineRenderer.SetPosition(0, new Vector3(x - hw, y + hl, z)); // Top Left
+        _lineRenderer.SetPosition(1, new Vector3(x + hw, y + hl, z)); // Top Right
+        _lineRenderer.SetPosition(2, new Vector3(x + hw, y - hl, z)); // Bottom Right
+        _lineRenderer.SetPosition(3, new Vector3(x - hw, y - hl, z)); // Bottom Left
+
+        // No texture scrolling or complex tiling needed here anymore
+
+        UpdateSafeZoneMasks();
+    }
+    // -------------------------------------
+
+    private void UpdateSafeZoneMasks()
+    {
+        if (_maskParent == null || _maskRenderers == null) return;
+        if (!_maskParent.activeSelf) _maskParent.SetActive(true);
+
+        // extent around safe center that represents "map bounds" for mask purposes
+        float extent = ringOfFire.maskExtent > 0f ? ringOfFire.maskExtent : 50f;
+
+        float hw = _currentSafeWidth / 2f;
+        float hl = _currentSafeLength / 2f;
+        float x = _currentSafeCenter.x;
+        float y = _currentSafeCenter.y;
+        float z = 0f;
+
+        float worldLeft = x - extent;
+        float worldRight = x + extent;
+        float worldTop = y + extent;
+        float worldBottom = y - extent;
+
+        // Top mask (covers area above safe rect)
+        float topYStart = y + hl;
+        float topHeight = Mathf.Max(0f, worldTop - topYStart);
+        float topCenterY = topYStart + topHeight * 0.5f;
+        float fullWidth = worldRight - worldLeft;
+
+        // Bottom mask (below safe rect)
+        float bottomYEnd = y - hl;
+        float bottomHeight = Mathf.Max(0f, bottomYEnd - worldBottom);
+        float bottomCenterY = worldBottom + bottomHeight * 0.5f;
+
+        // Left mask (left of safe rect within vertical safe band)
+        float leftXEnd = x - hw;
+        float leftWidth = Mathf.Max(0f, leftXEnd - worldLeft);
+        float leftCenterX = worldLeft + leftWidth * 0.5f;
+
+        // Right mask
+        float rightXStart = x + hw;
+        float rightWidth = Mathf.Max(0f, worldRight - rightXStart);
+        float rightCenterX = rightXStart + rightWidth * 0.5f;
+
+        // Ensure renderers exist
+        for (int i = 0; i < 4; i++)
+        {
+            var mr = _maskRenderers[i];
+            if (mr == null) continue;
+            Transform t = mr.transform;
+            switch (i)
+            {
+                // Top
+                case 0:
+                    t.position = new Vector3(x, topCenterY, z);
+                    t.localScale = new Vector3(fullWidth, topHeight, 1f);
+                    break;
+                // Bottom
+                case 1:
+                    t.position = new Vector3(x, bottomCenterY, z);
+                    t.localScale = new Vector3(fullWidth, bottomHeight, 1f);
+                    break;
+                // Left
+                case 2:
+                    t.position = new Vector3(leftCenterX, y, z);
+                    t.localScale = new Vector3(leftWidth, hl * 2f, 1f);
+                    break;
+                // Right
+                case 3:
+                    t.position = new Vector3(rightCenterX, y, z);
+                    t.localScale = new Vector3(rightWidth, hl * 2f, 1f);
+                    break;
+            }
+        }
+    }
+
+    private void InitializeSafeZoneMask()
+    {
+        if (_maskParent == null)
+        {
+            _maskParent = new GameObject("FireRing_Mask");
+            _maskParent.transform.SetParent(transform, false);
+
+            // Create 4 quads (top, bottom, left, right)
+            for (int i = 0; i < 4; i++)
+            {
+                GameObject q = GameObject.CreatePrimitive(PrimitiveType.Quad);
+                q.name = "Mask_" + i;
+                // remove collider
+                var col = q.GetComponent<Collider>();
+                if (col != null)
+                {
+#if UNITY_EDITOR
+                    if (!Application.isPlaying) DestroyImmediate(col);
+                    else
+#endif
+                        Destroy(col);
+                }
+
+                q.transform.SetParent(_maskParent.transform, false);
+                var mr = q.GetComponent<MeshRenderer>();
+                mr.material = ringOfFire.outsideMaskMaterial;
+                // fallback color
+                Color c = ringOfFire.outsideSafeAreaColor;
+                if (c == default) c = new Color(0f, 0f, 0f, 0.45f);
+                mr.material.color = c;
+                mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                mr.receiveShadows = false;
+                _maskRenderers[i] = mr;
+            }
+        }
+
+        _maskParent.SetActive(true);
+    }
+
+    private void ApplyFireDamage()
+    {
+        float tickInterval = ringOfFire.damageTickInterval > 0 ? ringOfFire.damageTickInterval : 0.5f;
+        float damageThisTick = ringOfFire.fireDamage * tickInterval;
+
+        // Update cache periodically to find new spawned players
+        if (Time.time - _lastCacheUpdateTime > CACHE_UPDATE_INTERVAL)
+        {
+            RefreshEntityCache();
+        }
+
+        // Iterate backwards in case entities were destroyed
+        for (int i = _cachedEntities.Count - 1; i >= 0; i--)
+        {
+            Entity entity = _cachedEntities[i];
+
+            // Clean up nulls
+            if (entity == null || entity.gameObject == null)
+            {
+                _cachedEntities.RemoveAt(i);
+                continue;
+            }
+
+            if (!entity.gameObject.activeInHierarchy) continue;
+
+            if (!IsInsideSafeZone(entity.transform.position))
+            {
+                entity.TakeDamage(damageThisTick, 0f, entity.transform.position, DamageSource.Other);
+            }
+        }
+    }
+
+    private void RefreshEntityCache()
+    {
+        _cachedEntities.Clear();
+        string[] tagsToFind = new string[] { "Player1", "Player2", "Player" };
+
+        foreach (var tag in tagsToFind)
+        {
+            GameObject[] found;
+            try { found = GameObject.FindGameObjectsWithTag(tag); }
+            catch { continue; }
+
+            foreach (var obj in found)
+            {
+                var ent = obj.GetComponent<Entity>();
+                if (ent != null) _cachedEntities.Add(ent);
+            }
+        }
+        _lastCacheUpdateTime = Time.time;
+    }
+
+    public bool IsInsideSafeZone(Vector3 position)
+    {
+        if (!_ringOfFireActive) return true;
+
+        float halfWidth = _currentSafeWidth / 2f;
+        float halfLength = _currentSafeLength / 2f;
+
+        // Optimization: Pre-calculate bounds
+        return position.x >= (_currentSafeCenter.x - halfWidth) &&
+               position.x <= (_currentSafeCenter.x + halfWidth) &&
+               position.y >= (_currentSafeCenter.y - halfLength) &&
+               position.y <= (_currentSafeCenter.y + halfLength);
+    }
+
+    public bool IsRingOfFireActive() => _ringOfFireActive;
+
+    public Rect GetCurrentSafeZoneBounds()
+    {
+        return new Rect(
+            _currentSafeCenter.x - _currentSafeWidth / 2f,
+            _currentSafeCenter.y - _currentSafeLength / 2f,
+            _currentSafeWidth,
+            _currentSafeLength
+        );
+    }
+
+    public int GetCurrentWaveIndex() => _currentWaveIndex;
+
+    public float GetCurrentWaveProgress()
+    {
+        if (!_ringOfFireActive || _currentWaveIndex >= ringOfFire.waves.Count) return 1f;
+
+        Wave currentWave = ringOfFire.waves[_currentWaveIndex];
+        return Mathf.Clamp01(_waveTimer / currentWave.duration);
+    }
+
+#if UNITY_EDITOR
+    void OnDrawGizmos()
+    {
+        if (!showRingOfFireGizmos) return;
+
+        if (!Application.isPlaying)
+        {
+            if (ringOfFire.waves != null && ringOfFire.waves.Count > 0)
+            {
+                Wave firstWave = ringOfFire.waves[0];
+                if (firstWave != null && firstWave.safeBox != null)
+                {
+                    DrawSafeZoneGizmo(firstWave.safeBox.centerPoint, firstWave.safeBox.width, firstWave.safeBox.length, Color.green);
+                    if (firstWave.endCenterBox != null)
+                    {
+                        DrawSafeZoneGizmo(firstWave.endCenterBox.centerPoint, firstWave.endCenterBox.width, firstWave.endCenterBox.length, Color.yellow);
+                    }
+                }
+            }
+        }
+        else if (_ringOfFireActive)
+        {
+            DrawSafeZoneGizmo(_currentSafeCenter, _currentSafeWidth, _currentSafeLength, Color.green);
+            Gizmos.color = new Color(1f, 1f, 0f, 0.3f);
+            Gizmos.DrawWireCube(new Vector3(_targetSafeCenter.x, _targetSafeCenter.y, 0f),
+                new Vector3(_targetSafeWidth, _targetSafeLength, 0.1f));
+        }
+    }
+
+    private void DrawSafeZoneGizmo(Vector2 center, float width, float length, Color color)
+    {
+        Gizmos.color = new Color(color.r, color.g, color.b, 0.3f);
+        Gizmos.DrawCube(new Vector3(center.x, center.y, 0f), new Vector3(width, length, 0.1f));
+
+        Gizmos.color = color;
+        Gizmos.DrawWireCube(new Vector3(center.x, center.y, 0f), new Vector3(width, length, 0.1f));
+    }
+#endif
+    #endregion
+
     #region Spawn Patterns
     private void SpawnScattered(System.Random rng)
     {
@@ -202,11 +674,7 @@ public class MapManagerScript : MonoBehaviour
     private void SpawnClustered(System.Random rng)
     {
         var centers = GenerateClusterCenters(rng);
-        if (centers.Count == 0)
-        {
-            Debug.LogWarning("Could not place any clusters. Try reducing minSpacing or increasing area size.");
-            return;
-        }
+        if (centers.Count == 0) return;
 
         int perCluster = asteroidCount / centers.Count;
         int remainder = asteroidCount % centers.Count;
@@ -218,7 +686,6 @@ public class MapManagerScript : MonoBehaviour
 
             for (int i = 0; i < count; i++)
             {
-                // Polar coordinates for even distribution within cluster
                 float angle = RandomRange(rng, 0f, Mathf.PI * 2f);
                 float dist = Mathf.Sqrt((float)rng.NextDouble()) * clustered.clusterRadius;
                 Vector3 pos = new Vector3(
@@ -321,7 +788,10 @@ public class MapManagerScript : MonoBehaviour
                 asteroid.transform.position = new Vector3(x, spawnY, asteroid.transform.position.z);
 
                 var rb = asteroid.GetComponent<Rigidbody2D>();
-                if (rb != null) ApplyFallingVelocity(rb, fallingRng);
+                if (rb != null)
+                {
+                    ApplyFallingVelocity(rb, fallingRng);
+                }
             }
         }
     }

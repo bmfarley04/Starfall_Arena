@@ -21,28 +21,39 @@ public class WaveBox
         return new Vector2(x,y);
     }
 
-    public Vector2 GetLeftEdge()
+    // Returns the two corners forming the Left edge
+    public (Vector2 start, Vector2 end) GetLeftEdge()
     {
         float x = centerPoint.x - width / 2;
-        float y = centerPoint.y;
-        return new Vector2(x, y);
+        Vector2 topLeft = new Vector2(x, centerPoint.y + length / 2);
+        Vector2 bottomLeft = new Vector2(x, centerPoint.y - length / 2);
+        return (bottomLeft, topLeft);
     }
-    public Vector2 GetRightEdge()
+
+    // Returns the two corners forming the Right edge
+    public (Vector2 start, Vector2 end) GetRightEdge()
     {
         float x = centerPoint.x + width / 2;
-        float y = centerPoint.y;
-        return new Vector2(x, y);
+        Vector2 topRight = new Vector2(x, centerPoint.y + length / 2);
+        Vector2 bottomRight = new Vector2(x, centerPoint.y - length / 2);
+        return (bottomRight, topRight);
     }
-    public Vector2 GetTopEdge()
+
+    // Returns the two corners forming the Top edge
+    public (Vector2 start, Vector2 end) GetTopEdge()
     {
-        float x = centerPoint.x;
         float y = centerPoint.y + length / 2;
-        return new Vector2(x, y);
+        Vector2 topLeft = new Vector2(centerPoint.x - width / 2, y);
+        Vector2 topRight = new Vector2(centerPoint.x + width / 2, y);
+        return (topLeft, topRight);
     }
-    public Vector2 GetBottomEdge()
+
+    // Returns the two corners forming the Bottom edge
+    public (Vector2 start, Vector2 end) GetBottomEdge()
     {
-        float x = centerPoint.x;
         float y = centerPoint.y - length / 2;
-        return new Vector2(x, y);
+        Vector2 bottomLeft = new Vector2(centerPoint.x - width / 2, y);
+        Vector2 bottomRight = new Vector2(centerPoint.x + width / 2, y);
+        return (bottomLeft, bottomRight);
     }
 }
