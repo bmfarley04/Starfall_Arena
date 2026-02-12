@@ -105,6 +105,8 @@ public abstract class Entity : MonoBehaviour
     // ===== MOVEMENT =====
     [Header("Movement")]
     public MovementConfig movement;
+    private float baseMaxSpeed;
+    private float baseRotationSpeed;
 
     // ===== TURRETS =====
     [Header("Turrets")]
@@ -128,6 +130,8 @@ public abstract class Entity : MonoBehaviour
 
     // ===== RUNTIME STATE - AUGMENTS =====
     public Dictionary<string, float> damageMultipliers = new Dictionary<string, float>();
+    public Dictionary<string, float> speedMultipliers = new Dictionary<string, float>();
+    public Dictionary<string, float> rotationMultipliers = new Dictionary<string, float>();
 
     // ===== RUNTIME STATE - COMBAT =====
     protected float currentHealth = 0;
@@ -198,14 +202,18 @@ public abstract class Entity : MonoBehaviour
                 }
             }
         }
+        
         projectileWeapon.damage = projectileWeapon.baseDamage;
+        baseMaxSpeed = movement.maxSpeed;
+        baseRotationSpeed = movement.rotationSpeed;
+        
         if(augments.Count > 0)
         {
             foreach (var augment in augments)
             {
                 if(augment != null)
                 {
-                    AcquireAugment(augment, currentRound); // handles setting player reference and setting augment variables
+                    AcquireAugment(augment, currentRound);
                 }
             }
         }
@@ -600,9 +608,9 @@ public abstract class Entity : MonoBehaviour
     public void SetAugmentVariables()
     {
         SetDamageMultiplier();
+        SetRotationMultiplier();
     }
 
-    // Set damage multiplier from augment
     void SetDamageMultiplier()
     {
         float total = 1.0f;
@@ -613,8 +621,23 @@ public abstract class Entity : MonoBehaviour
         projectileWeapon.damage = projectileWeapon.baseDamage * total;
     }
 
-    void SetDamageMultiplier(float multiplier)
+    void SetSpeedMultiplier()
     {
-        projectileWeapon.damage *= multiplier; // This is not safe in case it is called multiple times incorrectly
+        float total = 1.0f;
+        foreach (var mult in speedMultipliers.Values)
+        {
+            total *= mult;
+        }
+        movement.maxSpeed = baseMaxSpeed * total;
+    }
+
+    void SetRotationMultiplier()
+    {
+        float total = 1.0f;
+        foreach (var mult in rotationMultipliers.Values)
+        {
+            total *= mult;
+        }
+        movement.rotationSpeed = baseRotationSpeed * total;
     }
 }
