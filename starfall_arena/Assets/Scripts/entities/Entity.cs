@@ -270,7 +270,15 @@ public abstract class Entity : MonoBehaviour
     {
         if (_isDead) return;
 
+        // Allow augments to react after damage resolved (keeping original hook)
         AugmentFunction(a => a.OnTakeDamage(damage, impactForce, hitPoint, source));
+
+        // --- NEW: Allow augments to modify or cancel incoming damage before it's applied ---
+        bool shieldIgnored = false;
+        bool healthIgnored = false;
+
+        // Give each augment a chance to modify the damage or mark portions ignored
+        AugmentFunction(a => a.OnBeforeTakeDamage(ref damage, ref shieldIgnored, ref healthIgnored, source));
 
         if (hitPoint != Vector3.zero)
         {
@@ -281,7 +289,7 @@ public abstract class Entity : MonoBehaviour
             _lastDamageDirection = Vector2.zero;
         }
 
-        bool hasShield = currentShield > 0;
+        bool hasShield = currentShield > 0 && !shieldIgnored;
 
         if (hasShield)
         {
@@ -309,13 +317,32 @@ public abstract class Entity : MonoBehaviour
             damage -= shieldDamage;
         }
 
-        currentHealth -= damage;
+        if (!healthIgnored)
+        {
+            currentHealth -= damage;
+        }
         OnHealthChanged();
 
         if (currentHealth <= 0)
         {
             Die();
         }
+    }
+
+    /// <summary>
+    /// Restore health to this entity (clamped to maxHealth).
+    /// Intended for augments and other game systems that heal the entity.
+    /// Does nothing if amount is non-positive or the entity is already dead.
+    /// </summary>
+    public void Heal(float amount)
+    {
+        if (amount <= 0f) return;
+        if (currentHealth <= 0f) return; // dead or destroyed
+
+        currentHealth += amount;
+        if (currentHealth > maxHealth) currentHealth = maxHealth;
+
+        OnHealthChanged();
     }
 
     protected virtual void ScatterShipParts()
@@ -346,7 +373,12 @@ public abstract class Entity : MonoBehaviour
     {
         if (_isDead) return;
 
+        // Allow augments to react after direct damage (existing hook)
         AugmentFunction(a => a.OnTakeDirectDamage(damage, impactForce, hitPoint, source));
+
+        // Allow augments to cancel or modify direct damage before it's applied
+        bool healthIgnored = false;
+        AugmentFunction(a => a.OnBeforeTakeDirectDamage(ref damage, ref healthIgnored, source));
 
         if (hitPoint != Vector3.zero)
         {
@@ -357,7 +389,10 @@ public abstract class Entity : MonoBehaviour
             _lastDamageDirection = Vector2.zero;
         }
 
-        currentHealth -= damage;
+        if (!healthIgnored)
+        {
+            currentHealth -= damage;
+        }
         OnHealthChanged();
 
         if (currentHealth <= 0)

@@ -88,7 +88,25 @@ namespace StarfallArena.UI
         {
         }
 
+        /// <summary>
+        /// Called before the Entity actually applies damage. Allows augments to modify or cancel
+        /// how incoming damage is applied (for example: ignore shield damage or ignore health damage).
+        /// Default implementation does nothing.
+        /// </summary>
+        public virtual void OnBeforeTakeDamage(ref float damage, ref bool shieldIgnored, ref bool healthIgnored, DamageSource source = DamageSource.Projectile)
+        {
+        }
+
         public virtual void OnTakeDirectDamage(float damage, float impactForce = 0f, Vector3 hitPoint = default, DamageSource source = DamageSource.Projectile)
+        {
+        }
+
+        /// <summary>
+        /// Called before the Entity actually applies direct damage (bypassing shields).
+        /// Allows augments to cancel or modify the incoming direct health damage.
+        /// Default implementation does nothing.
+        /// </summary>
+        public virtual void OnBeforeTakeDirectDamage(ref float damage, ref bool healthIgnored, DamageSource source = DamageSource.Projectile)
         {
         }
 
