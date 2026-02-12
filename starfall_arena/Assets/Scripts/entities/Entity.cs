@@ -270,6 +270,8 @@ public abstract class Entity : MonoBehaviour
     {
         if (_isDead) return;
 
+        AugmentFunction(a => a.OnTakeDamage(damage, impactForce, hitPoint, source));
+
         if (hitPoint != Vector3.zero)
         {
             _lastDamageDirection = ((Vector2)transform.position - (Vector2)hitPoint).normalized;
@@ -314,8 +316,6 @@ public abstract class Entity : MonoBehaviour
         {
             Die();
         }
-
-        AugmentFunction(a => a.OnTakeDamage(damage, impactForce, hitPoint, source));
     }
 
     protected virtual void ScatterShipParts()
@@ -346,6 +346,8 @@ public abstract class Entity : MonoBehaviour
     {
         if (_isDead) return;
 
+        AugmentFunction(a => a.OnTakeDirectDamage(damage, impactForce, hitPoint, source));
+
         if (hitPoint != Vector3.zero)
         {
             _lastDamageDirection = ((Vector2)transform.position - (Vector2)hitPoint).normalized;
@@ -362,7 +364,6 @@ public abstract class Entity : MonoBehaviour
         {
             Die();
         }
-        AugmentFunction(a => a.OnTakeDirectDamage(damage, impactForce, hitPoint, source));
     }
 
     protected virtual void Die()
