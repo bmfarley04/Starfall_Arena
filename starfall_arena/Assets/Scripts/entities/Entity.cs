@@ -608,6 +608,7 @@ public abstract class Entity : MonoBehaviour
     public void SetAugmentVariables()
     {
         SetDamageMultiplier();
+        SetSpeedMultiplier();
         SetRotationMultiplier();
     }
 
