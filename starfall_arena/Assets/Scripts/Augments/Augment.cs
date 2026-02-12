@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace StarfallArena.UI
@@ -69,19 +70,45 @@ namespace StarfallArena.UI
             return currentRound - roundAcquired < rounds;
         }
 
-        public virtual void AddDamageMultiplier(float damageMultiplier)
+        public virtual void AddMultiplier(float mult, Dictionary<string, float> typeMultiplier)
         {
-            if (IsAugmentActive() && !player.damageMultipliers.ContainsKey(augmentID))
+            if (player == null) return;
+            if (IsAugmentActive() && !typeMultiplier.ContainsKey(augmentID))
             {
-                player.damageMultipliers.Add(augmentID, damageMultiplier);
-                Debug.Log("" + augmentName + " activated: Damage increased by " + damageMultiplier);
+                typeMultiplier.Add(augmentID, mult);
+                player.SetAugmentVariables(); // Update player's values immediately
+                Debug.Log($"{augmentName} activated: x{mult}");
             }
         }
 
-        public virtual void RemoveDamageMultiplier()
+        public void AddOrRefreshMultiplier(float mult, Dictionary<string, float> typeMultiplier)
         {
-            player.damageMultipliers.Remove(augmentID);
-            Debug.Log("" + augmentName + " deactivated: Damage returned to normal.");
+            if (!typeMultiplier.ContainsKey(augmentID))
+            {
+                typeMultiplier.Add(augmentID, mult);
+                player.SetAugmentVariables();
+                Debug.Log($"{augmentName} activated: x{mult}");
+            }
+            else
+            {
+                // ensure stored value matches desired multiplier
+                typeMultiplier[augmentID] = mult;
+                player.SetAugmentVariables();
+                Debug.Log($"{augmentName} refreshed: x{mult}");
+            }
+        }
+
+
+        public virtual void RemoveMultiplier(Dictionary<string, float> typeMultiplier)
+        {
+            if (player == null) return;
+
+            if (typeMultiplier.ContainsKey(augmentID))
+            {
+                typeMultiplier.Remove(augmentID);
+                player.SetAugmentVariables();
+                Debug.Log($"{augmentName} deactivated: returned to normal");
+            }
         }
 
         public virtual void OnTakeDamage(float damage, float impactForce = 0f, Vector3 hitPoint = default, DamageSource source = DamageSource.Projectile)
