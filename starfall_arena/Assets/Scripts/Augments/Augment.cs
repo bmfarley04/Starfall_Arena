@@ -23,13 +23,10 @@ namespace StarfallArena.UI
         [HideInInspector]
         public string augmentID;
 
-        [System.Serializable]
-        public struct AugmentSettings
-        {
-            [Tooltip("Number of Rounds this augment lasts (-1 for unlimited)")]
-            public int rounds;
-        }
-        public AugmentSettings augmentSettings;
+
+        [Tooltip("Number of Rounds this augment lasts (-1 for unlimited)")]
+        public int rounds = -1;
+
 
         protected int roundAcquired = 0;
         protected int currentRound = 0; // This will be updated by the manager each round, used for checking augment duration
@@ -65,11 +62,11 @@ namespace StarfallArena.UI
 
         public virtual bool IsAugmentActive()
         {
-            if(augmentSettings.rounds == -1)
+            if (rounds == -1)
             {
                 return true; // Always active if rounds is -1
             }
-            return currentRound - roundAcquired < augmentSettings.rounds;
+            return currentRound - roundAcquired < rounds;
         }
 
         public virtual void AddDamageMultiplier(float damageMultiplier)
@@ -85,6 +82,18 @@ namespace StarfallArena.UI
         {
             player.damageMultipliers.Remove(augmentID);
             Debug.Log("" + augmentName + " deactivated: Damage returned to normal.");
+        }
+
+        public virtual void OnTakeDamage(float damage, float impactForce = 0f, Vector3 hitPoint = default, DamageSource source = DamageSource.Projectile)
+        {
+        }
+
+        public virtual void OnTakeDirectDamage(float damage, float impactForce = 0f, Vector3 hitPoint = default, DamageSource source = DamageSource.Projectile)
+        {
+        }
+
+        public virtual void OnContact(Collision2D collision)
+        {
         }
     }
 }

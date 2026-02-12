@@ -306,6 +306,8 @@ public abstract class Entity : MonoBehaviour
         {
             Die();
         }
+
+        AugmentFunction(a => a.OnTakeDamage(damage, impactForce, hitPoint, source));
     }
 
     protected virtual void ScatterShipParts()
@@ -352,6 +354,7 @@ public abstract class Entity : MonoBehaviour
         {
             Die();
         }
+        AugmentFunction(a => a.OnTakeDirectDamage(damage, impactForce, hitPoint, source));
     }
 
     protected virtual void Die()
@@ -494,8 +497,13 @@ public abstract class Entity : MonoBehaviour
     {
     }
 
+    protected virtual void OnCollisionEnter2D(Collision2D collision) // Collision-based contact since ships are not triggers, this will capture physical collisions with other entities for thorns and similar effects
+    {
+        AugmentFunction(a => a.OnContact(collision));
+    }
+
     // ===== SLOW EFFECT SYSTEM =====
-    
+
     public void ApplySlow(float slowMultiplier, float duration)
     {
         bool wasSlowed = IsSlowed();
@@ -575,11 +583,16 @@ public abstract class Entity : MonoBehaviour
     protected void AugmentFixedUpdate()
     {
         // Call FixedUpdate on all augments to activate/deactivate effects and update variables as needed
+        AugmentFunction(a => a.ExecuteEffects());
+    }
+
+    protected void AugmentFunction(System.Action<Augment> action)
+    {
         foreach (var augment in augments)
         {
             if (augment != null)
             {
-                augment.ExecuteEffects();
+                action(augment);
             }
         }
     }
