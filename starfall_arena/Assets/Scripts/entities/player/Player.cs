@@ -5,7 +5,8 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
-using System.Collections.Generic;
+using StarfallArena.UI;
+using TMPro;
 using System;
 
 [System.Serializable]
@@ -68,6 +69,22 @@ public struct ScreenShakeConfig
     public float laserShakeMultiplier;
 }
 
+[System.Serializable]
+public struct HUDConfig
+{
+    [Header("Health")]
+    [Tooltip("Segmented bar for health display")]
+    public SegmentedBar healthBar;
+    [Tooltip("Text displaying current health number")]
+    public TextMeshProUGUI healthText;
+
+    [Header("Shield")]
+    [Tooltip("Segmented bar for shield display")]
+    public SegmentedBar shieldBar;
+    [Tooltip("Text displaying current shield number")]
+    public TextMeshProUGUI shieldText;
+}
+
 public abstract class Player : Entity
 {
     // ===== ABILITIES =====
@@ -98,6 +115,10 @@ public abstract class Player : Entity
     // ===== SCREEN SHAKE =====
     [Header("Screen Shake")]
     public ScreenShakeConfig screenShake;
+
+    // ===== HUD =====
+    [Header("HUD")]
+    public HUDConfig hud;
 
     // ===== SOUND EFFECTS =====
     [Header("Sound Effects")]
@@ -197,6 +218,7 @@ public abstract class Player : Entity
         }
 
         InitializeAudioSystem();
+        InitializeHUD();
     }
     private void InitializeAudioSystem()
     {
@@ -726,11 +748,33 @@ public abstract class Player : Entity
         }
     }
 
+    // ===== HUD =====
+    private void InitializeHUD()
+    {
+        if (hud.healthBar != null) hud.healthBar.InitializeBar(currentHealth, maxHealth);
+        if (hud.shieldBar != null) hud.shieldBar.InitializeBar(currentShield, maxShield);
+        UpdateHUDText();
+    }
+
+    private void UpdateHUDText()
+    {
+        if (hud.healthText != null)
+            hud.healthText.text = Mathf.CeilToInt(Mathf.Max(0, currentHealth)).ToString();
+        if (hud.shieldText != null)
+            hud.shieldText.text = Mathf.CeilToInt(Mathf.Max(0, currentShield)).ToString();
+    }
+
     protected override void OnHealthChanged()
     {
+        if (hud.healthBar != null) hud.healthBar.UpdateBar(currentHealth, maxHealth);
+        if (hud.healthText != null)
+            hud.healthText.text = Mathf.CeilToInt(Mathf.Max(0, currentHealth)).ToString();
     }
 
     protected override void OnShieldChanged()
     {
+        if (hud.shieldBar != null) hud.shieldBar.UpdateBar(currentShield, maxShield);
+        if (hud.shieldText != null)
+            hud.shieldText.text = Mathf.CeilToInt(Mathf.Max(0, currentShield)).ToString();
     }
 }

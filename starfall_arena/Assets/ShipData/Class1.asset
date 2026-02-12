@@ -17,6 +17,8 @@ MonoBehaviour:
   player1VSPrefab: {fileID: 1578230554132079418, guid: 981d58a2fa9701b419c367a25db94fb3, type: 3}
   player2VSPrefab: {fileID: 1578230554132079418, guid: 740815d3a1557964c90d5493bc53cda4, type: 3}
   shipPrefab: {fileID: 1578230554132079418, guid: dab56be66f149c34fbedb1fc28a943e6, type: 3}
+  player1VSPositionOffset: {x: 0, y: 0, z: 0}
+  player2VSPositionOffset: {x: 0, y: 0, z: 0}
   stats:
     damage: 20
     hull: 100
@@ -31,13 +33,13 @@ MonoBehaviour:
     abilityName: SHIELD REFLECT
     abilityDescription: Makes you invulnerable and reflects projectiles back at your
       opponent
-    abilityIcon: {fileID: 21300000, guid: ba79acef2f126784cb47ee9111effa4f, type: 3}
+    abilityIcon: {fileID: 21300000, guid: 4ff0361ed0564ac42b43b2012ea55fa5, type: 3}
   ability3:
     abilityName: TELEPORT
     abilityDescription: Teleports you a short distance in the direction you're facing
-    abilityIcon: {fileID: 21300000, guid: ba79acef2f126784cb47ee9111effa4f, type: 3}
+    abilityIcon: {fileID: 21300000, guid: e72098d4ec15c94468775a3954780a26, type: 3}
   ability4:
     abilityName: ATLAS CANNON
     abilityDescription: Allows you to charge your cannon for massively increased
       damage
-    abilityIcon: {fileID: 21300000, guid: ba79acef2f126784cb47ee9111effa4f, type: 3}
+    abilityIcon: {fileID: 21300000, guid: cfbcc25d4815d23418089de12e3d6e9b, type: 3}
