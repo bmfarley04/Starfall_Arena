@@ -73,6 +73,12 @@ public struct AnimationConfig
     public float shrinkDuration;
 }
 
+[System.Serializable]
+public struct RingOfFireConfig
+{
+    public List<Wave> waves;
+}
+
 public class MapManagerScript : MonoBehaviour
 {
     [Header("Pattern Selection")]
@@ -120,6 +126,9 @@ public class MapManagerScript : MonoBehaviour
 
     [Header("Animation")]
     public AnimationConfig animation = new AnimationConfig { growDuration = 0.5f, shrinkDuration = 0.3f };
+
+    [Header("Ring of Fire")]
+    public RingOfFireConfig ringOfFire;
 
     private Transform asteroidsParent;
     private List<GameObject> fallingAsteroids = new List<GameObject>();
