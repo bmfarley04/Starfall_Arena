@@ -1,7 +1,7 @@
 using StarfallArena.UI;
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "Thorns", menuName = "Starfall Arena/Augments/Thorns", order = 2)]
+[CreateAssetMenu(fileName = "Evasion", menuName = "Starfall Arena/Augments/Evasion", order = 2)]
 
 public class Evasion : Augment
 {
