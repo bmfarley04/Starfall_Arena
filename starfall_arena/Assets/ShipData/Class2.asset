@@ -14,6 +14,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ShipData
   shipName: HELLHAMMER
   shipModelPrefab: {fileID: 6103655459887012557, guid: 50eff087d99df9343b7a3be5c8bade09, type: 3}
+  player1VSPrefab: {fileID: 6103655459887012557, guid: e21573d599039e44cb560ec36d68de31, type: 3}
+  player2VSPrefab: {fileID: 6103655459887012557, guid: 5aa5071f12b46a04a86987f620adad6f, type: 3}
+  shipPrefab: {fileID: 6103655459887012557, guid: abfa508411c696a41bfc218cec79c630, type: 3}
+  player1VSPositionOffset: {x: 0.2, y: 0, z: 0}
+  player2VSPositionOffset: {x: -0.2, y: 0, z: 0}
   stats:
     damage: 32
     hull: 100

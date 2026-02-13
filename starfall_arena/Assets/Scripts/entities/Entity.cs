@@ -1,3 +1,4 @@
+using StarfallArena.UI;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -15,6 +16,8 @@ public struct ProjectileWeaponConfig
 {
     [Header("Projectile Settings")]
     public GameObject prefab;
+    public float baseDamage;
+    [HideInInspector]
     public float damage;
     public float speed;
     public float recoilForce;
@@ -86,6 +89,13 @@ public struct SlowEffectVisualConfig
 [RequireComponent(typeof(Rigidbody2D))]
 public abstract class Entity : MonoBehaviour
 {
+    // ===== MANAGER REFERENCES =====
+    public int currentRound;
+
+    // ===== AUGMENT LISTS =====
+    [Header("Augments")]
+    public List<Augment> augments = new List<Augment>();
+
     // ===== CORE COMBAT STATS =====
     [Header("Core Combat Stats")]
     public float maxHealth = 100f;
@@ -95,6 +105,8 @@ public abstract class Entity : MonoBehaviour
     // ===== MOVEMENT =====
     [Header("Movement")]
     public MovementConfig movement;
+    private float baseMaxSpeed;
+    private float baseRotationSpeed;
 
     // ===== TURRETS =====
     [Header("Turrets")]
@@ -116,8 +128,14 @@ public abstract class Entity : MonoBehaviour
     [Header("Slow Effect Visuals")]
     public SlowEffectVisualConfig slowEffectVisuals;
 
+    // ===== RUNTIME STATE - AUGMENTS =====
+    public Dictionary<string, float> damageMultipliers = new Dictionary<string, float>();
+    public Dictionary<string, float> speedMultipliers = new Dictionary<string, float>();
+    public Dictionary<string, float> rotationMultipliers = new Dictionary<string, float>();
+
     // ===== RUNTIME STATE - COMBAT =====
-    protected float currentHealth;
+    protected float currentHealth = 0;
+    public float CurrentHealth => currentHealth; // Public getter for health
     public float currentShield;  // Public so projectiles can check shield status
     protected Vector2 _lastDamageDirection;
     private bool _isDead = false;
@@ -184,7 +202,21 @@ public abstract class Entity : MonoBehaviour
                 }
             }
         }
-
+        
+        projectileWeapon.damage = projectileWeapon.baseDamage;
+        baseMaxSpeed = movement.maxSpeed;
+        baseRotationSpeed = movement.rotationSpeed;
+        
+        if(augments.Count > 0)
+        {
+            foreach (var augment in augments)
+            {
+                if(augment != null)
+                {
+                    AcquireAugment(augment, currentRound);
+                }
+            }
+        }
     }
 
     // ===== UPDATE LOOPS =====
@@ -195,6 +227,8 @@ public abstract class Entity : MonoBehaviour
         Vector2 currentVelocity = _rb.linearVelocity;
         _acceleration = (currentVelocity - _previousVelocity) / Time.fixedDeltaTime;
         _previousVelocity = currentVelocity;
+
+        AugmentFixedUpdate();
     }
 
     protected virtual void Update()
@@ -235,6 +269,8 @@ public abstract class Entity : MonoBehaviour
     public virtual void TakeDamage(float damage, float impactForce = 0f, Vector3 hitPoint = default, DamageSource source = DamageSource.Projectile)
     {
         if (_isDead) return;
+
+        AugmentFunction(a => a.OnTakeDamage(damage, impactForce, hitPoint, source));
 
         if (hitPoint != Vector3.zero)
         {
@@ -310,6 +346,8 @@ public abstract class Entity : MonoBehaviour
     {
         if (_isDead) return;
 
+        AugmentFunction(a => a.OnTakeDirectDamage(damage, impactForce, hitPoint, source));
+
         if (hitPoint != Vector3.zero)
         {
             _lastDamageDirection = ((Vector2)transform.position - (Vector2)hitPoint).normalized;
@@ -362,7 +400,7 @@ public abstract class Entity : MonoBehaviour
     }
 
     // ===== RECOIL & VISUAL EFFECTS =====
-    protected void ApplyRecoil(float recoilForce)
+    public void ApplyRecoil(float recoilForce)
     {
         if (_rb != null)
         {
@@ -468,7 +506,13 @@ public abstract class Entity : MonoBehaviour
     {
     }
 
+    protected virtual void OnCollisionEnter2D(Collision2D collision) // Collision-based contact since ships are not triggers, this will capture physical collisions with other entities for thorns and similar effects
+    {
+        AugmentFunction(a => a.OnContact(collision));
+    }
+
     // ===== SLOW EFFECT SYSTEM =====
+
     public void ApplySlow(float slowMultiplier, float duration)
     {
         bool wasSlowed = IsSlowed();
@@ -531,5 +575,71 @@ public abstract class Entity : MonoBehaviour
         {
             StopSlowVisuals();
         }
+    }
+
+    // ===== AUGMENTS =====
+    public void AcquireAugment(Augment augment, int currentRound)
+    {
+        if(!augments.Contains(augment))
+        {
+            augments.Add(augment);
+        }
+        augment.playerReference = gameObject;
+        augment.SetUpAugment(currentRound);
+        SetAugmentVariables();
+    }
+
+    protected void AugmentFixedUpdate()
+    {
+        // Call FixedUpdate on all augments to activate/deactivate effects and update variables as needed
+        AugmentFunction(a => a.ExecuteEffects());
+    }
+
+    protected void AugmentFunction(System.Action<Augment> action)
+    {
+        foreach (var augment in augments)
+        {
+            if (augment != null)
+            {
+                action(augment);
+            }
+        }
+    }
+
+    public void SetAugmentVariables()
+    {
+        SetDamageMultiplier();
+        SetSpeedMultiplier();
+        SetRotationMultiplier();
+    }
+
+    void SetDamageMultiplier()
+    {
+        float total = 1.0f;
+        foreach (var mult in damageMultipliers.Values)
+        {
+            total *= mult;
+        }
+        projectileWeapon.damage = projectileWeapon.baseDamage * total;
+    }
+
+    void SetSpeedMultiplier()
+    {
+        float total = 1.0f;
+        foreach (var mult in speedMultipliers.Values)
+        {
+            total *= mult;
+        }
+        movement.maxSpeed = baseMaxSpeed * total;
+    }
+
+    void SetRotationMultiplier()
+    {
+        float total = 1.0f;
+        foreach (var mult in rotationMultipliers.Values)
+        {
+            total *= mult;
+        }
+        movement.rotationSpeed = baseRotationSpeed * total;
     }
 }
