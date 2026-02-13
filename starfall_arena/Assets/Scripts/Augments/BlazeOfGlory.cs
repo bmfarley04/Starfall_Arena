@@ -27,11 +27,11 @@ public class BlazeOfGlory : Augment
         // Only update if state changed (avoids spamming logs)
         if (IsAugmentActive() && !player.damageMultipliers.ContainsKey(augmentID))
         {
-            AddDamageMultiplier(damageMultiplier);
+            AddMultiplier(damageMultiplier, player.damageMultipliers);
         }
         else if (!IsAugmentActive() && player.damageMultipliers.ContainsKey(augmentID))
         {
-            RemoveDamageMultiplier();
+            RemoveMultiplier(player.damageMultipliers);
         }
     }
 

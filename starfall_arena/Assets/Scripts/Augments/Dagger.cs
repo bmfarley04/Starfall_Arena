@@ -30,7 +30,7 @@ public class Dagger : Augment
         // If the boost expired, remove it
         if (player.damageMultipliers.ContainsKey(augmentID) && Time.time >= _damageBoostEndTime)
         {
-            RemoveDamageMultiplier();
+            RemoveMultiplier(player.damageMultipliers);
         }
     }
 
@@ -46,32 +46,9 @@ public class Dagger : Augment
         _damageBoostEndTime = Time.time + boostDuration;
 
         // Add or refresh the damage multiplier on the player
-        if (!player.damageMultipliers.ContainsKey(augmentID))
-        {
-            player.damageMultipliers.Add(augmentID, damageMultiplier);
-            player.SetAugmentVariables();
-            Debug.Log($"{augmentName} activated: damage x{damageMultiplier}");
-        }
-        else
-        {
-            // ensure stored value matches desired multiplier
-            player.damageMultipliers[augmentID] = damageMultiplier;
-            player.SetAugmentVariables();
-            Debug.Log($"{augmentName} refreshed: damage x{damageMultiplier} for {boostDuration}s");
-        }
+        AddOrRefreshMultiplier(damageMultiplier, player.damageMultipliers);
     }
 
-    public override void RemoveDamageMultiplier()
-    {
-        if (player == null) return;
-
-        if (player.damageMultipliers.ContainsKey(augmentID))
-        {
-            player.damageMultipliers.Remove(augmentID);
-            player.SetAugmentVariables();
-            Debug.Log($"{augmentName} deactivated: damage returned to normal");
-        }
-    }
 
     public override bool IsAugmentActive()
     {
