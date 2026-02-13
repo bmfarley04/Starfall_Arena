@@ -23,33 +23,11 @@ public class Rotator : Augment
         // Only update if state changed
         if (IsAugmentActive() && !player.rotationMultipliers.ContainsKey(augmentID))
         {
-            AddRotationMultiplier(rotationMultiplier);
+            AddMultiplier(rotationMultiplier, player.rotationMultipliers);
         }
         else if (!IsAugmentActive() && player.rotationMultipliers.ContainsKey(augmentID))
         {
-            RemoveRotationMultiplier();
-        }
-    }
-
-    public void AddRotationMultiplier(float mult)
-    {
-        if (player == null) return;
-        if (!player.rotationMultipliers.ContainsKey(augmentID))
-        {
-            player.rotationMultipliers.Add(augmentID, mult);
-            player.SetAugmentVariables(); // Update player's movement values immediately
-            Debug.Log($"{augmentName} activated: rotation speed x{mult}");
-        }
-    }
-
-    public void RemoveRotationMultiplier()
-    {
-        if (player == null) return;
-        if (player.rotationMultipliers.ContainsKey(augmentID))
-        {
-            player.rotationMultipliers.Remove(augmentID);
-            player.SetAugmentVariables();
-            Debug.Log($"{augmentName} deactivated: rotation speed returned to normal");
+            RemoveMultiplier(player.rotationMultipliers);
         }
     }
 
