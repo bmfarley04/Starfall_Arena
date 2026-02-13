@@ -208,6 +208,16 @@ public class ShipSelectManager : MonoBehaviour
         [Tooltip("Delay after spin before transitioning")]
         public float postSpinDelay;
 
+        [Header("Player Transition Slide")]
+        [Tooltip("Duration of slide-out animation (P1 exits left)")]
+        public float slideOutDuration;
+
+        [Tooltip("Duration of slide-in animation (P2 enters from right)")]
+        public float slideInDuration;
+
+        [Tooltip("Slide ship model along with UI")]
+        public bool slideShipWithUI;
+
         [Tooltip("Name of gameplay scene to load after Player 2 selects")]
         public string gameplaySceneName;
     }
@@ -241,6 +251,10 @@ public class ShipSelectManager : MonoBehaviour
         [Range(0f, 0.3f)]
         public float inputDeadzone;
     }
+
+    [Header("UI Container")]
+    [Tooltip("RectTransform container that holds all UI elements (will slide during P1→P2 transition)")]
+    [SerializeField] private RectTransform uiContainer;
 
     [Header("Ship Data")]
     [Tooltip("List of all available ships")]
@@ -1455,14 +1469,9 @@ public class ShipSelectManager : MonoBehaviour
         // Back button (B / Escape)
         if (backPressed)
         {
-            // On first press, immediately jump to 0
-            if (_backHoldTime == 0f && selectionUI.backButtonFill != null)
-                selectionUI.backButtonFill.fillAmount = 0f;
-
             _backHoldTime += Time.unscaledDeltaTime;
-
-            // Fill from 0 (empty) to 1 (full) as you hold
-            float fillRatio = Mathf.Clamp01(_backHoldTime / holdBack.holdDuration);
+            // Fill drains from 1 (full) to 0 (empty) as you hold
+            float fillRatio = 1f - Mathf.Clamp01(_backHoldTime / holdBack.holdDuration);
 
             if (selectionUI.backButtonFill != null)
                 selectionUI.backButtonFill.fillAmount = fillRatio;
@@ -1483,14 +1492,9 @@ public class ShipSelectManager : MonoBehaviour
         // Select button (A / Enter)
         if (selectPressed)
         {
-            // On first press, immediately jump to 0
-            if (_selectHoldTime == 0f && selectionUI.selectButtonFill != null)
-                selectionUI.selectButtonFill.fillAmount = 0f;
-
             _selectHoldTime += Time.unscaledDeltaTime;
-
-            // Fill from 0 (empty) to 1 (full) as you hold
-            float fillRatio = Mathf.Clamp01(_selectHoldTime / holdSelect.holdDuration);
+            // Fill drains from 1 (full) to 0 (empty) as you hold
+            float fillRatio = 1f - Mathf.Clamp01(_selectHoldTime / holdSelect.holdDuration);
 
             if (selectionUI.selectButtonFill != null)
                 selectionUI.selectButtonFill.fillAmount = fillRatio;
@@ -1592,13 +1596,8 @@ public class ShipSelectManager : MonoBehaviour
         // Transition based on player
         if (_currentPlayer == PlayerSelectState.Player1)
         {
-            // Move to Player 2 selection
-            _currentPlayer = PlayerSelectState.Player2;
-            UpdatePlayerSelectionText();
-
-            // Reset to first ship for Player 2
-            _currentShipIndex = 0;
-            LoadShip(_currentShipIndex);
+            // Fade transition to Player 2 selection
+            yield return StartCoroutine(TransitionToPlayer2());
 
             _isProcessingSelection = false;
         }
@@ -1608,6 +1607,107 @@ public class ShipSelectManager : MonoBehaviour
             StoreSelectionsInGameData();
             TransitionToGameplay();
         }
+    }
+
+    /// <summary>
+    /// Slide transition from Player 1 to Player 2 selection.
+    /// </summary>
+    private IEnumerator TransitionToPlayer2()
+    {
+        if (uiContainer == null)
+        {
+            Debug.LogWarning("ShipSelectManager: No UI container assigned for slide transition!");
+            // Fallback: just switch without animation
+            _currentPlayer = PlayerSelectState.Player2;
+            UpdatePlayerSelectionText();
+            _currentShipIndex = 0;
+            LoadShip(_currentShipIndex);
+            yield break;
+        }
+
+        // Use screen width for slide distance (automatically adapts to any resolution)
+        float slideDistance = Screen.width;
+
+        Vector2 startPos = uiContainer.anchoredPosition;
+        Vector3 shipStartPos = Vector3.zero;
+        GameObject currentShip = _shipModelInstances != null && _currentShipIndex < _shipModelInstances.Length
+            ? _shipModelInstances[_currentShipIndex]
+            : null;
+
+        if (currentShip != null && postSelection.slideShipWithUI)
+            shipStartPos = currentShip.transform.position;
+
+        // --- SLIDE OUT (left) ---
+        float elapsed = 0f;
+        while (elapsed < postSelection.slideOutDuration)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            float t = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(elapsed / postSelection.slideOutDuration));
+
+            // Slide UI left
+            Vector2 targetPos = startPos + Vector2.left * slideDistance;
+            uiContainer.anchoredPosition = Vector2.Lerp(startPos, targetPos, t);
+
+            // Slide ship left (convert screen space to world space offset)
+            if (currentShip != null && postSelection.slideShipWithUI)
+            {
+                float shipOffset = Mathf.Lerp(0f, -slideDistance * 0.01f, t); // Scale down for world space
+                currentShip.transform.position = shipStartPos + Vector3.right * shipOffset;
+            }
+
+            yield return null;
+        }
+
+        // Ensure final position
+        uiContainer.anchoredPosition = startPos + Vector2.left * slideDistance;
+
+        // --- SWITCH TO PLAYER 2 (while off-screen) ---
+        _currentPlayer = PlayerSelectState.Player2;
+        UpdatePlayerSelectionText();
+
+        // Reset to first ship for Player 2
+        _currentShipIndex = 0;
+        LoadShip(_currentShipIndex);
+
+        GameObject newShip = _shipModelInstances != null && _currentShipIndex < _shipModelInstances.Length
+            ? _shipModelInstances[_currentShipIndex]
+            : null;
+
+        // Position UI on the right side (ready to slide in)
+        Vector2 rightPos = startPos + Vector2.right * slideDistance;
+        uiContainer.anchoredPosition = rightPos;
+
+        // Position ship on the right
+        Vector3 shipRightPos = shipStartPos;
+        if (newShip != null && postSelection.slideShipWithUI)
+        {
+            shipRightPos = shipStartPos + Vector3.right * (slideDistance * 0.01f);
+            newShip.transform.position = shipRightPos;
+        }
+
+        // --- SLIDE IN (from right) ---
+        elapsed = 0f;
+        while (elapsed < postSelection.slideInDuration)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            float t = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(elapsed / postSelection.slideInDuration));
+
+            // Slide UI to center
+            uiContainer.anchoredPosition = Vector2.Lerp(rightPos, startPos, t);
+
+            // Slide ship to center
+            if (newShip != null && postSelection.slideShipWithUI)
+            {
+                newShip.transform.position = Vector3.Lerp(shipRightPos, shipStartPos, t);
+            }
+
+            yield return null;
+        }
+
+        // Ensure final position
+        uiContainer.anchoredPosition = startPos;
+        if (newShip != null && postSelection.slideShipWithUI)
+            newShip.transform.position = shipStartPos;
     }
 
     /// <summary>
@@ -1746,6 +1846,9 @@ public class ShipSelectManager : MonoBehaviour
         postSelection.confirmationDelay = 0.3f;
         postSelection.spinDuration = 1.5f;
         postSelection.postSpinDelay = 0.5f;
+        postSelection.slideOutDuration = 0.5f;
+        postSelection.slideInDuration = 0.5f;
+        postSelection.slideShipWithUI = true;
         postSelection.gameplaySceneName = "SampleScene";
     }
 }
