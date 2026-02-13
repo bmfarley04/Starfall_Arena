@@ -209,13 +209,20 @@ public abstract class Entity : MonoBehaviour
         
         if(augments.Count > 0)
         {
+            // Create runtime instances of augments to avoid modifying the original ScriptableObject assets
+            List<Augment> runtimeAugments = new List<Augment>();
             foreach (var augment in augments)
             {
                 if(augment != null)
                 {
-                    AcquireAugment(augment, currentRound);
+                    Augment runtimeAugment = Instantiate(augment);
+                    runtimeAugments.Add(runtimeAugment);
+                    runtimeAugment.playerReference = gameObject;
+                    runtimeAugment.SetUpAugment(currentRound);
                 }
             }
+            augments = runtimeAugments;
+            SetAugmentVariables();
         }
     }
 
@@ -615,12 +622,15 @@ public abstract class Entity : MonoBehaviour
     // ===== AUGMENTS =====
     public void AcquireAugment(Augment augment, int currentRound)
     {
-        if(!augments.Contains(augment))
+        // Create a runtime instance of the augment to avoid modifying the original ScriptableObject
+        Augment runtimeAugment = Instantiate(augment);
+        
+        if(!augments.Contains(runtimeAugment))
         {
-            augments.Add(augment);
+            augments.Add(runtimeAugment);
         }
-        augment.playerReference = gameObject;
-        augment.SetUpAugment(currentRound);
+        runtimeAugment.playerReference = gameObject;
+        runtimeAugment.SetUpAugment(currentRound);
         SetAugmentVariables();
     }
 
