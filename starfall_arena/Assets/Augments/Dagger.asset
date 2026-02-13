@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d145db3ba169a004ba2754025bff0392, type: 3}
   m_Name: Dagger
   m_EditorClassIdentifier: Assembly-CSharp::Dagger
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 50a143054e497e646b507d12ec28a2f0, type: 3}
   augmentName: Dagger
   description: After taking damage, deal 50% more damage for the next 5 seconds.
   augmentID: Dagger

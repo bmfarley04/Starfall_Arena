@@ -12,12 +12,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5973cbe82cf1b9d41a577851e5daa07c, type: 3}
   m_Name: Thorns
   m_EditorClassIdentifier: Assembly-CSharp::Thorns
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: d5075be9301eafb468e66fd7751e7225, type: 3}
   augmentName: Thorns
   description: Deal contact damage to entities that touch you.
   augmentID: Thorns
-  augmentSettings:
-    rounds: 0
+  rounds: -1
   playerReference: {fileID: 0}
   contactDamage: 10
   contactImpactForce: 0
+  hitCooldown: 0.5
