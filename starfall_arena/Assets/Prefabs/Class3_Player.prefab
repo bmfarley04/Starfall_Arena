@@ -19985,7 +19985,7 @@ MonoBehaviour:
       m_Calls: []
   m_ActionEvents: []
   m_NeverAutoSwitchControlSchemes: 0
-  m_DefaultControlScheme: 
+  m_DefaultControlScheme: controller
   m_DefaultActionMap: basic
   m_SplitScreenIndex: -1
   m_Camera: {fileID: 0}
@@ -20292,6 +20292,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 16bdaa66010651b4e92d58d8484b9ac2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Class3
+  currentRound: 0
+  augments: []
   maxHealth: 100
   maxShield: 50
   shieldController: {fileID: 4336082909312925661}
@@ -20307,6 +20309,7 @@ MonoBehaviour:
   - {fileID: 307486612009446285}
   projectileWeapon:
     prefab: {fileID: 1778989562205518720, guid: c1883d15da3eace4faf2638f38c358d2, type: 3}
+    baseDamage: 5
     damage: 7
     speed: 30
     recoilForce: 0.02
@@ -20345,7 +20348,6 @@ MonoBehaviour:
     regenRate: 0
   input:
     controllerLookDeadzone: 0
-    mouseMovementThreshold: 0
   friction:
     frictionDelay: 0
     frictionDeceleration: 0
@@ -20361,12 +20363,22 @@ MonoBehaviour:
     enableScreenShake: 0
     projectileShakeMultiplier: 0
     laserShakeMultiplier: 0
+  hud:
+    healthBar: {fileID: 0}
+    healthText: {fileID: 0}
+    shieldBar: {fileID: 0}
+    shieldText: {fileID: 0}
   projectileFireSound: {fileID: 11400000, guid: 9cc0a99a7224a944785760deb65b6e06, type: 2}
   shieldDamageSound: {fileID: 11400000, guid: 8114ed6832519704593f3c7fb99b8e8d, type: 2}
   hullDamageSound: {fileID: 11400000, guid: 91f31f6b0214c4e42b89e2a3484295f6, type: 2}
   beamHitLoopSound: {fileID: 0}
   explosionSound: {fileID: 11400000, guid: 52e8c58e387b89849affa74c78d6d899, type: 2}
   audioSourcePoolSize: 10
+  isMovementLocked: 0
+  shotsFired: 0
+  shotsHit: 0
+  damageDealt: 0
+  damageTaken: 0
   fireCooldown: 0.15
 --- !u!114 &4120815541869784891
 MonoBehaviour:
@@ -20402,6 +20414,7 @@ MonoBehaviour:
   stats:
     cooldown: 3
     duration: 3
+  isLocked: 0
   invisibility:
     becomeInvisibleSound: {fileID: 11400000, guid: e5e50206279a273459f7ced6514172e2, type: 2}
     becomeVisibleSound: {fileID: 11400000, guid: 638df6836e82591409ab776cd8c9f495, type: 2}
@@ -20421,6 +20434,7 @@ MonoBehaviour:
   stats:
     cooldown: 0
     duration: 0
+  isLocked: 0
   fireTrail:
     firePrefab: {fileID: 9122628155286203966, guid: 54c48d3a7b1bbd34babdb5a1d098c782, type: 3}
     damagePerSecond: 10
@@ -20450,6 +20464,7 @@ MonoBehaviour:
   stats:
     cooldown: 0
     duration: 0
+  isLocked: 0
   bomb:
     spawnOffset: 1
     cooldown: 2
@@ -20479,6 +20494,7 @@ MonoBehaviour:
   stats:
     cooldown: 0
     duration: 0
+  isLocked: 0
   config:
     scaleMultiplier: 0.5
     speedMultiplier: 7

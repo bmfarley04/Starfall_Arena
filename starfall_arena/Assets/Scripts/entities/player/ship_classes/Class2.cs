@@ -242,6 +242,8 @@ public class Class2 : Player
         // Calculate convergence point ahead of ship
         Vector3 convergencePoint = transform.position + transform.up * convergenceDistance;
 
+        shotsFired += turrets.Length;
+
         for (int i = 0; i < turrets.Length; i++)
         {
             Transform turret = turrets[i];
@@ -305,6 +307,8 @@ public class Class2 : Player
 
     private void FirePhysicalProjectile()
     {
+        shotsFired++;
+
         Transform spawnPoint = abilities.physicalProjectile.spawnPoint;
 
         // Use ship's forward direction, not spawn point's rotation
@@ -360,6 +364,8 @@ public class Class2 : Player
     // ===== EMPOWERED SHOT ABILITY =====
     private void FireEmpoweredShot()
     {
+        shotsFired += turrets.Length;
+
         // Calculate base stats from primary weapon
         float damage = projectileWeapon.damage * abilities.empoweredShot.damageMultiplier;
         float speed = projectileWeapon.speed * abilities.empoweredShot.speedMultiplier;

@@ -129,10 +129,17 @@ namespace StarfallArena.UI
         [Tooltip("Enable F1 key to trigger augment select during play (for testing)")]
         [SerializeField] private bool debugEnableKeyTrigger = true;
 
+        // ===== EVENTS =====
+        /// <summary>
+        /// Fired when a player selects an augment. Parameters: chosen augment, choice index (0-2).
+        /// </summary>
+        public System.Action<Augment, int> onAugmentChosen;
+
         // Internal state
         private int currentTier;
         private List<Augment> selectedAugments = new List<Augment>(3);
         private bool isShowing = false;
+        private List<Augment> _overridePool = null;
 
         private void OnValidate()
         {
@@ -187,8 +194,16 @@ namespace StarfallArena.UI
             currentTier = SelectRandomTier();
             Debug.Log($"Selected augment tier: {currentTier}");
 
-            // Get 3 random augments from the selected tier
-            selectedAugments = SelectRandomAugments(currentTier);
+            // Use override pool if provided, otherwise pick randomly from tier
+            if (_overridePool != null && _overridePool.Count > 0)
+            {
+                selectedAugments = new List<Augment>(_overridePool);
+                _overridePool = null;
+            }
+            else
+            {
+                selectedAugments = SelectRandomAugments(currentTier);
+            }
 
             // Populate UI with selected augments
             PopulateUI(currentTier, selectedAugments);
@@ -204,6 +219,24 @@ namespace StarfallArena.UI
             {
                 augmentAppearSound.Play(audioSource);
             }
+        }
+
+        /// <summary>
+        /// Shows the augment select screen with a specific pool of augments.
+        /// Used by SceneManager for sequential 2-player augment selection.
+        /// </summary>
+        public void ShowAugmentSelectWithPool(List<Augment> pool)
+        {
+            _overridePool = pool;
+            ShowAugmentSelect();
+        }
+
+        /// <summary>
+        /// Returns the list of currently selected augments (for removing chosen augment from pool).
+        /// </summary>
+        public List<Augment> GetSelectedAugments()
+        {
+            return selectedAugments;
         }
 
         /// <summary>
@@ -511,21 +544,11 @@ namespace StarfallArena.UI
             Augment selectedAugment = selectedAugments[choiceIndex];
             Debug.Log($"Player selected augment: {selectedAugment.augmentName}");
 
-            // Apply the augment effect
-            //if (selectedAugment.effectScript != null)
-            //{
-            //    selectedAugment.effectScript.ApplyEffect();
-            //}
-            //else
-            //{
-            //    Debug.LogWarning($"Augment '{selectedAugment.augmentName}' has no effect script assigned!");
-            //}
-
             // Hide the augment select screen
             HideAugmentSelect();
 
-            // TODO: Your scene manager can listen to this or add custom logic here
-            // For example: Resume game, spawn next wave, etc.
+            // Notify listeners (SceneManager) of the selection
+            onAugmentChosen?.Invoke(selectedAugment, choiceIndex);
         }
     }
 }
