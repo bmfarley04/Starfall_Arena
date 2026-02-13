@@ -4,6 +4,7 @@ using UnityEngine.UI;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.UI;
 using UnityEngine.EventSystems;
+using UnityEngine.SceneManagement;
 using TMPro;
 
 /// <summary>
@@ -172,6 +173,52 @@ public class ShipSelectManager : MonoBehaviour
     }
 
     [System.Serializable]
+    public struct SelectionUIReferences
+    {
+        [Tooltip("Text showing which player is selecting (e.g., 'PLAYER 1' or 'PLAYER 2')")]
+        public TextMeshProUGUI playerSelectionText;
+
+        [Tooltip("Back button radial fill image")]
+        public Image backButtonFill;
+
+        [Tooltip("Select button radial fill image")]
+        public Image selectButtonFill;
+    }
+
+    [System.Serializable]
+    public struct HoldButtonConfig
+    {
+        [Tooltip("Duration in seconds button must be held to trigger")]
+        [Range(0.5f, 3f)]
+        public float holdDuration;
+
+        [Tooltip("Sound played when hold completes")]
+        public SoundEffect confirmSound;
+    }
+
+    [System.Serializable]
+    public struct PostSelectionConfig
+    {
+        [Tooltip("Delay after confirmation before spin animation starts")]
+        public float confirmationDelay;
+
+        [Tooltip("Duration of 360° spin animation")]
+        public float spinDuration;
+
+        [Tooltip("Delay after spin before transitioning")]
+        public float postSpinDelay;
+
+        [Tooltip("Name of gameplay scene to load after Player 2 selects")]
+        public string gameplaySceneName;
+    }
+
+    public enum PlayerSelectState
+    {
+        Player1,
+        Player2
+    }
+
+    [System.Serializable]
     public struct ShipRotationConfig
     {
         [Header("Rotation Sensitivity")]
@@ -216,18 +263,9 @@ public class ShipSelectManager : MonoBehaviour
     [Tooltip("Pre-placed ability icon images (one per ship per ability). Arrays should match length of availableShips.")]
     [SerializeField] private AbilityIconReferences abilityIcons;
 
-    [Header("Navigation Buttons")]
-    [Tooltip("Left arrow button for previous ship")]
-    [SerializeField] private Button leftButton;
-
-    [Tooltip("Right arrow button for next ship")]
-    [SerializeField] private Button rightButton;
-
-    [Tooltip("Left button's Image component (for material effects)")]
-    [SerializeField] private Image leftButtonImage;
-
-    [Tooltip("Right button's Image component (for material effects)")]
-    [SerializeField] private Image rightButtonImage;
+    [Header("Selection UI")]
+    [Tooltip("Player selection UI references (player text, back/select button fills)")]
+    [SerializeField] private SelectionUIReferences selectionUI;
 
     [Tooltip("Default selected button for controller navigation (e.g., first ability button)")]
     [SerializeField] private GameObject defaultSelectedButton;
@@ -259,6 +297,16 @@ public class ShipSelectManager : MonoBehaviour
     [Tooltip("Navigation button press effects (material flash on press)")]
     [SerializeField] private NavigationButtonEffects navigationEffects;
 
+    [Header("Player Selection")]
+    [Tooltip("Hold button configuration for back and select buttons")]
+    [SerializeField] private HoldButtonConfig holdBack;
+
+    [SerializeField] private HoldButtonConfig holdSelect;
+
+    [Header("Post-Selection Animation")]
+    [Tooltip("Animation and transition configuration after ship selection")]
+    [SerializeField] private PostSelectionConfig postSelection;
+
     private int _currentShipIndex = 0;
     private GameObject[] _shipModelInstances;
     private AudioSource _audioSource;
@@ -271,24 +319,33 @@ public class ShipSelectManager : MonoBehaviour
     private int _lastHoveredAbilityIndex = -1; // -1 = none, 0-3 = ability 1-4
     private Class1PreviewController _currentPreviewController;
 
+    // Player selection state
+    private PlayerSelectState _currentPlayer = PlayerSelectState.Player1;
+    private ShipData _player1Selection;
+    private ShipData _player2Selection;
+
+    // Hold button state
+    private float _backHoldTime = 0f;
+    private float _selectHoldTime = 0f;
+    private bool _isProcessingSelection = false;
+
     private void Awake()
     {
         _audioSource = GetComponent<AudioSource>();
         if (_audioSource == null)
             _audioSource = gameObject.AddComponent<AudioSource>();
 
-        // Wire up button callbacks
-        if (leftButton != null)
-            leftButton.onClick.AddListener(NavigatePrevious);
-
-        if (rightButton != null)
-            rightButton.onClick.AddListener(NavigateNext);
-
         // Hide all tooltips initially
         HideAllTooltips();
 
         // Ensure all ability icons start disabled
         DisableAllAbilityIcons();
+
+        // Initialize button fills to 0
+        if (selectionUI.backButtonFill != null)
+            selectionUI.backButtonFill.fillAmount = 0f;
+        if (selectionUI.selectButtonFill != null)
+            selectionUI.selectButtonFill.fillAmount = 0f;
 
         // Ships are now spawned by TitleScreenManager at scene load
         // This keeps ShipSelectManager completely independent
@@ -318,15 +375,20 @@ public class ShipSelectManager : MonoBehaviour
             Debug.LogWarning("ShipSelectManager: Circle Hover Material is not assigned. Hover effect won't work.");
         }
 
-        // Validate navigation button references
-        if (leftButton != null && leftButtonImage == null)
+        // Validate selection UI references
+        if (selectionUI.backButtonFill == null)
         {
-            Debug.LogWarning("ShipSelectManager: Left Button is assigned but Left Button Image is not. Material flash won't work.");
+            Debug.LogWarning("ShipSelectManager: Back button fill image is not assigned.");
         }
 
-        if (rightButton != null && rightButtonImage == null)
+        if (selectionUI.selectButtonFill == null)
         {
-            Debug.LogWarning("ShipSelectManager: Right Button is assigned but Right Button Image is not. Material flash won't work.");
+            Debug.LogWarning("ShipSelectManager: Select button fill image is not assigned.");
+        }
+
+        if (selectionUI.playerSelectionText == null)
+        {
+            Debug.LogWarning("ShipSelectManager: Player selection text is not assigned.");
         }
     }
 
@@ -382,6 +444,9 @@ public class ShipSelectManager : MonoBehaviour
         // Disable EventSystem's automatic navigation (stick input) - we handle navigation manually
         DisableEventSystemNavigation();
 
+        // Update player selection text
+        UpdatePlayerSelectionText();
+
         // If not preloaded, load UI data first
         if (!_isPreloaded)
         {
@@ -409,6 +474,27 @@ public class ShipSelectManager : MonoBehaviour
         Debug.Log($"[ActivateShipWhenVisible] Activating ship {_currentShipIndex} NOW!");
         ShowShipModel(_currentShipIndex);
         _isPreloaded = false; // Reset flag
+    }
+
+    /// <summary>
+    /// PUBLIC: Reset to Player 1 selection state (called when entering ship select from main menu).
+    /// </summary>
+    public void ResetToPlayer1()
+    {
+        _currentPlayer = PlayerSelectState.Player1;
+        _player1Selection = null;
+        _player2Selection = null;
+        _currentShipIndex = 0;
+        _backHoldTime = 0f;
+        _selectHoldTime = 0f;
+        _isProcessingSelection = false;
+
+        if (selectionUI.backButtonFill != null)
+            selectionUI.backButtonFill.fillAmount = 0f;
+        if (selectionUI.selectButtonFill != null)
+            selectionUI.selectButtonFill.fillAmount = 0f;
+
+        UpdatePlayerSelectionText();
     }
 
     private IEnumerator ClearSelectionNextFrame()
@@ -475,6 +561,13 @@ public class ShipSelectManager : MonoBehaviour
 
     private void Update()
     {
+        // Don't process input during selection animation
+        if (_isProcessingSelection)
+        {
+            UpdateShipRotation();
+            return;
+        }
+
         // STICKS ALWAYS rotate ship (separated from D-pad navigation)
         HandleShipRotation();
 
@@ -483,6 +576,9 @@ public class ShipSelectManager : MonoBehaviour
 
         // Shoulder buttons switch ships
         HandleShipNavigation();
+
+        // Hold button logic for back and select
+        HandleHoldButtons();
 
         // Smooth rotate the ship model
         UpdateShipRotation();
@@ -833,7 +929,6 @@ public class ShipSelectManager : MonoBehaviour
 
         LoadShip(_currentShipIndex);
         PlayNavigationSound();
-        FlashNavigationButton(leftButtonImage);
         _lastNavigationTime = Time.unscaledTime;
     }
 
@@ -850,57 +945,9 @@ public class ShipSelectManager : MonoBehaviour
 
         LoadShip(_currentShipIndex);
         PlayNavigationSound();
-        FlashNavigationButton(rightButtonImage);
         _lastNavigationTime = Time.unscaledTime;
     }
 
-    /// <summary>
-    /// Briefly flash a navigation button with the pressed material.
-    /// </summary>
-    private void FlashNavigationButton(Image buttonImage)
-    {
-        if (buttonImage != null)
-            StartCoroutine(FlashNavigationButtonCoroutine(buttonImage));
-    }
-
-    /// <summary>
-    /// Coroutine to flash a navigation button material.
-    /// Unity UI Images require instantiated materials for runtime changes.
-    /// </summary>
-    private IEnumerator FlashNavigationButtonCoroutine(Image buttonImage)
-    {
-        if (buttonImage == null)
-        {
-            Debug.LogWarning("ShipSelectManager: FlashNavigationButton called with null Image");
-            yield break;
-        }
-
-        if (navigationEffects.buttonPressedMaterial == null)
-        {
-            Debug.LogWarning("ShipSelectManager: No pressed material assigned for navigation button flash");
-            yield break;
-        }
-
-        // Store original material
-        Material originalMaterial = buttonImage.material;
-
-        // Apply pressed material (instantiate to avoid modifying the asset)
-        buttonImage.material = new Material(navigationEffects.buttonPressedMaterial);
-
-        // Wait for flash duration
-        yield return new WaitForSecondsRealtime(navigationEffects.flashDuration);
-
-        // Revert to normal material
-        if (navigationEffects.buttonNormalMaterial != null)
-        {
-            buttonImage.material = new Material(navigationEffects.buttonNormalMaterial);
-        }
-        else
-        {
-            // Fallback: restore original material
-            buttonImage.material = originalMaterial;
-        }
-    }
 
     /// <summary>
     /// Preload ship data before the screen is visible (called early in transition).
@@ -1305,17 +1352,258 @@ public class ShipSelectManager : MonoBehaviour
     }
 
     /// <summary>
-    /// Confirm ship selection and proceed to gameplay.
-    /// Called by external button (e.g., "Select Ship" button).
+    /// Update player selection text based on current player state.
     /// </summary>
-    public void ConfirmSelection()
+    private void UpdatePlayerSelectionText()
     {
-        if (navigation.confirmSound != null)
-            navigation.confirmSound.Play(_audioSource);
+        if (selectionUI.playerSelectionText == null) return;
 
-        // TODO: Store selected ship index/data for gameplay scene
-        // TODO: Transition to gameplay scene
-        Debug.Log($"Ship selected: {availableShips[_currentShipIndex].shipName}");
+        selectionUI.playerSelectionText.text = _currentPlayer == PlayerSelectState.Player1
+            ? "PLAYER 1"
+            : "PLAYER 2";
+    }
+
+    /// <summary>
+    /// Handle hold button logic for back and select buttons.
+    /// </summary>
+    private void HandleHoldButtons()
+    {
+        bool backPressed = false;
+        bool selectPressed = false;
+
+        // Gamepad input
+        if (Gamepad.current != null)
+        {
+            backPressed = Gamepad.current.bButton.isPressed;
+            selectPressed = Gamepad.current.aButton.isPressed;
+        }
+
+        // Keyboard fallback (Escape for back, Enter for select)
+        if (Keyboard.current != null)
+        {
+            backPressed = backPressed || Keyboard.current.escapeKey.isPressed;
+            selectPressed = selectPressed || Keyboard.current.enterKey.isPressed;
+        }
+
+        // Back button (B / Escape)
+        if (backPressed)
+        {
+            _backHoldTime += Time.unscaledDeltaTime;
+            float fillRatio = Mathf.Clamp01(_backHoldTime / holdBack.holdDuration);
+
+            if (selectionUI.backButtonFill != null)
+                selectionUI.backButtonFill.fillAmount = fillRatio;
+
+            if (_backHoldTime >= holdBack.holdDuration)
+            {
+                HandleBackConfirm();
+                _backHoldTime = 0f;
+            }
+        }
+        else
+        {
+            _backHoldTime = 0f;
+            if (selectionUI.backButtonFill != null)
+                selectionUI.backButtonFill.fillAmount = 0f;
+        }
+
+        // Select button (A / Enter)
+        if (selectPressed)
+        {
+            _selectHoldTime += Time.unscaledDeltaTime;
+            float fillRatio = Mathf.Clamp01(_selectHoldTime / holdSelect.holdDuration);
+
+            if (selectionUI.selectButtonFill != null)
+                selectionUI.selectButtonFill.fillAmount = fillRatio;
+
+            if (_selectHoldTime >= holdSelect.holdDuration)
+            {
+                HandleSelectConfirm();
+                _selectHoldTime = 0f;
+            }
+        }
+        else
+        {
+            _selectHoldTime = 0f;
+            if (selectionUI.selectButtonFill != null)
+                selectionUI.selectButtonFill.fillAmount = 0f;
+        }
+    }
+
+    /// <summary>
+    /// Handle back button confirmation (hold complete).
+    /// </summary>
+    private void HandleBackConfirm()
+    {
+        if (holdBack.confirmSound != null)
+            holdBack.confirmSound.Play(_audioSource);
+
+        if (_currentPlayer == PlayerSelectState.Player1)
+        {
+            // Player 1 going back - return to main menu
+            Debug.Log("Player 1 backing out - returning to main menu");
+            TitleScreenManager titleScreen = FindObjectOfType<TitleScreenManager>();
+            if (titleScreen != null)
+                titleScreen.TransitionToMainMenu();
+        }
+        else
+        {
+            // Player 2 going back - return to Player 1 selection
+            Debug.Log("Player 2 backing out - returning to Player 1 selection");
+            _currentPlayer = PlayerSelectState.Player1;
+            _player2Selection = null;
+            UpdatePlayerSelectionText();
+
+            // Reset to Player 1's previous selection if they had one
+            if (_player1Selection != null)
+            {
+                int p1Index = System.Array.IndexOf(availableShips, _player1Selection);
+                if (p1Index >= 0)
+                {
+                    _currentShipIndex = p1Index;
+                    LoadShip(_currentShipIndex);
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Handle select button confirmation (hold complete).
+    /// </summary>
+    private void HandleSelectConfirm()
+    {
+        if (_isProcessingSelection) return;
+
+        if (holdSelect.confirmSound != null)
+            holdSelect.confirmSound.Play(_audioSource);
+
+        StartCoroutine(ProcessSelectionCoroutine());
+    }
+
+    /// <summary>
+    /// Process ship selection: store data, animate, transition.
+    /// </summary>
+    private IEnumerator ProcessSelectionCoroutine()
+    {
+        _isProcessingSelection = true;
+
+        // Store selected ship
+        ShipData selectedShip = availableShips[_currentShipIndex];
+
+        if (_currentPlayer == PlayerSelectState.Player1)
+        {
+            _player1Selection = selectedShip;
+            Debug.Log($"Player 1 selected: {selectedShip.shipName}");
+        }
+        else
+        {
+            _player2Selection = selectedShip;
+            Debug.Log($"Player 2 selected: {selectedShip.shipName}");
+        }
+
+        // Wait for confirmation delay
+        yield return new WaitForSecondsRealtime(postSelection.confirmationDelay);
+
+        // Spin animation
+        yield return StartCoroutine(SpinShipAnimation());
+
+        // Wait after spin
+        yield return new WaitForSecondsRealtime(postSelection.postSpinDelay);
+
+        // Transition based on player
+        if (_currentPlayer == PlayerSelectState.Player1)
+        {
+            // Move to Player 2 selection
+            _currentPlayer = PlayerSelectState.Player2;
+            UpdatePlayerSelectionText();
+
+            // Reset to first ship for Player 2
+            _currentShipIndex = 0;
+            LoadShip(_currentShipIndex);
+
+            _isProcessingSelection = false;
+        }
+        else
+        {
+            // Player 2 done - store both selections and transition to gameplay
+            StoreSelectionsInGameData();
+            TransitionToGameplay();
+        }
+    }
+
+    /// <summary>
+    /// Animate ship spinning 360 degrees on Y axis.
+    /// </summary>
+    private IEnumerator SpinShipAnimation()
+    {
+        if (_shipModelInstances == null || _currentShipIndex >= _shipModelInstances.Length)
+            yield break;
+
+        GameObject currentShip = _shipModelInstances[_currentShipIndex];
+        if (currentShip == null || !currentShip.activeSelf)
+            yield break;
+
+        Quaternion startRotation = currentShip.transform.rotation;
+        Quaternion endRotation = startRotation * Quaternion.Euler(0f, 360f, 0f);
+
+        float elapsed = 0f;
+        while (elapsed < postSelection.spinDuration)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            float t = elapsed / postSelection.spinDuration;
+
+            currentShip.transform.rotation = Quaternion.Slerp(startRotation, endRotation, t);
+
+            yield return null;
+        }
+
+        // Ensure final rotation
+        currentShip.transform.rotation = endRotation;
+
+        // Update rotation tracking
+        _currentRotation = endRotation;
+        _targetRotation = endRotation;
+    }
+
+    /// <summary>
+    /// Store both player selections in GameDataManager.
+    /// </summary>
+    private void StoreSelectionsInGameData()
+    {
+        if (GameDataManager.Instance == null)
+        {
+            Debug.LogError("ShipSelectManager: GameDataManager instance not found!");
+            return;
+        }
+
+        GameDataManager.Instance.selectedShipClasses.Clear();
+
+        if (_player1Selection != null)
+        {
+            GameDataManager.Instance.selectedShipClasses.Add(_player1Selection);
+            Debug.Log($"Stored Player 1 selection: {_player1Selection.shipName}");
+        }
+
+        if (_player2Selection != null)
+        {
+            GameDataManager.Instance.selectedShipClasses.Add(_player2Selection);
+            Debug.Log($"Stored Player 2 selection: {_player2Selection.shipName}");
+        }
+    }
+
+    /// <summary>
+    /// Transition to gameplay scene.
+    /// </summary>
+    private void TransitionToGameplay()
+    {
+        if (string.IsNullOrEmpty(postSelection.gameplaySceneName))
+        {
+            Debug.LogError("ShipSelectManager: No gameplay scene name configured!");
+            return;
+        }
+
+        Debug.Log($"Transitioning to gameplay scene: {postSelection.gameplaySceneName}");
+        UnityEngine.SceneManagement.SceneManager.LoadScene(postSelection.gameplaySceneName);
     }
 
     private void Reset()
@@ -1345,5 +1633,15 @@ public class ShipSelectManager : MonoBehaviour
 
         // Navigation button effect defaults
         navigationEffects.flashDuration = 0.15f;
+
+        // Hold button defaults
+        holdBack.holdDuration = 1.5f;
+        holdSelect.holdDuration = 1.0f;
+
+        // Post-selection animation defaults
+        postSelection.confirmationDelay = 0.3f;
+        postSelection.spinDuration = 1.5f;
+        postSelection.postSpinDelay = 0.5f;
+        postSelection.gameplaySceneName = "SampleScene";
     }
 }
