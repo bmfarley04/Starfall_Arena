@@ -4207,7 +4207,7 @@ MonoBehaviour:
   player2HUDCanvas: {fileID: 2008779531}
   player1AbilityCanvas: {fileID: 0}
   player2AbilityCanvas: {fileID: 0}
-  debugStartAtRound: 1
+  debugStartAtRound: 0
 --- !u!4 &1497365221
 Transform:
   m_ObjectHideFlags: 0
