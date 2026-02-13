@@ -4961,6 +4961,10 @@ GameObject:
   - component: {fileID: 9213498189382806680}
   - component: {fileID: 678256140099594092}
   - component: {fileID: 3550827916854919345}
+  - component: {fileID: 6100440838757200110}
+  - component: {fileID: 31027433883740222}
+  - component: {fileID: -4976364162122950036}
+  - component: {fileID: -5504958681508550136}
   m_Layer: 0
   m_Name: Class1_Player
   m_TagString: Player
@@ -5346,8 +5350,8 @@ MonoBehaviour:
     rotationSpeed: 360
     lateralDamping: 0.92
   turrets:
-  - {fileID: 941622909536434783}
-  - {fileID: 2305282194121495777}
+  - {fileID: 9053320766010288086}
+  - {fileID: 8019938659691727208}
   projectileWeapon:
     prefab: {fileID: 7408310672554650858, guid: 51403cdaf016c034cbbc52510d7ecaef, type: 3}
     baseDamage: 10
@@ -5377,10 +5381,10 @@ MonoBehaviour:
   slowEffectVisuals:
     slowParticleSystem: {fileID: 4517218207347267077}
   currentShield: 0
-  ability1: {fileID: 0}
-  ability2: {fileID: 0}
-  ability3: {fileID: 0}
-  ability4: {fileID: 0}
+  ability1: {fileID: 6100440838757200110}
+  ability2: {fileID: 31027433883740222}
+  ability3: {fileID: -4976364162122950036}
+  ability4: {fileID: -5504958681508550136}
   abilitySlots:
   - {fileID: 11500000, guid: 6b484fbf92d1f8a4c972f0c7584defa6, type: 3}
   - {fileID: 11500000, guid: 947c60145480efe4da5c2b90cf85194b, type: 3}
@@ -5422,6 +5426,168 @@ MonoBehaviour:
   shotsHit: 0
   damageDealt: 0
   damageTaken: 0
+--- !u!114 &6100440838757200110
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1578230554132079418}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6b484fbf92d1f8a4c972f0c7584defa6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GigaBlast
+  stats:
+    cooldown: 0
+    duration: 0
+  isLocked: 0
+  gigaBlast:
+    offsetDistance: 0
+    timing:
+      cooldown: 0
+      minChargeTime: 0
+      maxChargeTime: 0
+      projectileLifetime: 0
+    tierThresholds:
+      tier1Time: 0
+      tier2Time: 0
+      tier3Time: 0
+      tier4Time: 0
+    movementPenalties:
+      tier1ThrustMultiplier: 0
+      tier1RotationMultiplier: 0
+      tier2ThrustMultiplier: 0
+      tier2RotationMultiplier: 0
+      tier3ThrustMultiplier: 0
+      tier3RotationMultiplier: 0
+      tier4ThrustMultiplier: 0
+      tier4RotationMultiplier: 0
+    projectileScaling:
+      tier1SpeedMultiplier: 0
+      tier1DamageMultiplier: 0
+      tier1RecoilMultiplier: 0
+      tier1ImpactMultiplier: 0
+      tier2SpeedMultiplier: 0
+      tier2DamageMultiplier: 0
+      tier2RecoilMultiplier: 0
+      tier2ImpactMultiplier: 0
+      tier3SpeedMultiplier: 0
+      tier3DamageMultiplier: 0
+      tier3RecoilMultiplier: 0
+      tier3ImpactMultiplier: 0
+      tier4SpeedMultiplier: 0
+      tier4DamageMultiplier: 0
+      tier4RecoilMultiplier: 0
+      tier4ImpactMultiplier: 0
+    pierce:
+      tier3DamageMultiplierPerPierce: 0
+      tier4DamageMultiplierPerPierce: 0
+    visual:
+      tier1ProjectilePrefab: {fileID: 0}
+      tier2ProjectilePrefab: {fileID: 0}
+      tier3ProjectilePrefab: {fileID: 0}
+      tier4ProjectilePrefab: {fileID: 0}
+      tier1ParticleSystem: {fileID: 0}
+      tier2ParticleSystem: {fileID: 0}
+      tier3ParticleSystem: {fileID: 0}
+      tier4ParticleSystem: {fileID: 0}
+    chargeSound: {fileID: 0}
+    chargeSoundFadeDuration: 0
+    tier1FireSound: {fileID: 0}
+    tier2FireSound: {fileID: 0}
+    tier3FireSound: {fileID: 0}
+    tier4FireSound: {fileID: 0}
+--- !u!114 &31027433883740222
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1578230554132079418}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 947c60145480efe4da5c2b90cf85194b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Teleport
+  stats:
+    cooldown: 0
+    duration: 0
+  isLocked: 0
+  teleport:
+    cooldown: 0
+    preTeleportDelay: 0
+    teleportDistance: 0
+    animation:
+      shrinkDuration: 0
+      growDuration: 0
+      originScaleX: 0
+      originScaleY: 0
+      destinationOvershootScale: 0
+      normalScale: 0
+    visual:
+      enableChromaticFlash: 0
+      chromaticFlashIntensity: 0
+      enableScreenShake: 0
+      screenShakeStrength: 0
+      effects: []
+    exitSound: {fileID: 0}
+    arrivalSound: {fileID: 0}
+--- !u!114 &-4976364162122950036
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1578230554132079418}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 908cc72dae50f93469c58280dd7ce4ef, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Beam
+  stats:
+    cooldown: 0
+    duration: 0
+  isLocked: 0
+  beam:
+    stats:
+      prefab: {fileID: 0}
+      damagePerSecond: 0
+      maxDistance: 0
+      recoilForcePerSecond: 0
+      impactForce: 0
+    offsetDistance: 0
+    rotationMultiplier: 0
+    fadeInDuration: 0
+    capacity: 0
+    drainRate: 0
+    regenRate: 0
+    beamLoopSound: {fileID: 0}
+    soundFadeDuration: 0
+--- !u!114 &-5504958681508550136
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1578230554132079418}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4271e562bc81ff844953f97f936e0a23, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Reflector
+  stats:
+    cooldown: 0
+    duration: 0
+  isLocked: 0
+  reflect:
+    cooldown: 0
+    activeDuration: 0
+    shield: {fileID: 0}
+    reflectedProjectileColor: {r: 0, g: 0, b: 0, a: 0}
+    reflectedProjectileDamageMultiplier: 0
+    shieldLoopSound: {fileID: 0}
+    bulletReflectionSound: {fileID: 0}
 --- !u!1 &3501154216763360000
 GameObject:
   m_ObjectHideFlags: 0
@@ -16233,6 +16399,11 @@ MonoBehaviour:
   mass: 0.5
   drag: 0.5
   angularDrag: 0.3
+--- !u!4 &8019938659691727208 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 1478377516207963503, guid: bf0bc7146f022ca4ca750c6bc6606af6, type: 3}
+  m_PrefabInstance: {fileID: 8919602523151987719}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &8147778202047097603 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 782063000278720260, guid: bf0bc7146f022ca4ca750c6bc6606af6, type: 3}
@@ -16341,3 +16512,8 @@ MonoBehaviour:
   mass: 0.5
   drag: 0.5
   angularDrag: 0.3
+--- !u!4 &9053320766010288086 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 462481501793227729, guid: bf0bc7146f022ca4ca750c6bc6606af6, type: 3}
+  m_PrefabInstance: {fileID: 8919602523151987719}
+  m_PrefabAsset: {fileID: 0}

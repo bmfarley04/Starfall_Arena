@@ -24,12 +24,6 @@ namespace StarfallArena.UI
         {
             _ability = ability;
 
-            if (_ability == null)
-            {
-                gameObject.SetActive(false);
-                return;
-            }
-
             gameObject.SetActive(true);
             _wasOnCooldown = false;
 

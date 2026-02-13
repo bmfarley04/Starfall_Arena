@@ -489,6 +489,20 @@ public class GameSceneManager : MonoBehaviour
             {
                 player.BindAbilityHUD(panel);
             }
+
+            // Assign the correct split-screen camera as the render camera
+            // so the ability canvas renders on the right player's viewport
+            Canvas abilityCanvas = hudObj.GetComponent<Canvas>();
+            if (abilityCanvas == null)
+                abilityCanvas = hudObj.GetComponentInChildren<Canvas>();
+
+            if (abilityCanvas != null && splitScreenManager != null)
+            {
+                Camera cam = (tag == "Player1")
+                    ? splitScreenManager.player1Camera
+                    : splitScreenManager.player2Camera;
+                abilityCanvas.worldCamera = cam;
+            }
         }
 
         // Subscribe to death
