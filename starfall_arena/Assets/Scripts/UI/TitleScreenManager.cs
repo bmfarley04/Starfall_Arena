@@ -240,6 +240,7 @@ public class TitleScreenManager : MonoBehaviour
         {
             shipSelectManager.gameObject.SetActive(true);
             shipSelectManager.enabled = true;
+            shipSelectManager.ResetToPlayer1(); // Reset to Player 1 state when entering ship select
             shipSelectManager.PreloadShipData();
             // DON'T disable component - keep it enabled so ship stays active
             // The canvas is hidden anyway, so component being enabled doesn't matter
@@ -315,6 +316,9 @@ public class TitleScreenManager : MonoBehaviour
         if (_activeTransition != null) return;
         if (_activeCanvas == null || _activeCanvas == mainMenuCanvas) return;
 
+        // Don't handle cancel for ship select - it uses hold buttons
+        if (_activeCanvas == shipSelectCanvas) return;
+
         bool cancelPressed = false;
 
         if (Gamepad.current != null)
@@ -325,11 +329,8 @@ public class TitleScreenManager : MonoBehaviour
 
         if (cancelPressed)
         {
-            // Return to main menu from different screens
-            if (_activeCanvas == shipSelectCanvas)
-                TransitionToMainMenuFromShipSelect();
-            else
-                TransitionToMainMenu();
+            // Return to main menu from controls screen
+            TransitionToMainMenu();
         }
     }
 
