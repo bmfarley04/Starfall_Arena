@@ -267,6 +267,13 @@ public class ShipSelectManager : MonoBehaviour
     [Tooltip("Player selection UI references (player text, back/select button fills)")]
     [SerializeField] private SelectionUIReferences selectionUI;
 
+    [Header("Navigation Button Images")]
+    [Tooltip("Left navigation button image (for material flash effect)")]
+    [SerializeField] private Image leftNavigationImage;
+
+    [Tooltip("Right navigation button image (for material flash effect)")]
+    [SerializeField] private Image rightNavigationImage;
+
     [Tooltip("Default selected button for controller navigation (e.g., first ability button)")]
     [SerializeField] private GameObject defaultSelectedButton;
 
@@ -341,11 +348,11 @@ public class ShipSelectManager : MonoBehaviour
         // Ensure all ability icons start disabled
         DisableAllAbilityIcons();
 
-        // Initialize button fills to 0
+        // Initialize button fills to 1 (full) - they drain to 0 as you hold
         if (selectionUI.backButtonFill != null)
-            selectionUI.backButtonFill.fillAmount = 0f;
+            selectionUI.backButtonFill.fillAmount = 1f;
         if (selectionUI.selectButtonFill != null)
-            selectionUI.selectButtonFill.fillAmount = 0f;
+            selectionUI.selectButtonFill.fillAmount = 1f;
 
         // Ships are now spawned by TitleScreenManager at scene load
         // This keeps ShipSelectManager completely independent
@@ -1389,7 +1396,8 @@ public class ShipSelectManager : MonoBehaviour
         if (backPressed)
         {
             _backHoldTime += Time.unscaledDeltaTime;
-            float fillRatio = Mathf.Clamp01(_backHoldTime / holdBack.holdDuration);
+            // Fill drains from 1 (full) to 0 (empty) as you hold
+            float fillRatio = 1f - Mathf.Clamp01(_backHoldTime / holdBack.holdDuration);
 
             if (selectionUI.backButtonFill != null)
                 selectionUI.backButtonFill.fillAmount = fillRatio;
@@ -1404,14 +1412,15 @@ public class ShipSelectManager : MonoBehaviour
         {
             _backHoldTime = 0f;
             if (selectionUI.backButtonFill != null)
-                selectionUI.backButtonFill.fillAmount = 0f;
+                selectionUI.backButtonFill.fillAmount = 1f; // Reset to full
         }
 
         // Select button (A / Enter)
         if (selectPressed)
         {
             _selectHoldTime += Time.unscaledDeltaTime;
-            float fillRatio = Mathf.Clamp01(_selectHoldTime / holdSelect.holdDuration);
+            // Fill drains from 1 (full) to 0 (empty) as you hold
+            float fillRatio = 1f - Mathf.Clamp01(_selectHoldTime / holdSelect.holdDuration);
 
             if (selectionUI.selectButtonFill != null)
                 selectionUI.selectButtonFill.fillAmount = fillRatio;
@@ -1426,7 +1435,7 @@ public class ShipSelectManager : MonoBehaviour
         {
             _selectHoldTime = 0f;
             if (selectionUI.selectButtonFill != null)
-                selectionUI.selectButtonFill.fillAmount = 0f;
+                selectionUI.selectButtonFill.fillAmount = 1f; // Reset to full
         }
     }
 
