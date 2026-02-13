@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1e79241d1499b8c4e8c4a2bd5aa0714f, type: 3}
   m_Name: Artificial Fairy
   m_EditorClassIdentifier: Assembly-CSharp::ArtificialFairy
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 8764004600107c54a966bab035bc196a, type: 3}
   augmentName: Protostar
   description: The next time you would die, instantly heal to 75% health. This augment
     breaks.
