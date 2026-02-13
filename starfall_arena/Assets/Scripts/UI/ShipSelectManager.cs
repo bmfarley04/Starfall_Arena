@@ -397,6 +397,17 @@ public class ShipSelectManager : MonoBehaviour
         {
             Debug.LogWarning("ShipSelectManager: Player selection text is not assigned.");
         }
+
+        // Validate navigation button images
+        if (leftNavigationImage == null)
+        {
+            Debug.LogWarning("ShipSelectManager: Left navigation image is not assigned. Material flash won't work.");
+        }
+
+        if (rightNavigationImage == null)
+        {
+            Debug.LogWarning("ShipSelectManager: Right navigation image is not assigned. Material flash won't work.");
+        }
     }
 
     private void ValidateIconArray(Image[] iconArray, string abilityName, int expectedCount)
@@ -497,9 +508,9 @@ public class ShipSelectManager : MonoBehaviour
         _isProcessingSelection = false;
 
         if (selectionUI.backButtonFill != null)
-            selectionUI.backButtonFill.fillAmount = 0f;
+            selectionUI.backButtonFill.fillAmount = 1f;
         if (selectionUI.selectButtonFill != null)
-            selectionUI.selectButtonFill.fillAmount = 0f;
+            selectionUI.selectButtonFill.fillAmount = 1f;
 
         UpdatePlayerSelectionText();
     }
@@ -936,6 +947,7 @@ public class ShipSelectManager : MonoBehaviour
 
         LoadShip(_currentShipIndex);
         PlayNavigationSound();
+        FlashNavigationButton(leftNavigationImage);
         _lastNavigationTime = Time.unscaledTime;
     }
 
@@ -952,7 +964,55 @@ public class ShipSelectManager : MonoBehaviour
 
         LoadShip(_currentShipIndex);
         PlayNavigationSound();
+        FlashNavigationButton(rightNavigationImage);
         _lastNavigationTime = Time.unscaledTime;
+    }
+
+    /// <summary>
+    /// Flash a navigation button with the pressed material briefly.
+    /// </summary>
+    private void FlashNavigationButton(Image buttonImage)
+    {
+        if (buttonImage != null)
+            StartCoroutine(FlashNavigationButtonCoroutine(buttonImage));
+    }
+
+    /// <summary>
+    /// Coroutine to flash a navigation button material.
+    /// </summary>
+    private IEnumerator FlashNavigationButtonCoroutine(Image buttonImage)
+    {
+        if (buttonImage == null)
+        {
+            Debug.LogWarning("ShipSelectManager: FlashNavigationButton called with null Image");
+            yield break;
+        }
+
+        if (navigationEffects.buttonPressedMaterial == null)
+        {
+            Debug.LogWarning("ShipSelectManager: No pressed material assigned for navigation button flash");
+            yield break;
+        }
+
+        // Store original material
+        Material originalMaterial = buttonImage.material;
+
+        // Apply pressed material (instantiate to avoid modifying the asset)
+        buttonImage.material = new Material(navigationEffects.buttonPressedMaterial);
+
+        // Wait for flash duration
+        yield return new WaitForSecondsRealtime(navigationEffects.flashDuration);
+
+        // Revert to normal material
+        if (navigationEffects.buttonNormalMaterial != null)
+        {
+            buttonImage.material = new Material(navigationEffects.buttonNormalMaterial);
+        }
+        else
+        {
+            // Fallback: restore original material
+            buttonImage.material = originalMaterial;
+        }
     }
 
 
@@ -1395,9 +1455,14 @@ public class ShipSelectManager : MonoBehaviour
         // Back button (B / Escape)
         if (backPressed)
         {
+            // On first press, immediately jump to 0
+            if (_backHoldTime == 0f && selectionUI.backButtonFill != null)
+                selectionUI.backButtonFill.fillAmount = 0f;
+
             _backHoldTime += Time.unscaledDeltaTime;
-            // Fill drains from 1 (full) to 0 (empty) as you hold
-            float fillRatio = 1f - Mathf.Clamp01(_backHoldTime / holdBack.holdDuration);
+
+            // Fill from 0 (empty) to 1 (full) as you hold
+            float fillRatio = Mathf.Clamp01(_backHoldTime / holdBack.holdDuration);
 
             if (selectionUI.backButtonFill != null)
                 selectionUI.backButtonFill.fillAmount = fillRatio;
@@ -1418,9 +1483,14 @@ public class ShipSelectManager : MonoBehaviour
         // Select button (A / Enter)
         if (selectPressed)
         {
+            // On first press, immediately jump to 0
+            if (_selectHoldTime == 0f && selectionUI.selectButtonFill != null)
+                selectionUI.selectButtonFill.fillAmount = 0f;
+
             _selectHoldTime += Time.unscaledDeltaTime;
-            // Fill drains from 1 (full) to 0 (empty) as you hold
-            float fillRatio = 1f - Mathf.Clamp01(_selectHoldTime / holdSelect.holdDuration);
+
+            // Fill from 0 (empty) to 1 (full) as you hold
+            float fillRatio = Mathf.Clamp01(_selectHoldTime / holdSelect.holdDuration);
 
             if (selectionUI.selectButtonFill != null)
                 selectionUI.selectButtonFill.fillAmount = fillRatio;
@@ -1449,11 +1519,11 @@ public class ShipSelectManager : MonoBehaviour
 
         if (_currentPlayer == PlayerSelectState.Player1)
         {
-            // Player 1 going back - return to main menu
+            // Player 1 going back - return to main menu with proper transition
             Debug.Log("Player 1 backing out - returning to main menu");
             TitleScreenManager titleScreen = FindObjectOfType<TitleScreenManager>();
             if (titleScreen != null)
-                titleScreen.TransitionToMainMenu();
+                titleScreen.TransitionToMainMenuFromShipSelect();
         }
         else
         {
@@ -1545,15 +1615,34 @@ public class ShipSelectManager : MonoBehaviour
     /// </summary>
     private IEnumerator SpinShipAnimation()
     {
+        Debug.Log($"[SpinShipAnimation] Starting spin animation for ship {_currentShipIndex}");
+
         if (_shipModelInstances == null || _currentShipIndex >= _shipModelInstances.Length)
+        {
+            Debug.LogWarning($"[SpinShipAnimation] Invalid ship instances or index");
             yield break;
+        }
 
         GameObject currentShip = _shipModelInstances[_currentShipIndex];
-        if (currentShip == null || !currentShip.activeSelf)
+        if (currentShip == null)
+        {
+            Debug.LogWarning($"[SpinShipAnimation] Ship at index {_currentShipIndex} is null");
             yield break;
+        }
 
-        Quaternion startRotation = currentShip.transform.rotation;
-        Quaternion endRotation = startRotation * Quaternion.Euler(0f, 360f, 0f);
+        if (!currentShip.activeSelf)
+        {
+            Debug.LogWarning($"[SpinShipAnimation] Ship {currentShip.name} is not active");
+            yield break;
+        }
+
+        Debug.Log($"[SpinShipAnimation] Spinning ship: {currentShip.name}");
+
+        Vector3 startEuler = currentShip.transform.rotation.eulerAngles;
+        float startY = startEuler.y;
+        float endY = startY + 360f;
+
+        Debug.Log($"[SpinShipAnimation] Start Y: {startY}, End Y: {endY}");
 
         float elapsed = 0f;
         while (elapsed < postSelection.spinDuration)
@@ -1561,17 +1650,23 @@ public class ShipSelectManager : MonoBehaviour
             elapsed += Time.unscaledDeltaTime;
             float t = elapsed / postSelection.spinDuration;
 
-            currentShip.transform.rotation = Quaternion.Slerp(startRotation, endRotation, t);
+            // Interpolate Y rotation from start to start+360
+            float currentY = Mathf.Lerp(startY, endY, t);
+            Vector3 currentEuler = new Vector3(startEuler.x, currentY, startEuler.z);
+            currentShip.transform.rotation = Quaternion.Euler(currentEuler);
 
             yield return null;
         }
 
-        // Ensure final rotation
-        currentShip.transform.rotation = endRotation;
+        // Ensure final rotation (normalize back to 0-360 range)
+        Vector3 finalEuler = new Vector3(startEuler.x, startY, startEuler.z);
+        currentShip.transform.rotation = Quaternion.Euler(finalEuler);
 
         // Update rotation tracking
-        _currentRotation = endRotation;
-        _targetRotation = endRotation;
+        _currentRotation = currentShip.transform.rotation;
+        _targetRotation = _currentRotation;
+
+        Debug.Log($"[SpinShipAnimation] Spin complete! Final rotation: {currentShip.transform.rotation.eulerAngles}");
     }
 
     /// <summary>
