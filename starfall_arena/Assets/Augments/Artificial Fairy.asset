@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Artificial Fairy
   m_EditorClassIdentifier: Assembly-CSharp::ArtificialFairy
   icon: {fileID: 0}
-  augmentName: Artificial Fairy
+  augmentName: Protostar
   description: The next time you would die, instantly heal to 75% health. This augment
     breaks.
   augmentID: Artificial Fairy

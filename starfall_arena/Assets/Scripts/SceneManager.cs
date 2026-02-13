@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using TMPro;
 using StarfallArena.UI;
 
@@ -355,6 +356,10 @@ public class GameSceneManager : MonoBehaviour
                 lastRoundLoser = 1;
             }
 
+            // Capture gamepad references before players are destroyed
+            // (PlayerInput components hold the device assignments)
+            CapturePlayerGamepads();
+
             // Destroy current players (already hidden since TransitionToWholeScreen)
             DestroyPlayers();
 
@@ -514,6 +519,49 @@ public class GameSceneManager : MonoBehaviour
             Destroy(player2.gameObject);
             player2 = null;
         }
+    }
+
+    /// <summary>
+    /// Captures each player's assigned Gamepad from their PlayerInput component
+    /// and passes them to the AugmentSelectManager so only the active picker's
+    /// controller can navigate during augment selection.
+    /// Must be called BEFORE DestroyPlayers().
+    /// </summary>
+    private void CapturePlayerGamepads()
+    {
+        Gamepad p1Pad = null;
+        Gamepad p2Pad = null;
+
+        if (player1 != null)
+        {
+            var pi = player1.GetComponent<PlayerInput>();
+            if (pi != null)
+            {
+                foreach (var device in pi.devices)
+                {
+                    if (device is Gamepad gp) { p1Pad = gp; break; }
+                }
+            }
+        }
+
+        if (player2 != null)
+        {
+            var pi = player2.GetComponent<PlayerInput>();
+            if (pi != null)
+            {
+                foreach (var device in pi.devices)
+                {
+                    if (device is Gamepad gp) { p2Pad = gp; break; }
+                }
+            }
+        }
+
+        // Fallback: if we couldn't get from PlayerInput, use Gamepad.all ordering
+        if (p1Pad == null && Gamepad.all.Count > 0) p1Pad = Gamepad.all[0];
+        if (p2Pad == null && Gamepad.all.Count > 1) p2Pad = Gamepad.all[1];
+
+        if (augmentSelectManager != null)
+            augmentSelectManager.AssignGamepads(p1Pad, p2Pad);
     }
 
     // ===== DEATH HANDLING =====
