@@ -141,7 +141,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8447593613203198634, guid: b3d6e192d9b648a42977ef913b4a488a, type: 3}
       propertyPath: m_LocalPosition.y
-      value: -5
+      value: -20.02
       objectReference: {fileID: 0}
     - target: {fileID: 8447593613203198634, guid: b3d6e192d9b648a42977ef913b4a488a, type: 3}
       propertyPath: m_LocalPosition.z
@@ -297,7 +297,7 @@ MonoBehaviour:
     CustomLookAtTarget: 0
   Lens:
     FieldOfView: 34
-    OrthographicSize: 15
+    OrthographicSize: 10
     NearClipPlane: 0.3
     FarClipPlane: 1000
     Dutch: 0
@@ -1247,6 +1247,10 @@ PrefabInstance:
       propertyPath: m_Layer
       value: 22
       objectReference: {fileID: 0}
+    - target: {fileID: 6183447936910876643, guid: 2d602ed917360fd4e9b9a736aa10b207, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 6218371972909278912, guid: 2d602ed917360fd4e9b9a736aa10b207, type: 3}
       propertyPath: m_Layer
       value: 22
@@ -1330,6 +1334,30 @@ PrefabInstance:
     - target: {fileID: 7167628856654797355, guid: 2d602ed917360fd4e9b9a736aa10b207, type: 3}
       propertyPath: m_Layer
       value: 22
+      objectReference: {fileID: 0}
+    - target: {fileID: 7177241469136095376, guid: 2d602ed917360fd4e9b9a736aa10b207, type: 3}
+      propertyPath: calmGradient.key0.b
+      value: 0.9334253
+      objectReference: {fileID: 0}
+    - target: {fileID: 7177241469136095376, guid: 2d602ed917360fd4e9b9a736aa10b207, type: 3}
+      propertyPath: calmGradient.key0.g
+      value: 0.93710685
+      objectReference: {fileID: 0}
+    - target: {fileID: 7177241469136095376, guid: 2d602ed917360fd4e9b9a736aa10b207, type: 3}
+      propertyPath: calmGradient.key0.r
+      value: 0.5746409
+      objectReference: {fileID: 0}
+    - target: {fileID: 7177241469136095376, guid: 2d602ed917360fd4e9b9a736aa10b207, type: 3}
+      propertyPath: calmGradient.key1.b
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7177241469136095376, guid: 2d602ed917360fd4e9b9a736aa10b207, type: 3}
+      propertyPath: calmGradient.key1.g
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7177241469136095376, guid: 2d602ed917360fd4e9b9a736aa10b207, type: 3}
+      propertyPath: calmGradient.key1.r
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 7232707358410477011, guid: 2d602ed917360fd4e9b9a736aa10b207, type: 3}
       propertyPath: m_Layer
@@ -1808,7 +1836,7 @@ Camera:
   far clip plane: 1000
   field of view: 34
   orthographic: 1
-  orthographic size: 15
+  orthographic size: 10
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2
@@ -1833,7 +1861,7 @@ Transform:
   m_GameObject: {fileID: 1560328868}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: -5, z: -10}
+  m_LocalPosition: {x: 0, y: -20.02, z: -10}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1983,7 +2011,7 @@ Camera:
   far clip plane: 1000
   field of view: 34
   orthographic: 1
-  orthographic size: 15
+  orthographic size: 10
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2
@@ -2113,7 +2141,7 @@ MonoBehaviour:
     CustomLookAtTarget: 0
   Lens:
     FieldOfView: 34
-    OrthographicSize: 15
+    OrthographicSize: 10
     NearClipPlane: 0.3
     FarClipPlane: 1000
     Dutch: 0
@@ -2140,7 +2168,7 @@ Transform:
   m_GameObject: {fileID: 1997948845}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: -5, z: -10}
+  m_LocalPosition: {x: 0, y: -20.02, z: -10}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -3123,6 +3151,10 @@ PrefabInstance:
       propertyPath: m_Layer
       value: 21
       objectReference: {fileID: 0}
+    - target: {fileID: 6183447936910876643, guid: 2d602ed917360fd4e9b9a736aa10b207, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 6218371972909278912, guid: 2d602ed917360fd4e9b9a736aa10b207, type: 3}
       propertyPath: m_Layer
       value: 21
@@ -3206,6 +3238,30 @@ PrefabInstance:
     - target: {fileID: 7167628856654797355, guid: 2d602ed917360fd4e9b9a736aa10b207, type: 3}
       propertyPath: m_Layer
       value: 21
+      objectReference: {fileID: 0}
+    - target: {fileID: 7177241469136095376, guid: 2d602ed917360fd4e9b9a736aa10b207, type: 3}
+      propertyPath: calmGradient.key0.b
+      value: 0.9334253
+      objectReference: {fileID: 0}
+    - target: {fileID: 7177241469136095376, guid: 2d602ed917360fd4e9b9a736aa10b207, type: 3}
+      propertyPath: calmGradient.key0.g
+      value: 0.93710685
+      objectReference: {fileID: 0}
+    - target: {fileID: 7177241469136095376, guid: 2d602ed917360fd4e9b9a736aa10b207, type: 3}
+      propertyPath: calmGradient.key0.r
+      value: 0.5746409
+      objectReference: {fileID: 0}
+    - target: {fileID: 7177241469136095376, guid: 2d602ed917360fd4e9b9a736aa10b207, type: 3}
+      propertyPath: calmGradient.key1.b
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7177241469136095376, guid: 2d602ed917360fd4e9b9a736aa10b207, type: 3}
+      propertyPath: calmGradient.key1.g
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7177241469136095376, guid: 2d602ed917360fd4e9b9a736aa10b207, type: 3}
+      propertyPath: calmGradient.key1.r
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 7232707358410477011, guid: 2d602ed917360fd4e9b9a736aa10b207, type: 3}
       propertyPath: m_Layer
@@ -3549,6 +3605,7 @@ MonoBehaviour:
 SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
+  - {fileID: 1024413160}
   - {fileID: 773417014}
   - {fileID: 1867909033}
   - {fileID: 1997948849}
@@ -3557,6 +3614,5 @@ SceneRoots:
   - {fileID: 6632817810544565794}
   - {fileID: 1515599170}
   - {fileID: 3948759166270880185}
-  - {fileID: 1024413160}
   - {fileID: 1497365221}
   - {fileID: 337724716}
