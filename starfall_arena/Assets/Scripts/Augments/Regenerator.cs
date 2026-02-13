@@ -53,6 +53,7 @@ public class Regenerator : Augment
             {
                 float amount = healRate * Time.deltaTime;
                 player.Heal(amount);
+                Debug.Log($"[Regenerator] Healing player for {amount:F1} HP (current: {player.CurrentHealth}/{player.maxHealth})");
             }
         }
         else
@@ -68,5 +69,6 @@ public class Regenerator : Augment
         base.OnTakeDamage(damage, impactForce, hitPoint, source);
         // record the time of last damage so regen is interrupted
         lastDamageTime = Time.time;
+        Debug.Log($"[Regenerator] Player took damage, interrupting healing until {lastDamageTime + damageInterruptCooldown}");
     }
 }

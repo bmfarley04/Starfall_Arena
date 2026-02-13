@@ -31,12 +31,14 @@ public class Evasion : Augment
         if (!shieldIgnored && Random.value < shieldIgnoreChance)
         {
             shieldIgnored = true;
+            Debug.Log($"{player.name} evaded shield damage!");
         }
 
         // Random roll for ignoring health portion
         if (!healthIgnored && Random.value < healthIgnoreChance)
         {
             healthIgnored = true;
+            Debug.Log($"{player.name} evaded damage!");
         }
     }
 
@@ -50,6 +52,7 @@ public class Evasion : Augment
         if (!healthIgnored && Random.value < healthIgnoreChance)
         {
             healthIgnored = true;
+            Debug.Log($"{player.name} evaded direct damage!");
         }
     }
 }
