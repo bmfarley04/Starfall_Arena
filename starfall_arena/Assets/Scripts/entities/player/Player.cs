@@ -784,14 +784,23 @@ public abstract class Player : Entity
         {
             if (ph.playerTag == thisPlayerTag)
             {
-                hud.healthBar = ph.healthBar;
-                hud.healthText = ph.healthText;
-                hud.shieldBar = ph.shieldBar;
-                hud.shieldText = ph.shieldText;
-                InitializeHUD();
+                BindHUD(ph);
                 break;
             }
         }
+    }
+
+    /// <summary>
+    /// Binds directly from a known PlayerHUD reference (avoids FindObjectsByType issues with inactive objects).
+    /// </summary>
+    public void BindHUD(PlayerHUD ph)
+    {
+        if (ph == null) return;
+        hud.healthBar = ph.healthBar;
+        hud.healthText = ph.healthText;
+        hud.shieldBar = ph.shieldBar;
+        hud.shieldText = ph.shieldText;
+        InitializeHUD();
     }
 
     // ===== ABILITY 4 LOCK/UNLOCK =====

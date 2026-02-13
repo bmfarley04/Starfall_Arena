@@ -459,8 +459,21 @@ public class GameSceneManager : MonoBehaviour
         player.currentRound = currentRound;
         player.isMovementLocked = true;
 
-        // Bind HUD (auto-discovery via PlayerHUD tag matching)
-        player.BindHUD();
+        // Bind HUD directly from canvas reference (avoids inactive-object discovery issues)
+        Canvas hudCanvas = (tag == "Player1") ? player1HUDCanvas : player2HUDCanvas;
+        if (hudCanvas != null)
+        {
+            PlayerHUD ph = hudCanvas.GetComponent<PlayerHUD>();
+            if (ph != null)
+                player.BindHUD(ph);
+            else
+                Debug.LogWarning($"No PlayerHUD component found on {hudCanvas.name} for {tag}");
+        }
+        else
+        {
+            // Fallback to auto-discovery
+            player.BindHUD();
+        }
 
         // Bind ability HUD
         if (data.abilityHUDPrefab != null)
@@ -654,12 +667,12 @@ public class GameSceneManager : MonoBehaviour
         int firstPicker = lastRoundLoser;
         int secondPicker = (firstPicker == 1) ? 2 : 1;
 
-        // Show augment select for first picker
+        // --- First picker ---
         augmentChosen = false;
         chosenAugment = null;
         chosenAugmentIndex = -1;
 
-        augmentSelectManager.ShowAugmentSelect();
+        augmentSelectManager.ShowAugmentSelect(firstPicker);
 
         // Wait for first pick
         yield return new WaitUntil(() => augmentChosen);
@@ -670,22 +683,12 @@ public class GameSceneManager : MonoBehaviour
         // Apply augment to first picker
         ApplyAugmentToPlayer(firstPicker, firstChoice);
 
-        // Build remaining pool for second picker (remove chosen augment)
-        List<Augment> remainingPool = new List<Augment>(augmentSelectManager.GetSelectedAugments());
-        if (firstChoiceIndex >= 0 && firstChoiceIndex < remainingPool.Count)
-        {
-            remainingPool.RemoveAt(firstChoiceIndex);
-        }
-
-        // Brief pause between selections
-        yield return new WaitForSecondsRealtime(0.5f);
-
-        // Show augment select for second picker with remaining pool
+        // --- Transition to second picker (same screen, chosen card shrinks away) ---
         augmentChosen = false;
         chosenAugment = null;
         chosenAugmentIndex = -1;
 
-        augmentSelectManager.ShowAugmentSelectWithPool(remainingPool);
+        augmentSelectManager.TransitionToSecondPicker(firstChoiceIndex, secondPicker);
 
         // Wait for second pick
         yield return new WaitUntil(() => augmentChosen);
@@ -693,7 +696,9 @@ public class GameSceneManager : MonoBehaviour
         // Apply augment to second picker
         ApplyAugmentToPlayer(secondPicker, chosenAugment);
 
+        // Brief pause then hide
         yield return new WaitForSecondsRealtime(0.3f);
+        augmentSelectManager.HideAugmentSelect();
     }
 
     private void OnAugmentChosen(Augment augment, int index)
