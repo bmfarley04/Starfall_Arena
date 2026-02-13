@@ -81,6 +81,14 @@ MonoBehaviour:
   animation:
     growDuration: 0.5
     shrinkDuration: 0.3
+  ringOfFire:
+    waves: []
+    autoStart: 0
+    autoChainWaves: 0
+    fireLineMaterial: {fileID: 0}
+    lineWidth: 0
+    maskExtent: 0
+    outsideMaskMaterial: {fileID: 0}
 --- !u!1 &3221698777667135044
 GameObject:
   m_ObjectHideFlags: 0
@@ -354,6 +362,14 @@ MonoBehaviour:
   animation:
     growDuration: 0.5
     shrinkDuration: 0.3
+  ringOfFire:
+    waves: []
+    autoStart: 0
+    autoChainWaves: 0
+    fireLineMaterial: {fileID: 0}
+    lineWidth: 0
+    maskExtent: 0
+    outsideMaskMaterial: {fileID: 0}
 --- !u!1 &7879155641077518358
 GameObject:
   m_ObjectHideFlags: 0
@@ -436,6 +452,14 @@ MonoBehaviour:
   animation:
     growDuration: 0.5
     shrinkDuration: 0.3
+  ringOfFire:
+    waves: []
+    autoStart: 0
+    autoChainWaves: 0
+    fireLineMaterial: {fileID: 0}
+    lineWidth: 0
+    maskExtent: 0
+    outsideMaskMaterial: {fileID: 0}
 --- !u!1 &8029003339607521930
 GameObject:
   m_ObjectHideFlags: 0
@@ -552,3 +576,77 @@ MonoBehaviour:
   animation:
     growDuration: 0.5
     shrinkDuration: 0.3
+  ringOfFire:
+    waves:
+    - duration: 5
+      fireDamage: 1
+      damageTickInterval: 1
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 200
+        length: 200
+    - duration: 5
+      fireDamage: 2
+      damageTickInterval: 0.9
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 150
+        length: 150
+    - duration: 5
+      fireDamage: 4
+      damageTickInterval: 0.8
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 100
+        length: 100
+    - duration: 5
+      fireDamage: 8
+      damageTickInterval: 0.7
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 50
+        length: 50
+    - duration: 5
+      fireDamage: 16
+      damageTickInterval: 0.6
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 30
+        length: 30
+    - duration: 5
+      fireDamage: 32
+      damageTickInterval: 0.5
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 15
+        length: 15
+    autoStart: 1
+    autoChainWaves: 1
+    fireLineMaterial: {fileID: 10754, guid: 0000000000000000f000000000000000, type: 0}
+    lineWidth: 0
+    maskExtent: 400
+    outsideMaskMaterial: {fileID: 2100000, guid: ed9b04cc44f5efd4eb81ac84c0e4c20e, type: 2}

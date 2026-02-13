@@ -80,12 +80,10 @@ public struct RingOfFireConfig
     public List<Wave> waves;
 
     [Header("Game Logic")]
-    [Tooltip("Damage per second dealt to entities outside the safe zone")]
-    public float fireDamage;
-    [Tooltip("How often to apply fire damage (seconds). Default: 0.5")]
-    public float damageTickInterval;
     [Tooltip("Auto-start Ring of Fire when map is enabled")]
     public bool autoStart;
+    [Tooltip("Automatically chain waves - each wave's endCenterBox is set from previous wave's safeBox")]
+    public bool autoChainWaves;
 
     [Header("Line Renderer Visuals")]
     [Tooltip("Material for the line (Use Particles/Additive or similar)")]
@@ -94,12 +92,21 @@ public struct RingOfFireConfig
     public float lineWidth;
 
     [Header("Unsafe Area Visuals")]
-    [Tooltip("Color applied to areas outside the safe zone")]
-    public Color outsideSafeAreaColor;
     [Tooltip("Half-extent (in world units) from the safe zone center to use when drawing outside masks. Increase if your map is larger.")]
     public float maskExtent;
     [Tooltip("Material for the outside safe zone masks (optional, will use a default unlit color if not set)")]
     public Material outsideMaskMaterial;
+
+    public RingOfFireConfig(bool init)
+    {
+        waves = null;
+        autoStart = true;
+        autoChainWaves = true;
+        fireLineMaterial = null;
+        lineWidth = 0.2f;
+        maskExtent = 50f;
+        outsideMaskMaterial = null;
+    }
 }
 
 public class MapManagerScript : MonoBehaviour
@@ -152,9 +159,6 @@ public class MapManagerScript : MonoBehaviour
 
     [Header("Ring of Fire")]
     public RingOfFireConfig ringOfFire;
-
-    [Header("Ring of Fire Debug")]
-    public bool showRingOfFireGizmos = true;
 
     private Transform asteroidsParent;
     private List<GameObject> fallingAsteroids = new List<GameObject>();
@@ -269,6 +273,31 @@ public class MapManagerScript : MonoBehaviour
             return;
         }
 
+        // Auto-chain waves if enabled
+        if (ringOfFire.autoChainWaves && ringOfFire.waves.Count > 1)
+        {
+            for (int i = 1; i < ringOfFire.waves.Count; i++)
+            {
+                Wave previousWave = ringOfFire.waves[i - 1];
+                Wave currentWave = ringOfFire.waves[i];
+                
+                // Set the current wave's safeBox center to match previous wave's safeBox (where it ended)
+                currentWave.safeBox = new WaveBox(
+                    previousWave.safeBox.centerPoint,
+                    currentWave.safeBox.width,
+                    currentWave.safeBox.length
+                );
+                
+                // Set the current wave's endCenterBox to match the current wave's safeBox
+                // This means the wave will move to end at the current safe zone position
+                currentWave.endCenterBox = new WaveBox(
+                    currentWave.safeBox.centerPoint,
+                    currentWave.safeBox.width,
+                    currentWave.safeBox.length
+                );
+            }
+        }
+
         _currentWaveIndex = 0;
         _waveTimer = 0f;
         _ringOfFireActive = true;
@@ -304,6 +333,8 @@ public class MapManagerScript : MonoBehaviour
 
     private void UpdateRingOfFire()
     {
+        if (_currentWaveIndex >= ringOfFire.waves.Count) return;
+
         _waveTimer += Time.deltaTime;
 
         UpdateSafeZoneInterpolation();
@@ -312,7 +343,10 @@ public class MapManagerScript : MonoBehaviour
         // Update the visual line
         UpdateLineRendererVisuals();
 
-        float tickInterval = ringOfFire.damageTickInterval > 0 ? ringOfFire.damageTickInterval : 0.5f;
+        // Get current wave's damage settings
+        Wave currentWave = ringOfFire.waves[_currentWaveIndex];
+        float tickInterval = currentWave.damageTickInterval > 0 ? currentWave.damageTickInterval : 0.5f;
+        
         if (Time.time - _lastDamageTickTime >= tickInterval)
         {
             ApplyFireDamage();
@@ -521,9 +555,6 @@ public class MapManagerScript : MonoBehaviour
                 var mr = q.GetComponent<MeshRenderer>();
                 mr.material = ringOfFire.outsideMaskMaterial;
                 // fallback color
-                Color c = ringOfFire.outsideSafeAreaColor;
-                if (c == default) c = new Color(0f, 0f, 0f, 0.45f);
-                mr.material.color = c;
                 mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
                 mr.receiveShadows = false;
                 _maskRenderers[i] = mr;
@@ -535,8 +566,11 @@ public class MapManagerScript : MonoBehaviour
 
     private void ApplyFireDamage()
     {
-        float tickInterval = ringOfFire.damageTickInterval > 0 ? ringOfFire.damageTickInterval : 0.5f;
-        float damageThisTick = ringOfFire.fireDamage * tickInterval;
+        if (_currentWaveIndex >= ringOfFire.waves.Count) return;
+
+        Wave currentWave = ringOfFire.waves[_currentWaveIndex];
+        float tickInterval = currentWave.damageTickInterval > 0 ? currentWave.damageTickInterval : 0.5f;
+        float damageThisTick = currentWave.fireDamage * tickInterval;
 
         // Update cache periodically to find new spawned players
         if (Time.time - _lastCacheUpdateTime > CACHE_UPDATE_INTERVAL)
@@ -620,45 +654,6 @@ public class MapManagerScript : MonoBehaviour
         Wave currentWave = ringOfFire.waves[_currentWaveIndex];
         return Mathf.Clamp01(_waveTimer / currentWave.duration);
     }
-
-#if UNITY_EDITOR
-    void OnDrawGizmos()
-    {
-        if (!showRingOfFireGizmos) return;
-
-        if (!Application.isPlaying)
-        {
-            if (ringOfFire.waves != null && ringOfFire.waves.Count > 0)
-            {
-                Wave firstWave = ringOfFire.waves[0];
-                if (firstWave != null && firstWave.safeBox != null)
-                {
-                    DrawSafeZoneGizmo(firstWave.safeBox.centerPoint, firstWave.safeBox.width, firstWave.safeBox.length, Color.green);
-                    if (firstWave.endCenterBox != null)
-                    {
-                        DrawSafeZoneGizmo(firstWave.endCenterBox.centerPoint, firstWave.endCenterBox.width, firstWave.endCenterBox.length, Color.yellow);
-                    }
-                }
-            }
-        }
-        else if (_ringOfFireActive)
-        {
-            DrawSafeZoneGizmo(_currentSafeCenter, _currentSafeWidth, _currentSafeLength, Color.green);
-            Gizmos.color = new Color(1f, 1f, 0f, 0.3f);
-            Gizmos.DrawWireCube(new Vector3(_targetSafeCenter.x, _targetSafeCenter.y, 0f),
-                new Vector3(_targetSafeWidth, _targetSafeLength, 0.1f));
-        }
-    }
-
-    private void DrawSafeZoneGizmo(Vector2 center, float width, float length, Color color)
-    {
-        Gizmos.color = new Color(color.r, color.g, color.b, 0.3f);
-        Gizmos.DrawCube(new Vector3(center.x, center.y, 0f), new Vector3(width, length, 0.1f));
-
-        Gizmos.color = color;
-        Gizmos.DrawWireCube(new Vector3(center.x, center.y, 0f), new Vector3(width, length, 0.1f));
-    }
-#endif
     #endregion
 
     #region Spawn Patterns
