@@ -169,6 +169,9 @@ public abstract class Player : Entity
     private float _originalRotationSpeed;
     private bool _isAnchored = false;
 
+    // Public getter so augments and other systems can check whether the player is anchored
+    public bool IsAnchored => _isAnchored;
+
     // ===== INITIALIZATION =====
     protected override void Awake()
     {

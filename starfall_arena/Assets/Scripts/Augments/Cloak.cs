@@ -29,7 +29,7 @@ public class Cloak : Augment
         // If the boost expired, remove it
         if (player.speedMultipliers.ContainsKey(augmentID) && Time.time >= _speedBoostEndTime)
         {
-            RemoveSpeedMultiplier();
+            RemoveMultiplier(player.speedMultipliers);
         }
     }
 
@@ -46,6 +46,11 @@ public class Cloak : Augment
         _speedBoostEndTime = Time.time + boostDuration;
 
         // Add or refresh the multiplier on the player
+        AddOrRefreshSpeedMultiplier();
+    }
+
+    public void AddOrRefreshSpeedMultiplier()
+    {
         if (!player.speedMultipliers.ContainsKey(augmentID))
         {
             player.speedMultipliers.Add(augmentID, speedMultiplier);
@@ -58,17 +63,6 @@ public class Cloak : Augment
             player.speedMultipliers[augmentID] = speedMultiplier;
             player.SetAugmentVariables();
             Debug.Log($"{augmentName} refreshed: speed x{speedMultiplier} for {boostDuration}s");
-        }
-    }
-
-    public void RemoveSpeedMultiplier()
-    {
-        if (player == null) return;
-        if (player.speedMultipliers.ContainsKey(augmentID))
-        {
-            player.speedMultipliers.Remove(augmentID);
-            player.SetAugmentVariables();
-            Debug.Log($"{augmentName} deactivated: speed returned to normal");
         }
     }
 
