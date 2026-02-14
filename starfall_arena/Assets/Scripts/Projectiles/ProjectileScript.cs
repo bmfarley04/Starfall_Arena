@@ -192,7 +192,6 @@ public class ProjectileScript : MonoBehaviour
             }
         }
         // Check for asteroid collision
-        // TODO: Re-enable when AsteroidScript is implemented
         else if (collider.CompareTag("Asteroid"))
         {
             var asteroid = collider.GetComponent<AsteroidScript>();

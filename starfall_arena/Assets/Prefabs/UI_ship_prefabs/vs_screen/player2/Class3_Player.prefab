@@ -165,7 +165,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6c69aa69e566ed9479d0c430c26157d5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ShieldController
-  shieldColor: {r: 1, g: 0.91764706, b: 0.83137256, a: 1}
+  shieldColor: {r: 1, g: 0.50980395, b: 0, a: 1}
   inflationAmount: 0.1
   shieldVisibleDuration: 0.6
   rippleDuration: 0.5
@@ -175,7 +175,7 @@ MonoBehaviour:
   autoCalculateSize: 1
   maxBreakRadius: 1.5
   alwaysOn: 1
-  alwaysOnAlpha: 0.7
+  alwaysOnAlpha: 0.5
 --- !u!1 &6459063611578365934
 GameObject:
   m_ObjectHideFlags: 0
@@ -1293,7 +1293,6 @@ MonoBehaviour:
     regenRate: 0
   input:
     controllerLookDeadzone: 0
-    mouseMovementThreshold: 0
   friction:
     frictionDelay: 0
     frictionDeceleration: 0

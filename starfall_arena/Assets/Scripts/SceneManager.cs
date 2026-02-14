@@ -93,8 +93,8 @@ public class GameSceneManager : MonoBehaviour
     private MapManagerScript activeMapScript;
 
     // Augment persistence between rounds
-    private List<Augment> player1Augments = new List<Augment>();
-    private List<Augment> player2Augments = new List<Augment>();
+    private List<AugmentLoadoutEntry> player1Augments = new List<AugmentLoadoutEntry>();
+    private List<AugmentLoadoutEntry> player2Augments = new List<AugmentLoadoutEntry>();
 
     // Cumulative stats across all rounds
     private float totalGameDuration;
@@ -292,8 +292,17 @@ public class GameSceneManager : MonoBehaviour
             yield return new WaitUntil(() => roundOver);
 
             // Lock surviving player
-            if (player1 != null) player1.isMovementLocked = true;
-            if (player2 != null) player2.isMovementLocked = true;
+            if (player1 != null)
+            {
+                player1.PrepareForRoundEndFreeze();
+                player1.isMovementLocked = true;
+            }
+
+            if (player2 != null)
+            {
+                player2.PrepareForRoundEndFreeze();
+                player2.isMovementLocked = true;
+            }
 
             // Brief delay for death effects
             yield return new WaitForSeconds(deathToRoundEndDelay);
@@ -457,7 +466,7 @@ public class GameSceneManager : MonoBehaviour
         yield return null;
     }
 
-    private Player SpawnPlayer(ShipData data, Transform spawnPoint, string tag, List<Augment> existingAugments)
+    private Player SpawnPlayer(ShipData data, Transform spawnPoint, string tag, List<AugmentLoadoutEntry> existingAugments)
     {
         if (data == null || data.shipPrefab == null)
         {
@@ -475,13 +484,15 @@ public class GameSceneManager : MonoBehaviour
             return null;
         }
 
-        // Transfer augments from previous round
+        // Instantiate triggers Awake before this method continues, so refresh now using runtime tag.
+        player.RefreshCombatTags();
+
+        // Transfer augment loadout from previous rounds if one exists.
         if (existingAugments != null && existingAugments.Count > 0)
         {
-            player.augments = new List<Augment>(existingAugments);
+            player.ImportAugmentLoadout(existingAugments, currentRound);
         }
-
-        player.currentRound = currentRound;
+        player.SetCurrentRound(currentRound);
         player.isMovementLocked = true;
 
         // Bind HUD directly from canvas reference (avoids inactive-object discovery issues)
@@ -534,9 +545,9 @@ public class GameSceneManager : MonoBehaviour
     private void SavePlayerAugments()
     {
         if (player1 != null)
-            player1Augments = new List<Augment>(player1.augments);
+            player1Augments = player1.ExportAugmentLoadout();
         if (player2 != null)
-            player2Augments = new List<Augment>(player2.augments);
+            player2Augments = player2.ExportAugmentLoadout();
     }
 
     private void DestroyPlayers()
@@ -617,11 +628,19 @@ public class GameSceneManager : MonoBehaviour
         // Determine winner (the one who is still alive)
         if (deadEntity.gameObject.CompareTag("Player1"))
         {
+            if (deadPlayer != null)
+            {
+                player1Augments = deadPlayer.ExportAugmentLoadout();
+            }
             roundWinner = 2;
             player1 = null; // Already destroyed by Die()
         }
         else if (deadEntity.gameObject.CompareTag("Player2"))
         {
+            if (deadPlayer != null)
+            {
+                player2Augments = deadPlayer.ExportAugmentLoadout();
+            }
             roundWinner = 1;
             player2 = null; // Already destroyed by Die()
         }
@@ -778,9 +797,8 @@ public class GameSceneManager : MonoBehaviour
         // Apply augment to second picker
         ApplyAugmentToPlayer(secondPicker, chosenAugment);
 
-        // Brief pause then hide
-        yield return new WaitForSecondsRealtime(0.3f);
-        augmentSelectManager.HideAugmentSelect();
+        // Show final pick effect, then exit augment select.
+        yield return augmentSelectManager.PlayFinalSelectionThenHide(chosenAugmentIndex);
     }
 
     private void OnAugmentChosen(Augment augment, int index)
@@ -797,13 +815,23 @@ public class GameSceneManager : MonoBehaviour
         // Add to persistent augment list (will be transferred on next spawn)
         if (playerNumber == 1)
         {
-            player1Augments.Add(augment);
+            player1Augments.Add(new AugmentLoadoutEntry
+            {
+                definition = augment,
+                roundAcquired = currentRound,
+                persistentState = null
+            });
             // If player is currently alive, apply immediately
             if (player1 != null) player1.AcquireAugment(augment, currentRound);
         }
         else
         {
-            player2Augments.Add(augment);
+            player2Augments.Add(new AugmentLoadoutEntry
+            {
+                definition = augment,
+                roundAcquired = currentRound,
+                persistentState = null
+            });
             if (player2 != null) player2.AcquireAugment(augment, currentRound);
         }
     }

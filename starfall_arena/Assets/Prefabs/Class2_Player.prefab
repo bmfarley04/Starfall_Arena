@@ -23178,8 +23178,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: '::'
   currentRound: 0
   augments: []
-  maxHealth: 200
-  maxShield: 200
+  maxHealth: 100
+  maxShield: 100
   shieldController: {fileID: 3922741470573243441}
   movement:
     thrustForce: 25
@@ -23193,7 +23193,7 @@ MonoBehaviour:
   - {fileID: 8156541890577867122}
   projectileWeapon:
     prefab: {fileID: 7408310672554650858, guid: ad771594cdd28f548b428c67a5314a03, type: 3}
-    baseDamage: 100
+    baseDamage: 8
     damage: 8
     speed: 30
     recoilForce: 2
@@ -23286,8 +23286,8 @@ MonoBehaviour:
       shieldLoopSound: {fileID: 0}
       shieldHitSound: {fileID: 11400000, guid: 6a5f04ee6bc536848a1d144945dd48e8, type: 2}
     tractorBeam:
-      cooldown: 7
-      duration: 3
+      cooldown: 15
+      duration: 2
       coneHalfAngle: 25
       coneRange: 30
       pullSpeed: 5
