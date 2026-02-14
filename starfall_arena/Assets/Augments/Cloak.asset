@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f868cafe3b1e5d7498e24b27c982d507, type: 3}
   m_Name: Cloak
   m_EditorClassIdentifier: Assembly-CSharp::Cloak
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: ce9691987e023834f9687b06f03d1adf, type: 3}
   augmentName: Cloak
   description: After taking damage, move 50% faster for the next 5 seconds.
   augmentID: Cloak

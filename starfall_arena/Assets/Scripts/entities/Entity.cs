@@ -133,6 +133,9 @@ public abstract class Entity : MonoBehaviour
     public Dictionary<string, float> speedMultipliers = new Dictionary<string, float>();
     public Dictionary<string, float> rotationMultipliers = new Dictionary<string, float>();
 
+    // ===== EVENTS =====
+    public System.Action<Entity> onDeath;
+
     // ===== RUNTIME STATE - COMBAT =====
     protected float currentHealth = 0;
     public float CurrentHealth => currentHealth; // Public getter for health
@@ -412,6 +415,8 @@ public abstract class Entity : MonoBehaviour
     {
         if (_isDead) return;
         _isDead = true;
+
+        onDeath?.Invoke(this);
 
         ScatterShipParts();
 

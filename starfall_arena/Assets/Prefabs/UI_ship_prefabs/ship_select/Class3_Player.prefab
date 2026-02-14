@@ -9,7 +9,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1510783858964592112}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: Turret1
   m_TagString: Untagged
   m_Icon: {fileID: 7250588514170254948, guid: 0000000000000000d000000000000000, type: 0}
@@ -40,7 +40,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 3705249044902359239}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: Turret2
   m_TagString: Untagged
   m_Icon: {fileID: 7250588514170254948, guid: 0000000000000000d000000000000000, type: 0}
@@ -74,7 +74,7 @@ GameObject:
   - component: {fileID: 8739809183095928649}
   - component: {fileID: 4668526651064117194}
   - component: {fileID: 4336082909312925661}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: Shield
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -174,6 +174,8 @@ MonoBehaviour:
   breakDuration: 0.5
   autoCalculateSize: 1
   maxBreakRadius: 1.5
+  alwaysOn: 0
+  alwaysOnAlpha: 0.3
 --- !u!1 &6459063611578365934
 GameObject:
   m_ObjectHideFlags: 0
@@ -183,7 +185,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 307486612009446285}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: Turret4
   m_TagString: Untagged
   m_Icon: {fileID: 7250588514170254948, guid: 0000000000000000d000000000000000, type: 0}
@@ -214,7 +216,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1562697156233977449}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: Turret3
   m_TagString: Untagged
   m_Icon: {fileID: 7250588514170254948, guid: 0000000000000000d000000000000000, type: 0}
@@ -287,6 +289,10 @@ PrefabInstance:
     - target: {fileID: 8595475238803380239, guid: 7017a01347321c64cb59b716d41f528f, type: 3}
       propertyPath: m_Name
       value: SlowEffect
+      objectReference: {fileID: 0}
+    - target: {fileID: 8595475238803380239, guid: 7017a01347321c64cb59b716d41f528f, type: 3}
+      propertyPath: m_Layer
+      value: 5
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -363,6 +369,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: thruster_glow
       objectReference: {fileID: 0}
+    - target: {fileID: 7090833879166917028, guid: 9ae0e650ad00c2e4393ef7f44d8f0966, type: 3}
+      propertyPath: m_Layer
+      value: 5
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -387,16 +397,84 @@ PrefabInstance:
     m_TransformParent: {fileID: 8447593613203198634}
     m_Modifications:
     - target: {fileID: 292254784750866991, guid: 9f50449675dfe174fbc61d630be106b0, type: 3}
+      propertyPath: m_Layer
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 292254784750866991, guid: 9f50449675dfe174fbc61d630be106b0, type: 3}
       propertyPath: m_IsActive
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1091970241374985039, guid: 9f50449675dfe174fbc61d630be106b0, type: 3}
+      propertyPath: m_Layer
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 1674534774752798435, guid: 9f50449675dfe174fbc61d630be106b0, type: 3}
+      propertyPath: m_Layer
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 2552568119357302657, guid: 9f50449675dfe174fbc61d630be106b0, type: 3}
+      propertyPath: m_Layer
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 2795291525215995837, guid: 9f50449675dfe174fbc61d630be106b0, type: 3}
+      propertyPath: m_Layer
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 3060438884321714939, guid: 9f50449675dfe174fbc61d630be106b0, type: 3}
+      propertyPath: m_Layer
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 3206424785042455619, guid: 9f50449675dfe174fbc61d630be106b0, type: 3}
+      propertyPath: m_Layer
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 3623076669395592299, guid: 9f50449675dfe174fbc61d630be106b0, type: 3}
+      propertyPath: m_Layer
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 3635071268795080062, guid: 9f50449675dfe174fbc61d630be106b0, type: 3}
+      propertyPath: m_Layer
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 3717748520101073773, guid: 9f50449675dfe174fbc61d630be106b0, type: 3}
+      propertyPath: m_Layer
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 3871268464079119168, guid: 9f50449675dfe174fbc61d630be106b0, type: 3}
+      propertyPath: m_Layer
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 4354788386907169663, guid: 9f50449675dfe174fbc61d630be106b0, type: 3}
+      propertyPath: m_Layer
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 5036112624317742759, guid: 9f50449675dfe174fbc61d630be106b0, type: 3}
+      propertyPath: m_Layer
+      value: 5
       objectReference: {fileID: 0}
     - target: {fileID: 5386924367371987336, guid: 9f50449675dfe174fbc61d630be106b0, type: 3}
       propertyPath: m_RenderingLayerMask
       value: 128
       objectReference: {fileID: 0}
+    - target: {fileID: 5872121034516022980, guid: 9f50449675dfe174fbc61d630be106b0, type: 3}
+      propertyPath: m_Layer
+      value: 5
+      objectReference: {fileID: 0}
     - target: {fileID: 5891499256391780445, guid: 9f50449675dfe174fbc61d630be106b0, type: 3}
       propertyPath: m_Name
       value: ProtonLegacy17
+      objectReference: {fileID: 0}
+    - target: {fileID: 5891499256391780445, guid: 9f50449675dfe174fbc61d630be106b0, type: 3}
+      propertyPath: m_Layer
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 5955124324519448814, guid: 9f50449675dfe174fbc61d630be106b0, type: 3}
+      propertyPath: m_Layer
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 6343462041291734620, guid: 9f50449675dfe174fbc61d630be106b0, type: 3}
+      propertyPath: m_Layer
+      value: 5
       objectReference: {fileID: 0}
     - target: {fileID: 6523780682702230247, guid: 9f50449675dfe174fbc61d630be106b0, type: 3}
       propertyPath: m_LocalScale.x
@@ -449,6 +527,22 @@ PrefabInstance:
     - target: {fileID: 6523780682702230247, guid: 9f50449675dfe174fbc61d630be106b0, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: -90
+      objectReference: {fileID: 0}
+    - target: {fileID: 7293429617423309785, guid: 9f50449675dfe174fbc61d630be106b0, type: 3}
+      propertyPath: m_Layer
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 7490138201587287816, guid: 9f50449675dfe174fbc61d630be106b0, type: 3}
+      propertyPath: m_Layer
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 7501953217653836768, guid: 9f50449675dfe174fbc61d630be106b0, type: 3}
+      propertyPath: m_Layer
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 9222828922267104123, guid: 9f50449675dfe174fbc61d630be106b0, type: 3}
+      propertyPath: m_Layer
+      value: 5
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -515,13 +609,37 @@ PrefabInstance:
       propertyPath: m_Name
       value: Class3_Player
       objectReference: {fileID: 0}
+    - target: {fileID: 1578230554132079418, guid: dab56be66f149c34fbedb1fc28a943e6, type: 3}
+      propertyPath: m_Layer
+      value: 5
+      objectReference: {fileID: 0}
     - target: {fileID: 1732132673403547521, guid: dab56be66f149c34fbedb1fc28a943e6, type: 3}
       propertyPath: m_Enabled
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 2677476832777579529, guid: dab56be66f149c34fbedb1fc28a943e6, type: 3}
+      propertyPath: m_Layer
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 3651560402032542292, guid: dab56be66f149c34fbedb1fc28a943e6, type: 3}
+      propertyPath: m_Layer
+      value: 5
+      objectReference: {fileID: 0}
     - target: {fileID: 4830817012399286850, guid: dab56be66f149c34fbedb1fc28a943e6, type: 3}
       propertyPath: m_LocalPosition.y
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5496160795247459985, guid: dab56be66f149c34fbedb1fc28a943e6, type: 3}
+      propertyPath: m_Layer
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 5784472621415153883, guid: dab56be66f149c34fbedb1fc28a943e6, type: 3}
+      propertyPath: m_Layer
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 6362051756548500622, guid: dab56be66f149c34fbedb1fc28a943e6, type: 3}
+      propertyPath: m_Layer
+      value: 5
       objectReference: {fileID: 0}
     - target: {fileID: 8513319098364578400, guid: dab56be66f149c34fbedb1fc28a943e6, type: 3}
       propertyPath: m_UseDelaunayMesh
@@ -1119,6 +1237,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 16bdaa66010651b4e92d58d8484b9ac2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Class3
+  currentRound: 0
+  augments: []
   maxHealth: 100
   maxShield: 50
   shieldController: {fileID: 4336082909312925661}
@@ -1134,6 +1254,7 @@ MonoBehaviour:
   - {fileID: 307486612009446285}
   projectileWeapon:
     prefab: {fileID: 1778989562205518720, guid: c1883d15da3eace4faf2638f38c358d2, type: 3}
+    baseDamage: 0
     damage: 0.1
     speed: 30
     recoilForce: 0.02
@@ -1158,12 +1279,20 @@ MonoBehaviour:
   slowEffectVisuals:
     slowParticleSystem: {fileID: 541853997494829686}
   currentShield: 0
+  ability1: {fileID: 0}
+  ability2: {fileID: 0}
+  ability3: {fileID: 0}
+  ability4: {fileID: 0}
+  abilitySlots:
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
   shieldRegen:
     regenDelay: 0
     regenRate: 0
   input:
     controllerLookDeadzone: 0
-    mouseMovementThreshold: 0
   friction:
     frictionDelay: 0
     frictionDeceleration: 0
@@ -1179,23 +1308,23 @@ MonoBehaviour:
     enableScreenShake: 0
     projectileShakeMultiplier: 0
     laserShakeMultiplier: 0
+  hud:
+    healthBar: {fileID: 0}
+    healthText: {fileID: 0}
+    shieldBar: {fileID: 0}
+    shieldText: {fileID: 0}
   projectileFireSound: {fileID: 0}
   shieldDamageSound: {fileID: 0}
   hullDamageSound: {fileID: 0}
   beamHitLoopSound: {fileID: 0}
   explosionSound: {fileID: 0}
   audioSourcePoolSize: 10
+  isMovementLocked: 0
+  shotsFired: 0
+  shotsHit: 0
+  damageDealt: 0
+  damageTaken: 0
   fireCooldown: 0.15
-  abilities:
-    ability1Stats:
-      cooldown: 0
-      duration: 0
-    ability2Stats:
-      cooldown: 0
-      duration: 0
-    ability3Stats:
-      cooldown: 0
-      duration: 0
 --- !u!114 &-5416718075314668237
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3ce8099d81d517b4c9150cc097cc8a99, type: 3}
   m_Name: ReinforcedHull
   m_EditorClassIdentifier: Assembly-CSharp::ReinforcedHull
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 8d883554f1d3e76469946e54629e6379, type: 3}
   augmentName: Reinforced Hull
   description: Start with 50% more health for the next three Rounds.
   augmentID: ReinforcedHull

@@ -27,5 +27,10 @@ namespace StarfallArena.UI
             if (slot3 != null) slot3.Bind(player.ability3);
             if (slot4 != null) slot4.Bind(player.ability4);
         }
+
+        public void BindSlot4(Ability ability)
+        {
+            if (slot4 != null) slot4.Bind(ability);
+        }
     }
 }

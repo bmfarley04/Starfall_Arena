@@ -23176,8 +23176,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 010a088e7844cc94eb2255e4fe43d8fb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: '::'
-  maxHealth: 100
-  maxShield: 100
+  currentRound: 0
+  augments: []
+  maxHealth: 200
+  maxShield: 200
   shieldController: {fileID: 3922741470573243441}
   movement:
     thrustForce: 25
@@ -23191,11 +23193,12 @@ MonoBehaviour:
   - {fileID: 8156541890577867122}
   projectileWeapon:
     prefab: {fileID: 7408310672554650858, guid: ad771594cdd28f548b428c67a5314a03, type: 3}
+    baseDamage: 100
     damage: 8
     speed: 30
     recoilForce: 2
     lifetime: 2
-    impactForce: 4
+    impactForce: 0
   visualEffects:
     visualModel: {fileID: 7020441445794620648}
     maxBankAngle: 45
@@ -23218,12 +23221,20 @@ MonoBehaviour:
   slowEffectVisuals:
     slowParticleSystem: {fileID: 358170878837530469}
   currentShield: 0
+  ability1: {fileID: 0}
+  ability2: {fileID: 0}
+  ability3: {fileID: 0}
+  ability4: {fileID: 0}
+  abilitySlots:
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
   shieldRegen:
     regenDelay: 5
     regenRate: 20
   input:
     controllerLookDeadzone: 0.1
-    mouseMovementThreshold: 5
   friction:
     frictionDelay: 0.25
     frictionDeceleration: 10
@@ -23239,12 +23250,22 @@ MonoBehaviour:
     enableScreenShake: 1
     projectileShakeMultiplier: 0.1
     laserShakeMultiplier: 0.1
+  hud:
+    healthBar: {fileID: 0}
+    healthText: {fileID: 0}
+    shieldBar: {fileID: 0}
+    shieldText: {fileID: 0}
   projectileFireSound: {fileID: 11400000, guid: 0f50595e413d8184e8aabe486091f954, type: 2}
   shieldDamageSound: {fileID: 11400000, guid: 2f2e5dd7bfaf6da4282d7da4314d259d, type: 2}
   hullDamageSound: {fileID: 11400000, guid: 18762420ea09f2f4389ca449b1119bf0, type: 2}
   beamHitLoopSound: {fileID: 11400000, guid: c2635de459d5fd44594ecb3e303fa4b5, type: 2}
   explosionSound: {fileID: 11400000, guid: 52e8c58e387b89849affa74c78d6d899, type: 2}
   audioSourcePoolSize: 10
+  isMovementLocked: 0
+  shotsFired: 0
+  shotsHit: 0
+  damageDealt: 0
+  damageTaken: 0
   abilities:
     empoweredShot:
       cooldown: 3
@@ -28946,6 +28967,8 @@ MonoBehaviour:
   breakDuration: 0.5
   autoCalculateSize: 1
   maxBreakRadius: 1.5
+  alwaysOn: 0
+  alwaysOnAlpha: 0.3
 --- !u!1 &7709150360534166383
 GameObject:
   m_ObjectHideFlags: 0

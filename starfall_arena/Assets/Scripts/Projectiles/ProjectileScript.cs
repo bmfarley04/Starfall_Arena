@@ -161,6 +161,13 @@ public class ProjectileScript : MonoBehaviour
                 damageable.TakeDamage(_damage, _impactForce, transform.position);
                 ApplyImpactForce(collider);
 
+                // Stat tracking for shooter accuracy
+                if (_shooter is Player shooterPlayer)
+                {
+                    shooterPlayer.shotsHit++;
+                    shooterPlayer.damageDealt += _damage;
+                }
+
                 // Apply slow effect if enabled
                 if (_appliesSlow)
                 {

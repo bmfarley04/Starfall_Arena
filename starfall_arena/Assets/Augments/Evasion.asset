@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5ff17e1d076c055489030fddd711423e, type: 3}
   m_Name: Evasion
   m_EditorClassIdentifier: Assembly-CSharp::Evasion
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 0459b828ff870504e8be567b018306f3, type: 3}
   augmentName: Evasion
   description: Small chance to ignore shield or health damage when hit.
   augmentID: Evasion

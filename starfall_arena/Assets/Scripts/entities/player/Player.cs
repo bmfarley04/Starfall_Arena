@@ -24,8 +24,6 @@ public struct InputConfig
     [Tooltip("Deadzone threshold for controller look input (0-1)")]
     [Range(0f, 1f)]
     public float controllerLookDeadzone;
-    [Tooltip("Minimum mouse movement (pixels) to detect mouse input")]
-    public float mouseMovementThreshold;
 }
 
 [System.Serializable]
@@ -140,6 +138,15 @@ public abstract class Player : Entity
     // ===== PROTECTED STATE (for derived classes) =====
     protected float fireCooldown = 0.5f;  // Can be overridden in derived classes
 
+    // ===== MOVEMENT LOCK =====
+    [HideInInspector] public bool isMovementLocked = false;
+
+    // ===== STAT TRACKING =====
+    [HideInInspector] public int shotsFired;
+    [HideInInspector] public int shotsHit;
+    [HideInInspector] public float damageDealt;
+    [HideInInspector] public float damageTaken;
+
     // PUBLIC GET PROTECTED SET
     public string thisPlayerTag { get; protected set; }
     public string enemyTag { get; protected set; }
@@ -150,10 +157,6 @@ public abstract class Player : Entity
     private InputAction _moveAction;
     private bool _frictionEnabled = false;
     private Vector2 _lookInput;
-    private bool _usingControllerLook = false;
-    private float _lastControllerLookTime = 0f;
-    private Vector2 _lastMousePosition;
-    private float _lastMouseMoveTime = 0f;
     protected float _lastFireTime = -999f;
     private bool _isFiring = false;
     private float _frictionTimer = 0f;
@@ -195,8 +198,6 @@ public abstract class Player : Entity
         }
 
         _lastShieldHitTime = -shieldRegen.regenDelay;
-        _lastMousePosition = Mouse.current.position.ReadValue();
-        _lastMouseMoveTime = Time.time;
 
         _playerInput = GetComponent<PlayerInput>();
         if (_playerInput != null)
@@ -275,6 +276,9 @@ public abstract class Player : Entity
     protected override void Update()
     {
         base.Update();
+
+        if (isMovementLocked) return;
+
         HandleRotation();
         HandleShieldRegeneration();
 
@@ -295,6 +299,8 @@ public abstract class Player : Entity
 
     protected override void FixedUpdate()
     {
+        if (isMovementLocked) return;
+
         if (abilities.Any(a => a != null && a.HasThrustMitigation() == true))
         {
             return;
@@ -358,21 +364,25 @@ public abstract class Player : Entity
     // ===== ABILITY INPUT CALLBACKS =====
     void OnAbility1(InputValue value)
     {
+        if (isMovementLocked) return;
         if(ability1 != null)
             ability1.TryUseAbility(value);
     }
     void OnAbility2(InputValue value)
     {
+        if (isMovementLocked) return;
         if(ability2 != null)
             ability2.TryUseAbility(value);
     }
     void OnAbility3(InputValue value)
     {
+        if (isMovementLocked) return;
         if(ability3 != null)
             ability3.TryUseAbility(value);
     }
     void OnAbility4(InputValue value)
     {
+        if (isMovementLocked) return;
         if(ability4 != null)
             ability4.TryUseAbility(value);
     }
@@ -398,12 +408,6 @@ public abstract class Player : Entity
     void OnLook(InputValue value)
     {
         _lookInput = value.Get<Vector2>();
-
-        if (_lookInput.magnitude > input.controllerLookDeadzone)
-        {
-            _usingControllerLook = true;
-            _lastControllerLookTime = Time.time;
-        }
     }
 
     void OnToggleFriction()
@@ -415,6 +419,7 @@ public abstract class Player : Entity
 
     void OnFire(InputValue value)
     {
+        if (isMovementLocked) return;
         var activeAbility = abilities.FirstOrDefault(a => a != null && a.IsAbilityActive() == true);
         if (activeAbility == null || (activeAbility != null && !activeAbility.DisablePrimaryFire()))
         {
@@ -426,23 +431,9 @@ public abstract class Player : Entity
     // ===== ROTATION =====
     protected virtual void HandleRotation()
     {
-        Vector2 currentMousePosition = Mouse.current.position.ReadValue();
-        if (Vector2.Distance(currentMousePosition, _lastMousePosition) > input.mouseMovementThreshold)
-        {
-            _lastMousePosition = currentMousePosition;
-            _lastMouseMoveTime = Time.time;
-        }
-
-        bool controllerUsedRecently = _lookInput.magnitude > input.controllerLookDeadzone;
-        bool mouseUsedMoreRecently = _lastMouseMoveTime > _lastControllerLookTime;
-
-        if (controllerUsedRecently)
+        if (_lookInput.magnitude > input.controllerLookDeadzone)
         {
             RotateWithController();
-        }
-        else if (mouseUsedMoreRecently)
-        {
-            RotateTowardMouse();
         }
     }
 
@@ -457,29 +448,6 @@ public abstract class Player : Entity
         }
 
         float targetAngle = Mathf.Atan2(_lookInput.y, _lookInput.x) * Mathf.Rad2Deg;
-        float currentAngle = transform.eulerAngles.z;
-        float newAngle = Mathf.MoveTowardsAngle(currentAngle, targetAngle + ROTATION_OFFSET, movement.rotationSpeed * Time.deltaTime);
-        transform.rotation = Quaternion.Euler(0, 0, newAngle);
-
-        movement.rotationSpeed = originalRotationSpeed;
-    }
-
-    protected virtual void RotateTowardMouse()
-    {
-        float originalRotationSpeed = movement.rotationSpeed;
-
-        var activeAbility = abilities.FirstOrDefault(a => a != null && a.IsAbilityActive() == true);
-        if (activeAbility != null)
-        {
-            activeAbility.ApplyRotationMultiplier();
-        }
-
-        Vector2 mouseScreenPosition = Mouse.current.position.ReadValue();
-        Vector3 mouseWorldPosition = Camera.main.ScreenToWorldPoint(mouseScreenPosition);
-
-        Vector2 direction = mouseWorldPosition - transform.position;
-        float targetAngle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
-
         float currentAngle = transform.eulerAngles.z;
         float newAngle = Mathf.MoveTowardsAngle(currentAngle, targetAngle + ROTATION_OFFSET, movement.rotationSpeed * Time.deltaTime);
         transform.rotation = Quaternion.Euler(0, 0, newAngle);
@@ -510,11 +478,15 @@ public abstract class Player : Entity
     // ===== COMBAT =====
     protected virtual void TryFireProjectile()
     {
+        if (isMovementLocked) return;
+
         if (projectileWeapon.prefab == null)
             return;
 
         if (Time.time < _lastFireTime + fireCooldown)
             return;
+
+        shotsFired += turrets.Length;
 
         foreach (var turret in turrets)
         {
@@ -588,6 +560,8 @@ public abstract class Player : Entity
         {
             activeAbility.ApplyTakeDamageMultiplier(ref damage);
         }
+
+        damageTaken += damage;
 
         float previousShield = currentShield;
 
@@ -791,5 +765,53 @@ public abstract class Player : Entity
         if (hud.shieldBar != null) hud.shieldBar.UpdateBar(currentShield, maxShield);
         if (hud.shieldText != null)
             hud.shieldText.text = Mathf.CeilToInt(Mathf.Max(0, currentShield)).ToString();
+    }
+
+    // ===== STAT TRACKING =====
+    public void ResetStats()
+    {
+        shotsFired = 0;
+        shotsHit = 0;
+        damageDealt = 0f;
+        damageTaken = 0f;
+    }
+
+    // ===== HUD AUTO-DISCOVERY =====
+    public void BindHUD()
+    {
+        PlayerHUD[] huds = FindObjectsByType<PlayerHUD>(FindObjectsSortMode.None);
+        foreach (var ph in huds)
+        {
+            if (ph.playerTag == thisPlayerTag)
+            {
+                BindHUD(ph);
+                break;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Binds directly from a known PlayerHUD reference (avoids FindObjectsByType issues with inactive objects).
+    /// </summary>
+    public void BindHUD(PlayerHUD ph)
+    {
+        if (ph == null) return;
+        hud.healthBar = ph.healthBar;
+        hud.healthText = ph.healthText;
+        hud.shieldBar = ph.shieldBar;
+        hud.shieldText = ph.shieldText;
+        InitializeHUD();
+    }
+
+    // ===== ABILITY 4 LOCK/UNLOCK =====
+    public void LockAbility4()
+    {
+        if (ability4 != null) ability4.isLocked = true;
+    }
+
+    public void UnlockAbility4()
+    {
+        if (ability4 != null) ability4.isLocked = false;
+        if (_abilityHUDPanel != null) _abilityHUDPanel.BindSlot4(ability4);
     }
 }

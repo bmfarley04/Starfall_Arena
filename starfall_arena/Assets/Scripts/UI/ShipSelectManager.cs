@@ -345,6 +345,11 @@ public class ShipSelectManager : MonoBehaviour
     private ShipData _player1Selection;
     private ShipData _player2Selection;
 
+    // Per-player gamepad ownership (only active player's gamepad can control ship select)
+    private Gamepad _player1Gamepad;
+    private Gamepad _player2Gamepad;
+    private Gamepad _activeGamepad;
+
     // Hold button state
     private float _backHoldTime = 0f;
     private float _selectHoldTime = 0f;
@@ -370,6 +375,49 @@ public class ShipSelectManager : MonoBehaviour
 
         // Ships are now spawned by TitleScreenManager at scene load
         // This keeps ShipSelectManager completely independent
+    }
+
+    /// <summary>
+    /// Optional external assignment for deterministic controller ownership.
+    /// If not called, gamepads are auto-assigned from connected devices.
+    /// </summary>
+    public void AssignGamepads(Gamepad player1Pad, Gamepad player2Pad)
+    {
+        _player1Gamepad = player1Pad;
+        _player2Gamepad = player2Pad;
+
+        if (_player2Gamepad == null)
+            _player2Gamepad = _player1Gamepad;
+
+        SetActiveGamepadForCurrentPlayer();
+    }
+
+    private void ResolveGamepadAssignments()
+    {
+        if (_player1Gamepad == null || !_player1Gamepad.added)
+        {
+            _player1Gamepad = Gamepad.all.Count > 0 ? Gamepad.all[0] : null;
+        }
+
+        if (_player2Gamepad == null || !_player2Gamepad.added)
+        {
+            _player2Gamepad = Gamepad.all.Count > 1 ? Gamepad.all[1] : null;
+        }
+
+        if (_player2Gamepad == null)
+            _player2Gamepad = _player1Gamepad;
+
+        SetActiveGamepadForCurrentPlayer();
+    }
+
+    private void SetActiveGamepadForCurrentPlayer()
+    {
+        _activeGamepad = _currentPlayer == PlayerSelectState.Player1
+            ? _player1Gamepad
+            : _player2Gamepad;
+
+        if (_activeGamepad == null && Gamepad.all.Count > 0)
+            _activeGamepad = Gamepad.all[0];
     }
 
     private void OnValidate()
@@ -476,6 +524,9 @@ public class ShipSelectManager : MonoBehaviour
         // Disable EventSystem's automatic navigation (stick input) - we handle navigation manually
         DisableEventSystemNavigation();
 
+        // Ensure gamepads are assigned before input processing starts
+        ResolveGamepadAssignments();
+
         // Update player selection text
         UpdatePlayerSelectionText();
 
@@ -526,6 +577,7 @@ public class ShipSelectManager : MonoBehaviour
         if (selectionUI.selectButtonFill != null)
             selectionUI.selectButtonFill.fillAmount = 1f;
 
+        SetActiveGamepadForCurrentPlayer();
         UpdatePlayerSelectionText();
     }
 
@@ -593,6 +645,9 @@ public class ShipSelectManager : MonoBehaviour
 
     private void Update()
     {
+        if (_activeGamepad == null || !_activeGamepad.added)
+            ResolveGamepadAssignments();
+
         // Don't process input during selection animation
         if (_isProcessingSelection)
         {
@@ -629,11 +684,11 @@ public class ShipSelectManager : MonoBehaviour
         if (_currentPreviewController != null && _currentPreviewController.IsRotationLocked)
             return;
 
-        if (Gamepad.current == null) return;
+        if (_activeGamepad == null) return;
 
         // Read stick input
-        Vector2 leftStick = Gamepad.current.leftStick.ReadValue();
-        Vector2 rightStick = Gamepad.current.rightStick.ReadValue();
+        Vector2 leftStick = _activeGamepad.leftStick.ReadValue();
+        Vector2 rightStick = _activeGamepad.rightStick.ReadValue();
 
         // Apply deadzone
         if (leftStick.magnitude < shipRotation.inputDeadzone)
@@ -829,12 +884,12 @@ public class ShipSelectManager : MonoBehaviour
     /// </summary>
     private void HandleDPadNavigation()
     {
-        if (Gamepad.current == null || EventSystem.current == null) return;
+        if (_activeGamepad == null || EventSystem.current == null) return;
 
         GameObject selected = EventSystem.current.currentSelectedGameObject;
 
         // D-pad DOWN
-        if (Gamepad.current.dpad.down.wasPressedThisFrame)
+        if (_activeGamepad.dpad.down.wasPressedThisFrame)
         {
             if (selected == null)
             {
@@ -861,7 +916,7 @@ public class ShipSelectManager : MonoBehaviour
         }
 
         // D-pad UP
-        if (Gamepad.current.dpad.up.wasPressedThisFrame && selected != null)
+        if (_activeGamepad.dpad.up.wasPressedThisFrame && selected != null)
         {
             Selectable selectable = selected.GetComponent<Selectable>();
             if (selectable != null)
@@ -883,7 +938,7 @@ public class ShipSelectManager : MonoBehaviour
         }
 
         // D-pad LEFT
-        if (Gamepad.current.dpad.left.wasPressedThisFrame && selected != null)
+        if (_activeGamepad.dpad.left.wasPressedThisFrame && selected != null)
         {
             Selectable selectable = selected.GetComponent<Selectable>();
             if (selectable != null)
@@ -900,7 +955,7 @@ public class ShipSelectManager : MonoBehaviour
         }
 
         // D-pad RIGHT
-        if (Gamepad.current.dpad.right.wasPressedThisFrame && selected != null)
+        if (_activeGamepad.dpad.right.wasPressedThisFrame && selected != null)
         {
             Selectable selectable = selected.GetComponent<Selectable>();
             if (selectable != null)
@@ -928,11 +983,11 @@ public class ShipSelectManager : MonoBehaviour
         bool navigateLeft = false;
         bool navigateRight = false;
 
-        // Gamepad shoulder buttons for ship navigation
-        if (Gamepad.current != null)
+        // Active gamepad shoulder buttons for ship navigation
+        if (_activeGamepad != null)
         {
-            navigateLeft = Gamepad.current.leftShoulder.wasPressedThisFrame;
-            navigateRight = Gamepad.current.rightShoulder.wasPressedThisFrame;
+            navigateLeft = _activeGamepad.leftShoulder.wasPressedThisFrame;
+            navigateRight = _activeGamepad.rightShoulder.wasPressedThisFrame;
         }
 
         // Keyboard fallback (Q/E for shoulders)
@@ -1452,11 +1507,11 @@ public class ShipSelectManager : MonoBehaviour
         bool backPressed = false;
         bool selectPressed = false;
 
-        // Gamepad input
-        if (Gamepad.current != null)
+        // Active gamepad input only
+        if (_activeGamepad != null)
         {
-            backPressed = Gamepad.current.bButton.isPressed;
-            selectPressed = Gamepad.current.aButton.isPressed;
+            backPressed = _activeGamepad.bButton.isPressed;
+            selectPressed = _activeGamepad.aButton.isPressed;
         }
 
         // Keyboard fallback (Escape for back, Enter for select)
@@ -1534,6 +1589,7 @@ public class ShipSelectManager : MonoBehaviour
             // Player 2 going back - return to Player 1 selection
             Debug.Log("Player 2 backing out - returning to Player 1 selection");
             _currentPlayer = PlayerSelectState.Player1;
+            SetActiveGamepadForCurrentPlayer();
             _player2Selection = null;
             UpdatePlayerSelectionText();
 
@@ -1619,6 +1675,7 @@ public class ShipSelectManager : MonoBehaviour
             Debug.LogWarning("ShipSelectManager: No UI container assigned for slide transition!");
             // Fallback: just switch without animation
             _currentPlayer = PlayerSelectState.Player2;
+            SetActiveGamepadForCurrentPlayer();
             UpdatePlayerSelectionText();
             _currentShipIndex = 0;
             LoadShip(_currentShipIndex);
@@ -1663,6 +1720,7 @@ public class ShipSelectManager : MonoBehaviour
 
         // --- SWITCH TO PLAYER 2 (while off-screen) ---
         _currentPlayer = PlayerSelectState.Player2;
+        SetActiveGamepadForCurrentPlayer();
         UpdatePlayerSelectionText();
 
         // Reset to first ship for Player 2
