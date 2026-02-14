@@ -82,7 +82,6 @@ MonoBehaviour:
   animation:
     growDuration: 0.5
     shrinkDuration: 0.3
-  ringOfFireManager: {fileID: 0}
 --- !u!114 &2599233855982751468
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -396,7 +395,6 @@ MonoBehaviour:
   animation:
     growDuration: 0.5
     shrinkDuration: 0.3
-  ringOfFireManager: {fileID: 0}
 --- !u!114 &3187118788145129483
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -519,7 +517,6 @@ MonoBehaviour:
   animation:
     growDuration: 0.5
     shrinkDuration: 0.3
-  ringOfFireManager: {fileID: 0}
 --- !u!114 &7403510840332534524
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -676,7 +673,6 @@ MonoBehaviour:
   animation:
     growDuration: 0.5
     shrinkDuration: 0.3
-  ringOfFireManager: {fileID: 0}
 --- !u!114 &1841484504923890147
 MonoBehaviour:
   m_ObjectHideFlags: 0
