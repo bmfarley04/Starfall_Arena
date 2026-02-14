@@ -67,6 +67,12 @@ public class GameSceneManager : MonoBehaviour
     [Tooltip("Canvas containing Player 2 ability icons")]
     [SerializeField] private Canvas player2AbilityCanvas;
 
+    [Header("Win Trackers")]
+    [Tooltip("WinTracker component on Player 1's win indicator rectangles")]
+    [SerializeField] private StarfallArena.UI.WinTracker player1WinTracker;
+    [Tooltip("WinTracker component on Player 2's win indicator rectangles")]
+    [SerializeField] private StarfallArena.UI.WinTracker player2WinTracker;
+
     [Header("Debug — Start At Round")]
     [Tooltip("Skip VS screen and start directly at this round. 0 = normal flow (VS screen first).")]
     [Range(0, 5)]
@@ -198,6 +204,9 @@ public class GameSceneManager : MonoBehaviour
                 case 4: player1Wins = 2; player2Wins = 1; lastRoundLoser = 2; break;
                 case 5: player1Wins = 2; player2Wins = 2; lastRoundLoser = 1; break;
             }
+
+            // Sync win trackers with simulated wins
+            UpdateWinTrackers();
 
             // Go straight to split-screen
             if (splitScreenManager != null)
@@ -356,6 +365,8 @@ public class GameSceneManager : MonoBehaviour
                 lastRoundLoser = 1;
             }
 
+            UpdateWinTrackers();
+
             // Capture gamepad references before players are destroyed
             // (PlayerInput components hold the device assignments)
             CapturePlayerGamepads();
@@ -420,6 +431,15 @@ public class GameSceneManager : MonoBehaviour
         if (player2HUDCanvas != null) player2HUDCanvas.gameObject.SetActive(active);
         if (player1AbilityCanvas != null) player1AbilityCanvas.gameObject.SetActive(active);
         if (player2AbilityCanvas != null) player2AbilityCanvas.gameObject.SetActive(active);
+    }
+
+    /// <summary>
+    /// Syncs both win tracker UIs with the current win counts.
+    /// </summary>
+    private void UpdateWinTrackers()
+    {
+        if (player1WinTracker != null) player1WinTracker.SetWins(player1Wins);
+        if (player2WinTracker != null) player2WinTracker.SetWins(player2Wins);
     }
 
     // ===== PLAYER SPAWNING =====
