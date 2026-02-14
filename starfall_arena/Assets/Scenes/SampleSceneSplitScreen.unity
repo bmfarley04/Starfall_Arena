@@ -28998,7 +28998,7 @@ MonoBehaviour:
   player2AbilityCanvas: {fileID: 0}
   player1WinTracker: {fileID: 798331406}
   player2WinTracker: {fileID: 16507106}
-  debugStartAtRound: 1
+  debugStartAtRound: 0
 --- !u!4 &1497365221
 Transform:
   m_ObjectHideFlags: 0
