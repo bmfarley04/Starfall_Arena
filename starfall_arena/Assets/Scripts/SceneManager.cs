@@ -292,8 +292,17 @@ public class GameSceneManager : MonoBehaviour
             yield return new WaitUntil(() => roundOver);
 
             // Lock surviving player
-            if (player1 != null) player1.isMovementLocked = true;
-            if (player2 != null) player2.isMovementLocked = true;
+            if (player1 != null)
+            {
+                player1.PrepareForRoundEndFreeze();
+                player1.isMovementLocked = true;
+            }
+
+            if (player2 != null)
+            {
+                player2.PrepareForRoundEndFreeze();
+                player2.isMovementLocked = true;
+            }
 
             // Brief delay for death effects
             yield return new WaitForSeconds(deathToRoundEndDelay);
@@ -788,9 +797,8 @@ public class GameSceneManager : MonoBehaviour
         // Apply augment to second picker
         ApplyAugmentToPlayer(secondPicker, chosenAugment);
 
-        // Brief pause then hide
-        yield return new WaitForSecondsRealtime(0.3f);
-        augmentSelectManager.HideAugmentSelect();
+        // Show final pick effect, then exit augment select.
+        yield return augmentSelectManager.PlayFinalSelectionThenHide(chosenAugmentIndex);
     }
 
     private void OnAugmentChosen(Augment augment, int index)

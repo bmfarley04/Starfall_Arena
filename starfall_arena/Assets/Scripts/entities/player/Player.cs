@@ -716,6 +716,46 @@ public abstract class Player : Entity
         return 0f;
     }
 
+    public void PrepareForRoundEndFreeze()
+    {
+        _isFiring = false;
+        _isThrusting = false;
+        _lookInput = Vector2.zero;
+
+        if (_rb != null)
+        {
+            _rb.linearVelocity = Vector2.zero;
+            _rb.angularVelocity = 0f;
+        }
+
+        if (_isAnchored)
+        {
+            _isAnchored = false;
+            movement.rotationSpeed = _originalRotationSpeed;
+            _rb.linearDamping = 0f;
+            thrusters.invertColors = false;
+        }
+
+        if (_beamHitLoopSource != null && _beamHitLoopSource.isPlaying)
+        {
+            _beamHitLoopSource.Stop();
+        }
+
+        if (_chromaticFadeCoroutine != null)
+        {
+            StopCoroutine(_chromaticFadeCoroutine);
+            _chromaticFadeCoroutine = null;
+        }
+
+        _currentChromaticIntensity = 0f;
+        _damageAccumulator = 0f;
+
+        if (_chromaticAberration != null)
+        {
+            _chromaticAberration.intensity.value = 0f;
+        }
+    }
+
     // ===== SCREEN SHAKE =====
     private void HandleScreenShake(float damage, float impactForce, DamageSource source)
     {
