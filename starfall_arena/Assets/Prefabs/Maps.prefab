@@ -121,6 +121,7 @@ MonoBehaviour:
     lineWidth: 0
     maskExtent: 400
     outsideMaskMaterial: {fileID: 2100000, guid: ed9b04cc44f5efd4eb81ac84c0e4c20e, type: 2}
+    maskShaderZValue: 0.05
 --- !u!1 &3221698777667135044
 GameObject:
   m_ObjectHideFlags: 0
@@ -434,6 +435,7 @@ MonoBehaviour:
     lineWidth: 0
     maskExtent: 400
     outsideMaskMaterial: {fileID: 2100000, guid: ed9b04cc44f5efd4eb81ac84c0e4c20e, type: 2}
+    maskShaderZValue: 0.05
 --- !u!1 &7879155641077518358
 GameObject:
   m_ObjectHideFlags: 0
@@ -556,6 +558,7 @@ MonoBehaviour:
     lineWidth: 0
     maskExtent: 400
     outsideMaskMaterial: {fileID: 2100000, guid: ed9b04cc44f5efd4eb81ac84c0e4c20e, type: 2}
+    maskShaderZValue: 0.05
 --- !u!1 &8029003339607521930
 GameObject:
   m_ObjectHideFlags: 0
@@ -712,3 +715,4 @@ MonoBehaviour:
     lineWidth: 0
     maskExtent: 400
     outsideMaskMaterial: {fileID: 2100000, guid: ed9b04cc44f5efd4eb81ac84c0e4c20e, type: 2}
+    maskShaderZValue: 0.05

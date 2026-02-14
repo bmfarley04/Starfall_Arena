@@ -21,6 +21,8 @@ public struct RingOfFireConfig
     public float maskExtent;
     [Tooltip("Material for the outside safe zone masks (optional, will use a default unlit color if not set)")]
     public Material outsideMaskMaterial;
+    [Tooltip("Z value for the mask shader to ensure it renders above the map but below the line renderer")]
+    public float maskShaderZValue; // Z value for the mask shader to ensure it renders above the map but below the line renderer
 
     public RingOfFireConfig(bool init)
     {
@@ -30,6 +32,7 @@ public struct RingOfFireConfig
         lineWidth = 0.2f;
         maskExtent = 50f;
         outsideMaskMaterial = null;
+        maskShaderZValue = 0.05f;
     }
 }
 
@@ -354,6 +357,14 @@ public class RingOfFireManager : MonoBehaviour
         if (!_maskParent.activeSelf) 
             _maskParent.SetActive(true);
         
+        // Ensure the quad's world Z stays at the configured value while its X/Y follow the parent (shape)
+        if (_maskRenderer != null && _maskParent != null)
+        {
+            var quadTransform = _maskRenderer.transform;
+            Vector3 parentWorld = _maskParent.transform.position;
+            quadTransform.position = new Vector3(parentWorld.x, parentWorld.y, config.maskShaderZValue);
+        }
+        
         // Update shader properties based on current shape
         if (_currentShapeType == WaveShapeType.Box)
         {
@@ -396,7 +407,9 @@ public class RingOfFireManager : MonoBehaviour
             
             // Position and scale to cover the entire play area
             float extent = config.maskExtent > 0f ? config.maskExtent : 50f;
-            quad.transform.localPosition = new Vector3(0f, 0f, 0.05f); // Slightly behind line renderer
+            quad.transform.localPosition = Vector3.zero;
+            // Set world Z to the configured value while preserving world X/Y
+            quad.transform.position = new Vector3(_currentSafeCenter.x, _currentSafeCenter.y, config.maskShaderZValue);
             quad.transform.localScale = new Vector3(extent * 2f, extent * 2f, 1f);
             
             _maskRenderer = quad.GetComponent<MeshRenderer>();
