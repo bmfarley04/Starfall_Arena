@@ -475,6 +475,9 @@ public class GameSceneManager : MonoBehaviour
             return null;
         }
 
+        // Instantiate triggers Awake before this method continues, so refresh now using runtime tag.
+        player.RefreshCombatTags();
+
         // Transfer augments from previous round
         if (existingAugments != null && existingAugments.Count > 0)
         {

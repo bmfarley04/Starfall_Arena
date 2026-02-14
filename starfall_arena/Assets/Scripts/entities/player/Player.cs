@@ -181,21 +181,7 @@ public abstract class Player : Entity
         base.Awake();
         abilities = new List<Ability> { ability1, ability2, ability3, ability4 };
         _originalRotationSpeed = movement.rotationSpeed;
-        if(gameObject.CompareTag("Player1"))
-        {
-            thisPlayerTag = "Player1";
-            enemyTag = "Player2";
-        }
-        else if (gameObject.CompareTag("Player2"))
-        {
-            thisPlayerTag = "Player2";
-            enemyTag = "Player1";
-        }
-        else
-        {
-            thisPlayerTag = "Player";
-            enemyTag = "Enemy";
-        }
+        RefreshCombatTags();
 
         _lastShieldHitTime = -shieldRegen.regenDelay;
 
@@ -223,6 +209,32 @@ public abstract class Player : Entity
 
         InitializeAudioSystem();
         InitializeHUD();
+    }
+
+    protected virtual void Start()
+    {
+        // Spawn systems can set the final player tag after Instantiate/Awake.
+        // Resolve again here so projectile targeting always reflects the final tag.
+        RefreshCombatTags();
+    }
+
+    public void RefreshCombatTags()
+    {
+        if (gameObject.CompareTag("Player1"))
+        {
+            thisPlayerTag = "Player1";
+            enemyTag = "Player2";
+        }
+        else if (gameObject.CompareTag("Player2"))
+        {
+            thisPlayerTag = "Player2";
+            enemyTag = "Player1";
+        }
+        else
+        {
+            thisPlayerTag = "Player";
+            enemyTag = "Enemy";
+        }
     }
     private void InitializeAudioSystem()
     {
