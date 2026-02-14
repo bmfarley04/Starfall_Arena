@@ -624,3 +624,33 @@ Transition to Ship Select:
 - **Performance**: Background generation is procedural; monitor if adding more visual layers impacts performance
 - **Ability Expansion**: Class1 has 4 abilities; future ship classes can have different ability sets
 - **HUD Dynamic Binding**: The `HUDConfig` struct currently lives on `Player.cs` (abstract), but Player is never directly instantiated — concrete ships like Class1 are spawned dynamically after ship select. The HUD bars/text exist in the gameplay scene canvas and can't be pre-wired on ship prefabs. **TODO:** Create a `PlayerHUD` MonoBehaviour that sits on each HUD panel in the scene, holds the `SegmentedBar` and `TextMeshProUGUI` references, and has a `playerTag` field (`"Player1"` / `"Player2"`). Move the HUD wiring out of Player and have the spawned player auto-discover its matching `PlayerHUD` in `Start()` via tag match. This supports multiple players (P1 vs P2) and dynamic spawning without needing Inspector references on prefabs. Related files: `Player.cs` (HUDConfig struct + OnHealthChanged/OnShieldChanged), `SegmentedBar.cs` (bar segment logic).
+
+## Augment Architecture (Current)
+
+### Data vs Runtime Split
+
+Augments now follow a strict split:
+
+- `Augment` ScriptableObjects (`Assets/Scripts/Augments/Augment.cs`) are definition-only authoring assets.
+- Runtime behavior lives in `IAugmentRuntime` classes under `Assets/Scripts/Augments/Runtime/`.
+- Player-owned runtime instances are managed only by `AugmentController` (`Assets/Scripts/entities/AugmentController.cs`).
+
+Do not store per-player mutable state on ScriptableObject augment assets.
+
+### Core Runtime Contracts
+
+- `IAugmentRuntime`: per-augment runtime hooks (`ExecuteEffects`, damage hooks, contact hooks, persistence capture).
+- `AugmentLoadoutEntry`: snapshot entry used by SceneManager between rounds (`definition`, `roundAcquired`, `persistentState`).
+
+### Scene Flow Integration
+
+- `AugmentSelectManager` still passes `Augment` definitions (unchanged public contract).
+- `SceneManager` stores per-player `List<AugmentLoadoutEntry>` and re-imports them on respawn.
+- `Entity` delegates augment hook dispatch to `AugmentController`.
+
+### Rules
+
+- Never write `augmentName`, `description`, or `augmentID` at runtime.
+- New augment logic should be added as a new runtime class implementing `IAugmentRuntime`.
+- New augment definitions should only expose tunable parameters and return runtime via `CreateRuntime()`.
+- Avoid reflection in augment systems; use explicit `Entity` APIs (`SetShieldValue`, `SetMaxHealthAndClampCurrent`, etc.).
