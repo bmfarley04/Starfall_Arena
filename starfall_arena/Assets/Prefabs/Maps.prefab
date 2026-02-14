@@ -96,11 +96,131 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::RingOfFireManager
   config:
     waves:
-    - duration: 30
+    - duration: 20
       stationary: 0
-      fireDamage: 10
+      fireDamage: 3
       damageTickInterval: 0.5
       autoChainWithPrevious: 0
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 100
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 100
+    - duration: 10
+      stationary: 1
+      fireDamage: 3
+      damageTickInterval: 0.5
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 100
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 100
+    - duration: 20
+      stationary: 0
+      fireDamage: 6
+      damageTickInterval: 0.4
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+    - duration: 10
+      stationary: 1
+      fireDamage: 6
+      damageTickInterval: 0.4
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+    - duration: 13
+      stationary: 0
+      fireDamage: 9
+      damageTickInterval: 0.3
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 50
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+    - duration: 7
+      stationary: 1
+      fireDamage: 9
+      damageTickInterval: 0.3
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 50
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+    - duration: 13
+      stationary: 0
+      fireDamage: 12
+      damageTickInterval: 0.2
+      autoChainWithPrevious: 1
       shapeType: 1
       safeBox:
         centerPoint: {x: 0, y: 0}
@@ -115,11 +235,291 @@ MonoBehaviour:
         radius: 25
       endCenterCircle:
         centerPoint: {x: 0, y: 0}
-        radius: 25
+        radius: 75
+    - duration: 7
+      stationary: 1
+      fireDamage: 12
+      damageTickInterval: 0.2
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 50
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+    - duration: 13
+      stationary: 0
+      fireDamage: 15
+      damageTickInterval: 0.1
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 12
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+    - duration: 7
+      stationary: 1
+      fireDamage: 15
+      damageTickInterval: 0.1
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 50
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+    - duration: 7
+      stationary: 0
+      fireDamage: 18
+      damageTickInterval: 0.05
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 7
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+    - duration: 7
+      stationary: 0
+      fireDamage: 18
+      damageTickInterval: 0.05
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 7
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+    - duration: 7
+      stationary: 0
+      fireDamage: 18
+      damageTickInterval: 0.05
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 7
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+    - duration: 7
+      stationary: 0
+      fireDamage: 18
+      damageTickInterval: 0.05
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 7
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+    - duration: 7
+      stationary: 0
+      fireDamage: 18
+      damageTickInterval: 0.05
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 7
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+    - duration: 7
+      stationary: 0
+      fireDamage: 18
+      damageTickInterval: 0.05
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 7
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+    - duration: 7
+      stationary: 0
+      fireDamage: 18
+      damageTickInterval: 0.05
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 7
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+    - duration: 7
+      stationary: 0
+      fireDamage: 18
+      damageTickInterval: 0.05
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 7
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+    - duration: 7
+      stationary: 0
+      fireDamage: 18
+      damageTickInterval: 0.05
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 7
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+    - duration: 7
+      stationary: 0
+      fireDamage: 18
+      damageTickInterval: 0.05
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 7
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+    - duration: 99999
+      stationary: 0
+      fireDamage: 18
+      damageTickInterval: 0.05
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 7
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
     autoStart: 1
     fireLineMaterial: {fileID: 2100000, guid: 3ec3a6ee245fad5488f674cd61116782, type: 2}
     lineWidth: 0
-    maskExtent: 500
+    maskExtent: 1000
     outsideMaskMaterial: {fileID: 2100000, guid: ed9b04cc44f5efd4eb81ac84c0e4c20e, type: 2}
     maskShaderZValue: 0.05
 --- !u!1 &3221698777667135044
@@ -410,11 +810,131 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::RingOfFireManager
   config:
     waves:
-    - duration: 30
+    - duration: 20
       stationary: 0
-      fireDamage: 10
+      fireDamage: 3
       damageTickInterval: 0.5
       autoChainWithPrevious: 0
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 100
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 100
+    - duration: 10
+      stationary: 1
+      fireDamage: 3
+      damageTickInterval: 0.5
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 100
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 100
+    - duration: 20
+      stationary: 0
+      fireDamage: 6
+      damageTickInterval: 0.4
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+    - duration: 10
+      stationary: 1
+      fireDamage: 6
+      damageTickInterval: 0.4
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+    - duration: 13
+      stationary: 0
+      fireDamage: 9
+      damageTickInterval: 0.3
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 50
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+    - duration: 7
+      stationary: 1
+      fireDamage: 9
+      damageTickInterval: 0.3
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 50
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+    - duration: 13
+      stationary: 0
+      fireDamage: 12
+      damageTickInterval: 0.2
+      autoChainWithPrevious: 1
       shapeType: 1
       safeBox:
         centerPoint: {x: 0, y: 0}
@@ -429,11 +949,291 @@ MonoBehaviour:
         radius: 25
       endCenterCircle:
         centerPoint: {x: 0, y: 0}
-        radius: 25
+        radius: 75
+    - duration: 7
+      stationary: 1
+      fireDamage: 12
+      damageTickInterval: 0.2
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 50
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+    - duration: 13
+      stationary: 0
+      fireDamage: 15
+      damageTickInterval: 0.1
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 12
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+    - duration: 7
+      stationary: 1
+      fireDamage: 15
+      damageTickInterval: 0.1
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 50
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+    - duration: 7
+      stationary: 0
+      fireDamage: 18
+      damageTickInterval: 0.05
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 7
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+    - duration: 7
+      stationary: 0
+      fireDamage: 18
+      damageTickInterval: 0.05
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 7
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+    - duration: 7
+      stationary: 0
+      fireDamage: 18
+      damageTickInterval: 0.05
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 7
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+    - duration: 7
+      stationary: 0
+      fireDamage: 18
+      damageTickInterval: 0.05
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 7
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+    - duration: 7
+      stationary: 0
+      fireDamage: 18
+      damageTickInterval: 0.05
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 7
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+    - duration: 7
+      stationary: 0
+      fireDamage: 18
+      damageTickInterval: 0.05
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 7
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+    - duration: 7
+      stationary: 0
+      fireDamage: 18
+      damageTickInterval: 0.05
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 7
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+    - duration: 7
+      stationary: 0
+      fireDamage: 18
+      damageTickInterval: 0.05
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 7
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+    - duration: 7
+      stationary: 0
+      fireDamage: 18
+      damageTickInterval: 0.05
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 7
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+    - duration: 7
+      stationary: 0
+      fireDamage: 18
+      damageTickInterval: 0.05
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 7
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+    - duration: 99999
+      stationary: 0
+      fireDamage: 18
+      damageTickInterval: 0.05
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 7
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
     autoStart: 1
     fireLineMaterial: {fileID: 2100000, guid: 3ec3a6ee245fad5488f674cd61116782, type: 2}
     lineWidth: 0
-    maskExtent: 500
+    maskExtent: 1000
     outsideMaskMaterial: {fileID: 2100000, guid: ed9b04cc44f5efd4eb81ac84c0e4c20e, type: 2}
     maskShaderZValue: 0.05
 --- !u!1 &7879155641077518358
@@ -533,11 +1333,131 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::RingOfFireManager
   config:
     waves:
-    - duration: 30
+    - duration: 20
       stationary: 0
-      fireDamage: 10
+      fireDamage: 3
       damageTickInterval: 0.5
       autoChainWithPrevious: 0
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 100
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 100
+    - duration: 10
+      stationary: 1
+      fireDamage: 3
+      damageTickInterval: 0.5
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 100
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 100
+    - duration: 20
+      stationary: 0
+      fireDamage: 6
+      damageTickInterval: 0.4
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+    - duration: 10
+      stationary: 1
+      fireDamage: 6
+      damageTickInterval: 0.4
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+    - duration: 13
+      stationary: 0
+      fireDamage: 9
+      damageTickInterval: 0.3
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 50
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+    - duration: 7
+      stationary: 1
+      fireDamage: 9
+      damageTickInterval: 0.3
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 50
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+    - duration: 13
+      stationary: 0
+      fireDamage: 12
+      damageTickInterval: 0.2
+      autoChainWithPrevious: 1
       shapeType: 1
       safeBox:
         centerPoint: {x: 0, y: 0}
@@ -552,11 +1472,291 @@ MonoBehaviour:
         radius: 25
       endCenterCircle:
         centerPoint: {x: 0, y: 0}
-        radius: 25
+        radius: 75
+    - duration: 7
+      stationary: 1
+      fireDamage: 12
+      damageTickInterval: 0.2
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 50
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+    - duration: 13
+      stationary: 0
+      fireDamage: 15
+      damageTickInterval: 0.1
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 12
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+    - duration: 7
+      stationary: 1
+      fireDamage: 15
+      damageTickInterval: 0.1
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 50
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+    - duration: 7
+      stationary: 0
+      fireDamage: 18
+      damageTickInterval: 0.05
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 7
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+    - duration: 7
+      stationary: 0
+      fireDamage: 18
+      damageTickInterval: 0.05
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 7
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+    - duration: 7
+      stationary: 0
+      fireDamage: 18
+      damageTickInterval: 0.05
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 7
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+    - duration: 7
+      stationary: 0
+      fireDamage: 18
+      damageTickInterval: 0.05
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 7
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+    - duration: 7
+      stationary: 0
+      fireDamage: 18
+      damageTickInterval: 0.05
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 7
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+    - duration: 7
+      stationary: 0
+      fireDamage: 18
+      damageTickInterval: 0.05
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 7
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+    - duration: 7
+      stationary: 0
+      fireDamage: 18
+      damageTickInterval: 0.05
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 7
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+    - duration: 7
+      stationary: 0
+      fireDamage: 18
+      damageTickInterval: 0.05
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 7
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+    - duration: 7
+      stationary: 0
+      fireDamage: 18
+      damageTickInterval: 0.05
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 7
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+    - duration: 7
+      stationary: 0
+      fireDamage: 18
+      damageTickInterval: 0.05
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 7
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+    - duration: 99999
+      stationary: 0
+      fireDamage: 18
+      damageTickInterval: 0.05
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 7
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
     autoStart: 1
     fireLineMaterial: {fileID: 2100000, guid: 3ec3a6ee245fad5488f674cd61116782, type: 2}
     lineWidth: 0
-    maskExtent: 500
+    maskExtent: 1000
     outsideMaskMaterial: {fileID: 2100000, guid: ed9b04cc44f5efd4eb81ac84c0e4c20e, type: 2}
     maskShaderZValue: 0.05
 --- !u!1 &8029003339607521930
@@ -690,11 +1890,131 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::RingOfFireManager
   config:
     waves:
-    - duration: 30
+    - duration: 20
       stationary: 0
-      fireDamage: 10
+      fireDamage: 3
       damageTickInterval: 0.5
       autoChainWithPrevious: 0
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 100
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 100
+    - duration: 10
+      stationary: 1
+      fireDamage: 3
+      damageTickInterval: 0.5
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 100
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 100
+    - duration: 20
+      stationary: 0
+      fireDamage: 6
+      damageTickInterval: 0.4
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+    - duration: 10
+      stationary: 1
+      fireDamage: 6
+      damageTickInterval: 0.4
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+    - duration: 13
+      stationary: 0
+      fireDamage: 9
+      damageTickInterval: 0.3
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 50
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+    - duration: 7
+      stationary: 1
+      fireDamage: 9
+      damageTickInterval: 0.3
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 50
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+    - duration: 13
+      stationary: 0
+      fireDamage: 12
+      damageTickInterval: 0.2
+      autoChainWithPrevious: 1
       shapeType: 1
       safeBox:
         centerPoint: {x: 0, y: 0}
@@ -709,10 +2029,290 @@ MonoBehaviour:
         radius: 25
       endCenterCircle:
         centerPoint: {x: 0, y: 0}
-        radius: 25
+        radius: 75
+    - duration: 7
+      stationary: 1
+      fireDamage: 12
+      damageTickInterval: 0.2
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 50
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+    - duration: 13
+      stationary: 0
+      fireDamage: 15
+      damageTickInterval: 0.1
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 12
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+    - duration: 7
+      stationary: 1
+      fireDamage: 15
+      damageTickInterval: 0.1
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 50
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+    - duration: 7
+      stationary: 0
+      fireDamage: 18
+      damageTickInterval: 0.05
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 7
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+    - duration: 7
+      stationary: 0
+      fireDamage: 18
+      damageTickInterval: 0.05
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 7
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+    - duration: 7
+      stationary: 0
+      fireDamage: 18
+      damageTickInterval: 0.05
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 7
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+    - duration: 7
+      stationary: 0
+      fireDamage: 18
+      damageTickInterval: 0.05
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 7
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+    - duration: 7
+      stationary: 0
+      fireDamage: 18
+      damageTickInterval: 0.05
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 7
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+    - duration: 7
+      stationary: 0
+      fireDamage: 18
+      damageTickInterval: 0.05
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 7
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+    - duration: 7
+      stationary: 0
+      fireDamage: 18
+      damageTickInterval: 0.05
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 7
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+    - duration: 7
+      stationary: 0
+      fireDamage: 18
+      damageTickInterval: 0.05
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 7
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+    - duration: 7
+      stationary: 0
+      fireDamage: 18
+      damageTickInterval: 0.05
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 7
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+    - duration: 7
+      stationary: 0
+      fireDamage: 18
+      damageTickInterval: 0.05
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 7
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+    - duration: 99999
+      stationary: 0
+      fireDamage: 18
+      damageTickInterval: 0.05
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 7
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
     autoStart: 1
     fireLineMaterial: {fileID: 2100000, guid: 3ec3a6ee245fad5488f674cd61116782, type: 2}
     lineWidth: 0
-    maskExtent: 500
+    maskExtent: 1000
     outsideMaskMaterial: {fileID: 2100000, guid: ed9b04cc44f5efd4eb81ac84c0e4c20e, type: 2}
     maskShaderZValue: 0.05
