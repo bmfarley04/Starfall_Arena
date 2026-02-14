@@ -6,10 +6,12 @@ public class Wave
 {
     [Tooltip("Time in seconds for the wave to reach the end center box.")]
     public float duration;
+    [Tooltip("Whether the wave shrinks. If enabled, the box will stay still with the parameters from the last wave for the duration.")]
+    public bool stationaryBox;
     [Tooltip("Damage per second dealt to entities outside the safe zone")]
-    public float fireDamage;
+    public float fireDamage = 5f;
     [Tooltip("How often to apply fire damage (seconds). Default: 0.5")]
-    public float damageTickInterval;
+    public float damageTickInterval = 0.5f;
     [Tooltip("Whether this wave will automatically chain with the previous wave. If enabled, this wave's safe box center will be set from the previous wave's end center box (width/length are still used from this wave's safe box). Additionally, this wave's end center box settings will be set based on it's last save box.")]
     public bool autoChainWithPrevious; 
     [Tooltip("The box that the wave will reach at the end of its duration.")]
@@ -21,5 +23,9 @@ public class Wave
         this.duration = duration;
         this.endCenterBox = endCenterBox;
         this.safeBox = safeBox;
+        this.fireDamage = 5f;
+        this.damageTickInterval = 0.5f;
+        this.stationaryBox = false;
+        this.autoChainWithPrevious = false;
     }
 }

@@ -10,6 +10,7 @@ public class WavePropertyDrawer : PropertyDrawer
 
         // Find our properties
         SerializedProperty duration = property.FindPropertyRelative("duration");
+        SerializedProperty stationaryBox = property.FindPropertyRelative("stationaryBox");
         SerializedProperty fireDamage = property.FindPropertyRelative("fireDamage");
         SerializedProperty damageTickInterval = property.FindPropertyRelative("damageTickInterval");
         SerializedProperty autoChain = property.FindPropertyRelative("autoChainWithPrevious");
@@ -25,19 +26,33 @@ public class WavePropertyDrawer : PropertyDrawer
         EditorGUI.PropertyField(fieldRect, duration);
         fieldRect.y += EditorGUIUtility.singleLineHeight + 2;
 
+        EditorGUI.PropertyField(fieldRect, stationaryBox);
+        fieldRect.y += EditorGUIUtility.singleLineHeight + 2;
+
         EditorGUI.PropertyField(fieldRect, fireDamage);
         fieldRect.y += EditorGUIUtility.singleLineHeight + 2;
 
         EditorGUI.PropertyField(fieldRect, damageTickInterval);
         fieldRect.y += EditorGUIUtility.singleLineHeight + 2;
 
-        // Draw Boxes with conditional logic
-        DrawWaveBox(ref fieldRect, safeBox, "Safe Box", autoChain.boolValue);
-        
-        // Only draw End Center Box if not chained
-        if (!autoChain.boolValue)
+        // When stationaryBox is true, the safe zone stays at the previous wave's end position
+        // So we don't need to show safeBox or endCenterBox since they're not used
+        if (!stationaryBox.boolValue)
         {
-            DrawWaveBox(ref fieldRect, endCenterBox, "End Center Box", autoChain.boolValue);
+            // Draw Boxes with conditional logic
+            DrawWaveBox(ref fieldRect, safeBox, "Safe Box", autoChain.boolValue);
+            
+            // Only draw End Center Box if not chained
+            if (!autoChain.boolValue)
+            {
+                DrawWaveBox(ref fieldRect, endCenterBox, "End Center Box", autoChain.boolValue);
+            }
+        }
+        else
+        {
+            // Show a helpful note when stationary
+            EditorGUI.HelpBox(fieldRect, "Stationary mode: Safe zone remains at previous wave's position for this wave's duration.", MessageType.Info);
+            fieldRect.y += EditorGUIUtility.singleLineHeight * 2 + 5;
         }
 
         EditorGUI.EndProperty();
@@ -69,24 +84,33 @@ public class WavePropertyDrawer : PropertyDrawer
     public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
     {
         bool autoChain = property.FindPropertyRelative("autoChainWithPrevious").boolValue;
+        bool stationary = property.FindPropertyRelative("stationaryBox").boolValue;
 
-        // Base height for the 4 top variables
-        float totalHeight = (EditorGUIUtility.singleLineHeight + 2) * 4;
+        // Base height for the top variables (autoChain, duration, stationaryBox, fireDamage, damageTickInterval)
+        float totalHeight = (EditorGUIUtility.singleLineHeight + 2) * 5;
 
-        // Add height for Safe Box (Label + Width + Length)
-        totalHeight += (EditorGUIUtility.singleLineHeight + 2) * 3;
-
-        // If not chained, add height for Safe Box centerPoint
-        if (!autoChain)
+        if (stationary)
         {
-            totalHeight += (EditorGUIUtility.singleLineHeight + 2);
+            // Add height for the help box when stationary
+            totalHeight += EditorGUIUtility.singleLineHeight * 2 + 5;
         }
-
-        // Only add End Center Box height if not chained
-        if (!autoChain)
+        else
         {
-            // End Center Box (Label + CenterPoint + Width + Length)
-            totalHeight += (EditorGUIUtility.singleLineHeight + 2) * 4;
+            // Add height for Safe Box (Label + Width + Length)
+            totalHeight += (EditorGUIUtility.singleLineHeight + 2) * 3;
+
+            // If not chained, add height for Safe Box centerPoint
+            if (!autoChain)
+            {
+                totalHeight += (EditorGUIUtility.singleLineHeight + 2);
+            }
+
+            // Only add End Center Box height if not chained
+            if (!autoChain)
+            {
+                // End Center Box (Label + CenterPoint + Width + Length)
+                totalHeight += (EditorGUIUtility.singleLineHeight + 2) * 4;
+            }
         }
 
         return totalHeight + 10;

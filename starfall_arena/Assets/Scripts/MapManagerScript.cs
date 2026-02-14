@@ -369,6 +369,16 @@ public class MapManagerScript : MonoBehaviour
         if (_currentWaveIndex >= ringOfFire.waves.Count) return;
 
         Wave currentWave = ringOfFire.waves[_currentWaveIndex];
+        
+        // If stationaryBox is enabled, don't interpolate - keep the box at its starting position
+        if (currentWave.stationaryBox)
+        {
+            _currentSafeCenter = _startSafeCenter;
+            _currentSafeWidth = _startSafeWidth;
+            _currentSafeLength = _startSafeLength;
+            return;
+        }
+        
         float progress = Mathf.Clamp01(_waveTimer / currentWave.duration);
         float smoothProgress = Mathf.SmoothStep(0f, 1f, progress);
 
