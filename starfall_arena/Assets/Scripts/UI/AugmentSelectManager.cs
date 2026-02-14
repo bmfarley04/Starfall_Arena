@@ -6,6 +6,7 @@ using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.UI;
 using TMPro;
+using System.Security.Cryptography;
 
 namespace StarfallArena.UI
 {
@@ -27,7 +28,7 @@ namespace StarfallArena.UI
         [Tooltip("Tier 3 augments (legendary)")]
         [SerializeField] private List<Augment> tier3Augments = new List<Augment>();
 
-        [Header("Tier Selection Probabilities (DEPRECATED FOR NOW - USING ONE OF EACH TIER EVERY GAME)")]
+        [Header("Tier Selection Probabilities")]
         [Tooltip("Probability of tier 1 appearing (must sum to 1 with other tiers)")]
         [Range(0f, 1f)]
         [SerializeField] private float tier1Probability = 0.6f;
@@ -108,6 +109,14 @@ namespace StarfallArena.UI
         [Tooltip("The 'container' Image child of each tier 3 card (border element)")]
         [SerializeField] private Image[] tier3Containers = new Image[3];
 
+        [Header("Inner Card Containers (inner border Image per card - 3 per tier)")]
+        [Tooltip("The 'inner container' Image child of each tier 1 card (inner border element)")]
+        [SerializeField] private Image[] tier1InnerContainers = new Image[3];
+        [Tooltip("The 'inner container' Image child of each tier 2 card (inner border element)")]
+        [SerializeField] private Image[] tier2InnerContainers = new Image[3];
+        [Tooltip("The 'inner container' Image child of each tier 3 card (inner border element)")]
+        [SerializeField] private Image[] tier3InnerContainers = new Image[3];
+
         [Header("Hover / Selection Scale")]
         [Tooltip("X scale multiplier when a card is hovered/selected")]
         [SerializeField] private float hoverScaleX = 1.1f;
@@ -141,6 +150,11 @@ namespace StarfallArena.UI
         [SerializeField] private Material selectedMaterial;
         [Tooltip("Duration of the white text flash on Title and Description")]
         [SerializeField] private float textFlashDuration = 0.4f;
+
+        [Header("Selection Flow")]
+        [Tooltip("Extra time to keep the final selected card visible before leaving augment select")]
+        [Min(0f)]
+        [SerializeField] private float finalSelectionHoldDuration = 0.2f;
 
         [Header("Animation Settings")]
         [Tooltip("Duration of the entrance animation")]
@@ -189,6 +203,7 @@ namespace StarfallArena.UI
         // Per-game tier sequence: one of each tier in randomized order
         private List<int> _gameTierOrder = new List<int>(3);
         private int _gameTierOrderIndex = 0;
+        private System.Random _tierOrderRng;
 
         // CanvasGroups for player choice / timer text (auto-created in Start)
         private CanvasGroup _playerChoiceCG;
@@ -246,6 +261,9 @@ namespace StarfallArena.UI
             WireButtonEvents(tier2Buttons);
             WireButtonEvents(tier3Buttons);
 
+            // Create isolated RNG so tier shuffling is not affected by UnityEngine.Random.InitState calls in other systems
+            InitializeTierOrderRng();
+
             // Build randomized tier order for this game (one of each tier)
             GenerateRandomizedGameTierOrder();
 
@@ -254,6 +272,18 @@ namespace StarfallArena.UI
             {
                 ShowAugmentSelect(1);
             }
+        }
+
+        /// <summary>
+        /// Initializes an isolated RNG with a non-deterministic seed.
+        /// This avoids deterministic tier order when Unity's global Random state is reset elsewhere.
+        /// </summary>
+        private void InitializeTierOrderRng()
+        {
+            byte[] seedBytes = new byte[4];
+            RandomNumberGenerator.Fill(seedBytes);
+            int seed = System.BitConverter.ToInt32(seedBytes, 0);
+            _tierOrderRng = new System.Random(seed);
         }
 
         /// <summary>
@@ -266,9 +296,12 @@ namespace StarfallArena.UI
             _gameTierOrder.Add(2);
             _gameTierOrder.Add(3);
 
+            if (_tierOrderRng == null)
+                InitializeTierOrderRng();
+
             for (int i = _gameTierOrder.Count - 1; i > 0; i--)
             {
-                int j = Random.Range(0, i + 1);
+                int j = _tierOrderRng.Next(i + 1);
                 (_gameTierOrder[i], _gameTierOrder[j]) = (_gameTierOrder[j], _gameTierOrder[i]);
             }
 
@@ -656,6 +689,7 @@ namespace StarfallArena.UI
                 tierCG.interactable = true;
                 tierCG.blocksRaycasts = true;
             }
+            SetTierButtonsInteractable(currentTier, true);
 
             // --- 9. Set default selection to first remaining active button ---
             SetDefaultSelectionFirstActive(currentTier);
@@ -669,6 +703,37 @@ namespace StarfallArena.UI
             }
 
             _transitionCoroutine = null;
+        }
+
+        /// <summary>
+        /// Plays the selection effect for the final picker, then hides the augment UI.
+        /// This ensures the second player's choice is visible before transitioning out.
+        /// </summary>
+        public IEnumerator PlayFinalSelectionThenHide(int finalChoiceIndex)
+        {
+            if (!isShowing) yield break;
+
+            if (_countdownCoroutine != null)
+            {
+                StopCoroutine(_countdownCoroutine);
+                _countdownCoroutine = null;
+            }
+
+            SetTierButtonsInteractable(currentTier, false);
+
+            CanvasGroup tierCG = GetCanvasGroupForTier(currentTier);
+            if (tierCG != null)
+            {
+                tierCG.interactable = false;
+                tierCG.blocksRaycasts = false;
+            }
+
+            yield return StartCoroutine(PlaySelectionEffect(finalChoiceIndex));
+
+            if (finalSelectionHoldDuration > 0f)
+                yield return new WaitForSecondsRealtime(finalSelectionHoldDuration);
+
+            HideAugmentSelect();
         }
 
         /// <summary>
@@ -752,26 +817,16 @@ namespace StarfallArena.UI
             if (selectedMaterial == null) yield break;
 
             // Get references for this card
-            Image container = GetContainerForCard(currentTier, choiceIndex);
+            Image outerContainer = GetContainerForCard(currentTier, choiceIndex);
+            Image innerContainer = GetInnerContainerForCard(currentTier, choiceIndex);
             Image icon = GetIconForCard(currentTier, choiceIndex);
             TextMeshProUGUI titleText = GetNameForCard(currentTier, choiceIndex);
             TextMeshProUGUI descText = GetDescriptionForCard(currentTier, choiceIndex);
 
-            // Cache originals and swap container material
-            if (container != null)
-            {
-                if (!_originalContainerMaterials.ContainsKey(container))
-                    _originalContainerMaterials[container] = container.material;
-                container.material = selectedMaterial;
-            }
-
-            // Swap icon material
-            if (icon != null)
-            {
-                if (!_originalIconMaterials.ContainsKey(icon))
-                    _originalIconMaterials[icon] = icon.material;
-                icon.material = selectedMaterial;
-            }
+            // Cache originals and swap all visual targets.
+            ApplySelectedMaterial(outerContainer, _originalContainerMaterials);
+            ApplySelectedMaterial(innerContainer, _originalContainerMaterials);
+            ApplySelectedMaterial(icon, _originalIconMaterials);
 
             // Flash text white
             Color titleOriginal = titleText != null ? titleText.color : Color.white;
@@ -818,6 +873,18 @@ namespace StarfallArena.UI
                 2 => tier2Containers,
                 3 => tier3Containers,
                 _ => tier1Containers
+            };
+            return (containers != null && index >= 0 && index < containers.Length) ? containers[index] : null;
+        }
+
+        private Image GetInnerContainerForCard(int tier, int index)
+        {
+            Image[] containers = tier switch
+            {
+                1 => tier1InnerContainers,
+                2 => tier2InnerContainers,
+                3 => tier3InnerContainers,
+                _ => tier1InnerContainers
             };
             return (containers != null && index >= 0 && index < containers.Length) ? containers[index] : null;
         }
@@ -1397,10 +1464,33 @@ namespace StarfallArena.UI
                 tierCG.interactable = false;
                 tierCG.blocksRaycasts = false;
             }
+            SetTierButtonsInteractable(currentTier, false);
 
             // Notify listeners (SceneManager) of the selection
             // SceneManager will call TransitionToSecondPicker() or HideAugmentSelect()
             onAugmentChosen?.Invoke(selectedAugment, choiceIndex);
+        }
+
+        private void SetTierButtonsInteractable(int tier, bool interactable)
+        {
+            Button[] buttons = GetButtonsForTier(tier);
+            if (buttons == null) return;
+
+            foreach (var btn in buttons)
+            {
+                if (btn == null || !btn.gameObject.activeSelf) continue;
+                btn.interactable = interactable;
+            }
+        }
+
+        private void ApplySelectedMaterial(Image image, Dictionary<Image, Material> originalLookup)
+        {
+            if (image == null) return;
+
+            if (!originalLookup.ContainsKey(image))
+                originalLookup[image] = image.material;
+
+            image.material = selectedMaterial;
         }
     }
 }

@@ -181,21 +181,7 @@ public abstract class Player : Entity
         base.Awake();
         abilities = new List<Ability> { ability1, ability2, ability3, ability4 };
         _originalRotationSpeed = movement.rotationSpeed;
-        if(gameObject.CompareTag("Player1"))
-        {
-            thisPlayerTag = "Player1";
-            enemyTag = "Player2";
-        }
-        else if (gameObject.CompareTag("Player2"))
-        {
-            thisPlayerTag = "Player2";
-            enemyTag = "Player1";
-        }
-        else
-        {
-            thisPlayerTag = "Player";
-            enemyTag = "Enemy";
-        }
+        RefreshCombatTags();
 
         _lastShieldHitTime = -shieldRegen.regenDelay;
 
@@ -223,6 +209,32 @@ public abstract class Player : Entity
 
         InitializeAudioSystem();
         InitializeHUD();
+    }
+
+    protected virtual void Start()
+    {
+        // Spawn systems can set the final player tag after Instantiate/Awake.
+        // Resolve again here so projectile targeting always reflects the final tag.
+        RefreshCombatTags();
+    }
+
+    public void RefreshCombatTags()
+    {
+        if (gameObject.CompareTag("Player1"))
+        {
+            thisPlayerTag = "Player1";
+            enemyTag = "Player2";
+        }
+        else if (gameObject.CompareTag("Player2"))
+        {
+            thisPlayerTag = "Player2";
+            enemyTag = "Player1";
+        }
+        else
+        {
+            thisPlayerTag = "Player";
+            enemyTag = "Enemy";
+        }
     }
     private void InitializeAudioSystem()
     {
@@ -702,6 +714,46 @@ public abstract class Player : Entity
             return _chromaticAberration.intensity.value;
         }
         return 0f;
+    }
+
+    public void PrepareForRoundEndFreeze()
+    {
+        _isFiring = false;
+        _isThrusting = false;
+        _lookInput = Vector2.zero;
+
+        if (_rb != null)
+        {
+            _rb.linearVelocity = Vector2.zero;
+            _rb.angularVelocity = 0f;
+        }
+
+        if (_isAnchored)
+        {
+            _isAnchored = false;
+            movement.rotationSpeed = _originalRotationSpeed;
+            _rb.linearDamping = 0f;
+            thrusters.invertColors = false;
+        }
+
+        if (_beamHitLoopSource != null && _beamHitLoopSource.isPlaying)
+        {
+            _beamHitLoopSource.Stop();
+        }
+
+        if (_chromaticFadeCoroutine != null)
+        {
+            StopCoroutine(_chromaticFadeCoroutine);
+            _chromaticFadeCoroutine = null;
+        }
+
+        _currentChromaticIntensity = 0f;
+        _damageAccumulator = 0f;
+
+        if (_chromaticAberration != null)
+        {
+            _chromaticAberration.intensity.value = 0f;
+        }
     }
 
     // ===== SCREEN SHAKE =====

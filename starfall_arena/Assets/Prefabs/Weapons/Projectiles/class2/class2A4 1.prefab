@@ -266,4 +266,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ffd9cfc02ddae0e45b4d166bfd4f75e6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PhysicalProjectile
-  targetTag: Player
+  targetTag: Player2

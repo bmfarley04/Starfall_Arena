@@ -1,7 +1,6 @@
 using StarfallArena.UI;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Serialization;
 
 public enum DamageSource
 {
@@ -164,6 +163,7 @@ public abstract class Entity : MonoBehaviour
     private float _currentThrusterIntensity = 0f;
     private Dictionary<ParticleSystem, (ParticleSystem.MinMaxCurve speed, ParticleSystem.MinMaxCurve lifetime)> _thrusterOriginalValues = new();
     private Dictionary<ParticleSystem, Color> _thrusterOriginalColors = new();
+    private AugmentController _augmentController;
 
     // ===== CONSTANTS =====
     protected const float ROTATION_OFFSET = -90f;
@@ -210,22 +210,34 @@ public abstract class Entity : MonoBehaviour
         baseMaxSpeed = movement.maxSpeed;
         baseRotationSpeed = movement.rotationSpeed;
         
-        if(augments.Count > 0)
+        if (this is Player playerEntity)
         {
-            // Create runtime instances of augments to avoid modifying the original ScriptableObject assets
-            List<Augment> runtimeAugments = new List<Augment>();
-            foreach (var augment in augments)
+            _augmentController = GetComponent<AugmentController>();
+            if (_augmentController == null)
             {
-                if(augment != null)
-                {
-                    Augment runtimeAugment = Instantiate(augment);
-                    runtimeAugments.Add(runtimeAugment);
-                    runtimeAugment.playerReference = gameObject;
-                    runtimeAugment.SetUpAugment(currentRound);
-                }
+                _augmentController = gameObject.AddComponent<AugmentController>();
             }
-            augments = runtimeAugments;
-            SetAugmentVariables();
+
+            _augmentController.Initialize(playerEntity);
+            _augmentController.SetCurrentRound(currentRound);
+
+            if (augments.Count > 0)
+            {
+                List<AugmentLoadoutEntry> defaultLoadout = new List<AugmentLoadoutEntry>(augments.Count);
+                foreach (Augment augment in augments)
+                {
+                    if (augment == null) continue;
+
+                    defaultLoadout.Add(new AugmentLoadoutEntry
+                    {
+                        definition = augment,
+                        roundAcquired = currentRound,
+                        persistentState = null
+                    });
+                }
+
+                _augmentController.ImportLoadout(defaultLoadout, currentRound);
+            }
         }
     }
 
@@ -238,7 +250,7 @@ public abstract class Entity : MonoBehaviour
         _acceleration = (currentVelocity - _previousVelocity) / Time.fixedDeltaTime;
         _previousVelocity = currentVelocity;
 
-        AugmentFixedUpdate();
+        _augmentController?.ExecuteEffects();
     }
 
     protected virtual void Update()
@@ -280,15 +292,15 @@ public abstract class Entity : MonoBehaviour
     {
         if (_isDead) return;
 
-        // Allow augments to react after damage resolved (keeping original hook)
-        AugmentFunction(a => a.OnTakeDamage(damage, impactForce, hitPoint, source));
+        // Keep legacy call ordering: post hook is invoked before pre-apply hook.
+        _augmentController?.OnTakeDamage(damage, impactForce, hitPoint, source);
 
         // --- NEW: Allow augments to modify or cancel incoming damage before it's applied ---
         bool shieldIgnored = false;
         bool healthIgnored = false;
 
         // Give each augment a chance to modify the damage or mark portions ignored
-        AugmentFunction(a => a.OnBeforeTakeDamage(ref damage, ref shieldIgnored, ref healthIgnored, source));
+        _augmentController?.OnBeforeTakeDamage(ref damage, ref shieldIgnored, ref healthIgnored, source);
 
         if (hitPoint != Vector3.zero)
         {
@@ -383,12 +395,12 @@ public abstract class Entity : MonoBehaviour
     {
         if (_isDead) return;
 
-        // Allow augments to react after direct damage (existing hook)
-        AugmentFunction(a => a.OnTakeDirectDamage(damage, impactForce, hitPoint, source));
+        // Keep legacy call ordering: post hook is invoked before pre-apply hook.
+        _augmentController?.OnTakeDirectDamage(damage, impactForce, hitPoint, source);
 
         // Allow augments to cancel or modify direct damage before it's applied
         bool healthIgnored = false;
-        AugmentFunction(a => a.OnBeforeTakeDirectDamage(ref damage, ref healthIgnored, source));
+        _augmentController?.OnBeforeTakeDirectDamage(ref damage, ref healthIgnored, source);
 
         if (hitPoint != Vector3.zero)
         {
@@ -555,7 +567,33 @@ public abstract class Entity : MonoBehaviour
 
     protected virtual void OnCollisionEnter2D(Collision2D collision) // Collision-based contact since ships are not triggers, this will capture physical collisions with other entities for thorns and similar effects
     {
-        AugmentFunction(a => a.OnContact(collision));
+        _augmentController?.OnContact(collision);
+    }
+
+    public void SetCurrentRound(int round)
+    {
+        currentRound = round;
+        _augmentController?.SetCurrentRound(round);
+    }
+
+    public void SetShieldValue(float value, bool notify = true, bool clampToMax = true)
+    {
+        currentShield = clampToMax ? Mathf.Clamp(value, 0f, maxShield) : Mathf.Max(0f, value);
+        if (notify)
+        {
+            OnShieldChanged();
+        }
+    }
+
+    public void SetMaxHealthAndClampCurrent(float newMaxHealth, bool notify = true)
+    {
+        maxHealth = Mathf.Max(1f, newMaxHealth);
+        currentHealth = Mathf.Min(currentHealth, maxHealth);
+
+        if (notify)
+        {
+            OnHealthChanged();
+        }
     }
 
     // ===== SLOW EFFECT SYSTEM =====
@@ -627,33 +665,38 @@ public abstract class Entity : MonoBehaviour
     // ===== AUGMENTS =====
     public void AcquireAugment(Augment augment, int currentRound)
     {
-        // Create a runtime instance of the augment to avoid modifying the original ScriptableObject
-        Augment runtimeAugment = Instantiate(augment);
-        
-        if(!augments.Contains(runtimeAugment))
-        {
-            augments.Add(runtimeAugment);
-        }
-        runtimeAugment.playerReference = gameObject;
-        runtimeAugment.SetUpAugment(currentRound);
-        SetAugmentVariables();
+        if (augment == null) return;
+
+        SetCurrentRound(currentRound);
+        augments.Add(augment);
+        _augmentController?.AcquireAugment(augment, currentRound);
     }
 
-    protected void AugmentFixedUpdate()
+    public void ImportAugmentLoadout(List<AugmentLoadoutEntry> entries, int round)
     {
-        // Call FixedUpdate on all augments to activate/deactivate effects and update variables as needed
-        AugmentFunction(a => a.ExecuteEffects());
-    }
+        SetCurrentRound(round);
+        augments.Clear();
 
-    protected void AugmentFunction(System.Action<Augment> action)
-    {
-        foreach (var augment in augments)
+        if (entries != null)
         {
-            if (augment != null)
+            foreach (AugmentLoadoutEntry entry in entries)
             {
-                action(augment);
+                if (entry == null || entry.definition == null) continue;
+                augments.Add(entry.definition);
             }
         }
+
+        _augmentController?.ImportLoadout(entries, round);
+    }
+
+    public List<AugmentLoadoutEntry> ExportAugmentLoadout()
+    {
+        if (_augmentController == null)
+        {
+            return new List<AugmentLoadoutEntry>();
+        }
+
+        return _augmentController.ExportLoadout();
     }
 
     public void SetAugmentVariables()
