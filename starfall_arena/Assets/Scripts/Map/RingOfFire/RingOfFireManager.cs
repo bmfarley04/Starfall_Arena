@@ -60,7 +60,10 @@ public class RingOfFireManager : MonoBehaviour
     private float _startSafeWidth;
     private float _startSafeLength;
     private float _startSafeRadius; // For circle shapes
-    
+
+    // Circle setting
+    private const int _circleSegments = 128;
+
     // Current shape type tracking
     private WaveShapeType _currentShapeType = WaveShapeType.Box;
 
@@ -279,7 +282,7 @@ public class RingOfFireManager : MonoBehaviour
         _lineRenderer.loop = true;
         
         // Set position count based on shape type
-        _lineRenderer.positionCount = _currentShapeType == WaveShapeType.Box ? 4 : 32;
+        _lineRenderer.positionCount = _currentShapeType == WaveShapeType.Box ? 4 : _circleSegments;
 
         // Use a basic unlit material if none is provided
         if (config.fireLineMaterial != null)
@@ -335,7 +338,7 @@ public class RingOfFireManager : MonoBehaviour
     
     private void UpdateCircleLineRenderer()
     {
-        const int segments = 32;
+        const int segments = _circleSegments;
         if (_lineRenderer.positionCount != segments)
             _lineRenderer.positionCount = segments;
             
