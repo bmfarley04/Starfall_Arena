@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+// [Enum and Struct definitions]
 public enum AsteroidPattern { Scattered, Clustered, Falling }
 
 [System.Serializable]
@@ -125,7 +126,10 @@ public class MapManagerScript : MonoBehaviour
     private List<GameObject> fallingAsteroids = new List<GameObject>();
     private System.Random fallingRng;
 
-    void OnEnable() => SpawnAsteroids();
+    void OnEnable()
+    {
+        SpawnAsteroids();
+    }
 
     void Update()
     {
@@ -193,11 +197,7 @@ public class MapManagerScript : MonoBehaviour
     private void SpawnClustered(System.Random rng)
     {
         var centers = GenerateClusterCenters(rng);
-        if (centers.Count == 0)
-        {
-            Debug.LogWarning("Could not place any clusters. Try reducing minSpacing or increasing area size.");
-            return;
-        }
+        if (centers.Count == 0) return;
 
         int perCluster = asteroidCount / centers.Count;
         int remainder = asteroidCount % centers.Count;
@@ -209,7 +209,6 @@ public class MapManagerScript : MonoBehaviour
 
             for (int i = 0; i < count; i++)
             {
-                // Polar coordinates for even distribution within cluster
                 float angle = RandomRange(rng, 0f, Mathf.PI * 2f);
                 float dist = Mathf.Sqrt((float)rng.NextDouble()) * clustered.clusterRadius;
                 Vector3 pos = new Vector3(
@@ -312,7 +311,10 @@ public class MapManagerScript : MonoBehaviour
                 asteroid.transform.position = new Vector3(x, spawnY, asteroid.transform.position.z);
 
                 var rb = asteroid.GetComponent<Rigidbody2D>();
-                if (rb != null) ApplyFallingVelocity(rb, fallingRng);
+                if (rb != null)
+                {
+                    ApplyFallingVelocity(rb, fallingRng);
+                }
             }
         }
     }
