@@ -856,12 +856,12 @@ public abstract class Player : Entity
     }
 
     // ===== ABILITY 4 LOCK/UNLOCK =====
-    public void LockAbility4()
+    public virtual void LockAbility4()
     {
         if (ability4 != null) ability4.isLocked = true;
     }
 
-    public void UnlockAbility4()
+    public virtual void UnlockAbility4()
     {
         if (ability4 != null) ability4.isLocked = false;
         if (_abilityHUDPanel != null) _abilityHUDPanel.BindSlot4(ability4);

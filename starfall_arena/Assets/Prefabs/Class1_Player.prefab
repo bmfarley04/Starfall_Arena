@@ -5381,15 +5381,15 @@ MonoBehaviour:
   slowEffectVisuals:
     slowParticleSystem: {fileID: 4517218207347267077}
   currentShield: 0
-  ability1: {fileID: 6100440838757200110}
-  ability2: {fileID: 31027433883740222}
-  ability3: {fileID: -4976364162122950036}
-  ability4: {fileID: -5504958681508550136}
+  ability1: {fileID: -4976364162122950036}
+  ability2: {fileID: -5504958681508550136}
+  ability3: {fileID: 31027433883740222}
+  ability4: {fileID: 6100440838757200110}
   abilitySlots:
-  - {fileID: 11500000, guid: 6b484fbf92d1f8a4c972f0c7584defa6, type: 3}
-  - {fileID: 11500000, guid: 947c60145480efe4da5c2b90cf85194b, type: 3}
   - {fileID: 11500000, guid: 908cc72dae50f93469c58280dd7ce4ef, type: 3}
   - {fileID: 11500000, guid: 4271e562bc81ff844953f97f936e0a23, type: 3}
+  - {fileID: 11500000, guid: 947c60145480efe4da5c2b90cf85194b, type: 3}
+  - {fileID: 11500000, guid: 6b484fbf92d1f8a4c972f0c7584defa6, type: 3}
   shieldRegen:
     regenDelay: 5
     regenRate: 20
@@ -5400,14 +5400,14 @@ MonoBehaviour:
     frictionDeceleration: 10
     debugMode: 0
   visualFeedback:
-    enableChromaticAberration: 1
+    enableChromaticAberration: 0
     maxChromaticIntensity: 0.3
     chromaticIntensityPerDamage: 0.1
     chromaticFadeSpeed: 2
     beamDetectionWindow: 0.2
     projectileMultiplier: 0.5
   screenShake:
-    enableScreenShake: 1
+    enableScreenShake: 0
     projectileShakeMultiplier: 0.1
     laserShakeMultiplier: 0.1
   hud:
@@ -5445,55 +5445,55 @@ MonoBehaviour:
   gigaBlast:
     offsetDistance: 0
     timing:
-      cooldown: 0
-      minChargeTime: 0
-      maxChargeTime: 0
-      projectileLifetime: 0
+      cooldown: 2.5
+      minChargeTime: 0.5
+      maxChargeTime: 3
+      projectileLifetime: 5
     tierThresholds:
-      tier1Time: 0
-      tier2Time: 0
-      tier3Time: 0
-      tier4Time: 0
+      tier1Time: 0.5
+      tier2Time: 1
+      tier3Time: 2
+      tier4Time: 3
     movementPenalties:
-      tier1ThrustMultiplier: 0
-      tier1RotationMultiplier: 0
-      tier2ThrustMultiplier: 0
-      tier2RotationMultiplier: 0
-      tier3ThrustMultiplier: 0
-      tier3RotationMultiplier: 0
-      tier4ThrustMultiplier: 0
-      tier4RotationMultiplier: 0
+      tier1ThrustMultiplier: 0.8
+      tier1RotationMultiplier: 0.8
+      tier2ThrustMultiplier: 0.6
+      tier2RotationMultiplier: 0.6
+      tier3ThrustMultiplier: 0.4
+      tier3RotationMultiplier: 0.4
+      tier4ThrustMultiplier: 0.2
+      tier4RotationMultiplier: 0.2
     projectileScaling:
-      tier1SpeedMultiplier: 0
-      tier1DamageMultiplier: 0
-      tier1RecoilMultiplier: 0
-      tier1ImpactMultiplier: 0
-      tier2SpeedMultiplier: 0
-      tier2DamageMultiplier: 0
-      tier2RecoilMultiplier: 0
-      tier2ImpactMultiplier: 0
-      tier3SpeedMultiplier: 0
-      tier3DamageMultiplier: 0
-      tier3RecoilMultiplier: 0
-      tier3ImpactMultiplier: 0
-      tier4SpeedMultiplier: 0
-      tier4DamageMultiplier: 0
-      tier4RecoilMultiplier: 0
-      tier4ImpactMultiplier: 0
+      tier1SpeedMultiplier: 0.5
+      tier1DamageMultiplier: 1
+      tier1RecoilMultiplier: 1
+      tier1ImpactMultiplier: 1
+      tier2SpeedMultiplier: 1.5
+      tier2DamageMultiplier: 3
+      tier2RecoilMultiplier: 3
+      tier2ImpactMultiplier: 3
+      tier3SpeedMultiplier: 2
+      tier3DamageMultiplier: 5
+      tier3RecoilMultiplier: 5
+      tier3ImpactMultiplier: 5
+      tier4SpeedMultiplier: 3
+      tier4DamageMultiplier: 8
+      tier4RecoilMultiplier: 8
+      tier4ImpactMultiplier: 10
     pierce:
-      tier3DamageMultiplierPerPierce: 0
-      tier4DamageMultiplierPerPierce: 0
+      tier3DamageMultiplierPerPierce: 0.5
+      tier4DamageMultiplierPerPierce: 1
     visual:
-      tier1ProjectilePrefab: {fileID: 0}
-      tier2ProjectilePrefab: {fileID: 0}
-      tier3ProjectilePrefab: {fileID: 0}
-      tier4ProjectilePrefab: {fileID: 0}
-      tier1ParticleSystem: {fileID: 0}
-      tier2ParticleSystem: {fileID: 0}
-      tier3ParticleSystem: {fileID: 0}
-      tier4ParticleSystem: {fileID: 0}
+      tier1ProjectilePrefab: {fileID: 7408310672554650858, guid: df6f50ed071862a4482fbbbb8ed0c3ad, type: 3}
+      tier2ProjectilePrefab: {fileID: 7408310672554650858, guid: 51403cdaf016c034cbbc52510d7ecaef, type: 3}
+      tier3ProjectilePrefab: {fileID: 7408310672554650858, guid: 6b5d3c834e169584088a2e9222fcc625, type: 3}
+      tier4ProjectilePrefab: {fileID: 7408310672554650858, guid: d9aea8db2b172064eb4a64cf4b37f08b, type: 3}
+      tier1ParticleSystem: {fileID: 7111910598007728439}
+      tier2ParticleSystem: {fileID: 365551820481101173}
+      tier3ParticleSystem: {fileID: 5427583667433657938}
+      tier4ParticleSystem: {fileID: 6528417477677960060}
     chargeSound: {fileID: 0}
-    chargeSoundFadeDuration: 0
+    chargeSoundFadeDuration: 0.2
     tier1FireSound: {fileID: 0}
     tier2FireSound: {fileID: 0}
     tier3FireSound: {fileID: 0}
@@ -5515,19 +5515,19 @@ MonoBehaviour:
     duration: 0
   isLocked: 0
   teleport:
-    cooldown: 0
-    preTeleportDelay: 0
-    teleportDistance: 0
+    cooldown: 5
+    preTeleportDelay: 0.1
+    teleportDistance: 14
     animation:
-      shrinkDuration: 0
-      growDuration: 0
-      originScaleX: 0
-      originScaleY: 0
-      destinationOvershootScale: 0
-      normalScale: 0
+      shrinkDuration: 0.2
+      growDuration: 0.1
+      originScaleX: 0.5
+      originScaleY: 1.5
+      destinationOvershootScale: 1.2
+      normalScale: 1
     visual:
       enableChromaticFlash: 0
-      chromaticFlashIntensity: 0
+      chromaticFlashIntensity: 0.3
       enableScreenShake: 0
       screenShakeStrength: 0
       effects: []
@@ -5581,11 +5581,11 @@ MonoBehaviour:
     duration: 0
   isLocked: 0
   reflect:
-    cooldown: 0
-    activeDuration: 0
-    shield: {fileID: 0}
-    reflectedProjectileColor: {r: 0, g: 0, b: 0, a: 0}
-    reflectedProjectileDamageMultiplier: 0
+    cooldown: 7
+    activeDuration: 1.5
+    shield: {fileID: 1692808081896564359}
+    reflectedProjectileColor: {r: 0.8117648, g: 0.68235296, b: 0, a: 0}
+    reflectedProjectileDamageMultiplier: 1.5
     shieldLoopSound: {fileID: 0}
     bulletReflectionSound: {fileID: 0}
 --- !u!1 &3501154216763360000
@@ -15545,6 +15545,11 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: dfa3c7365266ff14fabd32458a5f4cdb, type: 3}
+--- !u!198 &6528417477677960060 stripped
+ParticleSystem:
+  m_CorrespondingSourceObject: {fileID: 8381745941407378872, guid: dfa3c7365266ff14fabd32458a5f4cdb, type: 3}
+  m_PrefabInstance: {fileID: 3371059345232684740}
+  m_PrefabAsset: {fileID: 0}
 --- !u!4 &7956279333944126032 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 4657295389829860500, guid: dfa3c7365266ff14fabd32458a5f4cdb, type: 3}
@@ -15612,6 +15617,11 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 8979479897878882123, guid: 7e97f2e2fcb7e944d82e6aad25cb0de2, type: 3}
   m_PrefabInstance: {fileID: 3698680660975318523}
   m_PrefabAsset: {fileID: 0}
+--- !u!198 &7111910598007728439 stripped
+ParticleSystem:
+  m_CorrespondingSourceObject: {fileID: 5901632462389009612, guid: 7e97f2e2fcb7e944d82e6aad25cb0de2, type: 3}
+  m_PrefabInstance: {fileID: 3698680660975318523}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &5379216660442743442
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -15677,6 +15687,11 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 8274b104761f7f44eabd492097626286, type: 3}
+--- !u!198 &365551820481101173 stripped
+ParticleSystem:
+  m_CorrespondingSourceObject: {fileID: 5743323712762445799, guid: 8274b104761f7f44eabd492097626286, type: 3}
+  m_PrefabInstance: {fileID: 5379216660442743442}
+  m_PrefabAsset: {fileID: 0}
 --- !u!4 &1574713905560919185 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 6880463362507808259, guid: 8274b104761f7f44eabd492097626286, type: 3}
@@ -15751,6 +15766,11 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 5a9322288f59add45a4c1dfa0d25be97, type: 3}
+--- !u!198 &5427583667433657938 stripped
+ParticleSystem:
+  m_CorrespondingSourceObject: {fileID: 4416137227223085880, guid: 5a9322288f59add45a4c1dfa0d25be97, type: 3}
+  m_PrefabInstance: {fileID: 8510646608727827818}
+  m_PrefabAsset: {fileID: 0}
 --- !u!4 &8777414534656560411 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 1140615755077052529, guid: 5a9322288f59add45a4c1dfa0d25be97, type: 3}
