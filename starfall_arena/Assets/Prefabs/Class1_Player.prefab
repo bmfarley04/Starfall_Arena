@@ -5345,9 +5345,9 @@ MonoBehaviour:
   maxShield: 100
   shieldController: {fileID: 487621983904113540}
   movement:
-    thrustForce: 25
-    maxSpeed: 15
-    rotationSpeed: 360
+    thrustForce: 50
+    maxSpeed: 20
+    rotationSpeed: 400
     lateralDamping: 0.92
   turrets:
   - {fileID: 9053320766010288086}

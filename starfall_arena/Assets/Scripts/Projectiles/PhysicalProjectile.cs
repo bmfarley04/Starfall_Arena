@@ -14,8 +14,7 @@ public class PhysicalProjectile : ProjectileScript
         {
             // Check if player has active reflect shield
             Player player = collider.GetComponent<Player>();
-            player.TryGetComponent<Reflector>(out var reflectScript);
-            if (player != null && reflectScript.IsAbilityActive())
+            if (player != null && player.TryGetComponent<Reflector>(out var reflectScript) && reflectScript.IsAbilityActive())
             {
                 // Let Class1 handle the reflection
                 return;
