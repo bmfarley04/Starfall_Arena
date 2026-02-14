@@ -1,7 +1,7 @@
 using UnityEngine;
 
 [System.Serializable]
-public class WaveBox
+public class WaveBox : WaveShape
 {
     public Vector2 centerPoint;
     public float width;
@@ -14,7 +14,7 @@ public class WaveBox
         this.length = length;
     }
 
-    public Vector2 GetRandomPoint()
+    public override Vector2 GetRandomPoint()
     {
         float x = Random.Range(centerPoint.x - width / 2, centerPoint.x + width / 2);
         float y = Random.Range(centerPoint.y - length / 2, centerPoint.y + length / 2);
