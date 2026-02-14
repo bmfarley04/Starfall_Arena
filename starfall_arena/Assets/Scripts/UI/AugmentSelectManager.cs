@@ -6,6 +6,7 @@ using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.UI;
 using TMPro;
+using System.Security.Cryptography;
 
 namespace StarfallArena.UI
 {
@@ -27,7 +28,7 @@ namespace StarfallArena.UI
         [Tooltip("Tier 3 augments (legendary)")]
         [SerializeField] private List<Augment> tier3Augments = new List<Augment>();
 
-        [Header("Tier Selection Probabilities (DEPRECATED FOR NOW - USING ONE OF EACH TIER EVERY GAME)")]
+        [Header("Tier Selection Probabilities")]
         [Tooltip("Probability of tier 1 appearing (must sum to 1 with other tiers)")]
         [Range(0f, 1f)]
         [SerializeField] private float tier1Probability = 0.6f;
@@ -189,6 +190,7 @@ namespace StarfallArena.UI
         // Per-game tier sequence: one of each tier in randomized order
         private List<int> _gameTierOrder = new List<int>(3);
         private int _gameTierOrderIndex = 0;
+        private System.Random _tierOrderRng;
 
         // CanvasGroups for player choice / timer text (auto-created in Start)
         private CanvasGroup _playerChoiceCG;
@@ -246,6 +248,9 @@ namespace StarfallArena.UI
             WireButtonEvents(tier2Buttons);
             WireButtonEvents(tier3Buttons);
 
+            // Create isolated RNG so tier shuffling is not affected by UnityEngine.Random.InitState calls in other systems
+            InitializeTierOrderRng();
+
             // Build randomized tier order for this game (one of each tier)
             GenerateRandomizedGameTierOrder();
 
@@ -254,6 +259,18 @@ namespace StarfallArena.UI
             {
                 ShowAugmentSelect(1);
             }
+        }
+
+        /// <summary>
+        /// Initializes an isolated RNG with a non-deterministic seed.
+        /// This avoids deterministic tier order when Unity's global Random state is reset elsewhere.
+        /// </summary>
+        private void InitializeTierOrderRng()
+        {
+            byte[] seedBytes = new byte[4];
+            RandomNumberGenerator.Fill(seedBytes);
+            int seed = System.BitConverter.ToInt32(seedBytes, 0);
+            _tierOrderRng = new System.Random(seed);
         }
 
         /// <summary>
@@ -266,9 +283,12 @@ namespace StarfallArena.UI
             _gameTierOrder.Add(2);
             _gameTierOrder.Add(3);
 
+            if (_tierOrderRng == null)
+                InitializeTierOrderRng();
+
             for (int i = _gameTierOrder.Count - 1; i > 0; i--)
             {
-                int j = Random.Range(0, i + 1);
+                int j = _tierOrderRng.Next(i + 1);
                 (_gameTierOrder[i], _gameTierOrder[j]) = (_gameTierOrder[j], _gameTierOrder[i]);
             }
 
