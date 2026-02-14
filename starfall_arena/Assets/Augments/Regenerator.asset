@@ -12,8 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3b5498600c34cfc4493143e160492720, type: 3}
   m_Name: Regenerator
   m_EditorClassIdentifier: Assembly-CSharp::Regenerator
-  icon: {fileID: 0}
-  augmentName: Regenerator
+  icon: {fileID: 21300000, guid: 4c3feb516dea6774d8c300e8267d7f45, type: 3}
+  augmentName: Anchor Asylum
   description: While anchoring, slowly regenerate health after a short delay. Taking
     damage interrupts healing.
   augmentID: Regenerator

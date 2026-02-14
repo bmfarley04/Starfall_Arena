@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 916495625088858016}
   - component: {fileID: 4104580386557967307}
   - component: {fileID: 1023743917486400459}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: GalaxyRaptor_Engine
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -125,7 +125,7 @@ GameObject:
   - component: {fileID: 1186509832910045998}
   - component: {fileID: 9125566949751814364}
   - component: {fileID: 401294648805389957}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: GalaxyRaptor_ThrustCover
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -237,7 +237,7 @@ GameObject:
   - component: {fileID: 5927668603220510548}
   - component: {fileID: 8765513821010179036}
   - component: {fileID: 3450983003208037134}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: Engine
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -5074,7 +5074,7 @@ GameObject:
   - component: {fileID: 1332658332793954025}
   - component: {fileID: 6465081641784381818}
   - component: {fileID: 5306303809941802053}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: GalaxyRaptor_MainBody4
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -5186,7 +5186,7 @@ GameObject:
   - component: {fileID: 8064779723508898516}
   - component: {fileID: 7803267935673130348}
   - component: {fileID: 2411560693476960428}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: TractorBeamParticles
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -10023,7 +10023,7 @@ GameObject:
   - component: {fileID: 4476694900708037677}
   - component: {fileID: 6875995201424638735}
   - component: {fileID: 8459190720915095976}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: GalaxyRaptor_Engine
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -10137,7 +10137,7 @@ GameObject:
   - component: {fileID: 3466602371068569815}
   - component: {fileID: 3477141980089673367}
   - component: {fileID: 8345566554121501753}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: GalaxyRaptor_Acc_Mirrored
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -10250,7 +10250,7 @@ GameObject:
   - component: {fileID: 5491763819713710881}
   - component: {fileID: 5972126163908130146}
   - component: {fileID: 7849507833834346480}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: GalaxyRaptor_WingHolder
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -10360,7 +10360,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 8859897667444938569}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: shooter
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -10394,7 +10394,7 @@ GameObject:
   - component: {fileID: 1561015333883055566}
   - component: {fileID: 8651051527920519834}
   - component: {fileID: 820219197921841764}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: GalaxyRaptor_Cockpit
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -10507,7 +10507,7 @@ GameObject:
   - component: {fileID: 1704403904533094898}
   - component: {fileID: 1689436241493452226}
   - component: {fileID: 6607958069892939362}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: GalaxyRaptor_MainBody2
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -10617,7 +10617,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 873564872842125562}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: physicalCanon
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -10651,7 +10651,7 @@ GameObject:
   - component: {fileID: 6712592230394126960}
   - component: {fileID: 4306254286549676222}
   - component: {fileID: 4354532375003865133}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: GalaxyRaptor_MainBody1
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -10764,7 +10764,7 @@ GameObject:
   - component: {fileID: 4351068296012852451}
   - component: {fileID: 5096945485168545101}
   - component: {fileID: 7585561753845046132}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: GalaxyRaptor_MainBody2
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -10874,7 +10874,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 8317353214794107712}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: shooter
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -10908,7 +10908,7 @@ GameObject:
   - component: {fileID: 1661681634626785690}
   - component: {fileID: 6999649148756126976}
   - component: {fileID: 2474148348112295264}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: GalaxyRaptor_Acc
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -11021,7 +11021,7 @@ GameObject:
   - component: {fileID: 5724432719800522925}
   - component: {fileID: 6325383535601932887}
   - component: {fileID: 3963941594506136929}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: GalaxyRaptor_ThrustCover
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -11134,7 +11134,7 @@ GameObject:
   - component: {fileID: 1619181302723683542}
   - component: {fileID: 6735084267389511673}
   - component: {fileID: 5948281010405516698}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: GalaxyRaptor_ThrustCover
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -11246,7 +11246,7 @@ GameObject:
   - component: {fileID: 2497987397549660158}
   - component: {fileID: 4263867608404506092}
   - component: {fileID: 5724585764172814363}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: Engine
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -16083,7 +16083,7 @@ GameObject:
   - component: {fileID: 699338159838586680}
   - component: {fileID: 3503334338201740522}
   - component: {fileID: 3895373147854900704}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: GalaxyRaptor_Wing4
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -16196,7 +16196,7 @@ GameObject:
   - component: {fileID: 4231600389515076823}
   - component: {fileID: 3612584070302038800}
   - component: {fileID: 7074752137132677526}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: GalaxyRaptor_Gun
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -16309,7 +16309,7 @@ GameObject:
   - component: {fileID: 2712502901660204036}
   - component: {fileID: 7074412924099597041}
   - component: {fileID: 1711160630373978473}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: Engine
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -21146,7 +21146,7 @@ GameObject:
   - component: {fileID: 8010404611596295229}
   - component: {fileID: 4339931262814323671}
   - component: {fileID: 8024714333940929033}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: Reflect_shield
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -21255,7 +21255,7 @@ GameObject:
   - component: {fileID: 4969037014415121803}
   - component: {fileID: 8699117653021644229}
   - component: {fileID: 1293533216936822348}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: GalaxyRaptor_Wing3
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -21368,7 +21368,7 @@ GameObject:
   - component: {fileID: 7125523045891951145}
   - component: {fileID: 632784390261243726}
   - component: {fileID: 7238286278778360334}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: GalaxyRaptor_MainBody4
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -21478,7 +21478,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 7020441445794620648}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: GalaxyRaptor01
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -21554,7 +21554,7 @@ GameObject:
   - component: {fileID: 8536531382653895867}
   - component: {fileID: 7818912581894041192}
   - component: {fileID: 2878052727186073733}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: GalaxyRaptor_MainBody3
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -21667,7 +21667,7 @@ GameObject:
   - component: {fileID: 325310880739546990}
   - component: {fileID: 6878739919320743587}
   - component: {fileID: 6993599752421948899}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: GalaxyRaptor_Gun
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -21781,7 +21781,7 @@ GameObject:
   - component: {fileID: 8597894367450119610}
   - component: {fileID: 6095996647088791966}
   - component: {fileID: 4966993208334656182}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: GalaxyRaptor_Wing4
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -21894,7 +21894,7 @@ GameObject:
   - component: {fileID: 43415099300828452}
   - component: {fileID: 4250910967013384598}
   - component: {fileID: 3151439188563940030}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: GalaxyRaptor_Wing3
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -22004,7 +22004,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 4069400133257366367}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: engineSpot 2
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -22039,7 +22039,7 @@ GameObject:
   - component: {fileID: 1026384161762395527}
   - component: {fileID: 6563559496403086674}
   - component: {fileID: 1456368096994445278}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: GalaxyRaptor_Wing2
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -22152,7 +22152,7 @@ GameObject:
   - component: {fileID: 3778850671811197690}
   - component: {fileID: 6819760264200835168}
   - component: {fileID: 9223140943313999682}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: GalaxyRaptor_Wing1
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -22265,7 +22265,7 @@ GameObject:
   - component: {fileID: 2656878145168630461}
   - component: {fileID: 6312406859691562466}
   - component: {fileID: 2764093881431691602}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: GalaxyRaptor_Acc
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -22378,7 +22378,7 @@ GameObject:
   - component: {fileID: 7994922702100986788}
   - component: {fileID: 446327122564709393}
   - component: {fileID: 5174890636231722402}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: GalaxyRaptor_Wing2
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -22491,7 +22491,7 @@ GameObject:
   - component: {fileID: 3264447311486904574}
   - component: {fileID: 1384879098633701786}
   - component: {fileID: 3501832716901189456}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: GalaxyRaptor_Gun
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -22602,7 +22602,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 8156541890577867122}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: shooter
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -22636,7 +22636,7 @@ GameObject:
   - component: {fileID: 8811184578227041156}
   - component: {fileID: 6323386806090498504}
   - component: {fileID: 974289111600380014}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: GalaxyRaptor_Detail
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -22754,7 +22754,7 @@ GameObject:
   - component: {fileID: 4666615493065647755}
   - component: {fileID: 8085225750662115640}
   - component: {fileID: -2539544771958711984}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: Class2_Player
   m_TagString: Player2
   m_Icon: {fileID: 0}
@@ -23177,6 +23177,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 010a088e7844cc94eb2255e4fe43d8fb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: '::'
+  currentRound: 0
+  augments: []
   maxHealth: 100
   maxShield: 100
   shieldController: {fileID: 3922741470573243441}
@@ -23192,6 +23194,7 @@ MonoBehaviour:
   - {fileID: 8156541890577867122}
   projectileWeapon:
     prefab: {fileID: 7408310672554650858, guid: ad771594cdd28f548b428c67a5314a03, type: 3}
+    baseDamage: 0
     damage: 8
     speed: 30
     recoilForce: 2
@@ -23219,12 +23222,20 @@ MonoBehaviour:
   slowEffectVisuals:
     slowParticleSystem: {fileID: 358170878837530469}
   currentShield: 0
+  ability1: {fileID: 0}
+  ability2: {fileID: 0}
+  ability3: {fileID: 0}
+  ability4: {fileID: 0}
+  abilitySlots:
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
   shieldRegen:
     regenDelay: 5
     regenRate: 20
   input:
     controllerLookDeadzone: 0.1
-    mouseMovementThreshold: 5
   friction:
     frictionDelay: 0.25
     frictionDeceleration: 10
@@ -23240,12 +23251,22 @@ MonoBehaviour:
     enableScreenShake: 1
     projectileShakeMultiplier: 0.1
     laserShakeMultiplier: 0.1
+  hud:
+    healthBar: {fileID: 0}
+    healthText: {fileID: 0}
+    shieldBar: {fileID: 0}
+    shieldText: {fileID: 0}
   projectileFireSound: {fileID: 11400000, guid: 0f50595e413d8184e8aabe486091f954, type: 2}
   shieldDamageSound: {fileID: 11400000, guid: 2f2e5dd7bfaf6da4282d7da4314d259d, type: 2}
   hullDamageSound: {fileID: 11400000, guid: 18762420ea09f2f4389ca449b1119bf0, type: 2}
   beamHitLoopSound: {fileID: 11400000, guid: c2635de459d5fd44594ecb3e303fa4b5, type: 2}
   explosionSound: {fileID: 11400000, guid: 52e8c58e387b89849affa74c78d6d899, type: 2}
   audioSourcePoolSize: 10
+  isMovementLocked: 0
+  shotsFired: 0
+  shotsHit: 0
+  damageDealt: 0
+  damageTaken: 0
   abilities:
     empoweredShot:
       cooldown: 3
@@ -23321,7 +23342,7 @@ GameObject:
   - component: {fileID: 249172684854020902}
   - component: {fileID: 8759292633929930567}
   - component: {fileID: 2057333825352896357}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: GalaxyRaptor_MainBody4
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -23434,7 +23455,7 @@ GameObject:
   - component: {fileID: 9140408943774374085}
   - component: {fileID: 5239300346354245311}
   - component: {fileID: 7314185165521519003}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: GalaxyRaptor_MainBody3
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -23546,7 +23567,7 @@ GameObject:
   - component: {fileID: 5122080930938461154}
   - component: {fileID: 4140892771409667349}
   - component: {fileID: 2983777725249462348}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: Engine
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -28383,7 +28404,7 @@ GameObject:
   - component: {fileID: 734842753761851589}
   - component: {fileID: 8938801738731596957}
   - component: {fileID: 2856398678112326602}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: GalaxyRaptor_Wing1
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -28496,7 +28517,7 @@ GameObject:
   - component: {fileID: 7639746819903132350}
   - component: {fileID: 2181950984279208513}
   - component: {fileID: 3637560901763346204}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: GalaxyRaptor_Detail
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -28609,7 +28630,7 @@ GameObject:
   - component: {fileID: 3485836540507723390}
   - component: {fileID: 3428648772149680705}
   - component: {fileID: 7724639729808175850}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: GalaxyRaptor_ThrustCover
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -28722,7 +28743,7 @@ GameObject:
   - component: {fileID: 5869559090846236210}
   - component: {fileID: 4678247935348473696}
   - component: {fileID: 2187246771609102657}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: GalaxyRaptor_Engine
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -28832,7 +28853,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2310993358341055216}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: shooter
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -28866,7 +28887,7 @@ GameObject:
   - component: {fileID: 1463636700235696571}
   - component: {fileID: 3152399088651750301}
   - component: {fileID: 3922741470573243441}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: Shield
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -28977,7 +28998,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 8801375264252431459}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: engineSpot 1
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -29012,7 +29033,7 @@ GameObject:
   - component: {fileID: 3736083077526081119}
   - component: {fileID: 4589437982079180651}
   - component: {fileID: 8645044676099301062}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: GalaxyRaptor_WingHolder
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -29125,7 +29146,7 @@ GameObject:
   - component: {fileID: 8937485009174879098}
   - component: {fileID: 365189775270350705}
   - component: {fileID: 4560281952163919608}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: GalaxyRaptor_Gun
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -29239,7 +29260,7 @@ GameObject:
   - component: {fileID: 543624270549009436}
   - component: {fileID: 4740887676752684858}
   - component: {fileID: 382704676716320636}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: GalaxyRaptor_Acc_Mirrored
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -29352,7 +29373,7 @@ GameObject:
   - component: {fileID: 8787551021642251700}
   - component: {fileID: 7121813625142885386}
   - component: {fileID: 8174660763573534585}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: GalaxyRaptor_Engine
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -29505,6 +29526,10 @@ PrefabInstance:
     - target: {fileID: 8595475238803380239, guid: 7017a01347321c64cb59b716d41f528f, type: 3}
       propertyPath: m_Name
       value: SlowEffect
+      objectReference: {fileID: 0}
+    - target: {fileID: 8595475238803380239, guid: 7017a01347321c64cb59b716d41f528f, type: 3}
+      propertyPath: m_Layer
+      value: 5
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

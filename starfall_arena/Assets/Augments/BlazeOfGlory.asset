@@ -12,12 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d3d83f4d201188747a9f794cdb616123, type: 3}
   m_Name: BlazeOfGlory
   m_EditorClassIdentifier: Assembly-CSharp::BlazeOfGlory
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: b5d25ebc02f664044b27eaf1518a1cbe, type: 3}
   augmentName: Blaze of Glory
-  description: Deal 50% more damage when below 70% health.
+  description: Deal 50% more damage when below 25% health.
   augmentID: BlazeOfGlory
-  augmentSettings:
-    rounds: 0
+  rounds: -1
   playerReference: {fileID: 0}
   bogEffect: {fileID: 0}
   damageMultiplier: 1.5

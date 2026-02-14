@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.UI;
 using TMPro;
 
 namespace StarfallArena.UI
@@ -11,6 +12,8 @@ namespace StarfallArena.UI
     /// <summary>
     /// Manages the augment selection screen with tier-based random selection,
     /// animated UI transitions, and controller navigation support.
+    /// Supports sequential two-player picking from the same pool.
+    /// Only the current picking player's gamepad can navigate/select.
     /// </summary>
     public class AugmentSelectManager : MonoBehaviour
     {
@@ -24,7 +27,7 @@ namespace StarfallArena.UI
         [Tooltip("Tier 3 augments (legendary)")]
         [SerializeField] private List<Augment> tier3Augments = new List<Augment>();
 
-        [Header("Tier Selection Probabilities")]
+        [Header("Tier Selection Probabilities (DEPRECATED FOR NOW - USING ONE OF EACH TIER EVERY GAME)")]
         [Tooltip("Probability of tier 1 appearing (must sum to 1 with other tiers)")]
         [Range(0f, 1f)]
         [SerializeField] private float tier1Probability = 0.6f;
@@ -92,15 +95,52 @@ namespace StarfallArena.UI
         [Tooltip("Canvas group containing tier 3 UI")]
         [SerializeField] private CanvasGroup tier3CanvasGroup;
 
-        [Header("Controller Navigation")]
-        [Tooltip("Default selected button for tier 1")]
-        [SerializeField] private Button tier1DefaultButton;
+        [Header("Card Buttons (3 per tier — left, center, right)")]
+        [SerializeField] private Button[] tier1Buttons = new Button[3];
+        [SerializeField] private Button[] tier2Buttons = new Button[3];
+        [SerializeField] private Button[] tier3Buttons = new Button[3];
 
-        [Tooltip("Default selected button for tier 2")]
-        [SerializeField] private Button tier2DefaultButton;
+        [Header("Card Containers (border Image per card — 3 per tier)")]
+        [Tooltip("The 'container' Image child of each tier 1 card (border element)")]
+        [SerializeField] private Image[] tier1Containers = new Image[3];
+        [Tooltip("The 'container' Image child of each tier 2 card (border element)")]
+        [SerializeField] private Image[] tier2Containers = new Image[3];
+        [Tooltip("The 'container' Image child of each tier 3 card (border element)")]
+        [SerializeField] private Image[] tier3Containers = new Image[3];
 
-        [Tooltip("Default selected button for tier 3")]
-        [SerializeField] private Button tier3DefaultButton;
+        [Header("Hover / Selection Scale")]
+        [Tooltip("X scale multiplier when a card is hovered/selected")]
+        [SerializeField] private float hoverScaleX = 1.1f;
+        [Tooltip("Y scale multiplier when a card is hovered/selected")]
+        [SerializeField] private float hoverScaleY = 1.1f;
+        [Tooltip("Duration of the hover scale transition")]
+        [SerializeField] private float hoverScaleDuration = 0.12f;
+
+        [Header("Player Choice UI")]
+        [Tooltip("Text field showing which player is choosing (e.g. 'PLAYER 1 CHOICE')")]
+        [SerializeField] private TextMeshProUGUI playerChoiceText;
+        [Tooltip("Countdown timer text field")]
+        [SerializeField] private TextMeshProUGUI countdownTimerText;
+        [Tooltip("Time in seconds for each player to pick an augment")]
+        [SerializeField] private float selectionTimeLimit = 10f;
+        [Tooltip("Color for Player 1 choice text and timer")]
+        [SerializeField] private Color player1Color = Color.cyan;
+        [Tooltip("Color for Player 2 choice text and timer")]
+        [SerializeField] private Color player2Color = Color.red;
+
+        [Header("Player Choice Fade")]
+        [Tooltip("Duration of player choice / timer text fade in/out")]
+        [SerializeField] private float playerChoiceFadeDuration = 0.3f;
+
+        [Header("Card Disable Animation")]
+        [Tooltip("Duration of the shrink animation when a chosen card is disabled")]
+        [SerializeField] private float cardDisableShrinkDuration = 0.3f;
+
+        [Header("Selection Effect")]
+        [Tooltip("Material applied to the container border and icon when a card is selected")]
+        [SerializeField] private Material selectedMaterial;
+        [Tooltip("Duration of the white text flash on Title and Description")]
+        [SerializeField] private float textFlashDuration = 0.4f;
 
         [Header("Animation Settings")]
         [Tooltip("Duration of the entrance animation")]
@@ -114,6 +154,10 @@ namespace StarfallArena.UI
 
         [Tooltip("Delay between each card animation")]
         [SerializeField] private float cardAnimationDelay = 0.1f;
+
+        [Header("Controller Navigation")]
+        [Tooltip("Dead-zone for stick navigation (below this = no input)")]
+        [SerializeField] private float stickDeadZone = 0.5f;
 
         [Header("Audio")]
         [Tooltip("Sound played when augment screen appears")]
@@ -129,10 +173,46 @@ namespace StarfallArena.UI
         [Tooltip("Enable F1 key to trigger augment select during play (for testing)")]
         [SerializeField] private bool debugEnableKeyTrigger = true;
 
+        // ===== EVENTS =====
+        /// <summary>
+        /// Fired when a player selects an augment. Parameters: chosen augment, choice index (0-2).
+        /// </summary>
+        public System.Action<Augment, int> onAugmentChosen;
+
         // Internal state
         private int currentTier;
+        private int currentPickingPlayer; // 1 or 2
         private List<Augment> selectedAugments = new List<Augment>(3);
         private bool isShowing = false;
+        private Coroutine _countdownCoroutine;
+
+        // Per-game tier sequence: one of each tier in randomized order
+        private List<int> _gameTierOrder = new List<int>(3);
+        private int _gameTierOrderIndex = 0;
+
+        // CanvasGroups for player choice / timer text (auto-created in Start)
+        private CanvasGroup _playerChoiceCG;
+        private CanvasGroup _countdownTimerCG;
+
+        // Transition state
+        private Coroutine _transitionCoroutine;
+
+        // Hover state — tracks original scales per card button so we restore correctly
+        private Dictionary<Button, Vector3> _cardOriginalScales = new Dictionary<Button, Vector3>();
+        private Dictionary<Button, Coroutine> _hoverCoroutines = new Dictionary<Button, Coroutine>();
+
+        // Per-player gamepad lock
+        private Gamepad _player1Gamepad;
+        private Gamepad _player2Gamepad;
+        private Gamepad _activeGamepad; // the gamepad allowed to navigate/select right now
+        private InputSystemUIInputModule _uiInputModule;
+
+        // Stick navigation cooldown (prevents rapid-fire from held stick)
+        private bool _stickNavigated = false;
+
+        // Selection effect: cached original materials per card so we can restore
+        private Dictionary<Image, Material> _originalContainerMaterials = new Dictionary<Image, Material>();
+        private Dictionary<Image, Material> _originalIconMaterials = new Dictionary<Image, Material>();
 
         private void OnValidate()
         {
@@ -149,11 +229,51 @@ namespace StarfallArena.UI
             // Hide all tiers at start
             HideAllTiers();
 
+            // Ensure CanvasGroups exist on player choice / timer text
+            _playerChoiceCG = EnsureCanvasGroup(playerChoiceText);
+            _countdownTimerCG = EnsureCanvasGroup(countdownTimerText);
+
+            // Start with both hidden
+            if (_playerChoiceCG != null) _playerChoiceCG.alpha = 0f;
+            if (_countdownTimerCG != null) _countdownTimerCG.alpha = 0f;
+
+            // Cache the InputSystemUIInputModule from EventSystem
+            if (EventSystem.current != null)
+                _uiInputModule = EventSystem.current.GetComponent<InputSystemUIInputModule>();
+
+            // Wire button onClick events + hover listeners for all tiers
+            WireButtonEvents(tier1Buttons);
+            WireButtonEvents(tier2Buttons);
+            WireButtonEvents(tier3Buttons);
+
+            // Build randomized tier order for this game (one of each tier)
+            GenerateRandomizedGameTierOrder();
+
             // Debug: Auto-show if enabled
             if (debugShowOnStart)
             {
-                ShowAugmentSelect();
+                ShowAugmentSelect(1);
             }
+        }
+
+        /// <summary>
+        /// Generates a randomized order containing exactly one of each tier (1, 2, 3).
+        /// </summary>
+        private void GenerateRandomizedGameTierOrder()
+        {
+            _gameTierOrder.Clear();
+            _gameTierOrder.Add(1);
+            _gameTierOrder.Add(2);
+            _gameTierOrder.Add(3);
+
+            for (int i = _gameTierOrder.Count - 1; i > 0; i--)
+            {
+                int j = Random.Range(0, i + 1);
+                (_gameTierOrder[i], _gameTierOrder[j]) = (_gameTierOrder[j], _gameTierOrder[i]);
+            }
+
+            _gameTierOrderIndex = 0;
+            Debug.Log($"[AugmentSelect] Game tier order: {_gameTierOrder[0]} -> {_gameTierOrder[1]} -> {_gameTierOrder[2]}");
         }
 
         private void Update()
@@ -163,17 +283,258 @@ namespace StarfallArena.UI
             {
                 if (Keyboard.current != null && Keyboard.current.f1Key.wasPressedThisFrame)
                 {
-                    ShowAugmentSelect();
+                    ShowAugmentSelect(1);
                 }
+            }
+
+            // Manual gamepad polling — only the active picker's gamepad can navigate/select
+            if (isShowing && _activeGamepad != null)
+            {
+                PollGamepadNavigation();
+            }
+        }
+
+        // ===== GAMEPAD ASSIGNMENT =====
+
+        /// <summary>
+        /// Call from SceneManager to tell the augment screen which gamepad belongs to which player.
+        /// Must be called before players are destroyed (capture from PlayerInput.devices).
+        /// </summary>
+        public void AssignGamepads(Gamepad player1Pad, Gamepad player2Pad)
+        {
+            _player1Gamepad = player1Pad;
+            _player2Gamepad = player2Pad;
+        }
+
+        /// <summary>
+        /// Sets the active gamepad based on which player is currently picking.
+        /// </summary>
+        private void SetActiveGamepad(int playerNumber)
+        {
+            _activeGamepad = (playerNumber == 1) ? _player1Gamepad : _player2Gamepad;
+        }
+
+        // ===== MANUAL GAMEPAD POLLING =====
+
+        /// <summary>
+        /// Polls only the active picker's gamepad for navigation (dpad/left stick) and submit (south/A button).
+        /// EventSystem's built-in InputSystemUIInputModule is disabled during augment selection
+        /// so both gamepads don't drive UI simultaneously.
+        /// </summary>
+        private void PollGamepadNavigation()
+        {
+            Gamepad pad = _activeGamepad;
+            if (pad == null) return;
+
+            // --- Submit (A / South button) ---
+            if (pad.buttonSouth.wasPressedThisFrame)
+            {
+                // Find which card is currently selected and invoke its click
+                GameObject selected = EventSystem.current?.currentSelectedGameObject;
+                if (selected != null)
+                {
+                    Button btn = selected.GetComponent<Button>();
+                    if (btn != null && btn.interactable)
+                    {
+                        btn.onClick.Invoke();
+                        return;
+                    }
+                }
+            }
+
+            // --- D-Pad navigation ---
+            if (pad.dpad.left.wasPressedThisFrame)
+            {
+                NavigateCards(-1);
+                return;
+            }
+            if (pad.dpad.right.wasPressedThisFrame)
+            {
+                NavigateCards(1);
+                return;
+            }
+
+            // --- Left stick navigation (with dead-zone + cooldown) ---
+            float stickX = pad.leftStick.ReadValue().x;
+            if (Mathf.Abs(stickX) > stickDeadZone)
+            {
+                if (!_stickNavigated)
+                {
+                    NavigateCards(stickX > 0 ? 1 : -1);
+                    _stickNavigated = true;
+                }
+            }
+            else
+            {
+                _stickNavigated = false;
             }
         }
 
         /// <summary>
-        /// MAIN FUNCTION: Call this from your scene manager to show the augment select screen.
-        /// This is the only function you need to call to trigger augment selection.
+        /// Moves the EventSystem selection left (-1) or right (+1) among active card buttons.
         /// </summary>
+        private void NavigateCards(int direction)
+        {
+            Button[] buttons = GetButtonsForTier(currentTier);
+            if (buttons == null) return;
+
+            // Build list of active buttons
+            List<int> activeIndices = new List<int>();
+            for (int i = 0; i < buttons.Length; i++)
+            {
+                if (buttons[i] != null && buttons[i].gameObject.activeSelf && buttons[i].interactable)
+                    activeIndices.Add(i);
+            }
+            if (activeIndices.Count == 0) return;
+
+            // Find current selection index
+            GameObject selected = EventSystem.current?.currentSelectedGameObject;
+            int currentIndex = -1;
+            if (selected != null)
+            {
+                for (int i = 0; i < buttons.Length; i++)
+                {
+                    if (buttons[i] != null && buttons[i].gameObject == selected)
+                    {
+                        currentIndex = activeIndices.IndexOf(i);
+                        break;
+                    }
+                }
+            }
+
+            // Compute next index
+            int nextIndex;
+            if (currentIndex < 0)
+            {
+                nextIndex = 0; // nothing selected, go to first
+            }
+            else
+            {
+                nextIndex = currentIndex + direction;
+                nextIndex = Mathf.Clamp(nextIndex, 0, activeIndices.Count - 1);
+            }
+
+            int btnIndex = activeIndices[nextIndex];
+            if (EventSystem.current != null)
+                EventSystem.current.SetSelectedGameObject(buttons[btnIndex].gameObject);
+        }
+
+        // ===== CANVAS GROUP HELPER =====
+
+        /// <summary>
+        /// Ensures a CanvasGroup component exists on the TMP text's GameObject.
+        /// Returns null if the text reference itself is null.
+        /// </summary>
+        private CanvasGroup EnsureCanvasGroup(TextMeshProUGUI textField)
+        {
+            if (textField == null) return null;
+            CanvasGroup cg = textField.GetComponent<CanvasGroup>();
+            if (cg == null)
+                cg = textField.gameObject.AddComponent<CanvasGroup>();
+            return cg;
+        }
+
+        // ===== BUTTON WIRING =====
+
+        /// <summary>
+        /// Wires onClick and select/deselect listeners for a set of 3 card buttons.
+        /// onClick is still wired so both manual polling (A button → onClick.Invoke)
+        /// and EventSystem fallback path work.
+        /// </summary>
+        private void WireButtonEvents(Button[] buttons)
+        {
+            if (buttons == null) return;
+
+            for (int i = 0; i < buttons.Length; i++)
+            {
+                if (buttons[i] == null) continue;
+
+                int index = i; // capture for closure
+                Button btn = buttons[i];
+
+                // onClick → select this augment
+                btn.onClick.AddListener(() => OnAugmentSelected(index));
+
+                // Add EventTrigger for Select / Deselect (controller navigation)
+                EventTrigger trigger = btn.gameObject.GetComponent<EventTrigger>();
+                if (trigger == null)
+                    trigger = btn.gameObject.AddComponent<EventTrigger>();
+
+                // On Select (hovered via controller)
+                EventTrigger.Entry selectEntry = new EventTrigger.Entry { eventID = EventTriggerType.Select };
+                selectEntry.callback.AddListener(_ => OnCardHoverEnter(btn));
+                trigger.triggers.Add(selectEntry);
+
+                // On Deselect (moved away via controller)
+                EventTrigger.Entry deselectEntry = new EventTrigger.Entry { eventID = EventTriggerType.Deselect };
+                deselectEntry.callback.AddListener(_ => OnCardHoverExit(btn));
+                trigger.triggers.Add(deselectEntry);
+
+                // On Pointer Enter (mouse fallback)
+                EventTrigger.Entry pointerEnter = new EventTrigger.Entry { eventID = EventTriggerType.PointerEnter };
+                pointerEnter.callback.AddListener(_ =>
+                {
+                    if (EventSystem.current != null)
+                        EventSystem.current.SetSelectedGameObject(btn.gameObject);
+                });
+                trigger.triggers.Add(pointerEnter);
+            }
+        }
+
+        // ===== HOVER SCALE =====
+
+        private void OnCardHoverEnter(Button btn)
+        {
+            if (btn == null) return;
+
+            if (!_cardOriginalScales.ContainsKey(btn))
+                _cardOriginalScales[btn] = btn.transform.localScale;
+
+            Vector3 target = new Vector3(
+                _cardOriginalScales[btn].x * hoverScaleX,
+                _cardOriginalScales[btn].y * hoverScaleY,
+                _cardOriginalScales[btn].z
+            );
+
+            if (_hoverCoroutines.ContainsKey(btn) && _hoverCoroutines[btn] != null)
+                StopCoroutine(_hoverCoroutines[btn]);
+
+            _hoverCoroutines[btn] = StartCoroutine(LerpScale(btn.transform, target, hoverScaleDuration));
+        }
+
+        private void OnCardHoverExit(Button btn)
+        {
+            if (btn == null) return;
+
+            if (!_cardOriginalScales.ContainsKey(btn)) return;
+
+            if (_hoverCoroutines.ContainsKey(btn) && _hoverCoroutines[btn] != null)
+                StopCoroutine(_hoverCoroutines[btn]);
+
+            _hoverCoroutines[btn] = StartCoroutine(LerpScale(btn.transform, _cardOriginalScales[btn], hoverScaleDuration));
+        }
+
+        private IEnumerator LerpScale(Transform t, Vector3 target, float duration)
+        {
+            Vector3 start = t.localScale;
+            float elapsed = 0f;
+            while (elapsed < duration)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                t.localScale = Vector3.Lerp(start, target, Mathf.Clamp01(elapsed / duration));
+                yield return null;
+            }
+            t.localScale = target;
+        }
+
+        // ===== SHOW / HIDE =====
+
+        /// <summary>
+        /// MAIN FUNCTION: Call this from your scene manager to show the augment select screen.
+        /// </summary>
+        /// <param name="pickingPlayer">Which player is picking (1 or 2). Used for UI text + color.</param>
         [ContextMenu("Debug: Show Augment Select")]
-        public void ShowAugmentSelect()
+        public void ShowAugmentSelect(int pickingPlayer = 1)
         {
             if (isShowing)
             {
@@ -182,22 +543,35 @@ namespace StarfallArena.UI
             }
 
             isShowing = true;
+            currentPickingPlayer = pickingPlayer;
+
+            // Lock input to the picking player's gamepad
+            SetActiveGamepad(pickingPlayer);
+            DisableUIModuleNavigation();
 
             // Select tier based on probabilities
             currentTier = SelectRandomTier();
             Debug.Log($"Selected augment tier: {currentTier}");
 
-            // Get 3 random augments from the selected tier
+            // Pick randomly from tier
             selectedAugments = SelectRandomAugments(currentTier);
 
             // Populate UI with selected augments
             PopulateUI(currentTier, selectedAugments);
 
+            // Update player choice text and colors
+            UpdatePlayerChoiceUI(pickingPlayer);
+
             // Show only the selected tier's canvas group (activates GameObject)
+            // Cards start invisible — the animation reveals them
             ShowTierCanvas(currentTier);
 
-            // Play entrance animation
+            // Play entrance animation (also fades in player choice / timer text)
             StartCoroutine(AnimateEntrance(currentTier));
+
+            // Start countdown timer
+            if (_countdownCoroutine != null) StopCoroutine(_countdownCoroutine);
+            _countdownCoroutine = StartCoroutine(RunCountdownTimer());
 
             // Play sound effect
             if (augmentAppearSound != null && audioSource != null)
@@ -207,13 +581,416 @@ namespace StarfallArena.UI
         }
 
         /// <summary>
-        /// Hides the augment select screen. Call this after an augment is chosen.
+        /// Returns the list of currently selected augments (for removing chosen augment from pool).
+        /// </summary>
+        public List<Augment> GetSelectedAugments()
+        {
+            return selectedAugments;
+        }
+
+        /// <summary>
+        /// Transitions from the first picker to the second picker on the same screen.
+        /// Plays selection effect, shrinks and deactivates the chosen card so the
+        /// HorizontalLayoutGroup reflows, fades out/in the player choice text, resets the timer.
+        /// </summary>
+        /// <param name="chosenCardIndex">Index (0-2) of the card the first picker chose.</param>
+        /// <param name="secondPickerPlayer">Player number (1 or 2) for the second picker.</param>
+        public void TransitionToSecondPicker(int chosenCardIndex, int secondPickerPlayer)
+        {
+            if (_transitionCoroutine != null)
+                StopCoroutine(_transitionCoroutine);
+
+            _transitionCoroutine = StartCoroutine(DoSecondPickerTransition(chosenCardIndex, secondPickerPlayer));
+        }
+
+        private IEnumerator DoSecondPickerTransition(int chosenCardIndex, int secondPickerPlayer)
+        {
+            Button[] buttons = GetButtonsForTier(currentTier);
+            if (buttons == null) yield break;
+
+            // --- 1. Play selection effect on chosen card (material swap + text flash) ---
+            yield return StartCoroutine(PlaySelectionEffect(chosenCardIndex));
+
+            // --- 2. Shrink the chosen card to zero scale, then deactivate it ---
+            Button chosenBtn = (chosenCardIndex >= 0 && chosenCardIndex < buttons.Length)
+                ? buttons[chosenCardIndex]
+                : null;
+
+            if (chosenBtn != null)
+            {
+                // Cancel any hover coroutine on this card
+                if (_hoverCoroutines.ContainsKey(chosenBtn) && _hoverCoroutines[chosenBtn] != null)
+                    StopCoroutine(_hoverCoroutines[chosenBtn]);
+
+                yield return StartCoroutine(LerpScale(chosenBtn.transform, Vector3.zero, cardDisableShrinkDuration));
+
+                // Deactivate so HorizontalLayoutGroup reflows remaining cards
+                chosenBtn.gameObject.SetActive(false);
+
+                // Remove from hover tracking
+                _cardOriginalScales.Remove(chosenBtn);
+                _hoverCoroutines.Remove(chosenBtn);
+            }
+
+            // --- 3. Fade out player choice + timer text ---
+            yield return StartCoroutine(FadePlayerChoiceUI(0f, playerChoiceFadeDuration));
+
+            // --- 4. Switch active gamepad to second picker ---
+            currentPickingPlayer = secondPickerPlayer;
+            SetActiveGamepad(secondPickerPlayer);
+
+            // --- 5. Update text for second picker ---
+            UpdatePlayerChoiceUI(secondPickerPlayer);
+
+            // --- 6. Fade in player choice + timer text ---
+            yield return StartCoroutine(FadePlayerChoiceUI(1f, playerChoiceFadeDuration));
+
+            // --- 7. Restart countdown timer ---
+            if (_countdownCoroutine != null) StopCoroutine(_countdownCoroutine);
+            _countdownCoroutine = StartCoroutine(RunCountdownTimer());
+
+            // --- 8. Re-enable interactability on the tier canvas group ---
+            CanvasGroup tierCG = GetCanvasGroupForTier(currentTier);
+            if (tierCG != null)
+            {
+                tierCG.interactable = true;
+                tierCG.blocksRaycasts = true;
+            }
+
+            // --- 9. Set default selection to first remaining active button ---
+            SetDefaultSelectionFirstActive(currentTier);
+
+            // --- 10. Re-cache original scales for remaining cards (they may have shifted) ---
+            _cardOriginalScales.Clear();
+            foreach (var btn in buttons)
+            {
+                if (btn != null && btn.gameObject.activeSelf)
+                    _cardOriginalScales[btn] = btn.transform.localScale;
+            }
+
+            _transitionCoroutine = null;
+        }
+
+        /// <summary>
+        /// Hides the augment select screen. Call after the second player has picked.
+        /// Reactivates all cards so they are ready for the next augment phase.
         /// </summary>
         public void HideAugmentSelect()
         {
+            if (_countdownCoroutine != null)
+            {
+                StopCoroutine(_countdownCoroutine);
+                _countdownCoroutine = null;
+            }
+
+            if (_transitionCoroutine != null)
+            {
+                StopCoroutine(_transitionCoroutine);
+                _transitionCoroutine = null;
+            }
+
+            // Reset any hover scales
+            foreach (var kvp in _cardOriginalScales)
+            {
+                if (kvp.Key != null)
+                    kvp.Key.transform.localScale = kvp.Value;
+            }
+            _cardOriginalScales.Clear();
+
+            // Reactivate all cards (some may have been deactivated during sequential pick)
+            ReactivateAllCards();
+
+            // Restore all card materials to originals
+            RestoreAllCardMaterials();
+
+            // Hide player choice / timer text
+            if (_playerChoiceCG != null) _playerChoiceCG.alpha = 0f;
+            if (_countdownTimerCG != null) _countdownTimerCG.alpha = 0f;
+
             HideAllTiers();
             isShowing = false;
+            _activeGamepad = null;
+
+            // Re-enable the UI module navigation for other screens
+            EnableUIModuleNavigation();
         }
+
+        // ===== INPUT MODULE CONTROL =====
+
+        /// <summary>
+        /// Disables the InputSystemUIInputModule's move and submit actions
+        /// so that both gamepads don't simultaneously drive the EventSystem.
+        /// We manually poll only the active picker's gamepad instead.
+        /// </summary>
+        private void DisableUIModuleNavigation()
+        {
+            if (_uiInputModule == null && EventSystem.current != null)
+                _uiInputModule = EventSystem.current.GetComponent<InputSystemUIInputModule>();
+
+            if (_uiInputModule != null)
+            {
+                _uiInputModule.enabled = false;
+            }
+        }
+
+        private void EnableUIModuleNavigation()
+        {
+            if (_uiInputModule != null)
+            {
+                _uiInputModule.enabled = true;
+            }
+        }
+
+        // ===== SELECTION EFFECT =====
+
+        /// <summary>
+        /// Plays a visual effect on the chosen card: swaps container + icon material,
+        /// flashes title and description text white.
+        /// </summary>
+        private IEnumerator PlaySelectionEffect(int choiceIndex)
+        {
+            if (selectedMaterial == null) yield break;
+
+            // Get references for this card
+            Image container = GetContainerForCard(currentTier, choiceIndex);
+            Image icon = GetIconForCard(currentTier, choiceIndex);
+            TextMeshProUGUI titleText = GetNameForCard(currentTier, choiceIndex);
+            TextMeshProUGUI descText = GetDescriptionForCard(currentTier, choiceIndex);
+
+            // Cache originals and swap container material
+            if (container != null)
+            {
+                if (!_originalContainerMaterials.ContainsKey(container))
+                    _originalContainerMaterials[container] = container.material;
+                container.material = selectedMaterial;
+            }
+
+            // Swap icon material
+            if (icon != null)
+            {
+                if (!_originalIconMaterials.ContainsKey(icon))
+                    _originalIconMaterials[icon] = icon.material;
+                icon.material = selectedMaterial;
+            }
+
+            // Flash text white
+            Color titleOriginal = titleText != null ? titleText.color : Color.white;
+            Color descOriginal = descText != null ? descText.color : Color.white;
+
+            if (titleText != null) titleText.color = Color.white;
+            if (descText != null) descText.color = Color.white;
+
+            yield return new WaitForSecondsRealtime(textFlashDuration);
+
+            // Restore text colors
+            if (titleText != null) titleText.color = titleOriginal;
+            if (descText != null) descText.color = descOriginal;
+        }
+
+        /// <summary>
+        /// Restores all cached original materials on containers and icons.
+        /// Called on HideAugmentSelect so cards are clean for the next phase.
+        /// </summary>
+        private void RestoreAllCardMaterials()
+        {
+            foreach (var kvp in _originalContainerMaterials)
+            {
+                if (kvp.Key != null)
+                    kvp.Key.material = kvp.Value;
+            }
+            _originalContainerMaterials.Clear();
+
+            foreach (var kvp in _originalIconMaterials)
+            {
+                if (kvp.Key != null)
+                    kvp.Key.material = kvp.Value;
+            }
+            _originalIconMaterials.Clear();
+        }
+
+        // ===== CARD REFERENCE GETTERS =====
+
+        private Image GetContainerForCard(int tier, int index)
+        {
+            Image[] containers = tier switch
+            {
+                1 => tier1Containers,
+                2 => tier2Containers,
+                3 => tier3Containers,
+                _ => tier1Containers
+            };
+            return (containers != null && index >= 0 && index < containers.Length) ? containers[index] : null;
+        }
+
+        private Image GetIconForCard(int tier, int index)
+        {
+            return (tier, index) switch
+            {
+                (1, 0) => tier1Choice1Icon,
+                (1, 1) => tier1Choice2Icon,
+                (1, 2) => tier1Choice3Icon,
+                (2, 0) => tier2Choice1Icon,
+                (2, 1) => tier2Choice2Icon,
+                (2, 2) => tier2Choice3Icon,
+                (3, 0) => tier3Choice1Icon,
+                (3, 1) => tier3Choice2Icon,
+                (3, 2) => tier3Choice3Icon,
+                _ => null
+            };
+        }
+
+        private TextMeshProUGUI GetNameForCard(int tier, int index)
+        {
+            return (tier, index) switch
+            {
+                (1, 0) => tier1Choice1Name,
+                (1, 1) => tier1Choice2Name,
+                (1, 2) => tier1Choice3Name,
+                (2, 0) => tier2Choice1Name,
+                (2, 1) => tier2Choice2Name,
+                (2, 2) => tier2Choice3Name,
+                (3, 0) => tier3Choice1Name,
+                (3, 1) => tier3Choice2Name,
+                (3, 2) => tier3Choice3Name,
+                _ => null
+            };
+        }
+
+        private TextMeshProUGUI GetDescriptionForCard(int tier, int index)
+        {
+            return (tier, index) switch
+            {
+                (1, 0) => tier1Choice1Description,
+                (1, 1) => tier1Choice2Description,
+                (1, 2) => tier1Choice3Description,
+                (2, 0) => tier2Choice1Description,
+                (2, 1) => tier2Choice2Description,
+                (2, 2) => tier2Choice3Description,
+                (3, 0) => tier3Choice1Description,
+                (3, 1) => tier3Choice2Description,
+                (3, 2) => tier3Choice3Description,
+                _ => null
+            };
+        }
+
+        // ===== PLAYER CHOICE UI =====
+
+        private void UpdatePlayerChoiceUI(int playerNumber)
+        {
+            Color c = playerNumber == 1 ? player1Color : player2Color;
+
+            if (playerChoiceText != null)
+            {
+                playerChoiceText.text = $"PLAYER {playerNumber} CHOICE";
+                playerChoiceText.color = c;
+            }
+
+            if (countdownTimerText != null)
+            {
+                countdownTimerText.color = c;
+                countdownTimerText.text = Mathf.CeilToInt(selectionTimeLimit).ToString();
+            }
+        }
+
+        /// <summary>
+        /// Fades the player choice text and countdown timer CanvasGroups to the target alpha.
+        /// </summary>
+        private IEnumerator FadePlayerChoiceUI(float targetAlpha, float duration)
+        {
+            float startAlphaChoice = _playerChoiceCG != null ? _playerChoiceCG.alpha : targetAlpha;
+            float startAlphaTimer = _countdownTimerCG != null ? _countdownTimerCG.alpha : targetAlpha;
+
+            float elapsed = 0f;
+            while (elapsed < duration)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                float t = Mathf.Clamp01(elapsed / duration);
+
+                if (_playerChoiceCG != null)
+                    _playerChoiceCG.alpha = Mathf.Lerp(startAlphaChoice, targetAlpha, t);
+                if (_countdownTimerCG != null)
+                    _countdownTimerCG.alpha = Mathf.Lerp(startAlphaTimer, targetAlpha, t);
+
+                yield return null;
+            }
+
+            if (_playerChoiceCG != null) _playerChoiceCG.alpha = targetAlpha;
+            if (_countdownTimerCG != null) _countdownTimerCG.alpha = targetAlpha;
+        }
+
+        private IEnumerator RunCountdownTimer()
+        {
+            float remaining = selectionTimeLimit;
+
+            while (remaining > 0f)
+            {
+                if (countdownTimerText != null)
+                    countdownTimerText.text = Mathf.CeilToInt(remaining).ToString();
+
+                remaining -= Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            if (countdownTimerText != null)
+                countdownTimerText.text = "0";
+
+            // Time expired — auto-select the first available active card
+            if (isShowing)
+            {
+                int autoIndex = GetFirstActiveCardIndex();
+                Debug.Log($"[AugmentSelect] Time expired — auto-selecting augment index {autoIndex}");
+                OnAugmentSelected(autoIndex);
+            }
+
+            _countdownCoroutine = null;
+        }
+
+        /// <summary>
+        /// Returns the index of the first active (non-deactivated) card button in the current tier.
+        /// Falls back to 0 if none found.
+        /// </summary>
+        private int GetFirstActiveCardIndex()
+        {
+            Button[] buttons = GetButtonsForTier(currentTier);
+            if (buttons == null) return 0;
+
+            for (int i = 0; i < buttons.Length; i++)
+            {
+                if (buttons[i] != null && buttons[i].gameObject.activeSelf && buttons[i].interactable)
+                    return i;
+            }
+            return 0;
+        }
+
+        // ===== CARD REACTIVATION =====
+
+        /// <summary>
+        /// Reactivates all card buttons across all tiers. Called on HideAugmentSelect
+        /// so cards are ready for the next augment phase.
+        /// </summary>
+        private void ReactivateAllCards()
+        {
+            ReactivateButtons(tier1Buttons);
+            ReactivateButtons(tier2Buttons);
+            ReactivateButtons(tier3Buttons);
+        }
+
+        private void ReactivateButtons(Button[] buttons)
+        {
+            if (buttons == null) return;
+            foreach (var btn in buttons)
+            {
+                if (btn == null) continue;
+                btn.gameObject.SetActive(true);
+                btn.interactable = true;
+                btn.transform.localScale = Vector3.one;
+
+                CanvasGroup cg = btn.GetComponent<CanvasGroup>();
+                if (cg != null) cg.alpha = 1f;
+            }
+        }
+
+        // ===== INTERNAL HELPERS =====
 
         /// <summary>
         /// Hides all tier canvas groups.
@@ -230,20 +1007,34 @@ namespace StarfallArena.UI
         /// </summary>
         private int SelectRandomTier()
         {
-            float roll = Random.Range(0f, 1f);
+            if (_gameTierOrder.Count < 3)
+                GenerateRandomizedGameTierOrder();
 
-            if (roll < tier1Probability)
+            if (_gameTierOrderIndex >= _gameTierOrder.Count)
             {
-                return 1;
+                Debug.LogWarning("[AugmentSelect] Tier order exhausted; generating a new randomized order.");
+                GenerateRandomizedGameTierOrder();
             }
-            else if (roll < tier1Probability + tier2Probability)
-            {
-                return 2;
-            }
-            else
-            {
-                return 3;
-            }
+
+            int tier = _gameTierOrder[_gameTierOrderIndex];
+            _gameTierOrderIndex++;
+            return tier;
+
+            // Old probability-based tier selection (kept for reference):
+            // float roll = Random.Range(0f, 1f);
+            //
+            // if (roll < tier1Probability)
+            // {
+            //     return 1;
+            // }
+            // else if (roll < tier1Probability + tier2Probability)
+            // {
+            //     return 2;
+            // }
+            // else
+            // {
+            //     return 3;
+            // }
         }
 
         /// <summary>
@@ -311,6 +1102,29 @@ namespace StarfallArena.UI
                     SetUIElements(tier3Choice3Icon, tier3Choice3Name, tier3Choice3Description, augments[2]);
                     break;
             }
+
+            // Re-enable all card buttons (may have been disabled from previous pick)
+            ReEnableCardButtons(tier);
+        }
+
+        /// <summary>
+        /// Re-enables all card buttons for the given tier.
+        /// </summary>
+        private void ReEnableCardButtons(int tier)
+        {
+            Button[] buttons = GetButtonsForTier(tier);
+            if (buttons == null) return;
+
+            foreach (var btn in buttons)
+            {
+                if (btn != null)
+                {
+                    btn.interactable = true;
+                    // Reset alpha in case it was dimmed
+                    CanvasGroup cg = btn.GetComponent<CanvasGroup>();
+                    if (cg != null) cg.alpha = 1f;
+                }
+            }
         }
 
         /// <summary>
@@ -336,7 +1150,7 @@ namespace StarfallArena.UI
 
         /// <summary>
         /// Shows the canvas group for the selected tier, hides others.
-        /// IMPORTANT: This activates the GameObject to make it visible.
+        /// Cards start at scale 0 and alpha 0 — the entrance animation is the first time they appear.
         /// </summary>
         private void ShowTierCanvas(int tier)
         {
@@ -344,21 +1158,26 @@ namespace StarfallArena.UI
             HideAllTiers();
 
             // Show selected tier
-            CanvasGroup targetGroup = tier switch
-            {
-                1 => tier1CanvasGroup,
-                2 => tier2CanvasGroup,
-                3 => tier3CanvasGroup,
-                _ => tier1CanvasGroup
-            };
+            CanvasGroup targetGroup = GetCanvasGroupForTier(tier);
 
             if (targetGroup != null)
             {
-                Debug.Log($"Activating tier {tier} canvas group: {targetGroup.name}");
+                // Pre-hide all card children so they don't flash before animation
+                int childCount = targetGroup.transform.childCount;
+                for (int i = 0; i < childCount; i++)
+                {
+                    Transform child = targetGroup.transform.GetChild(i);
+                    child.localScale = Vector3.one * startScale;
 
-                // CRITICAL: Activate the GameObject so it's visible
+                    CanvasGroup childCG = child.GetComponent<CanvasGroup>();
+                    if (childCG == null)
+                        childCG = child.gameObject.AddComponent<CanvasGroup>();
+                    childCG.alpha = 0f;
+                }
+
+                // Now activate the parent — cards are invisible (scale 0, alpha 0)
                 targetGroup.gameObject.SetActive(true);
-                targetGroup.alpha = 1f; // Changed: Start visible (cards will handle their own fade)
+                targetGroup.alpha = 1f;
                 targetGroup.interactable = false;
                 targetGroup.blocksRaycasts = false;
             }
@@ -366,6 +1185,20 @@ namespace StarfallArena.UI
             {
                 Debug.LogError($"Tier {tier} canvas group is not assigned!");
             }
+        }
+
+        /// <summary>
+        /// Returns the CanvasGroup for the given tier.
+        /// </summary>
+        private CanvasGroup GetCanvasGroupForTier(int tier)
+        {
+            return tier switch
+            {
+                1 => tier1CanvasGroup,
+                2 => tier2CanvasGroup,
+                3 => tier3CanvasGroup,
+                _ => tier1CanvasGroup
+            };
         }
 
         /// <summary>
@@ -386,17 +1219,12 @@ namespace StarfallArena.UI
         }
 
         /// <summary>
-        /// Animates the entrance of augment cards with staggered timing.
+        /// Animates the entrance of augment cards with staggered timing,
+        /// and fades in the player choice / timer text.
         /// </summary>
         private IEnumerator AnimateEntrance(int tier)
         {
-            CanvasGroup targetGroup = tier switch
-            {
-                1 => tier1CanvasGroup,
-                2 => tier2CanvasGroup,
-                3 => tier3CanvasGroup,
-                _ => tier1CanvasGroup
-            };
+            CanvasGroup targetGroup = GetCanvasGroupForTier(tier);
 
             if (targetGroup == null)
             {
@@ -404,21 +1232,20 @@ namespace StarfallArena.UI
                 yield break;
             }
 
-            // Make parent canvas group visible immediately
             targetGroup.alpha = 1f;
             targetGroup.interactable = false;
             targetGroup.blocksRaycasts = false;
 
-            // Get the three card transforms (assume they're the first 3 children)
+            // Fade in player choice + timer text alongside card animation
+            StartCoroutine(FadePlayerChoiceUI(1f, playerChoiceFadeDuration));
+
+            // Get the three card transforms (first 3 children)
             Transform[] cardTransforms = new Transform[3];
             int childCount = Mathf.Min(3, targetGroup.transform.childCount);
-
-            Debug.Log($"Found {childCount} children in tier {tier} canvas group");
 
             for (int i = 0; i < childCount; i++)
             {
                 cardTransforms[i] = targetGroup.transform.GetChild(i);
-                Debug.Log($"Card {i}: {cardTransforms[i].name}");
             }
 
             // Animate each card with staggered timing
@@ -438,7 +1265,18 @@ namespace StarfallArena.UI
             targetGroup.interactable = true;
             targetGroup.blocksRaycasts = true;
 
-            // Set default EventSystem selection
+            // Cache original scales for hover system
+            Button[] buttons = GetButtonsForTier(tier);
+            if (buttons != null)
+            {
+                foreach (var btn in buttons)
+                {
+                    if (btn != null)
+                        _cardOriginalScales[btn] = btn.transform.localScale;
+                }
+            }
+
+            // Set default selection to center button (index 1)
             SetDefaultSelection(tier);
         }
 
@@ -453,7 +1291,8 @@ namespace StarfallArena.UI
                 cardGroup = card.gameObject.AddComponent<CanvasGroup>();
             }
 
-            Vector3 originalScale = card.localScale;
+            // Target scale is 1 (the card's normal size)
+            Vector3 targetScale = Vector3.one;
             float elapsed = 0f;
 
             while (elapsed < animationDuration)
@@ -463,7 +1302,7 @@ namespace StarfallArena.UI
                 float curveValue = entranceCurve.Evaluate(t);
 
                 // Scale animation
-                card.localScale = Vector3.Lerp(Vector3.one * startScale, originalScale, curveValue);
+                card.localScale = Vector3.Lerp(Vector3.one * startScale, targetScale, curveValue);
 
                 // Fade animation
                 cardGroup.alpha = curveValue;
@@ -472,22 +1311,19 @@ namespace StarfallArena.UI
             }
 
             // Ensure final state
-            card.localScale = originalScale;
+            card.localScale = targetScale;
             cardGroup.alpha = 1f;
         }
 
         /// <summary>
-        /// Sets the default EventSystem selection for controller navigation.
+        /// Sets the default EventSystem selection to the center button (index 1).
         /// </summary>
         private void SetDefaultSelection(int tier)
         {
-            Button defaultButton = tier switch
-            {
-                1 => tier1DefaultButton,
-                2 => tier2DefaultButton,
-                3 => tier3DefaultButton,
-                _ => tier1DefaultButton
-            };
+            Button[] buttons = GetButtonsForTier(tier);
+            Button defaultButton = (buttons != null && buttons.Length > 1 && buttons[1] != null)
+                ? buttons[1]  // center button
+                : null;
 
             if (defaultButton != null && EventSystem.current != null)
             {
@@ -496,12 +1332,48 @@ namespace StarfallArena.UI
         }
 
         /// <summary>
-        /// Call this when an augment is selected (hook this up to button onClick events).
-        /// Pass the choice index (0, 1, or 2) to identify which augment was chosen.
+        /// Sets the default selection to the first remaining active button.
+        /// Used after the first picker's card has been deactivated.
         /// </summary>
-        /// <param name="choiceIndex">0-2 for the three choices</param>
+        private void SetDefaultSelectionFirstActive(int tier)
+        {
+            Button[] buttons = GetButtonsForTier(tier);
+            if (buttons == null) return;
+
+            foreach (var btn in buttons)
+            {
+                if (btn != null && btn.gameObject.activeSelf && btn.interactable)
+                {
+                    if (EventSystem.current != null)
+                        EventSystem.current.SetSelectedGameObject(btn.gameObject);
+                    return;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Returns the button array for the given tier.
+        /// </summary>
+        private Button[] GetButtonsForTier(int tier)
+        {
+            return tier switch
+            {
+                1 => tier1Buttons,
+                2 => tier2Buttons,
+                3 => tier3Buttons,
+                _ => tier1Buttons
+            };
+        }
+
+        /// <summary>
+        /// Called when an augment is selected (via button click or controller confirm).
+        /// Plays selection effect on the chosen card, then notifies SceneManager.
+        /// Does NOT hide the screen — SceneManager controls flow.
+        /// </summary>
         public void OnAugmentSelected(int choiceIndex)
         {
+            if (!isShowing) return;
+
             if (choiceIndex < 0 || choiceIndex >= selectedAugments.Count)
             {
                 Debug.LogError($"Invalid augment choice index: {choiceIndex}");
@@ -509,23 +1381,26 @@ namespace StarfallArena.UI
             }
 
             Augment selectedAugment = selectedAugments[choiceIndex];
-            Debug.Log($"Player selected augment: {selectedAugment.augmentName}");
+            Debug.Log($"Player {currentPickingPlayer} selected augment: {selectedAugment.augmentName}");
 
-            // Apply the augment effect
-            //if (selectedAugment.effectScript != null)
-            //{
-            //    selectedAugment.effectScript.ApplyEffect();
-            //}
-            //else
-            //{
-            //    Debug.LogWarning($"Augment '{selectedAugment.augmentName}' has no effect script assigned!");
-            //}
+            // Stop countdown
+            if (_countdownCoroutine != null)
+            {
+                StopCoroutine(_countdownCoroutine);
+                _countdownCoroutine = null;
+            }
 
-            // Hide the augment select screen
-            HideAugmentSelect();
+            // Disable interactivity so no double-picks during transition
+            CanvasGroup tierCG = GetCanvasGroupForTier(currentTier);
+            if (tierCG != null)
+            {
+                tierCG.interactable = false;
+                tierCG.blocksRaycasts = false;
+            }
 
-            // TODO: Your scene manager can listen to this or add custom logic here
-            // For example: Resume game, spawn next wave, etc.
+            // Notify listeners (SceneManager) of the selection
+            // SceneManager will call TransitionToSecondPicker() or HideAugmentSelect()
+            onAugmentChosen?.Invoke(selectedAugment, choiceIndex);
         }
     }
 }

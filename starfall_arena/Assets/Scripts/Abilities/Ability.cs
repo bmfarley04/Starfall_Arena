@@ -40,8 +40,11 @@ public class Ability : MonoBehaviour
         Debug.Log("Ability activated for " + stats.duration + " seconds.");
     }
 
+    [HideInInspector] public bool isLocked = false;
+
     public bool CanUseAbility()
     {
+        if (isLocked) return false;
         if (Time.time < lastUsedAbility + stats.cooldown)
         {
             Debug.Log($"Ability on cooldown: {(lastUsedAbility + stats.cooldown - Time.time):F1}s remaining");

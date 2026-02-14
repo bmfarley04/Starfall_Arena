@@ -364,6 +364,36 @@ public class VersusScreenManager : MonoBehaviour
         Vector2 p1Exit = new Vector2(p1Start.x - animation.cardSlideOffset, p1Start.y);
         Vector2 p2Exit = new Vector2(p2Start.x + animation.cardSlideOffset, p2Start.y);
 
+        Camera worldCamera = Camera.main;
+        Camera uiCamera = vsScreenCanvas != null && vsScreenCanvas.GetComponent<Canvas>() != null
+            ? vsScreenCanvas.GetComponent<Canvas>().worldCamera
+            : null;
+
+        Vector3 p1ShipStartPos = Vector3.zero;
+        Vector3 p2ShipStartPos = Vector3.zero;
+        float p1ShipScreenDepth = 0f;
+        float p2ShipScreenDepth = 0f;
+        Vector2 p1CardToShipScreenOffset = Vector2.zero;
+        Vector2 p2CardToShipScreenOffset = Vector2.zero;
+
+        if (_player1ShipInstance != null && worldCamera != null)
+        {
+            p1ShipStartPos = _player1ShipInstance.transform.position;
+            Vector3 shipScreen = worldCamera.WorldToScreenPoint(p1ShipStartPos);
+            Vector2 cardScreen = RectTransformUtility.WorldToScreenPoint(uiCamera, player1Card.position);
+            p1ShipScreenDepth = shipScreen.z;
+            p1CardToShipScreenOffset = new Vector2(shipScreen.x, shipScreen.y) - cardScreen;
+        }
+
+        if (_player2ShipInstance != null && worldCamera != null)
+        {
+            p2ShipStartPos = _player2ShipInstance.transform.position;
+            Vector3 shipScreen = worldCamera.WorldToScreenPoint(p2ShipStartPos);
+            Vector2 cardScreen = RectTransformUtility.WorldToScreenPoint(uiCamera, player2Card.position);
+            p2ShipScreenDepth = shipScreen.z;
+            p2CardToShipScreenOffset = new Vector2(shipScreen.x, shipScreen.y) - cardScreen;
+        }
+
         while (elapsed < animation.exitDuration)
         {
             elapsed += Time.unscaledDeltaTime;
@@ -381,9 +411,35 @@ public class VersusScreenManager : MonoBehaviour
 
             // Ships scale down
             if (_player1ShipInstance != null)
+            {
+                if (worldCamera != null)
+                {
+                    Vector2 cardScreen = RectTransformUtility.WorldToScreenPoint(uiCamera, player1Card.position);
+                    Vector2 shipScreen = cardScreen + p1CardToShipScreenOffset;
+                    Vector3 shipWorld = worldCamera.ScreenToWorldPoint(new Vector3(shipScreen.x, shipScreen.y, p1ShipScreenDepth));
+                    _player1ShipInstance.transform.position = shipWorld;
+                }
+                else
+                {
+                    _player1ShipInstance.transform.position = p1ShipStartPos;
+                }
                 _player1ShipInstance.transform.localScale = Vector3.Lerp(_player1TargetScale, Vector3.zero, eased);
+            }
             if (_player2ShipInstance != null)
+            {
+                if (worldCamera != null)
+                {
+                    Vector2 cardScreen = RectTransformUtility.WorldToScreenPoint(uiCamera, player2Card.position);
+                    Vector2 shipScreen = cardScreen + p2CardToShipScreenOffset;
+                    Vector3 shipWorld = worldCamera.ScreenToWorldPoint(new Vector3(shipScreen.x, shipScreen.y, p2ShipScreenDepth));
+                    _player2ShipInstance.transform.position = shipWorld;
+                }
+                else
+                {
+                    _player2ShipInstance.transform.position = p2ShipStartPos;
+                }
                 _player2ShipInstance.transform.localScale = Vector3.Lerp(_player2TargetScale, Vector3.zero, eased);
+            }
 
             // Overall canvas fades in the last 30% of the exit
             float fadeT = Mathf.InverseLerp(0.7f, 1f, t);

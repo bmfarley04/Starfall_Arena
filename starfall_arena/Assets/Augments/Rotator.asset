@@ -12,8 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ef02fad0897baff48ae2cfc7f654b6f1, type: 3}
   m_Name: Rotator
   m_EditorClassIdentifier: Assembly-CSharp::Rotator
-  icon: {fileID: 0}
-  augmentName: Rotator
+  icon: {fileID: 21300000, guid: b634cd65a13fb2a4bb0e7f9531b7aac7, type: 3}
+  augmentName: Flash Pivot
   description: Increases rotation speed by 30%.
   augmentID: Rotator
   rounds: -1

@@ -48,6 +48,8 @@ public class RoundEndScreenManager : MonoBehaviour
     [SerializeField] private float despawnDuration = 0.4f;
     [SerializeField] private float statDelayBetween = 0.15f;
     [SerializeField] private float scaleOvershoot = 1.15f;
+    [SerializeField] private float despawnPunchScale = 1.04f;
+    [SerializeField] private float despawnEndScale = 0.82f;
 
     [Header("Player 1 Canvas Stat Sections")]
     [SerializeField] private CanvasGroup p1_durationSection;
@@ -284,28 +286,44 @@ public class RoundEndScreenManager : MonoBehaviour
         Vector3 originalScale = canvasTransform.localScale;
         float startAlpha = currentActiveCanvas.alpha;
 
-        // Quick scale down + fade out + slight rotation
+        // Optional: quickly fade out stat sections first for cleaner focus
+        if (currentDurationSection != null) currentDurationSection.alpha = 0f;
+        if (currentDamageSection != null) currentDamageSection.alpha = 0f;
+        if (currentAccuracySection != null) currentAccuracySection.alpha = 0f;
+
+        // Phase 1: tiny punch to make the exit feel responsive
         float elapsed = 0f;
-        while (elapsed < despawnDuration)
+        float punchDuration = Mathf.Max(0.05f, despawnDuration * 0.22f);
+        while (elapsed < punchDuration)
         {
             elapsed += Time.unscaledDeltaTime;
-            float t = elapsed / despawnDuration;
+            float t = Mathf.Clamp01(elapsed / punchDuration);
 
-            // Scale down with ease in
-            canvasTransform.localScale = originalScale * Mathf.Lerp(1f, 0.7f, EaseInQuad(t));
+            canvasTransform.localScale = originalScale * Mathf.Lerp(1f, despawnPunchScale, EaseOutQuad(t));
+            currentActiveCanvas.alpha = Mathf.Lerp(startAlpha, startAlpha * 0.95f, t);
+
+            yield return null;
+        }
+
+        // Phase 2: smooth scale-down + fade-out (no tilt)
+        elapsed = 0f;
+        float fadeDuration = Mathf.Max(0.05f, despawnDuration - punchDuration);
+        while (elapsed < fadeDuration)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            float t = Mathf.Clamp01(elapsed / fadeDuration);
+
+            // Scale down with stronger ease in for a snappy finish
+            canvasTransform.localScale = originalScale * Mathf.Lerp(despawnPunchScale, despawnEndScale, EaseInCubic(t));
 
             // Fade out
-            currentActiveCanvas.alpha = Mathf.Lerp(startAlpha, 0f, EaseInQuad(t));
-
-            // Subtle rotation for dynamic feel
-            canvasTransform.rotation = Quaternion.Euler(0f, 0f, Mathf.Lerp(0f, 5f, EaseInQuad(t)));
+            currentActiveCanvas.alpha = Mathf.Lerp(startAlpha * 0.95f, 0f, EaseInCubic(t));
 
             yield return null;
         }
 
         // Reset and deactivate
         canvasTransform.localScale = originalScale;
-        canvasTransform.rotation = Quaternion.identity;
         currentActiveCanvas.alpha = 0f;
         currentActiveCanvas.gameObject.SetActive(false);
 
@@ -322,6 +340,11 @@ public class RoundEndScreenManager : MonoBehaviour
     private float EaseInQuad(float t)
     {
         return t * t;
+    }
+
+    private float EaseInCubic(float t)
+    {
+        return t * t * t;
     }
 
     private float EaseOutBack(float t)
