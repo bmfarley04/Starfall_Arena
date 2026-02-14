@@ -5415,11 +5415,11 @@ MonoBehaviour:
     healthText: {fileID: 0}
     shieldBar: {fileID: 0}
     shieldText: {fileID: 0}
-  projectileFireSound: {fileID: 0}
-  shieldDamageSound: {fileID: 0}
-  hullDamageSound: {fileID: 0}
-  beamHitLoopSound: {fileID: 0}
-  explosionSound: {fileID: 0}
+  projectileFireSound: {fileID: 11400000, guid: 80311ec3731e81d4c81d5e64fe8d23ea, type: 2}
+  shieldDamageSound: {fileID: 11400000, guid: fd2754dd24955964c99c8be0471fb1d2, type: 2}
+  hullDamageSound: {fileID: 11400000, guid: f9265c3e881424f4da91b40830f8b194, type: 2}
+  beamHitLoopSound: {fileID: 11400000, guid: cdf6af1d1d05cdd4d8cf3ea5f244f9f2, type: 2}
+  explosionSound: {fileID: 11400000, guid: 52e8c58e387b89849affa74c78d6d899, type: 2}
   audioSourcePoolSize: 10
   isMovementLocked: 0
   shotsFired: 0
@@ -5492,12 +5492,12 @@ MonoBehaviour:
       tier2ParticleSystem: {fileID: 365551820481101173}
       tier3ParticleSystem: {fileID: 5427583667433657938}
       tier4ParticleSystem: {fileID: 6528417477677960060}
-    chargeSound: {fileID: 0}
+    chargeSound: {fileID: 11400000, guid: c0ca32b488e896048b9506d3930a6f0c, type: 2}
     chargeSoundFadeDuration: 0.2
-    tier1FireSound: {fileID: 0}
-    tier2FireSound: {fileID: 0}
-    tier3FireSound: {fileID: 0}
-    tier4FireSound: {fileID: 0}
+    tier1FireSound: {fileID: 11400000, guid: 589e6a0df75d28849a496fbf6c74d2ad, type: 2}
+    tier2FireSound: {fileID: 11400000, guid: e7e42ed280f0c0c4b8350f72738de054, type: 2}
+    tier3FireSound: {fileID: 11400000, guid: f7365c957976a8b4e82cabcacd75dc73, type: 2}
+    tier4FireSound: {fileID: 11400000, guid: c16249345c8cb574d9b6150b6a225ff9, type: 2}
 --- !u!114 &31027433883740222
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5530,9 +5530,11 @@ MonoBehaviour:
       chromaticFlashIntensity: 0.3
       enableScreenShake: 0
       screenShakeStrength: 0
-      effects: []
-    exitSound: {fileID: 0}
-    arrivalSound: {fileID: 0}
+      effects:
+      - {fileID: 6844924702641111991, guid: d5d5ad029b642c5479372fc91f7c70cd, type: 3}
+      - {fileID: 7990418082684036425, guid: 0510e735713d119488183d4948cbedb0, type: 3}
+    exitSound: {fileID: 11400000, guid: bc1b416aa39b9084fb712befa92ac7f8, type: 2}
+    arrivalSound: {fileID: 11400000, guid: b5df1b844f0088a48bf54cac1c479aa8, type: 2}
 --- !u!114 &-4976364162122950036
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5562,7 +5564,7 @@ MonoBehaviour:
     capacity: 100
     drainRate: 25
     regenRate: 4
-    beamLoopSound: {fileID: 0}
+    beamLoopSound: {fileID: 11400000, guid: 2e4ef6af0cbd6bf4091e3bcdb76e99fd, type: 2}
     soundFadeDuration: 0.3
 --- !u!114 &-5504958681508550136
 MonoBehaviour:
@@ -5587,7 +5589,7 @@ MonoBehaviour:
     reflectedProjectileColor: {r: 0.8117648, g: 0.68235296, b: 0, a: 0}
     reflectedProjectileDamageMultiplier: 1.5
     shieldLoopSound: {fileID: 0}
-    bulletReflectionSound: {fileID: 0}
+    bulletReflectionSound: {fileID: 11400000, guid: 9eb877fd117843243bf3853dc3a30234, type: 2}
 --- !u!1 &3501154216763360000
 GameObject:
   m_ObjectHideFlags: 0
