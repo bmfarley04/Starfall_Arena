@@ -23286,8 +23286,8 @@ MonoBehaviour:
       shieldLoopSound: {fileID: 0}
       shieldHitSound: {fileID: 11400000, guid: 6a5f04ee6bc536848a1d144945dd48e8, type: 2}
     tractorBeam:
-      cooldown: 7
-      duration: 3
+      cooldown: 15
+      duration: 2
       coneHalfAngle: 25
       coneRange: 30
       pullSpeed: 5
