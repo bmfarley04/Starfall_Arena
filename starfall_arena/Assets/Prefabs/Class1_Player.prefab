@@ -5381,15 +5381,15 @@ MonoBehaviour:
   slowEffectVisuals:
     slowParticleSystem: {fileID: 4517218207347267077}
   currentShield: 0
-  ability1: {fileID: 6100440838757200110}
+  ability1: {fileID: -4976364162122950036}
   ability2: {fileID: 31027433883740222}
-  ability3: {fileID: -4976364162122950036}
-  ability4: {fileID: -5504958681508550136}
+  ability3: {fileID: -5504958681508550136}
+  ability4: {fileID: 6100440838757200110}
   abilitySlots:
-  - {fileID: 11500000, guid: 6b484fbf92d1f8a4c972f0c7584defa6, type: 3}
-  - {fileID: 11500000, guid: 947c60145480efe4da5c2b90cf85194b, type: 3}
   - {fileID: 11500000, guid: 908cc72dae50f93469c58280dd7ce4ef, type: 3}
+  - {fileID: 11500000, guid: 947c60145480efe4da5c2b90cf85194b, type: 3}
   - {fileID: 11500000, guid: 4271e562bc81ff844953f97f936e0a23, type: 3}
+  - {fileID: 11500000, guid: 6b484fbf92d1f8a4c972f0c7584defa6, type: 3}
   shieldRegen:
     regenDelay: 5
     regenRate: 20
@@ -5551,19 +5551,19 @@ MonoBehaviour:
   isLocked: 0
   beam:
     stats:
-      prefab: {fileID: 0}
-      damagePerSecond: 0
-      maxDistance: 0
-      recoilForcePerSecond: 0
-      impactForce: 0
-    offsetDistance: 0
-    rotationMultiplier: 0
-    fadeInDuration: 0
-    capacity: 0
-    drainRate: 0
-    regenRate: 0
+      prefab: {fileID: 2153662200343534273, guid: 83a72cb419d844b64b498b2b7eb5f252, type: 3}
+      damagePerSecond: 100
+      maxDistance: 60
+      recoilForcePerSecond: 1
+      impactForce: 20
+    offsetDistance: 1.7
+    rotationMultiplier: 0.2
+    fadeInDuration: 0.3
+    capacity: 100
+    drainRate: 25
+    regenRate: 4
     beamLoopSound: {fileID: 0}
-    soundFadeDuration: 0
+    soundFadeDuration: 0.3
 --- !u!114 &-5504958681508550136
 MonoBehaviour:
   m_ObjectHideFlags: 0
