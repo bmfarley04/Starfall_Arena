@@ -431,11 +431,11 @@ PrefabInstance:
       objectReference: {fileID: 2100000, guid: 04ec926d61457be49a3b21aa10a6f67f, type: 2}
     - target: {fileID: 4615817175343614204, guid: 3316819995f6b614fbdb541d5be9e0a4, type: 3}
       propertyPath: tier1Probability
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 4615817175343614204, guid: 3316819995f6b614fbdb541d5be9e0a4, type: 3}
       propertyPath: tier2Probability
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4615817175343614204, guid: 3316819995f6b614fbdb541d5be9e0a4, type: 3}
       propertyPath: tier3Probability
@@ -28998,7 +28998,7 @@ MonoBehaviour:
   player2AbilityCanvas: {fileID: 0}
   player1WinTracker: {fileID: 798331406}
   player2WinTracker: {fileID: 16507106}
-  debugStartAtRound: 0
+  debugStartAtRound: 1
 --- !u!4 &1497365221
 Transform:
   m_ObjectHideFlags: 0

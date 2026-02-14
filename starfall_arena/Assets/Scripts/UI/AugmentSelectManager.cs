@@ -27,7 +27,7 @@ namespace StarfallArena.UI
         [Tooltip("Tier 3 augments (legendary)")]
         [SerializeField] private List<Augment> tier3Augments = new List<Augment>();
 
-        [Header("Tier Selection Probabilities")]
+        [Header("Tier Selection Probabilities (DEPRECATED FOR NOW - USING ONE OF EACH TIER EVERY GAME)")]
         [Tooltip("Probability of tier 1 appearing (must sum to 1 with other tiers)")]
         [Range(0f, 1f)]
         [SerializeField] private float tier1Probability = 0.6f;
@@ -186,6 +186,10 @@ namespace StarfallArena.UI
         private bool isShowing = false;
         private Coroutine _countdownCoroutine;
 
+        // Per-game tier sequence: one of each tier in randomized order
+        private List<int> _gameTierOrder = new List<int>(3);
+        private int _gameTierOrderIndex = 0;
+
         // CanvasGroups for player choice / timer text (auto-created in Start)
         private CanvasGroup _playerChoiceCG;
         private CanvasGroup _countdownTimerCG;
@@ -242,11 +246,34 @@ namespace StarfallArena.UI
             WireButtonEvents(tier2Buttons);
             WireButtonEvents(tier3Buttons);
 
+            // Build randomized tier order for this game (one of each tier)
+            GenerateRandomizedGameTierOrder();
+
             // Debug: Auto-show if enabled
             if (debugShowOnStart)
             {
                 ShowAugmentSelect(1);
             }
+        }
+
+        /// <summary>
+        /// Generates a randomized order containing exactly one of each tier (1, 2, 3).
+        /// </summary>
+        private void GenerateRandomizedGameTierOrder()
+        {
+            _gameTierOrder.Clear();
+            _gameTierOrder.Add(1);
+            _gameTierOrder.Add(2);
+            _gameTierOrder.Add(3);
+
+            for (int i = _gameTierOrder.Count - 1; i > 0; i--)
+            {
+                int j = Random.Range(0, i + 1);
+                (_gameTierOrder[i], _gameTierOrder[j]) = (_gameTierOrder[j], _gameTierOrder[i]);
+            }
+
+            _gameTierOrderIndex = 0;
+            Debug.Log($"[AugmentSelect] Game tier order: {_gameTierOrder[0]} -> {_gameTierOrder[1]} -> {_gameTierOrder[2]}");
         }
 
         private void Update()
@@ -980,20 +1007,34 @@ namespace StarfallArena.UI
         /// </summary>
         private int SelectRandomTier()
         {
-            float roll = Random.Range(0f, 1f);
+            if (_gameTierOrder.Count < 3)
+                GenerateRandomizedGameTierOrder();
 
-            if (roll < tier1Probability)
+            if (_gameTierOrderIndex >= _gameTierOrder.Count)
             {
-                return 1;
+                Debug.LogWarning("[AugmentSelect] Tier order exhausted; generating a new randomized order.");
+                GenerateRandomizedGameTierOrder();
             }
-            else if (roll < tier1Probability + tier2Probability)
-            {
-                return 2;
-            }
-            else
-            {
-                return 3;
-            }
+
+            int tier = _gameTierOrder[_gameTierOrderIndex];
+            _gameTierOrderIndex++;
+            return tier;
+
+            // Old probability-based tier selection (kept for reference):
+            // float roll = Random.Range(0f, 1f);
+            //
+            // if (roll < tier1Probability)
+            // {
+            //     return 1;
+            // }
+            // else if (roll < tier1Probability + tier2Probability)
+            // {
+            //     return 2;
+            // }
+            // else
+            // {
+            //     return 3;
+            // }
         }
 
         /// <summary>

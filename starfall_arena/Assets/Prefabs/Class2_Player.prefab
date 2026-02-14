@@ -23178,8 +23178,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: '::'
   currentRound: 0
   augments: []
-  maxHealth: 100
-  maxShield: 100
+  maxHealth: 200
+  maxShield: 200
   shieldController: {fileID: 3922741470573243441}
   movement:
     thrustForce: 25
