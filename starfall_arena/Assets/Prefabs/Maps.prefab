@@ -84,7 +84,6 @@ MonoBehaviour:
   ringOfFire:
     waves: []
     autoStart: 0
-    autoChainWaves: 0
     fireLineMaterial: {fileID: 0}
     lineWidth: 0
     maskExtent: 0
@@ -365,7 +364,6 @@ MonoBehaviour:
   ringOfFire:
     waves: []
     autoStart: 0
-    autoChainWaves: 0
     fireLineMaterial: {fileID: 0}
     lineWidth: 0
     maskExtent: 0
@@ -455,7 +453,6 @@ MonoBehaviour:
   ringOfFire:
     waves: []
     autoStart: 0
-    autoChainWaves: 0
     fireLineMaterial: {fileID: 0}
     lineWidth: 0
     maskExtent: 0
@@ -579,8 +576,9 @@ MonoBehaviour:
   ringOfFire:
     waves:
     - duration: 5
-      fireDamage: 1
-      damageTickInterval: 1
+      fireDamage: 3
+      damageTickInterval: 0.5
+      autoChainWithPrevious: 0
       endCenterBox:
         centerPoint: {x: 0, y: 0}
         width: 0
@@ -590,8 +588,9 @@ MonoBehaviour:
         width: 200
         length: 200
     - duration: 5
-      fireDamage: 2
-      damageTickInterval: 0.9
+      fireDamage: 6
+      damageTickInterval: 0.4
+      autoChainWithPrevious: 1
       endCenterBox:
         centerPoint: {x: 0, y: 0}
         width: 0
@@ -601,8 +600,9 @@ MonoBehaviour:
         width: 150
         length: 150
     - duration: 5
-      fireDamage: 4
-      damageTickInterval: 0.8
+      fireDamage: 9
+      damageTickInterval: 0.3
+      autoChainWithPrevious: 1
       endCenterBox:
         centerPoint: {x: 0, y: 0}
         width: 0
@@ -612,8 +612,9 @@ MonoBehaviour:
         width: 100
         length: 100
     - duration: 5
-      fireDamage: 8
-      damageTickInterval: 0.7
+      fireDamage: 12
+      damageTickInterval: 0.2
+      autoChainWithPrevious: 1
       endCenterBox:
         centerPoint: {x: 0, y: 0}
         width: 0
@@ -623,8 +624,9 @@ MonoBehaviour:
         width: 50
         length: 50
     - duration: 5
-      fireDamage: 16
-      damageTickInterval: 0.6
+      fireDamage: 15
+      damageTickInterval: 0.1
+      autoChainWithPrevious: 1
       endCenterBox:
         centerPoint: {x: 0, y: 0}
         width: 0
@@ -634,8 +636,21 @@ MonoBehaviour:
         width: 30
         length: 30
     - duration: 5
-      fireDamage: 32
-      damageTickInterval: 0.5
+      fireDamage: 18
+      damageTickInterval: 0.05
+      autoChainWithPrevious: 1
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 15
+        length: 15
+    - duration: 9999
+      fireDamage: 18
+      damageTickInterval: 0.05
+      autoChainWithPrevious: 1
       endCenterBox:
         centerPoint: {x: 0, y: 0}
         width: 0
@@ -645,7 +660,6 @@ MonoBehaviour:
         width: 15
         length: 15
     autoStart: 1
-    autoChainWaves: 1
     fireLineMaterial: {fileID: 10754, guid: 0000000000000000f000000000000000, type: 0}
     lineWidth: 0
     maskExtent: 400

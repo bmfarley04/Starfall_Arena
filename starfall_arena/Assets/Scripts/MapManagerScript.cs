@@ -82,8 +82,6 @@ public struct RingOfFireConfig
     [Header("Game Logic")]
     [Tooltip("Auto-start Ring of Fire when map is enabled")]
     public bool autoStart;
-    [Tooltip("Automatically chain waves - each wave's endCenterBox is set from previous wave's safeBox")]
-    public bool autoChainWaves;
 
     [Header("Line Renderer Visuals")]
     [Tooltip("Material for the line (Use Particles/Additive or similar)")]
@@ -101,7 +99,6 @@ public struct RingOfFireConfig
     {
         waves = null;
         autoStart = true;
-        autoChainWaves = true;
         fireLineMaterial = null;
         lineWidth = 0.2f;
         maskExtent = 50f;
@@ -273,23 +270,24 @@ public class MapManagerScript : MonoBehaviour
             return;
         }
 
-        // Auto-chain waves if enabled
-        if (ringOfFire.autoChainWaves && ringOfFire.waves.Count > 1)
+        // Auto-chain waves based on current wave's autoChainWithPrevious setting
+        for (int i = 1; i < ringOfFire.waves.Count; i++)
         {
-            for (int i = 1; i < ringOfFire.waves.Count; i++)
+            Wave currentWave = ringOfFire.waves[i];
+            
+            // Only chain if the current wave has autoChainWithPrevious enabled
+            if (currentWave.autoChainWithPrevious)
             {
                 Wave previousWave = ringOfFire.waves[i - 1];
-                Wave currentWave = ringOfFire.waves[i];
                 
-                // Set the current wave's safeBox center to match previous wave's safeBox (where it ended)
+                // Set the current wave's safeBox center to match previous wave's endCenterBox (where it ended)
                 currentWave.safeBox = new WaveBox(
-                    previousWave.safeBox.centerPoint,
+                    previousWave.endCenterBox.centerPoint,
                     currentWave.safeBox.width,
                     currentWave.safeBox.length
                 );
                 
-                // Set the current wave's endCenterBox to match the current wave's safeBox
-                // This means the wave will move to end at the current safe zone position
+                // Set endCenterBox to match safeBox so the safe zone doesn't move during this wave
                 currentWave.endCenterBox = new WaveBox(
                     currentWave.safeBox.centerPoint,
                     currentWave.safeBox.width,
