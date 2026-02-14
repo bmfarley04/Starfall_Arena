@@ -20313,7 +20313,7 @@ MonoBehaviour:
     damage: 7
     speed: 30
     recoilForce: 0.02
-    lifetime: 0.5
+    lifetime: 3
     impactForce: 0.04
   visualEffects:
     visualModel: {fileID: 0}
@@ -20437,7 +20437,7 @@ MonoBehaviour:
   isLocked: 0
   fireTrail:
     firePrefab: {fileID: 9122628155286203966, guid: 54c48d3a7b1bbd34babdb5a1d098c782, type: 3}
-    damagePerSecond: 10
+    damagePerSecond: 20
     fireDuration: 4
     impactForce: 1
     spawnOffset: -1

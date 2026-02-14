@@ -175,7 +175,7 @@ MonoBehaviour:
   autoCalculateSize: 1
   maxBreakRadius: 1.5
   alwaysOn: 1
-  alwaysOnAlpha: 0.7
+  alwaysOnAlpha: 0.5
 --- !u!1 &6459063611578365934
 GameObject:
   m_ObjectHideFlags: 0
@@ -1290,7 +1290,6 @@ MonoBehaviour:
     regenRate: 0
   input:
     controllerLookDeadzone: 0
-    mouseMovementThreshold: 0
   friction:
     frictionDelay: 0
     frictionDeceleration: 0
