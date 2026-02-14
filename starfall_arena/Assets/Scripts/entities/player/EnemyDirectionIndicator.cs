@@ -30,10 +30,10 @@ public struct IndicatorConfig
     public float fadeEndDistance;
 
     [Header("Camera Culling")]
-    [Tooltip("Layer name for Player1's UI (arrow will be set to this layer if this is Player1)")]
+    [Tooltip("Layer for Player1's arrow. Should be 'Background2' (Player1 sees it, Player2 doesn't)")]
     public string player1Layer;
 
-    [Tooltip("Layer name for Player2's UI (arrow will be set to this layer if this is Player2)")]
+    [Tooltip("Layer for Player2's arrow. Should be 'Background1' (Player2 sees it, Player1 doesn't)")]
     public string player2Layer;
 }
 
@@ -53,8 +53,8 @@ public class EnemyDirectionIndicator : MonoBehaviour
         fadeWhenClose = true,
         fadeStartDistance = 15f,
         fadeEndDistance = 5f,
-        player1Layer = "Player1UI",
-        player2Layer = "Player2UI"
+        player1Layer = "Background2", // Player1 sees Background2, but not Background1
+        player2Layer = "Background1"  // Player2 sees Background1, but not Background2
     };
 
     private Player _player;
@@ -89,7 +89,10 @@ public class EnemyDirectionIndicator : MonoBehaviour
 
         string targetLayerName = null;
 
-        // Determine which layer to use based on player tag
+        // Use the same layer system as invisibility:
+        // - Player1's arrow → Background2 (Player1 can see it, Player2 cannot)
+        // - Player2's arrow → Background1 (Player2 can see it, Player1 cannot)
+        // This reuses the existing camera culling mask setup from the invisibility system
         if (gameObject.CompareTag("Player1"))
         {
             targetLayerName = indicator.player1Layer;

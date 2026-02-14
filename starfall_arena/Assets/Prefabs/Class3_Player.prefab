@@ -20522,8 +20522,10 @@ MonoBehaviour:
     positionSmoothSpeed: 20
     rotationSmoothSpeed: 20
     fadeWhenClose: 1
-    fadeStartDistance: 15
-    fadeEndDistance: 5
+    fadeStartDistance: 30
+    fadeEndDistance: 25
+    player1Layer: Player1UI
+    player2Layer: Player2UI
 --- !u!1001 &1583529772260481141
 PrefabInstance:
   m_ObjectHideFlags: 0
