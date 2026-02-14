@@ -435,11 +435,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4615817175343614204, guid: 3316819995f6b614fbdb541d5be9e0a4, type: 3}
       propertyPath: tier2Probability
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 4615817175343614204, guid: 3316819995f6b614fbdb541d5be9e0a4, type: 3}
       propertyPath: tier3Probability
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4615817175343614204, guid: 3316819995f6b614fbdb541d5be9e0a4, type: 3}
       propertyPath: countdownTimerText

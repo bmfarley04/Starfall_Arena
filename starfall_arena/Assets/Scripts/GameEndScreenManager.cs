@@ -426,6 +426,12 @@ public class GameEndScreenManager : MonoBehaviour
         Vector3 startPosition = shipTransform.position;
         Vector3 targetPosition = currentShipSpawnPoint.position;
         Vector3 originalScale = shipTransform.localScale;
+        Vector3 stretchedScale = originalScale;
+        stretchedScale.y *= warpMaxStretchY;
+        stretchedScale.x *= warpMinCompressX;
+
+        // Start at full warp stretch and keep that scale during travel
+        shipTransform.localScale = stretchedScale;
 
         // Get all renderers for alpha control
         Renderer[] renderers = spawnedShipModel.GetComponentsInChildren<Renderer>();
@@ -473,16 +479,8 @@ public class GameEndScreenManager : MonoBehaviour
                 float posT = EaseInCubic(t);
                 shipTransform.position = Vector3.Lerp(startPosition, targetPosition, posT);
 
-                // Progressive stretch reduction: starts very stretched, gradually normalizes
-                // Inverse interpolation: max stretch at t=0, normal at t=1
-                float stretchProgress = 1f - t; // 1.0 -> 0.0
-                float currentStretchY = Mathf.Lerp(1f, warpMaxStretchY, stretchProgress);
-                float currentCompressX = Mathf.Lerp(1f, warpMinCompressX, stretchProgress);
-
-                Vector3 stretchScale = originalScale;
-                stretchScale.y *= currentStretchY;   // Decreases from max to 1x
-                stretchScale.x *= currentCompressX;  // Increases from min to 1x
-                shipTransform.localScale = stretchScale;
+                // Keep full warp stretch until snap
+                shipTransform.localScale = stretchedScale;
 
                 // Fade in from start alpha to full opacity
                 float currentAlpha = Mathf.Lerp(warpStartAlpha, 1f, t);
