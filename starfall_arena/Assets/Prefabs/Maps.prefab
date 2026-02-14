@@ -96,8 +96,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::RingOfFireManager
   config:
     waves:
-    - duration: 25
-      stationaryBox: 0
+    - duration: 30
+      stationary: 0
       fireDamage: 10
       damageTickInterval: 0.5
       autoChainWithPrevious: 0
@@ -117,9 +117,9 @@ MonoBehaviour:
         centerPoint: {x: 0, y: 0}
         radius: 25
     autoStart: 1
-    fireLineMaterial: {fileID: 10306, guid: 0000000000000000f000000000000000, type: 0}
+    fireLineMaterial: {fileID: 2100000, guid: 3ec3a6ee245fad5488f674cd61116782, type: 2}
     lineWidth: 0
-    maskExtent: 400
+    maskExtent: 500
     outsideMaskMaterial: {fileID: 2100000, guid: ed9b04cc44f5efd4eb81ac84c0e4c20e, type: 2}
     maskShaderZValue: 0.05
 --- !u!1 &3221698777667135044
@@ -410,8 +410,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::RingOfFireManager
   config:
     waves:
-    - duration: 25
-      stationaryBox: 0
+    - duration: 30
+      stationary: 0
       fireDamage: 10
       damageTickInterval: 0.5
       autoChainWithPrevious: 0
@@ -431,9 +431,9 @@ MonoBehaviour:
         centerPoint: {x: 0, y: 0}
         radius: 25
     autoStart: 1
-    fireLineMaterial: {fileID: 10306, guid: 0000000000000000f000000000000000, type: 0}
+    fireLineMaterial: {fileID: 2100000, guid: 3ec3a6ee245fad5488f674cd61116782, type: 2}
     lineWidth: 0
-    maskExtent: 400
+    maskExtent: 500
     outsideMaskMaterial: {fileID: 2100000, guid: ed9b04cc44f5efd4eb81ac84c0e4c20e, type: 2}
     maskShaderZValue: 0.05
 --- !u!1 &7879155641077518358
@@ -533,8 +533,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::RingOfFireManager
   config:
     waves:
-    - duration: 25
-      stationaryBox: 0
+    - duration: 30
+      stationary: 0
       fireDamage: 10
       damageTickInterval: 0.5
       autoChainWithPrevious: 0
@@ -554,9 +554,9 @@ MonoBehaviour:
         centerPoint: {x: 0, y: 0}
         radius: 25
     autoStart: 1
-    fireLineMaterial: {fileID: 10306, guid: 0000000000000000f000000000000000, type: 0}
+    fireLineMaterial: {fileID: 2100000, guid: 3ec3a6ee245fad5488f674cd61116782, type: 2}
     lineWidth: 0
-    maskExtent: 400
+    maskExtent: 500
     outsideMaskMaterial: {fileID: 2100000, guid: ed9b04cc44f5efd4eb81ac84c0e4c20e, type: 2}
     maskShaderZValue: 0.05
 --- !u!1 &8029003339607521930
@@ -690,8 +690,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::RingOfFireManager
   config:
     waves:
-    - duration: 25
-      stationaryBox: 0
+    - duration: 30
+      stationary: 0
       fireDamage: 10
       damageTickInterval: 0.5
       autoChainWithPrevious: 0
@@ -711,8 +711,8 @@ MonoBehaviour:
         centerPoint: {x: 0, y: 0}
         radius: 25
     autoStart: 1
-    fireLineMaterial: {fileID: 10306, guid: 0000000000000000f000000000000000, type: 0}
+    fireLineMaterial: {fileID: 2100000, guid: 3ec3a6ee245fad5488f674cd61116782, type: 2}
     lineWidth: 0
-    maskExtent: 400
+    maskExtent: 500
     outsideMaskMaterial: {fileID: 2100000, guid: ed9b04cc44f5efd4eb81ac84c0e4c20e, type: 2}
     maskShaderZValue: 0.05

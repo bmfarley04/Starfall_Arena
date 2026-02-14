@@ -222,8 +222,8 @@ public class RingOfFireManager : MonoBehaviour
 
         Wave currentWave = config.waves[_currentWaveIndex];
         
-        // If stationaryBox is enabled, don't interpolate - keep the shape at its starting position
-        if (currentWave.stationaryBox)
+        // If stationary is enabled, don't interpolate - keep the shape at its starting position
+        if (currentWave.stationary)
         {
             _currentSafeCenter = _startSafeCenter;
             _currentSafeWidth = _startSafeWidth;
@@ -481,7 +481,7 @@ public class RingOfFireManager : MonoBehaviour
     private void RefreshEntityCache()
     {
         _cachedEntities.Clear();
-        string[] tagsToFind = new string[] { "Player1", "Player2", "Player" };
+        string[] tagsToFind = new string[] { "Player1", "Player2", "Player", "Enemy" };
 
         foreach (var tag in tagsToFind)
         {

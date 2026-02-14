@@ -10,7 +10,7 @@ public class WavePropertyDrawer : PropertyDrawer
 
         // Find our properties
         SerializedProperty duration = property.FindPropertyRelative("duration");
-        SerializedProperty stationaryBox = property.FindPropertyRelative("stationaryBox");
+        SerializedProperty stationary = property.FindPropertyRelative("stationary");
         SerializedProperty fireDamage = property.FindPropertyRelative("fireDamage");
         SerializedProperty damageTickInterval = property.FindPropertyRelative("damageTickInterval");
         SerializedProperty autoChain = property.FindPropertyRelative("autoChainWithPrevious");
@@ -29,7 +29,7 @@ public class WavePropertyDrawer : PropertyDrawer
         EditorGUI.PropertyField(fieldRect, duration);
         fieldRect.y += EditorGUIUtility.singleLineHeight + 2;
 
-        EditorGUI.PropertyField(fieldRect, stationaryBox);
+        EditorGUI.PropertyField(fieldRect, stationary);
         fieldRect.y += EditorGUIUtility.singleLineHeight + 2;
 
         EditorGUI.PropertyField(fieldRect, fireDamage);
@@ -41,9 +41,9 @@ public class WavePropertyDrawer : PropertyDrawer
         EditorGUI.PropertyField(fieldRect, shapeType);
         fieldRect.y += EditorGUIUtility.singleLineHeight + 2;
 
-        // When stationaryBox is true, the safe zone stays at the previous wave's end position
+        // When stationary is true, the safe zone stays at the previous wave's end position
         // So we don't need to show safeBox or endCenterBox since they're not used
-        if (!stationaryBox.boolValue)
+        if (!stationary.boolValue)
         {
             WaveShapeType currentShapeType = (WaveShapeType)shapeType.enumValueIndex;
             
@@ -125,10 +125,10 @@ public class WavePropertyDrawer : PropertyDrawer
     public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
     {
         bool autoChain = property.FindPropertyRelative("autoChainWithPrevious").boolValue;
-        bool stationary = property.FindPropertyRelative("stationaryBox").boolValue;
+        bool stationary = property.FindPropertyRelative("stationary").boolValue;
         WaveShapeType shapeType = (WaveShapeType)property.FindPropertyRelative("shapeType").enumValueIndex;
 
-        // Base height for the top variables (autoChain, duration, stationaryBox, fireDamage, damageTickInterval, shapeType)
+        // Base height for the top variables (autoChain, duration, stationary, fireDamage, damageTickInterval, shapeType)
         float totalHeight = (EditorGUIUtility.singleLineHeight + 2) * 6;
 
         if (stationary)

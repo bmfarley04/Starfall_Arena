@@ -9,7 +9,7 @@ public class Wave
     [Tooltip("Time in seconds for the wave to reach the end center shape.")]
     public float duration;
     [Tooltip("Whether the wave shrinks. If enabled, the shape will stay still with the parameters from the last wave for the duration.")]
-    public bool stationaryBox;
+    public bool stationary;
     [Tooltip("Damage per second dealt to entities outside the safe zone")]
     public float fireDamage = 5f;
     [Tooltip("How often to apply fire damage (seconds). Default: 0.5")]
@@ -37,7 +37,7 @@ public class Wave
         this.safeBox = safeBox;
         this.fireDamage = 5f;
         this.damageTickInterval = 0.5f;
-        this.stationaryBox = false;
+        this.stationary = false;
         this.autoChainWithPrevious = false;
         this.shapeType = WaveShapeType.Box;
     }
@@ -49,7 +49,7 @@ public class Wave
         this.safeCircle = safeCircle;
         this.fireDamage = 5f;
         this.damageTickInterval = 0.5f;
-        this.stationaryBox = false;
+        this.stationary = false;
         this.autoChainWithPrevious = false;
         this.shapeType = WaveShapeType.Circle;
     }
