@@ -43,9 +43,10 @@ namespace StarfallArena.UI
         {
             if (_ability == null) return;
 
-            float fillRatio = _ability.GetHUDFillRatio();
-            bool isOnCooldown = _ability.IsOnCooldown();
-            bool isResource = _ability.IsResourceBased();
+            bool isLocked = _ability.isLocked;
+            float fillRatio = isLocked ? 1f : _ability.GetHUDFillRatio();
+            bool isOnCooldown = isLocked || _ability.IsOnCooldown();
+            bool isResource = _ability.IsResourceBased() && !isLocked;
 
             // Update dark fill icon
             if (darkFillIcon != null)

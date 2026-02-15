@@ -29468,8 +29468,8 @@ MonoBehaviour:
   splitScreenManager: {fileID: 1497365223}
   player1SpawnPoint: {fileID: 467014797}
   player2SpawnPoint: {fileID: 1605044461}
-  defaultPlayer1Ship: {fileID: 11400000, guid: 9e0b8049ba8e9804c989ba9a8132db9d, type: 2}
-  defaultPlayer2Ship: {fileID: 11400000, guid: 635dd57ea0bf73840a19e65e9f919224, type: 2}
+  defaultPlayer1Ship: {fileID: 11400000, guid: 181f1725c458b3047a025d212cf88177, type: 2}
+  defaultPlayer2Ship: {fileID: 11400000, guid: 9e0b8049ba8e9804c989ba9a8132db9d, type: 2}
   versusScreenManager: {fileID: 1645183432}
   roundEndScreenManager: {fileID: 969421165}
   gameEndScreenManager: {fileID: 1968054541}
