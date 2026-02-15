@@ -408,7 +408,7 @@ Transform:
   - {fileID: 99262883118920132}
   - {fileID: 3123067214321442420}
   - {fileID: 6379532789281306917}
-  - {fileID: 4287523133036908992}
+  - {fileID: 2092925578676349283}
   - {fileID: 5734542300901874242}
   - {fileID: 5519259037183327233}
   - {fileID: 1708320067475687375}
@@ -764,8 +764,8 @@ MonoBehaviour:
   maxShield: 50
   shieldController: {fileID: 4336082909312925661}
   movement:
-    thrustForce: 25
-    maxSpeed: 16
+    thrustForce: 44
+    maxSpeed: 18
     rotationSpeed: 360
     lateralDamping: 0.92
   turrets:
@@ -775,7 +775,7 @@ MonoBehaviour:
   - {fileID: 1923464454567762205}
   projectileWeapon:
     prefab: {fileID: 1778989562205518720, guid: c1883d15da3eace4faf2638f38c358d2, type: 3}
-    baseDamage: 5
+    baseDamage: 6
     damage: 7
     speed: 30
     recoilForce: 0.02
@@ -845,7 +845,7 @@ MonoBehaviour:
   shotsHit: 0
   damageDealt: 0
   damageTaken: 0
-  fireCooldown: 0.15
+  fireCooldown: 0.1
 --- !u!114 &4120815541869784891
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1209,7 +1209,7 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 9f50449675dfe174fbc61d630be106b0, type: 3}
---- !u!4 &4287523133036908992 stripped
+--- !u!4 &2092925578676349283 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 6523780682702230247, guid: 9f50449675dfe174fbc61d630be106b0, type: 3}
   m_PrefabInstance: {fileID: 5152838492917644164}
