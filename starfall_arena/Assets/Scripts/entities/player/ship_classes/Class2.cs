@@ -184,6 +184,12 @@ public class Class2 : Player
         // Sync Inspector value to parent's protected field
         fireCooldown = _fireCooldown;
 
+        // Keep base Ability lock flag in sync so Ability HUD can reflect locked state.
+        if (ability4 != null)
+        {
+            ability4.isLocked = _isAbility4Locked;
+        }
+
         _shieldSource = gameObject.AddComponent<AudioSource>();
         _shieldSource.playOnAwake = false;
         _shieldSource.loop = true;
@@ -197,6 +203,65 @@ public class Class2 : Player
 
         // Initialize tractor beam cone visual
         InitializeTractorBeamCone();
+    }
+
+    // ===== ABILITY HUD STATE =====
+    public override float GetAbilityHUDFillRatio(int slotIndex)
+    {
+        float cooldown;
+        float lastUsedTime;
+
+        switch (slotIndex)
+        {
+            case 1:
+                cooldown = abilities.empoweredShot.cooldown;
+                lastUsedTime = _lastEmpoweredShotTime;
+                break;
+            case 2:
+                cooldown = abilities.shield.cooldown;
+                lastUsedTime = _lastShieldTime;
+                break;
+            case 3:
+                cooldown = abilities.tractorBeam.cooldown;
+                lastUsedTime = _lastTractorBeamTime;
+                break;
+            case 4:
+                if (_isAbility4Locked) return 1f;
+                cooldown = abilities.physicalProjectile.cooldown;
+                lastUsedTime = _lastPhysicalProjectileTime;
+                break;
+            default:
+                return base.GetAbilityHUDFillRatio(slotIndex);
+        }
+
+        if (cooldown <= 0f) return 0f;
+        float elapsed = Time.time - lastUsedTime;
+        if (elapsed >= cooldown) return 0f;
+        return 1f - (elapsed / cooldown);
+    }
+
+    public override bool IsAbilityOnCooldownForHUD(int slotIndex)
+    {
+        switch (slotIndex)
+        {
+            case 1:
+                return Time.time < _lastEmpoweredShotTime + abilities.empoweredShot.cooldown;
+            case 2:
+                return Time.time < _lastShieldTime + abilities.shield.cooldown;
+            case 3:
+                return Time.time < _lastTractorBeamTime + abilities.tractorBeam.cooldown;
+            case 4:
+                if (_isAbility4Locked) return true;
+                return Time.time < _lastPhysicalProjectileTime + abilities.physicalProjectile.cooldown;
+            default:
+                return base.IsAbilityOnCooldownForHUD(slotIndex);
+        }
+    }
+
+    public override bool IsAbilityResourceBasedForHUD(int slotIndex)
+    {
+        // Class2 uses cooldown visuals for all 4 inline abilities.
+        return false;
     }
 
     protected override void Update()
@@ -790,12 +855,14 @@ public class Class2 : Player
     // ===== ABILITY 4 LOCK/UNLOCK =====
     public override void LockAbility4()
     {
+        base.LockAbility4();
         _isAbility4Locked = true;
         Debug.Log("Physical Projectile (Ability 4) locked");
     }
 
     public override void UnlockAbility4()
     {
+        base.UnlockAbility4();
         _isAbility4Locked = false;
         Debug.Log("Physical Projectile (Ability 4) unlocked!");
     }
