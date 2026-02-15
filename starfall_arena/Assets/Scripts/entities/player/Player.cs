@@ -462,12 +462,7 @@ public abstract class Player : Entity
 
     void OnFire(InputValue value)
     {
-        if (isMovementLocked) return;
-        var activeAbility = abilities.FirstOrDefault(a => a != null && a.IsAbilityActive() == true);
-        if (activeAbility == null || (activeAbility != null && !activeAbility.DisablePrimaryFire()))
-        {
-            _isFiring = value.Get<float>() > 0f;
-        }
+        _isFiring = value.Get<float>() > 0f;
     }
 
 
@@ -522,6 +517,13 @@ public abstract class Player : Entity
     protected virtual void TryFireProjectile()
     {
         if (isMovementLocked) return;
+
+        // Prevent firing if an active ability disables primary fire
+        var activeAbility = abilities.FirstOrDefault(a => a != null && a.IsAbilityActive() == true);
+        if (activeAbility != null && activeAbility.DisablePrimaryFire())
+        {
+            return;
+        }
 
         if (projectileWeapon.prefab == null)
             return;
