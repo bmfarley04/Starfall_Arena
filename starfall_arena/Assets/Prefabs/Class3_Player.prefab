@@ -19894,12 +19894,12 @@ Transform:
   - {fileID: 8020913972604947391}
   - {fileID: 99262883118920132}
   - {fileID: 4287523133036908992}
-  - {fileID: 2802567047062795779}
   - {fileID: 6379532789281306917}
   - {fileID: 1510783858964592112}
   - {fileID: 3705249044902359239}
   - {fileID: 1562697156233977449}
   - {fileID: 307486612009446285}
+  - {fileID: 2802567047062795779}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!212 &3237536394328810945
@@ -20037,73 +20037,20 @@ PolygonCollider2D:
   m_AutoTiling: 0
   m_Points:
     m_Paths:
-    - - {x: 0.67176956, y: -0.7073312}
-      - {x: 0.5975536, y: -0.4654107}
-      - {x: 0.6152692, y: -0.4478116}
-      - {x: 0.6149657, y: -0.20803261}
-      - {x: 0.59418225, y: -0.18730164}
-      - {x: 0.58802694, y: -0.15023756}
-      - {x: 0.58472943, y: 0.052433014}
-      - {x: 0.57501, y: 0.07515907}
-      - {x: 0.4335447, y: 0.07528353}
-      - {x: 0.426662, y: 0.058627605}
-      - {x: 0.3573342, y: 0.15531111}
-      - {x: 0.26290628, y: 0.4801836}
-      - {x: 0.19500326, y: 1.0729938}
-      - {x: 0.1880203, y: 1.0821326}
-      - {x: 0.17627539, y: 1.081748}
-      - {x: 0.1697769, y: 1.0725265}
-      - {x: 0.17386676, y: 0.3880918}
-      - {x: 0.17048612, y: 0.38243103}
-      - {x: 0.119716145, y: 0.4140501}
-      - {x: 0.1202489, y: 0.5382905}
-      - {x: 0.116136335, y: 0.555675}
-      - {x: 0.031220179, y: 0.60298467}
-      - {x: -0.03100788, y: 0.60318804}
-      - {x: -0.11643138, y: 0.55583143}
-      - {x: -0.119950816, y: 0.5394349}
-      - {x: -0.11991657, y: 0.41432047}
-      - {x: -0.170806, y: 0.3822546}
-      - {x: -0.17417632, y: 0.38797903}
-      - {x: -0.16992134, y: 1.0727699}
-      - {x: -0.17660694, y: 1.0818388}
-      - {x: -0.1879306, y: 1.0821085}
-      - {x: -0.19487514, y: 1.0730236}
-      - {x: -0.2635344, y: 0.48042107}
-      - {x: -0.3563339, y: 0.15486622}
-      - {x: -0.426665, y: 0.058813572}
-      - {x: -0.43299723, y: 0.075315}
-      - {x: -0.5750473, y: 0.07526159}
-      - {x: -0.585108, y: 0.052239895}
-      - {x: -0.59477496, y: -0.186697}
-      - {x: -0.6157592, y: -0.20819521}
-      - {x: -0.6153089, y: -0.4481635}
-      - {x: -0.59760755, y: -0.46548033}
-      - {x: -0.67175525, y: -0.70727104}
-      - {x: -0.66693056, y: -0.7160182}
-      - {x: -0.6540448, y: -0.71891785}
-      - {x: -0.64246863, y: -0.7147126}
-      - {x: -0.50851446, y: -0.54489756}
-      - {x: -0.35282513, y: -0.4486308}
-      - {x: -0.21439801, y: -0.4344678}
-      - {x: -0.20487344, y: -0.47002697}
-      - {x: -0.18573514, y: -0.48216677}
-      - {x: -0.23163715, y: -0.59393644}
-      - {x: -0.24200794, y: -0.76145697}
-      - {x: -0.19271596, y: -0.92377186}
-      - {x: 0.00000002593697, y: -1.081943}
-      - {x: 0.19263656, y: -0.92356825}
-      - {x: 0.2422818, y: -0.76097345}
-      - {x: 0.23168029, y: -0.59371185}
-      - {x: 0.18544883, y: -0.48151875}
-      - {x: 0.1866408, y: -0.4815097}
-      - {x: 0.20481949, y: -0.47030306}
-      - {x: 0.21441041, y: -0.4343605}
-      - {x: 0.3537548, y: -0.44949627}
-      - {x: 0.5108514, y: -0.54753256}
-      - {x: 0.64260346, y: -0.7148752}
-      - {x: 0.65404063, y: -0.71888924}
-      - {x: 0.667111, y: -0.71584934}
+    - - {x: 0.9700968, y: 0.089938074}
+      - {x: 0.5735472, y: 0.4004944}
+      - {x: 0.3097067, y: 1.7321924}
+      - {x: 0.014320791, y: 1.7373424}
+      - {x: -0.30538094, y: 1.7176372}
+      - {x: -0.54164267, y: 0.47482482}
+      - {x: -0.9391707, y: 0.10754153}
+      - {x: -1.0805988, y: -1.1540954}
+      - {x: -0.31623596, y: -0.8076405}
+      - {x: -0.5788638, y: -1.2752984}
+      - {x: 0.0055038556, y: -1.7333533}
+      - {x: 0.49028447, y: -1.3455368}
+      - {x: 0.32391906, y: -0.7694831}
+      - {x: 1.0919253, y: -1.1574609}
   m_UseDelaunayMesh: 1
 --- !u!50 &9082626961702770905
 Rigidbody2D:
@@ -20325,9 +20272,9 @@ MonoBehaviour:
     maxPitchAngle: 0
     pitchSensitivity: 0
     pitchSmoothing: 0
-    impulseRecoilSensitivity: 0
+    impulseRecoilSensitivity: 10
     explosionEffectPrefab: {fileID: 6449558077517977558, guid: b2d6631e832473b418da4138ddc33bee, type: 3}
-    explosionScale: 0
+    explosionScale: 2
   thrusters:
     thrusters:
     - {fileID: 5230714889375272226}
@@ -20336,20 +20283,20 @@ MonoBehaviour:
   slowEffectVisuals:
     slowParticleSystem: {fileID: 541853997494829686}
   currentShield: 0
-  ability1: {fileID: 9076574994160510604}
+  ability1: {fileID: 2132662891210618044}
   ability2: {fileID: 4494098414829394601}
-  ability3: {fileID: 2132662891210618044}
-  ability4: {fileID: 4483054902844542671}
+  ability3: {fileID: 4483054902844542671}
+  ability4: {fileID: 9076574994160510604}
   abilitySlots:
-  - {fileID: 11500000, guid: 3a6ee9153481bfc4f8a713bec9b17242, type: 3}
-  - {fileID: 11500000, guid: d5e9967bfa742ea46adae3a0d7dfca81, type: 3}
   - {fileID: 11500000, guid: 4b733bc7ea7daa242836f59770870bbd, type: 3}
+  - {fileID: 11500000, guid: d5e9967bfa742ea46adae3a0d7dfca81, type: 3}
   - {fileID: 11500000, guid: e80a4986b0af08647b9a0c65c4b462e0, type: 3}
+  - {fileID: 11500000, guid: 3a6ee9153481bfc4f8a713bec9b17242, type: 3}
   shieldRegen:
-    regenDelay: 0
-    regenRate: 0
+    regenDelay: 5
+    regenRate: 20
   input:
-    controllerLookDeadzone: 0
+    controllerLookDeadzone: 0.1
   friction:
     frictionDelay: 0
     frictionDeceleration: 0
@@ -20607,7 +20554,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4984431733994752859, guid: 9ae0e650ad00c2e4393ef7f44d8f0966, type: 3}
       propertyPath: m_LocalPosition.y
-      value: -0.775
+      value: -0.85
       objectReference: {fileID: 0}
     - target: {fileID: 4984431733994752859, guid: 9ae0e650ad00c2e4393ef7f44d8f0966, type: 3}
       propertyPath: m_LocalPosition.z
@@ -20686,15 +20633,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6523780682702230247, guid: 9f50449675dfe174fbc61d630be106b0, type: 3}
       propertyPath: m_LocalScale.x
-      value: 0.25
+      value: 0.325
       objectReference: {fileID: 0}
     - target: {fileID: 6523780682702230247, guid: 9f50449675dfe174fbc61d630be106b0, type: 3}
       propertyPath: m_LocalScale.y
-      value: 0.25
+      value: 0.325
       objectReference: {fileID: 0}
     - target: {fileID: 6523780682702230247, guid: 9f50449675dfe174fbc61d630be106b0, type: 3}
       propertyPath: m_LocalScale.z
-      value: 0.25
+      value: 0.325
       objectReference: {fileID: 0}
     - target: {fileID: 6523780682702230247, guid: 9f50449675dfe174fbc61d630be106b0, type: 3}
       propertyPath: m_LocalPosition.x
