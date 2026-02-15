@@ -1,6 +1,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+
+// Used AI heavily for this feature
 [System.Serializable]
 public struct RingOfFireConfig
 {
@@ -117,13 +119,91 @@ public class RingOfFireManager : MonoBehaviour
             if (currentWave.autoChainWithPrevious)
             {
                 Wave previousWave = config.waves[i - 1];
-                
-                // Set the current wave's safe zone center to match previous wave's end center
-                Vector2 previousEndCenter = previousWave.GetEndCenter();
-                currentWave.SetSafeZoneCenter(previousEndCenter);
-                
-                // Set endCenter to match safeZone center so the safe zone doesn't move during this wave
+
+                // Determine area for previous wave's safe shape and its end-center shape
+                float safeArea = 0f;
+                float endArea = 0f;
+                Vector2 safeCenter = previousWave.GetSafeZoneCenter();
+                Vector2 endCenter = previousWave.GetEndCenter();
+
+                // Track type and size of the smaller shape
+                bool safeIsBox = previousWave.shapeType == WaveShapeType.Box;
+                bool endIsBox = previousWave.shapeType == WaveShapeType.Box; // same type in this Wave design
+
+                float safeWidth = 0f, safeLength = 0f, safeRadius = 0f;
+                float endWidth = 0f, endLength = 0f, endRadius = 0f;
+
+                if (safeIsBox)
+                {
+                    safeWidth = previousWave.safeBox.width;
+                    safeLength = previousWave.safeBox.length;
+                    safeArea = safeWidth * safeLength;
+                }
+                else
+                {
+                    safeRadius = previousWave.safeCircle.radius;
+                    safeArea = Mathf.PI * safeRadius * safeRadius;
+                }
+
+                if (endIsBox)
+                {
+                    endWidth = previousWave.endCenterBox.width;
+                    endLength = previousWave.endCenterBox.length;
+                    endArea = endWidth * endLength;
+                }
+                else
+                {
+                    endRadius = previousWave.endCenterCircle.radius;
+                    endArea = Mathf.PI * endRadius * endRadius;
+                }
+
+                // Choose the smaller area and chain to its center
+                bool chooseSafe = safeArea <= endArea;
+                Vector2 chosenCenter = chooseSafe ? safeCenter : endCenter;
+
+                // Determine chosen shape parameters
+                bool chosenIsBox = chooseSafe ? safeIsBox : endIsBox;
+                float chosenWidth = chooseSafe ? safeWidth : endWidth;
+                float chosenLength = chooseSafe ? safeLength : endLength;
+                float chosenRadius = chooseSafe ? safeRadius : endRadius;
+
+                // Set the next wave's safe center to the chosen center
+                currentWave.SetSafeZoneCenter(chosenCenter);
+
+                // Lock the end center to the same spot so this wave doesn't move away
                 currentWave.SetEndCenter(currentWave.GetSafeZoneCenter());
+
+                // Also adjust the next wave's end-center size so it matches the chosen (smaller) area as closely as possible.
+                if (currentWave.shapeType == WaveShapeType.Box)
+                {
+                    if (chosenIsBox)
+                    {
+                        // Direct copy of box dimensions
+                        currentWave.endCenterBox.width = chosenWidth;
+                        currentWave.endCenterBox.length = chosenLength;
+                    }
+                    else
+                    {
+                        // Convert circle -> box by using diameter as both width and length (square) to roughly match center footprint
+                        float diameter = chosenRadius * 2f;
+                        currentWave.endCenterBox.width = diameter;
+                        currentWave.endCenterBox.length = diameter;
+                    }
+                }
+                else // current wave is Circle
+                {
+                    if (chosenIsBox)
+                    {
+                        // Convert box -> circle by fitting a circle inside the box: use half the smaller box side
+                        float radius = Mathf.Min(chosenWidth, chosenLength) / 2f;
+                        currentWave.endCenterCircle.radius = radius;
+                    }
+                    else
+                    {
+                        // Direct copy of circle radius
+                        currentWave.endCenterCircle.radius = chosenRadius;
+                    }
+                }
             }
         }
 
