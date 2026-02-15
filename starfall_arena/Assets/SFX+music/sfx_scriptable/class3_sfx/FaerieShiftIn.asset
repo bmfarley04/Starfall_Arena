@@ -13,6 +13,6 @@ MonoBehaviour:
   m_Name: FaerieShiftIn
   m_EditorClassIdentifier: Assembly-CSharp::SoundEffect
   clip: {fileID: 8300000, guid: 6ec0f8355cca19044abb6d8305fe18f0, type: 3}
-  volume: 0.1
+  volume: 0.4
   minPitch: 0.9
   maxPitch: 1.1

@@ -5347,8 +5347,8 @@ MonoBehaviour:
   maxShield: 100
   shieldController: {fileID: 487621983904113540}
   movement:
-    thrustForce: 50
-    maxSpeed: 20
+    thrustForce: 40
+    maxSpeed: 18
     rotationSpeed: 400
     lateralDamping: 0.92
   turrets:
@@ -5556,7 +5556,7 @@ MonoBehaviour:
   beam:
     stats:
       prefab: {fileID: 2153662200343534273, guid: 83a72cb419d844b64b498b2b7eb5f252, type: 3}
-      damagePerSecond: 100
+      damagePerSecond: 30
       maxDistance: 60
       recoilForcePerSecond: 1
       impactForce: 20

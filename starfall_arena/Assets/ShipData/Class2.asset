@@ -21,10 +21,10 @@ MonoBehaviour:
   player2VSPositionOffset: {x: -0.5, y: 0, z: 0}
   abilityHUDPrefab: {fileID: 0}
   stats:
-    damage: 32
-    hull: 100
+    damage: 20
+    hull: 150
     shield: 100
-    speed: 30
+    speed: 20
   ability1:
     abilityName: DECISIVE STRIKE
     abilityDescription: Empowered base attack which slows enemies

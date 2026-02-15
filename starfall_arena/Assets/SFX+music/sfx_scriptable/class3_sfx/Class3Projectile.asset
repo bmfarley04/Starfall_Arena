@@ -13,6 +13,6 @@ MonoBehaviour:
   m_Name: Class3Projectile
   m_EditorClassIdentifier: Assembly-CSharp::SoundEffect
   clip: {fileID: 8300000, guid: e2078b127eece3446990c7a99d82b41e, type: 3}
-  volume: 0.1
+  volume: 0.4
   minPitch: 0.45
   maxPitch: 0.55

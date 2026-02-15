@@ -13,6 +13,6 @@ MonoBehaviour:
   m_Name: InvisibilityEnter
   m_EditorClassIdentifier: Assembly-CSharp::SoundEffect
   clip: {fileID: 8300000, guid: 77d9fa81f8dfc4c47bc72d0318e8747e, type: 3}
-  volume: 0.05
+  volume: 0.2
   minPitch: 0.9
   maxPitch: 1.1
