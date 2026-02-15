@@ -494,6 +494,308 @@ PolygonCollider2D:
       - {x: 16.099205, y: -18.354992}
       - {x: 20.771582, y: -16.725807}
   m_UseDelaunayMesh: 1
+--- !u!1 &4825277275185870162
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 5452385515175085907}
+  - component: {fileID: 494678241843710929}
+  - component: {fileID: 3187118788145129483}
+  m_Layer: 0
+  m_Name: MapManager4
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 0
+--- !u!4 &5452385515175085907
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4825277275185870162}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 1.2142897, y: -2.72681, z: -12.16493}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2241051889850896278}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &494678241843710929
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4825277275185870162}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b2c308072ea1af54fa7cc41148419955, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MapManagerScript
+  pattern: 2
+  asteroidCount: 30
+  useSeed: 1
+  seed: 12345
+  prefabs:
+    prefab1: {fileID: 281602037788047727, guid: 89e47e3dfd1c4ca4db8281832c513da1, type: 3}
+    prefab2: {fileID: 8918075630754091426, guid: 35b3f4e24d9bbad42a751bcddc6dbd8d, type: 3}
+    prefab1Chance: 0.6
+  scattered:
+    size: {x: 200, y: 150}
+    center: {x: 0, y: 0}
+  clustered:
+    area:
+      size: {x: 200, y: 150}
+      center: {x: 0, y: 0}
+    clusterCount: 5
+    clusterRadius: 40
+    minSpacing: 8
+  falling:
+    area:
+      size: {x: 200, y: 150}
+      center: {x: 0, y: 0}
+    spawnMargin: 15
+    velocityRange: {x: 15, y: 15}
+    driftRange: {x: -1, y: 1}
+    maxAngularVelocity: 90
+    spawnDelay: 1
+    recycle: 1
+  variation:
+    positionJitter: 0.2
+    scaleMin: {x: 0.4, y: 0.4}
+    scaleMax: {x: 0.6, y: 0.6}
+    rotationRange: 180
+    uniformScale: 1
+  animation:
+    growDuration: 0.5
+    shrinkDuration: 0.3
+--- !u!114 &3187118788145129483
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4825277275185870162}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 215431e1afc4bdd47906f03b16005df5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RingOfFireManager
+  config:
+    waves:
+    - duration: 25
+      stationary: 0
+      fireDamage: 3
+      damageTickInterval: 0.5
+      autoChainWithPrevious: 0
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 100
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 0
+    - duration: 15
+      stationary: 1
+      fireDamage: 3
+      damageTickInterval: 0.5
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 100
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 100
+    - duration: 25
+      stationary: 0
+      fireDamage: 6
+      damageTickInterval: 0.4
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 80
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+    - duration: 15
+      stationary: 1
+      fireDamage: 6
+      damageTickInterval: 0.4
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+    - duration: 13
+      stationary: 0
+      fireDamage: 9
+      damageTickInterval: 0.3
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 60
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+    - duration: 7
+      stationary: 1
+      fireDamage: 9
+      damageTickInterval: 0.3
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 50
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+    - duration: 13
+      stationary: 0
+      fireDamage: 12
+      damageTickInterval: 0.2
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 40
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+    - duration: 7
+      stationary: 1
+      fireDamage: 12
+      damageTickInterval: 0.2
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 50
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+    - duration: 10
+      stationary: 0
+      fireDamage: 15
+      damageTickInterval: 0.1
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 20
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+    - duration: 99999
+      stationary: 1
+      fireDamage: 15
+      damageTickInterval: 0.1
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 50
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+    autoStart: 1
+    fireLineMaterial: {fileID: 2100000, guid: 3ec3a6ee245fad5488f674cd61116782, type: 2}
+    lineWidth: 0
+    maskExtent: 1000
+    outsideMaskMaterial: {fileID: 2100000, guid: ed9b04cc44f5efd4eb81ac84c0e4c20e, type: 2}
+    maskShaderZValue: 0.05
 --- !u!1 &7879155641077518358
 GameObject:
   m_ObjectHideFlags: 0
@@ -807,7 +1109,7 @@ GameObject:
   m_Component:
   - component: {fileID: 2241051889850896278}
   m_Layer: 0
-  m_Name: Maps
+  m_Name: Maps 1
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -829,6 +1131,7 @@ Transform:
   - {fileID: 1032401732064188100}
   - {fileID: 347057026475290541}
   - {fileID: 6548599234806605937}
+  - {fileID: 5452385515175085907}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &8349115255470493581

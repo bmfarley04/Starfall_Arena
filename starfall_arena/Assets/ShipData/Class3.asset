@@ -19,25 +19,26 @@ MonoBehaviour:
   shipPrefab: {fileID: 8073042944126910331, guid: b3d6e192d9b648a42977ef913b4a488a, type: 3}
   player1VSPositionOffset: {x: 0, y: 0, z: 0}
   player2VSPositionOffset: {x: 0, y: 0, z: 0}
-  abilityHUDPrefab: {fileID: 6476359621877627330, guid: 3c254edb4e84a4f7abb1abe98b7efec0, type: 3}
+  abilityHUDPrefab: {fileID: 0}
   stats:
-    damage: 26
+    damage: 24
     hull: 100
     shield: 50
-    speed: 40
+    speed: 45
   ability1:
-    abilityName: 
-    abilityDescription: 
+    abilityName: FIRE WALL
+    abilityDescription: Leave a trail of fire behind you.
     abilityIcon: {fileID: 0}
   ability2:
-    abilityName: 
-    abilityDescription: 
+    abilityName: INVISIBILITY
+    abilityDescription: Become temporarily invisible.
     abilityIcon: {fileID: 0}
   ability3:
-    abilityName: 
-    abilityDescription: 
+    abilityName: FAERIE SHIFT
+    abilityDescription: Become smaller and more agile but take ten times as much
+      damage.
     abilityIcon: {fileID: 0}
   ability4:
-    abilityName: 
-    abilityDescription: 
+    abilityName: NOVA DART
+    abilityDescription: Launch an energy dart that explodes when triggered.
     abilityIcon: {fileID: 0}

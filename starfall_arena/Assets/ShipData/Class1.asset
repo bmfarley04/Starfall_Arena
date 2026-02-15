@@ -24,7 +24,7 @@ MonoBehaviour:
     damage: 20
     hull: 100
     shield: 100
-    speed: 30
+    speed: 40
   ability1:
     abilityName: LASER BEAM
     abilityDescription: Fires a continuous laser beam for high damage, but reduces
