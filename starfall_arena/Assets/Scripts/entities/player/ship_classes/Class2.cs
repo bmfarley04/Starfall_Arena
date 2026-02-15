@@ -766,6 +766,15 @@ public class Class2 : Player
         base.Die();
     }
 
+    void OnDestroy()
+    {
+        // Clean up detached tractor beam cone (it's unparented while active)
+        if (_tractorBeamConeObject != null)
+        {
+            Destroy(_tractorBeamConeObject);
+        }
+    }
+
     void OnTriggerEnter2D(Collider2D collider)
     {
         if (abilities.shield.shield != null && abilities.shield.shield.IsActive())
