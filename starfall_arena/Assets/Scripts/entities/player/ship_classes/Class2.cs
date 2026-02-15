@@ -187,21 +187,13 @@ public class Class2 : Player
         _shieldSource = gameObject.AddComponent<AudioSource>();
         _shieldSource.playOnAwake = false;
         _shieldSource.loop = true;
-        _shieldSource.spatialBlend = 1f;
-        _shieldSource.rolloffMode = AudioRolloffMode.Linear;
-        _shieldSource.minDistance = 10f;
-        _shieldSource.maxDistance = 50f;
-        _shieldSource.dopplerLevel = 0f;
+        _shieldSource.spatialBlend = 0f;
 
         // Initialize tractor beam audio source
         _tractorBeamSource = gameObject.AddComponent<AudioSource>();
         _tractorBeamSource.playOnAwake = false;
         _tractorBeamSource.loop = true;
-        _tractorBeamSource.spatialBlend = 1f;
-        _tractorBeamSource.rolloffMode = AudioRolloffMode.Linear;
-        _tractorBeamSource.minDistance = 10f;
-        _tractorBeamSource.maxDistance = 50f;
-        _tractorBeamSource.dopplerLevel = 0f;
+        _tractorBeamSource.spatialBlend = 0f;
 
         // Initialize tractor beam cone visual
         InitializeTractorBeamCone();

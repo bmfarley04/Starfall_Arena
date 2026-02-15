@@ -264,12 +264,7 @@ public class AsteroidScript : MonoBehaviour
         audioSource.clip = clip;
         audioSource.volume = volume;
 
-        // Configure 3D spatial audio
-        audioSource.spatialBlend = 1f; // Full 3D sound
-        audioSource.rolloffMode = AudioRolloffMode.Linear;
-        audioSource.minDistance = 10f; // Full volume within this distance
-        audioSource.maxDistance = 50f; // Silent beyond this distance
-        audioSource.dopplerLevel = 0f; // Disable doppler effect for explosions
+        audioSource.spatialBlend = 0f; // 2D sound for split-screen
 
         audioSource.Play();
         Object.Destroy(tempAudio, clip.length);

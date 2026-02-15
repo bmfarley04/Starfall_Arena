@@ -243,21 +243,13 @@ public abstract class Player : Entity
         {
             _audioSourcePool[i] = gameObject.AddComponent<AudioSource>();
             _audioSourcePool[i].playOnAwake = false;
-            _audioSourcePool[i].spatialBlend = 1f;
-            _audioSourcePool[i].rolloffMode = AudioRolloffMode.Linear;
-            _audioSourcePool[i].minDistance = 10f;
-            _audioSourcePool[i].maxDistance = 50f;
-            _audioSourcePool[i].dopplerLevel = 0f;
+            _audioSourcePool[i].spatialBlend = 0f;
         }
 
         _beamHitLoopSource = gameObject.AddComponent<AudioSource>();
         _beamHitLoopSource.playOnAwake = false;
         _beamHitLoopSource.loop = true;
-        _beamHitLoopSource.spatialBlend = 1f;
-        _beamHitLoopSource.rolloffMode = AudioRolloffMode.Linear;
-        _beamHitLoopSource.minDistance = 10f;
-        _beamHitLoopSource.maxDistance = 50f;
-        _beamHitLoopSource.dopplerLevel = 0f;
+        _beamHitLoopSource.spatialBlend = 0f;
     }
 
     public AudioSource GetAvailableAudioSource()

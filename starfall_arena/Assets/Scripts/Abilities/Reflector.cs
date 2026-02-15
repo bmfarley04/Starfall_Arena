@@ -45,11 +45,7 @@ public class Reflector : Ability
         _reflectShieldSource = gameObject.AddComponent<AudioSource>();
         _reflectShieldSource.playOnAwake = false;
         _reflectShieldSource.loop = true;
-        _reflectShieldSource.spatialBlend = 1f;
-        _reflectShieldSource.rolloffMode = AudioRolloffMode.Linear;
-        _reflectShieldSource.minDistance = 10f;
-        _reflectShieldSource.maxDistance = 50f;
-        _reflectShieldSource.dopplerLevel = 0f;
+        _reflectShieldSource.spatialBlend = 0f;
     }
 
     protected void Update()

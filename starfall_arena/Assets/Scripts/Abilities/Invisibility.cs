@@ -29,11 +29,7 @@ public class Invisibility : Ability
         _audioSource = gameObject.AddComponent<AudioSource>();
         _audioSource.playOnAwake = false;
         _audioSource.loop = false;
-        _audioSource.spatialBlend = 1f;
-        _audioSource.rolloffMode = AudioRolloffMode.Linear;
-        _audioSource.minDistance = 10f;
-        _audioSource.maxDistance = 50f;
-        _audioSource.dopplerLevel = 0f;
+        _audioSource.spatialBlend = 0f;
     }
 
     void FixedUpdate()
