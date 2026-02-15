@@ -1,7 +1,7 @@
 using System.Collections;
 using UnityEngine;
-using UnityEngine.EventSystems;
 using UnityEngine.UI;
+using UnityEngine.InputSystem;
 using TMPro;
 
 /// <summary>
@@ -9,6 +9,27 @@ using TMPro;
 /// </summary>
 public class GameEndScreenManager : MonoBehaviour
 {
+    [System.Serializable]
+    public struct ReturnHoldUIReferences
+    {
+        [Tooltip("Player 1 return button radial fill image")]
+        public Image player1ReturnFill;
+
+        [Tooltip("Player 2 return button radial fill image")]
+        public Image player2ReturnFill;
+    }
+
+    [System.Serializable]
+    public struct HoldButtonConfig
+    {
+        [Tooltip("Duration in seconds button must be held to trigger")]
+        [Range(0.5f, 3f)]
+        public float holdDuration;
+
+        [Tooltip("Sound played when hold completes")]
+        public SoundEffect confirmSound;
+    }
+
     [Header("Canvas References")]
     [Tooltip("Player 1 victory screen canvas group")]
     [SerializeField] private CanvasGroup player1Canvas;
@@ -97,15 +118,15 @@ public class GameEndScreenManager : MonoBehaviour
     [SerializeField] private float statDelayBetween = 0.15f;
     [SerializeField] private float scaleOvershoot = 1.15f;
 
-    [Header("Return Button")]
-    [Tooltip("Button to return to the title screen (must exist on both player canvases or be shared)")]
-    [SerializeField] private Button returnToTitleButton;
+    [Header("Return To Title (Hold)")]
+    [Tooltip("Return hold button fill references for each player canvas")]
+    [SerializeField] private ReturnHoldUIReferences returnHoldUI;
+
+    [Tooltip("Hold button configuration for returning to title")]
+    [SerializeField] private HoldButtonConfig holdReturn;
 
     [Tooltip("Scene name to load when the return button is pressed")]
     [SerializeField] private string titleSceneName = "titleScreenTest";
-
-    [Tooltip("Sound to play when the button is clicked")]
-    [SerializeField] private SoundEffect returnButtonClickSound;
 
     [Tooltip("Delay after click sound before loading scene")]
     [SerializeField] private float sceneLoadDelay = 0.15f;
@@ -133,9 +154,17 @@ public class GameEndScreenManager : MonoBehaviour
     private CanvasGroup[] currentStatSections;
     private GameObject spawnedShipModel;
     private Transform currentShipSpawnPoint;
+    private AudioSource _audioSource;
+    private float _returnHoldTime = 0f;
+    private bool _canReturnToTitle = false;
+    private bool _isLoadingTitle = false;
 
     private void Awake()
     {
+        _audioSource = GetComponent<AudioSource>();
+        if (_audioSource == null)
+            _audioSource = gameObject.AddComponent<AudioSource>();
+
         // Ensure both canvases start disabled
         if (player1Canvas != null)
         {
@@ -148,6 +177,8 @@ public class GameEndScreenManager : MonoBehaviour
             player2Canvas.alpha = 0f;
             player2Canvas.gameObject.SetActive(false);
         }
+
+        ResetReturnFillUI();
     }
 
     private void Start()
@@ -166,6 +197,11 @@ public class GameEndScreenManager : MonoBehaviour
                 debugAccuracy
             );
         }
+    }
+
+    private void Update()
+    {
+        HandleReturnHoldButton();
     }
 
     /// <summary>
@@ -247,13 +283,10 @@ public class GameEndScreenManager : MonoBehaviour
             return;
         }
 
-        // Wire up return button
-        if (returnToTitleButton != null)
-        {
-            returnToTitleButton.onClick.RemoveAllListeners();
-            returnToTitleButton.onClick.AddListener(OnReturnToTitleClicked);
-            returnToTitleButton.interactable = false;
-        }
+        _canReturnToTitle = false;
+        _isLoadingTitle = false;
+        _returnHoldTime = 0f;
+        ResetReturnFillUI();
 
         // Populate text fields
         PopulateStats(winningPlayer, gameDuration, wins, losses, damageDealt, damageTaken, accuracy);
@@ -410,13 +443,8 @@ public class GameEndScreenManager : MonoBehaviour
             yield return StartCoroutine(WarpInShip());
         }
 
-        // Phase 5: Activate, enable, and select return button for controller support
-        if (returnToTitleButton != null)
-        {
-            returnToTitleButton.gameObject.SetActive(true);
-            returnToTitleButton.interactable = true;
-            EventSystem.current.SetSelectedGameObject(returnToTitleButton.gameObject);
-        }
+        // Phase 5: Enable hold-to-return input
+        _canReturnToTitle = true;
 
         currentAnimation = null;
     }
@@ -586,19 +614,90 @@ public class GameEndScreenManager : MonoBehaviour
 
         currentActiveCanvas = null;
         currentAnimation = null;
+        _canReturnToTitle = false;
+        _returnHoldTime = 0f;
+        ResetReturnFillUI();
     }
 
-    private void OnReturnToTitleClicked()
+    private void HandleReturnHoldButton()
     {
-        if (returnButtonClickSound != null)
+        if (!_canReturnToTitle || _isLoadingTitle || currentActiveCanvas == null || !currentActiveCanvas.gameObject.activeInHierarchy)
         {
-            AudioSource audioSource = GetComponent<AudioSource>();
-            if (audioSource == null)
-                audioSource = gameObject.AddComponent<AudioSource>();
-            returnButtonClickSound.Play(audioSource);
+            return;
+        }
+
+        bool returnPressed = false;
+
+        foreach (var pad in Gamepad.all)
+        {
+            if (pad != null && pad.added && pad.aButton.isPressed)
+            {
+                returnPressed = true;
+                break;
+            }
+        }
+
+        if (Keyboard.current != null)
+        {
+            returnPressed = returnPressed || Keyboard.current.enterKey.isPressed;
+        }
+
+        if (returnPressed)
+        {
+            _returnHoldTime += Time.unscaledDeltaTime;
+            float fillRatio = 1f - Mathf.Clamp01(_returnHoldTime / holdReturn.holdDuration);
+            SetActiveReturnFill(fillRatio);
+
+            if (_returnHoldTime >= holdReturn.holdDuration)
+            {
+                ConfirmReturnToTitle();
+            }
+        }
+        else
+        {
+            _returnHoldTime = 0f;
+            SetActiveReturnFill(1f);
+        }
+    }
+
+    private void ConfirmReturnToTitle()
+    {
+        if (_isLoadingTitle) return;
+
+        _isLoadingTitle = true;
+        _canReturnToTitle = false;
+        _returnHoldTime = 0f;
+        SetActiveReturnFill(1f);
+
+        if (holdReturn.confirmSound != null)
+        {
+            holdReturn.confirmSound.Play(_audioSource);
         }
 
         StartCoroutine(LoadSceneDelayed(titleSceneName, sceneLoadDelay));
+    }
+
+    private void ResetReturnFillUI()
+    {
+        if (returnHoldUI.player1ReturnFill != null)
+            returnHoldUI.player1ReturnFill.fillAmount = 1f;
+
+        if (returnHoldUI.player2ReturnFill != null)
+            returnHoldUI.player2ReturnFill.fillAmount = 1f;
+    }
+
+    private void SetActiveReturnFill(float fillAmount)
+    {
+        if (currentActiveCanvas == player1Canvas)
+        {
+            if (returnHoldUI.player1ReturnFill != null)
+                returnHoldUI.player1ReturnFill.fillAmount = fillAmount;
+        }
+        else if (currentActiveCanvas == player2Canvas)
+        {
+            if (returnHoldUI.player2ReturnFill != null)
+                returnHoldUI.player2ReturnFill.fillAmount = fillAmount;
+        }
     }
 
     private IEnumerator LoadSceneDelayed(string sceneName, float delay)
@@ -633,5 +732,10 @@ public class GameEndScreenManager : MonoBehaviour
     private float EaseOutCubic(float t)
     {
         return 1f - Mathf.Pow(1f - t, 3f);
+    }
+
+    private void Reset()
+    {
+        holdReturn.holdDuration = 1.5f;
     }
 }
