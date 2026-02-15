@@ -18,11 +18,30 @@ namespace StarfallArena.UI
         [SerializeField] private Material cooldownMaterial;
 
         private Ability _ability;
+        private Player _player;
+        private int _slotIndex;
         private bool _wasOnCooldown;
 
         public void Bind(Ability ability)
         {
             _ability = ability;
+            _player = null;
+            _slotIndex = 0;
+
+            InitializeVisualState();
+        }
+
+        public void Bind(Player player, int slotIndex)
+        {
+            _player = player;
+            _slotIndex = slotIndex;
+            _ability = null;
+
+            InitializeVisualState();
+        }
+
+        private void InitializeVisualState()
+        {
 
             gameObject.SetActive(true);
             _wasOnCooldown = false;
@@ -41,11 +60,29 @@ namespace StarfallArena.UI
 
         void Update()
         {
-            if (_ability == null) return;
+            float fillRatio;
+            bool isOnCooldown;
+            bool isResource;
 
-            float fillRatio = _ability.GetHUDFillRatio();
-            bool isOnCooldown = _ability.IsOnCooldown();
-            bool isResource = _ability.IsResourceBased();
+            if (_player != null && _slotIndex >= 1 && _slotIndex <= 4)
+            {
+                fillRatio = _player.GetAbilityHUDFillRatio(_slotIndex);
+                isOnCooldown = _player.IsAbilityOnCooldownForHUD(_slotIndex);
+                isResource = _player.IsAbilityResourceBasedForHUD(_slotIndex);
+            }
+            else if (_ability != null)
+            {
+                bool isLocked = _ability.isLocked;
+                fillRatio = isLocked ? 1f : _ability.GetHUDFillRatio();
+                isOnCooldown = isLocked || _ability.IsOnCooldown();
+                isResource = _ability.IsResourceBased() && !isLocked;
+            }
+            else
+            {
+                return;
+            }
+
+            fillRatio = Mathf.Clamp01(fillRatio);
 
             // Update dark fill icon
             if (darkFillIcon != null)
