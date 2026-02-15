@@ -801,13 +801,13 @@ MonoBehaviour:
     slowParticleSystem: {fileID: 541853997494829686}
   currentShield: 0
   ability1: {fileID: 2132662891210618044}
-  ability2: {fileID: 4494098414829394601}
-  ability3: {fileID: 4483054902844542671}
+  ability2: {fileID: 4483054902844542671}
+  ability3: {fileID: 4494098414829394601}
   ability4: {fileID: 9076574994160510604}
   abilitySlots:
   - {fileID: 11500000, guid: 4b733bc7ea7daa242836f59770870bbd, type: 3}
-  - {fileID: 11500000, guid: d5e9967bfa742ea46adae3a0d7dfca81, type: 3}
   - {fileID: 11500000, guid: e80a4986b0af08647b9a0c65c4b462e0, type: 3}
+  - {fileID: 11500000, guid: d5e9967bfa742ea46adae3a0d7dfca81, type: 3}
   - {fileID: 11500000, guid: 3a6ee9153481bfc4f8a713bec9b17242, type: 3}
   shieldRegen:
     regenDelay: 5
