@@ -23762,11 +23762,6 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 918605806689994435, guid: f2f20bfc5e92ed248840a296d28c9e76, type: 3}
   m_PrefabInstance: {fileID: 1024413160}
   m_PrefabAsset: {fileID: 0}
---- !u!1 &1026462796 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 4825277275185870162, guid: 06751988f52c80044b881ccf094bc01c, type: 3}
-  m_PrefabInstance: {fileID: 346305755}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1036715820
 GameObject:
   m_ObjectHideFlags: 0
@@ -29482,7 +29477,7 @@ MonoBehaviour:
   - {fileID: 269892175}
   - {fileID: 1498634717}
   - {fileID: 131179207}
-  - {fileID: 1026462796}
+  - {fileID: 0}
   deathToRoundEndDelay: 1.5
   roundTextDisplayDuration: 1.5
   countdownInterval: 1
@@ -29592,7 +29587,7 @@ AudioSource:
   m_audioClip: {fileID: 0}
   m_Resource: {fileID: 8300000, guid: 43f63b483c1dd5947a02f493b2e3e6de, type: 3}
   m_PlayOnAwake: 1
-  m_Volume: 0.025
+  m_Volume: 0.2
   m_Pitch: 1
   Loop: 1
   Mute: 0

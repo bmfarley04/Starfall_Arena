@@ -13,6 +13,6 @@ MonoBehaviour:
   m_Name: Class3ShieldImpact
   m_EditorClassIdentifier: Assembly-CSharp::SoundEffect
   clip: {fileID: 8300000, guid: 46cf3319da9a2ef4898975b7482ddb1e, type: 3}
-  volume: 0.1
+  volume: 0.4
   minPitch: 0.9
   maxPitch: 1.1
