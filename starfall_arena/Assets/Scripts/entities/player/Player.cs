@@ -276,6 +276,45 @@ public abstract class Player : Entity
         }
     }
 
+    // ===== ABILITY HUD STATE API =====
+    // Default implementation uses modular Ability components.
+    // Derived classes with inline/non-modular abilities (e.g. Class2)
+    // should override these methods.
+    protected Ability GetAbilityInSlot(int slotIndex)
+    {
+        return slotIndex switch
+        {
+            1 => ability1,
+            2 => ability2,
+            3 => ability3,
+            4 => ability4,
+            _ => null
+        };
+    }
+
+    public virtual float GetAbilityHUDFillRatio(int slotIndex)
+    {
+        Ability ability = GetAbilityInSlot(slotIndex);
+        if (ability == null) return 0f;
+        if (ability.isLocked) return 1f;
+        return Mathf.Clamp01(ability.GetHUDFillRatio());
+    }
+
+    public virtual bool IsAbilityOnCooldownForHUD(int slotIndex)
+    {
+        Ability ability = GetAbilityInSlot(slotIndex);
+        if (ability == null) return false;
+        return ability.isLocked || ability.IsOnCooldown();
+    }
+
+    public virtual bool IsAbilityResourceBasedForHUD(int slotIndex)
+    {
+        Ability ability = GetAbilityInSlot(slotIndex);
+        if (ability == null) return false;
+        // Locked abilities should use cooldown visuals, not resource visuals.
+        return !ability.isLocked && ability.IsResourceBased();
+    }
+
     // ===== UPDATE LOOPS =====
     protected override void Update()
     {
@@ -856,6 +895,6 @@ public abstract class Player : Entity
     public virtual void UnlockAbility4()
     {
         if (ability4 != null) ability4.isLocked = false;
-        if (_abilityHUDPanel != null) _abilityHUDPanel.BindSlot4(ability4);
+        if (_abilityHUDPanel != null) _abilityHUDPanel.Bind(this);
     }
 }
