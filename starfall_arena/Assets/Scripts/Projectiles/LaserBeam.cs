@@ -167,10 +167,9 @@ public class LaserBeam : MonoBehaviour
 
                 // Check if this is a valid target (stops the beam)
                 bool isTargetTag = hit.collider.CompareTag(_targetTag);
-                // TODO: Re-enable asteroid check when AsteroidScript is implemented
-                // bool isAsteroid = hit.collider.CompareTag("Asteroid");
+                bool isAsteroid = hit.collider.CompareTag("Asteroid");
 
-                if (isTargetTag) // || isAsteroid)
+                if (isTargetTag || isAsteroid)
                 {
                     validHit = hit;
                     hitSomething = true;
@@ -230,17 +229,16 @@ public class LaserBeam : MonoBehaviour
                 }
             }
             // Deal damage if we hit an asteroid
-            // TODO: Re-enable when AsteroidScript is implemented
-            // else if (validHit.Value.collider.CompareTag("Asteroid"))
-            // {
-            //     AsteroidScript asteroid = validHit.Value.collider.GetComponent<AsteroidScript>();
-            //     if (asteroid != null)
-            //     {
-            //         float damageThisFrame = _damagePerSecond * Time.deltaTime;
-            //         float impactForceThisFrame = _impactForce * Time.deltaTime;
-            //         asteroid.TakeDamage(damageThisFrame, impactForceThisFrame, validHit.Value.point);
-            //     }
-            // }
+            else if (validHit.Value.collider.CompareTag("Asteroid"))
+            {
+                AsteroidScript asteroid = validHit.Value.collider.GetComponent<AsteroidScript>();
+                if (asteroid != null)
+                {
+                    float damageThisFrame = _damagePerSecond * Time.deltaTime;
+                    float impactForceThisFrame = _impactForce * Time.deltaTime;
+                    asteroid.TakeDamage(damageThisFrame, impactForceThisFrame, validHit.Value.point);
+                }
+            }
         }
         else
         {

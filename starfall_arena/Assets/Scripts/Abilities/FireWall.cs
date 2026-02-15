@@ -83,11 +83,7 @@ public class FireWall : Ability
         _fireLoopSource = gameObject.AddComponent<AudioSource>();
         _fireLoopSource.playOnAwake = false;
         _fireLoopSource.loop = true;
-        _fireLoopSource.spatialBlend = 1f;
-        _fireLoopSource.rolloffMode = AudioRolloffMode.Linear;
-        _fireLoopSource.minDistance = 10f;
-        _fireLoopSource.maxDistance = 50f;
-        _fireLoopSource.dopplerLevel = 0f;
+        _fireLoopSource.spatialBlend = 0f;
     }
 
     protected void Update()
@@ -196,11 +192,7 @@ public class FireWall : Ability
         AudioSource groupAudioSource = gameObject.AddComponent<AudioSource>();
         groupAudioSource.playOnAwake = false;
         groupAudioSource.loop = true;
-        groupAudioSource.spatialBlend = 1f;
-        groupAudioSource.rolloffMode = AudioRolloffMode.Linear;
-        groupAudioSource.minDistance = 10f;
-        groupAudioSource.maxDistance = 50f;
-        groupAudioSource.dopplerLevel = 0f;
+        groupAudioSource.spatialBlend = 0f;
         
         _currentGroup = new FireHazardGroup(groupAudioSource);
         _hazardGroups.Add(_currentGroup);

@@ -256,11 +256,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!4 &818846702 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 9053320766010288086, guid: dab56be66f149c34fbedb1fc28a943e6, type: 3}
-  m_PrefabInstance: {fileID: 3948759166270880185}
-  m_PrefabAsset: {fileID: 0}
 --- !u!4 &894694035 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 1213109017606901483, guid: dab56be66f149c34fbedb1fc28a943e6, type: 3}
@@ -380,11 +375,6 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: f2f20bfc5e92ed248840a296d28c9e76, type: 3}
---- !u!4 &1248933481 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 8019938659691727208, guid: dab56be66f149c34fbedb1fc28a943e6, type: 3}
-  m_PrefabInstance: {fileID: 3948759166270880185}
-  m_PrefabAsset: {fileID: 0}
 --- !u!198 &1355136628 stripped
 ParticleSystem:
   m_CorrespondingSourceObject: {fileID: 7967700455117977864, guid: dab56be66f149c34fbedb1fc28a943e6, type: 3}
@@ -419,6 +409,36 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ee3ac6e3b7a090e4c9512b927e3809a7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: '::'
+  splitScreenManager: {fileID: 0}
+  player1SpawnPoint: {fileID: 0}
+  player2SpawnPoint: {fileID: 0}
+  defaultPlayer1Ship: {fileID: 0}
+  defaultPlayer2Ship: {fileID: 0}
+  versusScreenManager: {fileID: 0}
+  roundEndScreenManager: {fileID: 0}
+  gameEndScreenManager: {fileID: 0}
+  augmentSelectManager: {fileID: 0}
+  roundTextCanvasGroup: {fileID: 0}
+  roundText: {fileID: 0}
+  countdownCanvasGroup: {fileID: 0}
+  countdownText: {fileID: 0}
+  maps: []
+  deathToRoundEndDelay: 1.5
+  roundTextDisplayDuration: 1.5
+  countdownInterval: 1
+  roundEndScreenDuration: 4
+  textFadeDuration: 0.3
+  cameraLerpDuration: 0.8
+  cameraLerpSettleDelay: 0.2
+  winsRequired: 3
+  ability4UnlockRound: 3
+  player1HUDCanvas: {fileID: 0}
+  player2HUDCanvas: {fileID: 0}
+  player1AbilityCanvas: {fileID: 0}
+  player2AbilityCanvas: {fileID: 0}
+  player1WinTracker: {fileID: 0}
+  player2WinTracker: {fileID: 0}
+  debugStartAtRound: 0
 --- !u!4 &1497365221
 Transform:
   m_ObjectHideFlags: 0
@@ -950,26 +970,6 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: c7ce114f7cdf8734caa1bccec8f31bd5, type: 2}
-    - target: {fileID: 3550827916854919345, guid: dab56be66f149c34fbedb1fc28a943e6, type: 3}
-      propertyPath: movement.maxSpeed
-      value: 20
-      objectReference: {fileID: 0}
-    - target: {fileID: 3550827916854919345, guid: dab56be66f149c34fbedb1fc28a943e6, type: 3}
-      propertyPath: movement.thrustForce
-      value: 50
-      objectReference: {fileID: 0}
-    - target: {fileID: 3550827916854919345, guid: dab56be66f149c34fbedb1fc28a943e6, type: 3}
-      propertyPath: 'turrets.Array.data[0]'
-      value: 
-      objectReference: {fileID: 818846702}
-    - target: {fileID: 3550827916854919345, guid: dab56be66f149c34fbedb1fc28a943e6, type: 3}
-      propertyPath: 'turrets.Array.data[1]'
-      value: 
-      objectReference: {fileID: 1248933481}
-    - target: {fileID: 3550827916854919345, guid: dab56be66f149c34fbedb1fc28a943e6, type: 3}
-      propertyPath: movement.rotationSpeed
-      value: 400
-      objectReference: {fileID: 0}
     - target: {fileID: 3550827916854919345, guid: dab56be66f149c34fbedb1fc28a943e6, type: 3}
       propertyPath: 'thrusters.thrusters.Array.data[0]'
       value: 

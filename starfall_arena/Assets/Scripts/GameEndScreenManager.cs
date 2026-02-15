@@ -1,5 +1,7 @@
 using System.Collections;
 using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.UI;
 using TMPro;
 
 /// <summary>
@@ -94,6 +96,19 @@ public class GameEndScreenManager : MonoBehaviour
     [SerializeField] private float despawnDuration = 0.4f;
     [SerializeField] private float statDelayBetween = 0.15f;
     [SerializeField] private float scaleOvershoot = 1.15f;
+
+    [Header("Return Button")]
+    [Tooltip("Button to return to the title screen (must exist on both player canvases or be shared)")]
+    [SerializeField] private Button returnToTitleButton;
+
+    [Tooltip("Scene name to load when the return button is pressed")]
+    [SerializeField] private string titleSceneName = "titleScreenTest";
+
+    [Tooltip("Sound to play when the button is clicked")]
+    [SerializeField] private SoundEffect returnButtonClickSound;
+
+    [Tooltip("Delay after click sound before loading scene")]
+    [SerializeField] private float sceneLoadDelay = 0.15f;
 
     [Header("Debug Mode")]
     [Tooltip("Enable to test with default parameters (no function call needed)")]
@@ -230,6 +245,14 @@ public class GameEndScreenManager : MonoBehaviour
         {
             Debug.LogError($"Player {winningPlayer} ship spawn point is not assigned!");
             return;
+        }
+
+        // Wire up return button
+        if (returnToTitleButton != null)
+        {
+            returnToTitleButton.onClick.RemoveAllListeners();
+            returnToTitleButton.onClick.AddListener(OnReturnToTitleClicked);
+            returnToTitleButton.interactable = false;
         }
 
         // Populate text fields
@@ -385,6 +408,14 @@ public class GameEndScreenManager : MonoBehaviour
         if (spawnedShipModel != null)
         {
             yield return StartCoroutine(WarpInShip());
+        }
+
+        // Phase 5: Activate, enable, and select return button for controller support
+        if (returnToTitleButton != null)
+        {
+            returnToTitleButton.gameObject.SetActive(true);
+            returnToTitleButton.interactable = true;
+            EventSystem.current.SetSelectedGameObject(returnToTitleButton.gameObject);
         }
 
         currentAnimation = null;
@@ -555,6 +586,25 @@ public class GameEndScreenManager : MonoBehaviour
 
         currentActiveCanvas = null;
         currentAnimation = null;
+    }
+
+    private void OnReturnToTitleClicked()
+    {
+        if (returnButtonClickSound != null)
+        {
+            AudioSource audioSource = GetComponent<AudioSource>();
+            if (audioSource == null)
+                audioSource = gameObject.AddComponent<AudioSource>();
+            returnButtonClickSound.Play(audioSource);
+        }
+
+        StartCoroutine(LoadSceneDelayed(titleSceneName, sceneLoadDelay));
+    }
+
+    private IEnumerator LoadSceneDelayed(string sceneName, float delay)
+    {
+        yield return new WaitForSecondsRealtime(delay);
+        UnityEngine.SceneManagement.SceneManager.LoadScene(sceneName);
     }
 
     // Easing functions

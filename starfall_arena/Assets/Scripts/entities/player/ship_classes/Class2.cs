@@ -166,6 +166,7 @@ public class Class2 : Player
     private float _lastShieldTime = -999f;
     private Coroutine _shieldCoroutine;
     private AudioSource _shieldSource;
+    private bool _isAbility4Locked = true; // Locked until round 3
 
     // Tractor Beam State
     private float _lastTractorBeamTime = -999f;
@@ -186,21 +187,13 @@ public class Class2 : Player
         _shieldSource = gameObject.AddComponent<AudioSource>();
         _shieldSource.playOnAwake = false;
         _shieldSource.loop = true;
-        _shieldSource.spatialBlend = 1f;
-        _shieldSource.rolloffMode = AudioRolloffMode.Linear;
-        _shieldSource.minDistance = 10f;
-        _shieldSource.maxDistance = 50f;
-        _shieldSource.dopplerLevel = 0f;
+        _shieldSource.spatialBlend = 0f;
 
         // Initialize tractor beam audio source
         _tractorBeamSource = gameObject.AddComponent<AudioSource>();
         _tractorBeamSource.playOnAwake = false;
         _tractorBeamSource.loop = true;
-        _tractorBeamSource.spatialBlend = 1f;
-        _tractorBeamSource.rolloffMode = AudioRolloffMode.Linear;
-        _tractorBeamSource.minDistance = 10f;
-        _tractorBeamSource.maxDistance = 50f;
-        _tractorBeamSource.dopplerLevel = 0f;
+        _tractorBeamSource.spatialBlend = 0f;
 
         // Initialize tractor beam cone visual
         InitializeTractorBeamCone();
@@ -280,29 +273,23 @@ public class Class2 : Player
 
     // ===== ABILITY INPUT CALLBACKS =====
 
-    // Ability 4 - Physical Projectile (same binding as Class1 Giga Blast)
+    // Ability 1 - Empowered Shot
     void OnAbility1()
     {
-        if (Time.time < _lastPhysicalProjectileTime + abilities.physicalProjectile.cooldown)
+        if (Time.time < _lastEmpoweredShotTime + abilities.empoweredShot.cooldown)
         {
-            Debug.Log($"Physical Projectile on cooldown: {(_lastPhysicalProjectileTime + abilities.physicalProjectile.cooldown - Time.time):F1}s remaining");
+            Debug.Log($"Empowered Shot on cooldown: {(_lastEmpoweredShotTime + abilities.empoweredShot.cooldown - Time.time):F1}s remaining");
             return;
         }
 
-        if (abilities.physicalProjectile.projectilePrefab == null)
+        if (abilities.empoweredShot.projectilePrefab == null)
         {
-            Debug.LogWarning("Physical Projectile prefab not assigned!");
+            Debug.LogWarning("Empowered Shot projectile prefab not assigned!");
             return;
         }
 
-        if (abilities.physicalProjectile.spawnPoint == null)
-        {
-            Debug.LogWarning("Physical Projectile spawn point not assigned!");
-            return;
-        }
-
-        FirePhysicalProjectile();
-        _lastPhysicalProjectileTime = Time.time;
+        FireEmpoweredShot();
+        _lastEmpoweredShotTime = Time.time;
     }
 
     private void FirePhysicalProjectile()
@@ -342,23 +329,28 @@ public class Class2 : Player
         Debug.Log($"Physical Projectile fired! Damage: {abilities.physicalProjectile.damage:F1}, Speed: {abilities.physicalProjectile.speed:F1}");
     }
 
-    // Ability 3 - Empowered Shot
-    void OnAbility3()
+    // Ability 2 - Shield
+    void OnAbility2()
     {
-        if (Time.time < _lastEmpoweredShotTime + abilities.empoweredShot.cooldown)
+        if (Time.time < _lastShieldTime + abilities.shield.cooldown)
         {
-            Debug.Log($"Empowered Shot on cooldown: {(_lastEmpoweredShotTime + abilities.empoweredShot.cooldown - Time.time):F1}s remaining");
+            Debug.Log($"Shield on cooldown: {(_lastShieldTime + abilities.shield.cooldown - Time.time):F1}s remaining");
             return;
         }
 
-        if (abilities.empoweredShot.projectilePrefab == null)
+        if (abilities.shield.shield == null)
         {
-            Debug.LogWarning("Empowered Shot projectile prefab not assigned!");
+            Debug.LogWarning("Shield not assigned!");
             return;
         }
 
-        FireEmpoweredShot();
-        _lastEmpoweredShotTime = Time.time;
+        _lastShieldTime = Time.time;
+
+        if (_shieldCoroutine != null)
+        {
+            StopCoroutine(_shieldCoroutine);
+        }
+        _shieldCoroutine = StartCoroutine(ActivateShield());
     }
 
     // ===== EMPOWERED SHOT ABILITY =====
@@ -412,28 +404,27 @@ public class Class2 : Player
         Debug.Log($"Empowered Shot fired! Damage: {damage:F1}, Speed: {speed:F1}, Slow: {abilities.empoweredShot.slowMultiplier * 100}% for {abilities.empoweredShot.slowDuration}s");
     }
 
-    // ===== SHIELD ABILITY =====
-    void OnAbility4()
+    // Ability 3 - Tractor Beam
+    void OnAbility3()
     {
-        if (Time.time < _lastShieldTime + abilities.shield.cooldown)
+        if (Time.time < _lastTractorBeamTime + abilities.tractorBeam.cooldown)
         {
-            Debug.Log($"Shield on cooldown: {(_lastShieldTime + abilities.shield.cooldown - Time.time):F1}s remaining");
+            Debug.Log($"Tractor Beam on cooldown: {(_lastTractorBeamTime + abilities.tractorBeam.cooldown - Time.time):F1}s remaining");
             return;
         }
 
-        if (abilities.shield.shield == null)
+        if (_isTractorBeamActive)
         {
-            Debug.LogWarning("Shield not assigned!");
             return;
         }
 
-        _lastShieldTime = Time.time;
+        _lastTractorBeamTime = Time.time;
 
-        if (_shieldCoroutine != null)
+        if (_tractorBeamCoroutine != null)
         {
-            StopCoroutine(_shieldCoroutine);
+            StopCoroutine(_tractorBeamCoroutine);
         }
-        _shieldCoroutine = StartCoroutine(ActivateShield());
+        _tractorBeamCoroutine = StartCoroutine(ActivateTractorBeam());
     }
 
     private System.Collections.IEnumerator ActivateShield()
@@ -455,27 +446,35 @@ public class Class2 : Player
         }
     }
 
-    // ===== TRACTOR BEAM ABILITY =====
-    void OnAbility2()
+    // Ability 4 - Physical Projectile (locked until round 3)
+    void OnAbility4()
     {
-        if (Time.time < _lastTractorBeamTime + abilities.tractorBeam.cooldown)
+        if (_isAbility4Locked)
         {
-            Debug.Log($"Tractor Beam on cooldown: {(_lastTractorBeamTime + abilities.tractorBeam.cooldown - Time.time):F1}s remaining");
+            Debug.Log("❌ Physical Projectile is locked until round 3!");
             return;
         }
 
-        if (_isTractorBeamActive)
+        if (Time.time < _lastPhysicalProjectileTime + abilities.physicalProjectile.cooldown)
         {
+            Debug.Log($"Physical Projectile on cooldown: {(_lastPhysicalProjectileTime + abilities.physicalProjectile.cooldown - Time.time):F1}s remaining");
             return;
         }
 
-        _lastTractorBeamTime = Time.time;
-
-        if (_tractorBeamCoroutine != null)
+        if (abilities.physicalProjectile.projectilePrefab == null)
         {
-            StopCoroutine(_tractorBeamCoroutine);
+            Debug.LogWarning("Physical Projectile prefab not assigned!");
+            return;
         }
-        _tractorBeamCoroutine = StartCoroutine(ActivateTractorBeam());
+
+        if (abilities.physicalProjectile.spawnPoint == null)
+        {
+            Debug.LogWarning("Physical Projectile spawn point not assigned!");
+            return;
+        }
+
+        FirePhysicalProjectile();
+        _lastPhysicalProjectileTime = Time.time;
     }
 
     private void InitializeTractorBeamCone()
@@ -759,6 +758,15 @@ public class Class2 : Player
         base.Die();
     }
 
+    void OnDestroy()
+    {
+        // Clean up detached tractor beam cone (it's unparented while active)
+        if (_tractorBeamConeObject != null)
+        {
+            Destroy(_tractorBeamConeObject);
+        }
+    }
+
     void OnTriggerEnter2D(Collider2D collider)
     {
         if (abilities.shield.shield != null && abilities.shield.shield.IsActive())
@@ -777,5 +785,18 @@ public class Class2 : Player
                 Destroy(projectile.gameObject);
             }
         }
+    }
+
+    // ===== ABILITY 4 LOCK/UNLOCK =====
+    public override void LockAbility4()
+    {
+        _isAbility4Locked = true;
+        Debug.Log("Physical Projectile (Ability 4) locked");
+    }
+
+    public override void UnlockAbility4()
+    {
+        _isAbility4Locked = false;
+        Debug.Log("Physical Projectile (Ability 4) unlocked!");
     }
 }

@@ -45,11 +45,7 @@ public class Reflector : Ability
         _reflectShieldSource = gameObject.AddComponent<AudioSource>();
         _reflectShieldSource.playOnAwake = false;
         _reflectShieldSource.loop = true;
-        _reflectShieldSource.spatialBlend = 1f;
-        _reflectShieldSource.rolloffMode = AudioRolloffMode.Linear;
-        _reflectShieldSource.minDistance = 10f;
-        _reflectShieldSource.maxDistance = 50f;
-        _reflectShieldSource.dopplerLevel = 0f;
+        _reflectShieldSource.spatialBlend = 0f;
     }
 
     protected void Update()
@@ -63,7 +59,9 @@ public class Reflector : Ability
     }
     public override void UseAbility(InputValue value)
     {
+        Debug.Log("🛡 Reflector.UseAbility() called!");
         base.UseAbility(value);
+
         if (Time.time < _lastReflectTime + reflect.cooldown)
         {
             Debug.Log($"Reflect on cooldown: {(_lastReflectTime + reflect.cooldown - Time.time):F1}s remaining");
@@ -76,6 +74,7 @@ public class Reflector : Ability
             return;
         }
 
+        Debug.Log("✓ All checks passed, activating shield...");
         _lastReflectTime = Time.time;
 
         if (_reflectCoroutine != null)
@@ -83,6 +82,7 @@ public class Reflector : Ability
             StopCoroutine(_reflectCoroutine);
         }
         _reflectCoroutine = StartCoroutine(ActivateReflectShield());
+        Debug.Log("✓ Coroutine started!");
     }
 
     public override bool IsAbilityActive()
@@ -148,20 +148,25 @@ public class Reflector : Ability
     // ===== COROUTINES =====
     private System.Collections.IEnumerator ActivateReflectShield()
     {
+        Debug.Log($"🛡 Calling shield.Activate() with color {reflect.reflectedProjectileColor}");
         reflect.shield.Activate(reflect.reflectedProjectileColor);
 
         if (reflect.shieldLoopSound != null && _reflectShieldSource != null)
         {
+            Debug.Log("🔊 Playing shield loop sound");
             reflect.shieldLoopSound.Play(_reflectShieldSource);
         }
 
+        Debug.Log($"⏱ Waiting {reflect.activeDuration} seconds...");
         yield return new WaitForSeconds(reflect.activeDuration);
 
+        Debug.Log("🛡 Deactivating shield");
         reflect.shield.Deactivate();
 
         if (_reflectShieldSource != null && _reflectShieldSource.isPlaying)
         {
             _reflectShieldSource.Stop();
         }
+        Debug.Log("✓ Shield deactivated");
     }
 }

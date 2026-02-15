@@ -167,11 +167,7 @@ public class GigaBlast : Ability
         _gigaBlastChargeSource = gameObject.AddComponent<AudioSource>();
         _gigaBlastChargeSource.playOnAwake = false;
         _gigaBlastChargeSource.loop = true;
-        _gigaBlastChargeSource.spatialBlend = 1f;
-        _gigaBlastChargeSource.rolloffMode = AudioRolloffMode.Linear;
-        _gigaBlastChargeSource.minDistance = 10f;
-        _gigaBlastChargeSource.maxDistance = 50f;
-        _gigaBlastChargeSource.dopplerLevel = 0f;
+        _gigaBlastChargeSource.spatialBlend = 0f;
     }
 
     protected void Update()

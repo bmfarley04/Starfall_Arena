@@ -243,21 +243,13 @@ public abstract class Player : Entity
         {
             _audioSourcePool[i] = gameObject.AddComponent<AudioSource>();
             _audioSourcePool[i].playOnAwake = false;
-            _audioSourcePool[i].spatialBlend = 1f;
-            _audioSourcePool[i].rolloffMode = AudioRolloffMode.Linear;
-            _audioSourcePool[i].minDistance = 10f;
-            _audioSourcePool[i].maxDistance = 50f;
-            _audioSourcePool[i].dopplerLevel = 0f;
+            _audioSourcePool[i].spatialBlend = 0f;
         }
 
         _beamHitLoopSource = gameObject.AddComponent<AudioSource>();
         _beamHitLoopSource.playOnAwake = false;
         _beamHitLoopSource.loop = true;
-        _beamHitLoopSource.spatialBlend = 1f;
-        _beamHitLoopSource.rolloffMode = AudioRolloffMode.Linear;
-        _beamHitLoopSource.minDistance = 10f;
-        _beamHitLoopSource.maxDistance = 50f;
-        _beamHitLoopSource.dopplerLevel = 0f;
+        _beamHitLoopSource.spatialBlend = 0f;
     }
 
     public AudioSource GetAvailableAudioSource()
@@ -856,12 +848,12 @@ public abstract class Player : Entity
     }
 
     // ===== ABILITY 4 LOCK/UNLOCK =====
-    public void LockAbility4()
+    public virtual void LockAbility4()
     {
         if (ability4 != null) ability4.isLocked = true;
     }
 
-    public void UnlockAbility4()
+    public virtual void UnlockAbility4()
     {
         if (ability4 != null) ability4.isLocked = false;
         if (_abilityHUDPanel != null) _abilityHUDPanel.BindSlot4(ability4);

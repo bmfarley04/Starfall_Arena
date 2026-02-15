@@ -115,30 +115,18 @@ public abstract class Enemy : Entity
         {
             _audioSourcePool[i] = gameObject.AddComponent<AudioSource>();
             _audioSourcePool[i].playOnAwake = false;
-            _audioSourcePool[i].spatialBlend = 1f;
-            _audioSourcePool[i].rolloffMode = AudioRolloffMode.Linear;
-            _audioSourcePool[i].minDistance = 10f;
-            _audioSourcePool[i].maxDistance = 50f;
-            _audioSourcePool[i].dopplerLevel = 0f;
+            _audioSourcePool[i].spatialBlend = 0f;
         }
 
         _beamAudioSource = gameObject.AddComponent<AudioSource>();
         _beamAudioSource.playOnAwake = false;
         _beamAudioSource.loop = true;
-        _beamAudioSource.spatialBlend = 1f;
-        _beamAudioSource.rolloffMode = AudioRolloffMode.Linear;
-        _beamAudioSource.minDistance = 10f;
-        _beamAudioSource.maxDistance = 50f;
-        _beamAudioSource.dopplerLevel = 0f;
+        _beamAudioSource.spatialBlend = 0f;
 
         _beamHitLoopSource = gameObject.AddComponent<AudioSource>();
         _beamHitLoopSource.playOnAwake = false;
         _beamHitLoopSource.loop = true;
-        _beamHitLoopSource.spatialBlend = 1f;
-        _beamHitLoopSource.rolloffMode = AudioRolloffMode.Linear;
-        _beamHitLoopSource.minDistance = 10f;
-        _beamHitLoopSource.maxDistance = 50f;
-        _beamHitLoopSource.dopplerLevel = 0f;
+        _beamHitLoopSource.spatialBlend = 0f;
     }
 
     protected AudioSource GetAvailableAudioSource()
@@ -635,11 +623,7 @@ public abstract class Enemy : Entity
         audioSource.clip = clip;
         audioSource.volume = volume;
 
-        audioSource.spatialBlend = 1f;
-        audioSource.rolloffMode = AudioRolloffMode.Linear;
-        audioSource.minDistance = 10f;
-        audioSource.maxDistance = 50f;
-        audioSource.dopplerLevel = 0f;
+        audioSource.spatialBlend = 0f;
 
         audioSource.Play();
         Object.Destroy(tempAudio, clip.length);

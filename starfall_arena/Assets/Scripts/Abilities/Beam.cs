@@ -45,11 +45,7 @@ public class Beam : Ability
         _laserBeamSource = gameObject.AddComponent<AudioSource>();
         _laserBeamSource.playOnAwake = false;
         _laserBeamSource.loop = true;
-        _laserBeamSource.spatialBlend = 1f;
-        _laserBeamSource.rolloffMode = AudioRolloffMode.Linear;
-        _laserBeamSource.minDistance = 10f;
-        _laserBeamSource.maxDistance = 50f;
-        _laserBeamSource.dopplerLevel = 0f;
+        _laserBeamSource.spatialBlend = 0f;
     }
 
     protected void Update()
