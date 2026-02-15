@@ -19,7 +19,7 @@ MonoBehaviour:
   shipPrefab: {fileID: 6103655459887012557, guid: abfa508411c696a41bfc218cec79c630, type: 3}
   player1VSPositionOffset: {x: 0.5, y: 0, z: 0}
   player2VSPositionOffset: {x: -0.5, y: 0, z: 0}
-  abilityHUDPrefab: {fileID: 0}
+  abilityHUDPrefab: {fileID: 6476359621877627330, guid: 361cc8760ca9643208e946e52694f241, type: 3}
   stats:
     damage: 32
     hull: 100
