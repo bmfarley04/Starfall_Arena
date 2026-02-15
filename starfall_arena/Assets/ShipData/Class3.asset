@@ -26,18 +26,19 @@ MonoBehaviour:
     shield: 50
     speed: 45
   ability1:
-    abilityName: 
-    abilityDescription: 
+    abilityName: FIRE WALL
+    abilityDescription: Leave a trail of fire behind you.
     abilityIcon: {fileID: 0}
   ability2:
-    abilityName: 
-    abilityDescription: 
+    abilityName: INVISIBILITY
+    abilityDescription: Become temporarily invisible.
     abilityIcon: {fileID: 0}
   ability3:
-    abilityName: 
-    abilityDescription: 
+    abilityName: FAERIE SHIFT
+    abilityDescription: Become smaller and more agile but take ten times as much
+      damage.
     abilityIcon: {fileID: 0}
   ability4:
-    abilityName: 
-    abilityDescription: 
+    abilityName: NOVA DART
+    abilityDescription: Launch an energy dart that explodes when triggered.
     abilityIcon: {fileID: 0}
