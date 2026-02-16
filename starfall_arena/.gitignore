@@ -142,3 +142,5 @@ build_v3/
 
 Assets/Asset Packs/Alien Planets/Texturemaps
 Assets/Asset Packs/CW
+
+*.zip
