@@ -334,7 +334,7 @@ public abstract class Player : Entity
             }
         }
 
-        if (_isFiring)
+        if (_isFiring && !IsAnyAbilityActiveForPrimaryFireLock())
         {
             TryFireProjectile();
         }
