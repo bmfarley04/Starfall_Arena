@@ -471,6 +471,7 @@ public abstract class Player : Entity
     /// Default behavior blocks firing while any modular ability is active.
     /// Inline-ability ship classes should override.
     /// </summary>
+    /// missing code?
     protected virtual bool IsAnyAbilityActiveForPrimaryFireLock()
     {
         return abilities.Any(a => a != null && a.IsAbilityActive());
