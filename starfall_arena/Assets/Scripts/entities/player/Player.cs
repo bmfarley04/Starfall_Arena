@@ -462,18 +462,7 @@ public abstract class Player : Entity
 
     void OnFire(InputValue value)
     {
-        if (isMovementLocked) return;
         _isFiring = value.Get<float>() > 0f;
-    }
-
-    /// <summary>
-    /// Returns true when primary fire should be blocked due to an active ability.
-    /// Default behavior blocks firing while any modular ability is active.
-    /// Inline-ability ship classes should override.
-    /// </summary>
-    protected virtual bool IsAnyAbilityActiveForPrimaryFireLock()
-    {
-        return abilities.Any(a => a != null && a.IsAbilityActive());
     }
 
 
@@ -528,6 +517,13 @@ public abstract class Player : Entity
     protected virtual void TryFireProjectile()
     {
         if (isMovementLocked) return;
+
+        // Prevent firing if an active ability disables primary fire
+        var activeAbility = abilities.FirstOrDefault(a => a != null && a.IsAbilityActive() == true);
+        if (activeAbility != null && activeAbility.DisablePrimaryFire())
+        {
+            return;
+        }
 
         if (projectileWeapon.prefab == null)
             return;
