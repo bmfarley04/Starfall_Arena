@@ -92,6 +92,10 @@ public class GameSceneManager : MonoBehaviour
     private GameObject activeMapObject;
     private MapManagerScript activeMapScript;
 
+    // Runtime-instantiated ability HUD instances (one per player)
+    private GameObject player1AbilityHUDInstance;
+    private GameObject player2AbilityHUDInstance;
+
     // Augment persistence between rounds
     private List<AugmentLoadoutEntry> player1Augments = new List<AugmentLoadoutEntry>();
     private List<AugmentLoadoutEntry> player2Augments = new List<AugmentLoadoutEntry>();
@@ -514,12 +518,18 @@ public class GameSceneManager : MonoBehaviour
         // Bind ability HUD
         if (data.abilityHUDPrefab != null)
         {
+            // Ensure there is only one runtime HUD instance per player.
+            DestroyPlayerAbilityHUD(tag);
+
             GameObject hudObj = Instantiate(data.abilityHUDPrefab);
             var panel = hudObj.GetComponent<AbilityHUDPanel>();
             if (panel != null)
             {
                 player.BindAbilityHUD(panel);
             }
+
+            if (tag == "Player1") player1AbilityHUDInstance = hudObj;
+            else if (tag == "Player2") player2AbilityHUDInstance = hudObj;
 
             // Assign the correct split-screen camera as the render camera
             // so the ability canvas renders on the right player's viewport
@@ -552,6 +562,9 @@ public class GameSceneManager : MonoBehaviour
 
     private void DestroyPlayers()
     {
+        DestroyPlayerAbilityHUD("Player1");
+        DestroyPlayerAbilityHUD("Player2");
+
         if (player1 != null)
         {
             player1.onDeath -= OnPlayerDeath;
@@ -563,6 +576,26 @@ public class GameSceneManager : MonoBehaviour
             player2.onDeath -= OnPlayerDeath;
             Destroy(player2.gameObject);
             player2 = null;
+        }
+    }
+
+    private void DestroyPlayerAbilityHUD(string tag)
+    {
+        if (tag == "Player1")
+        {
+            if (player1AbilityHUDInstance != null)
+            {
+                Destroy(player1AbilityHUDInstance);
+                player1AbilityHUDInstance = null;
+            }
+        }
+        else if (tag == "Player2")
+        {
+            if (player2AbilityHUDInstance != null)
+            {
+                Destroy(player2AbilityHUDInstance);
+                player2AbilityHUDInstance = null;
+            }
         }
     }
 
