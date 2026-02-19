@@ -7,7 +7,7 @@
             "id": "006d8cae-688d-4f56-9eea-c72977515299",
             "actions": [
                 {
-                    "name": "Move",
+                    "name": "Thrust",
                     "type": "PassThrough",
                     "id": "af957cc6-9e6f-4f1d-bdbb-f112ef782db5",
                     "expectedControlType": "Button",
@@ -16,27 +16,9 @@
                     "initialStateCheck": false
                 },
                 {
-                    "name": "ToggleFriction",
-                    "type": "Button",
-                    "id": "b3066516-f7e9-4d21-b655-0c5507aa9d9d",
-                    "expectedControlType": "",
-                    "processors": "",
-                    "interactions": "",
-                    "initialStateCheck": false
-                },
-                {
                     "name": "Fire",
                     "type": "Value",
                     "id": "7d13abd1-3fda-4584-92fb-195c714472bf",
-                    "expectedControlType": "",
-                    "processors": "",
-                    "interactions": "",
-                    "initialStateCheck": true
-                },
-                {
-                    "name": "Primary",
-                    "type": "Value",
-                    "id": "7bae3254-6f21-4596-8023-3dbe5f886ca0",
                     "expectedControlType": "",
                     "processors": "",
                     "interactions": "",
@@ -79,16 +61,7 @@
                     "initialStateCheck": true
                 },
                 {
-                    "name": "Pause",
-                    "type": "Button",
-                    "id": "75017eb5-ac87-44e0-b323-ad1b4e656eb3",
-                    "expectedControlType": "",
-                    "processors": "",
-                    "interactions": "",
-                    "initialStateCheck": false
-                },
-                {
-                    "name": "Look",
+                    "name": "FreeLook",
                     "type": "Value",
                     "id": "b64987b8-a6d8-4546-a1d2-bd661eebd73f",
                     "expectedControlType": "Vector2",
@@ -114,7 +87,7 @@
                     "interactions": "",
                     "processors": "",
                     "groups": ";key+mouse",
-                    "action": "Move",
+                    "action": "Thrust",
                     "isComposite": false,
                     "isPartOfComposite": false
                 },
@@ -125,18 +98,7 @@
                     "interactions": "",
                     "processors": "",
                     "groups": ";controller",
-                    "action": "Move",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
-                    "id": "0eda0f58-81e0-45c3-80c3-4f28475c4358",
-                    "path": "<Keyboard>/tab",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": ";key+mouse",
-                    "action": "ToggleFriction",
+                    "action": "Thrust",
                     "isComposite": false,
                     "isPartOfComposite": false
                 },
@@ -159,28 +121,6 @@
                     "processors": "",
                     "groups": ";controller",
                     "action": "Fire",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
-                    "id": "6759b115-9137-4415-afbe-e0cabc06c1a0",
-                    "path": "<Mouse>/leftButton",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": ";key+mouse",
-                    "action": "Primary",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
-                    "id": "9b254bbc-9022-453a-a383-ba1440e49266",
-                    "path": "<Gamepad>/rightTrigger",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": ";controller",
-                    "action": "Primary",
                     "isComposite": false,
                     "isPartOfComposite": false
                 },
@@ -274,34 +214,12 @@
                 },
                 {
                     "name": "",
-                    "id": "8294bdbb-1263-46cf-93bd-b3beb1f9a291",
-                    "path": "<Gamepad>/start",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": ";controller",
-                    "action": "Pause",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
-                    "id": "9ea56602-0cfa-41ea-8c8c-a2790b7961cf",
-                    "path": "<Keyboard>/escape",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": ";key+mouse",
-                    "action": "Pause",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
                     "id": "278a6f6a-c6b3-48fa-9c94-46e1184165c0",
-                    "path": "<Gamepad>/leftStick",
+                    "path": "<Gamepad>/rightStick",
                     "interactions": "",
                     "processors": "",
                     "groups": "",
-                    "action": "Look",
+                    "action": "FreeLook",
                     "isComposite": false,
                     "isPartOfComposite": false
                 },
@@ -319,6 +237,251 @@
                 {
                     "name": "",
                     "id": "7acd93dc-9e7b-40e6-8308-53cefb121026",
+                    "path": "<Gamepad>/leftShoulder",
+                    "interactions": "Press(behavior=2)",
+                    "processors": "",
+                    "groups": ";controller",
+                    "action": "Anchor",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                }
+            ]
+        },
+        {
+            "name": "3d",
+            "id": "7d33c9f6-cc5f-4415-a841-5f4ad21a38ed",
+            "actions": [
+                {
+                    "name": "Thrust",
+                    "type": "PassThrough",
+                    "id": "b5c23ae2-37a9-4aba-849c-174e19f54b4b",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "Fire",
+                    "type": "Value",
+                    "id": "3fae77c9-b260-4b0a-9c33-766cb4a4e880",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": true
+                },
+                {
+                    "name": "Ability3",
+                    "type": "Value",
+                    "id": "95449a6b-04a8-468d-a575-0f5f61bfb469",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": true
+                },
+                {
+                    "name": "Ability4",
+                    "type": "Value",
+                    "id": "bc019fc6-35cc-4f63-840d-7376f35c4399",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": true
+                },
+                {
+                    "name": "Ability2",
+                    "type": "Value",
+                    "id": "099e3b69-b385-4067-ae9d-29914689db52",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": true
+                },
+                {
+                    "name": "Ability1",
+                    "type": "Value",
+                    "id": "91ef03e1-27d3-4261-bd0c-a5328377a81c",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": true
+                },
+                {
+                    "name": "FreeLook",
+                    "type": "Value",
+                    "id": "9ac0b54d-98c6-49bd-b8e8-07e20ef5ddd6",
+                    "expectedControlType": "Vector2",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": true
+                },
+                {
+                    "name": "Anchor",
+                    "type": "Button",
+                    "id": "510dd5bc-187e-493b-a3b8-74f21f34a519",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                }
+            ],
+            "bindings": [
+                {
+                    "name": "",
+                    "id": "2535d420-ae3e-4bcf-8905-fe816f673973",
+                    "path": "<Keyboard>/space",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": ";key+mouse",
+                    "action": "Thrust",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "2557e88b-2617-43d2-9d9e-59614afd492b",
+                    "path": "<Gamepad>/leftTrigger",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": ";controller",
+                    "action": "Thrust",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "acf7e706-fef9-4dcf-a103-6fe3a228710d",
+                    "path": "<Mouse>/leftButton",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": ";key+mouse",
+                    "action": "Fire",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "39b51f93-4c05-44d4-b537-f2a8f56c7de2",
+                    "path": "<Gamepad>/rightTrigger",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": ";controller",
+                    "action": "Fire",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "ca7fff7b-f668-4391-8a1b-7a7ae3201d56",
+                    "path": "<Keyboard>/q",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": ";key+mouse",
+                    "action": "Ability3",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "84ffb8a4-7fdc-4cc3-8f07-05eb8a5a8f53",
+                    "path": "<Gamepad>/buttonEast",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": ";controller",
+                    "action": "Ability3",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "eee64d63-5084-4fda-9ef1-97b7fdf439a8",
+                    "path": "<Keyboard>/w",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": ";key+mouse",
+                    "action": "Ability4",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "5e05dc76-046b-4867-a3bd-a4772a3212a4",
+                    "path": "<Gamepad>/buttonSouth",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": ";controller",
+                    "action": "Ability4",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "35e4799b-4a7e-400b-bb93-286af135f889",
+                    "path": "<Keyboard>/e",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": ";key+mouse",
+                    "action": "Ability2",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "386802ec-725a-4918-9d77-60da36f73371",
+                    "path": "<Gamepad>/buttonNorth",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": ";controller",
+                    "action": "Ability2",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "6ad5cb44-abc4-448e-84ba-9a589cedc0ab",
+                    "path": "<Keyboard>/r",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": ";key+mouse",
+                    "action": "Ability1",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "b646d2f5-abe8-4b4f-bef2-351b296345f3",
+                    "path": "<Gamepad>/buttonWest",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": ";controller",
+                    "action": "Ability1",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "646f206b-8bba-4cb9-83cf-757f4aec17a6",
+                    "path": "<Gamepad>/rightStick",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": ";controller",
+                    "action": "FreeLook",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "d4498ae8-9e13-413c-a0db-09cd423e9a03",
+                    "path": "<Gamepad>/rightShoulder",
+                    "interactions": "Press(behavior=2)",
+                    "processors": "",
+                    "groups": ";controller",
+                    "action": "Anchor",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "e502cc95-7874-4024-bae1-3b31f21107c1",
                     "path": "<Gamepad>/leftShoulder",
                     "interactions": "Press(behavior=2)",
                     "processors": "",
