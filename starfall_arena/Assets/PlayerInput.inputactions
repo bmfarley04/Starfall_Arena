@@ -322,6 +322,15 @@
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": false
+                },
+                {
+                    "name": "ToggleFriction",
+                    "type": "Button",
+                    "id": "8aecfa44-8220-4e26-ad30-9fca54e6b0e8",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
                 }
             ],
             "bindings": [
@@ -487,6 +496,17 @@
                     "processors": "",
                     "groups": ";controller",
                     "action": "Anchor",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "df6d21f7-ee07-4c76-84ed-98e1218faee6",
+                    "path": "<Gamepad>/dpad/down",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": ";controller",
+                    "action": "ToggleFriction",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }
