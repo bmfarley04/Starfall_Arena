@@ -134,6 +134,8 @@ $RECYCLE.BIN/
 *.lnk
 
 Final_Build/
+Final_Build2/
+build_v3/
 
 # End of https://www.toptal.com/developers/gitignore/api/unity,windows,macos
 
@@ -141,3 +143,5 @@ Final_Build/
 
 Assets/Asset Packs/Alien Planets/Texturemaps
 Assets/Asset Packs/CW
+
+*.zip

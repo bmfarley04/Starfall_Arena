@@ -497,25 +497,18 @@ public class RingOfFireManager : MonoBehaviour
             
             _maskRenderer = quad.GetComponent<MeshRenderer>();
             
-            // Create material with custom shader
-            Shader maskShader = Shader.Find("Custom/RingOfFireMask");
-            if (maskShader == null)
+            // Clone the configured material so the shader is included in builds
+            // (Shader.Find() fails in builds for shaders not in Resources or Always Included Shaders)
+            if (config.outsideMaskMaterial != null)
             {
-                Debug.LogError("RingOfFireMask shader not found! Make sure RingOfFireMask.shader is in Assets/Shaders/");
-                maskShader = Shader.Find("Sprites/Default");
-            }
-            
-            _maskMaterial = new Material(maskShader);
-            
-            // Set default color from config or use fallback
-            if (config.outsideMaskMaterial != null && config.outsideMaskMaterial.HasProperty("_Color"))
-            {
-                _maskMaterial.SetColor("_Color", config.outsideMaskMaterial.GetColor("_Color"));
+                _maskMaterial = new Material(config.outsideMaskMaterial);
             }
             else
             {
-                // Fallback: semi-transparent red
+                // Fallback: semi-transparent red with basic shader
+                _maskMaterial = new Material(Shader.Find("Sprites/Default"));
                 _maskMaterial.SetColor("_Color", new Color(1f, 0f, 0f, 0.3f));
+                Debug.LogWarning("RingOfFireManager: No outsideMaskMaterial assigned. Using fallback (no safe zone masking).");
             }
             
             _maskRenderer.material = _maskMaterial;
