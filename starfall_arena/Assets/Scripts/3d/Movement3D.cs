@@ -27,6 +27,11 @@ public class ShipController : MonoBehaviour
     [SerializeField] private float maxFOV = 70f;
     [SerializeField] private float cameraLerpSpeed = 5f;
 
+    [Header("VFX Settings")]
+    [SerializeField] private ParticleSystem speedDustParticles;
+    [SerializeField] private float maxDustEmissionRate = 200f;
+    [SerializeField, Range(0f, 1f)] private float dustSpeedThreshold = 0.5f; // Sets the activation floor
+
     private Rigidbody rb;
     private CinemachineFollow followComponent;
     private Vector2 lookInput;
@@ -37,8 +42,6 @@ public class ShipController : MonoBehaviour
         rb = GetComponent<Rigidbody>();
         
         rb.useGravity = false;
-        
-        // Initialize with friction off
         rb.linearDamping = 0f;
         rb.angularDamping = 0f;
         rb.interpolation = RigidbodyInterpolation.Interpolate; 
@@ -47,9 +50,13 @@ public class ShipController : MonoBehaviour
         {
             followComponent = virtualCamera.GetComponent<CinemachineFollow>();
         }
-    }
 
-    // --- Input System Callbacks ---
+        if (speedDustParticles != null)
+        {
+            var emission = speedDustParticles.emission;
+            emission.rateOverTime = 0f;
+        }
+    }
 
     public void OnFreeLook(InputValue value)
     {
@@ -63,7 +70,6 @@ public class ShipController : MonoBehaviour
 
     public void OnToggleFriction(InputValue value)
     {
-        // value.isPressed ensures this only fires on button down, ignoring the button release
         if (value.isPressed)
         {
             isFrictionEnabled = !isFrictionEnabled;
@@ -81,8 +87,6 @@ public class ShipController : MonoBehaviour
         }
     }
 
-    // --- Physics Application ---
-
     private void FixedUpdate()
     {
         HandleRotation();
@@ -91,7 +95,7 @@ public class ShipController : MonoBehaviour
 
     private void Update()
     {
-        HandleDynamicCamera();
+        HandleVisuals();
     }
 
     private void HandleRotation()
@@ -116,19 +120,37 @@ public class ShipController : MonoBehaviour
         }
     }
 
-    private void HandleDynamicCamera()
+    private void HandleVisuals()
     {
-        if (virtualCamera == null || followComponent == null) return;
+        // 1. Calculate ONLY the forward component of our velocity
+        float forwardSpeed = Vector3.Dot(rb.linearVelocity, transform.forward);
 
-        float speedPercent = rb.linearVelocity.magnitude / maxSpeed;
+        // 2. Clamp it between 0 and maxSpeed so moving backward doesn't cause negative visual math
+        float clampedForwardSpeed = Mathf.Clamp(forwardSpeed, 0f, maxSpeed);
 
-        float targetZ = Mathf.Lerp(minZOffset, maxZOffset, speedPercent);
-        float targetFOV = Mathf.Lerp(minFOV, maxFOV, speedPercent);
+        // 3. Get the percentage based purely on forward momentum
+        float forwardSpeedPercent = clampedForwardSpeed / maxSpeed;
 
-        Vector3 currentOffset = followComponent.FollowOffset;
-        currentOffset.z = Mathf.Lerp(currentOffset.z, targetZ, Time.deltaTime * cameraLerpSpeed);
-        followComponent.FollowOffset = currentOffset;
+        // 4. Update Camera
+        if (virtualCamera != null && followComponent != null)
+        {
+            float targetZ = Mathf.Lerp(minZOffset, maxZOffset, forwardSpeedPercent);
+            float targetFOV = Mathf.Lerp(minFOV, maxFOV, forwardSpeedPercent);
 
-        virtualCamera.Lens.FieldOfView = Mathf.Lerp(virtualCamera.Lens.FieldOfView, targetFOV, Time.deltaTime * cameraLerpSpeed);
+            Vector3 currentOffset = followComponent.FollowOffset;
+            currentOffset.z = Mathf.Lerp(currentOffset.z, targetZ, Time.deltaTime * cameraLerpSpeed);
+            followComponent.FollowOffset = currentOffset;
+
+            virtualCamera.Lens.FieldOfView = Mathf.Lerp(virtualCamera.Lens.FieldOfView, targetFOV, Time.deltaTime * cameraLerpSpeed);
+        }
+
+        // 5. Update Dust Particles
+        if (speedDustParticles != null)
+        {
+            float normalizedDustEmission = Mathf.InverseLerp(dustSpeedThreshold, 1f, forwardSpeedPercent);
+            
+            var emission = speedDustParticles.emission;
+            emission.rateOverTime = normalizedDustEmission * maxDustEmissionRate;
+        }
     }
 }
