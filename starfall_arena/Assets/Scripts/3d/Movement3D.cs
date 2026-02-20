@@ -1,10 +1,40 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
-using Unity.Cinemachine; 
+using Unity.Cinemachine;
 
 [RequireComponent(typeof(Rigidbody))]
 public class ShipController : MonoBehaviour
 {
+    [System.Serializable]
+    public struct VisualEffects3DConfig
+    {
+        [Header("Visual Model")]
+        [Tooltip("Child transform containing the ship mesh. Banking and pitch lean are applied here.")]
+        public Transform visualModel;
+
+        [Header("Banking (Roll)")]
+        [Tooltip("Maximum roll angle applied to the visual model when yawing")]
+        public float maxBankAngle;
+        [Tooltip("How strongly yaw angular velocity drives the bank. Negative values invert the direction.")]
+        public float bankSensitivity;
+        [Tooltip("Smoothing speed for bank interpolation")]
+        public float bankSmoothing;
+
+        [Header("Pitch Lean")]
+        [Tooltip("Maximum additional pitch lean applied to the visual model when pitching")]
+        public float maxPitchLeanAngle;
+        [Tooltip("How strongly pitch angular velocity drives the lean. Negative values invert the direction.")]
+        public float pitchLeanSensitivity;
+        [Tooltip("Smoothing speed for pitch lean interpolation")]
+        public float pitchLeanSmoothing;
+
+        [Header("Acceleration Response")]
+        [Tooltip("How strongly forward/backward linear acceleration drives pitch lean (thrust start/stop, braking)")]
+        public float forwardAccelPitchSensitivity;
+        [Tooltip("How strongly lateral linear acceleration drives banking (centripetal force from turning at speed)")]
+        public float lateralAccelBankSensitivity;
+    }
+
     [Header("Engine Parameters")]
     [SerializeField] private float thrustAcceleration = 50f;
     [SerializeField] private float maxSpeed = 100f;
@@ -32,19 +62,29 @@ public class ShipController : MonoBehaviour
     [SerializeField] private float maxDustEmissionRate = 200f;
     [SerializeField, Range(0f, 1f)] private float dustSpeedThreshold = 0.5f; // Sets the activation floor
 
+    [Header("Visual Effects")]
+    [SerializeField] private VisualEffects3DConfig visualEffects;
+
     private Rigidbody rb;
     private CinemachineFollow followComponent;
     private Vector2 lookInput;
     private float thrustInput;
 
+    // Visual state
+    private float _currentBankAngle;
+    private float _currentPitchLeanAngle;
+    private Quaternion _visualBaseLocalRotation;
+    private Vector3 _previousVelocity;
+    private Vector3 _linearAcceleration;
+
     private void Awake()
     {
         rb = GetComponent<Rigidbody>();
-        
+
         rb.useGravity = false;
         rb.linearDamping = 0f;
         rb.angularDamping = 0f;
-        rb.interpolation = RigidbodyInterpolation.Interpolate; 
+        rb.interpolation = RigidbodyInterpolation.Interpolate;
 
         if (virtualCamera != null)
         {
@@ -56,6 +96,16 @@ public class ShipController : MonoBehaviour
             var emission = speedDustParticles.emission;
             emission.rateOverTime = 0f;
         }
+
+        if (visualEffects.visualModel != null)
+        {
+            _visualBaseLocalRotation = visualEffects.visualModel.localRotation;
+        }
+        else
+        {
+            _visualBaseLocalRotation = Quaternion.identity;
+            Debug.LogWarning($"Visual model not assigned on {gameObject.name}. Banking/pitch lean will not work.", this);
+        }
     }
 
     public void OnFreeLook(InputValue value)
@@ -65,7 +115,7 @@ public class ShipController : MonoBehaviour
 
     public void OnThrust(InputValue value)
     {
-        thrustInput = value.Get<float>(); 
+        thrustInput = value.Get<float>();
     }
 
     public void OnToggleFriction(InputValue value)
@@ -91,11 +141,19 @@ public class ShipController : MonoBehaviour
     {
         HandleRotation();
         HandleThrust();
+
+        _linearAcceleration = (rb.linearVelocity - _previousVelocity) / Time.fixedDeltaTime;
+        _previousVelocity = rb.linearVelocity;
     }
 
     private void Update()
     {
         HandleVisuals();
+    }
+
+    private void LateUpdate()
+    {
+        UpdateVisualRotation();
     }
 
     private void HandleRotation()
@@ -109,7 +167,7 @@ public class ShipController : MonoBehaviour
 
     private void HandleThrust()
     {
-        if (thrustInput > 0.05f) 
+        if (thrustInput > 0.05f)
         {
             rb.linearVelocity += transform.forward * (thrustInput * thrustAcceleration * Time.fixedDeltaTime);
         }
@@ -148,9 +206,46 @@ public class ShipController : MonoBehaviour
         if (speedDustParticles != null)
         {
             float normalizedDustEmission = Mathf.InverseLerp(dustSpeedThreshold, 1f, forwardSpeedPercent);
-            
+
             var emission = speedDustParticles.emission;
             emission.rateOverTime = normalizedDustEmission * maxDustEmissionRate;
         }
+    }
+
+    private void UpdateVisualRotation()
+    {
+        if (visualEffects.visualModel == null) return;
+        if (Time.deltaTime <= 0f) return;
+
+        // Extract yaw and pitch components from world-space angular velocity
+        // by projecting onto the ship's local axes.
+        float yawAngVel   = Vector3.Dot(rb.angularVelocity, transform.up);
+        float pitchAngVel = Vector3.Dot(rb.angularVelocity, transform.right);
+
+        // Decompose linear acceleration into local axes.
+        float forwardAccel = Vector3.Dot(_linearAcceleration, transform.forward);
+        float lateralAccel = Vector3.Dot(_linearAcceleration, transform.right);
+
+        // Banking: yaw angular velocity (spinning in place) + lateral linear acceleration (turning at speed).
+        float targetBankAngle = Mathf.Clamp(
+            (-yawAngVel * visualEffects.bankSensitivity) + (-lateralAccel * visualEffects.lateralAccelBankSensitivity),
+            -visualEffects.maxBankAngle,
+            visualEffects.maxBankAngle
+        );
+
+        // Pitch lean: pitch angular velocity + forward linear acceleration (thrust start/stop, braking).
+        float targetPitchLeanAngle = Mathf.Clamp(
+            (pitchAngVel * visualEffects.pitchLeanSensitivity) + (-forwardAccel * visualEffects.forwardAccelPitchSensitivity),
+            -visualEffects.maxPitchLeanAngle,
+            visualEffects.maxPitchLeanAngle
+        );
+
+        _currentBankAngle = Mathf.Lerp(_currentBankAngle, targetBankAngle, Time.deltaTime * visualEffects.bankSmoothing);
+        _currentPitchLeanAngle = Mathf.Lerp(_currentPitchLeanAngle, targetPitchLeanAngle, Time.deltaTime * visualEffects.pitchLeanSmoothing);
+
+        // Combine: pitch lean around local X, bank around local Z, applied on top of the base local rotation.
+        Quaternion pitchQuat = Quaternion.AngleAxis(_currentPitchLeanAngle, Vector3.right);
+        Quaternion bankQuat  = Quaternion.AngleAxis(_currentBankAngle, Vector3.forward);
+        visualEffects.visualModel.localRotation = _visualBaseLocalRotation * pitchQuat * bankQuat;
     }
 }
