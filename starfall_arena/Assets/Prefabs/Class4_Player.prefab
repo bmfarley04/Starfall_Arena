@@ -637,19 +637,23 @@ MonoBehaviour:
   isLocked: 0
   convergeBeam:
     stats:
-      prefab: {fileID: 0}
-      damagePerSecond: 0
-      maxDistance: 0
-      recoilForcePerSecond: 0
-      impactForce: 0
-    convergenceDistance: 0
-    rotationMultiplier: 0
-    hardpoints: []
-    capacity: 0
-    drainRate: 0
-    regenRate: 0
-    beamLoopSound: {fileID: 0}
-    soundFadeDuration: 0
+      prefab: {fileID: 2153662200343534273, guid: 83a72cb419d844b64b498b2b7eb5f252, type: 3}
+      damagePerSecond: 8
+      maxDistance: 60
+      recoilForcePerSecond: 1
+      impactForce: 20
+    convergenceDistance: 8
+    rotationMultiplier: 0.2
+    hardpoints:
+    - {fileID: 1321576700543072607}
+    - {fileID: 4736814429436613961}
+    - {fileID: 6637487226644195424}
+    - {fileID: 2422605848778522004}
+    capacity: 100
+    drainRate: 25
+    regenRate: 4
+    beamLoopSound: {fileID: 11400000, guid: 2e4ef6af0cbd6bf4091e3bcdb76e99fd, type: 2}
+    soundFadeDuration: 0.3
 --- !u!1 &6321119112069739111
 GameObject:
   m_ObjectHideFlags: 0
