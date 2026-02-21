@@ -9,6 +9,10 @@ using UnityEngine.UI;
 public class Class4 : Player
 {
     // ===== BURST FIRE CONFIG =====
+    [Header("Primary Weapon")]
+    [Tooltip("Time in seconds between bursts")]
+    [SerializeField] private float baseFireCooldown = 0.5f;
+
     [Header("Burst Fire")]
     [Tooltip("Number of shots per burst")]
     [SerializeField] private int burstCount = 3;
@@ -21,6 +25,7 @@ public class Class4 : Player
     protected override void Awake()
     {
         base.Awake();
+        fireCooldown = baseFireCooldown;
     }
 
     // ===== UPDATE LOOP =====
