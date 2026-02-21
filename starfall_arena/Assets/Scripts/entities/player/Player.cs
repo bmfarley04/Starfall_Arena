@@ -153,8 +153,7 @@ public abstract class Player : Entity
 
     // ===== PRIVATE STATE =====
     private List<Ability> abilities;
-    private PlayerInput _playerInput;
-    private InputAction _moveAction;
+    private bool _isThrustPressed = false;
     private bool _frictionEnabled = false;
     private Vector2 _lookInput;
     protected float _lastFireTime = -999f;
@@ -184,12 +183,6 @@ public abstract class Player : Entity
         RefreshCombatTags();
 
         _lastShieldHitTime = -shieldRegen.regenDelay;
-
-        _playerInput = GetComponent<PlayerInput>();
-        if (_playerInput != null)
-        {
-            _moveAction = _playerInput.actions["Move"];
-        }
 
         _impulseSource = GetComponent<Unity.Cinemachine.CinemachineImpulseSource>();
         if (_impulseSource == null)
@@ -356,7 +349,7 @@ public abstract class Player : Entity
 
         base.FixedUpdate();
 
-        bool movePressed = _moveAction != null && _moveAction.IsPressed();
+        bool movePressed = _isThrustPressed;
         float slowMult = GetSlowMultiplier();
 
         if (movePressed)
@@ -443,10 +436,10 @@ public abstract class Player : Entity
         }
     }
 
-    // ===== INPUT CALLBACKS =====
-    void OnMove()
-    {
-    }
+    // // ===== INPUT CALLBACKS =====
+    // void OnMove()
+    // {
+    // }
 
     void OnLook(InputValue value)
     {
@@ -458,6 +451,12 @@ public abstract class Player : Entity
         _frictionEnabled = !_frictionEnabled;
         _frictionTimer = 0f;
         Debug.Log($"friction: {(_frictionEnabled ? "ON" : "OFF")}");
+    }
+
+    void OnThrust(InputValue value)
+    {
+        if (isMovementLocked) return;
+        _isThrustPressed = value.Get<float>() > 0f;
     }
 
     void OnFire(InputValue value)
