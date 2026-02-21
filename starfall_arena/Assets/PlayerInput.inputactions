@@ -61,7 +61,7 @@
                     "initialStateCheck": true
                 },
                 {
-                    "name": "FreeLook",
+                    "name": "Look",
                     "type": "Value",
                     "id": "b64987b8-a6d8-4546-a1d2-bd661eebd73f",
                     "expectedControlType": "Vector2",
@@ -73,6 +73,15 @@
                     "name": "Anchor",
                     "type": "Button",
                     "id": "25ed24a1-8e61-487d-91d6-d971252410f2",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "Move",
+                    "type": "Button",
+                    "id": "3cd74607-ee2b-40a5-889a-c42e4485b8b0",
                     "expectedControlType": "",
                     "processors": "",
                     "interactions": "",
@@ -215,11 +224,11 @@
                 {
                     "name": "",
                     "id": "278a6f6a-c6b3-48fa-9c94-46e1184165c0",
-                    "path": "<Gamepad>/rightStick",
+                    "path": "<Gamepad>/leftStick",
                     "interactions": "",
                     "processors": "",
-                    "groups": "",
-                    "action": "FreeLook",
+                    "groups": ";controller",
+                    "action": "Look",
                     "isComposite": false,
                     "isPartOfComposite": false
                 },
@@ -242,6 +251,17 @@
                     "processors": "",
                     "groups": ";controller",
                     "action": "Anchor",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "90652c53-5803-40cd-ba70-8de076d34a4b",
+                    "path": "",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Move",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }
