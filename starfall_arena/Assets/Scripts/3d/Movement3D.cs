@@ -3,7 +3,7 @@ using UnityEngine.InputSystem;
 using Unity.Cinemachine;
 
 [RequireComponent(typeof(Rigidbody))]
-public class ShipController : MonoBehaviour
+public class Movement3D : MonoBehaviour
 {
     [System.Serializable]
     public struct VisualEffects3DConfig
@@ -43,9 +43,13 @@ public class ShipController : MonoBehaviour
     [SerializeField] private float pitchSpeed = 2.5f;
     [SerializeField] private float yawSpeed = 2.5f;
     [SerializeField] private bool invertY = true;
+    [Tooltip("Rotation speed multiplier applied at max speed. 0 = can't rotate at all, 1 = full speed always.")]
+    [SerializeField, Range(0f, 1f)] private float minRotationMultiplierAtMaxSpeed = 0.1f;
 
     [Header("Flight Assist (Friction)")]
-    [SerializeField] private float activeLinearDamping = 1.5f;
+    [Tooltip("How fast velocity bleeds off when not thrusting (units/s²). Does not affect max speed while thrusting.")]
+    [SerializeField] private float frictionDeceleration = 20f;
+    [Tooltip("Angular damping applied to rotation when friction is active")]
     [SerializeField] private float activeAngularDamping = 2.0f;
     private bool isFrictionEnabled = false;
 
@@ -123,17 +127,7 @@ public class ShipController : MonoBehaviour
         if (value.isPressed)
         {
             isFrictionEnabled = !isFrictionEnabled;
-
-            if (isFrictionEnabled)
-            {
-                rb.linearDamping = activeLinearDamping;
-                rb.angularDamping = activeAngularDamping;
-            }
-            else
-            {
-                rb.linearDamping = 0f;
-                rb.angularDamping = 0f;
-            }
+            rb.angularDamping = isFrictionEnabled ? activeAngularDamping : 0f;
         }
     }
 
@@ -158,8 +152,11 @@ public class ShipController : MonoBehaviour
 
     private void HandleRotation()
     {
-        float pitch = lookInput.y * pitchSpeed * (invertY ? -1f : 1f);
-        float yaw = lookInput.x * yawSpeed;
+        float speedPercent = rb.linearVelocity.magnitude / maxSpeed;
+        float rotMult = Mathf.Lerp(1f, minRotationMultiplierAtMaxSpeed, speedPercent);
+
+        float pitch = lookInput.y * pitchSpeed * rotMult * (invertY ? -1f : 1f);
+        float yaw = lookInput.x * yawSpeed * rotMult;
 
         Vector3 localAngularVelocity = new Vector3(pitch, yaw, 0f);
         rb.angularVelocity = transform.TransformDirection(localAngularVelocity);
@@ -170,6 +167,10 @@ public class ShipController : MonoBehaviour
         if (thrustInput > 0.05f)
         {
             rb.linearVelocity += transform.forward * (thrustInput * thrustAcceleration * Time.fixedDeltaTime);
+        }
+        else if (isFrictionEnabled)
+        {
+            rb.linearVelocity = Vector3.MoveTowards(rb.linearVelocity, Vector3.zero, frictionDeceleration * Time.fixedDeltaTime);
         }
 
         if (rb.linearVelocity.magnitude > maxSpeed)
