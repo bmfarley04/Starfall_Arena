@@ -14,14 +14,18 @@ public class ConvergeBeam : Ability
         public float rotationMultiplier;
 
         [Header("Hardpoints")]
-        [Tooltip("Cannon positions on ship model — base fires first 2, empowered fires all")]
+        [Tooltip("Cannon positions on ship model.")]
         public Transform[] hardpoints;
 
         [Header("Empowerment")]
-        [Tooltip("If true, start in empowered mode (all hardpoints active)")]
-        public bool startEmpowered;
-        [Tooltip("Number of hardpoints used in base mode (fires from first N hardpoints)")]
-        public int baseHardpointCount;
+        [Tooltip("Reference to this ship's Empower ability. If null, auto-finds on this GameObject.")]
+        public Empower empowerAbility;
+        [Tooltip("If true, always uses empowered beam count (debug/testing).")]
+        public bool forceEmpowered;
+        [Tooltip("Number of beams in base mode.")]
+        public int baseBeamCount;
+        [Tooltip("Number of beams in empowered mode.")]
+        public int empoweredBeamCount;
 
         [Header("Beam Capacity")]
         [Tooltip("Maximum beam capacity (100 units)")]
@@ -46,24 +50,36 @@ public class ConvergeBeam : Ability
     private AudioSource _laserBeamSource;
     private Coroutine _beamFadeCoroutine;
     private bool _isFiring;
-    private bool _isEmpowered;
+    private bool _lastEmpoweredState;
 
     protected override void Awake()
     {
         base.Awake();
         _currentBeamCapacity = 0f;
-        _isEmpowered = convergeBeam.startEmpowered;
+        if (convergeBeam.empowerAbility == null)
+        {
+            convergeBeam.empowerAbility = GetComponent<Empower>();
+        }
 
         _laserBeamSource = gameObject.AddComponent<AudioSource>();
         _laserBeamSource.playOnAwake = false;
         _laserBeamSource.loop = true;
         _laserBeamSource.spatialBlend = 0f;
+        _lastEmpoweredState = IsEmpoweredActive();
     }
 
     protected void Update()
     {
         if (_isFiring)
         {
+            bool empoweredNow = IsEmpoweredActive();
+            if (empoweredNow != _lastEmpoweredState)
+            {
+                // Rebuild beam set so count switches immediately when Empower toggles.
+                DestroyAllBeams();
+                SpawnAllBeams();
+            }
+
             UpdateBeamConvergence();
         }
         else if (_currentBeamCapacity > 0f)
@@ -112,7 +128,7 @@ public class ConvergeBeam : Ability
 
             if (!_isFiring && convergeBeam.stats.prefab != null && convergeBeam.hardpoints != null && convergeBeam.hardpoints.Length > 0)
             {
-                Debug.Log($"Creating {GetActiveHardpointCount()} converging beams (empowered: {_isEmpowered})");
+                Debug.Log($"Creating {GetActiveHardpointCount()} converging beams (empowered: {IsEmpoweredActive()})");
                 SpawnAllBeams();
                 FadeInSound();
             }
@@ -128,25 +144,21 @@ public class ConvergeBeam : Ability
         }
     }
 
-    public void SetEmpowered(bool empowered)
-    {
-        _isEmpowered = empowered;
-    }
-
-    public bool IsEmpowered()
-    {
-        return _isEmpowered;
-    }
-
     private int GetActiveHardpointCount()
     {
         if (convergeBeam.hardpoints == null) return 0;
-        if (_isEmpowered) return convergeBeam.hardpoints.Length;
-        return Mathf.Min(convergeBeam.baseHardpointCount, convergeBeam.hardpoints.Length);
+        int desired = IsEmpoweredActive() ? convergeBeam.empoweredBeamCount : convergeBeam.baseBeamCount;
+        if (desired <= 0)
+        {
+            desired = IsEmpoweredActive() ? 4 : 2;
+        }
+
+        return Mathf.Min(desired, convergeBeam.hardpoints.Length);
     }
 
     private void SpawnAllBeams()
     {
+        _lastEmpoweredState = IsEmpoweredActive();
         int count = GetActiveHardpointCount();
         _activeBeams = new LaserBeam[count];
 
@@ -206,6 +218,16 @@ public class ConvergeBeam : Ability
             _activeBeams = null;
         }
         _isFiring = false;
+    }
+
+    private bool IsEmpoweredActive()
+    {
+        if (convergeBeam.forceEmpowered)
+        {
+            return true;
+        }
+
+        return convergeBeam.empowerAbility != null && convergeBeam.empowerAbility.IsEmpoweredActive;
     }
 
     // ===== ROTATION =====
