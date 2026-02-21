@@ -186,7 +186,8 @@ public class Missile : ProjectileScript
 
         Vector2 desiredDirection = toTarget.normalized;
         float turnStepRadians = Mathf.Max(0f, guidance.turnRateDegPerSecond) * Mathf.Deg2Rad * Time.fixedDeltaTime;
-        _currentDirection = Vector2.RotateTowards(_currentDirection, desiredDirection, turnStepRadians, 0f).normalized;
+        Vector3 steered = Vector3.RotateTowards(_currentDirection, desiredDirection, turnStepRadians, 0f);
+        _currentDirection = ((Vector2)steered).normalized;
 
         float angle = Mathf.Atan2(_currentDirection.y, _currentDirection.x) * Mathf.Rad2Deg;
         transform.rotation = Quaternion.Euler(0f, 0f, angle + ROTATION_OFFSET);

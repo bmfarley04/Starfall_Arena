@@ -4743,6 +4743,8 @@ GameObject:
   - component: {fileID: 3352454}
   - component: {fileID: 2352454}
   - component: {fileID: 11452454}
+  - component: {fileID: 7610910945642598719}
+  - component: {fileID: 3708400297387755540}
   m_Layer: 0
   m_Name: missile
   m_TagString: Untagged
@@ -4831,7 +4833,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 152452}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 2eb81a48b708c7d4586ad5144351d65f, type: 3}
   m_Name: 
@@ -4852,6 +4854,61 @@ MonoBehaviour:
   - {fileID: 19852452}
   - {fileID: 19852454}
   launcher: {fileID: 0}
+--- !u!50 &7610910945642598719
+Rigidbody2D:
+  serializedVersion: 5
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 152452}
+  m_BodyType: 0
+  m_Simulated: 1
+  m_UseFullKinematicContacts: 0
+  m_UseAutoMass: 0
+  m_Mass: 1
+  m_LinearDamping: 0
+  m_AngularDamping: 0.05
+  m_GravityScale: 1
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_Interpolate: 0
+  m_SleepingMode: 1
+  m_CollisionDetection: 0
+  m_Constraints: 0
+--- !u!114 &3708400297387755540
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 152452}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c904dad052aea1748a959ac0b69b2bf0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Missile
+  targetTag: 
+  guidance:
+    enabled: 1
+    turnRateDegPerSecond: 120
+    guidanceStartDelay: 0.05
+  warmup:
+    enabled: 1
+    initialSpeed: 6
+    lowSpeedDuration: 0.08
+    accelerationDuration: 0.25
+  despawn:
+    delayDespawn: 1
+    despawnDelay: 0.35
+    delayedParticles:
+    - {fileID: 19852452}
+    - {fileID: 19852454}
 --- !u!1 &152454
 GameObject:
   m_ObjectHideFlags: 0
@@ -9512,7 +9569,6 @@ ParticleSystemRenderer:
   m_RendererPriority: 0
   m_Materials:
   - {fileID: 2100000, guid: 719b6ec14d11b2a43a04a1da0e8a0a94, type: 2}
-  - {fileID: 0}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
