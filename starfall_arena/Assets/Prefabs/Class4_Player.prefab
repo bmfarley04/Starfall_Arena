@@ -110,6 +110,7 @@ GameObject:
   - component: {fileID: 2553233869693140979}
   - component: {fileID: 7700191331405447628}
   - component: {fileID: 2776879011367663162}
+  - component: {fileID: 2614992339745496931}
   m_Layer: 0
   m_Name: Class4_Player
   m_TagString: Player
@@ -571,12 +572,12 @@ MonoBehaviour:
   slowEffectVisuals:
     slowParticleSystem: {fileID: 5452617243140674123}
   currentShield: 0
-  ability1: {fileID: 0}
-  ability2: {fileID: 0}
-  ability3: {fileID: 0}
-  ability4: {fileID: 0}
+  ability1: {fileID: 2614992339745496931}
+  ability2: {fileID: 2614992339745496931}
+  ability3: {fileID: 2614992339745496931}
+  ability4: {fileID: 2614992339745496931}
   abilitySlots:
-  - {fileID: 0}
+  - {fileID: 11500000, guid: 7482e70d8bfec2c4cb3c488c81e0dd09, type: 3}
   - {fileID: 0}
   - {fileID: 0}
   - {fileID: 0}
@@ -616,6 +617,39 @@ MonoBehaviour:
   shotsHit: 0
   damageDealt: 0
   damageTaken: 0
+  burstCount: 3
+  burstInterval: 0.08
+--- !u!114 &2614992339745496931
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5720108135059277148}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7482e70d8bfec2c4cb3c488c81e0dd09, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ConvergeBeam
+  stats:
+    cooldown: 0
+    duration: 0
+  isLocked: 0
+  convergeBeam:
+    stats:
+      prefab: {fileID: 0}
+      damagePerSecond: 0
+      maxDistance: 0
+      recoilForcePerSecond: 0
+      impactForce: 0
+    convergenceDistance: 0
+    rotationMultiplier: 0
+    hardpoints: []
+    capacity: 0
+    drainRate: 0
+    regenRate: 0
+    beamLoopSound: {fileID: 0}
+    soundFadeDuration: 0
 --- !u!1 &6321119112069739111
 GameObject:
   m_ObjectHideFlags: 0
