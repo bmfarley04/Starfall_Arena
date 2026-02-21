@@ -156,6 +156,7 @@ public abstract class Player : Entity
     private bool _isThrustPressed = false;
     private bool _frictionEnabled = false;
     private Vector2 _lookInput;
+    public Vector2 LookInput => _lookInput;
     protected float _lastFireTime = -999f;
     private bool _isFiring = false;
     private float _frictionTimer = 0f;

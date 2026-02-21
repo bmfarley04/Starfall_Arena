@@ -6,7 +6,8 @@ public class SoundEffect : ScriptableObject
     public AudioClip clip;
     
     [Range(0f, 1f)] public float volume = 1f;
-    
+    [Range(0.1f, 3f)] public float speed = 1f;
+
     [Header("Randomization")]
     [Range(0.1f, 2f)] public float minPitch = 0.95f;
     [Range(0.1f, 2f)] public float maxPitch = 1.05f;
@@ -17,7 +18,7 @@ public class SoundEffect : ScriptableObject
 
         source.clip = clip;
         source.volume = volume;
-        source.pitch = Random.Range(minPitch, maxPitch);
+        source.pitch = Random.Range(minPitch, maxPitch) * speed;
         source.Play();
     }
 
@@ -36,7 +37,7 @@ public class SoundEffect : ScriptableObject
         AudioSource source = tempAudio.AddComponent<AudioSource>();
         source.clip = clip;
         source.volume = volume;
-        source.pitch = Random.Range(minPitch, maxPitch);
+        source.pitch = Random.Range(minPitch, maxPitch) * speed;
         source.spatialBlend = 0f; // 2D sound
         source.Play();
 

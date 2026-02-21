@@ -142,6 +142,7 @@ GameObject:
   - component: {fileID: 7700191331405447628}
   - component: {fileID: 2776879011367663162}
   - component: {fileID: 2614992339745496931}
+  - component: {fileID: 933208337794910135}
   m_Layer: 0
   m_Name: Class4_Player
   m_TagString: Player
@@ -566,7 +567,7 @@ MonoBehaviour:
   shieldController: {fileID: 4756364460336259094}
   movement:
     thrustForce: 44
-    maxSpeed: 18
+    maxSpeed: 20
     rotationSpeed: 400
     lateralDamping: 0.92
   turrets:
@@ -604,14 +605,12 @@ MonoBehaviour:
     slowParticleSystem: {fileID: 5452617243140674123}
   currentShield: 0
   ability1: {fileID: 2614992339745496931}
-  ability2: {fileID: 2614992339745496931}
-  ability3: {fileID: 2614992339745496931}
+  ability2: {fileID: 933208337794910135}
+  ability3: {fileID: 0}
   ability4: {fileID: 2614992339745496931}
   abilitySlots:
   - {fileID: 11500000, guid: 7482e70d8bfec2c4cb3c488c81e0dd09, type: 3}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
+  - {fileID: 11500000, guid: 172bc736f5ad2104f96035a3b5e56a2f, type: 3}
   shieldRegen:
     regenDelay: 5
     regenRate: 20
@@ -688,6 +687,30 @@ MonoBehaviour:
     regenRate: 4
     beamLoopSound: {fileID: 11400000, guid: 2e4ef6af0cbd6bf4091e3bcdb76e99fd, type: 2}
     soundFadeDuration: 0.3
+--- !u!114 &933208337794910135
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5720108135059277148}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 172bc736f5ad2104f96035a3b5e56a2f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Dodge
+  stats:
+    cooldown: 2
+    duration: 2
+  isLocked: 0
+  dodge:
+    dodgeDistance: 8
+    slideDuration: 0.2
+    primeWindow: 1.5
+    startEmpowered: 1
+    empoweredCooldown: 1
+    primeSound: {fileID: 0}
+    dodgeSound: {fileID: 11400000, guid: 93ac188e5cb8eec4888d23ddeb995c76, type: 2}
 --- !u!1 &6321119112069739111
 GameObject:
   m_ObjectHideFlags: 0

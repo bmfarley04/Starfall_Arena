@@ -187,12 +187,12 @@ MonoBehaviour:
       Enabled: 1
       Size: {x: 0.01, y: 0.01}
     HardLimits:
-      Enabled: 1
+      Enabled: 0
       Size: {x: 0.3, y: 0.25}
       Offset: {x: 0, y: 0}
   CenterOnActivate: 1
   TargetOffset: {x: 0, y: 0, z: 0}
-  Damping: {x: 2, y: 2, z: 1}
+  Damping: {x: 1, y: 1, z: 1}
   Lookahead:
     Enabled: 0
     Time: 0
@@ -759,6 +759,14 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 933208337794910135, guid: bbe86802b43fc6a439859cb32ba2aa52, type: 3}
+      propertyPath: stats.cooldown
+      value: 0.1
+      objectReference: {fileID: 0}
+    - target: {fileID: 933208337794910135, guid: bbe86802b43fc6a439859cb32ba2aa52, type: 3}
+      propertyPath: dodge.cinemachineCamera
+      value: 
+      objectReference: {fileID: 773417013}
     - target: {fileID: 4525998004725888138, guid: bbe86802b43fc6a439859cb32ba2aa52, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
