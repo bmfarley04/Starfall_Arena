@@ -14,8 +14,14 @@ public class ConvergeBeam : Ability
         public float rotationMultiplier;
 
         [Header("Hardpoints")]
-        [Tooltip("Cannon positions on ship model — one beam spawns per hardpoint")]
+        [Tooltip("Cannon positions on ship model — base fires first 2, empowered fires all")]
         public Transform[] hardpoints;
+
+        [Header("Empowerment")]
+        [Tooltip("If true, start in empowered mode (all hardpoints active)")]
+        public bool startEmpowered;
+        [Tooltip("Number of hardpoints used in base mode (fires from first N hardpoints)")]
+        public int baseHardpointCount;
 
         [Header("Beam Capacity")]
         [Tooltip("Maximum beam capacity (100 units)")]
@@ -29,12 +35,6 @@ public class ConvergeBeam : Ability
         public SoundEffect beamLoopSound;
         [Tooltip("Fade in/out duration for beam sound (seconds)")]
         public float soundFadeDuration;
-
-        [Header("Empower Source")]
-        [Tooltip("Reference to this ship's Empower ability. If null, auto-finds on this GameObject.")]
-        public Empower empowerAbility;
-        [Tooltip("If true, treats this beam as empowered (for external systems/debug).")]
-        public bool forceEmpowered;
     }
 
     [Header("Converge Beam Weapon")]
@@ -46,22 +46,18 @@ public class ConvergeBeam : Ability
     private AudioSource _laserBeamSource;
     private Coroutine _beamFadeCoroutine;
     private bool _isFiring;
-    private bool _isBeamEmpowered;
+    private bool _isEmpowered;
 
     protected override void Awake()
     {
         base.Awake();
         _currentBeamCapacity = 0f;
+        _isEmpowered = convergeBeam.startEmpowered;
 
         _laserBeamSource = gameObject.AddComponent<AudioSource>();
         _laserBeamSource.playOnAwake = false;
         _laserBeamSource.loop = true;
         _laserBeamSource.spatialBlend = 0f;
-
-        if (convergeBeam.empowerAbility == null)
-        {
-            convergeBeam.empowerAbility = GetComponent<Empower>();
-        }
     }
 
     protected void Update()
@@ -116,7 +112,7 @@ public class ConvergeBeam : Ability
 
             if (!_isFiring && convergeBeam.stats.prefab != null && convergeBeam.hardpoints != null && convergeBeam.hardpoints.Length > 0)
             {
-                Debug.Log($"Creating {convergeBeam.hardpoints.Length} converging beams");
+                Debug.Log($"Creating {GetActiveHardpointCount()} converging beams (empowered: {_isEmpowered})");
                 SpawnAllBeams();
                 FadeInSound();
             }
@@ -132,12 +128,29 @@ public class ConvergeBeam : Ability
         }
     }
 
+    public void SetEmpowered(bool empowered)
+    {
+        _isEmpowered = empowered;
+    }
+
+    public bool IsEmpowered()
+    {
+        return _isEmpowered;
+    }
+
+    private int GetActiveHardpointCount()
+    {
+        if (convergeBeam.hardpoints == null) return 0;
+        if (_isEmpowered) return convergeBeam.hardpoints.Length;
+        return Mathf.Min(convergeBeam.baseHardpointCount, convergeBeam.hardpoints.Length);
+    }
+
     private void SpawnAllBeams()
     {
-        _isBeamEmpowered = IsEmpoweredActive();
-        _activeBeams = new LaserBeam[convergeBeam.hardpoints.Length];
+        int count = GetActiveHardpointCount();
+        _activeBeams = new LaserBeam[count];
 
-        for (int i = 0; i < convergeBeam.hardpoints.Length; i++)
+        for (int i = 0; i < count; i++)
         {
             Transform hardpoint = convergeBeam.hardpoints[i];
             if (hardpoint == null) continue;
@@ -193,7 +206,6 @@ public class ConvergeBeam : Ability
             _activeBeams = null;
         }
         _isFiring = false;
-        _isBeamEmpowered = false;
     }
 
     // ===== ROTATION =====
@@ -290,15 +302,4 @@ public class ConvergeBeam : Ability
             _laserBeamSource.Stop();
         }
     }
-
-    private bool IsEmpoweredActive()
-    {
-        if (convergeBeam.forceEmpowered)
-        {
-            return true;
-        }
-
-        return convergeBeam.empowerAbility != null && convergeBeam.empowerAbility.IsEmpoweredActive;
-    }
-
 }
