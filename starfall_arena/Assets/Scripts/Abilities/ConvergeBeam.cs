@@ -29,6 +29,12 @@ public class ConvergeBeam : Ability
         public SoundEffect beamLoopSound;
         [Tooltip("Fade in/out duration for beam sound (seconds)")]
         public float soundFadeDuration;
+
+        [Header("Empower Source")]
+        [Tooltip("Reference to this ship's Empower ability. If null, auto-finds on this GameObject.")]
+        public Empower empowerAbility;
+        [Tooltip("If true, treats this beam as empowered (for external systems/debug).")]
+        public bool forceEmpowered;
     }
 
     [Header("Converge Beam Weapon")]
@@ -40,6 +46,7 @@ public class ConvergeBeam : Ability
     private AudioSource _laserBeamSource;
     private Coroutine _beamFadeCoroutine;
     private bool _isFiring;
+    private bool _isBeamEmpowered;
 
     protected override void Awake()
     {
@@ -50,6 +57,11 @@ public class ConvergeBeam : Ability
         _laserBeamSource.playOnAwake = false;
         _laserBeamSource.loop = true;
         _laserBeamSource.spatialBlend = 0f;
+
+        if (convergeBeam.empowerAbility == null)
+        {
+            convergeBeam.empowerAbility = GetComponent<Empower>();
+        }
     }
 
     protected void Update()
@@ -122,6 +134,7 @@ public class ConvergeBeam : Ability
 
     private void SpawnAllBeams()
     {
+        _isBeamEmpowered = IsEmpoweredActive();
         _activeBeams = new LaserBeam[convergeBeam.hardpoints.Length];
 
         for (int i = 0; i < convergeBeam.hardpoints.Length; i++)
@@ -180,6 +193,7 @@ public class ConvergeBeam : Ability
             _activeBeams = null;
         }
         _isFiring = false;
+        _isBeamEmpowered = false;
     }
 
     // ===== ROTATION =====
@@ -276,4 +290,15 @@ public class ConvergeBeam : Ability
             _laserBeamSource.Stop();
         }
     }
+
+    private bool IsEmpoweredActive()
+    {
+        if (convergeBeam.forceEmpowered)
+        {
+            return true;
+        }
+
+        return convergeBeam.empowerAbility != null && convergeBeam.empowerAbility.IsEmpoweredActive;
+    }
+
 }

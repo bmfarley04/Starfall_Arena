@@ -41,9 +41,11 @@ public class GuidedMissile : Ability
         [Tooltip("Max search radius for nearest target (0 = unlimited).")]
         public float targetSearchRadius;
 
-        [Header("Variant Selection")]
-        [Tooltip("If true, fire empowered variant by default.")]
-        public bool startEmpowered;
+        [Header("Empower Source")]
+        [Tooltip("Reference to this ship's Empower ability. If null, auto-finds on this GameObject.")]
+        public Empower empowerAbility;
+        [Tooltip("If true, this ability always uses empowered variant (debug/testing).")]
+        public bool forceEmpowered;
 
         [Header("Sound Effects")]
         public SoundEffect fireSound;
@@ -58,13 +60,15 @@ public class GuidedMissile : Ability
     [Header("Guided Missile")]
     public GuidedMissileConfig guidedMissile;
 
-    private bool _isEmpowered;
     private float _lastMissileFireTime = -999f;
 
     protected override void Awake()
     {
         base.Awake();
-        _isEmpowered = guidedMissile.startEmpowered;
+        if (guidedMissile.empowerAbility == null)
+        {
+            guidedMissile.empowerAbility = GetComponent<Empower>();
+        }
     }
 
     public override void UseAbility(InputValue value)
@@ -77,16 +81,6 @@ public class GuidedMissile : Ability
         FireMissile();
     }
 
-    public void SetEmpowered(bool empowered)
-    {
-        _isEmpowered = empowered;
-    }
-
-    public bool IsEmpowered()
-    {
-        return _isEmpowered;
-    }
-
     public override bool IsAbilityActive()
     {
         return false;
@@ -94,7 +88,8 @@ public class GuidedMissile : Ability
 
     private void FireMissile()
     {
-        MissileVariantConfig variant = _isEmpowered ? guidedMissile.empowered : guidedMissile.regular;
+        bool empowered = IsEmpoweredActive();
+        MissileVariantConfig variant = empowered ? guidedMissile.empowered : guidedMissile.regular;
 
         if (variant.missilePrefab == null)
         {
@@ -156,6 +151,16 @@ public class GuidedMissile : Ability
         }
 
         _lastMissileFireTime = Time.time;
+    }
+
+    private bool IsEmpoweredActive()
+    {
+        if (guidedMissile.forceEmpowered)
+        {
+            return true;
+        }
+
+        return guidedMissile.empowerAbility != null && guidedMissile.empowerAbility.IsEmpoweredActive;
     }
 
     private Transform ResolveSpawnTransform()

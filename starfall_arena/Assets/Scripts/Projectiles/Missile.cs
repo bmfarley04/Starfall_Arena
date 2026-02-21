@@ -63,6 +63,12 @@ public class Missile : ProjectileScript
         despawnDelay = 0.35f
     };
 
+    [Header("Impact")]
+    [Tooltip("Spawned at the missile's position on any hit or end-of-life.")]
+    [SerializeField] private GameObject explosionPrefab;
+    [Tooltip("Uniform scale multiplier applied to the spawned explosion.")]
+    [SerializeField] private float explosionScale = 1f;
+
     private Transform _target;
     private Vector2 _inheritedVelocity;
     private Vector2 _currentDirection;
@@ -73,7 +79,6 @@ public class Missile : ProjectileScript
     private Renderer[] _renderers;
     private ParticleSystem[] _particles;
     private Coroutine _lifetimeCoroutine;
-    private const float ROTATION_OFFSET = -90f;
 
     private void OnEnable()
     {
@@ -135,6 +140,7 @@ public class Missile : ProjectileScript
         _inheritedVelocity = shipVelocity;
         _cruiseSpeed = speed;
         _spawnTime = Time.time;
+        UpdateMissileRotation();
     }
 
     public void SetTarget(Transform target)
@@ -189,8 +195,7 @@ public class Missile : ProjectileScript
         Vector3 steered = Vector3.RotateTowards(_currentDirection, desiredDirection, turnStepRadians, 0f);
         _currentDirection = ((Vector2)steered).normalized;
 
-        float angle = Mathf.Atan2(_currentDirection.y, _currentDirection.x) * Mathf.Rad2Deg;
-        transform.rotation = Quaternion.Euler(0f, 0f, angle + ROTATION_OFFSET);
+        UpdateMissileRotation();
     }
 
     private float GetCurrentSpeed()
@@ -214,9 +219,25 @@ public class Missile : ProjectileScript
         return Mathf.Lerp(safeInitial, _cruiseSpeed, t);
     }
 
+    private void UpdateMissileRotation()
+    {
+        transform.rotation = GetDesiredFacingRotation();
+    }
+
+    private Quaternion GetDesiredFacingRotation()
+    {
+        float angle = Mathf.Atan2(_currentDirection.y, _currentDirection.x) * Mathf.Rad2Deg;
+        return Quaternion.Euler(0f, 0f, angle);
+    }
+
     protected override void OnTriggerEnter2D(Collider2D collider)
     {
         if (_isHit)
+        {
+            return;
+        }
+
+        if (_shooter != null && collider.gameObject == _shooter.gameObject)
         {
             return;
         }
@@ -285,6 +306,12 @@ public class Missile : ProjectileScript
         }
 
         _isHit = true;
+
+        if (explosionPrefab != null)
+        {
+            GameObject explosion = Instantiate(explosionPrefab, transform.position, Quaternion.identity);
+            explosion.transform.localScale *= explosionScale;
+        }
 
         if (!_impactVisualSpawned && _visualController != null)
         {
