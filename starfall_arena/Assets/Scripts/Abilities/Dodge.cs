@@ -13,8 +13,10 @@ public struct DodgeAbilityConfig
     public float primeWindow;
 
     [Header("Empowerment")]
-    [Tooltip("If true, start with empowered cooldown")]
-    public bool startEmpowered;
+    [Tooltip("Reference to this ship's Empower ability. If null, auto-finds on this GameObject.")]
+    public Empower empowerAbility;
+    [Tooltip("If true, always uses empowered cooldown (debug/testing).")]
+    public bool forceEmpowered;
     [Tooltip("Cooldown when empowered (seconds) - uses stats.cooldown for base")]
     public float empoweredCooldown;
 
@@ -28,7 +30,6 @@ public class Dodge : Ability
     [Header("Dodge")]
     public DodgeAbilityConfig dodge;
 
-    private bool _isEmpowered;
     private bool _isPrimed;
     private bool _isSliding;
     private float _primeStartTime;
@@ -38,17 +39,10 @@ public class Dodge : Ability
     protected override void Awake()
     {
         base.Awake();
-        _isEmpowered = dodge.startEmpowered;
-    }
-
-    public void SetEmpowered(bool empowered)
-    {
-        _isEmpowered = empowered;
-    }
-
-    public bool IsEmpowered()
-    {
-        return _isEmpowered;
+        if (dodge.empowerAbility == null)
+        {
+            dodge.empowerAbility = GetComponent<Empower>();
+        }
     }
 
     public override void UseAbility(InputValue value)
@@ -145,7 +139,17 @@ public class Dodge : Ability
         return _isSliding;
     }
 
-    private float ActiveCooldown => _isEmpowered ? dodge.empoweredCooldown : stats.cooldown;
+    private float ActiveCooldown => IsEmpoweredActive() ? dodge.empoweredCooldown : stats.cooldown;
+
+    private bool IsEmpoweredActive()
+    {
+        if (dodge.forceEmpowered)
+        {
+            return true;
+        }
+
+        return dodge.empowerAbility != null && dodge.empowerAbility.IsEmpoweredActive;
+    }
 
     public override bool IsAbilityActive()
     {

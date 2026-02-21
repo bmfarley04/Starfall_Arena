@@ -143,6 +143,8 @@ GameObject:
   - component: {fileID: 2776879011367663162}
   - component: {fileID: 2614992339745496931}
   - component: {fileID: 933208337794910135}
+  - component: {fileID: 7810287427595631669}
+  - component: {fileID: 836217916081292876}
   m_Layer: 0
   m_Name: Class4_Player
   m_TagString: Player
@@ -606,11 +608,13 @@ MonoBehaviour:
   currentShield: 0
   ability1: {fileID: 2614992339745496931}
   ability2: {fileID: 933208337794910135}
-  ability3: {fileID: 0}
-  ability4: {fileID: 2614992339745496931}
+  ability3: {fileID: 7810287427595631669}
+  ability4: {fileID: 836217916081292876}
   abilitySlots:
   - {fileID: 11500000, guid: 7482e70d8bfec2c4cb3c488c81e0dd09, type: 3}
   - {fileID: 11500000, guid: 172bc736f5ad2104f96035a3b5e56a2f, type: 3}
+  - {fileID: 11500000, guid: bbede3a966f016f4caf59bb76fd5c7ad, type: 3}
+  - {fileID: 11500000, guid: eb217b43de5a2a0418fb25e28f27f118, type: 3}
   shieldRegen:
     regenDelay: 5
     regenRate: 20
@@ -680,8 +684,10 @@ MonoBehaviour:
     - {fileID: 4723198445447354796}
     - {fileID: 7430301850446625583}
     - {fileID: 6394249755771203933}
-    startEmpowered: 0
-    baseHardpointCount: 2
+    empowerAbility: {fileID: 836217916081292876}
+    forceEmpowered: 0
+    baseBeamCount: 2
+    empoweredBeamCount: 4
     capacity: 100
     drainRate: 25
     regenRate: 4
@@ -700,17 +706,80 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Dodge
   stats:
-    cooldown: 2
+    cooldown: 3
     duration: 2
   isLocked: 0
   dodge:
     dodgeDistance: 8
     slideDuration: 0.2
     primeWindow: 1.5
-    startEmpowered: 1
+    empowerAbility: {fileID: 836217916081292876}
+    forceEmpowered: 0
     empoweredCooldown: 1
     primeSound: {fileID: 0}
     dodgeSound: {fileID: 11400000, guid: 93ac188e5cb8eec4888d23ddeb995c76, type: 2}
+--- !u!114 &7810287427595631669
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5720108135059277148}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bbede3a966f016f4caf59bb76fd5c7ad, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GuidedMissile
+  stats:
+    cooldown: 0
+    duration: 0
+  isLocked: 0
+  guidedMissile:
+    spawnPoint: {fileID: 4525998004725888138}
+    spawnOffset: 2
+    inheritShipVelocity: 0
+    specifiedTarget: {fileID: 0}
+    acquireNearestEnemyByTag: 0
+    targetSearchRadius: 0
+    empowerAbility: {fileID: 836217916081292876}
+    forceEmpowered: 0
+    fireSound: {fileID: 0}
+    regular:
+      missilePrefab: {fileID: 152452, guid: e0395125146512d49b2bdb0cb17d0a26, type: 3}
+      damageMultiplier: 8
+      speedMultiplier: 1
+      impactMultiplier: 10
+      recoilMultiplier: 5
+      lifetimeOverride: 5
+      sizeMultiplier: 1
+    empowered:
+      missilePrefab: {fileID: 152452, guid: e0395125146512d49b2bdb0cb17d0a26, type: 3}
+      damageMultiplier: 12
+      speedMultiplier: 1.5
+      impactMultiplier: 15
+      recoilMultiplier: 7
+      lifetimeOverride: 5
+      sizeMultiplier: 1.5
+--- !u!114 &836217916081292876
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5720108135059277148}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eb217b43de5a2a0418fb25e28f27f118, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Empower
+  stats:
+    cooldown: 0
+    duration: 0
+  isLocked: 0
+  empower:
+    duration: 5
+    activateSound: {fileID: 0}
+    deactivateSound: {fileID: 0}
 --- !u!1 &6321119112069739111
 GameObject:
   m_ObjectHideFlags: 0
