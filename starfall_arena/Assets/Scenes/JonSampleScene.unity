@@ -119,11 +119,63 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
---- !u!4 &615101957 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 8447593613203198634, guid: b3d6e192d9b648a42977ef913b4a488a, type: 3}
-  m_PrefabInstance: {fileID: 2057529789}
-  m_PrefabAsset: {fileID: 0}
+--- !u!1001 &414534105
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 2770685403010924880, guid: 21d3566236d085e4c863a6517e23b71a, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2770685403010924880, guid: 21d3566236d085e4c863a6517e23b71a, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2770685403010924880, guid: 21d3566236d085e4c863a6517e23b71a, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2770685403010924880, guid: 21d3566236d085e4c863a6517e23b71a, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2770685403010924880, guid: 21d3566236d085e4c863a6517e23b71a, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2770685403010924880, guid: 21d3566236d085e4c863a6517e23b71a, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2770685403010924880, guid: 21d3566236d085e4c863a6517e23b71a, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2770685403010924880, guid: 21d3566236d085e4c863a6517e23b71a, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2770685403010924880, guid: 21d3566236d085e4c863a6517e23b71a, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2770685403010924880, guid: 21d3566236d085e4c863a6517e23b71a, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8270235200235412842, guid: 21d3566236d085e4c863a6517e23b71a, type: 3}
+      propertyPath: m_Name
+      value: Class5_Player
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 21d3566236d085e4c863a6517e23b71a, type: 3}
 --- !u!1 &773417010
 GameObject:
   m_ObjectHideFlags: 0
@@ -218,7 +270,7 @@ MonoBehaviour:
   m_StreamingVersion: 20241001
   m_LegacyPriority: 0
   Target:
-    TrackingTarget: {fileID: 615101957}
+    TrackingTarget: {fileID: 0}
     LookAtTarget: {fileID: 0}
     CustomLookAtTarget: 0
   Lens:
@@ -342,6 +394,36 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ee3ac6e3b7a090e4c9512b927e3809a7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: '::'
+  splitScreenManager: {fileID: 0}
+  player1SpawnPoint: {fileID: 0}
+  player2SpawnPoint: {fileID: 0}
+  defaultPlayer1Ship: {fileID: 0}
+  defaultPlayer2Ship: {fileID: 0}
+  versusScreenManager: {fileID: 0}
+  roundEndScreenManager: {fileID: 0}
+  gameEndScreenManager: {fileID: 0}
+  augmentSelectManager: {fileID: 0}
+  roundTextCanvasGroup: {fileID: 0}
+  roundText: {fileID: 0}
+  countdownCanvasGroup: {fileID: 0}
+  countdownText: {fileID: 0}
+  maps: []
+  deathToRoundEndDelay: 1.5
+  roundTextDisplayDuration: 1.5
+  countdownInterval: 1
+  roundEndScreenDuration: 4
+  textFadeDuration: 0.3
+  cameraLerpDuration: 0.8
+  cameraLerpSettleDelay: 0.2
+  winsRequired: 3
+  ability4UnlockRound: 3
+  player1HUDCanvas: {fileID: 0}
+  player2HUDCanvas: {fileID: 0}
+  player1AbilityCanvas: {fileID: 0}
+  player2AbilityCanvas: {fileID: 0}
+  player1WinTracker: {fileID: 0}
+  player2WinTracker: {fileID: 0}
+  debugStartAtRound: 0
 --- !u!4 &1497365221
 Transform:
   m_ObjectHideFlags: 0
@@ -538,6 +620,10 @@ PrefabInstance:
     - target: {fileID: 8073042944126910331, guid: b3d6e192d9b648a42977ef913b4a488a, type: 3}
       propertyPath: m_Name
       value: Class3_Player
+      objectReference: {fileID: 0}
+    - target: {fileID: 8073042944126910331, guid: b3d6e192d9b648a42977ef913b4a488a, type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8447593613203198634, guid: b3d6e192d9b648a42977ef913b4a488a, type: 3}
       propertyPath: m_LocalPosition.x
@@ -783,3 +869,4 @@ SceneRoots:
   - {fileID: 1024413160}
   - {fileID: 1497365221}
   - {fileID: 2057529789}
+  - {fileID: 414534105}
