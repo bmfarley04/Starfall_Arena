@@ -16,10 +16,15 @@ public class Class5 : Player, IChargeProvider
     // ===== ABILITY MODIFIERS =====
     public List<GameObject> abilityChargePrefabs = new List<GameObject>();
 
+    [Header("Charge Regeneration")]
+    [Tooltip("Seconds between passive charge gains")]
+    public float chargeRegenInterval = 5f;
 
     // ===== ICHARGE PROVIDER =====
     public int CurrentCharges { get; private set; } = 0;
     public int MaxCharges { get; private set; } = 4;
+
+    private float _lastChargeGainTime;
 
     /// <inheritdoc/>
     public bool TrySpendCharges(int amount)
@@ -34,12 +39,14 @@ public class Class5 : Player, IChargeProvider
     {
         base.Awake();
         MaxCharges = abilityChargePrefabs.Count;
+        _lastChargeGainTime = Time.time;
     }
 
     // ===== UPDATE LOOP =====
     protected override void Update()
     {
         base.Update();
+        HandleChargeRegen();
     }
 
     protected override void FixedUpdate()
@@ -48,12 +55,22 @@ public class Class5 : Player, IChargeProvider
 
     }
 
+    private void HandleChargeRegen()
+    {
+        if (CurrentCharges >= MaxCharges) return;
+        if (Time.time >= _lastChargeGainTime + chargeRegenInterval)
+        {
+            GainCharges(1);
+        }
+    }
+
     private void GainCharges(int amount)
     {
         if (CurrentCharges < MaxCharges)
         {
             CurrentCharges += amount;
             if (CurrentCharges > MaxCharges) CurrentCharges = MaxCharges;
+            _lastChargeGainTime = Time.time;
             Debug.Log($"Gained charges: {amount}. Current charges: {CurrentCharges}/{MaxCharges}");
         }
         UpdateAbilityChargeVisuals();
@@ -65,6 +82,7 @@ public class Class5 : Player, IChargeProvider
         {
             CurrentCharges -= amount;
             if (CurrentCharges < 0) CurrentCharges = 0;
+            _lastChargeGainTime = Time.time;
             Debug.Log($"Lost charges: {amount}. Current charges: {CurrentCharges}/{MaxCharges}");
         }
         UpdateAbilityChargeVisuals();
