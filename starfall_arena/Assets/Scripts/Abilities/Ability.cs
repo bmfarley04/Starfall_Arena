@@ -137,10 +137,6 @@ public class Ability : MonoBehaviour
     {
     }
 
-    public virtual void Magic(object obj)
-    {
-    }
-
     public virtual void Die()
     {
     }
