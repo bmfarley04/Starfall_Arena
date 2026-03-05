@@ -18,6 +18,7 @@ THIS IS A CONTROLLER FIRST GAME - ALL INPUT SHOULD BE PRIMARILY DESIGNED AROUND 
 - Universal Render Pipeline (17.2.0) - Modern graphics rendering
 - TextMeshPro (UI text rendering)
 - 2D Animation & Sprite packages
+- Netcode for Game Objects 
 
 **Build Profiles:** PC/Windows (project is configured for desktop)
 
@@ -28,6 +29,8 @@ This project uses **3D objects with Z-depth rendered in an orthographic 2D view*
 - Natural layering without manual Z-sorting
 - Smooth 3D rotation and transformations
 - 2D physics with 3D visuals
+
+We are in the process of transitioning this into a networked game (first with two players.) To understand our planned network implementation, reference NETWORK.md.
 
 Objects use `Rigidbody2D` for physics but have 3D models/meshes positioned in 3D space. The camera is orthographic looking down the Z-axis, making the game appear 2D while leveraging 3D rendering capabilities.
 

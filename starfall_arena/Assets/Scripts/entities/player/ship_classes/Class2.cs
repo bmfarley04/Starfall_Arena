@@ -777,8 +777,8 @@ public class Class2 : Player
                         }
                         else
                         {
-                            // Add force for non-frozen targets
-                            targetRb.AddForce(pullVelocity * targetRb.mass, ForceMode2D.Force);
+                            // Direct velocity change (deterministic equivalent of ForceMode2D.Force)
+                            targetRb.linearVelocity += pullVelocity * Time.fixedDeltaTime;
                         }
                     }
                 }

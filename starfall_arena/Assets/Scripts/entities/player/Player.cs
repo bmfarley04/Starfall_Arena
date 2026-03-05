@@ -170,6 +170,7 @@ public abstract class Player : Entity
     private AudioSource _beamHitLoopSource;
     private float _originalRotationSpeed;
     private bool _isAnchored = false;
+    private float _anchorDragAccumulator = 0f;
 
     // Public getter so augments and other systems can check whether the player is anchored
     public bool IsAnchored => _isAnchored;
@@ -178,6 +179,7 @@ public abstract class Player : Entity
     protected override void Awake()
     {
         base.Awake();
+
         abilities = new List<Ability> { ability1, ability2, ability3, ability4 };
         _originalRotationSpeed = movement.rotationSpeed;
         RefreshCombatTags();
@@ -355,9 +357,16 @@ public abstract class Player : Entity
         if (movePressed)
         {
             _isThrusting = true;
-            Vector2 thrustDirection = transform.up;
-            _rb.AddForce(thrustDirection * movement.thrustForce * slowMult);
+
+            // Dampen lateral (sideways) drift on the existing velocity first,
+            // then add thrust.  This matches the old force-based timing where
+            // AddForce was integrated by the physics engine AFTER user code ran.
             ApplyLateralDamping();
+
+            Vector2 thrustDirection = transform.up;
+            float acceleration = (movement.thrustForce * slowMult) / _rb.mass;
+            _rb.linearVelocity += thrustDirection * acceleration * Time.fixedDeltaTime;
+
             _frictionTimer = 0f;
         }
         else
@@ -380,7 +389,13 @@ public abstract class Player : Entity
         }
         if (_isAnchored)
         {
-            _rb.linearDamping += .1f;
+            // Manual drag that replicates Unity's per-step linear drag formula:
+            //   velocity *= 1 / (1 + drag * dt)
+            // The accumulator grows each tick just like the old
+            // "_rb.linearDamping += .1f" did, producing identical braking.
+            _anchorDragAccumulator += 0.1f;
+            float dragFactor = 1f / (1f + _anchorDragAccumulator * Time.fixedDeltaTime);
+            _rb.linearVelocity *= dragFactor;
         }
 
         // Apply slow to max speed
@@ -518,7 +533,7 @@ public abstract class Player : Entity
         {
             thrusters.invertColors = false;
             _isAnchored = false;
-            _rb.linearDamping = 0f;
+            _anchorDragAccumulator = 0f;
             movement.rotationSpeed = _originalRotationSpeed;
             Debug.Log("Anchor Deactivated: Rotate " + _originalRotationSpeed);
         }
@@ -769,7 +784,7 @@ public abstract class Player : Entity
         {
             _isAnchored = false;
             movement.rotationSpeed = _originalRotationSpeed;
-            _rb.linearDamping = 0f;
+            _anchorDragAccumulator = 0f;
             thrusters.invertColors = false;
         }
 
