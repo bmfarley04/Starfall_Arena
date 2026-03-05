@@ -141,6 +141,13 @@ public abstract class Player : Entity
     // ===== MOVEMENT LOCK =====
     [HideInInspector] public bool isMovementLocked = false;
 
+    /// <summary>
+    /// When true, Player skips its own movement and rotation logic in FixedUpdate/Update.
+    /// Used by external systems (e.g. NetMovement) that take over physics control.
+    /// Input callbacks (OnThrust, OnLook, etc.) still fire so external systems can read input state.
+    /// </summary>
+    [HideInInspector] public bool externalMovementControl = false;
+
     // ===== STAT TRACKING =====
     [HideInInspector] public int shotsFired;
     [HideInInspector] public int shotsHit;
@@ -174,6 +181,12 @@ public abstract class Player : Entity
 
     // Public getter so augments and other systems can check whether the player is anchored
     public bool IsAnchored => _isAnchored;
+
+    // ===== READ-ONLY INPUT STATE (for external systems like NetMovement) =====
+    public bool IsThrustPressed => _isThrustPressed;
+    public Vector2 LookInput => _lookInput;
+    public bool IsFrictionEnabled => _frictionEnabled;
+    public float FrictionTimer => _frictionTimer;
 
     // ===== INITIALIZATION =====
     protected override void Awake()
@@ -317,7 +330,8 @@ public abstract class Player : Entity
 
         if (isMovementLocked) return;
 
-        HandleRotation();
+        if (!externalMovementControl)
+            HandleRotation();
         HandleShieldRegeneration();
 
         if (_beamHitLoopSource != null && _beamHitLoopSource.isPlaying)
@@ -338,6 +352,7 @@ public abstract class Player : Entity
     protected override void FixedUpdate()
     {
         if (isMovementLocked) return;
+        if (externalMovementControl) { base.FixedUpdate(); return; }
 
         if (abilities.Any(a => a != null && a.HasThrustMitigation() == true))
         {
