@@ -198,11 +198,11 @@ public class LaserBeam : MonoBehaviour
                     // Apply damage with LaserBeam source to skip OnHit() and preserve shield alpha
                     damageable.TakeDamage(damageThisFrame, impactForceThisFrame, validHit.Value.point, DamageSource.LaserBeam);
 
-                    // Apply impact force continuously (scaled by deltaTime for smooth application)
+                    // Apply impact force continuously (deterministic velocity change)
                     Rigidbody2D targetRb = validHit.Value.collider.GetComponent<Rigidbody2D>();
                     if (targetRb != null)
                     {
-                        targetRb.AddForce(fireDirection * impactForceThisFrame, ForceMode2D.Impulse);
+                        targetRb.linearVelocity += (Vector2)(fireDirection * (impactForceThisFrame / targetRb.mass));
                     }
 
                     // Call OnLaserHit on shield at specified interval (only if shield is active)

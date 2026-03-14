@@ -183,6 +183,11 @@ public abstract class Entity : MonoBehaviour
 
         _rb.constraints = RigidbodyConstraints2D.FreezeRotation;
 
+        // --- Deterministic physics: prevent the engine from modifying velocity ---
+        _rb.gravityScale = 0f;
+        _rb.linearDamping = 0f;
+        _rb.angularDamping = 0f;
+
         if (visualEffects.visualModel != null)
         {
             _visualBaseLocalRotation = visualEffects.visualModel.localRotation;

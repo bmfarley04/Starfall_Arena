@@ -226,9 +226,9 @@ public class FighterEnemyScript : Enemy
         if (shouldThrust)
         {
             _isThrusting = true;
-            Vector2 thrustDirection = transform.up; // Always thrust forward
-            _rb.AddForce(thrustDirection * movement.thrustForce);
             ApplyLateralDamping();
+            Vector2 thrustDirection = transform.up; // Always thrust forward
+            _rb.linearVelocity += thrustDirection * (movement.thrustForce / _rb.mass) * Time.fixedDeltaTime;
         }
         else
         {
@@ -918,8 +918,8 @@ public class FighterEnemyScript : Enemy
         // Random left/right
         if (Random.value > 0.5f) dodgeDirection = -dodgeDirection;
 
-        // Apply impulse
-        _rb.AddForce(dodgeDirection * dodgeImpulseForce, ForceMode2D.Impulse);
+        // Direct velocity change (deterministic equivalent of ForceMode2D.Impulse)
+        _rb.linearVelocity += dodgeDirection * (dodgeImpulseForce / _rb.mass);
     }
 
     #endregion

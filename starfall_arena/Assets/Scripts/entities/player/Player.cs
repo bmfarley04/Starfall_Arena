@@ -24,6 +24,9 @@ public struct InputConfig
     [Tooltip("Deadzone threshold for controller look input (0-1)")]
     [Range(0f, 1f)]
     public float controllerLookDeadzone;
+
+    [Tooltip("Logs which aiming path is active and the values driving rotation.")]
+    public bool debugRotation;
 }
 
 [System.Serializable]
@@ -141,6 +144,13 @@ public abstract class Player : Entity
     // ===== MOVEMENT LOCK =====
     [HideInInspector] public bool isMovementLocked = false;
 
+    /// <summary>
+    /// When true, Player skips its own movement and rotation logic in FixedUpdate/Update.
+    /// Used by external systems (e.g. NetMovement) that take over physics control.
+    /// Input callbacks (OnThrust, OnLook, etc.) still fire so external systems can read input state.
+    /// </summary>
+    [HideInInspector] public bool externalMovementControl = false;
+
     // ===== STAT TRACKING =====
     [HideInInspector] public int shotsFired;
     [HideInInspector] public int shotsHit;
@@ -170,16 +180,26 @@ public abstract class Player : Entity
     private AudioSource _beamHitLoopSource;
     private float _originalRotationSpeed;
     private bool _isAnchored = false;
+    private float _anchorDragAccumulator = 0f;
+    private PlayerInput _playerInput;
 
     // Public getter so augments and other systems can check whether the player is anchored
     public bool IsAnchored => _isAnchored;
+
+    // ===== READ-ONLY INPUT STATE (for external systems like NetMovement) =====
+    public bool IsThrustPressed => _isThrustPressed;
+    public Vector2 LookInput => _lookInput;
+    public bool IsFrictionEnabled => _frictionEnabled;
+    public float FrictionTimer => _frictionTimer;
 
     // ===== INITIALIZATION =====
     protected override void Awake()
     {
         base.Awake();
+
         abilities = new List<Ability> { ability1, ability2, ability3, ability4 };
         _originalRotationSpeed = movement.rotationSpeed;
+        _playerInput = GetComponent<PlayerInput>();
         RefreshCombatTags();
 
         _lastShieldHitTime = -shieldRegen.regenDelay;
@@ -315,7 +335,10 @@ public abstract class Player : Entity
 
         if (isMovementLocked) return;
 
-        HandleRotation();
+        UpdateAimInputFromActiveControlScheme();
+
+        if (!externalMovementControl)
+            HandleRotation();
         HandleShieldRegeneration();
 
         if (_beamHitLoopSource != null && _beamHitLoopSource.isPlaying)
@@ -336,6 +359,7 @@ public abstract class Player : Entity
     protected override void FixedUpdate()
     {
         if (isMovementLocked) return;
+        if (externalMovementControl) { base.FixedUpdate(); return; }
 
         if (abilities.Any(a => a != null && a.HasThrustMitigation() == true))
         {
@@ -355,9 +379,16 @@ public abstract class Player : Entity
         if (movePressed)
         {
             _isThrusting = true;
-            Vector2 thrustDirection = transform.up;
-            _rb.AddForce(thrustDirection * movement.thrustForce * slowMult);
+
+            // Dampen lateral (sideways) drift on the existing velocity first,
+            // then add thrust.  This matches the old force-based timing where
+            // AddForce was integrated by the physics engine AFTER user code ran.
             ApplyLateralDamping();
+
+            Vector2 thrustDirection = transform.up;
+            float acceleration = (movement.thrustForce * slowMult) / _rb.mass;
+            _rb.linearVelocity += thrustDirection * acceleration * Time.fixedDeltaTime;
+
             _frictionTimer = 0f;
         }
         else
@@ -380,7 +411,13 @@ public abstract class Player : Entity
         }
         if (_isAnchored)
         {
-            _rb.linearDamping += .1f;
+            // Manual drag that replicates Unity's per-step linear drag formula:
+            //   velocity *= 1 / (1 + drag * dt)
+            // The accumulator grows each tick just like the old
+            // "_rb.linearDamping += .1f" did, producing identical braking.
+            _anchorDragAccumulator += 0.1f;
+            float dragFactor = 1f / (1f + _anchorDragAccumulator * Time.fixedDeltaTime);
+            _rb.linearVelocity *= dragFactor;
         }
 
         // Apply slow to max speed
@@ -480,9 +517,27 @@ public abstract class Player : Entity
     // ===== ROTATION =====
     protected virtual void HandleRotation()
     {
-        if (_lookInput.magnitude > input.controllerLookDeadzone)
+        string controlScheme = GetActiveControlScheme();
+
+        if (input.debugRotation)
         {
-            RotateWithController();
+            Debug.Log(
+                $"[PlayerRotation] object={name} scheme={controlScheme} lookInput={_lookInput} mousePresent={Mouse.current != null} playerInputEnabled={(_playerInput != null && _playerInput.enabled)}",
+                this);
+        }
+
+        if (controlScheme == "controller")
+        {
+            if (_lookInput.magnitude > input.controllerLookDeadzone)
+            {
+                RotateWithController();
+            }
+            return;
+        }
+
+        if (controlScheme == "key+mouse" && _lookInput.sqrMagnitude > 0.0001f)
+        {
+            RotateTowardAimInput();
         }
     }
 
@@ -504,6 +559,71 @@ public abstract class Player : Entity
         movement.rotationSpeed = originalRotationSpeed;
     }
 
+    protected virtual bool ShouldRotateWithMouse()
+    {
+        return Mouse.current != null && (_playerInput == null || _playerInput.enabled);
+    }
+
+    protected virtual string GetActiveControlScheme()
+    {
+        if (_playerInput == null || !_playerInput.enabled)
+        {
+            return string.Empty;
+        }
+
+        return _playerInput.currentControlScheme ?? string.Empty;
+    }
+
+    protected virtual void RotateTowardAimInput()
+    {
+        float targetAngle = Mathf.Atan2(_lookInput.y, _lookInput.x) * Mathf.Rad2Deg;
+        float currentAngle = transform.eulerAngles.z;
+        float newAngle = Mathf.MoveTowardsAngle(currentAngle, targetAngle + ROTATION_OFFSET, movement.rotationSpeed * Time.deltaTime);
+
+        if (input.debugRotation)
+        {
+            Debug.Log(
+                $"[PlayerRotation] aim object={name} lookInput={_lookInput} currentAngle={currentAngle:F2} targetAngle={(targetAngle + ROTATION_OFFSET):F2} newAngle={newAngle:F2}",
+                this);
+        }
+
+        transform.rotation = Quaternion.Euler(0f, 0f, newAngle);
+    }
+
+    protected virtual void UpdateAimInputFromActiveControlScheme()
+    {
+        string controlScheme = GetActiveControlScheme();
+
+        if (controlScheme != "key+mouse" || !ShouldRotateWithMouse())
+        {
+            return;
+        }
+
+        Camera aimCamera = _playerInput != null && _playerInput.camera != null
+            ? _playerInput.camera
+            : Camera.main;
+
+        if (aimCamera == null)
+        {
+            return;
+        }
+
+        Vector2 mouseScreenPosition = Mouse.current.position.ReadValue();
+        Vector3 mouseWorldPosition = aimCamera.ScreenToWorldPoint(mouseScreenPosition);
+        Vector2 aimDirection = mouseWorldPosition - transform.position;
+
+        _lookInput = aimDirection.sqrMagnitude > 0.0001f
+            ? aimDirection.normalized
+            : Vector2.zero;
+
+        if (input.debugRotation)
+        {
+            Debug.Log(
+                $"[PlayerRotation] mouse sample object={name} camera={aimCamera.name} mouseScreen={mouseScreenPosition} mouseWorld={mouseWorldPosition} sampledLookInput={_lookInput}",
+                this);
+        }
+    }
+
     // Anchor
     void OnAnchor(InputValue value)
     {
@@ -518,7 +638,7 @@ public abstract class Player : Entity
         {
             thrusters.invertColors = false;
             _isAnchored = false;
-            _rb.linearDamping = 0f;
+            _anchorDragAccumulator = 0f;
             movement.rotationSpeed = _originalRotationSpeed;
             Debug.Log("Anchor Deactivated: Rotate " + _originalRotationSpeed);
         }
@@ -769,7 +889,7 @@ public abstract class Player : Entity
         {
             _isAnchored = false;
             movement.rotationSpeed = _originalRotationSpeed;
-            _rb.linearDamping = 0f;
+            _anchorDragAccumulator = 0f;
             thrusters.invertColors = false;
         }
 

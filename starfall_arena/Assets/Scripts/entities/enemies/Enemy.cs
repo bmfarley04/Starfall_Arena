@@ -310,14 +310,14 @@ public abstract class Enemy : Entity
     protected virtual void MovePatrol()
     {
         UpdateWanderDirection();
-        _rb.AddForce(_wanderDirection * movement.thrustForce * 0.7f);
+        _rb.linearVelocity += _wanderDirection * (movement.thrustForce * 0.7f / _rb.mass) * Time.fixedDeltaTime;
         _isThrusting = true;
     }
 
     protected virtual void MovePursuit()
     {
         Vector2 directionToTarget = (_target.position - transform.position).normalized;
-        _rb.AddForce(directionToTarget * movement.thrustForce);
+        _rb.linearVelocity += directionToTarget * (movement.thrustForce / _rb.mass) * Time.fixedDeltaTime;
         _isThrusting = true;
     }
 
@@ -328,13 +328,13 @@ public abstract class Enemy : Entity
 
         if (distanceToLastKnown > 1f)
         {
-            _rb.AddForce(directionToLastKnown * movement.thrustForce);
+            _rb.linearVelocity += directionToLastKnown * (movement.thrustForce / _rb.mass) * Time.fixedDeltaTime;
             _isThrusting = true;
         }
         else
         {
             UpdateWanderDirection();
-            _rb.AddForce(_wanderDirection * movement.thrustForce * 0.5f);
+            _rb.linearVelocity += _wanderDirection * (movement.thrustForce * 0.5f / _rb.mass) * Time.fixedDeltaTime;
             _isThrusting = true;
         }
     }

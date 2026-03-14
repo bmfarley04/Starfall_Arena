@@ -13,7 +13,7 @@
                     "expectedControlType": "Button",
                     "processors": "",
                     "interactions": "",
-                    "initialStateCheck": false
+                    "initialStateCheck": true
                 },
                 {
                     "name": "Fire",
@@ -136,7 +136,7 @@
                 {
                     "name": "",
                     "id": "f61d1f1a-369a-482f-906c-d6862d74e687",
-                    "path": "<Keyboard>/q",
+                    "path": "<Keyboard>/e",
                     "interactions": "",
                     "processors": "",
                     "groups": ";key+mouse",
@@ -158,7 +158,7 @@
                 {
                     "name": "",
                     "id": "ce21092c-6012-4875-9e60-bce7986cc0cf",
-                    "path": "<Keyboard>/w",
+                    "path": "<Keyboard>/r",
                     "interactions": "",
                     "processors": "",
                     "groups": ";key+mouse",
@@ -180,7 +180,7 @@
                 {
                     "name": "",
                     "id": "42404130-7dfb-4d07-ac1e-85a96159b78d",
-                    "path": "<Keyboard>/e",
+                    "path": "<Keyboard>/w",
                     "interactions": "",
                     "processors": "",
                     "groups": ";key+mouse",
@@ -202,7 +202,7 @@
                 {
                     "name": "",
                     "id": "62645960-74a3-4645-805b-d92d77a4e233",
-                    "path": "<Keyboard>/r",
+                    "path": "<Keyboard>/q",
                     "interactions": "",
                     "processors": "",
                     "groups": ";key+mouse",

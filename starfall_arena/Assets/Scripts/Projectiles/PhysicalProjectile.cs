@@ -82,8 +82,9 @@ public class PhysicalProjectile : ProjectileScript
         Rigidbody2D targetRb = collider.GetComponent<Rigidbody2D>();
         if (targetRb != null)
         {
+            // Direct velocity change (deterministic equivalent of ForceMode2D.Impulse)
             Vector2 forceDirection = _direction.normalized;
-            targetRb.AddForce(forceDirection * _impactForce, ForceMode2D.Impulse);
+            targetRb.linearVelocity += forceDirection * (_impactForce / targetRb.mass);
         }
     }
 }
