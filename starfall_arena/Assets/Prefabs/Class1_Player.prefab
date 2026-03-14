@@ -5019,7 +5019,7 @@ MonoBehaviour:
       m_Calls: []
   m_ActionEvents: []
   m_NeverAutoSwitchControlSchemes: 0
-  m_DefaultControlScheme: controller
+  m_DefaultControlScheme: key+mouse
   m_DefaultActionMap: basic
   m_SplitScreenIndex: -1
   m_Camera: {fileID: 0}
@@ -5339,6 +5339,7 @@ MonoBehaviour:
     regenRate: 20
   input:
     controllerLookDeadzone: 0.1
+    debugRotation: 1
   friction:
     frictionDelay: 0.25
     frictionDeceleration: 10

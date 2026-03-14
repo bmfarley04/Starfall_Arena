@@ -1,4 +1,5 @@
 using Unity.Netcode;
+using Unity.Cinemachine;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -88,21 +89,32 @@ public class NetMovement : NetworkBehaviour
             if (IsOwner && playerInput != null)
             {
                 playerInput.enabled = true;
+                AssignOwnerCameraAndTracking(playerInput);
             }
         }
-        else
+        else if (!IsServer)
         {
-            // Remote player: disable the Player component so its Update/FixedUpdate
-            // never run. NetMovement drives the Rigidbody via interpolation.
+            // Pure client-side proxy: disable local gameplay logic and let
+            // interpolation drive a kinematic body.
             if (_player != null)
             {
                 _player.enabled = false;
             }
 
-            // Make the Rigidbody kinematic so physics doesn't interfere with interpolation
+            // Make the Rigidbody kinematic so physics doesn't interfere with interpolation.
             _rb.bodyType = RigidbodyType2D.Kinematic;
 
             _interpolationBuffer = new NetStateSnapshot[SERVER_STATE_BUFFER_SIZE];
+        }
+        else
+        {
+            // Server-authoritative copy of a client-owned player.
+            // Keep the Rigidbody dynamic for authoritative simulation, but disable
+            // the Player component so local Update/FixedUpdate logic does not run.
+            if (_player != null)
+            {
+                _player.enabled = false;
+            }
         }
 
         if (IsServer)
@@ -128,6 +140,23 @@ public class NetMovement : NetworkBehaviour
         }
 
         base.OnNetworkDespawn();
+    }
+
+    private void AssignOwnerCameraAndTracking(PlayerInput playerInput)
+    {
+        CinemachineCamera targetCinemachine = FindFirstObjectByType<CinemachineCamera>();
+        if (targetCinemachine == null)
+        {
+            return;
+        }
+
+        targetCinemachine.Target.TrackingTarget = transform;
+
+        Camera mainCamera = Camera.main;
+        if (mainCamera != null)
+        {
+            playerInput.camera = mainCamera;
+        }
     }
 
     // ===== TICK LOOP =====
@@ -208,8 +237,26 @@ public class NetMovement : NetworkBehaviour
             FrictionTimer = _ownerFrictionTimer,
         };
 
-        // 6. Send input to server
-        SubmitInputServerRpc(input);
+        // 6. Submit to the authoritative path.
+        // On a host the owner and server live on the same object, so running the
+        // server simulation again here would double-apply movement and rotation.
+        if (IsServer)
+        {
+            _serverFrictionTimer = _ownerFrictionTimer;
+            _serverAnchorDragAccumulator = _ownerAnchorDragAccumulator;
+
+            PublishAuthoritativeState(
+                tick,
+                velocity,
+                rotation,
+                _serverFrictionTimer,
+                _serverAnchorDragAccumulator,
+                dt);
+        }
+        else
+        {
+            SubmitInputServerRpc(input);
+        }
     }
 
     // ===== SERVER: AUTHORITATIVE SIMULATION =====
@@ -236,24 +283,13 @@ public class NetMovement : NetworkBehaviour
         _rb.linearVelocity = velocity;
         transform.rotation = Quaternion.Euler(0, 0, rotation);
 
-        // Store in state history (for future lag compensation)
-        Vector2 expectedPosition = _rb.position + velocity * dt;
-        NetStateSnapshot state = new NetStateSnapshot
-        {
-            Tick = input.Tick,
-            Position = expectedPosition,
-            Rotation = rotation,
-            Velocity = velocity,
-            AnchorDragAccumulator = _serverAnchorDragAccumulator,
-            FrictionTimer = _serverFrictionTimer,
-        };
-
-        int histIdx = input.Tick % SERVER_STATE_BUFFER_SIZE;
-        _stateHistory[histIdx] = state;
-        _stateHistoryHead = input.Tick;
-
-        // Broadcast to all clients
-        BroadcastStateClientRpc(state);
+        PublishAuthoritativeState(
+            input.Tick,
+            velocity,
+            rotation,
+            _serverFrictionTimer,
+            _serverAnchorDragAccumulator,
+            dt);
     }
 
     // ===== CLIENT: RECONCILIATION (Owner) & INTERPOLATION BUFFER (Non-owner) =====
@@ -269,6 +305,32 @@ public class NetMovement : NetworkBehaviour
         {
             BufferInterpolationState(serverState);
         }
+    }
+
+    private void PublishAuthoritativeState(
+        int tick,
+        Vector2 velocity,
+        float rotation,
+        float frictionTimer,
+        float anchorDragAccumulator,
+        float dt)
+    {
+        Vector2 expectedPosition = _rb.position + velocity * dt;
+        NetStateSnapshot state = new NetStateSnapshot
+        {
+            Tick = tick,
+            Position = expectedPosition,
+            Rotation = rotation,
+            Velocity = velocity,
+            AnchorDragAccumulator = anchorDragAccumulator,
+            FrictionTimer = frictionTimer,
+        };
+
+        int histIdx = tick % SERVER_STATE_BUFFER_SIZE;
+        _stateHistory[histIdx] = state;
+        _stateHistoryHead = tick;
+
+        BroadcastStateClientRpc(state);
     }
 
     // ===== RECONCILIATION =====
