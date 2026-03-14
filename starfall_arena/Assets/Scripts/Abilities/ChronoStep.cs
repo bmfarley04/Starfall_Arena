@@ -156,7 +156,7 @@ public class ChronoStep : Ability
 
     public override bool IsAbilityActive()
     {
-        return _isHolding || _isTeleporting;
+        return _isTeleporting;
     }
 
     public override bool HasThrustMitigation()

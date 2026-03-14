@@ -25,6 +25,9 @@ public class FireHazard : MonoBehaviour
     [Tooltip("Duration of fade out effect before destruction (seconds)")]
     public float fadeOutDuration = 0.5f;
 
+    [HideInInspector]
+    public bool disableVelocityDampening = false;
+
     // Private state
     private float _spawnTime;
     private bool _isFadingOut = false;
@@ -32,11 +35,15 @@ public class FireHazard : MonoBehaviour
     private SpriteRenderer _spriteRenderer;
     private ParticleSystem _particleSystem;
     private float _originalAlpha;
+    private Rigidbody2D _rb;
+    private Vector2 _initialVelocity;
+    private bool _capturedInitialVelocity;
 
     private void Awake()
     {
         _spriteRenderer = GetComponentInChildren<SpriteRenderer>();
         _particleSystem = GetComponentInChildren<ParticleSystem>();
+        _rb = GetComponent<Rigidbody2D>();
         
         if (_spriteRenderer != null)
         {
@@ -47,6 +54,7 @@ public class FireHazard : MonoBehaviour
     private void Start()
     {
         _spawnTime = Time.time;
+        CaptureInitialVelocity();
     }
 
     /// <summary>
@@ -59,6 +67,7 @@ public class FireHazard : MonoBehaviour
         lifetime = duration;
         impactForce = force;
         _spawnTime = Time.time;
+        _capturedInitialVelocity = false;
     }
 
     private void Update()
@@ -99,6 +108,9 @@ public class FireHazard : MonoBehaviour
 
     private void FixedUpdate()
     {
+        CaptureInitialVelocity();
+        ApplyVelocityDampening();
+
         // Apply damage to all entities currently inside the hazard
         float damageThisFrame = damagePerSecond * Time.fixedDeltaTime;
         
@@ -115,6 +127,56 @@ public class FireHazard : MonoBehaviour
         
         // Clean up null references
         _entitiesInside.RemoveWhere(e => e == null);
+    }
+
+    private void ApplyVelocityDampening()
+    {
+        if (disableVelocityDampening)
+        {
+            return;
+        }
+        if (_rb == null || lifetime <= 0f)
+        {
+            return;
+        }
+
+        float elapsed = Time.time - _spawnTime;
+        float t = Mathf.Clamp01(elapsed / lifetime);
+        float initialSpeed = _initialVelocity.magnitude;
+
+        if (initialSpeed <= 0f)
+        {
+            return;
+        }
+
+        float targetSpeed = Mathf.Lerp(initialSpeed, 0f, t);
+        Vector2 currentDirection;
+
+        if (_rb.linearVelocity.sqrMagnitude > 0.0001f)
+        {
+            currentDirection = _rb.linearVelocity.normalized;
+        }
+        else if (_initialVelocity.sqrMagnitude > 0f)
+        {
+            currentDirection = _initialVelocity.normalized;
+        }
+        else
+        {
+            currentDirection = Vector2.zero;
+        }
+
+        _rb.linearVelocity = currentDirection * targetSpeed;
+    }
+
+    private void CaptureInitialVelocity()
+    {
+        if (_rb == null || _capturedInitialVelocity)
+        {
+            return;
+        }
+
+        _initialVelocity = _rb.linearVelocity;
+        _capturedInitialVelocity = true;
     }
 
     private void OnTriggerEnter2D(Collider2D other)

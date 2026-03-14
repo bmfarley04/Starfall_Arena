@@ -49,6 +49,8 @@ public class BatteryRam : Ability
     {
         base.Awake();
         _chargeProvider = player as IChargeProvider;
+        // Start off cooldown at match start
+        lastUsedAbility = -ram.cooldown;
         if (ram.ramHealth <= 0f)
         {
             ram.ramHealth = 1f;

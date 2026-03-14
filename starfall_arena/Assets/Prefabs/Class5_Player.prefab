@@ -454,6 +454,8 @@ GameObject:
   - component: {fileID: 7993053445287700778}
   - component: {fileID: 5500273053722224665}
   - component: {fileID: 7843259032499436624}
+  - component: {fileID: 1887452519756409650}
+  - component: {fileID: 5751580293887161649}
   m_Layer: 0
   m_Name: Class5_Player
   m_TagString: Player
@@ -935,15 +937,15 @@ MonoBehaviour:
   slowEffectVisuals:
     slowParticleSystem: {fileID: 0}
   currentShield: 0
-  ability1: {fileID: 0}
+  ability1: {fileID: 1887452519756409650}
   ability2: {fileID: 7843259032499436624}
   ability3: {fileID: 5500273053722224665}
-  ability4: {fileID: 0}
+  ability4: {fileID: 5751580293887161649}
   abilitySlots:
-  - {fileID: 0}
+  - {fileID: 11500000, guid: 5e648880f1161ad4c9aa8a7746458f1e, type: 3}
   - {fileID: 11500000, guid: 93619df216cab064a853ced33562b00f, type: 3}
   - {fileID: 11500000, guid: 2983956f88bcb0843867a6f079b8c773, type: 3}
-  - {fileID: 0}
+  - {fileID: 11500000, guid: acc1420b07c868a42a09612b735918a9, type: 3}
   shieldRegen:
     regenDelay: 0
     regenRate: 0
@@ -1048,12 +1050,62 @@ MonoBehaviour:
     localOffset: {x: 0, y: 0, z: 0}
     fallbackColliderSize: {x: 0, y: 0}
     ramHealth: 1
-    stunDuration: 2
-    knockbackForce: 10
-    selfRecoil: 2
+    stunDuration: 0.2
+    knockbackForce: 20
+    selfRecoil: 4
     activateSound: {fileID: 0}
     hitSound: {fileID: 0}
     breakSound: {fileID: 0}
+--- !u!114 &1887452519756409650
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8270235200235412842}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5e648880f1161ad4c9aa8a7746458f1e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::FlameWave
+  stats:
+    cooldown: 0
+    duration: 0
+  isLocked: 0
+  flameWave:
+    flamePrefab: {fileID: 9122628155286203966, guid: dfb11bd0e6e5d7148994c92f2570f715, type: 3}
+    damagePerSecond: 20
+    duration: 4
+    impactForce: 1
+    forwardOffset: 2
+    launchSpeed: 16
+    chargesRequired: 1
+    fireSound: {fileID: 11400000, guid: 923a682d573d75f45bfd3b5f976d1c63, type: 2}
+--- !u!114 &5751580293887161649
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8270235200235412842}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: acc1420b07c868a42a09612b735918a9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DarkMatter
+  stats:
+    cooldown: 0
+    duration: 0
+  isLocked: 0
+  darkMatter:
+    flamePrefab: {fileID: 9122628155286203966, guid: 02d600f3cf23f174c95740b494a8edaf, type: 3}
+    damagePerSecond: 2
+    duration: 3
+    impactForce: 20
+    forwardOffset: 3
+    launchSpeed: 16
+    chargesRequired: 0
+    fireSound: {fileID: 0}
 --- !u!1 &8670132325785847231
 GameObject:
   m_ObjectHideFlags: 0

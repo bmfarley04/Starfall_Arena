@@ -22,6 +22,8 @@ public class Ability : MonoBehaviour
     {
         player = GetComponent<Player>();
         originalLayer = gameObject.layer;
+
+        lastUsedAbility = -stats.cooldown;
     }
 
     public virtual bool TryUseAbility(InputValue value)
