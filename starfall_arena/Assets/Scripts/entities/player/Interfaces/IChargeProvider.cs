@@ -17,4 +17,9 @@ public interface IChargeProvider
     /// returns <c>false</c> and leaves the count unchanged otherwise.
     /// </summary>
     bool TrySpendCharges(int amount);
+
+    /// <summary>
+    /// Award <paramref name="amount"/> charges (clamped to <see cref="MaxCharges"/>).
+    /// </summary>
+    void GainCharges(int amount);
 }

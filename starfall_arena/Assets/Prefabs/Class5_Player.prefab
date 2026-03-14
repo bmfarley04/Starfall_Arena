@@ -452,6 +452,8 @@ GameObject:
   - component: {fileID: 8669137358063924218}
   - component: {fileID: 2779339148183138290}
   - component: {fileID: 7993053445287700778}
+  - component: {fileID: 5500273053722224665}
+  - component: {fileID: 7843259032499436624}
   m_Layer: 0
   m_Name: Class5_Player
   m_TagString: Player
@@ -895,7 +897,7 @@ MonoBehaviour:
     thrustForce: 15
     maxSpeed: 15
     rotationSpeed: 100
-    lateralDamping: 16
+    lateralDamping: 0.16
   turrets:
   - {fileID: 6379726440248708534}
   - {fileID: 7840247264763304907}
@@ -934,13 +936,13 @@ MonoBehaviour:
     slowParticleSystem: {fileID: 0}
   currentShield: 0
   ability1: {fileID: 0}
-  ability2: {fileID: 0}
-  ability3: {fileID: 0}
+  ability2: {fileID: 7843259032499436624}
+  ability3: {fileID: 5500273053722224665}
   ability4: {fileID: 0}
   abilitySlots:
   - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
+  - {fileID: 11500000, guid: 93619df216cab064a853ced33562b00f, type: 3}
+  - {fileID: 11500000, guid: 2983956f88bcb0843867a6f079b8c773, type: 3}
   - {fileID: 0}
   shieldRegen:
     regenDelay: 0
@@ -985,6 +987,73 @@ MonoBehaviour:
   - {fileID: 5013813649603664222}
   - {fileID: 2140816045655724552}
   chargeRegenInterval: 5
+--- !u!114 &5500273053722224665
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8270235200235412842}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2983956f88bcb0843867a6f079b8c773, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ChronoStep
+  stats:
+    cooldown: 0
+    duration: 0
+  isLocked: 0
+  teleport:
+    cooldown: 3
+    maxHoldDuration: 5
+    animation:
+      shrinkDuration: 0.2
+      growDuration: 0.1
+      originScaleX: 0.5
+      originScaleY: 1.5
+      destinationOvershootScale: 1.2
+      normalScale: 1
+    visual:
+      enableChromaticFlash: 0
+      chromaticFlashIntensity: 0.3
+      enableScreenShake: 0
+      screenShakeStrength: 0
+      waypointMarkerPrefab: {fileID: 748282212219136858, guid: 3136b45c79ab49c48bff753dc59d1c00, type: 3}
+      effects:
+      - {fileID: 6844924702641111991, guid: d5d5ad029b642c5479372fc91f7c70cd, type: 3}
+      - {fileID: 7990418082684036425, guid: 0510e735713d119488183d4948cbedb0, type: 3}
+    waypointSound: {fileID: 0}
+    exitSound: {fileID: 11400000, guid: bc1b416aa39b9084fb712befa92ac7f8, type: 2}
+    arrivalSound: {fileID: 11400000, guid: b5df1b844f0088a48bf54cac1c479aa8, type: 2}
+--- !u!114 &7843259032499436624
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8270235200235412842}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 93619df216cab064a853ced33562b00f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BatteryRam
+  stats:
+    cooldown: 0
+    duration: 0
+  isLocked: 0
+  ram:
+    cooldown: 2
+    maxDuration: 99
+    ramPrefab: {fileID: 2005732020785494134, guid: 9fc3dd8c2d0f5e54786fe9d6a0b7f3a1, type: 3}
+    localOffset: {x: 0, y: 0, z: 0}
+    fallbackColliderSize: {x: 0, y: 0}
+    ramHealth: 1
+    stunDuration: 2
+    knockbackForce: 10
+    selfRecoil: 2
+    activateSound: {fileID: 0}
+    hitSound: {fileID: 0}
+    breakSound: {fileID: 0}
 --- !u!1 &8670132325785847231
 GameObject:
   m_ObjectHideFlags: 0

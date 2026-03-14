@@ -33,6 +33,19 @@ public class Class5 : Player, IChargeProvider
         LoseCharges(amount);
         return true;
     }
+    /// <inheritdoc/>
+    public void GainCharges(int amount)
+    {
+        if (amount <= 0) return;
+        if (CurrentCharges < MaxCharges)
+        {
+            CurrentCharges += amount;
+            if (CurrentCharges > MaxCharges) CurrentCharges = MaxCharges;
+            _lastChargeGainTime = Time.time;
+            Debug.Log($"Gained charges: {amount}. Current charges: {CurrentCharges}/{MaxCharges}");
+        }
+        UpdateAbilityChargeVisuals();
+    }
 
     // ===== INITIALIZATION =====
     protected override void Awake()
@@ -62,18 +75,6 @@ public class Class5 : Player, IChargeProvider
         {
             GainCharges(1);
         }
-    }
-
-    private void GainCharges(int amount)
-    {
-        if (CurrentCharges < MaxCharges)
-        {
-            CurrentCharges += amount;
-            if (CurrentCharges > MaxCharges) CurrentCharges = MaxCharges;
-            _lastChargeGainTime = Time.time;
-            Debug.Log($"Gained charges: {amount}. Current charges: {CurrentCharges}/{MaxCharges}");
-        }
-        UpdateAbilityChargeVisuals();
     }
 
     private void LoseCharges(int amount)
