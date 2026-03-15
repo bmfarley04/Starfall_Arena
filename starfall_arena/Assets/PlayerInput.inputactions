@@ -122,6 +122,17 @@
                 },
                 {
                     "name": "",
+                    "id": "7b7ad676-81da-4614-a3d1-920baad04093",
+                    "path": "<DualShockGamepad>/leftTrigger",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": ";Playstation",
+                    "action": "Thrust",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
                     "id": "fbed056c-6ddd-4acf-b411-1b4b9887086a",
                     "path": "<Mouse>/leftButton",
                     "interactions": "",
@@ -138,6 +149,17 @@
                     "interactions": "",
                     "processors": "",
                     "groups": ";controller",
+                    "action": "Fire",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "2953b0b8-c5b1-424f-bc13-46bb6cc9af30",
+                    "path": "<DualShockGamepad>/rightTrigger",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": ";Playstation",
                     "action": "Fire",
                     "isComposite": false,
                     "isPartOfComposite": false
@@ -166,6 +188,28 @@
                 },
                 {
                     "name": "",
+                    "id": "0020e13b-065d-4478-81e5-d7c6902b4c46",
+                    "path": "<DualShockGamepad>/buttonEast",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": ";Playstation",
+                    "action": "Ability3",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "ce21092c-6012-4875-9e60-bce7986cc0cf",
+                    "path": "<Keyboard>/r",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": ";key+mouse",
+                    "action": "Ability4",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
                     "id": "c2774ce9-64e1-40f1-91f0-3315fa9c9364",
                     "path": "<Gamepad>/buttonSouth",
                     "interactions": "",
@@ -177,11 +221,11 @@
                 },
                 {
                     "name": "",
-                    "id": "7a7799e9-431b-4295-81f4-dd2c4e3bb49c",
-                    "path": "<Keyboard>/r",
+                    "id": "09fd838d-f204-4ad5-b39c-e6916bc1ace4",
+                    "path": "<DualShockGamepad>/buttonSouth",
                     "interactions": "",
                     "processors": "",
-                    "groups": ";key+mouse",
+                    "groups": ";Playstation",
                     "action": "Ability4",
                     "isComposite": false,
                     "isPartOfComposite": false
@@ -210,6 +254,17 @@
                 },
                 {
                     "name": "",
+                    "id": "4df79912-994d-4df4-b89b-7ba42cd6fde4",
+                    "path": "<DualShockGamepad>/buttonNorth",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": ";Playstation",
+                    "action": "Ability2",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
                     "id": "62645960-74a3-4645-805b-d92d77a4e233",
                     "path": "<Keyboard>/q",
                     "interactions": "",
@@ -232,11 +287,33 @@
                 },
                 {
                     "name": "",
+                    "id": "3a54783d-cfc0-4d64-a47a-39e3bbea747b",
+                    "path": "<DualShockGamepad>/buttonWest",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": ";Playstation",
+                    "action": "Ability1",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
                     "id": "278a6f6a-c6b3-48fa-9c94-46e1184165c0",
                     "path": "<Gamepad>/leftStick",
                     "interactions": "",
                     "processors": "",
                     "groups": ";controller",
+                    "action": "Look",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "3b1e2335-3ba6-47a0-b610-38243fb570b3",
+                    "path": "<DualShockGamepad>/leftStick",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": ";Playstation",
                     "action": "Look",
                     "isComposite": false,
                     "isPartOfComposite": false
@@ -254,11 +331,33 @@
                 },
                 {
                     "name": "",
+                    "id": "2f2ea736-62ba-4ba9-8594-91760514c960",
+                    "path": "<DualShockGamepad>/rightShoulder",
+                    "interactions": "Press(behavior=2)",
+                    "processors": "",
+                    "groups": ";Playstation",
+                    "action": "Anchor",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
                     "id": "7acd93dc-9e7b-40e6-8308-53cefb121026",
                     "path": "<Gamepad>/leftShoulder",
                     "interactions": "Press(behavior=2)",
                     "processors": "",
                     "groups": ";controller",
+                    "action": "Anchor",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "2f2a7222-9d71-4d6e-a529-adb872d8fe7c",
+                    "path": "<DualShockGamepad>/leftShoulder",
+                    "interactions": "Press(behavior=2)",
+                    "processors": "",
+                    "groups": ";Playstation",
                     "action": "Anchor",
                     "isComposite": false,
                     "isPartOfComposite": false
@@ -587,6 +686,17 @@
             "devices": [
                 {
                     "devicePath": "<Gamepad>",
+                    "isOptional": false,
+                    "isOR": false
+                }
+            ]
+        },
+        {
+            "name": "Playstation",
+            "bindingGroup": "Playstation",
+            "devices": [
+                {
+                    "devicePath": "<DualShockGamepad>",
                     "isOptional": false,
                     "isOR": false
                 }

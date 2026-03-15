@@ -2,8 +2,24 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Unity.Netcode;
 
-// [Enum and Struct definitions]
+/// <summary>
+/// Spawns and manages asteroids and static props for a map.
+/// When a network session is active:
+///   - Server:  spawns all asteroids via NetworkObject.Spawn(), manages falling recycle,
+///              despawns everything on disable
+///   - Client:  receives spawned objects via NGO replication, does nothing locally
+///
+/// When no network session is running (local multiplayer), spawns and manages
+/// asteroids locally under a parent container as before.
+///
+/// Enable/disable this component's GameObject to activate/deactivate the map.
+/// Multiple MapManagerScripts can exist in a scene — only one should be active at a time.
+/// </summary>
+
+// ===== SUPPORTING STRUCTS =====
+
 public enum AsteroidPattern { Scattered, Clustered, Falling }
 
 [System.Serializable]
@@ -74,8 +90,25 @@ public struct AnimationConfig
     public float shrinkDuration;
 }
 
+[System.Serializable]
+public struct MapProp
+{
+    [Tooltip("Prefab to spawn (must have NetworkObject component for networked mode)")]
+    public GameObject prefab;
+    [Tooltip("World position to spawn at")]
+    public Vector3 position;
+    [Tooltip("Rotation in degrees (X, Y, Z)")]
+    public Vector3 rotation;
+    [Tooltip("Scale of the prop")]
+    public Vector3 scale;
+}
+
+// ===== MAP MANAGER =====
+
 public class MapManagerScript : MonoBehaviour
 {
+    // ===== CONFIGURATION =====
+
     [Header("Pattern Selection")]
     public AsteroidPattern pattern = AsteroidPattern.Scattered;
     public int asteroidCount = 50;
@@ -122,20 +155,78 @@ public class MapManagerScript : MonoBehaviour
     [Header("Animation")]
     public AnimationConfig animation = new AnimationConfig { growDuration = 0.5f, shrinkDuration = 0.3f };
 
-    private Transform asteroidsParent;
+    [Header("Static Props")]
+    [Tooltip("Optional static props (e.g. abandoned ships) to spawn with the map")]
+    public MapProp[] staticProps;
+
+    // ===== RUNTIME STATE =====
+
+    private Transform asteroidsParent;                              // non-networked parent container
+    private List<GameObject> spawnedNetworkObjects = new List<GameObject>(); // networked tracking list
     private List<GameObject> fallingAsteroids = new List<GameObject>();
     private System.Random fallingRng;
+    private static HashSet<int> _registeredPrefabIds = new HashSet<int>();
+
+    // ===== LIFECYCLE =====
+
+    void Start()
+    {
+        RegisterNetworkPrefabs();
+    }
 
     void OnEnable()
     {
+        // Networked: only the server spawns — clients receive via NGO replication
+        if (NetMgr.IsNetworked && !NetworkManager.Singleton.IsServer) return;
+
         SpawnAsteroids();
+    }
+
+    void OnDisable()
+    {
+        ClearAsteroids();
     }
 
     void Update()
     {
         if (pattern == AsteroidPattern.Falling && falling.recycle)
+        {
+            if (NetMgr.IsNetworked && !NetworkManager.Singleton.IsServer) return;
             RecycleFallingAsteroids();
+        }
     }
+
+    // ===== NETWORK PREFAB REGISTRATION =====
+
+    /// <summary>
+    /// Registers asteroid and static prop prefabs with the NetworkManager
+    /// so they can be spawned over the network. Called once in Start() —
+    /// safe to call from multiple MapManagers (deduplicates by instance ID).
+    /// </summary>
+    private void RegisterNetworkPrefabs()
+    {
+        if (NetworkManager.Singleton == null) return;
+
+        RegisterPrefab(prefabs.prefab1);
+        RegisterPrefab(prefabs.prefab2);
+
+        if (staticProps != null)
+        {
+            foreach (var prop in staticProps)
+                RegisterPrefab(prop.prefab);
+        }
+    }
+
+    private static void RegisterPrefab(GameObject prefab)
+    {
+        if (prefab == null) return;
+        int id = prefab.GetInstanceID();
+        if (_registeredPrefabIds.Contains(id)) return;
+        NetworkManager.Singleton.AddNetworkPrefab(prefab);
+        _registeredPrefabIds.Add(id);
+    }
+
+    // ===== SPAWN / CLEAR =====
 
     [ContextMenu("Spawn Asteroids")]
     public void SpawnAsteroids()
@@ -147,8 +238,14 @@ public class MapManagerScript : MonoBehaviour
         }
 
         ClearAsteroids();
-        asteroidsParent = new GameObject("Asteroids").transform;
-        asteroidsParent.SetParent(transform, false);
+
+        // Non-networked: use a parent container for easy cleanup.
+        // Networked: NetworkObjects live at the root (can't parent under non-NetworkObjects).
+        if (!NetMgr.IsNetworked)
+        {
+            asteroidsParent = new GameObject("Asteroids").transform;
+            asteroidsParent.SetParent(transform, false);
+        }
 
         var rng = useSeed ? new System.Random(seed) : new System.Random();
 
@@ -161,28 +258,61 @@ public class MapManagerScript : MonoBehaviour
                 StartCoroutine(SpawnFallingStaggered(rng));
                 break;
         }
+
+        SpawnStaticProps();
     }
 
     [ContextMenu("Clear Asteroids")]
     public void ClearAsteroids()
     {
         fallingAsteroids.Clear();
-        var existing = transform.Find("Asteroids");
-        if (existing == null) return;
+
+        if (NetMgr.IsNetworked)
+        {
+            // Despawn all tracked networked objects (asteroids + props)
+            foreach (var obj in spawnedNetworkObjects)
+            {
+                if (obj == null) continue;
+                var netObj = obj.GetComponent<NetworkObject>();
+                if (netObj != null && netObj.IsSpawned)
+                    netObj.Despawn(true);
+                else
+                    Destroy(obj);
+            }
+            spawnedNetworkObjects.Clear();
+        }
+        else
+        {
+            var existing = transform.Find("Asteroids");
+            if (existing == null) return;
 
 #if UNITY_EDITOR
-        if (!Application.isPlaying) DestroyImmediate(existing.gameObject);
-        else Destroy(existing.gameObject);
+            if (!Application.isPlaying) DestroyImmediate(existing.gameObject);
+            else Destroy(existing.gameObject);
 #else
-        Destroy(existing.gameObject);
+            Destroy(existing.gameObject);
 #endif
+        }
     }
 
+    /// <summary>
+    /// Plays a shrink animation on all asteroids then destroys them.
+    /// Networked mode skips the animation and despawns immediately.
+    /// </summary>
     public void ShrinkAndDestroy()
     {
-        if (asteroidsParent != null)
-            StartCoroutine(ShrinkAllAsteroids());
+        if (NetMgr.IsNetworked)
+        {
+            ClearAsteroids();
+        }
+        else
+        {
+            if (asteroidsParent != null)
+                StartCoroutine(ShrinkAllAsteroids());
+        }
     }
+
+    // ===== SPAWN PATTERNS =====
 
     #region Spawn Patterns
     private void SpawnScattered(System.Random rng)
@@ -288,6 +418,10 @@ public class MapManagerScript : MonoBehaviour
         rb.angularVelocity = RandomRange(rng, -falling.maxAngularVelocity, falling.maxAngularVelocity);
     }
 
+    /// <summary>
+    /// Server-only: repositions falling asteroids that have drifted below the play area
+    /// back to the top with new random velocities.
+    /// </summary>
     private void RecycleFallingAsteroids()
     {
         if (fallingAsteroids.Count == 0 || fallingRng == null) return;
@@ -320,18 +454,56 @@ public class MapManagerScript : MonoBehaviour
     }
     #endregion
 
+    // ===== ASTEROID CREATION =====
+
     #region Asteroid Creation
+    /// <summary>
+    /// Instantiates a single asteroid prefab at the given position.
+    /// Networked: spawns via NetworkObject.Spawn() and tracks for cleanup.
+    /// Non-networked: parents under asteroidsParent container.
+    /// </summary>
     private GameObject CreateAsteroid(Vector3 position, System.Random rng, bool returnObject = false)
     {
         GameObject prefab = SelectPrefab(rng);
         if (prefab == null) return null;
 
-        var asteroid = Instantiate(prefab, asteroidsParent);
-        asteroid.transform.position = new Vector3(position.x, position.y, prefab.transform.position.z);
-        asteroid.transform.rotation = Quaternion.Euler(0f, 0f, RandomRange(rng, -variation.rotationRange, variation.rotationRange));
-        asteroid.transform.localScale = Vector3.zero;
+        Vector3 targetScale = CalculateScale(prefab, rng);
 
-        StartCoroutine(GrowAsteroid(asteroid.transform, CalculateScale(prefab, rng)));
+        GameObject asteroid;
+        if (NetMgr.IsNetworked)
+        {
+            asteroid = Instantiate(prefab);
+            asteroid.transform.position = new Vector3(position.x, position.y, prefab.transform.position.z);
+            asteroid.transform.rotation = Quaternion.Euler(0f, 0f, RandomRange(rng, -variation.rotationRange, variation.rotationRange));
+            asteroid.transform.localScale = Vector3.zero;
+
+            // Stage scale before Spawn() — written to NetworkVariable in OnNetworkSpawn
+            var asteroidScript = asteroid.GetComponent<AsteroidScript>();
+            if (asteroidScript != null)
+            {
+                asteroidScript.SetTargetScale(targetScale);
+            }
+
+            // Network spawn — replicates to all clients
+            var netObj = asteroid.GetComponent<NetworkObject>();
+            netObj.Spawn(true);
+
+            spawnedNetworkObjects.Add(asteroid);
+        }
+        else
+        {
+            asteroid = Instantiate(prefab, asteroidsParent);
+            asteroid.transform.position = new Vector3(position.x, position.y, prefab.transform.position.z);
+            asteroid.transform.rotation = Quaternion.Euler(0f, 0f, RandomRange(rng, -variation.rotationRange, variation.rotationRange));
+            asteroid.transform.localScale = Vector3.zero;
+
+            var asteroidScript = asteroid.GetComponent<AsteroidScript>();
+            if (asteroidScript != null)
+            {
+                asteroidScript.SetTargetScale(targetScale);
+            }
+        }
+
         return returnObject ? asteroid : null;
     }
 
@@ -362,6 +534,47 @@ public class MapManagerScript : MonoBehaviour
     }
     #endregion
 
+    // ===== STATIC PROPS =====
+
+    #region Static Props
+    /// <summary>
+    /// Spawns all configured static props (e.g. abandoned ships, debris).
+    /// Networked: each prop is NetworkObject.Spawn()'d and tracked for cleanup.
+    /// Non-networked: parented under asteroidsParent container.
+    /// </summary>
+    private void SpawnStaticProps()
+    {
+        if (staticProps == null) return;
+
+        foreach (var prop in staticProps)
+        {
+            if (prop.prefab == null) continue;
+
+            var instance = Instantiate(prop.prefab);
+            instance.transform.position = prop.position;
+            instance.transform.rotation = Quaternion.Euler(prop.rotation);
+            instance.transform.localScale = prop.scale == Vector3.zero ? Vector3.one : prop.scale;
+
+            if (NetMgr.IsNetworked)
+            {
+                var netObj = instance.GetComponent<NetworkObject>();
+                if (netObj != null)
+                {
+                    netObj.Spawn(true);
+                }
+                spawnedNetworkObjects.Add(instance);
+            }
+            else
+            {
+                if (asteroidsParent != null)
+                    instance.transform.SetParent(asteroidsParent, true);
+            }
+        }
+    }
+    #endregion
+
+    // ===== HELPERS =====
+
     #region Helpers
     private static float RandomRange(System.Random rng, float min, float max) =>
         (float)(rng.NextDouble() * (max - min) + min);
@@ -380,19 +593,9 @@ public class MapManagerScript : MonoBehaviour
     }
     #endregion
 
-    #region Animations
-    private IEnumerator GrowAsteroid(Transform asteroid, Vector3 targetScale)
-    {
-        for (float t = 0f; t < animation.growDuration; t += Time.deltaTime)
-        {
-            if (asteroid == null) yield break;
-            float eased = 1f - Mathf.Pow(1f - t / animation.growDuration, 2f);
-            asteroid.localScale = Vector3.Lerp(Vector3.zero, targetScale, eased);
-            yield return null;
-        }
-        if (asteroid != null) asteroid.localScale = targetScale;
-    }
+    // ===== ANIMATIONS =====
 
+    #region Animations
     private IEnumerator ShrinkAllAsteroids()
     {
         if (asteroidsParent == null) yield break;

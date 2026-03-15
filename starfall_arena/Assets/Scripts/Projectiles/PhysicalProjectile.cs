@@ -76,7 +76,7 @@ public class PhysicalProjectile : ProjectileScript
             var asteroid = collider.GetComponent<AsteroidScript>();
             if (asteroid != null)
             {
-                asteroid.TakeDamage(_damage, _impactForce, transform.position);
+                asteroid.RequestDamage(_damage, _impactForce, transform.position);
             }
 
             if (_visualController != null)
