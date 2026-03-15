@@ -82,6 +82,7 @@ MonoBehaviour:
   animation:
     growDuration: 0.5
     shrinkDuration: 0.3
+  staticProps: []
 --- !u!114 &2599233855982751468
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -577,6 +578,7 @@ MonoBehaviour:
   animation:
     growDuration: 0.5
     shrinkDuration: 0.3
+  staticProps: []
 --- !u!114 &7403510840332534524
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -829,6 +831,7 @@ Transform:
   - {fileID: 1032401732064188100}
   - {fileID: 347057026475290541}
   - {fileID: 6548599234806605937}
+  - {fileID: 1290766653905464932}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &8349115255470493581
@@ -913,6 +916,7 @@ MonoBehaviour:
   animation:
     growDuration: 0.5
     shrinkDuration: 0.3
+  staticProps: []
 --- !u!114 &1841484504923890147
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1133,3 +1137,281 @@ MonoBehaviour:
     maskExtent: 1000
     outsideMaskMaterial: {fileID: 2100000, guid: ed9b04cc44f5efd4eb81ac84c0e4c20e, type: 2}
     maskShaderZValue: 0.05
+--- !u!1 &8856344515840683637
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1290766653905464932}
+  - component: {fileID: 8022513949830934647}
+  - component: {fileID: 8446236090977147253}
+  m_Layer: 0
+  m_Name: ringOfFire
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 0
+--- !u!4 &1290766653905464932
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8856344515840683637}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 1.2142897, y: -2.72681, z: -12.16493}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2241051889850896278}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &8022513949830934647
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8856344515840683637}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 215431e1afc4bdd47906f03b16005df5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RingOfFireManager
+  config:
+    waves:
+    - duration: 25
+      stationary: 0
+      fireDamage: 3
+      damageTickInterval: 0.5
+      autoChainWithPrevious: 0
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 100
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 0
+    - duration: 15
+      stationary: 1
+      fireDamage: 3
+      damageTickInterval: 0.5
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 100
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 100
+    - duration: 25
+      stationary: 0
+      fireDamage: 6
+      damageTickInterval: 0.4
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 80
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+    - duration: 15
+      stationary: 1
+      fireDamage: 6
+      damageTickInterval: 0.4
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+    - duration: 13
+      stationary: 0
+      fireDamage: 9
+      damageTickInterval: 0.3
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 60
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+    - duration: 7
+      stationary: 1
+      fireDamage: 9
+      damageTickInterval: 0.3
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 50
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+    - duration: 13
+      stationary: 0
+      fireDamage: 12
+      damageTickInterval: 0.2
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 40
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+    - duration: 7
+      stationary: 1
+      fireDamage: 12
+      damageTickInterval: 0.2
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 50
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+    - duration: 10
+      stationary: 0
+      fireDamage: 15
+      damageTickInterval: 0.1
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 20
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+    - duration: 99999
+      stationary: 1
+      fireDamage: 15
+      damageTickInterval: 0.1
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 50
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+    autoStart: 1
+    fireLineMaterial: {fileID: 2100000, guid: 3ec3a6ee245fad5488f674cd61116782, type: 2}
+    lineWidth: 0
+    maskExtent: 1000
+    outsideMaskMaterial: {fileID: 2100000, guid: ed9b04cc44f5efd4eb81ac84c0e4c20e, type: 2}
+    maskShaderZValue: 0.05
+--- !u!114 &8446236090977147253
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8856344515840683637}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
+  GlobalObjectIdHash: 3199118339
+  InScenePlacedSourceGlobalObjectIdHash: 0
+  DeferredDespawnTick: 0
+  Ownership: 1
+  AlwaysReplicateAsRoot: 0
+  SynchronizeTransform: 1
+  ActiveSceneSynchronization: 0
+  SceneMigrationSynchronization: 0
+  SpawnWithObservers: 1
+  DontDestroyWithOwner: 0
+  AutoObjectParentSync: 1
+  SyncOwnerTransformWhenParented: 1
+  AllowOwnerToParent: 0
