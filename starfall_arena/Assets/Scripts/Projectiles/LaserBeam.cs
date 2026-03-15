@@ -252,7 +252,7 @@ public class LaserBeam : MonoBehaviour
                 {
                     float damageThisFrame = _damagePerSecond * Time.deltaTime;
                     float impactForceThisFrame = _impactForce * Time.deltaTime;
-                    asteroid.TakeDamage(damageThisFrame, impactForceThisFrame, validHit.Value.point);
+                    asteroid.RequestDamage(damageThisFrame, impactForceThisFrame, validHit.Value.point);
                 }
             }
         }
