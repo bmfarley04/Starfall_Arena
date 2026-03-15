@@ -287,6 +287,9 @@ Networked combat note:
 - `GigaBlast` projectile release now follows the same network split as primary projectiles: immediate local cosmetic shot, server-authoritative gameplay shot
 - `FireWall` hazards now treat the server-spawned hazard as gameplay truth in network play; remote client hazards are cosmetic-only
 - `Reflector` activation is now forwarded to the server in network sessions so reflection decisions happen on the authoritative side
+- `TriggerBomb`, `FaerieShift`, and `Invisibility` now also route through the network combat/state framework so Class3 ability state is no longer local-only during network play
+- Bug note: `Class3_Player.prefab` friction tuning must stay aligned with the shared `Player` friction system. If `frictionDelay` or `frictionDeceleration` are left at zero, the Class3 friction toggle will look broken even when the network/input code is correct.
+- Bug note: `Invisibility` should explicitly hide and restore ship renderers during activation instead of relying on layer changes alone. The layer swap is still needed for targeting/filtering, but by itself it is not reliable enough as player-facing feedback.
 
 ### Ability 4 Unlock Rule
 

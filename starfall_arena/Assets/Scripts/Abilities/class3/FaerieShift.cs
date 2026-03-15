@@ -32,6 +32,7 @@ public class FaerieShift : Ability
     // ===== PRIVATE STATE =====
     private Vector3 _originalScale;
     private bool _isActive = false;
+    private NetMovement _netMovement;
 
     protected override void Awake()
     {
@@ -42,6 +43,7 @@ public class FaerieShift : Ability
         {
             _originalScale = player.transform.localScale;
         }
+        _netMovement = GetComponent<NetMovement>();
     }
 
     public override void UseAbility(InputValue value)
@@ -51,11 +53,37 @@ public class FaerieShift : Ability
         // Toggle on press
         if (value.isPressed)
         {
-            ActivateShift();
+            bool useNetworkPath = NetTickUtil.IsActive && _netMovement != null && _netMovement.IsSpawned && _netMovement.IsOwner;
+            if (useNetworkPath)
+            {
+                if (!_netMovement.IsServer)
+                {
+                    ApplyNetworkShiftState(true, authoritative: false);
+                }
+
+                _netMovement.RequestFaerieShiftState(true);
+            }
+            else
+            {
+                ActivateShift();
+            }
         }
         else
         {
-            DeactivateShift();
+            bool useNetworkPath = NetTickUtil.IsActive && _netMovement != null && _netMovement.IsSpawned && _netMovement.IsOwner;
+            if (useNetworkPath)
+            {
+                if (!_netMovement.IsServer)
+                {
+                    ApplyNetworkShiftState(false, authoritative: false);
+                }
+
+                _netMovement.RequestFaerieShiftState(false);
+            }
+            else
+            {
+                DeactivateShift();
+            }
         }
     }
 
@@ -152,5 +180,16 @@ public class FaerieShift : Ability
             player.transform.localScale = _originalScale;
             _isActive = false;
         }
+    }
+
+    public void ApplyNetworkShiftState(bool isActive, bool authoritative)
+    {
+        if (isActive)
+        {
+            ActivateShift();
+            return;
+        }
+
+        DeactivateShift();
     }
 }

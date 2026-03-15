@@ -68,6 +68,8 @@ public class NetMovement : NetworkBehaviour
     private int _lastReceivedServerTick = -1;
     private float _lastServerPrimaryFireTime = -999f;
     private int _lastServerPrimaryFireTick = -999999;
+    private bool _lastOwnerFrictionEnabled;
+    private bool _lastServerFrictionEnabled;
 
     // ===== LIFECYCLE =====
 
@@ -80,6 +82,12 @@ public class NetMovement : NetworkBehaviour
         if (!ActiveInstances.Contains(this))
         {
             ActiveInstances.Add(this);
+        }
+        if (_player != null)
+        {
+            _player.onFrictionToggled += HandleFrictionToggled;
+            _lastOwnerFrictionEnabled = _player.IsFrictionEnabled;
+            _lastServerFrictionEnabled = _player.IsFrictionEnabled;
         }
 
         if (IsOwner)
@@ -145,6 +153,7 @@ public class NetMovement : NetworkBehaviour
 
         if (_player != null)
         {
+            _player.onFrictionToggled -= HandleFrictionToggled;
             if (IsOwner)
             {
                 _player.externalMovementControl = false;
@@ -160,6 +169,15 @@ public class NetMovement : NetworkBehaviour
         }
 
         base.OnNetworkDespawn();
+    }
+
+    private void HandleFrictionToggled(bool isEnabled)
+    {
+        _ownerFrictionTimer = 0f;
+        if (IsServer)
+        {
+            _serverFrictionTimer = 0f;
+        }
     }
 
     public static bool TryGetPlayerByTag(string tag, out NetMovement movement)
@@ -422,6 +440,93 @@ public class NetMovement : NetworkBehaviour
         SubmitTractorBeamServerRpc(state);
     }
 
+    public void RequestTriggerBombLaunch(Vector2 spawnPosition, Vector2 velocity)
+    {
+        if (!NetTickUtil.IsActive || !IsOwner)
+        {
+            return;
+        }
+
+        NetTriggerBombLaunchState state = new NetTriggerBombLaunchState
+        {
+            SpawnPosition = spawnPosition,
+            Velocity = velocity
+        };
+
+        if (IsServer)
+        {
+            HandleTriggerBombLaunchServer(state);
+            return;
+        }
+
+        SubmitTriggerBombLaunchServerRpc(state);
+    }
+
+    public void RequestTriggerBombDetonate(Vector2 position)
+    {
+        if (!NetTickUtil.IsActive || !IsOwner)
+        {
+            return;
+        }
+
+        NetTriggerBombDetonateState state = new NetTriggerBombDetonateState
+        {
+            Position = position
+        };
+
+        if (IsServer)
+        {
+            HandleTriggerBombDetonateServer(state);
+            return;
+        }
+
+        SubmitTriggerBombDetonateServerRpc(state);
+    }
+
+    public void RequestFaerieShiftState(bool isActive)
+    {
+        if (!NetTickUtil.IsActive || !IsOwner)
+        {
+            return;
+        }
+
+        NetAbilityToggleState state = new NetAbilityToggleState { IsActive = isActive };
+        if (IsServer)
+        {
+            HandleFaerieShiftServer(state);
+            return;
+        }
+
+        SubmitFaerieShiftServerRpc(state);
+    }
+
+    public void RequestInvisibilityState(bool isActive)
+    {
+        if (!NetTickUtil.IsActive || !IsOwner)
+        {
+            return;
+        }
+
+        NetAbilityToggleState state = new NetAbilityToggleState { IsActive = isActive };
+        if (IsServer)
+        {
+            HandleInvisibilityServer(state);
+            return;
+        }
+
+        SubmitInvisibilityServerRpc(state);
+    }
+
+    public void SetInvisibilityStateAuthoritative(bool isActive)
+    {
+        if (!IsServer)
+        {
+            return;
+        }
+
+        HandleInvisibilityServer(new NetAbilityToggleState { IsActive = isActive });
+    }
+
     // ===== OWNER: CLIENT-SIDE PREDICTION =====
 
     private void OwnerTick()
@@ -450,6 +555,12 @@ public class NetMovement : NetworkBehaviour
             VisualBankAngle = ownerVisualBankAngle,
             VisualPitchAngle = ownerVisualPitchAngle,
         };
+
+        if (input.FrictionEnabled != _lastOwnerFrictionEnabled)
+        {
+            _ownerFrictionTimer = 0f;
+            _lastOwnerFrictionEnabled = input.FrictionEnabled;
+        }
 
         // 2. Store input in circular buffer
         int bufIdx = tick % CLIENT_INPUT_BUFFER_SIZE;
@@ -525,6 +636,12 @@ public class NetMovement : NetworkBehaviour
         float dt = NetTickUtil.TickInterval;
         if (dt <= 0f) dt = Time.fixedDeltaTime; // fallback
 
+        if (input.FrictionEnabled != _lastServerFrictionEnabled)
+        {
+            _serverFrictionTimer = 0f;
+            _lastServerFrictionEnabled = input.FrictionEnabled;
+        }
+
         // Run authoritative simulation
         Vector2 velocity = _rb.linearVelocity;
         Vector2 position = _rb.position;
@@ -596,6 +713,30 @@ public class NetMovement : NetworkBehaviour
     private void SubmitTractorBeamServerRpc(NetTractorBeamState state, ServerRpcParams rpcParams = default)
     {
         HandleTractorBeamServer(state);
+    }
+
+    [ServerRpc]
+    private void SubmitTriggerBombLaunchServerRpc(NetTriggerBombLaunchState state, ServerRpcParams rpcParams = default)
+    {
+        HandleTriggerBombLaunchServer(state);
+    }
+
+    [ServerRpc]
+    private void SubmitTriggerBombDetonateServerRpc(NetTriggerBombDetonateState state, ServerRpcParams rpcParams = default)
+    {
+        HandleTriggerBombDetonateServer(state);
+    }
+
+    [ServerRpc]
+    private void SubmitFaerieShiftServerRpc(NetAbilityToggleState state, ServerRpcParams rpcParams = default)
+    {
+        HandleFaerieShiftServer(state);
+    }
+
+    [ServerRpc]
+    private void SubmitInvisibilityServerRpc(NetAbilityToggleState state, ServerRpcParams rpcParams = default)
+    {
+        HandleInvisibilityServer(state);
     }
 
     // ===== CLIENT: RECONCILIATION (Owner) & INTERPOLATION BUFFER (Non-owner) =====
@@ -738,6 +879,54 @@ public class NetMovement : NetworkBehaviour
 
         TractorBeam tractorBeam = GetComponent<TractorBeam>();
         tractorBeam?.ApplyNetworkTractorBeamState(state.IsActive, authoritative: false);
+    }
+
+    [ClientRpc]
+    private void BroadcastTriggerBombLaunchClientRpc(NetTriggerBombLaunchState state)
+    {
+        if (IsOwner && !IsServer)
+        {
+            return;
+        }
+
+        TriggerBomb triggerBomb = GetComponent<TriggerBomb>();
+        triggerBomb?.ApplyNetworkBombLaunch(state, authoritative: false);
+    }
+
+    [ClientRpc]
+    private void BroadcastTriggerBombDetonateClientRpc(NetTriggerBombDetonateState state)
+    {
+        if (IsOwner && !IsServer)
+        {
+            return;
+        }
+
+        TriggerBomb triggerBomb = GetComponent<TriggerBomb>();
+        triggerBomb?.ApplyNetworkBombDetonation(state, authoritative: false);
+    }
+
+    [ClientRpc]
+    private void BroadcastFaerieShiftClientRpc(NetAbilityToggleState state)
+    {
+        if (IsOwner && !IsServer)
+        {
+            return;
+        }
+
+        FaerieShift faerieShift = GetComponent<FaerieShift>();
+        faerieShift?.ApplyNetworkShiftState(state.IsActive, authoritative: false);
+    }
+
+    [ClientRpc]
+    private void BroadcastInvisibilityClientRpc(NetAbilityToggleState state)
+    {
+        if (IsOwner && !IsServer && state.IsActive)
+        {
+            return;
+        }
+
+        Invisibility invisibility = GetComponent<Invisibility>();
+        invisibility?.ApplyNetworkInvisibilityState(state.IsActive, authoritative: false);
     }
 
     private void PublishAuthoritativeState(
@@ -917,6 +1106,54 @@ public class NetMovement : NetworkBehaviour
 
         tractorBeam.ApplyNetworkTractorBeamState(state.IsActive, authoritative: true);
         BroadcastTractorBeamClientRpc(state);
+    }
+
+    private void HandleTriggerBombLaunchServer(NetTriggerBombLaunchState state)
+    {
+        TriggerBomb triggerBomb = GetComponent<TriggerBomb>();
+        if (triggerBomb == null)
+        {
+            return;
+        }
+
+        triggerBomb.ApplyNetworkBombLaunch(state, authoritative: true);
+        BroadcastTriggerBombLaunchClientRpc(state);
+    }
+
+    private void HandleTriggerBombDetonateServer(NetTriggerBombDetonateState state)
+    {
+        TriggerBomb triggerBomb = GetComponent<TriggerBomb>();
+        if (triggerBomb == null)
+        {
+            return;
+        }
+
+        triggerBomb.ApplyNetworkBombDetonation(state, authoritative: true);
+        BroadcastTriggerBombDetonateClientRpc(state);
+    }
+
+    private void HandleFaerieShiftServer(NetAbilityToggleState state)
+    {
+        FaerieShift faerieShift = GetComponent<FaerieShift>();
+        if (faerieShift == null)
+        {
+            return;
+        }
+
+        faerieShift.ApplyNetworkShiftState(state.IsActive, authoritative: true);
+        BroadcastFaerieShiftClientRpc(state);
+    }
+
+    private void HandleInvisibilityServer(NetAbilityToggleState state)
+    {
+        Invisibility invisibility = GetComponent<Invisibility>();
+        if (invisibility == null)
+        {
+            return;
+        }
+
+        invisibility.ApplyNetworkInvisibilityState(state.IsActive, authoritative: true);
+        BroadcastInvisibilityClientRpc(state);
     }
 
     public void BroadcastFireHazardSpawn(NetFireHazardSpawnData spawnData)

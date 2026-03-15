@@ -51,6 +51,13 @@ public class TriggerBomb : Ability
     private GameObject _activeBomb;
     private Rigidbody2D _activeBombRb;
     private Coroutine _autoDetonateCoroutine;
+    private NetMovement _netMovement;
+
+    protected override void Awake()
+    {
+        base.Awake();
+        _netMovement = GetComponent<NetMovement>();
+    }
 
     public override void UseAbility(InputValue value)
     {
@@ -82,28 +89,34 @@ public class TriggerBomb : Ability
             return;
         }
 
+        bool useNetworkPath = NetTickUtil.IsActive && _netMovement != null && _netMovement.IsSpawned && _netMovement.IsOwner;
+
         // Spawn bomb in front of ship
         Vector3 spawnPosition = transform.position + transform.up * bomb.spawnOffset;
-        _activeBomb = Instantiate(bomb.bombPrefab, spawnPosition, transform.rotation);
+        Vector2 launchVelocity = (Vector2)transform.up * bomb.launchSpeed;
 
-        // Set up physics
-        _activeBombRb = _activeBomb.GetComponent<Rigidbody2D>();
-        if (_activeBombRb != null)
+        if (useNetworkPath)
         {
-            _activeBombRb.linearVelocity = (Vector2)transform.up * bomb.launchSpeed;
+            if (!_netMovement.IsServer)
+            {
+                ApplyNetworkBombLaunch(new NetTriggerBombLaunchState
+                {
+                    SpawnPosition = spawnPosition,
+                    Velocity = launchVelocity
+                }, authoritative: false);
+                player.ApplyRecoil(bomb.recoilForce);
+            }
+
+            _netMovement.RequestTriggerBombLaunch(spawnPosition, launchVelocity);
         }
-
-        // Apply recoil to player
-        player.ApplyRecoil(bomb.recoilForce);
-
-        // Play launch sound
-        if (bomb.launchSound != null)
+        else
         {
-            bomb.launchSound.Play(player.GetAvailableAudioSource());
+            ApplyNetworkBombLaunch(new NetTriggerBombLaunchState
+            {
+                SpawnPosition = spawnPosition,
+                Velocity = launchVelocity
+            }, authoritative: true);
         }
-
-        // Auto-detonate after max lifetime
-        _autoDetonateCoroutine = StartCoroutine(AutoDetonateBomb());
 
     }
 
@@ -129,6 +142,66 @@ public class TriggerBomb : Ability
         }
 
         Vector3 explosionPosition = _activeBomb.transform.position;
+        bool useNetworkPath = NetTickUtil.IsActive && _netMovement != null && _netMovement.IsSpawned && _netMovement.IsOwner;
+
+        if (useNetworkPath)
+        {
+            if (!_netMovement.IsServer)
+            {
+                ApplyNetworkBombDetonation(new NetTriggerBombDetonateState { Position = explosionPosition }, authoritative: false);
+            }
+
+            _netMovement.RequestTriggerBombDetonate(explosionPosition);
+            return;
+        }
+
+        ApplyNetworkBombDetonation(new NetTriggerBombDetonateState { Position = explosionPosition }, authoritative: true);
+    }
+
+    public void ApplyNetworkBombLaunch(NetTriggerBombLaunchState state, bool authoritative)
+    {
+        if (_activeBomb != null)
+        {
+            Destroy(_activeBomb);
+        }
+
+        _activeBomb = Instantiate(bomb.bombPrefab, state.SpawnPosition, transform.rotation);
+        _activeBombRb = _activeBomb.GetComponent<Rigidbody2D>();
+        if (_activeBombRb != null)
+        {
+            _activeBombRb.linearVelocity = state.Velocity;
+        }
+
+        if (!NetTickUtil.IsActive || authoritative)
+        {
+            player.ApplyRecoil(bomb.recoilForce);
+        }
+
+        bomb.launchSound?.Play(player.GetAvailableAudioSource());
+
+        if (_autoDetonateCoroutine != null)
+        {
+            StopCoroutine(_autoDetonateCoroutine);
+        }
+
+        if (!NetTickUtil.IsActive || authoritative)
+        {
+            _autoDetonateCoroutine = StartCoroutine(AutoDetonateBomb());
+        }
+        else
+        {
+            _autoDetonateCoroutine = null;
+        }
+    }
+
+    public void ApplyNetworkBombDetonation(NetTriggerBombDetonateState state, bool authoritative)
+    {
+        if (_activeBomb == null)
+        {
+            return;
+        }
+
+        Vector3 explosionPosition = state.Position;
 
         // Create explosion visual
         if (bomb.explosionPrefab != null)
@@ -145,29 +218,30 @@ public class TriggerBomb : Ability
         }
 
         // Deal damage to entities in radius
-        Collider2D[] hitColliders = Physics2D.OverlapCircleAll(explosionPosition, bomb.explosionRadius);
-        foreach (Collider2D col in hitColliders)
+        if (!NetTickUtil.IsActive || authoritative)
         {
-            // Skip the bomb itself
-            if (col.gameObject == _activeBomb) continue;
-
-            Entity entity = col.GetComponent<Entity>();
-            if (entity != null)
+            Collider2D[] hitColliders = Physics2D.OverlapCircleAll(explosionPosition, bomb.explosionRadius);
+            foreach (Collider2D col in hitColliders)
             {
-                // Check if this is an enemy
-                if (col.CompareTag(player.enemyTag))
+                // Skip the bomb itself
+                if (col.gameObject == _activeBomb) continue;
+
+                Entity entity = col.GetComponent<Entity>();
+                if (entity != null)
                 {
-                    entity.TakeDamage(bomb.explosionDamage, bomb.explosionImpactForce, explosionPosition, DamageSource.Explosion);
+                    if (col.CompareTag(player.enemyTag))
+                    {
+                        entity.TakeDamage(bomb.explosionDamage, bomb.explosionImpactForce, explosionPosition, DamageSource.Explosion);
+                    }
                 }
-            }
 
-            // Also damage asteroids
-            if (col.CompareTag("Asteroid"))
-            {
-                AsteroidScript asteroid = col.GetComponent<AsteroidScript>();
-                if (asteroid != null)
+                if (col.CompareTag("Asteroid"))
                 {
-                    asteroid.TakeDamage(bomb.explosionDamage, bomb.explosionImpactForce, explosionPosition);
+                    AsteroidScript asteroid = col.GetComponent<AsteroidScript>();
+                    if (asteroid != null)
+                    {
+                        asteroid.TakeDamage(bomb.explosionDamage, bomb.explosionImpactForce, explosionPosition);
+                    }
                 }
             }
         }
@@ -184,7 +258,6 @@ public class TriggerBomb : Ability
         _activeBombRb = null;
 
         _lastBombTime = Time.time;
-
     }
 
     public override bool IsAbilityActive()

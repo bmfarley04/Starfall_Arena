@@ -247,3 +247,35 @@ public struct NetTractorBeamState : INetworkSerializable
         serializer.SerializeValue(ref IsActive);
     }
 }
+
+public struct NetTriggerBombLaunchState : INetworkSerializable
+{
+    public Vector2 SpawnPosition;
+    public Vector2 Velocity;
+
+    public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
+    {
+        serializer.SerializeValue(ref SpawnPosition);
+        serializer.SerializeValue(ref Velocity);
+    }
+}
+
+public struct NetTriggerBombDetonateState : INetworkSerializable
+{
+    public Vector2 Position;
+
+    public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
+    {
+        serializer.SerializeValue(ref Position);
+    }
+}
+
+public struct NetAbilityToggleState : INetworkSerializable
+{
+    public bool IsActive;
+
+    public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
+    {
+        serializer.SerializeValue(ref IsActive);
+    }
+}

@@ -192,6 +192,7 @@ public abstract class Player : Entity
     public Vector2 LookInput => _lookInput;
     public bool IsFrictionEnabled => _frictionEnabled;
     public float FrictionTimer => _frictionTimer;
+    public System.Action<bool> onFrictionToggled;
 
     // ===== INITIALIZATION =====
     protected override void Awake()
@@ -490,6 +491,7 @@ public abstract class Player : Entity
 
         _frictionEnabled = !_frictionEnabled;
         _frictionTimer = 0f;
+        onFrictionToggled?.Invoke(_frictionEnabled);
     }
 
     void OnToggleFriction(InputValue value)

@@ -215,6 +215,7 @@ Based on the current repo, these pieces are not yet represented as fully integra
 - the broader duel loop in `GameSceneManager` still reads as primarily local/splitscreen-oriented
 - full projectile/gameplay replication for every weapon family is still incomplete
 - the current networked combat path covers player projectile shots, GigaBlast projectile shots, beam start/stop, fire-trail hazard authority, and reflector activation
+- the current networked combat path also covers teleport, Class2 inline abilities, and Class3 bomb / self-state abilities
 - projectile and beam lag compensation currently uses a short, defender-favored history window from `NetMovement` state history rather than a full world rewind system
 
 That means `NETWORK.md` should describe those pieces as planned or intended, not current fact.
