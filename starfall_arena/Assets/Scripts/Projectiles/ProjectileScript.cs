@@ -250,7 +250,7 @@ public class ProjectileScript : MonoBehaviour
             var asteroid = collider.GetComponent<AsteroidScript>();
             if (asteroid != null)
             {
-                asteroid.RequestDamage(_damage, _impactForce, transform.position);
+                asteroid.TakeDamage(_damage, _impactForce, transform.position);
             }
 
             if (_visualController != null)
