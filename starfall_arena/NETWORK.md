@@ -1,62 +1,218 @@
-# Networking Philosophy — Space Dueling Game
+# NETWORK.md
 
-## Overview
+This document summarizes the networking philosophy and the current implementation status in the repo.
 
-This document summarizes the networking architecture and design philosophy for our 2.5D space dueling game. We use **Netcode for GameObjects** as our base layer, with custom networking code for player movement and projectiles.
+## Current Scope
 
----
+The project is moving from a local duel game toward a networked two-player duel game.
 
-## Tick Rate
+Important distinction:
 
-The server runs at **60hz** (one tick every ~16ms). All networked state is stamped with a tick number, which serves as the common time reference across all clients and the server.
+- the networking philosophy is broader than what is fully integrated today
+- movement networking has real implementation now
+- full networking is the active direction for the project
+- older local multiplayer/split-screen play should be treated as mostly deprecated for now
+- full networked match flow, spawning integration, and weapon/combat replication are not all complete yet
+
+Do not describe the entire duel as fully networked unless those missing pieces are actually integrated.
+
+## Networking Philosophy
+
+The intended model remains:
+
+- server authoritative
+- client responsiveness for the local player
+- conservative correction
+- stability over flashy extrapolation
+- dodging should remain skillful and trustworthy
+
+This is still the right philosophy for a duel game where movement precision matters.
+
+Input/platform note:
+
+- networking changes must preserve both controller and keyboard-and-mouse control paths
+- current target deployment context is PC/computer plus controller-oriented console-style play
+
+## Tick Model
+
+Networking is built around NGO ticks.
+
+Current expectations:
+
+- tick rate target: `60hz`
+- tick identity is the shared time reference for simulation and reconciliation
+- network simulation should prefer tick time over ad hoc timing
+
+`NetTickUtil` wraps NGO tick access so code can query:
+
+- current local tick
+- server tick
+- tick interval
+- tick rate
+- whether networking is currently active
 
 ## Authority Model
 
-The **server is authoritative**. Clients simulate ahead locally but are always subject to server correction. No client-submitted result is trusted without server validation.
+The intended authority model is already reflected in movement code:
 
----
+- the server is authoritative
+- the owning client predicts locally
+- remote non-owners are rendered from server snapshots
+- the owning client can be corrected and replay inputs when prediction drifts
 
-## Player Movement
+## Current Implemented Pieces
 
-- **Local player** uses full **client-side prediction**: inputs are applied immediately on the client without waiting for server confirmation. The client stores a rolling buffer of recent inputs and replays them on top of server corrections when reconciling.
-- **Remote players** are displayed using **interpolation only** — no extrapolation or dead reckoning. We buffer 2 ticks (~33ms) of incoming state and interpolate smoothly between confirmed positions. This trades a small, fixed visual delay for stability and correctness.
-- Each player maintains a **position history buffer** of the last 120 ticks (~2 seconds) on the server for use in lag compensation.
+### NetMgr
 
----
+`NetMgr` is the current session lifecycle helper.
 
-## Projectiles
+It currently provides:
 
-Because all projectile motion is fully deterministic, projectiles require **no ongoing network synchronization** after creation.
+- host/client/server startup helpers
+- shutdown helper
+- connection and disconnection callbacks
+- a helper for server-side spawning of player `NetworkObject`s
 
-- When a player fires, the client spawns a **local ghost projectile** immediately for visual responsiveness.
-- A `FireCommand` (containing tick, origin, direction, and velocity) is sent to the server.
-- The server validates and spawns the **authoritative projectile**, broadcasting initial conditions to all clients.
-- All clients simulate the projectile independently using identical deterministic physics. No NetworkTransform is used.
-- Destruction (hit or expiry) is communicated via RPC.
+Current caveat:
 
----
+- the file explicitly notes that gameplay scene spawn integration is still pending
+- this means the networking helper exists, but the full scene flow is not yet switched over to a complete networked spawn path
 
-## Hit Detection & Lag Compensation
+### NetMovement
 
-We use **server-side lag compensation** for projectile hit detection.
+`NetMovement` is the main implemented networked gameplay system right now.
 
-When a projectile potentially hits a player, the server:
-1. Rewinds that player's position to account for the **shooter's network latency** — so shooters are registering hits against what they actually saw on their screen.
-2. Checks collision against that rewound historical position.
-3. Does **not** additionally rewind for projectile travel time — the projectile is a real object in the world, and if the target moved out of its path, the shot misses.
+It is attached beside `Player` and takes over movement when a network session is active.
 
-### Design Philosophy: Favor the Dodger
+Behavior by role:
 
-Since dodging is a core skill in this game, our lag compensation is intentionally **conservative**. Near-misses are awarded to the defender. We do not rewind aggressively beyond accounting for the shooter's own latency. This ensures that skillful evasion is always meaningful, regardless of network conditions.
+- owner
+  - reads local input from `Player`
+  - predicts movement immediately
+  - stores input and predicted-state history
+  - sends input snapshots to the server
+- server
+  - runs authoritative movement simulation
+  - publishes authoritative state snapshots
+  - stores state history for future networking features
+- remote non-owner
+  - disables local gameplay-driving `Player` logic
+  - becomes interpolation-driven
+  - uses buffered authoritative snapshots for smooth display
 
----
+This is the most important “recent context” addition versus the older doc.
 
-## Summary of Key Choices
+### MovementSimulation
 
-| Decision | Choice | Reason |
-|---|---|---|
-| Tick rate | 60hz | Sufficient for our game speed; manageable bandwidth |
-| Remote player display | Interpolation (no prediction) | Stable, no correction snaps; 33ms delay is imperceptible |
-| Interpolation buffer | 2 ticks (~33ms) | Minimum smooth buffer; revisit if players report stutter |
-| Projectile sync | Initial conditions only | Deterministic motion eliminates need for ongoing sync |
-| Lag comp philosophy | Favor dodger | Dodging is a skill; conservative rewind preserves that |
+`MovementSimulation` is the deterministic movement math layer shared by networking code.
+
+It exists to make movement simulation:
+
+- pure-value driven
+- replayable during reconciliation
+- aligned with the intended local movement rules
+
+It currently handles:
+
+- thrust acceleration
+- lateral damping
+- delayed friction
+- anchor drag
+- max-speed clamping
+- rotation toward look input
+
+This script is the core of the prediction and replay approach.
+
+### NetworkStructs
+
+Current network payloads include:
+
+- `NetInputSnapshot`
+  - tick
+  - thrust
+  - look input
+  - anchor state
+  - friction-enabled state
+- `NetStateSnapshot`
+  - tick
+  - authoritative position
+  - authoritative rotation
+  - authoritative velocity
+  - anchor drag accumulator
+  - friction timer
+
+These structs are intentionally minimal and focused on what movement replay needs.
+
+## Current Movement Networking Flow
+
+### Owner Flow
+
+Per tick, the owner:
+
+1. reads movement-relevant state from `Player`
+2. stores the input in a circular buffer
+3. runs local prediction through `MovementSimulation`
+4. applies velocity and rotation locally
+5. stores predicted state for reconciliation
+6. sends input to the server, or publishes authoritative state directly when host-owned
+
+### Server Flow
+
+The server:
+
+1. receives input snapshots
+2. simulates authoritative movement
+3. applies authoritative velocity and rotation
+4. broadcasts authoritative state snapshots to clients
+5. stores authoritative history in a circular buffer
+
+### Owner Reconciliation
+
+When the owner receives authoritative state:
+
+- predicted and authoritative positions are compared
+- if the error is below threshold, no correction happens
+- if the error exceeds threshold, the client rewinds to server state
+- stored inputs are replayed forward through `MovementSimulation`
+- corrected state is written back to the rigidbody
+
+### Remote Proxy Display
+
+Remote non-owners:
+
+- buffer authoritative snapshots
+- interpolate between snapshots
+- do not run local movement logic
+- do not perform forward prediction
+
+This stays aligned with the original stability-first networking philosophy.
+
+## Current Implementation Limits
+
+Based on the current repo, these pieces are not yet represented as fully integrated networking systems:
+
+- gameplay scene flow is not fully wired to the network spawn helper
+- the broader duel loop in `GameSceneManager` still reads as primarily local/splitscreen-oriented
+- projectile and beam replication are not yet implemented in `Assets/Scripts/Networking`
+- lag compensation and rewind hit validation from the older design doc are not yet implemented in the active networking code
+
+That means `NETWORK.md` should describe those pieces as planned or intended, not current fact.
+
+## Planned Direction Still Supported By The Current Design
+
+The older design direction still fits the current codebase:
+
+- client-side prediction for local player movement
+- interpolation-only display for remote players
+- deterministic projectile simulation after spawn
+- conservative lag compensation that favors the dodger
+
+The existing movement implementation is a real first step toward that architecture.
+
+## Known Networking Notes
+
+- `Player.externalMovementControl` is the bridge that lets networking take over physics without discarding the existing input callbacks.
+- Remote proxies disable `Player` and rely on interpolation instead of duplicating gameplay logic client-side.
+- Host mode requires special care to avoid double-simulating owner movement, and `NetMovement` already includes host-specific handling for that.
+- Any networking migration work should assume full-network play is the target and treat old split-screen assumptions as secondary unless specifically required.
+- Future bugs or drift issues should be documented here with the exact subsystem affected: prediction, reconciliation, interpolation, spawn flow, or combat replication.
