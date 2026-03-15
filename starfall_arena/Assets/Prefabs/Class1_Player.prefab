@@ -5339,7 +5339,7 @@ MonoBehaviour:
     regenRate: 20
   input:
     controllerLookDeadzone: 0.1
-    debugRotation: 1
+    debugRotation: 0
   friction:
     frictionDelay: 0.25
     frictionDeceleration: 10

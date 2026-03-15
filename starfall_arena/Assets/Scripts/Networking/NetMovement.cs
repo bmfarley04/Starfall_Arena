@@ -235,6 +235,7 @@ public class NetMovement : NetworkBehaviour
             Velocity = velocity,
             AnchorDragAccumulator = _ownerAnchorDragAccumulator,
             FrictionTimer = _ownerFrictionTimer,
+            FrictionEnabled = input.FrictionEnabled,
         };
 
         // 6. Submit to the authoritative path.
@@ -324,6 +325,7 @@ public class NetMovement : NetworkBehaviour
             Velocity = velocity,
             AnchorDragAccumulator = anchorDragAccumulator,
             FrictionTimer = frictionTimer,
+            FrictionEnabled = _player != null && _player.IsFrictionEnabled,
         };
 
         int histIdx = tick % SERVER_STATE_BUFFER_SIZE;
@@ -389,6 +391,7 @@ public class NetMovement : NetworkBehaviour
                 Velocity = velocity,
                 AnchorDragAccumulator = anchorDragAccumulator,
                 FrictionTimer = frictionTimer,
+                FrictionEnabled = input.FrictionEnabled,
             };
         }
 

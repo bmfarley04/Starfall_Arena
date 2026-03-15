@@ -483,10 +483,17 @@ public abstract class Player : Entity
         _lookInput = value.Get<Vector2>();
     }
 
-    void OnToggleFriction()
+    void OnFriction(InputValue value)
     {
+        if (isMovementLocked || !value.isPressed) return;
+
         _frictionEnabled = !_frictionEnabled;
         _frictionTimer = 0f;
+    }
+
+    void OnToggleFriction(InputValue value)
+    {
+        OnFriction(value);
     }
 
     void OnThrust(InputValue value)

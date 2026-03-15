@@ -56,6 +56,9 @@ public struct NetStateSnapshot : INetworkSerializable
     /// <summary>Friction timer (needed for reconciliation replay).</summary>
     public float FrictionTimer;
 
+    /// <summary>Authoritative friction toggle state for debugging and replay context.</summary>
+    public bool FrictionEnabled;
+
     public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
     {
         serializer.SerializeValue(ref Tick);
@@ -64,5 +67,6 @@ public struct NetStateSnapshot : INetworkSerializable
         serializer.SerializeValue(ref Velocity);
         serializer.SerializeValue(ref AnchorDragAccumulator);
         serializer.SerializeValue(ref FrictionTimer);
+        serializer.SerializeValue(ref FrictionEnabled);
     }
 }
