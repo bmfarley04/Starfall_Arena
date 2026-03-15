@@ -265,6 +265,17 @@
                 },
                 {
                     "name": "",
+                    "id": "18b7cb32-4809-462b-8f32-fa6b528870a4",
+                    "path": "<Keyboard>/g",
+                    "interactions": "Press(behavior=2)",
+                    "processors": "",
+                    "groups": ";key+mouse",
+                    "action": "Anchor",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
                     "id": "90652c53-5803-40cd-ba70-8de076d34a4b",
                     "path": "",
                     "interactions": "",

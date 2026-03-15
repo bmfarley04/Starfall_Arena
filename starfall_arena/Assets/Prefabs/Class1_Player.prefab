@@ -5308,7 +5308,7 @@ MonoBehaviour:
     visualModel: {fileID: 1770409303365008523}
     maxBankAngle: 45
     bankSensitivity: 0.1
-    bankSmoothing: 5
+    bankSmoothing: 10
     maxPitchAngle: 45
     pitchSensitivity: 0.1
     pitchSmoothing: 10

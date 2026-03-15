@@ -50,6 +50,12 @@ public struct NetStateSnapshot : INetworkSerializable
     /// <summary>Authoritative linear velocity.</summary>
     public Vector2 Velocity;
 
+    /// <summary>Authoritative visual roll/bank angle for the 3D ship model.</summary>
+    public float VisualBankAngle;
+
+    /// <summary>Authoritative visual pitch angle for the 3D ship model.</summary>
+    public float VisualPitchAngle;
+
     /// <summary>Anchor drag accumulator (needed for reconciliation replay).</summary>
     public float AnchorDragAccumulator;
 
@@ -65,6 +71,8 @@ public struct NetStateSnapshot : INetworkSerializable
         serializer.SerializeValue(ref Position);
         serializer.SerializeValue(ref Rotation);
         serializer.SerializeValue(ref Velocity);
+        serializer.SerializeValue(ref VisualBankAngle);
+        serializer.SerializeValue(ref VisualPitchAngle);
         serializer.SerializeValue(ref AnchorDragAccumulator);
         serializer.SerializeValue(ref FrictionTimer);
         serializer.SerializeValue(ref FrictionEnabled);

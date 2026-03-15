@@ -80,6 +80,7 @@ public class NetMovement : NetworkBehaviour
             if (_player != null)
             {
                 _player.externalMovementControl = true;
+                _player.SetExternalVisualStateEnabled(false);
             }
 
             // Enable PlayerInput on the owner so this player receives local input.
@@ -99,6 +100,7 @@ public class NetMovement : NetworkBehaviour
             if (_player != null)
             {
                 _player.enabled = false;
+                _player.SetExternalVisualStateEnabled(true);
             }
 
             // Make the Rigidbody kinematic so physics doesn't interfere with interpolation.
@@ -114,6 +116,7 @@ public class NetMovement : NetworkBehaviour
             if (_player != null)
             {
                 _player.enabled = false;
+                _player.SetExternalVisualStateEnabled(false);
             }
         }
 
@@ -130,11 +133,13 @@ public class NetMovement : NetworkBehaviour
             if (IsOwner)
             {
                 _player.externalMovementControl = false;
+                _player.SetExternalVisualStateEnabled(false);
             }
             else
             {
                 // Re-enable Player if we disabled it (safety for pooling / round transitions)
                 _player.enabled = true;
+                _player.SetExternalVisualStateEnabled(false);
                 _rb.bodyType = RigidbodyType2D.Dynamic;
             }
         }
@@ -227,12 +232,20 @@ public class NetMovement : NetworkBehaviour
         // 5. Store predicted state for reconciliation comparison
         //    Position stored is where we expect to be AFTER physics integrates.
         Vector2 expectedPosition = _rb.position + velocity * dt;
+        float predictedVisualBankAngle = 0f;
+        float predictedVisualPitchAngle = 0f;
+        if (_player != null)
+        {
+            _player.GetVisualTiltState(out predictedVisualBankAngle, out predictedVisualPitchAngle);
+        }
         _predictionBuffer[bufIdx] = new NetStateSnapshot
         {
             Tick = tick,
             Position = expectedPosition,
             Rotation = rotation,
             Velocity = velocity,
+            VisualBankAngle = predictedVisualBankAngle,
+            VisualPitchAngle = predictedVisualPitchAngle,
             AnchorDragAccumulator = _ownerAnchorDragAccumulator,
             FrictionTimer = _ownerFrictionTimer,
             FrictionEnabled = input.FrictionEnabled,
@@ -283,6 +296,10 @@ public class NetMovement : NetworkBehaviour
         // Apply velocity and rotation only — let physics integrate position
         _rb.linearVelocity = velocity;
         transform.rotation = Quaternion.Euler(0, 0, rotation);
+        if (_player != null && !_player.enabled)
+        {
+            _player.RefreshVisualState(dt);
+        }
 
         PublishAuthoritativeState(
             input.Tick,
@@ -316,6 +333,13 @@ public class NetMovement : NetworkBehaviour
         float anchorDragAccumulator,
         float dt)
     {
+        float visualBankAngle = 0f;
+        float visualPitchAngle = 0f;
+        if (_player != null)
+        {
+            _player.GetVisualTiltState(out visualBankAngle, out visualPitchAngle);
+        }
+
         Vector2 expectedPosition = _rb.position + velocity * dt;
         NetStateSnapshot state = new NetStateSnapshot
         {
@@ -323,6 +347,8 @@ public class NetMovement : NetworkBehaviour
             Position = expectedPosition,
             Rotation = rotation,
             Velocity = velocity,
+            VisualBankAngle = visualBankAngle,
+            VisualPitchAngle = visualPitchAngle,
             AnchorDragAccumulator = anchorDragAccumulator,
             FrictionTimer = frictionTimer,
             FrictionEnabled = _player != null && _player.IsFrictionEnabled,
@@ -389,6 +415,8 @@ public class NetMovement : NetworkBehaviour
                 Position = position,
                 Rotation = rotation,
                 Velocity = velocity,
+                VisualBankAngle = serverState.VisualBankAngle,
+                VisualPitchAngle = serverState.VisualPitchAngle,
                 AnchorDragAccumulator = anchorDragAccumulator,
                 FrictionTimer = frictionTimer,
                 FrictionEnabled = input.FrictionEnabled,
@@ -446,10 +474,13 @@ public class NetMovement : NetworkBehaviour
         Vector2 interpPos = Vector2.Lerp(from.Position, to.Position, t);
         float interpRot = Mathf.LerpAngle(from.Rotation, to.Rotation, t);
         Vector2 interpVel = Vector2.Lerp(from.Velocity, to.Velocity, t);
+        float interpBank = Mathf.Lerp(from.VisualBankAngle, to.VisualBankAngle, t);
+        float interpPitch = Mathf.Lerp(from.VisualPitchAngle, to.VisualPitchAngle, t);
 
         _rb.position = interpPos;
         transform.rotation = Quaternion.Euler(0, 0, interpRot);
         _rb.linearVelocity = interpVel; // for visual systems that read velocity
+        _player?.ApplyExternalVisualTiltState(interpBank, interpPitch);
 
         // When we've finished interpolating to 'to', advance
         if (t >= 1f)
