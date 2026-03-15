@@ -199,6 +199,13 @@ public class NetMovement : NetworkBehaviour
 
         float dt = Time.fixedDeltaTime;
 
+        float ownerVisualBankAngle = 0f;
+        float ownerVisualPitchAngle = 0f;
+        if (_player != null)
+        {
+            _player.GetVisualTiltState(out ownerVisualBankAngle, out ownerVisualPitchAngle);
+        }
+
         // 1. Sample input from Player's read-only getters
         NetInputSnapshot input = new NetInputSnapshot
         {
@@ -207,6 +214,8 @@ public class NetMovement : NetworkBehaviour
             LookInput = _player.LookInput,
             Anchor = _player.IsAnchored,
             FrictionEnabled = _player.IsFrictionEnabled,
+            VisualBankAngle = ownerVisualBankAngle,
+            VisualPitchAngle = ownerVisualPitchAngle,
         };
 
         // 2. Store input in circular buffer
@@ -263,6 +272,8 @@ public class NetMovement : NetworkBehaviour
                 tick,
                 velocity,
                 rotation,
+                ownerVisualBankAngle,
+                ownerVisualPitchAngle,
                 _serverFrictionTimer,
                 _serverAnchorDragAccumulator,
                 dt);
@@ -298,13 +309,15 @@ public class NetMovement : NetworkBehaviour
         transform.rotation = Quaternion.Euler(0, 0, rotation);
         if (_player != null && !_player.enabled)
         {
-            _player.RefreshVisualState(dt);
+            _player.ApplyExternalVisualTiltState(input.VisualBankAngle, input.VisualPitchAngle);
         }
 
         PublishAuthoritativeState(
             input.Tick,
             velocity,
             rotation,
+            input.VisualBankAngle,
+            input.VisualPitchAngle,
             _serverFrictionTimer,
             _serverAnchorDragAccumulator,
             dt);
@@ -329,17 +342,12 @@ public class NetMovement : NetworkBehaviour
         int tick,
         Vector2 velocity,
         float rotation,
+        float visualBankAngle,
+        float visualPitchAngle,
         float frictionTimer,
         float anchorDragAccumulator,
         float dt)
     {
-        float visualBankAngle = 0f;
-        float visualPitchAngle = 0f;
-        if (_player != null)
-        {
-            _player.GetVisualTiltState(out visualBankAngle, out visualPitchAngle);
-        }
-
         Vector2 expectedPosition = _rb.position + velocity * dt;
         NetStateSnapshot state = new NetStateSnapshot
         {

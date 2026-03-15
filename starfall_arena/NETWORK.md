@@ -133,6 +133,8 @@ Current network payloads include:
   - look input
   - anchor state
   - friction-enabled state
+  - owner visual bank angle
+  - owner visual pitch angle
 - `NetStateSnapshot`
   - tick
   - authoritative position
@@ -217,6 +219,7 @@ The existing movement implementation is a real first step toward that architectu
 - `Player.externalMovementControl` is the bridge that lets networking take over physics without discarding the existing input callbacks.
 - Remote proxies disable `Player` and rely on interpolation instead of duplicating gameplay logic client-side.
 - `Entity` banking/pitching on the 3D visual model now rides in `NetStateSnapshot`; remote proxies should consume the replicated visual tilt instead of recomputing it from interpolated root movement, or turns/recoil can look flat or mismatched.
+- For client-owned ships, the server/display side should forward the owner's reported visual tilt instead of recomputing bank from the server copy's root rotation, or the host view can over-bank badly.
 - Host mode requires special care to avoid double-simulating owner movement, and `NetMovement` already includes host-specific handling for that.
 - Any networking migration work should assume full-network play is the target and treat old split-screen assumptions as secondary unless specifically required.
 - Future bugs or drift issues should be documented here with the exact subsystem affected: prediction, reconciliation, interpolation, spawn flow, or combat replication.

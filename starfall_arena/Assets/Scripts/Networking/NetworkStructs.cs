@@ -22,6 +22,12 @@ public struct NetInputSnapshot : INetworkSerializable
     /// <summary>True when space-friction mode is toggled on.</summary>
     public bool FrictionEnabled;
 
+    /// <summary>Current owner-computed visual roll/bank angle for the ship model.</summary>
+    public float VisualBankAngle;
+
+    /// <summary>Current owner-computed visual pitch angle for the ship model.</summary>
+    public float VisualPitchAngle;
+
     public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
     {
         serializer.SerializeValue(ref Tick);
@@ -29,6 +35,8 @@ public struct NetInputSnapshot : INetworkSerializable
         serializer.SerializeValue(ref LookInput);
         serializer.SerializeValue(ref Anchor);
         serializer.SerializeValue(ref FrictionEnabled);
+        serializer.SerializeValue(ref VisualBankAngle);
+        serializer.SerializeValue(ref VisualPitchAngle);
     }
 }
 
