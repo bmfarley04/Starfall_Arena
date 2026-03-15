@@ -67,7 +67,6 @@ public class Beam : Ability
 
             if (_currentBeamCapacity >= beam.capacity)
             {
-                Debug.Log("Beam capacity full! Stopping beam.");
                 _activeBeam.StopFiring();
                 Destroy(_activeBeam.gameObject);
                 _activeBeam = null;
@@ -90,7 +89,6 @@ public class Beam : Ability
     public override void UseAbility(InputValue value)
     {
         base.UseAbility(value);
-        Debug.Log($"Fire Beam input received - isPressed: {value.isPressed}");
 
         if (value.isPressed)
         {
@@ -102,14 +100,11 @@ public class Beam : Ability
 
             if (_currentBeamCapacity >= beam.capacity)
             {
-                Debug.Log("Cannot fire beam: capacity full (overheated)");
                 return;
             }
 
             if (_activeBeam == null && beam.stats.prefab != null)
             {
-                Debug.Log("Creating and starting beam");
-
                 Vector3 spawnPosition = transform.position + transform.up * beam.offsetDistance;
 
                 GameObject beamObj = Instantiate(beam.stats.prefab, spawnPosition, transform.rotation, transform);
@@ -141,7 +136,6 @@ public class Beam : Ability
         {
             if (_activeBeam != null)
             {
-                Debug.Log("Stopping and destroying beam");
                 _activeBeam.StopFiring();
                 Destroy(_activeBeam.gameObject);
                 _activeBeam = null;

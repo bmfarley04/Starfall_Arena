@@ -343,7 +343,6 @@ public class Class2 : Player
     {
         if (Time.time < _lastEmpoweredShotTime + abilities.empoweredShot.cooldown)
         {
-            Debug.Log($"Empowered Shot on cooldown: {(_lastEmpoweredShotTime + abilities.empoweredShot.cooldown - Time.time):F1}s remaining");
             return;
         }
 
@@ -391,7 +390,6 @@ public class Class2 : Player
             abilities.physicalProjectile.fireSound.Play(GetAvailableAudioSource());
         }
 
-        Debug.Log($"Physical Projectile fired! Damage: {abilities.physicalProjectile.damage:F1}, Speed: {abilities.physicalProjectile.speed:F1}");
     }
 
     // Ability 2 - Shield
@@ -399,7 +397,6 @@ public class Class2 : Player
     {
         if (Time.time < _lastShieldTime + abilities.shield.cooldown)
         {
-            Debug.Log($"Shield on cooldown: {(_lastShieldTime + abilities.shield.cooldown - Time.time):F1}s remaining");
             return;
         }
 
@@ -466,7 +463,6 @@ public class Class2 : Player
             abilities.empoweredShot.fireSound.Play(GetAvailableAudioSource());
         }
 
-        Debug.Log($"Empowered Shot fired! Damage: {damage:F1}, Speed: {speed:F1}, Slow: {abilities.empoweredShot.slowMultiplier * 100}% for {abilities.empoweredShot.slowDuration}s");
     }
 
     // Ability 3 - Tractor Beam
@@ -474,7 +470,6 @@ public class Class2 : Player
     {
         if (Time.time < _lastTractorBeamTime + abilities.tractorBeam.cooldown)
         {
-            Debug.Log($"Tractor Beam on cooldown: {(_lastTractorBeamTime + abilities.tractorBeam.cooldown - Time.time):F1}s remaining");
             return;
         }
 
@@ -516,13 +511,11 @@ public class Class2 : Player
     {
         if (_isAbility4Locked)
         {
-            Debug.Log("❌ Physical Projectile is locked until round 3!");
             return;
         }
 
         if (Time.time < _lastPhysicalProjectileTime + abilities.physicalProjectile.cooldown)
         {
-            Debug.Log($"Physical Projectile on cooldown: {(_lastPhysicalProjectileTime + abilities.physicalProjectile.cooldown - Time.time):F1}s remaining");
             return;
         }
 
@@ -672,7 +665,6 @@ public class Class2 : Player
             _tractorBeamConeObject.transform.position = transform.position + worldOffset;
             _tractorBeamConeObject.transform.rotation = transform.rotation;
             _tractorBeamConeObject.SetActive(true);
-            Debug.Log($"Tractor beam cone activated at {transform.position}, range: {abilities.tractorBeam.coneRange}, angle: {abilities.tractorBeam.coneHalfAngle}");
         }
 
         // Start loop sound
@@ -686,8 +678,6 @@ public class Class2 : Player
         {
             abilities.tractorBeam.suctionParticles.Play();
         }
-
-        Debug.Log($"Tractor Beam activated! Duration: {abilities.tractorBeam.duration}s, Range: {abilities.tractorBeam.coneRange}, Angle: {abilities.tractorBeam.coneHalfAngle * 2}°");
 
         yield return new WaitForSeconds(abilities.tractorBeam.duration);
 
@@ -720,7 +710,6 @@ public class Class2 : Player
             abilities.tractorBeam.suctionParticles.Stop();
         }
 
-        Debug.Log("Tractor Beam deactivated");
     }
 
     private void ApplyTractorBeamPull()
@@ -857,13 +846,11 @@ public class Class2 : Player
     {
         base.LockAbility4();
         _isAbility4Locked = true;
-        Debug.Log("Physical Projectile (Ability 4) locked");
     }
 
     public override void UnlockAbility4()
     {
         base.UnlockAbility4();
         _isAbility4Locked = false;
-        Debug.Log("Physical Projectile (Ability 4) unlocked!");
     }
 }

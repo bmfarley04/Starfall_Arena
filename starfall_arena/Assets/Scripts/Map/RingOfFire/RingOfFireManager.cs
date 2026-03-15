@@ -238,7 +238,6 @@ public class RingOfFireManager : MonoBehaviour
         InitializeLineRenderer();
         InitializeSafeZoneMask();
 
-        Debug.Log($"Ring of Fire started! Wave 1/{config.waves.Count}");
     }
 
     [ContextMenu("Stop Ring of Fire")]
@@ -247,7 +246,6 @@ public class RingOfFireManager : MonoBehaviour
         _ringOfFireActive = false;
         if (_lineObj != null) _lineObj.SetActive(false);
         if (_maskParent != null) _maskParent.SetActive(false);
-        Debug.Log("Ring of Fire stopped!");
     }
 
     private void UpdateRingOfFire()

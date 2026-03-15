@@ -188,15 +188,10 @@ public class GigaBlast : Ability
 
     void FixedUpdate()
     {
-        if(_isCharging)
-        {
-            Debug.Log($"Charging GigaBlast - Charge Time: {(Time.time - _chargeStartTime):F2}s, Current Tier: {_currentChargeTier}");
-        }
     }
     public override void UseAbility(InputValue value)
     {
         base.UseAbility(value);
-        Debug.Log($"GigaBlast input received - isPressed: {value.isPressed}");
 
         if (value.isPressed)
         {
@@ -204,7 +199,6 @@ public class GigaBlast : Ability
             {
                 if (IsAnyOtherAbilityActive())
                 {
-                    Debug.Log("Cannot charge GigaBlast: other abilities active");
                     return;
                 }
 
@@ -226,7 +220,6 @@ public class GigaBlast : Ability
                     _gigaBlastChargeFadeCoroutine = StartCoroutine(FadeGigaBlastChargeVolume(gigaBlast.chargeSound.volume));
                 }
 
-                Debug.Log("GigaBlast charging started");
             }
         }
         else
@@ -239,10 +232,6 @@ public class GigaBlast : Ability
                 {
                     FireChargedShot(chargeTime);
                     _lastGigaBlastTime = Time.time;
-                }
-                else
-                {
-                    Debug.Log($"GigaBlast released too early: {chargeTime:F2}s < {gigaBlast.timing.minChargeTime:F2}s");
                 }
 
                 _isCharging = false;
@@ -351,7 +340,6 @@ public class GigaBlast : Ability
 
         if (particleToPlay != null)
         {
-            Debug.Log($"Playing Tier {tier} particle effect: {particleToPlay.name}");
             particleToPlay.Play();
         }
         else
@@ -373,14 +361,12 @@ public class GigaBlast : Ability
 
         if (particleToStop != null)
         {
-            Debug.Log($"Stopping Tier {_currentChargeTier} particle effect: {particleToStop.name}");
             particleToStop.Stop(true, ParticleSystemStopBehavior.StopEmitting);
         }
     }
 
     private void StopAllChargeParticles()
     {
-        Debug.Log("Stopping all GigaBlast charge particles");
         if (gigaBlast.visual.tier1ParticleSystem != null) gigaBlast.visual.tier1ParticleSystem.Stop(true, ParticleSystemStopBehavior.StopEmitting);
         if (gigaBlast.visual.tier2ParticleSystem != null) gigaBlast.visual.tier2ParticleSystem.Stop(true, ParticleSystemStopBehavior.StopEmitting);
         if (gigaBlast.visual.tier3ParticleSystem != null) gigaBlast.visual.tier3ParticleSystem.Stop(true, ParticleSystemStopBehavior.StopEmitting);
@@ -502,7 +488,6 @@ public class GigaBlast : Ability
             fireSound.Play(player.GetAvailableAudioSource());
         }
 
-        Debug.Log($"GigaBlast fired! Tier: {tier}, Charge: {chargeTime:F2}s, Damage: {finalDamage:F1}, Speed: {finalSpeed:F1}");
     }
 
     // ===== AUDIO =====

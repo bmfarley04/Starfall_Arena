@@ -77,7 +77,6 @@ public class FaerieShift : Ability
         // Disable other abilities while active
         DisableOtherAbilities(true);
 
-        Debug.Log($"Faerie Shift activated! Scale: {config.scaleMultiplier}x, Speed: {config.speedMultiplier}x, Rotation: {config.rotationMultiplier}x, Damage: {config.takeDamageMultiplier}x");
     }
 
     private void DeactivateShift()
@@ -98,7 +97,6 @@ public class FaerieShift : Ability
         // Re-enable other abilities
         DisableOtherAbilities(false);
 
-        Debug.Log("Faerie Shift deactivated!");
     }
 
     public override bool IsAbilityActive()

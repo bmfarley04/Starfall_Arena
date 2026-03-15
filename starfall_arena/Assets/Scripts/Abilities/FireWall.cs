@@ -149,7 +149,6 @@ public class FireWall : Ability
             // Stop if capacity is full (overheated)
             if (_currentCapacity >= fireTrail.capacity)
             {
-                Debug.Log("Fire trail capacity full! Stopping.");
                 StopFireTrail();
             }
         }
@@ -158,13 +157,11 @@ public class FireWall : Ability
     public override void UseAbility(InputValue value)
     {
         base.UseAbility(value);
-        Debug.Log($"Fire Trail input received - isPressed: {value.isPressed}");
 
         if (value.isPressed)
         {
             if (_currentCapacity >= fireTrail.capacity)
             {
-                Debug.Log("Cannot activate fire trail: capacity full (overheated)");
                 return;
             }
 
@@ -184,7 +181,6 @@ public class FireWall : Ability
 
     private void StartFireTrail()
     {
-        Debug.Log("Starting fire trail");
         _isActive = true;
         _lastSpawnPosition = transform.position;
 
@@ -203,7 +199,6 @@ public class FireWall : Ability
 
     private void StopFireTrail()
     {
-        Debug.Log("Stopping fire trail");
         _isActive = false;
         _currentGroup = null;
     }

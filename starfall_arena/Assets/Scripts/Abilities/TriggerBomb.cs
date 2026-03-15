@@ -55,7 +55,6 @@ public class TriggerBomb : Ability
     public override void UseAbility(InputValue value)
     {
         base.UseAbility(value);
-        Debug.Log($"Trigger Bomb input received - isPressed: {value.isPressed}");
 
         if (value.isPressed)
         {
@@ -106,7 +105,6 @@ public class TriggerBomb : Ability
         // Auto-detonate after max lifetime
         _autoDetonateCoroutine = StartCoroutine(AutoDetonateBomb());
 
-        Debug.Log($"Bomb launched! Speed: {bomb.launchSpeed}, Max Lifetime: {bomb.maxLifetime}s");
     }
 
     private System.Collections.IEnumerator AutoDetonateBomb()
@@ -115,7 +113,6 @@ public class TriggerBomb : Ability
 
         if (_activeBomb != null)
         {
-            Debug.Log("Bomb reached max lifetime, auto-detonating");
             DetonateBomb();
         }
     }
@@ -161,7 +158,6 @@ public class TriggerBomb : Ability
                 if (col.CompareTag(player.enemyTag))
                 {
                     entity.TakeDamage(bomb.explosionDamage, bomb.explosionImpactForce, explosionPosition, DamageSource.Explosion);
-                    Debug.Log($"Bomb damaged {col.gameObject.name} for {bomb.explosionDamage} damage");
                 }
             }
 
@@ -189,7 +185,6 @@ public class TriggerBomb : Ability
 
         _lastBombTime = Time.time;
 
-        Debug.Log($"Bomb detonated! Damage: {bomb.explosionDamage}, Radius: {bomb.explosionRadius}");
     }
 
     public override bool IsAbilityActive()

@@ -487,7 +487,6 @@ public abstract class Player : Entity
     {
         _frictionEnabled = !_frictionEnabled;
         _frictionTimer = 0f;
-        Debug.Log($"friction: {(_frictionEnabled ? "ON" : "OFF")}");
     }
 
     void OnThrust(InputValue value)
@@ -630,7 +629,6 @@ public abstract class Player : Entity
         if (value.isPressed)
         {
             thrusters.invertColors = true;
-            Debug.Log("Anchor Activated: Rotate " + movement.rotationSpeed);
             movement.rotationSpeed *= 3;
             _isAnchored = true;
         }
@@ -640,7 +638,6 @@ public abstract class Player : Entity
             _isAnchored = false;
             _anchorDragAccumulator = 0f;
             movement.rotationSpeed = _originalRotationSpeed;
-            Debug.Log("Anchor Deactivated: Rotate " + _originalRotationSpeed);
         }
     }
 
