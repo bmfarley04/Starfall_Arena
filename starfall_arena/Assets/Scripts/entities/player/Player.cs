@@ -656,6 +656,9 @@ public abstract class Player : Entity
     {
         if (isMovementLocked) return;
 
+        Invisibility invisibility = ability2 as Invisibility;
+        invisibility?.BreakInvisibilityFromAction();
+
         if (projectileWeapon.prefab == null)
             return;
 

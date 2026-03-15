@@ -50,6 +50,11 @@ public class FaerieShift : Ability
     {
         base.UseAbility(value);
 
+        if (value.isPressed)
+        {
+            (player?.ability2 as Invisibility)?.BreakInvisibilityFromAction();
+        }
+
         // Toggle on press
         if (value.isPressed)
         {

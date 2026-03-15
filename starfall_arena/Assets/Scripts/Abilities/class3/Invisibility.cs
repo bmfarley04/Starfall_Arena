@@ -113,7 +113,14 @@ public class Invisibility : Ability
                 gameObject.layer = LayerMask.NameToLayer("Invisible");
             }
             SetAllChildrenLayer(gameObject.layer);
-            HideRenderers();
+            if (ShouldHideRenderersForLocalView())
+            {
+                HideRenderers();
+            }
+            else
+            {
+                RestoreRendererVisibility();
+            }
 
             if (invisibility.becomeInvisibleSound != null && _audioSource != null)
             {
@@ -157,6 +164,28 @@ public class Invisibility : Ability
         }
 
         BecomeVisible();
+    }
+
+    public void BreakInvisibilityFromAction()
+    {
+        if (!_isInvisible)
+        {
+            return;
+        }
+
+        bool useNetworkPath = NetTickUtil.IsActive && _netMovement != null && _netMovement.IsSpawned && _netMovement.IsOwner;
+        if (useNetworkPath)
+        {
+            if (!_netMovement.IsServer)
+            {
+                ApplyNetworkInvisibilityState(false, authoritative: false);
+            }
+
+            _netMovement.RequestInvisibilityState(false);
+            return;
+        }
+
+        ApplyNetworkInvisibilityState(false, authoritative: true);
     }
 
     public override bool IsAbilityActive()
@@ -268,6 +297,16 @@ public class Invisibility : Ability
 
             renderer.enabled = false;
         }
+    }
+
+    private bool ShouldHideRenderersForLocalView()
+    {
+        if (!NetTickUtil.IsActive || _netMovement == null || !_netMovement.IsSpawned)
+        {
+            return false;
+        }
+
+        return !_netMovement.IsOwner;
     }
 
     private void RestoreRendererVisibility()

@@ -165,6 +165,8 @@ public class FireWall : Ability
     {
         base.UseAbility(value);
 
+        (player?.ability2 as Invisibility)?.BreakInvisibilityFromAction();
+
         bool useNetworkPath = NetTickUtil.IsActive && _netMovement != null && _netMovement.IsSpawned && _netMovement.IsOwner;
 
         if (value.isPressed)

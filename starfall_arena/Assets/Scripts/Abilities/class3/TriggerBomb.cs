@@ -63,6 +63,8 @@ public class TriggerBomb : Ability
     {
         base.UseAbility(value);
 
+        (player?.ability2 as Invisibility)?.BreakInvisibilityFromAction();
+
         if (value.isPressed)
         {
             // Launch bomb

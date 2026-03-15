@@ -882,7 +882,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Invisibility
   stats:
-    cooldown: 3
+    cooldown: 10
     duration: 3
   isLocked: 0
   invisibility:
