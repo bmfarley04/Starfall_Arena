@@ -16,6 +16,7 @@ public class Class3 : Player
     protected override void Awake()
     {
         base.Awake();
+        base.fireCooldown = fireCooldown;
     }
 
     // ===== UPDATE LOOP =====

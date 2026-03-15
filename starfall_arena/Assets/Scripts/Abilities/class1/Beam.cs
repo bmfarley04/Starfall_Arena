@@ -36,11 +36,13 @@ public class Beam : Ability
     private float _currentBeamCapacity;
     private AudioSource _laserBeamSource;
     private Coroutine _beamFadeCoroutine;
+    private NetMovement _netMovement;
 
     protected override void Awake()
     {
         base.Awake();
         _currentBeamCapacity = 0f;
+        _netMovement = GetComponent<NetMovement>();
 
         _laserBeamSource = gameObject.AddComponent<AudioSource>();
         _laserBeamSource.playOnAwake = false;
@@ -58,6 +60,11 @@ public class Beam : Ability
 
     void FixedUpdate()
     {
+        if (NetTickUtil.IsActive && _netMovement != null && !_netMovement.IsOwner && !_netMovement.IsServer)
+        {
+            return;
+        }
+
         if (_activeBeam != null)
         {
             float recoilForceThisFrame = _activeBeam.GetRecoilForcePerSecond() * Time.fixedDeltaTime;
@@ -67,22 +74,12 @@ public class Beam : Ability
 
             if (_currentBeamCapacity >= beam.capacity)
             {
-                Debug.Log("Beam capacity full! Stopping beam.");
-                _activeBeam.StopFiring();
-                Destroy(_activeBeam.gameObject);
-                _activeBeam = null;
+                bool useNetworkPath = NetTickUtil.IsActive && _netMovement != null && _netMovement.IsSpawned && _netMovement.IsOwner;
+                ApplyNetworkBeamState(false, authoritative: useNetworkPath && _netMovement.IsServer);
 
-                if (_laserBeamSource != null && _laserBeamSource.isPlaying)
+                if (useNetworkPath)
                 {
-                    if (_beamFadeCoroutine != null)
-                    {
-                        StopCoroutine(_beamFadeCoroutine);
-                    }
-                    _beamFadeCoroutine = StartCoroutine(FadeBeamVolume(0f, stopAfterFade: true));
-                }
-                else if (_laserBeamSource != null && !_laserBeamSource.isPlaying)
-                {
-                    _laserBeamSource.Stop();
+                    _netMovement.RequestBeamState(false);
                 }
             }
         }
@@ -90,8 +87,8 @@ public class Beam : Ability
     public override void UseAbility(InputValue value)
     {
         base.UseAbility(value);
-        Debug.Log($"Fire Beam input received - isPressed: {value.isPressed}");
 
+        bool useNetworkPath = NetTickUtil.IsActive && _netMovement != null && _netMovement.IsSpawned && _netMovement.IsOwner;
         if (value.isPressed)
         {
             //if (_isCharging)
@@ -102,38 +99,16 @@ public class Beam : Ability
 
             if (_currentBeamCapacity >= beam.capacity)
             {
-                Debug.Log("Cannot fire beam: capacity full (overheated)");
                 return;
             }
 
             if (_activeBeam == null && beam.stats.prefab != null)
             {
-                Debug.Log("Creating and starting beam");
+                ApplyNetworkBeamState(true, authoritative: useNetworkPath && _netMovement.IsServer, requestedTick: NetTickUtil.IsActive ? NetTickUtil.CurrentTick : -1);
 
-                Vector3 spawnPosition = transform.position + transform.up * beam.offsetDistance;
-
-                GameObject beamObj = Instantiate(beam.stats.prefab, spawnPosition, transform.rotation, transform);
-                _activeBeam = beamObj.GetComponent<LaserBeam>();
-                _activeBeam.Initialize(
-                    player.enemyTag,
-                    beam.stats.damagePerSecond,
-                    beam.stats.maxDistance,
-                    beam.stats.recoilForcePerSecond,
-                    beam.stats.impactForce,
-                    player
-                );
-                _activeBeam.StartFiring();
-
-                if (beam.beamLoopSound != null && _laserBeamSource != null)
+                if (useNetworkPath)
                 {
-                    _laserBeamSource.volume = 0f;
-                    beam.beamLoopSound.Play(_laserBeamSource);
-
-                    if (_beamFadeCoroutine != null)
-                    {
-                        StopCoroutine(_beamFadeCoroutine);
-                    }
-                    _beamFadeCoroutine = StartCoroutine(FadeBeamVolume(beam.beamLoopSound.volume));
+                    _netMovement.RequestBeamState(true);
                 }
             }
         }
@@ -141,24 +116,85 @@ public class Beam : Ability
         {
             if (_activeBeam != null)
             {
-                Debug.Log("Stopping and destroying beam");
-                _activeBeam.StopFiring();
-                Destroy(_activeBeam.gameObject);
-                _activeBeam = null;
+                ApplyNetworkBeamState(false, authoritative: useNetworkPath && _netMovement.IsServer);
 
-                if (_laserBeamSource != null && _laserBeamSource.isPlaying)
+                if (useNetworkPath)
                 {
-                    if (_beamFadeCoroutine != null)
-                    {
-                        StopCoroutine(_beamFadeCoroutine);
-                    }
-                    _beamFadeCoroutine = StartCoroutine(FadeBeamVolume(0f, stopAfterFade: true));
-                }
-                else if (_laserBeamSource != null && !_laserBeamSource.isPlaying)
-                {
-                    _laserBeamSource.Stop();
+                    _netMovement.RequestBeamState(false);
                 }
             }
+        }
+    }
+
+    public void ApplyNetworkBeamState(bool isFiring, bool authoritative, int requestedTick = -1)
+    {
+        if (isFiring)
+        {
+            if (_activeBeam != null || beam.stats.prefab == null)
+            {
+                return;
+            }
+
+            Vector3 spawnPosition = transform.position + transform.up * beam.offsetDistance;
+            GameObject beamObj = Instantiate(beam.stats.prefab, spawnPosition, transform.rotation, transform);
+            _activeBeam = beamObj.GetComponent<LaserBeam>();
+            if (_activeBeam == null)
+            {
+                Destroy(beamObj);
+                return;
+            }
+
+            _activeBeam.Initialize(
+                player.enemyTag,
+                beam.stats.damagePerSecond,
+                beam.stats.maxDistance,
+                beam.stats.recoilForcePerSecond,
+                beam.stats.impactForce,
+                player);
+
+            bool cosmeticOnly = NetTickUtil.IsActive && !authoritative;
+            _activeBeam.SetCosmeticOnly(cosmeticOnly);
+            if (NetTickUtil.IsActive && authoritative && _netMovement != null)
+            {
+                int beamTick = requestedTick >= 0 ? requestedTick : NetTickUtil.ServerTick;
+                _activeBeam.SetNetworkAuthority(_netMovement, beamTick);
+            }
+
+            _activeBeam.StartFiring();
+
+            if (beam.beamLoopSound != null && _laserBeamSource != null)
+            {
+                _laserBeamSource.volume = 0f;
+                beam.beamLoopSound.Play(_laserBeamSource);
+
+                if (_beamFadeCoroutine != null)
+                {
+                    StopCoroutine(_beamFadeCoroutine);
+                }
+                _beamFadeCoroutine = StartCoroutine(FadeBeamVolume(beam.beamLoopSound.volume));
+            }
+
+            return;
+        }
+
+        if (_activeBeam != null)
+        {
+            _activeBeam.StopFiring();
+            Destroy(_activeBeam.gameObject);
+            _activeBeam = null;
+        }
+
+        if (_laserBeamSource != null && _laserBeamSource.isPlaying)
+        {
+            if (_beamFadeCoroutine != null)
+            {
+                StopCoroutine(_beamFadeCoroutine);
+            }
+            _beamFadeCoroutine = StartCoroutine(FadeBeamVolume(0f, stopAfterFade: true));
+        }
+        else if (_laserBeamSource != null && !_laserBeamSource.isPlaying)
+        {
+            _laserBeamSource.Stop();
         }
     }
 

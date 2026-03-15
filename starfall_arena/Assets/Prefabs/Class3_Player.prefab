@@ -384,9 +384,11 @@ GameObject:
   - component: {fileID: 9076574994160510604}
   - component: {fileID: 4494098414829394601}
   - component: {fileID: 8606764284625981102}
+  - component: {fileID: 5692532840308415011}
+  - component: {fileID: 8050964477193080453}
   m_Layer: 0
   m_Name: Class3_Player
-  m_TagString: Player
+  m_TagString: Player2
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -500,7 +502,7 @@ MonoBehaviour:
       m_Calls: []
   m_ActionEvents: []
   m_NeverAutoSwitchControlSchemes: 0
-  m_DefaultControlScheme: controller
+  m_DefaultControlScheme: key+mouse
   m_DefaultActionMap: basic
   m_SplitScreenIndex: -1
   m_Camera: {fileID: 0}
@@ -814,9 +816,10 @@ MonoBehaviour:
     regenRate: 20
   input:
     controllerLookDeadzone: 0.1
+    debugRotation: 0
   friction:
-    frictionDelay: 0
-    frictionDeceleration: 0
+    frictionDelay: 0.25
+    frictionDeceleration: 10
     debugMode: 0
   visualFeedback:
     enableChromaticAberration: 0
@@ -841,11 +844,12 @@ MonoBehaviour:
   explosionSound: {fileID: 11400000, guid: 52e8c58e387b89849affa74c78d6d899, type: 2}
   audioSourcePoolSize: 10
   isMovementLocked: 0
+  externalMovementControl: 0
   shotsFired: 0
   shotsHit: 0
   damageDealt: 0
   damageTaken: 0
-  fireCooldown: 0.1
+  fireCooldown: 1
 --- !u!114 &4120815541869784891
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -878,7 +882,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Invisibility
   stats:
-    cooldown: 3
+    cooldown: 10
     duration: 3
   isLocked: 0
   invisibility:
@@ -990,6 +994,47 @@ MonoBehaviour:
     fadeEndDistance: 25
     player1Layer: Player1UI
     player2Layer: Player2UI
+--- !u!114 &5692532840308415011
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8073042944126910331}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
+  GlobalObjectIdHash: 2152852021
+  InScenePlacedSourceGlobalObjectIdHash: 0
+  DeferredDespawnTick: 0
+  Ownership: 1
+  AlwaysReplicateAsRoot: 0
+  SynchronizeTransform: 1
+  ActiveSceneSynchronization: 0
+  SceneMigrationSynchronization: 1
+  SpawnWithObservers: 1
+  DontDestroyWithOwner: 0
+  AutoObjectParentSync: 1
+  SyncOwnerTransformWhenParented: 1
+  AllowOwnerToParent: 0
+--- !u!114 &8050964477193080453
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8073042944126910331}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 27b03cdfe300648459fc773032a0c731, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NetMovement
+  ShowTopMostFoldoutHeaderGroup: 1
+  _reconciliationThreshold: 0.01
+  _interpolationBufferTicks: 2
+  _maxCombatRewindTicks: 6
 --- !u!1001 &1583529772260481141
 PrefabInstance:
   m_ObjectHideFlags: 0

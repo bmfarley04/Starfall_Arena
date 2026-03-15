@@ -160,6 +160,7 @@ public abstract class Player : Entity
     // PUBLIC GET PROTECTED SET
     public string thisPlayerTag { get; protected set; }
     public string enemyTag { get; protected set; }
+    public float PrimaryFireCooldown => fireCooldown;
 
     // ===== PRIVATE STATE =====
     private List<Ability> abilities;
@@ -191,6 +192,7 @@ public abstract class Player : Entity
     public Vector2 LookInput => _lookInput;
     public bool IsFrictionEnabled => _frictionEnabled;
     public float FrictionTimer => _frictionTimer;
+    public System.Action<bool> onFrictionToggled;
 
     // ===== INITIALIZATION =====
     protected override void Awake()
@@ -483,11 +485,18 @@ public abstract class Player : Entity
         _lookInput = value.Get<Vector2>();
     }
 
-    void OnToggleFriction()
+    void OnFriction(InputValue value)
     {
+        if (isMovementLocked || !value.isPressed) return;
+
         _frictionEnabled = !_frictionEnabled;
         _frictionTimer = 0f;
-        Debug.Log($"friction: {(_frictionEnabled ? "ON" : "OFF")}");
+        onFrictionToggled?.Invoke(_frictionEnabled);
+    }
+
+    void OnToggleFriction(InputValue value)
+    {
+        OnFriction(value);
     }
 
     void OnThrust(InputValue value)
@@ -630,7 +639,6 @@ public abstract class Player : Entity
         if (value.isPressed)
         {
             thrusters.invertColors = true;
-            Debug.Log("Anchor Activated: Rotate " + movement.rotationSpeed);
             movement.rotationSpeed *= 3;
             _isAnchored = true;
         }
@@ -640,7 +648,6 @@ public abstract class Player : Entity
             _isAnchored = false;
             _anchorDragAccumulator = 0f;
             movement.rotationSpeed = _originalRotationSpeed;
-            Debug.Log("Anchor Deactivated: Rotate " + _originalRotationSpeed);
         }
     }
 
@@ -649,11 +656,76 @@ public abstract class Player : Entity
     {
         if (isMovementLocked) return;
 
+        Invisibility invisibility = ability2 as Invisibility;
+        invisibility?.BreakInvisibilityFromAction();
+
         if (projectileWeapon.prefab == null)
             return;
 
         if (Time.time < _lastFireTime + fireCooldown)
             return;
+
+        NetMovement netMovement = GetComponent<NetMovement>();
+        if (NetTickUtil.IsActive && netMovement != null && netMovement.IsSpawned && netMovement.IsOwner)
+        {
+            shotsFired += turrets.Length;
+
+            for (int turretIndex = 0; turretIndex < turrets.Length; turretIndex++)
+            {
+                Transform turret = turrets[turretIndex];
+                Vector3 direction = GetFireDirection(turret);
+                if (!netMovement.IsServer)
+                {
+                    GameObject cosmeticProjectile = Instantiate(projectileWeapon.prefab, turret.position, Quaternion.identity);
+                    if (cosmeticProjectile.TryGetComponent(out ProjectileScript cosmeticScript))
+                    {
+                        cosmeticScript.targetTag = enemyTag;
+                        cosmeticScript.SetCosmeticOnly(true);
+                        cosmeticScript.Initialize(
+                            direction,
+                            Vector2.zero,
+                            projectileWeapon.speed,
+                            projectileWeapon.damage,
+                            projectileWeapon.lifetime,
+                            projectileWeapon.impactForce,
+                            this);
+                    }
+                }
+
+                netMovement.RequestPrimaryFire(new NetFireRequest
+                {
+                    Tick = NetTickUtil.CurrentTick,
+                    SpawnPosition = turret.position,
+                    Direction = direction.normalized,
+                    InheritedVelocity = Vector2.zero,
+                    Speed = projectileWeapon.speed,
+                    Damage = projectileWeapon.damage,
+                    Lifetime = projectileWeapon.lifetime,
+                    ImpactForce = projectileWeapon.impactForce,
+                    RecoilForce = projectileWeapon.recoilForce,
+                    ApplyRecoil = turretIndex == 0,
+                    PierceMultiplier = 1f,
+                    SlowMultiplier = 1f,
+                    SlowDuration = 0f,
+                    CanPierce = false,
+                    AppliesSlow = false,
+                    VisualType = NetProjectileVisualType.Primary,
+                });
+            }
+
+            if (!netMovement.IsServer)
+            {
+                ApplyRecoil(projectileWeapon.recoilForce);
+            }
+
+            if (projectileFireSound != null)
+            {
+                projectileFireSound.Play(GetAvailableAudioSource());
+            }
+
+            _lastFireTime = Time.time;
+            return;
+        }
 
         shotsFired += turrets.Length;
 
@@ -944,6 +1016,34 @@ public abstract class Player : Entity
                 ability.ProcessCollisionModification(collider);
             }
         }
+    }
+
+    public bool TryProcessIncomingProjectileCollision(Collider2D collider)
+    {
+        ProjectileScript projectile = collider != null ? collider.GetComponent<ProjectileScript>() : null;
+        string originalTargetTag = projectile != null ? projectile.targetTag : string.Empty;
+        bool processed = false;
+
+        if (abilities.Any(a => a != null && a.HasCollisionModification()))
+        {
+            foreach (var ability in abilities.Where(a => a != null && a.HasCollisionModification()))
+            {
+                ability.ProcessCollisionModification(collider);
+                processed = true;
+
+                if (projectile == null)
+                {
+                    return true;
+                }
+
+                if (projectile.targetTag != thisPlayerTag)
+                {
+                    return true;
+                }
+            }
+        }
+
+        return processed && projectile == null;
     }
 
     // ===== HUD =====

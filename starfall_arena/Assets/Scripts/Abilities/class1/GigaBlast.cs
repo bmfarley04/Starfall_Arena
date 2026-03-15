@@ -160,10 +160,12 @@ public class GigaBlast : Ability
     private int _currentChargeTier = 0;
     private AudioSource _gigaBlastChargeSource;
     private Coroutine _gigaBlastChargeFadeCoroutine;
+    private NetMovement _netMovement;
     protected override void Awake()
     {
         base.Awake();
         _originalThrustForce = player.movement.thrustForce;
+        _netMovement = GetComponent<NetMovement>();
         _gigaBlastChargeSource = gameObject.AddComponent<AudioSource>();
         _gigaBlastChargeSource.playOnAwake = false;
         _gigaBlastChargeSource.loop = true;
@@ -188,15 +190,10 @@ public class GigaBlast : Ability
 
     void FixedUpdate()
     {
-        if(_isCharging)
-        {
-            Debug.Log($"Charging GigaBlast - Charge Time: {(Time.time - _chargeStartTime):F2}s, Current Tier: {_currentChargeTier}");
-        }
     }
     public override void UseAbility(InputValue value)
     {
         base.UseAbility(value);
-        Debug.Log($"GigaBlast input received - isPressed: {value.isPressed}");
 
         if (value.isPressed)
         {
@@ -204,7 +201,6 @@ public class GigaBlast : Ability
             {
                 if (IsAnyOtherAbilityActive())
                 {
-                    Debug.Log("Cannot charge GigaBlast: other abilities active");
                     return;
                 }
 
@@ -226,7 +222,6 @@ public class GigaBlast : Ability
                     _gigaBlastChargeFadeCoroutine = StartCoroutine(FadeGigaBlastChargeVolume(gigaBlast.chargeSound.volume));
                 }
 
-                Debug.Log("GigaBlast charging started");
             }
         }
         else
@@ -239,10 +234,6 @@ public class GigaBlast : Ability
                 {
                     FireChargedShot(chargeTime);
                     _lastGigaBlastTime = Time.time;
-                }
-                else
-                {
-                    Debug.Log($"GigaBlast released too early: {chargeTime:F2}s < {gigaBlast.timing.minChargeTime:F2}s");
                 }
 
                 _isCharging = false;
@@ -351,7 +342,6 @@ public class GigaBlast : Ability
 
         if (particleToPlay != null)
         {
-            Debug.Log($"Playing Tier {tier} particle effect: {particleToPlay.name}");
             particleToPlay.Play();
         }
         else
@@ -373,14 +363,12 @@ public class GigaBlast : Ability
 
         if (particleToStop != null)
         {
-            Debug.Log($"Stopping Tier {_currentChargeTier} particle effect: {particleToStop.name}");
             particleToStop.Stop(true, ParticleSystemStopBehavior.StopEmitting);
         }
     }
 
     private void StopAllChargeParticles()
     {
-        Debug.Log("Stopping all GigaBlast charge particles");
         if (gigaBlast.visual.tier1ParticleSystem != null) gigaBlast.visual.tier1ParticleSystem.Stop(true, ParticleSystemStopBehavior.StopEmitting);
         if (gigaBlast.visual.tier2ParticleSystem != null) gigaBlast.visual.tier2ParticleSystem.Stop(true, ParticleSystemStopBehavior.StopEmitting);
         if (gigaBlast.visual.tier3ParticleSystem != null) gigaBlast.visual.tier3ParticleSystem.Stop(true, ParticleSystemStopBehavior.StopEmitting);
@@ -464,6 +452,79 @@ public class GigaBlast : Ability
         }
 
         Vector3 spawnPosition = transform.position + transform.up * gigaBlast.offsetDistance;
+
+        bool useNetworkPath = NetTickUtil.IsActive && _netMovement != null && _netMovement.IsSpawned && _netMovement.IsOwner;
+        if (useNetworkPath)
+        {
+            Vector3 direction = transform.up;
+            if (!_netMovement.IsServer)
+            {
+                GameObject cosmeticProjectile = Instantiate(projectilePrefab, spawnPosition, Quaternion.identity);
+                if (cosmeticProjectile.TryGetComponent(out ProjectileScript cosmeticScript))
+                {
+                    cosmeticScript.targetTag = player.enemyTag;
+                    cosmeticScript.SetCosmeticOnly(true);
+                    cosmeticScript.Initialize(
+                        direction,
+                        Vector2.zero,
+                        finalSpeed,
+                        finalDamage,
+                        gigaBlast.timing.projectileLifetime,
+                        finalImpact,
+                        player);
+
+                    if (tier >= 3)
+                    {
+                        float cosmeticPierceMultiplier = (tier == 3) ? gigaBlast.pierce.tier3DamageMultiplierPerPierce : gigaBlast.pierce.tier4DamageMultiplierPerPierce;
+                        cosmeticScript.EnablePiercing(cosmeticPierceMultiplier);
+                    }
+                }
+            }
+
+            _netMovement.RequestPrimaryFire(new NetFireRequest
+            {
+                Tick = NetTickUtil.CurrentTick,
+                SpawnPosition = spawnPosition,
+                Direction = direction.normalized,
+                InheritedVelocity = Vector2.zero,
+                Speed = finalSpeed,
+                Damage = finalDamage,
+                Lifetime = gigaBlast.timing.projectileLifetime,
+                ImpactForce = finalImpact,
+                RecoilForce = finalRecoil,
+                ApplyRecoil = true,
+                PierceMultiplier = tier >= 3 ? ((tier == 3) ? gigaBlast.pierce.tier3DamageMultiplierPerPierce : gigaBlast.pierce.tier4DamageMultiplierPerPierce) : 1f,
+                SlowMultiplier = 1f,
+                SlowDuration = 0f,
+                CanPierce = tier >= 3,
+                AppliesSlow = false,
+                VisualType = tier switch
+                {
+                    1 => NetProjectileVisualType.GigaBlastTier1,
+                    2 => NetProjectileVisualType.GigaBlastTier2,
+                    3 => NetProjectileVisualType.GigaBlastTier3,
+                    _ => NetProjectileVisualType.GigaBlastTier4,
+                }
+            });
+
+            if (!_netMovement.IsServer)
+            {
+                player.ApplyRecoil(finalRecoil);
+            }
+
+            SoundEffect networkFireSound = tier switch
+            {
+                1 => gigaBlast.tier1FireSound,
+                2 => gigaBlast.tier2FireSound,
+                3 => gigaBlast.tier3FireSound,
+                4 => gigaBlast.tier4FireSound,
+                _ => null
+            };
+
+            networkFireSound?.Play(player.GetAvailableAudioSource());
+            return;
+        }
+
         GameObject projectile = Instantiate(projectilePrefab, spawnPosition, transform.rotation);
 
         if (projectile.TryGetComponent<ProjectileScript>(out var projectileScript))
@@ -502,7 +563,6 @@ public class GigaBlast : Ability
             fireSound.Play(player.GetAvailableAudioSource());
         }
 
-        Debug.Log($"GigaBlast fired! Tier: {tier}, Charge: {chargeTime:F2}s, Damage: {finalDamage:F1}, Speed: {finalSpeed:F1}");
     }
 
     // ===== AUDIO =====

@@ -86,6 +86,15 @@
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": false
+                },
+                {
+                    "name": "Friction",
+                    "type": "Button",
+                    "id": "3b8b5431-217e-4d0f-81c8-ce2513e52bfa",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
                 }
             ],
             "bindings": [
@@ -355,12 +364,34 @@
                 },
                 {
                     "name": "",
+                    "id": "18b7cb32-4809-462b-8f32-fa6b528870a4",
+                    "path": "<Keyboard>/g",
+                    "interactions": "Press(behavior=2)",
+                    "processors": "",
+                    "groups": ";key+mouse",
+                    "action": "Anchor",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
                     "id": "90652c53-5803-40cd-ba70-8de076d34a4b",
                     "path": "",
                     "interactions": "",
                     "processors": "",
                     "groups": "",
                     "action": "Move",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "48e2349f-4035-4e09-8e0c-07178367f0ee",
+                    "path": "<Keyboard>/f",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": ";key+mouse",
+                    "action": "Friction",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }

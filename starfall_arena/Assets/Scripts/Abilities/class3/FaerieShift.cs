@@ -32,6 +32,7 @@ public class FaerieShift : Ability
     // ===== PRIVATE STATE =====
     private Vector3 _originalScale;
     private bool _isActive = false;
+    private NetMovement _netMovement;
 
     protected override void Awake()
     {
@@ -42,20 +43,52 @@ public class FaerieShift : Ability
         {
             _originalScale = player.transform.localScale;
         }
+        _netMovement = GetComponent<NetMovement>();
     }
 
     public override void UseAbility(InputValue value)
     {
         base.UseAbility(value);
 
+        if (value.isPressed)
+        {
+            (player?.ability2 as Invisibility)?.BreakInvisibilityFromAction();
+        }
+
         // Toggle on press
         if (value.isPressed)
         {
-            ActivateShift();
+            bool useNetworkPath = NetTickUtil.IsActive && _netMovement != null && _netMovement.IsSpawned && _netMovement.IsOwner;
+            if (useNetworkPath)
+            {
+                if (!_netMovement.IsServer)
+                {
+                    ApplyNetworkShiftState(true, authoritative: false);
+                }
+
+                _netMovement.RequestFaerieShiftState(true);
+            }
+            else
+            {
+                ActivateShift();
+            }
         }
         else
         {
-            DeactivateShift();
+            bool useNetworkPath = NetTickUtil.IsActive && _netMovement != null && _netMovement.IsSpawned && _netMovement.IsOwner;
+            if (useNetworkPath)
+            {
+                if (!_netMovement.IsServer)
+                {
+                    ApplyNetworkShiftState(false, authoritative: false);
+                }
+
+                _netMovement.RequestFaerieShiftState(false);
+            }
+            else
+            {
+                DeactivateShift();
+            }
         }
     }
 
@@ -77,7 +110,6 @@ public class FaerieShift : Ability
         // Disable other abilities while active
         DisableOtherAbilities(true);
 
-        Debug.Log($"Faerie Shift activated! Scale: {config.scaleMultiplier}x, Speed: {config.speedMultiplier}x, Rotation: {config.rotationMultiplier}x, Damage: {config.takeDamageMultiplier}x");
     }
 
     private void DeactivateShift()
@@ -98,7 +130,6 @@ public class FaerieShift : Ability
         // Re-enable other abilities
         DisableOtherAbilities(false);
 
-        Debug.Log("Faerie Shift deactivated!");
     }
 
     public override bool IsAbilityActive()
@@ -154,5 +185,16 @@ public class FaerieShift : Ability
             player.transform.localScale = _originalScale;
             _isActive = false;
         }
+    }
+
+    public void ApplyNetworkShiftState(bool isActive, bool authoritative)
+    {
+        if (isActive)
+        {
+            ActivateShift();
+            return;
+        }
+
+        DeactivateShift();
     }
 }

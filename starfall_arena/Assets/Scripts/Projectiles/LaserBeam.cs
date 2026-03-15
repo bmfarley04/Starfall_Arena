@@ -31,6 +31,10 @@ public class LaserBeam : MonoBehaviour
     private ShieldController _currentTargetShield = null;
     private Entity _shooter;
     private bool _hasBeenReflected = false;
+    private bool _isCosmeticOnly = false;
+    private NetMovement _networkAuthority;
+    private int _requestedFireTick = -1;
+    private int _beamServerStartTick = -1;
 
     void Awake()
     {
@@ -54,6 +58,18 @@ public class LaserBeam : MonoBehaviour
         _recoilForcePerSecond = recoilForcePerSecond;
         _impactForce = impactForce;
         _shooter = shooter;
+    }
+
+    public void SetCosmeticOnly(bool isCosmeticOnly)
+    {
+        _isCosmeticOnly = isCosmeticOnly;
+    }
+
+    public void SetNetworkAuthority(NetMovement networkAuthority, int requestedFireTick)
+    {
+        _networkAuthority = networkAuthority;
+        _requestedFireTick = requestedFireTick;
+        _beamServerStartTick = NetTickUtil.IsActive ? NetTickUtil.ServerTick : requestedFireTick;
     }
 
     public float GetRecoilForcePerSecond()
@@ -190,7 +206,7 @@ public class LaserBeam : MonoBehaviour
             if (validHit.Value.collider.CompareTag(_targetTag))
             {
                 Entity damageable = validHit.Value.collider.GetComponent<Entity>();
-                if (damageable != null)
+                if (damageable != null && CanApplyGameplay())
                 {
                     float damageThisFrame = _damagePerSecond * Time.deltaTime;
                     float impactForceThisFrame = _impactForce * Time.deltaTime;
@@ -232,11 +248,29 @@ public class LaserBeam : MonoBehaviour
             else if (validHit.Value.collider.CompareTag("Asteroid"))
             {
                 AsteroidScript asteroid = validHit.Value.collider.GetComponent<AsteroidScript>();
-                if (asteroid != null)
+                if (asteroid != null && CanApplyGameplay())
                 {
                     float damageThisFrame = _damagePerSecond * Time.deltaTime;
                     float impactForceThisFrame = _impactForce * Time.deltaTime;
                     asteroid.RequestDamage(damageThisFrame, impactForceThisFrame, validHit.Value.point);
+                }
+            }
+        }
+        else if (TryResolveLagCompensatedTargetHit(startPosition, fireDirection, out Vector2 lagCompHitPoint, out Entity lagCompTarget))
+        {
+            endPosition = lagCompHitPoint;
+            UpdateImpactEffect(lagCompHitPoint, fireDirection);
+
+            if (CanApplyGameplay())
+            {
+                float damageThisFrame = _damagePerSecond * Time.deltaTime;
+                float impactForceThisFrame = _impactForce * Time.deltaTime;
+                lagCompTarget.TakeDamage(damageThisFrame, impactForceThisFrame, lagCompHitPoint, DamageSource.LaserBeam);
+
+                Rigidbody2D targetRb = lagCompTarget.GetComponent<Rigidbody2D>();
+                if (targetRb != null)
+                {
+                    targetRb.linearVelocity += fireDirection * (impactForceThisFrame / targetRb.mass);
                 }
             }
         }
@@ -259,6 +293,70 @@ public class LaserBeam : MonoBehaviour
         // Update line renderer positions
         lineRenderer.SetPosition(0, startPosition);
         lineRenderer.SetPosition(1, endPosition);
+    }
+
+    private bool CanApplyGameplay()
+    {
+        if (_isCosmeticOnly)
+        {
+            return false;
+        }
+
+        if (!NetTickUtil.IsActive)
+        {
+            return true;
+        }
+
+        return _networkAuthority != null && _networkAuthority.IsServer;
+    }
+
+    private bool TryResolveLagCompensatedTargetHit(Vector2 startPosition, Vector2 fireDirection, out Vector2 hitPoint, out Entity target)
+    {
+        hitPoint = default;
+        target = null;
+
+        if (!CanApplyGameplay() || string.IsNullOrEmpty(_targetTag))
+        {
+            return false;
+        }
+
+        if (!NetMovement.TryGetPlayerByTag(_targetTag, out NetMovement targetMovement))
+        {
+            return false;
+        }
+
+        int elapsedTicks = Mathf.Max(0, NetTickUtil.ServerTick - _beamServerStartTick);
+        int desiredTick = _requestedFireTick >= 0 ? _requestedFireTick + elapsedTicks : NetTickUtil.ServerTick;
+        if (!targetMovement.TryGetHistoricalState(desiredTick, out NetStateSnapshot snapshot))
+        {
+            return false;
+        }
+
+        Vector2 endPosition = startPosition + fireDirection * _maxBeamDistance;
+        float radius = targetMovement.GetCollisionRadius();
+        Vector2 closest = ClosestPointOnSegment(startPosition, endPosition, snapshot.Position);
+        if ((closest - snapshot.Position).sqrMagnitude > radius * radius)
+        {
+            return false;
+        }
+
+        hitPoint = closest;
+        target = targetMovement.GetComponent<Entity>();
+        return target != null;
+    }
+
+    private static Vector2 ClosestPointOnSegment(Vector2 from, Vector2 to, Vector2 point)
+    {
+        Vector2 segment = to - from;
+        float segmentSqrMagnitude = segment.sqrMagnitude;
+        if (segmentSqrMagnitude <= Mathf.Epsilon)
+        {
+            return from;
+        }
+
+        float t = Vector2.Dot(point - from, segment) / segmentSqrMagnitude;
+        t = Mathf.Clamp01(t);
+        return from + segment * t;
     }
     
     private void SpawnMuzzleFlash()

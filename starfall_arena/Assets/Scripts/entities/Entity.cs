@@ -160,6 +160,7 @@ public abstract class Entity : MonoBehaviour
     private float _currentBankAngle;
     private float _currentPitchAngle;
     private Quaternion _visualBaseLocalRotation;
+    private bool _useExternalVisualState = false;
     private float _currentThrusterIntensity = 0f;
     private Dictionary<ParticleSystem, (ParticleSystem.MinMaxCurve speed, ParticleSystem.MinMaxCurve lifetime)> _thrusterOriginalValues = new();
     private Dictionary<ParticleSystem, Color> _thrusterOriginalColors = new();
@@ -266,7 +267,7 @@ public abstract class Entity : MonoBehaviour
 
     protected virtual void LateUpdate()
     {
-        UpdateVisualRotation();
+        UpdateVisualRotation(Time.deltaTime);
     }
 
     // ===== MOVEMENT HELPERS =====
@@ -317,6 +318,8 @@ public abstract class Entity : MonoBehaviour
         }
 
         bool hasShield = currentShield > 0 && !shieldIgnored;
+        bool shieldTookHit = false;
+        bool shieldBroke = false;
 
         if (hasShield)
         {
@@ -324,12 +327,14 @@ public abstract class Entity : MonoBehaviour
 
             float shieldDamage = Mathf.Min(currentShield, damage);
             currentShield -= shieldDamage;
+            shieldTookHit = shieldDamage > 0f;
             OnShieldChanged();
 
             if (shieldController != null)
             {
                 if (hadShields && currentShield <= 0)
                 {
+                    shieldBroke = true;
                     shieldController.BreakShield();
                 }
                 else if (currentShield > 0 && source != DamageSource.LaserBeam)
@@ -339,7 +344,11 @@ public abstract class Entity : MonoBehaviour
                 }
             }
 
-            if (shieldDamage >= damage) return;
+            if (shieldDamage >= damage)
+            {
+                BroadcastAuthoritativeCombatState(hitPoint, source, shieldTookHit, shieldBroke, impactForce);
+                return;
+            }
 
             damage -= shieldDamage;
         }
@@ -354,6 +363,8 @@ public abstract class Entity : MonoBehaviour
         {
             Die();
         }
+
+        BroadcastAuthoritativeCombatState(hitPoint, source, shieldTookHit, shieldBroke, impactForce);
     }
 
     /// <summary>
@@ -426,6 +437,45 @@ public abstract class Entity : MonoBehaviour
         {
             Die();
         }
+
+        BroadcastAuthoritativeCombatState(hitPoint, source, false, false, impactForce);
+    }
+
+    public void ApplyAuthoritativeCombatState(float health, float shield, Vector2 hitPoint, DamageSource source, bool shieldHit, bool shieldBreak)
+    {
+        currentHealth = Mathf.Clamp(health, 0f, maxHealth);
+        currentShield = Mathf.Clamp(shield, 0f, maxShield);
+        OnHealthChanged();
+        OnShieldChanged();
+
+        if (shieldController == null || hitPoint == Vector2.zero)
+        {
+            if (shieldController != null && shieldBreak)
+            {
+                shieldController.BreakShield();
+            }
+            return;
+        }
+
+        if (shieldBreak)
+        {
+            shieldController.BreakShield();
+            return;
+        }
+
+        if (!shieldHit)
+        {
+            return;
+        }
+
+        if (source == DamageSource.LaserBeam)
+        {
+            shieldController.OnLaserHit(hitPoint);
+        }
+        else
+        {
+            shieldController.OnHit(hitPoint);
+        }
     }
 
     protected virtual void Die()
@@ -474,14 +524,19 @@ public abstract class Entity : MonoBehaviour
         }
     }
 
-    private void UpdateVisualRotation()
+    private void UpdateVisualRotation(float deltaTime)
     {
         if (visualEffects.visualModel == null) return;
-        if (Time.deltaTime <= 0f) return;
+        if (_useExternalVisualState)
+        {
+            ApplyVisualModelRotation();
+            return;
+        }
+        if (deltaTime <= 0f) return;
 
         float currentZRotation = transform.eulerAngles.z;
         float deltaRotation = Mathf.DeltaAngle(_previousRotationZ, currentZRotation);
-        float angularVelocity = deltaRotation / Time.deltaTime;
+        float angularVelocity = deltaRotation / deltaTime;
         _previousRotationZ = currentZRotation;
 
         float targetBankAngle = Mathf.Clamp(
@@ -499,16 +554,54 @@ public abstract class Entity : MonoBehaviour
             visualEffects.maxPitchAngle
         );
 
-        _currentBankAngle = Mathf.Lerp(_currentBankAngle, targetBankAngle, Time.deltaTime * visualEffects.bankSmoothing);
-        _currentPitchAngle = Mathf.Lerp(_currentPitchAngle, targetPitchAngle, Time.deltaTime * visualEffects.pitchSmoothing);
+        _currentBankAngle = Mathf.Lerp(_currentBankAngle, targetBankAngle, deltaTime * visualEffects.bankSmoothing);
+        _currentPitchAngle = Mathf.Lerp(_currentPitchAngle, targetPitchAngle, deltaTime * visualEffects.pitchSmoothing);
 
-        _recentImpulse = Vector2.Lerp(_recentImpulse, Vector2.zero, Time.deltaTime * _impulseDecayRate);
+        _recentImpulse = Vector2.Lerp(_recentImpulse, Vector2.zero, deltaTime * _impulseDecayRate);
+
+        ApplyVisualModelRotation();
+    }
+
+    private void ApplyVisualModelRotation()
+    {
+        if (visualEffects.visualModel == null) return;
 
         Quaternion pitchQuat = Quaternion.AngleAxis(_currentPitchAngle, Vector3.right);
         Quaternion bankQuat = Quaternion.AngleAxis(_currentBankAngle, Vector3.forward);
         Quaternion finalRot = _visualBaseLocalRotation * pitchQuat * bankQuat;
-
         visualEffects.visualModel.localRotation = finalRot;
+    }
+
+    public void SetExternalVisualStateEnabled(bool enabled)
+    {
+        _useExternalVisualState = enabled;
+
+        if (!enabled)
+        {
+            _previousRotationZ = transform.eulerAngles.z;
+        }
+    }
+
+    public void GetVisualTiltState(out float bankAngle, out float pitchAngle)
+    {
+        bankAngle = _currentBankAngle;
+        pitchAngle = _currentPitchAngle;
+    }
+
+    public void RefreshVisualState(float deltaTime)
+    {
+        UpdateVisualRotation(deltaTime);
+    }
+
+    public void ApplyExternalVisualTiltState(float bankAngle, float pitchAngle)
+    {
+        if (visualEffects.visualModel == null) return;
+
+        _useExternalVisualState = true;
+        _currentBankAngle = bankAngle;
+        _currentPitchAngle = pitchAngle;
+        _previousRotationZ = transform.eulerAngles.z;
+        ApplyVisualModelRotation();
     }
 
     private void UpdateThrusters()
@@ -588,6 +681,22 @@ public abstract class Entity : MonoBehaviour
         {
             OnShieldChanged();
         }
+    }
+
+    private void BroadcastAuthoritativeCombatState(Vector3 hitPoint, DamageSource source, bool shieldHit, bool shieldBreak, float impactForce)
+    {
+        if (!NetTickUtil.IsActive)
+        {
+            return;
+        }
+
+        NetMovement netMovement = GetComponent<NetMovement>();
+        if (netMovement == null || !netMovement.IsServer)
+        {
+            return;
+        }
+
+        netMovement.BroadcastCombatState(currentHealth, currentShield, hitPoint, source, shieldHit, shieldBreak, impactForce);
     }
 
     public void SetMaxHealthAndClampCurrent(float newMaxHealth, bool notify = true)

@@ -130,7 +130,6 @@ public class ProceduralStarfield : MonoBehaviour
             ps.Play();
         }
         
-        Debug.Log($"Generated {starCount} stars for {gameObject.name}");
     }
     
     // Optional: Regenerate stars at runtime

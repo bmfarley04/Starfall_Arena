@@ -82,12 +82,9 @@ public class ReflectShield : MonoBehaviour
 
     public void Activate(Color color)
     {
-        Debug.Log($"🛡 ReflectShield.Activate() called! Color: {color}");
-
         // Ensure components are initialized
         if (_shieldRenderer == null || _propBlock == null)
         {
-            Debug.Log("Initializing shield components...");
             InitializeComponents();
         }
 
@@ -95,8 +92,6 @@ public class ReflectShield : MonoBehaviour
         shieldColor = color;
         _activationTime = Time.time;
         _currentAlpha = 0f;
-
-        Debug.Log($"Shield activated! _isActive={_isActive}, _activationTime={_activationTime}");
 
         // Reset ripples
         for (int i = 0; i < MAX_RIPPLES; i++)
@@ -110,7 +105,6 @@ public class ReflectShield : MonoBehaviour
         _propBlock.SetColor(_colorID, shieldColor);
         _shieldRenderer.SetPropertyBlock(_propBlock);
 
-        Debug.Log($"Shield renderer enabled: {_shieldRenderer.enabled}, GameObject active: {gameObject.activeInHierarchy}");
     }
 
     public void Deactivate()
