@@ -74,11 +74,13 @@ public class FireWall : Ability
     private FireHazardGroup _currentGroup;
     private AudioSource _fireLoopSource;
     private Coroutine _soundFadeCoroutine;
+    private NetMovement _netMovement;
 
     protected override void Awake()
     {
         base.Awake();
         _currentCapacity = 0f;
+        _netMovement = GetComponent<NetMovement>();
 
         _fireLoopSource = gameObject.AddComponent<AudioSource>();
         _fireLoopSource.playOnAwake = false;
@@ -133,6 +135,11 @@ public class FireWall : Ability
 
     void FixedUpdate()
     {
+        if (NetTickUtil.IsActive && (_netMovement == null || !_netMovement.IsServer))
+        {
+            return;
+        }
+
         if (_isActive)
         {
             // Drain capacity while active
@@ -158,6 +165,8 @@ public class FireWall : Ability
     {
         base.UseAbility(value);
 
+        bool useNetworkPath = NetTickUtil.IsActive && _netMovement != null && _netMovement.IsSpawned && _netMovement.IsOwner;
+
         if (value.isPressed)
         {
             if (_currentCapacity >= fireTrail.capacity)
@@ -167,15 +176,53 @@ public class FireWall : Ability
 
             if (!_isActive && fireTrail.firePrefab != null)
             {
-                StartFireTrail();
+                ApplyNetworkTrailState(true, authoritative: useNetworkPath && _netMovement.IsServer);
+                if (useNetworkPath)
+                {
+                    _netMovement.RequestFireTrailState(true);
+                }
             }
         }
         else
         {
             if (_isActive)
             {
-                StopFireTrail();
+                ApplyNetworkTrailState(false, authoritative: useNetworkPath && _netMovement.IsServer);
+                if (useNetworkPath)
+                {
+                    _netMovement.RequestFireTrailState(false);
+                }
             }
+        }
+    }
+
+    public void ApplyNetworkTrailState(bool isActive, bool authoritative)
+    {
+        if (isActive)
+        {
+            if (_isActive)
+            {
+                return;
+            }
+
+            if (NetTickUtil.IsActive && !authoritative)
+            {
+                _isActive = true;
+                _lastSpawnPosition = transform.position;
+                return;
+            }
+
+            if (fireTrail.firePrefab != null)
+            {
+                StartFireTrail();
+            }
+
+            return;
+        }
+
+        if (_isActive)
+        {
+            StopFireTrail();
         }
     }
 
@@ -232,6 +279,9 @@ public class FireWall : Ability
                 fireTrail.fireDuration,
                 fireTrail.impactForce
             );
+
+            bool authoritativeHazard = !NetTickUtil.IsActive || (_netMovement != null && _netMovement.IsServer);
+            fireHazardComponent.SetCosmeticOnly(!authoritativeHazard);
         }
 
         _activeHazards.Add(hazard);
@@ -240,6 +290,33 @@ public class FireWall : Ability
         if (_currentGroup != null)
         {
             _currentGroup.hazards.Add(hazard);
+        }
+
+        if (NetTickUtil.IsActive && _netMovement != null && _netMovement.IsServer)
+        {
+            _netMovement.BroadcastFireHazardSpawn(new NetFireHazardSpawnData
+            {
+                SpawnPosition = spawnPosition,
+                DamagePerSecond = fireTrail.damagePerSecond,
+                Lifetime = fireTrail.fireDuration,
+                ImpactForce = fireTrail.impactForce,
+            });
+        }
+    }
+
+    public void SpawnRemoteHazard(NetFireHazardSpawnData spawnData)
+    {
+        if (fireTrail.firePrefab == null)
+        {
+            return;
+        }
+
+        GameObject hazard = Instantiate(fireTrail.firePrefab, spawnData.SpawnPosition, Quaternion.identity);
+        FireHazard fireHazard = hazard.GetComponent<FireHazard>();
+        if (fireHazard != null)
+        {
+            fireHazard.Initialize(player.enemyTag, spawnData.DamagePerSecond, spawnData.Lifetime, spawnData.ImpactForce);
+            fireHazard.SetCosmeticOnly(true);
         }
     }
 

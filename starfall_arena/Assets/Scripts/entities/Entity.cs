@@ -318,6 +318,8 @@ public abstract class Entity : MonoBehaviour
         }
 
         bool hasShield = currentShield > 0 && !shieldIgnored;
+        bool shieldTookHit = false;
+        bool shieldBroke = false;
 
         if (hasShield)
         {
@@ -325,12 +327,14 @@ public abstract class Entity : MonoBehaviour
 
             float shieldDamage = Mathf.Min(currentShield, damage);
             currentShield -= shieldDamage;
+            shieldTookHit = shieldDamage > 0f;
             OnShieldChanged();
 
             if (shieldController != null)
             {
                 if (hadShields && currentShield <= 0)
                 {
+                    shieldBroke = true;
                     shieldController.BreakShield();
                 }
                 else if (currentShield > 0 && source != DamageSource.LaserBeam)
@@ -340,7 +344,11 @@ public abstract class Entity : MonoBehaviour
                 }
             }
 
-            if (shieldDamage >= damage) return;
+            if (shieldDamage >= damage)
+            {
+                BroadcastAuthoritativeCombatState(hitPoint, source, shieldTookHit, shieldBroke, impactForce);
+                return;
+            }
 
             damage -= shieldDamage;
         }
@@ -355,6 +363,8 @@ public abstract class Entity : MonoBehaviour
         {
             Die();
         }
+
+        BroadcastAuthoritativeCombatState(hitPoint, source, shieldTookHit, shieldBroke, impactForce);
     }
 
     /// <summary>
@@ -426,6 +436,45 @@ public abstract class Entity : MonoBehaviour
         if (currentHealth <= 0)
         {
             Die();
+        }
+
+        BroadcastAuthoritativeCombatState(hitPoint, source, false, false, impactForce);
+    }
+
+    public void ApplyAuthoritativeCombatState(float health, float shield, Vector2 hitPoint, DamageSource source, bool shieldHit, bool shieldBreak)
+    {
+        currentHealth = Mathf.Clamp(health, 0f, maxHealth);
+        currentShield = Mathf.Clamp(shield, 0f, maxShield);
+        OnHealthChanged();
+        OnShieldChanged();
+
+        if (shieldController == null || hitPoint == Vector2.zero)
+        {
+            if (shieldController != null && shieldBreak)
+            {
+                shieldController.BreakShield();
+            }
+            return;
+        }
+
+        if (shieldBreak)
+        {
+            shieldController.BreakShield();
+            return;
+        }
+
+        if (!shieldHit)
+        {
+            return;
+        }
+
+        if (source == DamageSource.LaserBeam)
+        {
+            shieldController.OnLaserHit(hitPoint);
+        }
+        else
+        {
+            shieldController.OnHit(hitPoint);
         }
     }
 
@@ -515,6 +564,8 @@ public abstract class Entity : MonoBehaviour
 
     private void ApplyVisualModelRotation()
     {
+        if (visualEffects.visualModel == null) return;
+
         Quaternion pitchQuat = Quaternion.AngleAxis(_currentPitchAngle, Vector3.right);
         Quaternion bankQuat = Quaternion.AngleAxis(_currentBankAngle, Vector3.forward);
         Quaternion finalRot = _visualBaseLocalRotation * pitchQuat * bankQuat;
@@ -544,6 +595,8 @@ public abstract class Entity : MonoBehaviour
 
     public void ApplyExternalVisualTiltState(float bankAngle, float pitchAngle)
     {
+        if (visualEffects.visualModel == null) return;
+
         _useExternalVisualState = true;
         _currentBankAngle = bankAngle;
         _currentPitchAngle = pitchAngle;
@@ -628,6 +681,22 @@ public abstract class Entity : MonoBehaviour
         {
             OnShieldChanged();
         }
+    }
+
+    private void BroadcastAuthoritativeCombatState(Vector3 hitPoint, DamageSource source, bool shieldHit, bool shieldBreak, float impactForce)
+    {
+        if (!NetTickUtil.IsActive)
+        {
+            return;
+        }
+
+        NetMovement netMovement = GetComponent<NetMovement>();
+        if (netMovement == null || !netMovement.IsServer)
+        {
+            return;
+        }
+
+        netMovement.BroadcastCombatState(currentHealth, currentShield, hitPoint, source, shieldHit, shieldBreak, impactForce);
     }
 
     public void SetMaxHealthAndClampCurrent(float newMaxHealth, bool notify = true)

@@ -4969,7 +4969,7 @@ GameObject:
   - component: {fileID: -3504052430344171325}
   m_Layer: 0
   m_Name: Class1_Player
-  m_TagString: Player
+  m_TagString: Player1
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -5307,7 +5307,7 @@ MonoBehaviour:
   visualEffects:
     visualModel: {fileID: 1770409303365008523}
     maxBankAngle: 90
-    bankSensitivity: 0.3
+    bankSensitivity: 0.1
     bankSmoothing: 10
     maxPitchAngle: 45
     pitchSensitivity: 0.1
@@ -5598,6 +5598,7 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   _reconciliationThreshold: 0.01
   _interpolationBufferTicks: 2
+  _maxCombatRewindTicks: 6
 --- !u!1 &3501154216763360000
 GameObject:
   m_ObjectHideFlags: 0

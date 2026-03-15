@@ -37,11 +37,13 @@ public class Reflector : Ability
     private float _lastReflectTime = -999f;
     private Coroutine _reflectCoroutine;
     private AudioSource _reflectShieldSource;
+    private NetMovement _netMovement;
 
 
     protected override void Awake()
     {
         base.Awake();
+        _netMovement = GetComponent<NetMovement>();
         _reflectShieldSource = gameObject.AddComponent<AudioSource>();
         _reflectShieldSource.playOnAwake = false;
         _reflectShieldSource.loop = true;
@@ -73,12 +75,12 @@ public class Reflector : Ability
         }
 
         _lastReflectTime = Time.time;
-
-        if (_reflectCoroutine != null)
+        bool useNetworkPath = NetTickUtil.IsActive && _netMovement != null && _netMovement.IsSpawned && _netMovement.IsOwner;
+        ApplyNetworkReflectActivation(authoritative: useNetworkPath && _netMovement.IsServer);
+        if (useNetworkPath)
         {
-            StopCoroutine(_reflectCoroutine);
+            _netMovement.RequestReflectActivation();
         }
-        _reflectCoroutine = StartCoroutine(ActivateReflectShield());
     }
 
     public override bool IsAbilityActive()
@@ -159,5 +161,17 @@ public class Reflector : Ability
         {
             _reflectShieldSource.Stop();
         }
+    }
+
+    public void ApplyNetworkReflectActivation(bool authoritative)
+    {
+        _lastReflectTime = Time.time;
+
+        if (_reflectCoroutine != null)
+        {
+            StopCoroutine(_reflectCoroutine);
+        }
+
+        _reflectCoroutine = StartCoroutine(ActivateReflectShield());
     }
 }

@@ -84,7 +84,9 @@ Input note:
 
 `Class1` is currently the simplest concrete player class and inherits almost all live behavior from `Player` plus attached abilities.
 
-`Class2` and `Class3` exist in the repo and should be treated as real ship-class architecture, but the current docs should center on the duel systems that are active now rather than implying every class is equally production-complete.
+`Class2` now also uses the modular ability-component pattern, with its empowered shot, shield, tractor beam, and physical projectile implemented as separate scripts under `Assets/Scripts/Abilities/class2` while the ship class keeps only its custom primary-fire convergence and slot-4 lock behavior.
+
+`Class3` exists in the repo and should be treated as real ship-class architecture, but the current docs should center on the duel systems that are active now rather than implying every class is equally production-complete.
 
 ### Enemy
 
@@ -158,6 +160,12 @@ All standard projectile-style weapons derive from `ProjectileScript`.
 - optional slow application
 - reflection state handling
 
+Networked duel note:
+
+- in network sessions, projectile visuals can exist as cosmetic-only local or remote instances
+- only the server-authoritative projectile instance should decide real hits, damage, slow application, and reflection outcomes
+- projectile hit validation now uses recent network movement history with a short defender-favored rewind cap instead of trusting local client trigger collisions
+
 This is the main reusable base for projectile weapons.
 
 #### PhysicalProjectile
@@ -182,6 +190,12 @@ Key differences from projectiles:
 - manages muzzle and impact FX separately
 - has special shield ripple timing behavior
 - can be stopped by valid blockers without behaving like a spawned projectile body
+
+Networked duel note:
+
+- beam start and stop still appears immediately for the owning player
+- real beam damage now only comes from the server-authoritative beam instance
+- cosmetic beam instances on clients are visual-only and should not apply damage or force
 
 That distinction is important: projectile docs and beam docs should stay separate.
 
@@ -268,11 +282,21 @@ The current duel-oriented documentation should especially treat these as establi
   - movement penalties while charging
   - tier-based projectile scaling and optional piercing at higher tiers
 
+Networked combat note:
+
+- `GigaBlast` projectile release now follows the same network split as primary projectiles: immediate local cosmetic shot, server-authoritative gameplay shot
+- `FireWall` hazards now treat the server-spawned hazard as gameplay truth in network play; remote client hazards are cosmetic-only
+- `Reflector` activation is now forwarded to the server in network sessions so reflection decisions happen on the authoritative side
+
 ### Ability 4 Unlock Rule
 
 The round flow currently locks `ability4` until a configured later round.
 
 That means ability availability is not just per-ship data; it is also tied into duel progression.
+
+Bug note:
+
+- if `Class2` ability 4 appears nonfunctional while its other modular abilities work, check the round lock first; `GameSceneManager` still keeps slot 4 locked until the configured unlock round unless a test scene explicitly calls `UnlockAbility4()`
 
 ## Augment System
 
@@ -353,5 +377,6 @@ Current augment flow:
 - The camera is still described in many places as orthographic, but future work should keep perspective-camera migration in mind.
 - Weapon docs must distinguish between projectile-family weapons and beam weapons.
 - Ability behavior is component-based and distributed, so changes often require docs updates in both gameplay and UI/flow docs.
+- Bug note: modular abilities should initialize their cooldown timer in a ready state. If the base `Ability.lastUsedAbility` starts at `0`, newly spawned ships can have abilities appear broken until each cooldown elapses once.
 - `Assets/Scripts/3d` is future-facing groundwork for a more fully 3D version of the game, not a current core maintenance area.
 - Bugs in combat, ability timing, or augment behavior should be added here in the relevant section once discovered.

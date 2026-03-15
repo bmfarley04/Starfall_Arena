@@ -17,7 +17,7 @@ public class Ability : MonoBehaviour
     protected Player player;
     protected LayerMask originalLayer;
     protected LayerMask thisPlayerLayer;
-    protected float lastUsedAbility = 0;
+    protected float lastUsedAbility = -999f;
     protected virtual void Awake()
     {
         player = GetComponent<Player>();

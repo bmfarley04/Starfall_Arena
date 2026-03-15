@@ -14,6 +14,11 @@ public class ProjectileScript : MonoBehaviour
     protected Vector2 _direction;
     protected ProjectileVisualController _visualController;
     protected Entity _shooter;
+    protected NetMovement _networkAuthority;
+    protected int _requestedFireTick = -1;
+    protected int _spawnServerTick = -1;
+    protected bool _isCosmeticOnly = false;
+    private Vector2 _previousPosition;
 
     // Pierce mechanics
     protected bool _canPierce = false;
@@ -36,6 +41,7 @@ public class ProjectileScript : MonoBehaviour
 
     void Start()
     {
+        _previousPosition = _rb.position;
         Destroy(gameObject, _lifetime);
     }
 
@@ -58,6 +64,18 @@ public class ProjectileScript : MonoBehaviour
         {
             _visualController.OnProjectileSpawned();
         }
+    }
+
+    public void SetCosmeticOnly(bool isCosmeticOnly)
+    {
+        _isCosmeticOnly = isCosmeticOnly;
+    }
+
+    public void SetNetworkAuthority(NetMovement networkAuthority, int requestedFireTick)
+    {
+        _networkAuthority = networkAuthority;
+        _requestedFireTick = requestedFireTick;
+        _spawnServerTick = NetTickUtil.IsActive ? NetTickUtil.ServerTick : requestedFireTick;
     }
 
     public Entity GetShooter()
@@ -141,11 +159,48 @@ public class ProjectileScript : MonoBehaviour
         return _isReflected;
     }
 
+    protected virtual void FixedUpdate()
+    {
+        if (_isCosmeticOnly || !NetTickUtil.IsActive)
+        {
+            _previousPosition = _rb.position;
+            return;
+        }
+
+        if (_networkAuthority == null || !_networkAuthority.IsServer)
+        {
+            _previousPosition = _rb.position;
+            return;
+        }
+
+        EvaluateServerHitSweep(_previousPosition, _rb.position);
+        _previousPosition = _rb.position;
+    }
+
     protected virtual void OnTriggerEnter2D(Collider2D collider)
     {
+        if (_isCosmeticOnly)
+        {
+            if (collider.CompareTag(targetTag) || collider.CompareTag("Asteroid"))
+            {
+                HandleCosmeticImpact();
+            }
+            return;
+        }
+
+        if (NetTickUtil.IsActive && (_networkAuthority == null || !_networkAuthority.IsServer))
+        {
+            return;
+        }
+
         // Check for ship collision
         if (collider.CompareTag(targetTag))
         {
+            if (NetTickUtil.IsActive)
+            {
+                return;
+            }
+
             // Check if player has active reflect shield
             Player player = collider.GetComponent<Player>();
             if (player != null && player.TryGetComponent<Reflector>(out var reflectScript) && reflectScript.IsAbilityActive())
@@ -157,9 +212,7 @@ public class ProjectileScript : MonoBehaviour
             var damageable = collider.GetComponent<Entity>();
             if (damageable != null)
             {
-                // Deal damage to the entity
-                damageable.TakeDamage(_damage, _impactForce, transform.position);
-                ApplyImpactForce(collider);
+                ApplyDamageToEntity(damageable, transform.position, collider);
 
                 // Stat tracking for shooter accuracy
                 if (_shooter is Player shooterPlayer)
@@ -218,7 +271,7 @@ public class ProjectileScript : MonoBehaviour
         }
     }
 
-    private void ApplyImpactForce(Collider2D collider)
+    protected virtual void ApplyImpactForce(Collider2D collider)
     {
         Rigidbody2D targetRb = collider.GetComponent<Rigidbody2D>();
         if (targetRb != null)
@@ -227,6 +280,115 @@ public class ProjectileScript : MonoBehaviour
             Vector2 forceDirection = _direction.normalized;
             targetRb.linearVelocity += forceDirection * (_impactForce / targetRb.mass);
         }
+    }
+
+    protected virtual void ApplyDamageToEntity(Entity damageable, Vector2 hitPoint, Collider2D collider)
+    {
+        damageable.TakeDamage(_damage, _impactForce, hitPoint);
+        ApplyImpactForce(collider);
+    }
+
+    protected void HandleCosmeticImpact()
+    {
+        if (_visualController != null)
+        {
+            _visualController.OnProjectileImpact(transform.position, _direction);
+        }
+
+        Destroy(gameObject);
+    }
+
+    private void EvaluateServerHitSweep(Vector2 from, Vector2 to)
+    {
+        if (string.IsNullOrEmpty(targetTag) || !NetMovement.TryGetPlayerByTag(targetTag, out NetMovement targetMovement))
+        {
+            return;
+        }
+
+        int currentServerTick = NetTickUtil.ServerTick;
+        int elapsedTicks = Mathf.Max(0, currentServerTick - _spawnServerTick);
+        int desiredTargetTick = _requestedFireTick >= 0 ? _requestedFireTick + elapsedTicks : currentServerTick;
+
+        if (!targetMovement.TryGetHistoricalState(desiredTargetTick, out NetStateSnapshot targetSnapshot))
+        {
+            return;
+        }
+
+        float targetRadius = targetMovement.GetCollisionRadius();
+        if (!SegmentIntersectsCircle(from, to, targetSnapshot.Position, targetRadius))
+        {
+            return;
+        }
+
+        Collider2D targetCollider = targetMovement.GetComponent<Collider2D>();
+        Entity damageable = targetMovement.GetComponent<Entity>();
+        if (targetCollider == null || damageable == null)
+        {
+            return;
+        }
+
+        Vector2 hitPoint = ClosestPointOnSegment(from, to, targetSnapshot.Position);
+
+        if (targetMovement.TryGetComponent(out Player player))
+        {
+            Collider2D projectileCollider = GetComponent<Collider2D>();
+            if (projectileCollider != null && player.TryProcessIncomingProjectileCollision(projectileCollider))
+            {
+                if (_visualController != null)
+                {
+                    _visualController.OnProjectileImpact(hitPoint, _direction);
+                }
+
+                Destroy(gameObject);
+                return;
+            }
+        }
+        ApplyDamageToEntity(damageable, hitPoint, targetCollider);
+
+        if (_shooter is Player shooterPlayer)
+        {
+            shooterPlayer.shotsHit++;
+            shooterPlayer.damageDealt += _damage;
+        }
+
+        if (_appliesSlow)
+        {
+            damageable.ApplySlow(_slowMultiplier, _slowDuration);
+        }
+
+        if (_visualController != null)
+        {
+            _visualController.OnProjectileImpact(hitPoint, _direction);
+        }
+
+        if (_canPierce && _pierceMultiplier > 0f)
+        {
+            _damage *= _pierceMultiplier;
+            return;
+        }
+
+        Destroy(gameObject);
+    }
+
+    private static bool SegmentIntersectsCircle(Vector2 from, Vector2 to, Vector2 center, float radius)
+    {
+        Vector2 closest = ClosestPointOnSegment(from, to, center);
+        float radiusSq = radius * radius;
+        return (closest - center).sqrMagnitude <= radiusSq;
+    }
+
+    private static Vector2 ClosestPointOnSegment(Vector2 from, Vector2 to, Vector2 point)
+    {
+        Vector2 segment = to - from;
+        float segmentSqrMagnitude = segment.sqrMagnitude;
+        if (segmentSqrMagnitude <= Mathf.Epsilon)
+        {
+            return from;
+        }
+
+        float t = Vector2.Dot(point - from, segment) / segmentSqrMagnitude;
+        t = Mathf.Clamp01(t);
+        return from + segment * t;
     }
 
     void OnDestroy()

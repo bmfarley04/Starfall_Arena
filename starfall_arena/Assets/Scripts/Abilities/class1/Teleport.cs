@@ -68,6 +68,7 @@ public class Teleport : Ability
     private float _lastTeleportTime = -999f;
     private Coroutine _teleportCoroutine;
     private bool _isTeleporting = false;
+    private NetMovement _netMovement;
 
     // ===== HUD STATE =====
     public override float GetHUDFillRatio()
@@ -85,7 +86,7 @@ public class Teleport : Ability
     protected override void Awake()
     {
         base.Awake();
-
+        _netMovement = GetComponent<NetMovement>();
     }
 
     protected void Update()
@@ -116,11 +117,19 @@ public class Teleport : Ability
 
         _lastTeleportTime = Time.time;
 
-        if (_teleportCoroutine != null)
+        bool useNetworkPath = NetTickUtil.IsActive && _netMovement != null && _netMovement.IsSpawned && _netMovement.IsOwner;
+        if (useNetworkPath)
         {
-            StopCoroutine(_teleportCoroutine);
+            if (!_netMovement.IsServer)
+            {
+                ApplyNetworkTeleport(targetWorldPosition, authoritative: false);
+            }
+
+            _netMovement.RequestTeleport(targetWorldPosition);
+            return;
         }
-        _teleportCoroutine = StartCoroutine(ExecuteTeleport(targetWorldPosition));
+
+        ApplyNetworkTeleport(targetWorldPosition, authoritative: true);
     }
 
     public override bool IsAbilityActive()
@@ -141,7 +150,17 @@ public class Teleport : Ability
     }
 
     // ===== COROUTINES =====
-    private System.Collections.IEnumerator ExecuteTeleport(Vector3 targetPosition)
+    public void ApplyNetworkTeleport(Vector2 targetPosition, bool authoritative)
+    {
+        if (_teleportCoroutine != null)
+        {
+            StopCoroutine(_teleportCoroutine);
+        }
+
+        _teleportCoroutine = StartCoroutine(ExecuteTeleport(targetPosition, authoritative));
+    }
+
+    private System.Collections.IEnumerator ExecuteTeleport(Vector3 targetPosition, bool authoritative)
     {
         _isTeleporting = true;
 
@@ -199,6 +218,11 @@ public class Teleport : Ability
         }
 
         Vector3 previousPosition = transform.position;
+        Rigidbody2D rb = GetComponent<Rigidbody2D>();
+        if (rb != null)
+        {
+            rb.position = targetPosition;
+        }
         transform.position = targetPosition;
 
         var cinemachineCameras = FindObjectsByType<Unity.Cinemachine.CinemachineCamera>(FindObjectsSortMode.None);

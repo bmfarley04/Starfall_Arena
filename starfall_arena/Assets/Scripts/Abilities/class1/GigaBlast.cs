@@ -160,10 +160,12 @@ public class GigaBlast : Ability
     private int _currentChargeTier = 0;
     private AudioSource _gigaBlastChargeSource;
     private Coroutine _gigaBlastChargeFadeCoroutine;
+    private NetMovement _netMovement;
     protected override void Awake()
     {
         base.Awake();
         _originalThrustForce = player.movement.thrustForce;
+        _netMovement = GetComponent<NetMovement>();
         _gigaBlastChargeSource = gameObject.AddComponent<AudioSource>();
         _gigaBlastChargeSource.playOnAwake = false;
         _gigaBlastChargeSource.loop = true;
@@ -450,6 +452,79 @@ public class GigaBlast : Ability
         }
 
         Vector3 spawnPosition = transform.position + transform.up * gigaBlast.offsetDistance;
+
+        bool useNetworkPath = NetTickUtil.IsActive && _netMovement != null && _netMovement.IsSpawned && _netMovement.IsOwner;
+        if (useNetworkPath)
+        {
+            Vector3 direction = transform.up;
+            if (!_netMovement.IsServer)
+            {
+                GameObject cosmeticProjectile = Instantiate(projectilePrefab, spawnPosition, Quaternion.identity);
+                if (cosmeticProjectile.TryGetComponent(out ProjectileScript cosmeticScript))
+                {
+                    cosmeticScript.targetTag = player.enemyTag;
+                    cosmeticScript.SetCosmeticOnly(true);
+                    cosmeticScript.Initialize(
+                        direction,
+                        Vector2.zero,
+                        finalSpeed,
+                        finalDamage,
+                        gigaBlast.timing.projectileLifetime,
+                        finalImpact,
+                        player);
+
+                    if (tier >= 3)
+                    {
+                        float cosmeticPierceMultiplier = (tier == 3) ? gigaBlast.pierce.tier3DamageMultiplierPerPierce : gigaBlast.pierce.tier4DamageMultiplierPerPierce;
+                        cosmeticScript.EnablePiercing(cosmeticPierceMultiplier);
+                    }
+                }
+            }
+
+            _netMovement.RequestPrimaryFire(new NetFireRequest
+            {
+                Tick = NetTickUtil.CurrentTick,
+                SpawnPosition = spawnPosition,
+                Direction = direction.normalized,
+                InheritedVelocity = Vector2.zero,
+                Speed = finalSpeed,
+                Damage = finalDamage,
+                Lifetime = gigaBlast.timing.projectileLifetime,
+                ImpactForce = finalImpact,
+                RecoilForce = finalRecoil,
+                ApplyRecoil = true,
+                PierceMultiplier = tier >= 3 ? ((tier == 3) ? gigaBlast.pierce.tier3DamageMultiplierPerPierce : gigaBlast.pierce.tier4DamageMultiplierPerPierce) : 1f,
+                SlowMultiplier = 1f,
+                SlowDuration = 0f,
+                CanPierce = tier >= 3,
+                AppliesSlow = false,
+                VisualType = tier switch
+                {
+                    1 => NetProjectileVisualType.GigaBlastTier1,
+                    2 => NetProjectileVisualType.GigaBlastTier2,
+                    3 => NetProjectileVisualType.GigaBlastTier3,
+                    _ => NetProjectileVisualType.GigaBlastTier4,
+                }
+            });
+
+            if (!_netMovement.IsServer)
+            {
+                player.ApplyRecoil(finalRecoil);
+            }
+
+            SoundEffect networkFireSound = tier switch
+            {
+                1 => gigaBlast.tier1FireSound,
+                2 => gigaBlast.tier2FireSound,
+                3 => gigaBlast.tier3FireSound,
+                4 => gigaBlast.tier4FireSound,
+                _ => null
+            };
+
+            networkFireSound?.Play(player.GetAvailableAudioSource());
+            return;
+        }
+
         GameObject projectile = Instantiate(projectilePrefab, spawnPosition, transform.rotation);
 
         if (projectile.TryGetComponent<ProjectileScript>(out var projectileScript))

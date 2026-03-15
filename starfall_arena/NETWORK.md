@@ -71,12 +71,14 @@ It currently provides:
 - host/client/server startup helpers
 - shutdown helper
 - connection and disconnection callbacks
+- join-order-based manual player prefab spawning
 - a helper for server-side spawning of player `NetworkObject`s
 
 Current caveat:
 
 - the file explicitly notes that gameplay scene spawn integration is still pending
 - this means the networking helper exists, but the full scene flow is not yet switched over to a complete networked spawn path
+- `NetMgr` now disables NGO's default player prefab assignment and manually spawns the configured first-player prefab for the first connected player and the configured second-player prefab for the second connected player; both prefabs still need `NetworkObject` components and registration in the `NetworkManager` prefab list
 
 ### NetMovement
 
@@ -192,25 +194,46 @@ Remote non-owners:
 
 This stays aligned with the original stability-first networking philosophy.
 
+### Networked Combat Broker
+
+`NetMovement` now also acts as the temporary combat RPC and history broker for duel weapons.
+
+Current behavior:
+
+- owning clients still play immediate local weapon visuals
+- the server receives fire/start/stop requests for projectile, beam, fire-trail, and reflect actions
+- the server spawns and owns the real gameplay projectile / beam / fire hazard behavior
+- non-owning clients receive cosmetic spawn/state RPCs so they can render the same weapon events without applying gameplay damage
+
+This is intentionally a bridge step that keeps combat authority aligned with the already-implemented movement authority model without requiring every weapon prefab to become a separate NGO network object first.
+
 ## Current Implementation Limits
 
 Based on the current repo, these pieces are not yet represented as fully integrated networking systems:
 
 - gameplay scene flow is not fully wired to the network spawn helper
 - the broader duel loop in `GameSceneManager` still reads as primarily local/splitscreen-oriented
-- projectile and beam replication are not yet implemented in `Assets/Scripts/Networking`
-- lag compensation and rewind hit validation from the older design doc are not yet implemented in the active networking code
+- full projectile/gameplay replication for every weapon family is still incomplete
+- the current networked combat path covers player projectile shots, GigaBlast projectile shots, beam start/stop, fire-trail hazard authority, and reflector activation
+- projectile and beam lag compensation currently uses a short, defender-favored history window from `NetMovement` state history rather than a full world rewind system
 
 That means `NETWORK.md` should describe those pieces as planned or intended, not current fact.
 
-## Planned Direction Still Supported By The Current Design
+## Current Combat Validation Direction
 
-The older design direction still fits the current codebase:
+The active implementation now follows this direction:
 
 - client-side prediction for local player movement
 - interpolation-only display for remote players
-- deterministic projectile simulation after spawn
+- immediate local cosmetic weapon feedback for the owner
+- server-authoritative projectile, beam, and fire-hazard damage
 - conservative lag compensation that favors the dodger
+
+Current projectile / beam note:
+
+- projectile hits are validated on the server against recent target history using a short rewind cap
+- beams also use a short rewind cap and only apply real damage from the server-owned beam instance
+- if the rewind result is outside the stored safety window, the current implementation falls back toward a miss instead of stretching further into the past
 
 The existing movement implementation is a real first step toward that architecture.
 
@@ -221,5 +244,7 @@ The existing movement implementation is a real first step toward that architectu
 - `Entity` banking/pitching on the 3D visual model now rides in `NetStateSnapshot`; remote proxies should consume the replicated visual tilt instead of recomputing it from interpolated root movement, or turns/recoil can look flat or mismatched.
 - For client-owned ships, the server/display side should forward the owner's reported visual tilt instead of recomputing bank from the server copy's root rotation, or the host view can over-bank badly.
 - Host mode requires special care to avoid double-simulating owner movement, and `NetMovement` already includes host-specific handling for that.
+- Host mode now also needs special care for combat visuals versus gameplay authority: owner-side local weapon visuals must not be allowed to double-apply gameplay recoil or damage when the host is also the authoritative server.
+- `ProjectileScript`, `LaserBeam`, and `FireHazard` now have a split between cosmetic-only instances and server-authoritative gameplay instances during network sessions. Future combat work should preserve that separation instead of letting client visuals deal damage directly.
 - Any networking migration work should assume full-network play is the target and treat old split-screen assumptions as secondary unless specifically required.
 - Future bugs or drift issues should be documented here with the exact subsystem affected: prediction, reconciliation, interpolation, spawn flow, or combat replication.

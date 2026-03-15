@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
+using Unity.Netcode;
 
 /// <summary>
 /// A fire hazard zone that damages entities that enter it.
@@ -32,6 +33,7 @@ public class FireHazard : MonoBehaviour
     private SpriteRenderer _spriteRenderer;
     private ParticleSystem _particleSystem;
     private float _originalAlpha;
+    private bool _isCosmeticOnly = false;
 
     private void Awake()
     {
@@ -59,6 +61,11 @@ public class FireHazard : MonoBehaviour
         lifetime = duration;
         impactForce = force;
         _spawnTime = Time.time;
+    }
+
+    public void SetCosmeticOnly(bool isCosmeticOnly)
+    {
+        _isCosmeticOnly = isCosmeticOnly;
     }
 
     private void Update()
@@ -99,6 +106,16 @@ public class FireHazard : MonoBehaviour
 
     private void FixedUpdate()
     {
+        if (_isCosmeticOnly)
+        {
+            return;
+        }
+
+        if (NetTickUtil.IsActive && (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsServer))
+        {
+            return;
+        }
+
         // Apply damage to all entities currently inside the hazard
         float damageThisFrame = damagePerSecond * Time.fixedDeltaTime;
         
