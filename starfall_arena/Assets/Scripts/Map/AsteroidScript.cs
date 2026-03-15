@@ -1,17 +1,28 @@
 using UnityEngine;
+using Unity.Netcode;
 using System.Collections;
 
-public class AsteroidScript : MonoBehaviour
+/// <summary>
+/// Networked asteroid with server-authoritative health and collision damage.
+/// When a network session is active:
+///   - Server:  owns health, processes damage and collisions, despawns on death
+///   - Client:  receives explosion/impact VFX via ClientRpc, runs cosmetic rotation locally
+///
+/// When no network session is running (local multiplayer), all logic runs locally
+/// as before — no RPCs or NetworkVariables are used.
+/// </summary>
+public class AsteroidScript : NetworkBehaviour
 {
+    // ===== CONFIGURATION =====
+
     [Header("Health Settings")]
     public float maxHealth = 500f;
-    private float currentHealth;
 
     [Header("Rotation Settings")]
     [Tooltip("The child GameObject with the visual mesh to rotate (not the collider parent)")]
     public GameObject visualObject;
-    public float minRotationSpeed = 10f;   // minimum rotation speed for each axis
-    public float maxRotationSpeed = 60f;   // maximum rotation speed for each axis
+    public float minRotationSpeed = 10f;
+    public float maxRotationSpeed = 60f;
 
     [Header("Visual Effects")]
     [Tooltip("Particle system prefab to spawn when destroyed")]
@@ -49,79 +60,151 @@ public class AsteroidScript : MonoBehaviour
     [Tooltip("Enable debug logging for collision and damage events")]
     public bool debugCollisionDamage = false;
 
+    // ===== NETWORK STATE =====
+
+    // Target scale set by MapManagerScript before Spawn(), applied in OnNetworkSpawn.
+    // All clients read this to run the grow animation with the correct final size.
+    private NetworkVariable<Vector3> _netTargetScale = new NetworkVariable<Vector3>(
+        Vector3.one, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+
+    // Staging field: holds the scale value between SetTargetScale() and OnNetworkSpawn(),
+    // since NetworkVariables can't be written before Spawn().
+    private Vector3 _pendingTargetScale = Vector3.one;
+
+    // ===== RUNTIME STATE =====
+
+    private float _currentHealth;
     private Rigidbody2D _rb;
-    private float parentZRotationSpeed;
-    private float childYRotationSpeed;
-    private float originalChildX;
-    private float originalChildZ;
-    private float currentChildY;
     private Vector2 _lastDamageDirection;
     private float _lastCollisionTime = -999f;
 
+    // ===== COSMETIC ROTATION (client-local, not synced) =====
+
+    private float _parentZRotationSpeed;
+    private float _childYRotationSpeed;
+    private float _originalChildX;
+    private float _originalChildZ;
+    private float _currentChildY;
+
+    // ===== LIFECYCLE =====
+
     void Start()
     {
-        // Initialize health
-        currentHealth = maxHealth;
-
-        // Get Rigidbody2D component for collision damage
         _rb = GetComponent<Rigidbody2D>();
 
-        // Parent rotates on Z axis only (spinning in 2D plane)
-        parentZRotationSpeed = Random.Range(minRotationSpeed, maxRotationSpeed) * (Random.value > 0.5f ? 1 : -1);
+        // Rotation is purely cosmetic — each client picks its own random speeds
+        _parentZRotationSpeed = Random.Range(minRotationSpeed, maxRotationSpeed) * (Random.value > 0.5f ? 1 : -1);
+        _childYRotationSpeed = Random.Range(minRotationSpeed, maxRotationSpeed) * (Random.value > 0.5f ? 1 : -1);
 
-        // Child rotates on Y axis only (turning over effect)
-        childYRotationSpeed = Random.Range(minRotationSpeed, maxRotationSpeed) * (Random.value > 0.5f ? 1 : -1);
-
-        // Store child's original X and Z rotation values
         if (visualObject != null)
         {
             Vector3 childRot = visualObject.transform.localEulerAngles;
-            originalChildX = childRot.x;
-            originalChildZ = childRot.z;
-            currentChildY = childRot.y;
+            _originalChildX = childRot.x;
+            _originalChildZ = childRot.z;
+            _currentChildY = childRot.y;
+        }
+
+        // Non-networked: init health locally
+        if (!NetMgr.IsNetworked)
+        {
+            _currentHealth = maxHealth;
         }
     }
 
+    public override void OnNetworkSpawn()
+    {
+        base.OnNetworkSpawn();
+
+        if (IsServer)
+        {
+            _currentHealth = maxHealth;
+            // Write the pending scale into the NetworkVariable now that the object is spawned.
+            // This value is included in the spawn message sent to clients.
+            _netTargetScale.Value = _pendingTargetScale;
+        }
+
+        // All clients run the grow animation using the server-set target scale
+        StartCoroutine(GrowAsteroid(_netTargetScale.Value));
+    }
+
+    // ===== COSMETIC UPDATE =====
+
     void Update()
     {
-        // Rotate parent on Z axis (keeps collider aligned, spins in 2D plane)
-        transform.Rotate(0f, 0f, parentZRotationSpeed * Time.deltaTime, Space.Self);
+        // Parent rotates on Z axis (spins in 2D plane, keeps collider aligned)
+        transform.Rotate(0f, 0f, _parentZRotationSpeed * Time.deltaTime, Space.Self);
 
-        // Rotate child on Y axis only, lock X and Z at original values
+        // Child rotates on Y axis only (turning-over effect), X and Z locked
         if (visualObject != null)
         {
-            currentChildY += childYRotationSpeed * Time.deltaTime;
-            visualObject.transform.localEulerAngles = new Vector3(originalChildX, currentChildY, originalChildZ);
+            _currentChildY += _childYRotationSpeed * Time.deltaTime;
+            visualObject.transform.localEulerAngles = new Vector3(_originalChildX, _currentChildY, _originalChildZ);
         }
+    }
+
+    // ===== DAMAGE: PUBLIC API =====
+
+    /// <summary>
+    /// Entry point for all external damage (projectiles, beams, bombs).
+    /// Routes through ServerRpc when called from a client in networked mode.
+    /// </summary>
+    public void RequestDamage(float damage, float impactForce = 0f, Vector3 hitPoint = default)
+    {
+        if (!NetMgr.IsNetworked)
+        {
+            TakeDamage(damage, impactForce, hitPoint);
+            return;
+        }
+
+        if (IsServer)
+        {
+            TakeDamage(damage, impactForce, hitPoint);
+        }
+        else
+        {
+            TakeDamageServerRpc(damage, impactForce, hitPoint);
+        }
+    }
+
+    // ===== DAMAGE: SERVER-AUTHORITATIVE =====
+
+    [ServerRpc(RequireOwnership = false)]
+    private void TakeDamageServerRpc(float damage, float impactForce, Vector3 hitPoint)
+    {
+        TakeDamage(damage, impactForce, hitPoint);
     }
 
     public void TakeDamage(float damage, float impactForce = 0f, Vector3 hitPoint = default)
     {
-        // Calculate damage direction (from attacker position to this asteroid)
-        // This way sparks always point away from whoever dealt the damage
+        // Networked: only the server owns health
+        if (NetMgr.IsNetworked && !IsServer) return;
+
+        // Track damage direction so explosion sparks point away from the attacker
         if (hitPoint != Vector3.zero)
         {
             _lastDamageDirection = ((Vector2)transform.position - (Vector2)hitPoint).normalized;
         }
         else
         {
-            _lastDamageDirection = Vector2.zero; // No direction info available
+            _lastDamageDirection = Vector2.zero;
         }
 
-        currentHealth -= damage;
+        _currentHealth -= damage;
 
-        if (currentHealth <= 0)
+        if (_currentHealth <= 0)
         {
             DestroyAsteroid();
         }
     }
 
+    // ===== COLLISION DAMAGE (server-only in networked mode) =====
+
     void OnCollisionEnter2D(Collision2D collision)
     {
-        // Check if collision damage is enabled
         if (!enableCollisionDamage) return;
+        if (NetMgr.IsNetworked && !IsServer) return;
 
-        // Check cooldown to prevent rapid successive hits
+        // Cooldown check
         if (Time.time - _lastCollisionTime < collisionCooldown)
         {
             if (debugCollisionDamage)
@@ -129,32 +212,23 @@ public class AsteroidScript : MonoBehaviour
             return;
         }
 
-        // Check if we hit a player
         Player player = collision.gameObject.GetComponent<Player>();
         if (player == null) return;
-
-        // Calculate velocity magnitude (ignores mass)
         if (_rb == null) return;
 
         Vector2 asteroidVelocity = _rb.linearVelocity;
         float velocity = asteroidVelocity.magnitude;
 
-        // Only deal damage if velocity exceeds threshold
+        // Velocity threshold gate
         if (velocity < minimumVelocityThreshold) return;
 
-        // Get collision point for hit direction
         Vector3 collisionPoint = collision.contacts.Length > 0 ? collision.contacts[0].point : transform.position;
 
-        // Check if player was hit by the traveling side of the asteroid
-        // Direction from asteroid center to collision point
+        // Only damage if hit from the traveling side (dot > 0)
         Vector2 toCollisionPoint = ((Vector2)collisionPoint - (Vector2)transform.position).normalized;
-        // Direction the asteroid is traveling
         Vector2 velocityDirection = asteroidVelocity.normalized;
-
-        // Dot product: positive means collision is on the front/traveling side
         float alignment = Vector2.Dot(velocityDirection, toCollisionPoint);
 
-        // Only damage if hit from the traveling side (dot > 0 means collision point is in front)
         if (alignment <= 0f)
         {
             if (debugCollisionDamage)
@@ -162,78 +236,103 @@ public class AsteroidScript : MonoBehaviour
             return;
         }
 
-        // Calculate damage based on velocity only (mass-independent)
+        // Apply damage (velocity-based, mass-independent)
         float damage = velocity * damagePerVelocity;
 
-        // DEBUG: Log damage details
         if (debugCollisionDamage)
             Debug.Log($"[Asteroid] HIT PLAYER! Velocity: {velocity:F1}, Damage: {damage:F1}");
 
-        // Deal damage to the player
         player.TakeDamage(damage, collisionImpactForce, collisionPoint, DamageSource.Other);
 
-        // Play impact sound
+        // Impact sound — broadcast to all clients in networked mode
         if (impactSound != null)
         {
-            Play2DAudioAtPoint(impactSound, collisionPoint, impactVolume);
+            if (NetMgr.IsNetworked)
+                PlayImpactSoundClientRpc(collisionPoint);
+            else
+                Play2DAudioAtPoint(impactSound, collisionPoint, impactVolume);
         }
 
-        // Apply knockback force to the player
+        // Knockback — applied over multiple frames to overcome player movement resistance
         Rigidbody2D playerRb = player.GetComponent<Rigidbody2D>();
         if (playerRb != null)
         {
-            // Calculate knockback direction (from asteroid to player)
             Vector2 knockbackDirection = ((Vector2)player.transform.position - (Vector2)collisionPoint).normalized;
-
-            // Scale knockback by velocity for more dynamic impacts
-            // Divide by mass to get velocity change (impulse = mass * velocity change)
             float knockbackSpeed = (collisionImpactForce * velocity) / playerRb.mass;
 
-            // Start coroutine on the PLAYER object so it survives if asteroid is destroyed
-            // Apply knockback over multiple frames to overcome player movement resistance
             player.StartCoroutine(ApplyKnockbackOverTime(playerRb, knockbackDirection, knockbackSpeed, knockbackDuration, debugCollisionDamage));
 
             if (debugCollisionDamage)
                 Debug.Log($"[Asteroid] Starting knockback coroutine: Direction={knockbackDirection}, TotalSpeed={knockbackSpeed:F1}, Duration={knockbackDuration:F2}s");
         }
 
-        // Update last collision time
         _lastCollisionTime = Time.time;
     }
 
+    // ===== DESTRUCTION =====
+
     private void DestroyAsteroid()
     {
-        // Play explosion sound (2D audio that survives GameObject destruction)
+        if (NetMgr.IsNetworked)
+        {
+            // Broadcast explosion VFX to all clients, then despawn
+            PlayDestructionEffectsClientRpc(transform.position, transform.rotation, explosionScaleMultiplier, _lastDamageDirection);
+            NetworkObject.Despawn(true);
+        }
+        else
+        {
+            PlayDestructionEffectsLocal(transform.position, transform.rotation, explosionScaleMultiplier, _lastDamageDirection);
+            Destroy(gameObject);
+        }
+    }
+
+    // ===== CLIENT RPCs: VFX & AUDIO =====
+
+    [ClientRpc]
+    private void PlayDestructionEffectsClientRpc(Vector3 position, Quaternion rotation, float scaleMultiplier, Vector2 damageDirection)
+    {
+        PlayDestructionEffectsLocal(position, rotation, scaleMultiplier, damageDirection);
+    }
+
+    [ClientRpc]
+    private void PlayImpactSoundClientRpc(Vector3 position)
+    {
+        if (impactSound != null)
+        {
+            Play2DAudioAtPoint(impactSound, position, impactVolume);
+        }
+    }
+
+    // ===== LOCAL VFX =====
+
+    private void PlayDestructionEffectsLocal(Vector3 position, Quaternion rotation, float scaleMultiplier, Vector2 damageDirection)
+    {
         if (explosionSound != null)
         {
-            Play2DAudioAtPoint(explosionSound, transform.position, explosionVolume);
+            Play2DAudioAtPoint(explosionSound, position, explosionVolume);
         }
 
-        // Spawn explosion visual effect
         if (explosionPrefab != null)
         {
-            // Use pool if available, otherwise fallback to instantiate
             if (ExplosionPool.Instance != null)
             {
-                Vector2? impactDir = _lastDamageDirection != Vector2.zero ? _lastDamageDirection : (Vector2?)null;
-                ExplosionPool.Instance.GetExplosion(transform.position, transform.rotation, explosionScaleMultiplier, impactDir);
+                Vector2? impactDir = damageDirection != Vector2.zero ? damageDirection : (Vector2?)null;
+                ExplosionPool.Instance.GetExplosion(position, rotation, scaleMultiplier, impactDir);
             }
             else
             {
-                GameObject explosion = Instantiate(explosionPrefab, transform.position, transform.rotation);
-                explosion.transform.localScale = transform.localScale * explosionScaleMultiplier;
+                GameObject explosion = Instantiate(explosionPrefab, position, rotation);
+                explosion.transform.localScale = Vector3.one * scaleMultiplier;
 
-                // Set impact direction if we have it
-                if (_lastDamageDirection != Vector2.zero)
+                if (damageDirection != Vector2.zero)
                 {
                     ExplosionScript explosionScript = explosion.GetComponent<ExplosionScript>();
                     if (explosionScript != null)
                     {
-                        explosionScript.SetImpactDirection(_lastDamageDirection);
+                        explosionScript.SetImpactDirection(damageDirection);
                     }
                 }
 
-                // Automatically destroy the explosion object after the particle effect finishes
                 ParticleSystem ps = explosion.GetComponent<ParticleSystem>();
                 if (ps != null)
                 {
@@ -245,17 +344,50 @@ public class AsteroidScript : MonoBehaviour
                 }
             }
         }
-
-        Destroy(gameObject);
     }
 
-    // Helper method to play 3D spatial audio that survives GameObject destruction
+    // ===== SCALE / GROW ANIMATION =====
+
+    /// <summary>
+    /// Called by MapManagerScript to set the target scale before NetworkObject.Spawn().
+    /// The value is staged in _pendingTargetScale and written to the NetworkVariable
+    /// in OnNetworkSpawn once the object is registered with NGO.
+    /// </summary>
+    public void SetTargetScale(Vector3 scale)
+    {
+        _pendingTargetScale = scale;
+
+        // Non-networked: start grow immediately
+        if (!NetMgr.IsNetworked)
+        {
+            StartCoroutine(GrowAsteroid(scale));
+        }
+    }
+
+    private IEnumerator GrowAsteroid(Vector3 targetScale)
+    {
+        float growDuration = 0.5f;
+        for (float t = 0f; t < growDuration; t += Time.deltaTime)
+        {
+            if (this == null) yield break;
+            float eased = 1f - Mathf.Pow(1f - t / growDuration, 2f);
+            transform.localScale = Vector3.Lerp(Vector3.zero, targetScale, eased);
+            yield return null;
+        }
+        if (this != null) transform.localScale = targetScale;
+    }
+
+    // ===== HELPERS =====
+
+    /// <summary>
+    /// Plays a 2D audio clip via a temporary GameObject that survives the
+    /// source asteroid being destroyed/despawned.
+    /// </summary>
     private static void Play2DAudioAtPoint(AudioClip clip, Vector3 position, float volume)
     {
-        // Check if AudioListener exists in scene
         if (Object.FindFirstObjectByType<AudioListener>() == null)
         {
-            Debug.LogWarning("No AudioListener found in scene! 3D spatial audio will not work correctly. Add an AudioListener component to your main camera.");
+            Debug.LogWarning("No AudioListener found in scene! Audio will not work correctly. Add an AudioListener component to your main camera.");
         }
 
         GameObject tempAudio = new GameObject("TempAudio_Explosion");
@@ -263,26 +395,26 @@ public class AsteroidScript : MonoBehaviour
         AudioSource audioSource = tempAudio.AddComponent<AudioSource>();
         audioSource.clip = clip;
         audioSource.volume = volume;
-
         audioSource.spatialBlend = 0f; // 2D sound for split-screen
-
         audioSource.Play();
         Object.Destroy(tempAudio, clip.length);
     }
 
-    // Coroutine to apply knockback over multiple frames
-    // This overcomes player movement code that might reset velocity each frame
+    /// <summary>
+    /// Applies knockback velocity over multiple fixed-update frames to overcome
+    /// player movement code that may reset velocity each frame.
+    /// Runs on the Player's MonoBehaviour so it survives asteroid despawn.
+    /// </summary>
     private static IEnumerator ApplyKnockbackOverTime(Rigidbody2D rb, Vector2 direction, float totalSpeed, float duration, bool debug)
     {
         if (rb == null || duration <= 0f) yield break;
 
         float elapsed = 0f;
-        // Apply velocity additively each fixed update
         float speedPerSecond = totalSpeed / duration;
 
         while (elapsed < duration)
         {
-            if (rb == null) yield break; // Player might be destroyed
+            if (rb == null) yield break;
 
             rb.linearVelocity += direction * speedPerSecond * Time.fixedDeltaTime;
             elapsed += Time.fixedDeltaTime;

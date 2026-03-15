@@ -171,7 +171,7 @@ public class TriggerBomb : Ability
                 AsteroidScript asteroid = col.GetComponent<AsteroidScript>();
                 if (asteroid != null)
                 {
-                    asteroid.TakeDamage(bomb.explosionDamage, bomb.explosionImpactForce, explosionPosition);
+                    asteroid.RequestDamage(bomb.explosionDamage, bomb.explosionImpactForce, explosionPosition);
                 }
             }
         }
