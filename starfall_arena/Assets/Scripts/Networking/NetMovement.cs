@@ -33,6 +33,10 @@ public class NetMovement : NetworkBehaviour
     [Tooltip("Maximum lag compensation window for projectile and beam hit validation, in ticks.")]
     [SerializeField] private int _maxCombatRewindTicks = 6;
 
+    [Header("Audio")]
+    [Tooltip("Sound played on remote clients when this player fires a basic projectile")]
+    [SerializeField] private SoundEffect _primaryFireSound;
+
     // ===== BUFFER SIZES =====
     // Client input buffer: 64 entries (~1 sec at 60 Hz) — sized for max expected RTT.
     // Server state history: 120 entries (~2 sec at 60 Hz) — sized for lag compensation.
@@ -261,6 +265,27 @@ public class NetMovement : NetworkBehaviour
                 return GetComponent<PhysicalProjectileAbility>()?.physicalProjectile.projectilePrefab;
             default:
                 return null;
+        }
+    }
+
+    private SoundEffect ResolveFireSound(NetProjectileVisualType visualType)
+    {
+        switch (visualType)
+        {
+            case NetProjectileVisualType.GigaBlastTier1:
+                return GetComponent<GigaBlast>()?.gigaBlast.tier1FireSound;
+            case NetProjectileVisualType.GigaBlastTier2:
+                return GetComponent<GigaBlast>()?.gigaBlast.tier2FireSound;
+            case NetProjectileVisualType.GigaBlastTier3:
+                return GetComponent<GigaBlast>()?.gigaBlast.tier3FireSound;
+            case NetProjectileVisualType.GigaBlastTier4:
+                return GetComponent<GigaBlast>()?.gigaBlast.tier4FireSound;
+            case NetProjectileVisualType.Class2EmpoweredShot:
+                return GetComponent<EmpoweredShot>()?.empoweredShot.fireSound;
+            case NetProjectileVisualType.Class2PhysicalProjectile:
+                return GetComponent<PhysicalProjectileAbility>()?.physicalProjectile.fireSound;
+            default:
+                return _primaryFireSound;
         }
     }
 
@@ -795,6 +820,13 @@ public class NetMovement : NetworkBehaviour
         {
             projectile.EnableSlow(spawnData.SlowMultiplier, spawnData.SlowDuration);
         }
+
+        // Play fire sound on remote client
+        if (_player != null)
+        {
+            SoundEffect fireSound = ResolveFireSound(spawnData.VisualType);
+            fireSound?.Play(_player.GetAvailableAudioSource());
+        }
     }
 
     [ClientRpc]
@@ -1008,6 +1040,13 @@ public class NetMovement : NetworkBehaviour
         if (request.AppliesSlow)
         {
             projectile.EnableSlow(request.SlowMultiplier, request.SlowDuration);
+        }
+
+        // Play fire sound on host for remote player's projectiles
+        if (!IsOwner && _player != null)
+        {
+            SoundEffect fireSound = ResolveFireSound(request.VisualType);
+            fireSound?.Play(_player.GetAvailableAudioSource());
         }
 
         BroadcastProjectileSpawnClientRpc(new NetProjectileSpawnData

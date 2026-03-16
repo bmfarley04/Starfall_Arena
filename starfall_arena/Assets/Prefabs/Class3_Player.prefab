@@ -1035,6 +1035,7 @@ MonoBehaviour:
   _reconciliationThreshold: 0.01
   _interpolationBufferTicks: 2
   _maxCombatRewindTicks: 6
+  _primaryFireSound: {fileID: 11400000, guid: 9cc0a99a7224a944785760deb65b6e06, type: 2}
 --- !u!1001 &1583529772260481141
 PrefabInstance:
   m_ObjectHideFlags: 0
