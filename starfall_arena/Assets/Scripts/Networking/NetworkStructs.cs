@@ -288,6 +288,18 @@ public struct NetAbilityToggleState : INetworkSerializable
     }
 }
 
+public struct NetGigaBlastChargeState : INetworkSerializable
+{
+    public bool IsCharging;
+    public int Tier;
+
+    public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
+    {
+        serializer.SerializeValue(ref IsCharging);
+        serializer.SerializeValue(ref Tier);
+    }
+}
+
 public struct NetReflectedProjectileData : INetworkSerializable
 {
     public Vector2 SpawnPosition;

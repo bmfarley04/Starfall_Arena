@@ -214,7 +214,35 @@ public partial class NetMovement
         HandleInvisibilityServer(new NetAbilityToggleState { IsActive = isActive });
     }
 
+    public void RequestGigaBlastChargeState(bool isCharging, int tier)
+    {
+        if (!NetTickUtil.IsActive || !IsOwner)
+        {
+            return;
+        }
+
+        NetGigaBlastChargeState state = new NetGigaBlastChargeState
+        {
+            IsCharging = isCharging,
+            Tier = tier
+        };
+
+        if (IsServer)
+        {
+            HandleGigaBlastChargeServer(state);
+            return;
+        }
+
+        SubmitGigaBlastChargeServerRpc(state);
+    }
+
     // ===== ABILITY SERVER RPCs =====
+
+    [ServerRpc]
+    private void SubmitGigaBlastChargeServerRpc(NetGigaBlastChargeState state, ServerRpcParams rpcParams = default)
+    {
+        HandleGigaBlastChargeServer(state);
+    }
 
     [ServerRpc]
     private void SubmitBeamStateServerRpc(NetBeamState state, ServerRpcParams rpcParams = default)
@@ -277,6 +305,24 @@ public partial class NetMovement
     }
 
     // ===== ABILITY SERVER HANDLERS =====
+
+    private void HandleGigaBlastChargeServer(NetGigaBlastChargeState state)
+    {
+        GigaBlast gigaBlast = GetComponent<GigaBlast>();
+        if (gigaBlast == null)
+        {
+            return;
+        }
+
+        // Host already applied charge state locally in UseAbility/Update.
+        // Only apply on the server's copy of a client-owned player.
+        if (!IsOwner)
+        {
+            gigaBlast.ApplyNetworkChargeState(state.IsCharging, state.Tier);
+        }
+
+        BroadcastGigaBlastChargeClientRpc(state);
+    }
 
     private void HandleBeamStateServer(NetBeamState state)
     {
@@ -399,6 +445,18 @@ public partial class NetMovement
     }
 
     // ===== ABILITY CLIENT RPC BROADCASTS =====
+
+    [ClientRpc]
+    private void BroadcastGigaBlastChargeClientRpc(NetGigaBlastChargeState state)
+    {
+        if (IsServer || IsOwner)
+        {
+            return;
+        }
+
+        GigaBlast gigaBlast = GetComponent<GigaBlast>();
+        gigaBlast?.ApplyNetworkChargeState(state.IsCharging, state.Tier);
+    }
 
     [ClientRpc]
     private void BroadcastBeamStateClientRpc(NetBeamState state)

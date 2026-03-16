@@ -295,6 +295,12 @@ public class ProjectileScript : MonoBehaviour
             _visualController.OnProjectileImpact(transform.position, _direction);
         }
 
+        if (_canPierce && _pierceMultiplier > 0f)
+        {
+            _damage *= _pierceMultiplier;
+            return;
+        }
+
         Destroy(gameObject);
     }
 
