@@ -875,6 +875,12 @@ public class NetMovement : NetworkBehaviour
 
         DamageSource damageSource = (DamageSource)source;
         _player.ApplyAuthoritativeCombatState(health, shield, hitPoint, damageSource, shieldHit, shieldBreak);
+
+        // Play damage sounds on all non-server clients (server already plays them in TakeDamage)
+        if (!IsServer)
+        {
+            _player.PlayNetworkDamageSounds(damageSource, shieldHit);
+        }
     }
 
     [ClientRpc]
@@ -1225,6 +1231,31 @@ public class NetMovement : NetworkBehaviour
         }
 
         BroadcastCombatStateClientRpc(health, shield, hitPoint, (int)source, shieldHit, shieldBreak, impactForce);
+    }
+
+    public void BroadcastDeath(Vector2 position, float rotation, Vector2 lastDamageDirection)
+    {
+        if (!IsServer)
+        {
+            return;
+        }
+
+        BroadcastDeathClientRpc(position, rotation, lastDamageDirection);
+    }
+
+    [ClientRpc]
+    private void BroadcastDeathClientRpc(Vector2 position, float rotation, Vector2 lastDamageDirection)
+    {
+        // Server already ran Die() locally; only non-server clients need effects
+        if (IsServer)
+        {
+            return;
+        }
+
+        if (_player != null)
+        {
+            _player.PlayNetworkDeathEffects(position, rotation, lastDamageDirection);
+        }
     }
 
     // ===== RECONCILIATION =====

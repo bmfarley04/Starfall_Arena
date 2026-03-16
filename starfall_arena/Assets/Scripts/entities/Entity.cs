@@ -483,6 +483,9 @@ public abstract class Entity : MonoBehaviour
         if (_isDead) return;
         _isDead = true;
 
+        // Broadcast death to remote clients before destroying so they can play effects
+        BroadcastNetworkDeath();
+
         onDeath?.Invoke(this);
 
         ScatterShipParts();
@@ -511,6 +514,23 @@ public abstract class Entity : MonoBehaviour
         }
 
         Destroy(gameObject);
+    }
+
+    private void BroadcastNetworkDeath()
+    {
+        if (!NetTickUtil.IsActive)
+        {
+            return;
+        }
+
+        NetMovement netMovement = GetComponent<NetMovement>();
+        if (netMovement == null || !netMovement.IsServer)
+        {
+            return;
+        }
+
+        float rotZ = transform.rotation.eulerAngles.z;
+        netMovement.BroadcastDeath(transform.position, rotZ, _lastDamageDirection);
     }
 
     // ===== RECOIL & VISUAL EFFECTS =====
