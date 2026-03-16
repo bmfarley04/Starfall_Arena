@@ -80,6 +80,18 @@ Current caveat:
 - this means the networking helper exists, but the full scene flow is not yet switched over to a complete networked spawn path
 - `NetMgr` now disables NGO's default player prefab assignment and manually spawns the configured first-player prefab for the first connected player and the configured second-player prefab for the second connected player; both prefabs still need `NetworkObject` components and registration in the `NetworkManager` prefab list
 
+### NetMgrTest
+
+`NetMgrTest` is a separate scene-test harness for legacy networking and movement testing.
+
+Use it only in dedicated test scenes that still rely on:
+
+- debug host/client hotkeys
+- explicit player 1 / player 2 prefab references
+- explicit player spawn-point references
+
+Do not use `NetMgrTest` for the production title-screen host/join flow.
+
 ### NetMovement
 
 `NetMovement` is the main implemented networked gameplay system right now.
