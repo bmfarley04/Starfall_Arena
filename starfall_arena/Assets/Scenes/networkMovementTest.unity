@@ -941,6 +941,18 @@ PrefabInstance:
       propertyPath: m_Name
       value: Maps
       objectReference: {fileID: 0}
+    - target: {fileID: 8446236090977147253, guid: 06751988f52c80044b881ccf094bc01c, type: 3}
+      propertyPath: GlobalObjectIdHash
+      value: 1424166111
+      objectReference: {fileID: 0}
+    - target: {fileID: 9133868624511721010, guid: 06751988f52c80044b881ccf094bc01c, type: 3}
+      propertyPath: GlobalObjectIdHash
+      value: 1949991709
+      objectReference: {fileID: 0}
+    - target: {fileID: 9133868624511721010, guid: 06751988f52c80044b881ccf094bc01c, type: 3}
+      propertyPath: SceneMigrationSynchronization
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
