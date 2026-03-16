@@ -279,3 +279,27 @@ public struct NetAbilityToggleState : INetworkSerializable
         serializer.SerializeValue(ref IsActive);
     }
 }
+
+public struct NetReflectedProjectileData : INetworkSerializable
+{
+    public Vector2 SpawnPosition;
+    public Vector2 Direction;
+    public float Speed;
+    public float Damage;
+    public float Lifetime;
+    public float ImpactForce;
+    public Color ReflectColor;
+    public NetProjectileVisualType VisualType;
+
+    public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
+    {
+        serializer.SerializeValue(ref SpawnPosition);
+        serializer.SerializeValue(ref Direction);
+        serializer.SerializeValue(ref Speed);
+        serializer.SerializeValue(ref Damage);
+        serializer.SerializeValue(ref Lifetime);
+        serializer.SerializeValue(ref ImpactForce);
+        serializer.SerializeValue(ref ReflectColor);
+        serializer.SerializeValue(ref VisualType);
+    }
+}

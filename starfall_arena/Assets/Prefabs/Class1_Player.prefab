@@ -5530,7 +5530,7 @@ MonoBehaviour:
   isLocked: 0
   reflect:
     cooldown: 7
-    activeDuration: 1.5
+    activeDuration: 5
     shield: {fileID: 1692808081896564359}
     reflectedProjectileColor: {r: 0.8117648, g: 0.68235296, b: 0, a: 0}
     reflectedProjectileDamageMultiplier: 1.5
