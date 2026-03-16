@@ -408,8 +408,8 @@ public partial class NetMovement : NetworkBehaviour
             // For the host (IsServer && IsOwner), the owner tick already ran and
             // the ServerRpc path handles authoritative sim. Nothing extra needed here.
 
-            // Run shield regen for client-owned players (Player.Update is disabled on
-            // server copies, so HandleShieldRegeneration never runs).
+            // Player.Update is disabled on server copies, so HandleShieldRegeneration
+            // and UpdateSlowVisuals never run. Drive them here.
             if (_player != null)
             {
                 float prevShield = _player.currentShield;
@@ -421,6 +421,9 @@ public partial class NetMovement : NetworkBehaviour
                 {
                     _player.shieldController.SetRegeneration(isRegenerating);
                 }
+
+                // Stop slow particle when slow expires
+                _player.TickSlowVisuals();
             }
         }
 
@@ -778,6 +781,9 @@ public partial class NetMovement : NetworkBehaviour
                 _player.shieldController.SetRegeneration(isRegenerating);
             }
             _remoteLastShield = to.Shield;
+
+            // Stop slow particle when slow expires
+            _player.TickSlowVisuals();
         }
 
         // When we've finished interpolating to 'to', advance
