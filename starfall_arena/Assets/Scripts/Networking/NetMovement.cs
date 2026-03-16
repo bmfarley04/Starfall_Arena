@@ -876,8 +876,9 @@ public class NetMovement : NetworkBehaviour
         DamageSource damageSource = (DamageSource)source;
         _player.ApplyAuthoritativeCombatState(health, shield, hitPoint, damageSource, shieldHit, shieldBreak);
 
-        // Play damage sounds on all non-server clients (server already plays them in TakeDamage)
-        if (!IsServer)
+        // Play damage sounds on remote clients. Skip only for the host's own player,
+        // which already plays audio in TakeDamage via shouldPlayLocalAudio.
+        if (!(IsServer && IsOwner))
         {
             _player.PlayNetworkDamageSounds(damageSource, shieldHit);
         }

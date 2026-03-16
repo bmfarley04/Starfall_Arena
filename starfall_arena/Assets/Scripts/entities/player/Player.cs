@@ -887,7 +887,10 @@ public abstract class Player : Entity
     {
         if (source == DamageSource.LaserBeam)
         {
-            if (beamHitLoopSound != null && _beamHitLoopSource != null && !_beamHitLoopSource.isPlaying)
+            // Only start the beam hit loop when Player.Update() is running (enabled),
+            // because the auto-stop relies on Update(). On the host, non-owner Player
+            // components are disabled, so starting a loop here would never stop.
+            if (enabled && beamHitLoopSound != null && _beamHitLoopSource != null && !_beamHitLoopSource.isPlaying)
             {
                 beamHitLoopSound.Play(_beamHitLoopSource);
             }
