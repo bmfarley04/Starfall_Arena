@@ -1,5 +1,6 @@
 using StarfallArena.UI;
 using System.Collections.Generic;
+using Unity.Netcode;
 using UnityEngine;
 
 public enum DamageSource
@@ -510,6 +511,17 @@ public abstract class Entity : MonoBehaviour
             }
         }
 
+        NetworkObject networkObject = GetComponent<NetworkObject>();
+        if (networkObject != null && networkObject.IsSpawned)
+        {
+            if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsServer)
+            {
+                networkObject.Despawn(true);
+            }
+
+            return;
+        }
+
         Destroy(gameObject);
     }
 
@@ -811,6 +823,41 @@ public abstract class Entity : MonoBehaviour
         }
 
         return _augmentController.ExportLoadout();
+    }
+
+    public List<NetworkAugmentLoadoutEntry> ExportNetworkAugmentLoadout()
+    {
+        if (_augmentController == null)
+        {
+            return new List<NetworkAugmentLoadoutEntry>();
+        }
+
+        return _augmentController.ExportNetworkLoadout();
+    }
+
+    public void ImportNetworkAugmentLoadout(List<NetworkAugmentLoadoutEntry> entries, int round)
+    {
+        SetCurrentRound(round);
+        augments.Clear();
+
+        if (entries != null && GameDataManager.Instance != null)
+        {
+            foreach (NetworkAugmentLoadoutEntry entry in entries)
+            {
+                if (entry == null)
+                {
+                    continue;
+                }
+
+                Augment augment = GameDataManager.Instance.GetAugmentById(entry.augmentId);
+                if (augment != null)
+                {
+                    augments.Add(augment);
+                }
+            }
+        }
+
+        _augmentController?.ImportNetworkLoadout(entries, round);
     }
 
     public void SetAugmentVariables()

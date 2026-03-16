@@ -3,13 +3,14 @@ using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
+using UnityEngine.InputSystem;
 
 /// <summary>
 /// Title screen button with fade-in hover effects and configurable click actions.
 /// Keeps hover elements active but transparent, fading alpha on pointer enter/exit.
 /// Requires a Graphic component (e.g., Image) on this GameObject for raycast detection.
 /// </summary>
-public class TitleScreenButton : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerClickHandler, ISelectHandler, IDeselectHandler, ISubmitHandler
+public class TitleScreenButton : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerClickHandler, ISelectHandler, IDeselectHandler, ISubmitHandler, IPointerDownHandler, IPointerUpHandler
 {
     [System.Serializable]
     public struct HoverEffectsConfig
@@ -80,6 +81,20 @@ public class TitleScreenButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
         public SoundEffect clickSound;
     }
 
+    [System.Serializable]
+    public struct HoldToSubmitConfig
+    {
+        [Tooltip("If true, submit actions require the button to be held instead of tapped.")]
+        public bool enabled;
+
+        [Tooltip("How long the button must be held before the action fires.")]
+        [Range(0.2f, 3f)]
+        public float holdDuration;
+
+        [Tooltip("Optional radial or bar fill image. Starts full and drains to empty while holding.")]
+        public Image fillImage;
+    }
+
     [Header("Hover Effects")]
     [SerializeField] private HoverEffectsConfig hoverEffects;
 
@@ -89,11 +104,17 @@ public class TitleScreenButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
     [Header("Sound Effects")]
     [SerializeField] private SoundConfig sounds;
 
+    [Header("Hold To Submit")]
+    [SerializeField] private HoldToSubmitConfig holdToSubmit;
+
     private AudioSource _audioSource;
     private CanvasGroup _parentCanvasGroup;
     private Coroutine[] _circleCoroutines;
     private Coroutine _overlayCoroutine;
     private bool _programmaticSelection = false;
+    private bool _executedByHold = false;
+    private float _holdTimer = 0f;
+    private bool _pointerHeld;
 
     private void Awake()
     {
@@ -104,6 +125,7 @@ public class TitleScreenButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
         _parentCanvasGroup = GetComponentInParent<CanvasGroup>();
 
         InitializeHoverElements();
+        ResetHoldVisual();
     }
 
     private bool IsInteractable()
@@ -166,6 +188,7 @@ public class TitleScreenButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
     public void OnPointerClick(PointerEventData eventData)
     {
         if (!IsInteractable()) return;
+        if (holdToSubmit.enabled) return;
         ExecuteClick();
     }
 
@@ -173,7 +196,64 @@ public class TitleScreenButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
     public void OnSubmit(BaseEventData eventData)
     {
         if (!IsInteractable()) return;
+        if (holdToSubmit.enabled) return;
         ExecuteClick();
+    }
+
+    private void Update()
+    {
+        if (!holdToSubmit.enabled)
+        {
+            return;
+        }
+
+        if (!IsInteractable())
+        {
+            ResetHoldState();
+            return;
+        }
+
+        bool isSelected = EventSystem.current != null && EventSystem.current.currentSelectedGameObject == gameObject;
+
+        bool pointerPressed = _pointerHeld && Mouse.current != null && Mouse.current.leftButton.isPressed;
+        bool submitPressed = isSelected && (
+            (Gamepad.current != null && Gamepad.current.buttonSouth.isPressed) ||
+            (Keyboard.current != null && Keyboard.current.enterKey.isPressed));
+
+        bool isHolding = pointerPressed || submitPressed;
+        if (!isHolding)
+        {
+            ResetHoldState();
+            return;
+        }
+
+        _holdTimer += Time.unscaledDeltaTime;
+        float remainingRatio = 1f - Mathf.Clamp01(_holdTimer / Mathf.Max(0.001f, holdToSubmit.holdDuration));
+        if (holdToSubmit.fillImage != null)
+        {
+            holdToSubmit.fillImage.fillAmount = remainingRatio;
+        }
+
+        if (_executedByHold || _holdTimer < holdToSubmit.holdDuration)
+        {
+            return;
+        }
+
+        _executedByHold = true;
+        ExecuteClick();
+    }
+
+    public void OnPointerDown(PointerEventData eventData)
+    {
+        if (!holdToSubmit.enabled || !IsInteractable()) return;
+        _pointerHeld = true;
+    }
+
+    public void OnPointerUp(PointerEventData eventData)
+    {
+        if (!holdToSubmit.enabled) return;
+        _pointerHeld = false;
+        ResetHoldState();
     }
 
     private void ShowHover()
@@ -194,6 +274,13 @@ public class TitleScreenButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
     private void HideHover()
     {
         FadeHoverElements(0f, hoverEffects.fadeOutDuration, hoverEffects.fadeOutDuration);
+        if (!holdToSubmit.enabled)
+        {
+            return;
+        }
+
+        _pointerHeld = false;
+        ResetHoldState();
     }
 
     private void ExecuteClick()
@@ -294,6 +381,21 @@ public class TitleScreenButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
         image.color = color;
     }
 
+    private void ResetHoldState()
+    {
+        _holdTimer = 0f;
+        _executedByHold = false;
+        ResetHoldVisual();
+    }
+
+    private void ResetHoldVisual()
+    {
+        if (holdToSubmit.fillImage != null)
+        {
+            holdToSubmit.fillImage.fillAmount = 1f;
+        }
+    }
+
     private void Reset()
     {
         hoverEffects.circleFadeInDuration = 0.2f;
@@ -301,5 +403,7 @@ public class TitleScreenButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
         hoverEffects.fadeOutDuration = 0.15f;
         hoverEffects.targetHoverAlpha = 1f;
         click.sceneLoadDelay = 0.15f;
+        holdToSubmit.holdDuration = 1f;
     }
+
 }
