@@ -75,6 +75,9 @@ public class NetworkSessionData : NetworkBehaviour
     public string StatusMessage => _statusMessage;
     public string GameplaySceneName => gameplaySceneName;
     public bool IsShipSelectActive => _currentState == NetworkMatchState.ShipSelect;
+    public bool HasBothPlayersConnected =>
+        _shipSelections[0].ClientId != ulong.MaxValue &&
+        _shipSelections[1].ClientId != ulong.MaxValue;
     public bool IsLocalPlayerLockedIn => TryGetLocalSelectionState(out NetworkShipSelectionState selection) && selection.IsLockedIn;
     public ulong LocalClientId => NetworkManager.Singleton != null ? NetworkManager.Singleton.LocalClientId : ulong.MaxValue;
     public ulong HostClientId => NetworkManager.Singleton != null ? NetworkManager.ServerClientId : ulong.MaxValue;

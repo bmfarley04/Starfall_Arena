@@ -283,9 +283,6 @@ public class ShipSelectManager : MonoBehaviour
 
     [Header("Networked Ship Select")]
     [SerializeField] private TextMeshProUGUI countdownTimerText;
-    [SerializeField] private TextMeshProUGUI localSelectionStatusText;
-    [SerializeField] private TextMeshProUGUI remoteSelectionStatusText;
-    [SerializeField] private TextMeshProUGUI timeoutStatusText;
 
     [Header("Navigation Button Images")]
     [Tooltip("Left navigation button image (for material flash effect)")]
@@ -384,9 +381,7 @@ public class ShipSelectManager : MonoBehaviour
         // Ships are now spawned by TitleScreenManager at scene load
         // This keeps ShipSelectManager completely independent
 
-        SetNetworkStatusText(localSelectionStatusText, string.Empty);
-        SetNetworkStatusText(remoteSelectionStatusText, string.Empty);
-        SetNetworkStatusText(timeoutStatusText, string.Empty);
+        SetCountdownText(string.Empty);
     }
 
     /// <summary>
@@ -1567,11 +1562,11 @@ public class ShipSelectManager : MonoBehaviour
             selectPressed = _activeGamepad.aButton.isPressed;
         }
 
-        // Keyboard fallback (Escape for back, Enter for select)
+        // Keyboard fallback matches the controller prompts: B for back, X for confirm
         if (Keyboard.current != null)
         {
-            backPressed = backPressed || Keyboard.current.escapeKey.isPressed;
-            selectPressed = selectPressed || Keyboard.current.enterKey.isPressed;
+            backPressed = backPressed || Keyboard.current.bKey.isPressed;
+            selectPressed = selectPressed || Keyboard.current.xKey.isPressed;
         }
 
         // Back button (B / Escape)
@@ -1697,7 +1692,6 @@ public class ShipSelectManager : MonoBehaviour
             if (_networkSession != null && selectedShip != null)
             {
                 _networkSession.RequestShipSelection(selectedShip.ShipId, true);
-                SetNetworkStatusText(localSelectionStatusText, $"Locked in {selectedShip.shipName}. Waiting for opponent...");
             }
 
             yield return new WaitForSecondsRealtime(postSelection.confirmationDelay);
@@ -1989,29 +1983,6 @@ public class ShipSelectManager : MonoBehaviour
         }
 
         UpdatePlayerSelectionText();
-
-        if (_networkSession.TryGetLocalSelectionState(out NetworkShipSelectionState localSelection))
-        {
-            string localShipName = localSelection.ShipData != null ? localSelection.ShipData.shipName : "No ship selected";
-            string localState = localSelection.IsLockedIn
-                ? $"Locked in: {localShipName}"
-                : $"Current ship: {localShipName}";
-            SetNetworkStatusText(localSelectionStatusText, localState);
-        }
-
-        if (_networkSession.TryGetRemoteSelectionState(out NetworkShipSelectionState remoteSelection))
-        {
-            string remoteState = remoteSelection.IsLockedIn
-                ? $"Opponent locked in: {(remoteSelection.ShipData != null ? remoteSelection.ShipData.shipName : "Ready")}"
-                : "Opponent is choosing...";
-            SetNetworkStatusText(remoteSelectionStatusText, remoteState);
-        }
-        else
-        {
-            SetNetworkStatusText(remoteSelectionStatusText, "Waiting for opponent...");
-        }
-
-        SetNetworkStatusText(timeoutStatusText, _networkSession.StatusMessage);
     }
 
     private void HandleNetworkTimerChanged(float timeRemaining)
@@ -2021,9 +1992,9 @@ public class ShipSelectManager : MonoBehaviour
             return;
         }
 
-        countdownTimerText.text = _useNetworkSession
+        SetCountdownText(_useNetworkSession
             ? Mathf.CeilToInt(Mathf.Max(0f, timeRemaining)).ToString()
-            : string.Empty;
+            : string.Empty);
     }
 
     private void HandleNetworkSessionStateChanged(NetworkMatchState state)
@@ -2034,18 +2005,13 @@ public class ShipSelectManager : MonoBehaviour
         {
             return;
         }
-
-        if (state == NetworkMatchState.LoadingGameplay)
-        {
-            SetNetworkStatusText(timeoutStatusText, "Both players ready. Loading duel...");
-        }
     }
 
-    private static void SetNetworkStatusText(TextMeshProUGUI textField, string value)
+    private void SetCountdownText(string value)
     {
-        if (textField != null)
+        if (countdownTimerText != null)
         {
-            textField.text = value ?? string.Empty;
+            countdownTimerText.text = value ?? string.Empty;
         }
     }
 }

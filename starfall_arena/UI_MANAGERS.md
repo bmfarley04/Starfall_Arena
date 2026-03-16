@@ -222,6 +222,8 @@ This makes `ShipData` a bridge between:
 - Controller-first remains correct, but keyboard-and-mouse support should still remain intact where applicable.
 - UI and gameplay flow are tightly coupled around rounds, augments, and unlock timing, so documentation should be updated when any of those rules move.
 - Existing split-screen flow should be treated as transitional or legacy-oriented unless a task specifically targets it.
-- `TitleScreenManager` now needs serialized references for online host/join/waiting canvases, the IP input field, and network status text in addition to the legacy menu canvases.
-- `ShipSelectManager` now expects optional serialized references for countdown, local status, opponent status, and timeout/status text when using the networked ship-select path.
+- `TitleScreenManager` now needs serialized references for the join canvas, the host-waiting canvas, the IP input field, and optional status text in addition to the legacy main menu canvas.
+- `TitleScreenManager` now owns only the special hold-style join/waiting controls. The main title `Host Game` and `Join Game` controls should stay on the normal clickable title-button pattern.
+- `ShipSelectManager` now expects only a countdown timer text reference for the networked ship-select path; once a player locks in, that client should no longer be able to change ships before the timer expires.
+- Bug note: the main `Host Game` button must not keep any legacy `ShipSelect` transition wiring in `TitleScreenButton`, or the UI will bypass the waiting screen and appear to host successfully when networking never actually started.
 - Bugs or pitfalls in menu flow, HUD binding, selection order, or round transitions should be documented here in the relevant section.

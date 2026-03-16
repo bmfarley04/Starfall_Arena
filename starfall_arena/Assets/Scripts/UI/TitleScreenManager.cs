@@ -2,6 +2,7 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
+using UnityEngine.UI;
 using TMPro;
 
 /// <summary>
@@ -52,6 +53,19 @@ public class TitleScreenManager : MonoBehaviour
         public float enterStartScale;
     }
 
+    [System.Serializable]
+    public struct HoldActionButton
+    {
+        public GameObject target;
+        public Image fillImage;
+    }
+
+    [System.Serializable]
+    public struct NavigationGroup
+    {
+        public GameObject[] targets;
+    }
+
     [Header("Menu Canvases")]
     [Tooltip("Main menu canvas (buttons, title). Also used for intro fade-in.")]
     [SerializeField] private CanvasGroup mainMenuCanvas;
@@ -74,12 +88,6 @@ public class TitleScreenManager : MonoBehaviour
     [Tooltip("First selected button on the ship select screen (for controller navigation)")]
     [SerializeField] private GameObject shipSelectFirstSelected;
 
-    [Tooltip("Online flow root canvas with Host/Join choices")]
-    [SerializeField] private CanvasGroup onlineMenuCanvas;
-
-    [Tooltip("First selected button on the online menu canvas")]
-    [SerializeField] private GameObject onlineMenuFirstSelected;
-
     [Tooltip("Join-game canvas that contains the IP field and connect button")]
     [SerializeField] private CanvasGroup joinGameCanvas;
 
@@ -96,6 +104,17 @@ public class TitleScreenManager : MonoBehaviour
     [SerializeField] private TMP_InputField ipAddressInputField;
     [SerializeField] private TextMeshProUGUI networkStatusText;
 
+    [Header("Hold Actions")]
+    [SerializeField] private float submitHoldDuration = 1f;
+    [SerializeField] private float backHoldDuration = 1f;
+    [SerializeField] private HoldActionButton joinConfirmButton;
+    [SerializeField] private HoldActionButton joinBackButton;
+    [SerializeField] private HoldActionButton waitingBackButton;
+
+    [Header("Manual Navigation")]
+    [SerializeField] private NavigationGroup joinGameNavigation;
+    [SerializeField] private NavigationGroup hostWaitingNavigation;
+
     [Header("Intro: Scene Fade In")]
     [SerializeField] private SceneFadeConfig sceneFade;
 
@@ -110,6 +129,9 @@ public class TitleScreenManager : MonoBehaviour
     private CanvasGroup _activeCanvas;
     private NetMgr _netMgr;
     private NetworkSessionData _sessionData;
+    private float _submitHoldTime;
+    private float _backHoldTime;
+    private bool _navigationLatch;
 
     private IEnumerator Start()
     {
@@ -125,7 +147,14 @@ public class TitleScreenManager : MonoBehaviour
         {
             _sessionData.OnSessionStateChanged += HandleSessionStateChanged;
             _sessionData.OnStatusMessageChanged += HandleStatusMessageChanged;
+
+            if (!NetMgr.IsNetworked)
+            {
+                _sessionData.ResetToTitleLocal();
+            }
         }
+
+        ResetHoldVisuals();
 
         _overlayAlpha = 1f;
 
@@ -134,7 +163,6 @@ public class TitleScreenManager : MonoBehaviour
         mainMenuCanvas.gameObject.SetActive(false);
         controlsCanvas.gameObject.SetActive(false);
         shipSelectCanvas.gameObject.SetActive(false);
-        if (onlineMenuCanvas != null) onlineMenuCanvas.gameObject.SetActive(false);
         if (joinGameCanvas != null) joinGameCanvas.gameObject.SetActive(false);
         if (hostWaitingCanvas != null) hostWaitingCanvas.gameObject.SetActive(false);
 
@@ -142,7 +170,6 @@ public class TitleScreenManager : MonoBehaviour
         SetCanvasHidden(mainMenuCanvas);
         SetCanvasHidden(controlsCanvas);
         SetCanvasHidden(shipSelectCanvas);
-        SetCanvasHidden(onlineMenuCanvas);
         SetCanvasHidden(joinGameCanvas);
         SetCanvasHidden(hostWaitingCanvas);
 
@@ -252,32 +279,18 @@ public class TitleScreenManager : MonoBehaviour
             RunTransition(mainMenuCanvas, shipSelectCanvas, shipSelectFirstSelected));
     }
 
-    public void TransitionToOnlineMenu()
-    {
-        if (_activeTransition != null || onlineMenuCanvas == null) return;
-        _activeTransition = StartCoroutine(
-            RunTransition(mainMenuCanvas, onlineMenuCanvas, onlineMenuFirstSelected));
-    }
-
-    public void TransitionToMainMenuFromOnline()
-    {
-        if (_activeTransition != null || onlineMenuCanvas == null) return;
-        _activeTransition = StartCoroutine(
-            RunTransition(onlineMenuCanvas, mainMenuCanvas, mainMenuFirstSelected));
-    }
-
     public void TransitionToJoinGame()
     {
-        if (_activeTransition != null || joinGameCanvas == null || onlineMenuCanvas == null) return;
+        if (_activeTransition != null || joinGameCanvas == null) return;
         _activeTransition = StartCoroutine(
-            RunTransition(onlineMenuCanvas, joinGameCanvas, joinGameFirstSelected));
+            RunTransition(mainMenuCanvas, joinGameCanvas, joinGameFirstSelected));
     }
 
     public void TransitionToOnlineMenuFromJoin()
     {
-        if (_activeTransition != null || joinGameCanvas == null || onlineMenuCanvas == null) return;
+        if (_activeTransition != null || joinGameCanvas == null) return;
         _activeTransition = StartCoroutine(
-            RunTransition(joinGameCanvas, onlineMenuCanvas, onlineMenuFirstSelected));
+            RunTransition(joinGameCanvas, mainMenuCanvas, mainMenuFirstSelected));
     }
 
     public void StartHostingFlow()
@@ -286,9 +299,12 @@ public class TitleScreenManager : MonoBehaviour
 
         _netMgr = NetMgr.Instance;
         _sessionData = NetworkSessionData.Instance;
-        _netMgr?.StartHostForMenu();
+        if (_netMgr == null || !_netMgr.StartHostForMenu())
+        {
+            return;
+        }
 
-        CanvasGroup source = _activeCanvas ?? onlineMenuCanvas ?? mainMenuCanvas;
+        CanvasGroup source = _activeCanvas ?? mainMenuCanvas;
         _activeTransition = StartCoroutine(
             RunTransition(source, hostWaitingCanvas, hostWaitingFirstSelected));
     }
@@ -298,7 +314,11 @@ public class TitleScreenManager : MonoBehaviour
         string address = ipAddressInputField != null ? ipAddressInputField.text : string.Empty;
         _netMgr = NetMgr.Instance;
         _sessionData = NetworkSessionData.Instance;
-        _netMgr?.StartClientForMenu(address);
+        bool started = _netMgr != null && _netMgr.StartClientForMenu(address);
+        if (started)
+        {
+            HandleStatusMessageChanged("Connecting to host...");
+        }
     }
 
     public void CancelNetworkFlow()
@@ -307,13 +327,13 @@ public class TitleScreenManager : MonoBehaviour
         _netMgr?.CancelCurrentAttempt();
         HandleStatusMessageChanged(string.Empty);
 
-        if (_activeCanvas == hostWaitingCanvas && onlineMenuCanvas != null)
+        if (_activeCanvas == hostWaitingCanvas)
         {
-            TransitionCanvas(hostWaitingCanvas, onlineMenuCanvas, onlineMenuFirstSelected);
+            TransitionCanvas(hostWaitingCanvas, mainMenuCanvas, mainMenuFirstSelected);
         }
-        else if (_activeCanvas == joinGameCanvas && onlineMenuCanvas != null)
+        else if (_activeCanvas == joinGameCanvas)
         {
-            TransitionCanvas(joinGameCanvas, onlineMenuCanvas, onlineMenuFirstSelected);
+            TransitionCanvas(joinGameCanvas, mainMenuCanvas, mainMenuFirstSelected);
         }
     }
 
@@ -423,34 +443,92 @@ public class TitleScreenManager : MonoBehaviour
 
     private void Update()
     {
-        if (_activeTransition != null) return;
-        if (_activeCanvas == null || _activeCanvas == mainMenuCanvas) return;
-
-        // Don't handle cancel for ship select - it uses hold buttons
-        if (_activeCanvas == shipSelectCanvas) return;
-
-        bool cancelPressed = false;
-
-        if (Gamepad.current != null)
-            cancelPressed = Gamepad.current.buttonEast.wasPressedThisFrame;
-
-        if (!cancelPressed && Keyboard.current != null)
-            cancelPressed = Keyboard.current.escapeKey.wasPressedThisFrame;
-
-        if (cancelPressed)
+        if (_activeTransition != null)
         {
-            if (_activeCanvas == controlsCanvas)
-            {
-                TransitionToMainMenu();
-            }
-            else if (_activeCanvas == onlineMenuCanvas)
-            {
-                TransitionToMainMenuFromOnline();
-            }
-            else if (_activeCanvas == joinGameCanvas || _activeCanvas == hostWaitingCanvas)
-            {
-                CancelNetworkFlow();
-            }
+            ResetHoldVisuals();
+            return;
+        }
+
+        if (_activeCanvas == null || _activeCanvas == shipSelectCanvas)
+        {
+            ResetHoldVisuals();
+            return;
+        }
+
+        if (_activeCanvas != mainMenuCanvas)
+        {
+            HandleManualNavigation();
+        }
+
+        bool submitHeld =
+            (Gamepad.current != null && Gamepad.current.buttonSouth.isPressed) ||
+            (Keyboard.current != null && Keyboard.current.xKey.isPressed);
+
+        bool backHeld =
+            (Gamepad.current != null && Gamepad.current.buttonEast.isPressed) ||
+            (Keyboard.current != null && Keyboard.current.bKey.isPressed);
+
+        HandleSubmitHold(submitHeld);
+        HandleBackHold(backHeld);
+    }
+
+    private void HandleSubmitHold(bool submitHeld)
+    {
+        HoldActionButton activeButton = GetActiveSubmitButton();
+        ResetSubmitFillVisuals(activeButton.fillImage);
+        if (activeButton.target == null || !submitHeld)
+        {
+            _submitHoldTime = 0f;
+            UpdateFill(activeButton.fillImage, 1f);
+            return;
+        }
+
+        _submitHoldTime += Time.unscaledDeltaTime;
+        UpdateFill(activeButton.fillImage, 1f - Mathf.Clamp01(_submitHoldTime / Mathf.Max(0.001f, submitHoldDuration)));
+
+        if (_submitHoldTime < submitHoldDuration)
+        {
+            return;
+        }
+
+        _submitHoldTime = 0f;
+        UpdateFill(activeButton.fillImage, 1f);
+
+        if (activeButton.target == joinConfirmButton.target)
+        {
+            StartJoinFlow();
+        }
+    }
+
+    private void HandleBackHold(bool backHeld)
+    {
+        HoldActionButton activeButton = GetActiveBackButton();
+        ResetBackFillVisuals(activeButton.fillImage);
+        if (activeButton.target == null || !backHeld)
+        {
+            _backHoldTime = 0f;
+            UpdateFill(activeButton.fillImage, 1f);
+            return;
+        }
+
+        _backHoldTime += Time.unscaledDeltaTime;
+        UpdateFill(activeButton.fillImage, 1f - Mathf.Clamp01(_backHoldTime / Mathf.Max(0.001f, backHoldDuration)));
+
+        if (_backHoldTime < backHoldDuration)
+        {
+            return;
+        }
+
+        _backHoldTime = 0f;
+        UpdateFill(activeButton.fillImage, 1f);
+
+        if (_activeCanvas == controlsCanvas)
+        {
+            TransitionToMainMenu();
+        }
+        else
+        {
+            CancelNetworkFlow();
         }
     }
 
@@ -500,13 +578,18 @@ public class TitleScreenManager : MonoBehaviour
         switch (state)
         {
             case NetworkMatchState.ShipSelect:
+                if (!NetMgr.IsNetworked || _sessionData == null || !_sessionData.HasBothPlayersConnected)
+                {
+                    return;
+                }
+
                 TransitionToShipSelectFromCurrent();
                 break;
             case NetworkMatchState.Disconnected:
             case NetworkMatchState.Error:
                 if (_activeCanvas == hostWaitingCanvas || _activeCanvas == joinGameCanvas)
                 {
-                    TransitionCanvas(_activeCanvas, onlineMenuCanvas, onlineMenuFirstSelected);
+                    TransitionCanvas(_activeCanvas, mainMenuCanvas, mainMenuFirstSelected);
                 }
                 break;
         }
@@ -539,6 +622,184 @@ public class TitleScreenManager : MonoBehaviour
         }
 
         _activeTransition = StartCoroutine(RunTransition(from, to, firstSelected));
+    }
+
+    private HoldActionButton GetActiveSubmitButton()
+    {
+        GameObject selected = EventSystem.current != null ? EventSystem.current.currentSelectedGameObject : null;
+        if (_activeCanvas == joinGameCanvas)
+        {
+            if (selected == null)
+            {
+                return joinConfirmButton;
+            }
+
+            if (selected == joinConfirmButton.target || selected == ipAddressInputField?.gameObject)
+            {
+                return joinConfirmButton;
+            }
+        }
+
+        return default;
+    }
+
+    private HoldActionButton GetActiveBackButton()
+    {
+        if (_activeCanvas == controlsCanvas)
+        {
+            return joinBackButton;
+        }
+
+        if (_activeCanvas == joinGameCanvas)
+        {
+            return joinBackButton;
+        }
+
+        if (_activeCanvas == hostWaitingCanvas)
+        {
+            return waitingBackButton;
+        }
+
+        return default;
+    }
+
+    private void ResetHoldVisuals()
+    {
+        _submitHoldTime = 0f;
+        _backHoldTime = 0f;
+        ResetSubmitFillVisuals(null);
+        ResetBackFillVisuals(null);
+    }
+
+    private void HandleManualNavigation()
+    {
+        NavigationGroup group = GetActiveNavigationGroup();
+        if (group.targets == null || group.targets.Length == 0)
+        {
+            return;
+        }
+
+        Vector2 navigationInput = Vector2.zero;
+        if (Gamepad.current != null)
+        {
+            navigationInput = Gamepad.current.dpad.ReadValue();
+            if (navigationInput == Vector2.zero)
+            {
+                navigationInput = Gamepad.current.leftStick.ReadValue();
+            }
+        }
+
+        if (Keyboard.current != null)
+        {
+            if (Keyboard.current.leftArrowKey.isPressed || Keyboard.current.aKey.isPressed)
+            {
+                navigationInput.x = -1f;
+            }
+            else if (Keyboard.current.rightArrowKey.isPressed || Keyboard.current.dKey.isPressed)
+            {
+                navigationInput.x = 1f;
+            }
+
+            if (Keyboard.current.upArrowKey.isPressed || Keyboard.current.wKey.isPressed)
+            {
+                navigationInput.y = 1f;
+            }
+            else if (Keyboard.current.downArrowKey.isPressed || Keyboard.current.sKey.isPressed)
+            {
+                navigationInput.y = -1f;
+            }
+        }
+
+        bool hasNavigation = Mathf.Abs(navigationInput.x) > 0.5f || Mathf.Abs(navigationInput.y) > 0.5f;
+        if (!hasNavigation)
+        {
+            _navigationLatch = false;
+            return;
+        }
+
+        if (_navigationLatch)
+        {
+            return;
+        }
+
+        _navigationLatch = true;
+
+        int direction = ResolveNavigationDirection(navigationInput);
+        if (direction == 0)
+        {
+            return;
+        }
+
+        GameObject current = EventSystem.current != null ? EventSystem.current.currentSelectedGameObject : null;
+        int currentIndex = System.Array.IndexOf(group.targets, current);
+        if (currentIndex < 0)
+        {
+            currentIndex = 0;
+        }
+        else
+        {
+            currentIndex = (currentIndex + direction + group.targets.Length) % group.targets.Length;
+        }
+
+        RefreshSelection(group.targets[currentIndex]);
+    }
+
+    private NavigationGroup GetActiveNavigationGroup()
+    {
+        if (_activeCanvas == joinGameCanvas)
+        {
+            return joinGameNavigation;
+        }
+
+        if (_activeCanvas == hostWaitingCanvas)
+        {
+            return hostWaitingNavigation;
+        }
+
+        return default;
+    }
+
+    private static int ResolveNavigationDirection(Vector2 navigationInput)
+    {
+        if (Mathf.Abs(navigationInput.x) >= Mathf.Abs(navigationInput.y))
+        {
+            if (navigationInput.x > 0.5f) return 1;
+            if (navigationInput.x < -0.5f) return -1;
+        }
+        else
+        {
+            if (navigationInput.y < -0.5f) return 1;
+            if (navigationInput.y > 0.5f) return -1;
+        }
+
+        return 0;
+    }
+
+    private void ResetSubmitFillVisuals(Image activeImage)
+    {
+        ResetFillIfInactive(joinConfirmButton.fillImage, activeImage);
+    }
+
+    private void ResetBackFillVisuals(Image activeImage)
+    {
+        ResetFillIfInactive(joinBackButton.fillImage, activeImage);
+        ResetFillIfInactive(waitingBackButton.fillImage, activeImage);
+    }
+
+    private static void UpdateFill(Image image, float amount)
+    {
+        if (image != null)
+        {
+            image.fillAmount = amount;
+        }
+    }
+
+    private static void ResetFillIfInactive(Image image, Image activeImage)
+    {
+        if (image != null && image != activeImage)
+        {
+            image.fillAmount = 1f;
+        }
     }
 
     private void OnDestroy()

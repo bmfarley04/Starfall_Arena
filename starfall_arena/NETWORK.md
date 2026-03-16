@@ -73,13 +73,15 @@ It currently provides:
 - shutdown helper
 - connection and disconnection callbacks
 - direct-IP transport configuration for menu-driven joins
+- client-side connect timeout/failure reporting for bad IPs or missing hosts
 - two-player session limit enforcement
 - a helper for server-side spawning of player `NetworkObject`s once gameplay begins
 
 Current caveat:
 
-- title/menu connection state and gameplay ship spawning are now intentionally split
-- clients are assigned duel slots when they connect, but ship objects are not spawned until the gameplay scene starts with the authoritative final ship choices
+- title/menu connection state and gameplay ship spawning are intentionally split
+- `NetMgr` no longer owns scene-specific player prefab or spawn-point assignments
+- clients are assigned duel slots when they connect, but ship objects are not spawned until the gameplay scene starts with the authoritative final ship choices chosen through `ShipData`
 - any gameplay ship prefab used by `ShipData.shipPrefab` still needs a `NetworkObject` component and registration in the `NetworkManager` prefab list
 
 ### NetworkSessionData

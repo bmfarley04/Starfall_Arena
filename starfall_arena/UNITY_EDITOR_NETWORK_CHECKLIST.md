@@ -10,31 +10,41 @@ This checklist captures the serialized Unity editor changes that still need to b
 - Add or wire a persistent `GameDataManager` object with:
   - `knownShips`
   - `knownAugments`
+- Keep the main title canvas as the host/join choice screen.
+- Main title `Host Game` and `Join Game` should stay on the project's normal clickable-button pattern.
+- `NetMgr` no longer needs gameplay prefab or spawn-point assignments in the title scene. It only needs to sit beside the `NetworkManager`/`UnityTransport`.
 - Update `TitleScreenManager` references:
-  - `onlineMenuCanvas`
-  - `onlineMenuFirstSelected`
   - `joinGameCanvas`
   - `joinGameFirstSelected`
   - `hostWaitingCanvas`
   - `hostWaitingFirstSelected`
   - `ipAddressInputField`
-  - `networkStatusText`
-- Add button events for:
-  - `TransitionToOnlineMenu()`
-  - `TransitionToJoinGame()`
-  - `StartHostingFlow()`
-  - `StartJoinFlow()`
-  - `CancelNetworkFlow()`
+  - optional `networkStatusText`
+- Do not rely on Unity `Button.onClick` for the new image-based host/join/back controls.
+- `TitleScreenManager` now handles only the special hold-style controls on the join and waiting screens.
+- Wire the `TitleScreenManager` hold-button references:
+  - `joinConfirmButton.target` + `fillImage`
+  - `joinBackButton.target` + `fillImage`
+  - `waitingBackButton.target` + `fillImage`
+- Wire the manual navigation groups:
+  - `joinGameNavigation.targets`
+  - `hostWaitingNavigation.targets`
+- Action behavior is now manager-owned:
+  - selecting `Join Game` on the join canvas and holding confirm triggers `StartJoinFlow()`
+  - holding back on the join or waiting canvases triggers `CancelNetworkFlow()`
+- Main title actions should be wired through the existing normal clickable flow:
+  - main `Host Game` -> `StartHostingFlow()`
+  - main `Join Game` -> `TransitionToJoinGame()`
+- Input behavior:
+  - submit/confirm hold = controller south button / keyboard `X`
+  - back hold = controller east button / keyboard `B`
 
 ## Ship Select UI
 
-- Add or wire `ShipSelectManager` text references:
-  - `countdownTimerText`
-  - `localSelectionStatusText`
-  - `remoteSelectionStatusText`
-  - `timeoutStatusText`
+- Add or wire only the `countdownTimerText` reference on `ShipSelectManager`.
 - Verify the first-selected object for ship select still works with controller navigation.
 - Verify the ship preview model parent and animation setup still behaves correctly when the screen is entered from the new network flow.
+- Verify the timer is visible enough to communicate the auto-pick deadline because the extra local/opponent status labels are no longer used.
 
 ## Gameplay Scene
 

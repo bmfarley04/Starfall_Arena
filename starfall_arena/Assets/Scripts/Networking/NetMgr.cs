@@ -1,29 +1,20 @@
 using System;
-using System.Collections.Generic;
 using Unity.Netcode;
 using Unity.Netcode.Transports.UTP;
 using UnityEngine;
 
 /// <summary>
-/// Network session lifecycle manager for the menu and duel flow.
-/// Handles direct-IP host/client startup, session shutdown, and
-/// deterministic slot assignment for the two dueling players.
+/// Production session lifecycle manager for menu-driven LAN networking.
+/// Owns transport startup/shutdown and connection callbacks.
+/// Gameplay prefabs are selected by ShipData/GameSceneManager, not here.
 /// </summary>
 [DisallowMultipleComponent]
 public class NetMgr : MonoBehaviour
 {
-    [Header("Player Prefabs")]
-    [Tooltip("Prefab spawned for the first connected player.")]
-    [SerializeField] private GameObject player1Prefab;
-    [Tooltip("Prefab spawned for the second connected player.")]
-    [SerializeField] private GameObject player2Prefab;
-
-    [Header("Spawn Points")]
-    [SerializeField] private Transform player1SpawnPoint;
-    [SerializeField] private Transform player2SpawnPoint;
-
-    [Header("Limits")]
+    [Header("Connection")]
+    [SerializeField] private ushort defaultPort = 7777;
     [SerializeField] private int maxPlayers = 2;
+    [SerializeField] private float clientConnectionTimeoutSeconds = 8f;
 
     public static NetMgr Instance { get; private set; }
 
@@ -41,8 +32,10 @@ public class NetMgr : MonoBehaviour
     public event Action<ulong> OnPlayerJoined;
     public event Action<ulong> OnPlayerLeft;
 
-    private readonly Dictionary<ulong, NetworkObject> _spawnedPlayers = new Dictionary<ulong, NetworkObject>();
     private UnityTransport _transport;
+    private bool _isConfigured;
+    private bool _awaitingClientConnect;
+    private float _clientConnectStartedAt;
 
     private void Awake()
     {
@@ -65,13 +58,15 @@ public class NetMgr : MonoBehaviour
         }
 
         _transport = NetworkManager.Singleton.GetComponent<UnityTransport>();
-
-        if (!ValidatePlayerPrefab(player1Prefab, nameof(player1Prefab)) ||
-            !ValidatePlayerPrefab(player2Prefab, nameof(player2Prefab)))
+        if (_transport == null)
         {
+            Debug.LogError("[NetMgr] UnityTransport component is missing from the NetworkManager.");
             return;
         }
 
+        _isConfigured = true;
+
+        // Gameplay player objects are spawned manually from GameSceneManager.
         NetworkManager.Singleton.NetworkConfig.PlayerPrefab = null;
         NetworkManager.Singleton.NetworkConfig.AutoSpawnPlayerPrefabClientSide = false;
 
@@ -93,57 +88,114 @@ public class NetMgr : MonoBehaviour
         }
     }
 
-    public void StartHostForMenu()
+    private void Update()
     {
-        if (NetworkManager.Singleton == null || NetworkManager.Singleton.IsListening)
+        if (!_awaitingClientConnect || NetworkManager.Singleton == null)
         {
             return;
         }
 
-        NetworkSessionData.Instance?.BeginHostingState();
+        if (NetworkManager.Singleton.IsConnectedClient)
+        {
+            ClearClientConnectTimeout();
+            return;
+        }
+
+        if (Time.unscaledTime - _clientConnectStartedAt < clientConnectionTimeoutSeconds)
+        {
+            return;
+        }
+
+        ClearClientConnectTimeout();
+        if (NetworkManager.Singleton.IsListening)
+        {
+            NetworkManager.Singleton.Shutdown();
+        }
+
+        NotifyConnectionFailed($"Failed to connect to host at {_transport.ConnectionData.Address}:{defaultPort}.");
+    }
+
+    public bool StartHostForMenu()
+    {
+        if (NetworkManager.Singleton == null)
+        {
+            NotifyConnectionFailed("NetworkManager is missing from the scene.");
+            return false;
+        }
+
+        if (NetworkManager.Singleton.IsListening)
+        {
+            NotifyConnectionFailed("A network session is already active.");
+            return false;
+        }
+
+        if (!EnsureConfigured())
+        {
+            return false;
+        }
+
+        ConfigureConnectionAddress("0.0.0.0", defaultPort);
 
         if (!NetworkManager.Singleton.StartHost())
         {
             NotifyConnectionFailed("Failed to start host.");
-            return;
+            return false;
         }
 
+        ClearClientConnectTimeout();
+        NetworkSessionData.Instance?.BeginHostingState();
         OnConnectionStarted?.Invoke(true);
+        return true;
     }
 
-    public void StartClientForMenu(string address)
+    public bool StartClientForMenu(string address)
     {
-        if (NetworkManager.Singleton == null || NetworkManager.Singleton.IsListening)
+        if (NetworkManager.Singleton == null)
         {
-            return;
+            NotifyConnectionFailed("NetworkManager is missing from the scene.");
+            return false;
+        }
+
+        if (NetworkManager.Singleton.IsListening)
+        {
+            NotifyConnectionFailed("A network session is already active.");
+            return false;
+        }
+
+        if (!EnsureConfigured())
+        {
+            return false;
         }
 
         if (string.IsNullOrWhiteSpace(address))
         {
             NotifyConnectionFailed("Enter the host IP address first.");
-            return;
+            return false;
         }
 
-        ConfigureConnectionAddress(address);
+        ConfigureConnectionAddress(address.Trim(), defaultPort);
         NetworkSessionData.Instance?.BeginJoiningState();
 
         if (!NetworkManager.Singleton.StartClient())
         {
             NotifyConnectionFailed("Failed to start client.");
-            return;
+            return false;
         }
 
+        _awaitingClientConnect = true;
+        _clientConnectStartedAt = Time.unscaledTime;
         OnConnectionStarted?.Invoke(false);
+        return true;
     }
 
     public void CancelCurrentAttempt()
     {
+        ClearClientConnectTimeout();
         if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
         {
             NetworkManager.Singleton.Shutdown();
         }
 
-        _spawnedPlayers.Clear();
         NetworkSessionData.Instance?.ResetToTitleLocal();
     }
 
@@ -153,21 +205,16 @@ public class NetMgr : MonoBehaviour
         NetworkSessionData.Instance?.ResetToTitleLocal();
     }
 
-    public void ConfigureConnectionAddress(string address, ushort port = 7777)
+    public void ConfigureConnectionAddress(string address, ushort port)
     {
-        if (_transport == null)
+        if (_transport == null && NetworkManager.Singleton != null)
         {
-            _transport = NetworkManager.Singleton != null
-                ? NetworkManager.Singleton.GetComponent<UnityTransport>()
-                : null;
+            _transport = NetworkManager.Singleton.GetComponent<UnityTransport>();
         }
 
         _transport?.SetConnectionData(address, port);
     }
 
-    /// <summary>
-    /// Spawn a player NetworkObject on the server for the requested owner.
-    /// </summary>
     public static GameObject SpawnPlayerNetworked(GameObject prefab, Vector3 position, Quaternion rotation, ulong ownerClientId)
     {
         if (!IsNetworked || NetworkManager.Singleton == null || !NetworkManager.Singleton.IsServer)
@@ -176,16 +223,22 @@ public class NetMgr : MonoBehaviour
             return null;
         }
 
+        if (prefab == null)
+        {
+            Debug.LogError("[NetMgr] SpawnPlayerNetworked received a null prefab.");
+            return null;
+        }
+
         GameObject instance = Instantiate(prefab, position, rotation);
-        NetworkObject netObj = instance.GetComponent<NetworkObject>();
-        if (netObj == null)
+        NetworkObject networkObject = instance.GetComponent<NetworkObject>();
+        if (networkObject == null)
         {
             Debug.LogError($"[NetMgr] Prefab '{prefab.name}' has no NetworkObject component.");
             Destroy(instance);
             return null;
         }
 
-        netObj.SpawnAsPlayerObject(ownerClientId, true);
+        networkObject.SpawnAsPlayerObject(ownerClientId, true);
         return instance;
     }
 
@@ -194,10 +247,16 @@ public class NetMgr : MonoBehaviour
         Debug.Log($"[NetMgr] Client connected: {clientId}");
         OnPlayerJoined?.Invoke(clientId);
 
-        if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsServer)
+        if (NetworkManager.Singleton == null)
+        {
+            return;
+        }
+
+        if (!NetworkManager.Singleton.IsServer)
         {
             if (clientId == NetworkManager.Singleton.LocalClientId)
             {
+                ClearClientConnectTimeout();
                 NetworkSessionData.Instance?.SetLocalState(
                     NetworkMatchState.ConnectedReadyForShipSelect,
                     "Connected. Waiting for ship select...");
@@ -217,7 +276,20 @@ public class NetMgr : MonoBehaviour
 
     private void OnClientDisconnected(ulong clientId)
     {
-        _spawnedPlayers.Remove(clientId);
+        if (NetworkManager.Singleton != null &&
+            !NetworkManager.Singleton.IsServer &&
+            clientId == NetworkManager.Singleton.LocalClientId)
+        {
+            bool wasAwaitingConnection = _awaitingClientConnect;
+            ClearClientConnectTimeout();
+
+            if (wasAwaitingConnection)
+            {
+                NotifyConnectionFailed("Disconnected before joining the host. Check the IP address and make sure the host is waiting for an opponent.");
+                return;
+            }
+        }
+
         OnPlayerLeft?.Invoke(clientId);
         NetworkSessionData.Instance?.RegisterClientDisconnected(clientId);
     }
@@ -225,24 +297,32 @@ public class NetMgr : MonoBehaviour
     private void NotifyConnectionFailed(string message)
     {
         Debug.LogError($"[NetMgr] {message}");
+        ClearClientConnectTimeout();
         NetworkSessionData.Instance?.SetLocalState(NetworkMatchState.Error, message);
         OnConnectionFailed?.Invoke(message);
     }
 
-    private bool ValidatePlayerPrefab(GameObject prefab, string fieldName)
+    private bool EnsureConfigured()
     {
-        if (prefab == null)
+        if (_isConfigured && _transport != null)
         {
-            Debug.LogError($"[NetMgr] {fieldName} is not assigned.");
+            return true;
+        }
+
+        if (NetworkManager.Singleton == null)
+        {
+            NotifyConnectionFailed("NetworkManager is missing from the scene.");
             return false;
         }
 
-        if (prefab.GetComponent<NetworkObject>() == null)
+        _transport = NetworkManager.Singleton.GetComponent<UnityTransport>();
+        if (_transport == null)
         {
-            Debug.LogError($"[NetMgr] Prefab '{prefab.name}' assigned to {fieldName} has no NetworkObject component.");
+            NotifyConnectionFailed("UnityTransport is missing from the NetworkManager.");
             return false;
         }
 
+        _isConfigured = true;
         return true;
     }
 
@@ -251,5 +331,11 @@ public class NetMgr : MonoBehaviour
         return NetworkManager.Singleton != null && NetworkManager.Singleton.ConnectedClientsIds != null
             ? NetworkManager.Singleton.ConnectedClientsIds.Count
             : 0;
+    }
+
+    private void ClearClientConnectTimeout()
+    {
+        _awaitingClientConnect = false;
+        _clientConnectStartedAt = 0f;
     }
 }
