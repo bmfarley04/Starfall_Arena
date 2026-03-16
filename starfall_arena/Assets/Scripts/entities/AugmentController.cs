@@ -76,6 +76,59 @@ public class AugmentController : MonoBehaviour
         return entries;
     }
 
+    public List<NetworkAugmentLoadoutEntry> ExportNetworkLoadout()
+    {
+        List<NetworkAugmentLoadoutEntry> entries = new List<NetworkAugmentLoadoutEntry>(_runtimes.Count);
+
+        foreach (IAugmentRuntime runtime in _runtimes)
+        {
+            if (runtime == null || runtime.Definition == null || string.IsNullOrWhiteSpace(runtime.Definition.augmentID))
+            {
+                continue;
+            }
+
+            entries.Add(new NetworkAugmentLoadoutEntry
+            {
+                augmentId = runtime.Definition.augmentID,
+                roundAcquired = runtime.RoundAcquired
+            });
+        }
+
+        return entries;
+    }
+
+    public void ImportNetworkLoadout(List<NetworkAugmentLoadoutEntry> entries, int currentRound)
+    {
+        if (_player == null)
+        {
+            return;
+        }
+
+        ClearRuntimesAndModifiers();
+        SetCurrentRound(currentRound);
+
+        if (entries == null || GameDataManager.Instance == null)
+        {
+            return;
+        }
+
+        foreach (NetworkAugmentLoadoutEntry entry in entries)
+        {
+            if (entry == null)
+            {
+                continue;
+            }
+
+            Augment definition = GameDataManager.Instance.GetAugmentById(entry.augmentId);
+            if (definition == null)
+            {
+                continue;
+            }
+
+            AcquireAugment(definition, entry.roundAcquired, null);
+        }
+    }
+
     public void ExecuteEffects()
     {
         foreach (IAugmentRuntime runtime in _runtimes)

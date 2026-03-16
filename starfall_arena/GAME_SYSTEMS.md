@@ -374,6 +374,12 @@ Current augment flow:
 - round transitions export and import augment loadouts
 - runtime activation can expire based on augment duration in rounds
 
+Network persistence note:
+
+- the repo now also has a minimal `NetworkAugmentLoadoutEntry` shape that carries stable augment ID plus round acquired for network-safe export/import
+- this is intentionally narrower than the local `AugmentLoadoutEntry` because opaque runtime `object` state is not safe for NGO/session transport
+- augments with richer mutable runtime state still need explicit serializer support before they can be treated as fully network-persistent across all networked round transitions
+
 ## Known Architectural Notes
 
 - The game is currently duel-first, even though enemy and broader PvE architecture still exists.
