@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Serialization;
 
 /// <summary>
 /// ScriptableObject containing all data for a ship displayed in the ship selection screen.
@@ -42,6 +43,10 @@ public class ShipData : ScriptableObject
     }
 
     [Header("Ship Identity")]
+    [FormerlySerializedAs("shipId")]
+    [HideInInspector]
+    [SerializeField] private string _shipId;
+
     [Tooltip("Display name shown at top of ship select screen (e.g., 'VX-ATLAS')")]
     public string shipName;
 
@@ -81,4 +86,14 @@ public class ShipData : ScriptableObject
 
     [Tooltip("Ability 4 data (bottom-right ability button)")]
     public AbilityData ability4;
+
+    public string ShipId => _shipId;
+
+    private void OnValidate()
+    {
+        if (string.IsNullOrWhiteSpace(_shipId))
+        {
+            _shipId = System.Guid.NewGuid().ToString("N");
+        }
+    }
 }

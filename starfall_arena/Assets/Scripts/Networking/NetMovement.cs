@@ -527,6 +527,42 @@ public class NetMovement : NetworkBehaviour
         HandleInvisibilityServer(new NetAbilityToggleState { IsActive = isActive });
     }
 
+    public void SetMovementLockedAuthoritative(bool isLocked)
+    {
+        if (_player == null)
+        {
+            return;
+        }
+
+        _player.isMovementLocked = isLocked;
+        if (IsServer)
+        {
+            BroadcastMovementLockClientRpc(isLocked);
+        }
+    }
+
+    public void SetAbility4LockedAuthoritative(bool isLocked)
+    {
+        if (_player == null)
+        {
+            return;
+        }
+
+        if (isLocked)
+        {
+            _player.LockAbility4();
+        }
+        else
+        {
+            _player.UnlockAbility4();
+        }
+
+        if (IsServer)
+        {
+            BroadcastAbility4LockClientRpc(isLocked);
+        }
+    }
+
     // ===== OWNER: CLIENT-SIDE PREDICTION =====
 
     private void OwnerTick()
@@ -927,6 +963,33 @@ public class NetMovement : NetworkBehaviour
 
         Invisibility invisibility = GetComponent<Invisibility>();
         invisibility?.ApplyNetworkInvisibilityState(state.IsActive, authoritative: false);
+    }
+
+    [ClientRpc]
+    private void BroadcastMovementLockClientRpc(bool isLocked)
+    {
+        if (_player != null)
+        {
+            _player.isMovementLocked = isLocked;
+        }
+    }
+
+    [ClientRpc]
+    private void BroadcastAbility4LockClientRpc(bool isLocked)
+    {
+        if (_player == null)
+        {
+            return;
+        }
+
+        if (isLocked)
+        {
+            _player.LockAbility4();
+        }
+        else
+        {
+            _player.UnlockAbility4();
+        }
     }
 
     private void PublishAuthoritativeState(

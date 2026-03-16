@@ -2,6 +2,7 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
+using TMPro;
 
 /// <summary>
 /// Orchestrates the title screen intro and menu transitions.
@@ -73,6 +74,28 @@ public class TitleScreenManager : MonoBehaviour
     [Tooltip("First selected button on the ship select screen (for controller navigation)")]
     [SerializeField] private GameObject shipSelectFirstSelected;
 
+    [Tooltip("Online flow root canvas with Host/Join choices")]
+    [SerializeField] private CanvasGroup onlineMenuCanvas;
+
+    [Tooltip("First selected button on the online menu canvas")]
+    [SerializeField] private GameObject onlineMenuFirstSelected;
+
+    [Tooltip("Join-game canvas that contains the IP field and connect button")]
+    [SerializeField] private CanvasGroup joinGameCanvas;
+
+    [Tooltip("First selected button or input field on the join-game canvas")]
+    [SerializeField] private GameObject joinGameFirstSelected;
+
+    [Tooltip("Waiting-room canvas shown to the host after starting a LAN duel")]
+    [SerializeField] private CanvasGroup hostWaitingCanvas;
+
+    [Tooltip("First selected button on the host waiting canvas")]
+    [SerializeField] private GameObject hostWaitingFirstSelected;
+
+    [Header("Networking UI")]
+    [SerializeField] private TMP_InputField ipAddressInputField;
+    [SerializeField] private TextMeshProUGUI networkStatusText;
+
     [Header("Intro: Scene Fade In")]
     [SerializeField] private SceneFadeConfig sceneFade;
 
@@ -85,9 +108,25 @@ public class TitleScreenManager : MonoBehaviour
     private float _overlayAlpha = 1f;
     private Coroutine _activeTransition;
     private CanvasGroup _activeCanvas;
+    private NetMgr _netMgr;
+    private NetworkSessionData _sessionData;
 
     private IEnumerator Start()
     {
+        _netMgr = NetMgr.Instance;
+        _sessionData = NetworkSessionData.Instance;
+
+        if (_netMgr != null)
+        {
+            _netMgr.OnConnectionFailed += HandleConnectionFailed;
+        }
+
+        if (_sessionData != null)
+        {
+            _sessionData.OnSessionStateChanged += HandleSessionStateChanged;
+            _sessionData.OnStatusMessageChanged += HandleStatusMessageChanged;
+        }
+
         _overlayAlpha = 1f;
 
         // CRITICAL: Deactivate canvas GameObjects to prevent ANY events during intro
@@ -95,11 +134,17 @@ public class TitleScreenManager : MonoBehaviour
         mainMenuCanvas.gameObject.SetActive(false);
         controlsCanvas.gameObject.SetActive(false);
         shipSelectCanvas.gameObject.SetActive(false);
+        if (onlineMenuCanvas != null) onlineMenuCanvas.gameObject.SetActive(false);
+        if (joinGameCanvas != null) joinGameCanvas.gameObject.SetActive(false);
+        if (hostWaitingCanvas != null) hostWaitingCanvas.gameObject.SetActive(false);
 
         // Hide all canvases at start (when we activate them later)
         SetCanvasHidden(mainMenuCanvas);
         SetCanvasHidden(controlsCanvas);
         SetCanvasHidden(shipSelectCanvas);
+        SetCanvasHidden(onlineMenuCanvas);
+        SetCanvasHidden(joinGameCanvas);
+        SetCanvasHidden(hostWaitingCanvas);
 
         // PRELOAD: Spawn ship models NOW (at scene load) so they're ready instantly
         // This eliminates any loading delay when entering ship select
@@ -205,6 +250,71 @@ public class TitleScreenManager : MonoBehaviour
         if (_activeTransition != null) return;
         _activeTransition = StartCoroutine(
             RunTransition(mainMenuCanvas, shipSelectCanvas, shipSelectFirstSelected));
+    }
+
+    public void TransitionToOnlineMenu()
+    {
+        if (_activeTransition != null || onlineMenuCanvas == null) return;
+        _activeTransition = StartCoroutine(
+            RunTransition(mainMenuCanvas, onlineMenuCanvas, onlineMenuFirstSelected));
+    }
+
+    public void TransitionToMainMenuFromOnline()
+    {
+        if (_activeTransition != null || onlineMenuCanvas == null) return;
+        _activeTransition = StartCoroutine(
+            RunTransition(onlineMenuCanvas, mainMenuCanvas, mainMenuFirstSelected));
+    }
+
+    public void TransitionToJoinGame()
+    {
+        if (_activeTransition != null || joinGameCanvas == null || onlineMenuCanvas == null) return;
+        _activeTransition = StartCoroutine(
+            RunTransition(onlineMenuCanvas, joinGameCanvas, joinGameFirstSelected));
+    }
+
+    public void TransitionToOnlineMenuFromJoin()
+    {
+        if (_activeTransition != null || joinGameCanvas == null || onlineMenuCanvas == null) return;
+        _activeTransition = StartCoroutine(
+            RunTransition(joinGameCanvas, onlineMenuCanvas, onlineMenuFirstSelected));
+    }
+
+    public void StartHostingFlow()
+    {
+        if (hostWaitingCanvas == null || _activeTransition != null) return;
+
+        _netMgr = NetMgr.Instance;
+        _sessionData = NetworkSessionData.Instance;
+        _netMgr?.StartHostForMenu();
+
+        CanvasGroup source = _activeCanvas ?? onlineMenuCanvas ?? mainMenuCanvas;
+        _activeTransition = StartCoroutine(
+            RunTransition(source, hostWaitingCanvas, hostWaitingFirstSelected));
+    }
+
+    public void StartJoinFlow()
+    {
+        string address = ipAddressInputField != null ? ipAddressInputField.text : string.Empty;
+        _netMgr = NetMgr.Instance;
+        _sessionData = NetworkSessionData.Instance;
+        _netMgr?.StartClientForMenu(address);
+    }
+
+    public void CancelNetworkFlow()
+    {
+        _netMgr = NetMgr.Instance;
+        _netMgr?.CancelCurrentAttempt();
+        HandleStatusMessageChanged(string.Empty);
+
+        if (_activeCanvas == hostWaitingCanvas && onlineMenuCanvas != null)
+        {
+            TransitionCanvas(hostWaitingCanvas, onlineMenuCanvas, onlineMenuFirstSelected);
+        }
+        else if (_activeCanvas == joinGameCanvas && onlineMenuCanvas != null)
+        {
+            TransitionCanvas(joinGameCanvas, onlineMenuCanvas, onlineMenuFirstSelected);
+        }
     }
 
     public void TransitionToMainMenuFromShipSelect()
@@ -329,8 +439,18 @@ public class TitleScreenManager : MonoBehaviour
 
         if (cancelPressed)
         {
-            // Return to main menu from controls screen
-            TransitionToMainMenu();
+            if (_activeCanvas == controlsCanvas)
+            {
+                TransitionToMainMenu();
+            }
+            else if (_activeCanvas == onlineMenuCanvas)
+            {
+                TransitionToMainMenuFromOnline();
+            }
+            else if (_activeCanvas == joinGameCanvas || _activeCanvas == hostWaitingCanvas)
+            {
+                CancelNetworkFlow();
+            }
         }
     }
 
@@ -368,5 +488,70 @@ public class TitleScreenManager : MonoBehaviour
         menuTransition.pauseDuration = 0.15f;
         menuTransition.enterDuration = 0.4f;
         menuTransition.enterStartScale = 0.9f;
+    }
+
+    private void HandleConnectionFailed(string message)
+    {
+        HandleStatusMessageChanged(message);
+    }
+
+    private void HandleSessionStateChanged(NetworkMatchState state)
+    {
+        switch (state)
+        {
+            case NetworkMatchState.ShipSelect:
+                TransitionToShipSelectFromCurrent();
+                break;
+            case NetworkMatchState.Disconnected:
+            case NetworkMatchState.Error:
+                if (_activeCanvas == hostWaitingCanvas || _activeCanvas == joinGameCanvas)
+                {
+                    TransitionCanvas(_activeCanvas, onlineMenuCanvas, onlineMenuFirstSelected);
+                }
+                break;
+        }
+    }
+
+    private void HandleStatusMessageChanged(string message)
+    {
+        if (networkStatusText != null)
+        {
+            networkStatusText.text = message ?? string.Empty;
+        }
+    }
+
+    private void TransitionToShipSelectFromCurrent()
+    {
+        if (_activeTransition != null || shipSelectCanvas == null) return;
+
+        CanvasGroup source = _activeCanvas ?? mainMenuCanvas;
+        if (source == shipSelectCanvas) return;
+
+        _activeTransition = StartCoroutine(
+            RunTransition(source, shipSelectCanvas, shipSelectFirstSelected));
+    }
+
+    private void TransitionCanvas(CanvasGroup from, CanvasGroup to, GameObject firstSelected)
+    {
+        if (from == null || to == null || _activeTransition != null)
+        {
+            return;
+        }
+
+        _activeTransition = StartCoroutine(RunTransition(from, to, firstSelected));
+    }
+
+    private void OnDestroy()
+    {
+        if (_netMgr != null)
+        {
+            _netMgr.OnConnectionFailed -= HandleConnectionFailed;
+        }
+
+        if (_sessionData != null)
+        {
+            _sessionData.OnSessionStateChanged -= HandleSessionStateChanged;
+            _sessionData.OnStatusMessageChanged -= HandleStatusMessageChanged;
+        }
     }
 }

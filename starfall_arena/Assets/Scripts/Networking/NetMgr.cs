@@ -1,44 +1,59 @@
+using System;
 using System.Collections.Generic;
 using Unity.Netcode;
+using Unity.Netcode.Transports.UTP;
 using UnityEngine;
 
 /// <summary>
-/// Network session lifecycle manager.
-/// Handles host/client startup, manual player spawning,
-/// and connection/disconnection callbacks.
-///
-/// Attach to a persistent GameObject in the scene (e.g. alongside NetworkManager).
+/// Network session lifecycle manager for the menu and duel flow.
+/// Handles direct-IP host/client startup, session shutdown, and
+/// deterministic slot assignment for the two dueling players.
 /// </summary>
+[DisallowMultipleComponent]
 public class NetMgr : MonoBehaviour
 {
-    [Header("Debug Controls")]
-    [Tooltip("Key to start as Host (server + local client)")]
-    [SerializeField] private KeyCode _hostKey = KeyCode.H;
-    [Tooltip("Key to start as Client")]
-    [SerializeField] private KeyCode _clientKey = KeyCode.C;
-
     [Header("Player Prefabs")]
     [Tooltip("Prefab spawned for the first connected player.")]
-    [SerializeField] private GameObject _player1Prefab;
-    [Tooltip("Prefab spawned for the second connected player and any later joins.")]
-    [SerializeField] private GameObject _player2Prefab;
+    [SerializeField] private GameObject player1Prefab;
+    [Tooltip("Prefab spawned for the second connected player.")]
+    [SerializeField] private GameObject player2Prefab;
 
     [Header("Spawn Points")]
-    [Tooltip("Optional spawn point for player 1. Falls back to world origin if left empty.")]
-    [SerializeField] private Transform _player1SpawnPoint;
-    [Tooltip("Optional spawn point for player 2. Falls back to world origin if left empty.")]
-    [SerializeField] private Transform _player2SpawnPoint;
+    [SerializeField] private Transform player1SpawnPoint;
+    [SerializeField] private Transform player2SpawnPoint;
 
-    private readonly Dictionary<ulong, NetworkObject> _spawnedPlayers = new();
+    [Header("Limits")]
+    [SerializeField] private int maxPlayers = 2;
 
-    /// <summary>True when a networked session is active.</summary>
+    public static NetMgr Instance { get; private set; }
+
     public static bool IsNetworked
     {
         get
         {
-            var nm = NetworkManager.Singleton;
+            NetworkManager nm = NetworkManager.Singleton;
             return nm != null && nm.IsListening;
         }
+    }
+
+    public event Action<bool> OnConnectionStarted;
+    public event Action<string> OnConnectionFailed;
+    public event Action<ulong> OnPlayerJoined;
+    public event Action<ulong> OnPlayerLeft;
+
+    private readonly Dictionary<ulong, NetworkObject> _spawnedPlayers = new Dictionary<ulong, NetworkObject>();
+    private UnityTransport _transport;
+
+    private void Awake()
+    {
+        if (Instance != null && Instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+
+        Instance = this;
+        DontDestroyOnLoad(gameObject);
     }
 
     private void Start()
@@ -49,13 +64,14 @@ public class NetMgr : MonoBehaviour
             return;
         }
 
-        if (!ValidatePlayerPrefab(_player1Prefab, nameof(_player1Prefab)) ||
-            !ValidatePlayerPrefab(_player2Prefab, nameof(_player2Prefab)))
+        _transport = NetworkManager.Singleton.GetComponent<UnityTransport>();
+
+        if (!ValidatePlayerPrefab(player1Prefab, nameof(player1Prefab)) ||
+            !ValidatePlayerPrefab(player2Prefab, nameof(player2Prefab)))
         {
             return;
         }
 
-        // We manually spawn the correct prefab per client when they connect.
         NetworkManager.Singleton.NetworkConfig.PlayerPrefab = null;
         NetworkManager.Singleton.NetworkConfig.AutoSpawnPlayerPrefabClientSide = false;
 
@@ -65,6 +81,11 @@ public class NetMgr : MonoBehaviour
 
     private void OnDestroy()
     {
+        if (Instance == this)
+        {
+            Instance = null;
+        }
+
         if (NetworkManager.Singleton != null)
         {
             NetworkManager.Singleton.OnClientConnectedCallback -= OnClientConnected;
@@ -72,72 +93,86 @@ public class NetMgr : MonoBehaviour
         }
     }
 
-    private void Update()
+    public void StartHostForMenu()
     {
-        if (NetworkManager.Singleton == null) return;
-        if (NetworkManager.Singleton.IsListening) return;
-
-        if (Input.GetKeyDown(_hostKey))
+        if (NetworkManager.Singleton == null || NetworkManager.Singleton.IsListening)
         {
-            StartHost();
-        }
-
-        if (Input.GetKeyDown(_clientKey))
-        {
-            StartClient();
-        }
-    }
-
-    public void StartHost()
-    {
-        Debug.Log("[NetMgr] Starting Host...");
-        if (!NetworkManager.Singleton.StartHost())
-        {
-            Debug.LogError("[NetMgr] Failed to start Host.");
             return;
         }
 
-        // Make host assignment deterministic: the host is always player 1.
-        SpawnAssignedPlayer(NetworkManager.Singleton.LocalClientId);
+        NetworkSessionData.Instance?.BeginHostingState();
+
+        if (!NetworkManager.Singleton.StartHost())
+        {
+            NotifyConnectionFailed("Failed to start host.");
+            return;
+        }
+
+        OnConnectionStarted?.Invoke(true);
     }
 
-    public void StartClient()
+    public void StartClientForMenu(string address)
     {
-        Debug.Log("[NetMgr] Starting Client...");
+        if (NetworkManager.Singleton == null || NetworkManager.Singleton.IsListening)
+        {
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(address))
+        {
+            NotifyConnectionFailed("Enter the host IP address first.");
+            return;
+        }
+
+        ConfigureConnectionAddress(address);
+        NetworkSessionData.Instance?.BeginJoiningState();
+
         if (!NetworkManager.Singleton.StartClient())
         {
-            Debug.LogError("[NetMgr] Failed to start Client.");
+            NotifyConnectionFailed("Failed to start client.");
+            return;
         }
+
+        OnConnectionStarted?.Invoke(false);
     }
 
-    public void StartServer()
-    {
-        Debug.Log("[NetMgr] Starting dedicated Server...");
-        if (!NetworkManager.Singleton.StartServer())
-        {
-            Debug.LogError("[NetMgr] Failed to start dedicated Server.");
-        }
-    }
-
-    public void Shutdown()
+    public void CancelCurrentAttempt()
     {
         if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
         {
-            Debug.Log("[NetMgr] Shutting down network session.");
             NetworkManager.Singleton.Shutdown();
         }
+
+        _spawnedPlayers.Clear();
+        NetworkSessionData.Instance?.ResetToTitleLocal();
+    }
+
+    public void ShutdownToTitle()
+    {
+        CancelCurrentAttempt();
+        NetworkSessionData.Instance?.ResetToTitleLocal();
+    }
+
+    public void ConfigureConnectionAddress(string address, ushort port = 7777)
+    {
+        if (_transport == null)
+        {
+            _transport = NetworkManager.Singleton != null
+                ? NetworkManager.Singleton.GetComponent<UnityTransport>()
+                : null;
+        }
+
+        _transport?.SetConnectionData(address, port);
     }
 
     /// <summary>
-    /// Spawn a player NetworkObject on the server. Call from GameSceneManager
-    /// instead of Instantiate() when a networked session is active.
-    /// The prefab must be registered in NetworkManager's NetworkPrefabs list.
+    /// Spawn a player NetworkObject on the server for the requested owner.
     /// </summary>
     public static GameObject SpawnPlayerNetworked(GameObject prefab, Vector3 position, Quaternion rotation, ulong ownerClientId)
     {
-        if (!IsNetworked || !NetworkManager.Singleton.IsServer)
+        if (!IsNetworked || NetworkManager.Singleton == null || !NetworkManager.Singleton.IsServer)
         {
-            Debug.LogError("[NetMgr] SpawnPlayerNetworked called but not running as server.");
+            Debug.LogError("[NetMgr] SpawnPlayerNetworked called but the server is not active.");
             return null;
         }
 
@@ -150,63 +185,48 @@ public class NetMgr : MonoBehaviour
             return null;
         }
 
-        netObj.SpawnAsPlayerObject(ownerClientId, destroyWithScene: true);
+        netObj.SpawnAsPlayerObject(ownerClientId, true);
         return instance;
     }
 
     private void OnClientConnected(ulong clientId)
     {
         Debug.Log($"[NetMgr] Client connected: {clientId}");
+        OnPlayerJoined?.Invoke(clientId);
 
-        if (!NetworkManager.Singleton.IsServer)
+        if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsServer)
         {
+            if (clientId == NetworkManager.Singleton.LocalClientId)
+            {
+                NetworkSessionData.Instance?.SetLocalState(
+                    NetworkMatchState.ConnectedReadyForShipSelect,
+                    "Connected. Waiting for ship select...");
+            }
+
             return;
         }
 
-        SpawnAssignedPlayer(clientId);
+        if (GetConnectedPlayerCount() > maxPlayers)
+        {
+            NetworkManager.Singleton.DisconnectClient(clientId);
+            return;
+        }
+
+        NetworkSessionData.Instance?.RegisterConnectedClient(clientId);
     }
 
     private void OnClientDisconnected(ulong clientId)
     {
         _spawnedPlayers.Remove(clientId);
-        Debug.Log($"[NetMgr] Client disconnected: {clientId}");
+        OnPlayerLeft?.Invoke(clientId);
+        NetworkSessionData.Instance?.RegisterClientDisconnected(clientId);
     }
 
-    private void SpawnAssignedPlayer(ulong clientId)
+    private void NotifyConnectionFailed(string message)
     {
-        if (_spawnedPlayers.TryGetValue(clientId, out NetworkObject existingPlayer) && existingPlayer != null)
-        {
-            return;
-        }
-
-        bool usePlayer1Slot = ShouldUsePlayer1Slot(clientId);
-        GameObject selectedPrefab = usePlayer1Slot ? _player1Prefab : _player2Prefab;
-
-        if (!usePlayer1Slot && _spawnedPlayers.Count >= 2)
-        {
-            Debug.LogWarning($"[NetMgr] More than two players attempted to join. Reusing '{_player2Prefab.name}' for client {clientId}.");
-        }
-
-        Transform spawnPoint = usePlayer1Slot ? _player1SpawnPoint : _player2SpawnPoint;
-        Vector3 spawnPosition = spawnPoint != null ? spawnPoint.position : Vector3.zero;
-        Quaternion spawnRotation = spawnPoint != null ? spawnPoint.rotation : Quaternion.identity;
-
-        GameObject instance = Instantiate(selectedPrefab, spawnPosition, spawnRotation);
-        NetworkObject netObj = instance.GetComponent<NetworkObject>();
-        netObj.SpawnAsPlayerObject(clientId, destroyWithScene: true);
-        _spawnedPlayers[clientId] = netObj;
-
-        Debug.Log($"[NetMgr] Spawned '{selectedPrefab.name}' for client {clientId} at {spawnPosition}.");
-    }
-
-    private bool ShouldUsePlayer1Slot(ulong clientId)
-    {
-        if (NetworkManager.Singleton.IsHost && clientId == NetworkManager.ServerClientId)
-        {
-            return true;
-        }
-
-        return _spawnedPlayers.Count == 0;
+        Debug.LogError($"[NetMgr] {message}");
+        NetworkSessionData.Instance?.SetLocalState(NetworkMatchState.Error, message);
+        OnConnectionFailed?.Invoke(message);
     }
 
     private bool ValidatePlayerPrefab(GameObject prefab, string fieldName)
@@ -224,5 +244,12 @@ public class NetMgr : MonoBehaviour
         }
 
         return true;
+    }
+
+    private int GetConnectedPlayerCount()
+    {
+        return NetworkManager.Singleton != null && NetworkManager.Singleton.ConnectedClientsIds != null
+            ? NetworkManager.Singleton.ConnectedClientsIds.Count
+            : 0;
     }
 }

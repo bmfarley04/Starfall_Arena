@@ -281,6 +281,12 @@ public class ShipSelectManager : MonoBehaviour
     [Tooltip("Player selection UI references (player text, back/select button fills)")]
     [SerializeField] private SelectionUIReferences selectionUI;
 
+    [Header("Networked Ship Select")]
+    [SerializeField] private TextMeshProUGUI countdownTimerText;
+    [SerializeField] private TextMeshProUGUI localSelectionStatusText;
+    [SerializeField] private TextMeshProUGUI remoteSelectionStatusText;
+    [SerializeField] private TextMeshProUGUI timeoutStatusText;
+
     [Header("Navigation Button Images")]
     [Tooltip("Left navigation button image (for material flash effect)")]
     [SerializeField] private Image leftNavigationImage;
@@ -354,6 +360,8 @@ public class ShipSelectManager : MonoBehaviour
     private float _backHoldTime = 0f;
     private float _selectHoldTime = 0f;
     private bool _isProcessingSelection = false;
+    private bool _useNetworkSession = false;
+    private NetworkSessionData _networkSession;
 
     private void Awake()
     {
@@ -375,6 +383,10 @@ public class ShipSelectManager : MonoBehaviour
 
         // Ships are now spawned by TitleScreenManager at scene load
         // This keeps ShipSelectManager completely independent
+
+        SetNetworkStatusText(localSelectionStatusText, string.Empty);
+        SetNetworkStatusText(remoteSelectionStatusText, string.Empty);
+        SetNetworkStatusText(timeoutStatusText, string.Empty);
     }
 
     /// <summary>
@@ -527,6 +539,15 @@ public class ShipSelectManager : MonoBehaviour
         // Ensure gamepads are assigned before input processing starts
         ResolveGamepadAssignments();
 
+        _networkSession = NetworkSessionData.Instance;
+        _useNetworkSession = NetMgr.IsNetworked && _networkSession != null;
+        if (_networkSession != null)
+        {
+            _networkSession.OnShipSelectionsChanged += RefreshNetworkSessionUI;
+            _networkSession.OnSelectionTimerChanged += HandleNetworkTimerChanged;
+            _networkSession.OnSessionStateChanged += HandleNetworkSessionStateChanged;
+        }
+
         // Update player selection text
         UpdatePlayerSelectionText();
 
@@ -544,6 +565,8 @@ public class ShipSelectManager : MonoBehaviour
         // CRITICAL: Start with NO button selected (ship rotation mode)
         // Do this on next frame to ensure EventSystem doesn't auto-select
         StartCoroutine(ClearSelectionNextFrame());
+
+        RefreshNetworkSessionUI();
 
         Debug.Log("[OnEnable] Complete (ship will activate when canvas is visible)!");
     }
@@ -605,6 +628,13 @@ public class ShipSelectManager : MonoBehaviour
         HideAllShipModels();
         HideAllTooltips();
 
+        if (_networkSession != null)
+        {
+            _networkSession.OnShipSelectionsChanged -= RefreshNetworkSessionUI;
+            _networkSession.OnSelectionTimerChanged -= HandleNetworkTimerChanged;
+            _networkSession.OnSessionStateChanged -= HandleNetworkSessionStateChanged;
+        }
+
         // Clear EventSystem selection when leaving ship select
         if (EventSystem.current != null)
             EventSystem.current.SetSelectedGameObject(null);
@@ -645,6 +675,11 @@ public class ShipSelectManager : MonoBehaviour
 
     private void Update()
     {
+        if (_useNetworkSession && _networkSession == null)
+        {
+            _networkSession = NetworkSessionData.Instance;
+        }
+
         if (_activeGamepad == null || !_activeGamepad.added)
             ResolveGamepadAssignments();
 
@@ -661,11 +696,19 @@ public class ShipSelectManager : MonoBehaviour
         // D-pad navigates UI (EventSystem handles automatically)
         HandleDPadNavigation();
 
-        // Shoulder buttons switch ships
-        HandleShipNavigation();
+        bool localLocked = _useNetworkSession && _networkSession != null && _networkSession.IsLocalPlayerLockedIn;
 
-        // Hold button logic for back and select
-        HandleHoldButtons();
+        // Shoulder buttons switch ships
+        if (!localLocked)
+        {
+            HandleShipNavigation();
+            HandleHoldButtons();
+        }
+
+        if (_useNetworkSession)
+        {
+            RefreshNetworkSessionUI();
+        }
 
         // Smooth rotate the ship model
         UpdateShipRotation();
@@ -1494,6 +1537,16 @@ public class ShipSelectManager : MonoBehaviour
     {
         if (selectionUI.playerSelectionText == null) return;
 
+        if (_useNetworkSession && _networkSession != null)
+        {
+            int localSlot = _networkSession.GetLocalSlotIndex();
+            if (localSlot >= 0)
+            {
+                selectionUI.playerSelectionText.text = localSlot == 0 ? "PLAYER 1" : "PLAYER 2";
+                return;
+            }
+        }
+
         selectionUI.playerSelectionText.text = _currentPlayer == PlayerSelectState.Player1
             ? "PLAYER 1"
             : "PLAYER 2";
@@ -1576,6 +1629,16 @@ public class ShipSelectManager : MonoBehaviour
         if (holdBack.confirmSound != null)
             holdBack.confirmSound.Play(_audioSource);
 
+        if (_useNetworkSession)
+        {
+            TitleScreenManager titleScreen = FindObjectOfType<TitleScreenManager>();
+            if (titleScreen != null)
+            {
+                titleScreen.CancelNetworkFlow();
+            }
+            return;
+        }
+
         if (_currentPlayer == PlayerSelectState.Player1)
         {
             // Player 1 going back - return to main menu with proper transition
@@ -1628,6 +1691,21 @@ public class ShipSelectManager : MonoBehaviour
 
         // Store selected ship
         ShipData selectedShip = availableShips[_currentShipIndex];
+
+        if (_useNetworkSession)
+        {
+            if (_networkSession != null && selectedShip != null)
+            {
+                _networkSession.RequestShipSelection(selectedShip.ShipId, true);
+                SetNetworkStatusText(localSelectionStatusText, $"Locked in {selectedShip.shipName}. Waiting for opponent...");
+            }
+
+            yield return new WaitForSecondsRealtime(postSelection.confirmationDelay);
+            yield return StartCoroutine(SpinShipAnimation());
+            yield return new WaitForSecondsRealtime(postSelection.postSpinDelay);
+            _isProcessingSelection = false;
+            yield break;
+        }
 
         if (_currentPlayer == PlayerSelectState.Player1)
         {
@@ -1838,19 +1916,7 @@ public class ShipSelectManager : MonoBehaviour
             return;
         }
 
-        GameDataManager.Instance.selectedShipClasses.Clear();
-
-        if (_player1Selection != null)
-        {
-            GameDataManager.Instance.selectedShipClasses.Add(_player1Selection);
-            Debug.Log($"Stored Player 1 selection: {_player1Selection.shipName}");
-        }
-
-        if (_player2Selection != null)
-        {
-            GameDataManager.Instance.selectedShipClasses.Add(_player2Selection);
-            Debug.Log($"Stored Player 2 selection: {_player2Selection.shipName}");
-        }
+        GameDataManager.Instance.SetSelectedShips(_player1Selection, _player2Selection);
     }
 
     /// <summary>
@@ -1858,6 +1924,11 @@ public class ShipSelectManager : MonoBehaviour
     /// </summary>
     private void TransitionToGameplay()
     {
+        if (_useNetworkSession)
+        {
+            return;
+        }
+
         if (string.IsNullOrEmpty(postSelection.gameplaySceneName))
         {
             Debug.LogError("ShipSelectManager: No gameplay scene name configured!");
@@ -1908,5 +1979,73 @@ public class ShipSelectManager : MonoBehaviour
         postSelection.slideInDuration = 0.5f;
         postSelection.slideShipWithUI = true;
         postSelection.gameplaySceneName = "SampleScene";
+    }
+
+    private void RefreshNetworkSessionUI()
+    {
+        if (!_useNetworkSession || _networkSession == null)
+        {
+            return;
+        }
+
+        UpdatePlayerSelectionText();
+
+        if (_networkSession.TryGetLocalSelectionState(out NetworkShipSelectionState localSelection))
+        {
+            string localShipName = localSelection.ShipData != null ? localSelection.ShipData.shipName : "No ship selected";
+            string localState = localSelection.IsLockedIn
+                ? $"Locked in: {localShipName}"
+                : $"Current ship: {localShipName}";
+            SetNetworkStatusText(localSelectionStatusText, localState);
+        }
+
+        if (_networkSession.TryGetRemoteSelectionState(out NetworkShipSelectionState remoteSelection))
+        {
+            string remoteState = remoteSelection.IsLockedIn
+                ? $"Opponent locked in: {(remoteSelection.ShipData != null ? remoteSelection.ShipData.shipName : "Ready")}"
+                : "Opponent is choosing...";
+            SetNetworkStatusText(remoteSelectionStatusText, remoteState);
+        }
+        else
+        {
+            SetNetworkStatusText(remoteSelectionStatusText, "Waiting for opponent...");
+        }
+
+        SetNetworkStatusText(timeoutStatusText, _networkSession.StatusMessage);
+    }
+
+    private void HandleNetworkTimerChanged(float timeRemaining)
+    {
+        if (countdownTimerText == null)
+        {
+            return;
+        }
+
+        countdownTimerText.text = _useNetworkSession
+            ? Mathf.CeilToInt(Mathf.Max(0f, timeRemaining)).ToString()
+            : string.Empty;
+    }
+
+    private void HandleNetworkSessionStateChanged(NetworkMatchState state)
+    {
+        _useNetworkSession = NetMgr.IsNetworked && _networkSession != null;
+
+        if (!_useNetworkSession)
+        {
+            return;
+        }
+
+        if (state == NetworkMatchState.LoadingGameplay)
+        {
+            SetNetworkStatusText(timeoutStatusText, "Both players ready. Loading duel...");
+        }
+    }
+
+    private static void SetNetworkStatusText(TextMeshProUGUI textField, string value)
+    {
+        if (textField != null)
+        {
+            textField.text = value ?? string.Empty;
+        }
     }
 }
