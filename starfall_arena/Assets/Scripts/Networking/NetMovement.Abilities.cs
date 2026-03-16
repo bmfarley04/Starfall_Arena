@@ -344,8 +344,12 @@ public partial class NetMovement
             return;
         }
 
-        fireWall.ApplyNetworkTrailState(state.IsActive, authoritative: true);
+        // Broadcast trail state BEFORE applying locally, because applying
+        // calls StartFireTrail → SpawnFireHazard → BroadcastFireHazardSpawnClientRpc.
+        // Clients need the trail state (which creates the audio group) before
+        // receiving hazard spawns so hazards are tracked in the group for audio.
         BroadcastFireTrailStateClientRpc(state);
+        fireWall.ApplyNetworkTrailState(state.IsActive, authoritative: true);
     }
 
     private void HandleReflectActivationServer()

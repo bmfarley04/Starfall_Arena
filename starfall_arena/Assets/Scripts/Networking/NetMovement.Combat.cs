@@ -219,11 +219,16 @@ public partial class NetMovement
             return;
         }
 
-        BroadcastCombatStateClientRpc(health, shield, hitPoint, (int)source, shieldHit, shieldBreak, impactForce);
+        // Include slow state so clients can show/hide the slow particle effect.
+        bool isSlowed = _player != null && _player.IsSlowed();
+        float slowMultiplier = isSlowed ? _player.GetSlowMultiplier() : 1f;
+        float slowRemainingTime = isSlowed ? _player.GetSlowRemainingTime() : 0f;
+
+        BroadcastCombatStateClientRpc(health, shield, hitPoint, (int)source, shieldHit, shieldBreak, impactForce, slowMultiplier, slowRemainingTime);
     }
 
     [ClientRpc]
-    private void BroadcastCombatStateClientRpc(float health, float shield, Vector2 hitPoint, int source, bool shieldHit, bool shieldBreak, float impactForce)
+    private void BroadcastCombatStateClientRpc(float health, float shield, Vector2 hitPoint, int source, bool shieldHit, bool shieldBreak, float impactForce, float slowMultiplier, float slowRemainingTime)
     {
         if (_player == null)
         {
@@ -237,6 +242,12 @@ public partial class NetMovement
         // in sync with the server (TakeDamage only runs on the server, so the
         // client's _lastShieldHitTime would never update otherwise).
         _player.ResetShieldRegenTimer();
+
+        // Apply slow effect so clients show the particle system
+        if (slowRemainingTime > 0f)
+        {
+            _player.ApplySlow(slowMultiplier, slowRemainingTime);
+        }
 
         // Play damage sounds on remote clients. Skip only for the host's own player,
         // which already plays audio in TakeDamage via shouldPlayLocalAudio.

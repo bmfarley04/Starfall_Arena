@@ -797,6 +797,12 @@ public abstract class Entity : MonoBehaviour
         return Time.time < _slowEndTime && _slowMultiplier < 1f;
     }
 
+    public float GetSlowRemainingTime()
+    {
+        float remaining = _slowEndTime - Time.time;
+        return remaining > 0f ? remaining : 0f;
+    }
+
     private void StartSlowVisuals()
     {
         _slowVisualsActive = true;
@@ -826,6 +832,15 @@ public abstract class Entity : MonoBehaviour
         {
             StopSlowVisuals();
         }
+    }
+
+    /// <summary>
+    /// Checks and stops slow visuals when the slow effect expires.
+    /// Used by NetMovement for remote/server copies where Entity.Update doesn't run.
+    /// </summary>
+    public void TickSlowVisuals()
+    {
+        UpdateSlowVisuals();
     }
 
     // ===== AUGMENTS =====
