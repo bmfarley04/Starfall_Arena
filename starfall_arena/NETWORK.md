@@ -13,7 +13,6 @@ Important distinction:
 - full networking is the active direction for the project
 - older local multiplayer/split-screen play should be treated as mostly deprecated for now
 - full networked match flow, spawning integration, and weapon/combat replication are not all complete yet
-- the current repo now also includes a direct-IP LAN menu/session layer for hosting, joining, and synchronized ship select
 
 Do not describe the entire duel as fully networked unless those missing pieces are actually integrated.
 
@@ -72,37 +71,14 @@ It currently provides:
 - host/client/server startup helpers
 - shutdown helper
 - connection and disconnection callbacks
-- direct-IP transport configuration for menu-driven joins
-- client-side connect timeout/failure reporting for bad IPs or missing hosts
-- two-player session limit enforcement
-- a helper for server-side spawning of player `NetworkObject`s once gameplay begins
+- join-order-based manual player prefab spawning
+- a helper for server-side spawning of player `NetworkObject`s
 
 Current caveat:
 
-- title/menu connection state and gameplay ship spawning are intentionally split
-- `NetMgr` no longer owns scene-specific player prefab or spawn-point assignments
-- clients are assigned duel slots when they connect, but ship objects are not spawned until the gameplay scene starts with the authoritative final ship choices chosen through `ShipData`
-- any gameplay ship prefab used by `ShipData.shipPrefab` still needs a `NetworkObject` component and registration in the `NetworkManager` prefab list
-
-### NetworkSessionData
-
-`NetworkSessionData` is the new lightweight session-state authority layer for the menu and ship-select flow.
-
-It currently provides:
-
-- a high-level network match state enum
-- host-waiting / joining / ship-select / loading / in-match state transitions
-- authoritative two-slot client assignment
-- synchronized ship-select timer state
-- authoritative per-slot ship lock-in state
-- random fallback ship assignment on timeout
-- handoff of final ship selections into persistent game data before gameplay scene load
-
-Important limitation:
-
-- this is the first session-flow pass, not a complete lobby platform
-- it supports direct-IP LAN connection flow only
-- broader disconnect recovery and full replicated round UI state are still follow-up work
+- the file explicitly notes that gameplay scene spawn integration is still pending
+- this means the networking helper exists, but the full scene flow is not yet switched over to a complete networked spawn path
+- `NetMgr` now disables NGO's default player prefab assignment and manually spawns the configured first-player prefab for the first connected player and the configured second-player prefab for the second connected player; both prefabs still need `NetworkObject` components and registration in the `NetworkManager` prefab list
 
 ### NetMovement
 
@@ -170,8 +146,10 @@ Current network payloads include:
   - authoritative visual pitch angle
   - anchor drag accumulator
   - friction timer
+  - thrust state (for remote thruster visuals)
+  - shield value (for remote shield regen visuals)
 
-These structs are intentionally minimal and focused on what movement replay needs.
+These structs are intentionally minimal and focused on what movement replay and visual sync needs.
 
 ## Current Movement Networking Flow
 
@@ -264,13 +242,12 @@ Design notes:
 
 Based on the current repo, these pieces are not yet represented as fully integrated networking systems:
 
-- gameplay scene flow now has an initial server-owned ship-spawn path, but client-side round presentation still needs more replication polish
-- the broader duel loop in `GameSceneManager` is mid-migration away from local split-screen assumptions
+- gameplay scene flow is not fully wired to the network spawn helper
+- the broader duel loop in `GameSceneManager` still reads as primarily local/splitscreen-oriented
 - full projectile/gameplay replication for every weapon family is still incomplete
 - the current networked combat path covers player projectile shots, GigaBlast projectile shots, beam start/stop, fire-trail hazard authority, and reflector activation
 - the current networked combat path also covers teleport, Class2 inline abilities, and Class3 bomb / self-state abilities
 - projectile and beam lag compensation currently uses a short, defender-favored history window from `NetMovement` state history rather than a full world rewind system
-- augment runtime persistence now has a minimal network-safe export shape based on stable augment IDs and acquisition round, but opaque runtime state is still not fully serialized for every augment
 
 That means `NETWORK.md` should describe those pieces as planned or intended, not current fact.
 
@@ -295,13 +272,12 @@ The existing movement implementation is a real first step toward that architectu
 ## Known Networking Notes
 
 - `Player.externalMovementControl` is the bridge that lets networking take over physics without discarding the existing input callbacks.
-- Remote proxies disable `Player` and rely on interpolation instead of duplicating gameplay logic client-side.
-- `Entity.Die()` now needs to route network-spawned ships through NGO despawn instead of always doing a plain local `Destroy`, or one peer can lose the ship while others keep a stale network object.
+- Remote proxies disable `Player` and rely on interpolation instead of duplicating gameplay logic client-side. Because `Player` is disabled, systems that normally run in `Player.Update()` must be driven externally by `NetMovement` for remote/server copies. Currently this includes thruster visuals (driven via `ApplyNetworkThrustState` from state snapshot thrust flag) and shield regeneration (driven via `TickShieldRegeneration` on the server, with shield value broadcast in state snapshots for remote regen visuals).
 - `Entity` banking/pitching on the 3D visual model now rides in `NetStateSnapshot`; remote proxies should consume the replicated visual tilt instead of recomputing it from interpolated root movement, or turns/recoil can look flat or mismatched.
 - For client-owned ships, the server/display side should forward the owner's reported visual tilt instead of recomputing bank from the server copy's root rotation, or the host view can over-bank badly.
 - Host mode requires special care to avoid double-simulating owner movement, and `NetMovement` already includes host-specific handling for that.
 - Host mode now also needs special care for combat visuals versus gameplay authority: owner-side local weapon visuals must not be allowed to double-apply gameplay recoil or damage when the host is also the authoritative server.
 - `ProjectileScript`, `LaserBeam`, and `FireHazard` now have a split between cosmetic-only instances and server-authoritative gameplay instances during network sessions. Future combat work should preserve that separation instead of letting client visuals deal damage directly.
-- `NetMovement` now also exposes authoritative movement-lock and ability-4-lock helpers so the duel controller can stop or release both peers without relying on local-only flags.
 - Any networking migration work should assume full-network play is the target and treat old split-screen assumptions as secondary unless specifically required.
+- Ability ClientRpc guards must use `if (IsServer || IsOwner) return;`, NOT `if (IsOwner && !IsServer) return;`. The latter fails to catch the host (IsServer && IsOwner), causing double-execution: the server handler already applied the ability, then the RPC applies it again. For abilities with coroutines (Teleport, Reflector), this stops the first coroutine mid-execution, corrupting state (e.g. Teleport's collider stays permanently disabled because the second coroutine captures the already-disabled collider and never re-enables it).
 - Future bugs or drift issues should be documented here with the exact subsystem affected: prediction, reconciliation, interpolation, spawn flow, or combat replication.

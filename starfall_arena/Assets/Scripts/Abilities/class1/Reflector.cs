@@ -117,6 +117,22 @@ public class Reflector : Ability
                 {
                     reflect.bulletReflectionSound.Play(player.GetAvailableAudioSource());
                 }
+
+                // Broadcast reflected projectile to clients
+                if (NetTickUtil.IsActive && _netMovement != null && _netMovement.IsServer)
+                {
+                    _netMovement.BroadcastReflectedProjectile(new NetReflectedProjectileData
+                    {
+                        SpawnPosition = projectile.transform.position,
+                        Direction = projectile.GetDirection(),
+                        Speed = projectile.GetSpeed(),
+                        Damage = projectile.GetDamage(),
+                        Lifetime = projectile.GetLifetime(),
+                        ImpactForce = projectile.GetImpactForce(),
+                        ReflectColor = reflect.reflectedProjectileColor,
+                        VisualType = NetProjectileVisualType.Primary,
+                    });
+                }
             }
         }
     }

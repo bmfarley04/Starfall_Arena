@@ -484,6 +484,9 @@ public abstract class Entity : MonoBehaviour
         if (_isDead) return;
         _isDead = true;
 
+        // Broadcast death to remote clients before destroying so they can play effects
+        BroadcastNetworkDeath();
+
         onDeath?.Invoke(this);
 
         ScatterShipParts();
@@ -523,6 +526,23 @@ public abstract class Entity : MonoBehaviour
         }
 
         Destroy(gameObject);
+    }
+
+    private void BroadcastNetworkDeath()
+    {
+        if (!NetTickUtil.IsActive)
+        {
+            return;
+        }
+
+        NetMovement netMovement = GetComponent<NetMovement>();
+        if (netMovement == null || !netMovement.IsServer)
+        {
+            return;
+        }
+
+        float rotZ = transform.rotation.eulerAngles.z;
+        netMovement.BroadcastDeath(transform.position, rotZ, _lastDamageDirection);
     }
 
     // ===== RECOIL & VISUAL EFFECTS =====
@@ -614,6 +634,26 @@ public abstract class Entity : MonoBehaviour
         _currentPitchAngle = pitchAngle;
         _previousRotationZ = transform.eulerAngles.z;
         ApplyVisualModelRotation();
+    }
+
+    /// <summary>
+    /// Sets thrust state and updates thruster visuals. Used by NetMovement
+    /// to drive thruster effects on remote clients where Player is disabled.
+    /// </summary>
+    public void ApplyNetworkThrustState(bool isThrusting)
+    {
+        _isThrusting = isThrusting;
+        UpdateThrusters();
+    }
+
+    /// <summary>
+    /// Updates shield value and refreshes HUD. Used by NetMovement to sync
+    /// shield state on remote clients where Player.HandleShieldRegeneration doesn't run.
+    /// </summary>
+    public void ApplyNetworkShieldState(float shield)
+    {
+        currentShield = Mathf.Clamp(shield, 0f, maxShield);
+        OnShieldChanged();
     }
 
     private void UpdateThrusters()

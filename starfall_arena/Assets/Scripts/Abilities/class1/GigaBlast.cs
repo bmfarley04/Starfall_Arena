@@ -172,9 +172,13 @@ public class GigaBlast : Ability
         _gigaBlastChargeSource.spatialBlend = 0f;
     }
 
+    private bool _useNetworkPath;
+    private bool _isRemoteCharge;
+
     protected void Update()
     {
-        if (_isCharging)
+        // Remote clients receive tier changes via RPC — don't override locally.
+        if (_isCharging && !_isRemoteCharge)
         {
             float chargeTime = Time.time - _chargeStartTime;
             int newTier = GetChargeTier(chargeTime);
@@ -184,6 +188,11 @@ public class GigaBlast : Ability
                 StopCurrentChargeParticle();
                 _currentChargeTier = newTier;
                 PlayChargeParticleForTier(newTier);
+
+                if (_useNetworkPath)
+                {
+                    _netMovement.RequestGigaBlastChargeState(true, newTier);
+                }
             }
         }
     }
@@ -194,6 +203,8 @@ public class GigaBlast : Ability
     public override void UseAbility(InputValue value)
     {
         base.UseAbility(value);
+
+        _useNetworkPath = NetTickUtil.IsActive && _netMovement != null && _netMovement.IsSpawned && _netMovement.IsOwner;
 
         if (value.isPressed)
         {
@@ -209,19 +220,12 @@ public class GigaBlast : Ability
                 _currentChargeTier = 1;
 
                 PlayChargeParticleForTier(1);
+                StartChargeSound();
 
-                if (gigaBlast.chargeSound != null && _gigaBlastChargeSource != null)
+                if (_useNetworkPath)
                 {
-                    _gigaBlastChargeSource.volume = 0f;
-                    gigaBlast.chargeSound.Play(_gigaBlastChargeSource);
-
-                    if (_gigaBlastChargeFadeCoroutine != null)
-                    {
-                        StopCoroutine(_gigaBlastChargeFadeCoroutine);
-                    }
-                    _gigaBlastChargeFadeCoroutine = StartCoroutine(FadeGigaBlastChargeVolume(gigaBlast.chargeSound.volume));
+                    _netMovement.RequestGigaBlastChargeState(true, 1);
                 }
-
             }
         }
         else
@@ -239,14 +243,11 @@ public class GigaBlast : Ability
                 _isCharging = false;
                 _currentChargeTier = 0;
                 StopAllChargeParticles();
+                StopChargeSound();
 
-                if (_gigaBlastChargeSource != null && _gigaBlastChargeSource.isPlaying)
+                if (_useNetworkPath)
                 {
-                    if (_gigaBlastChargeFadeCoroutine != null)
-                    {
-                        StopCoroutine(_gigaBlastChargeFadeCoroutine);
-                    }
-                    _gigaBlastChargeFadeCoroutine = StartCoroutine(FadeGigaBlastChargeVolume(0f, stopAfterFade: true));
+                    _netMovement.RequestGigaBlastChargeState(false, 0);
                 }
             }
         }
@@ -566,6 +567,64 @@ public class GigaBlast : Ability
     }
 
     // ===== AUDIO =====
+
+    // ===== NETWORK =====
+
+    public void ApplyNetworkChargeState(bool isCharging, int tier)
+    {
+        _isRemoteCharge = true;
+
+        if (isCharging)
+        {
+            if (tier != _currentChargeTier)
+            {
+                StopCurrentChargeParticle();
+            }
+            _isCharging = true;
+            _currentChargeTier = tier;
+            PlayChargeParticleForTier(tier);
+
+            if (!_gigaBlastChargeSource.isPlaying)
+            {
+                StartChargeSound();
+            }
+        }
+        else
+        {
+            _isCharging = false;
+            _currentChargeTier = 0;
+            StopAllChargeParticles();
+            StopChargeSound();
+            _isRemoteCharge = false;
+        }
+    }
+
+    private void StartChargeSound()
+    {
+        if (gigaBlast.chargeSound != null && _gigaBlastChargeSource != null)
+        {
+            _gigaBlastChargeSource.volume = 0f;
+            gigaBlast.chargeSound.Play(_gigaBlastChargeSource);
+
+            if (_gigaBlastChargeFadeCoroutine != null)
+            {
+                StopCoroutine(_gigaBlastChargeFadeCoroutine);
+            }
+            _gigaBlastChargeFadeCoroutine = StartCoroutine(FadeGigaBlastChargeVolume(gigaBlast.chargeSound.volume));
+        }
+    }
+
+    private void StopChargeSound()
+    {
+        if (_gigaBlastChargeSource != null && _gigaBlastChargeSource.isPlaying)
+        {
+            if (_gigaBlastChargeFadeCoroutine != null)
+            {
+                StopCoroutine(_gigaBlastChargeFadeCoroutine);
+            }
+            _gigaBlastChargeFadeCoroutine = StartCoroutine(FadeGigaBlastChargeVolume(0f, stopAfterFade: true));
+        }
+    }
 
     private System.Collections.IEnumerator FadeGigaBlastChargeVolume(float targetVolume, bool stopAfterFade = false)
     {

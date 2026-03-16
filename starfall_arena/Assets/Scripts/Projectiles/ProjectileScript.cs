@@ -295,6 +295,12 @@ public class ProjectileScript : MonoBehaviour
             _visualController.OnProjectileImpact(transform.position, _direction);
         }
 
+        if (_canPierce && _pierceMultiplier > 0f)
+        {
+            _damage *= _pierceMultiplier;
+            return;
+        }
+
         Destroy(gameObject);
     }
 
@@ -334,6 +340,13 @@ public class ProjectileScript : MonoBehaviour
             Collider2D projectileCollider = GetComponent<Collider2D>();
             if (projectileCollider != null && player.TryProcessIncomingProjectileCollision(projectileCollider))
             {
+                // Check if the projectile was reflected (targetTag changed away from us)
+                if (targetTag != player.thisPlayerTag)
+                {
+                    // Projectile was reflected — don't destroy it, let it continue
+                    return;
+                }
+
                 if (_visualController != null)
                 {
                     _visualController.OnProjectileImpact(hitPoint, _direction);

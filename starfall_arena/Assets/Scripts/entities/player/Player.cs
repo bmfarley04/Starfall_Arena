@@ -788,6 +788,39 @@ public abstract class Player : Entity
         if (shieldController != null) shieldController.SetRegeneration(true);
     }
 
+    /// <summary>
+    /// Resets the shield regen delay timer. Called when authoritative damage
+    /// arrives via network RPC so the client's local regen timer stays in sync
+    /// with the server.
+    /// </summary>
+    public void ResetShieldRegenTimer()
+    {
+        _lastShieldHitTime = Time.time;
+    }
+
+    /// <summary>
+    /// Runs shield regen logic externally. Called by the server's NetMovement for
+    /// client-owned players whose Player component is disabled.
+    /// </summary>
+    public void TickShieldRegeneration(float deltaTime)
+    {
+        if (currentShield >= maxShield || maxShield <= 0)
+        {
+            return;
+        }
+
+        if (Time.time < _lastShieldHitTime + shieldRegen.regenDelay)
+        {
+            return;
+        }
+
+        currentShield += shieldRegen.regenRate * deltaTime;
+        if (currentShield > maxShield)
+        {
+            currentShield = maxShield;
+        }
+    }
+
     // ===== DAMAGE HANDLING =====
     public override void TakeDamage(float damage, float impactForce = 0f, Vector3 hitPoint = default, DamageSource source = DamageSource.Projectile)
     {
@@ -810,27 +843,36 @@ public abstract class Player : Entity
 
         base.TakeDamage(damage, impactForce, hitPoint, source);
 
-        if (source == DamageSource.LaserBeam)
+        // In networked play, TakeDamage only runs on the server. Audio for non-owner
+        // players is handled by PlayNetworkDamageSounds via BroadcastCombatStateClientRpc.
+        // Only play audio here for the host's own player to avoid looping sounds on
+        // disabled Player components that can never auto-stop.
+        bool shouldPlayLocalAudio = !NetTickUtil.IsActive || _IsLocallyOwned();
+
+        if (shouldPlayLocalAudio)
         {
-            if (beamHitLoopSound != null && _beamHitLoopSource != null && !_beamHitLoopSource.isPlaying)
+            if (source == DamageSource.LaserBeam)
             {
-                beamHitLoopSound.Play(_beamHitLoopSource);
-            }
-        }
-        else
-        {
-            if (previousShield > 0f)
-            {
-                if (shieldDamageSound != null)
+                if (beamHitLoopSound != null && _beamHitLoopSource != null && !_beamHitLoopSource.isPlaying)
                 {
-                    shieldDamageSound.Play(GetAvailableAudioSource());
+                    beamHitLoopSound.Play(_beamHitLoopSource);
                 }
             }
             else
             {
-                if (hullDamageSound != null)
+                if (previousShield > 0f)
                 {
-                    hullDamageSound.Play(GetAvailableAudioSource());
+                    if (shieldDamageSound != null)
+                    {
+                        shieldDamageSound.Play(GetAvailableAudioSource());
+                    }
+                }
+                else
+                {
+                    if (hullDamageSound != null)
+                    {
+                        hullDamageSound.Play(GetAvailableAudioSource());
+                    }
                 }
             }
         }
@@ -867,6 +909,99 @@ public abstract class Player : Entity
         }
 
         base.Die();
+    }
+
+    // ===== NETWORK AUDIO/VFX REPLICATION =====
+
+    /// <summary>
+    /// Called on non-owner clients via BroadcastCombatStateClientRpc to play damage sounds.
+    /// </summary>
+    public void PlayNetworkDamageSounds(DamageSource source, bool shieldHit)
+    {
+        if (source == DamageSource.LaserBeam)
+        {
+            // Only start the beam hit loop when Player.Update() is running (enabled),
+            // because the auto-stop relies on Update(). On the host, non-owner Player
+            // components are disabled, so starting a loop here would never stop.
+            if (enabled && beamHitLoopSound != null && _beamHitLoopSource != null && !_beamHitLoopSource.isPlaying)
+            {
+                beamHitLoopSound.Play(_beamHitLoopSource);
+            }
+            _lastDamageTime = Time.time;
+        }
+        else
+        {
+            if (shieldHit)
+            {
+                if (shieldDamageSound != null)
+                {
+                    shieldDamageSound.Play(GetAvailableAudioSource());
+                }
+            }
+            else
+            {
+                if (hullDamageSound != null)
+                {
+                    hullDamageSound.Play(GetAvailableAudioSource());
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Called on non-server clients via BroadcastDeathClientRpc to play death effects.
+    /// </summary>
+    public void PlayNetworkDeathEffects(Vector2 position, float rotation, Vector2 lastDamageDirection)
+    {
+        if (_beamHitLoopSource != null && _beamHitLoopSource.isPlaying)
+        {
+            _beamHitLoopSource.Stop();
+        }
+
+        if (explosionSound != null)
+        {
+            explosionSound.PlayAtPoint(position);
+        }
+
+        // Spawn explosion VFX
+        if (visualEffects.explosionEffectPrefab != null)
+        {
+            Quaternion rot = Quaternion.Euler(0, 0, rotation);
+            Vector2? impactDir = lastDamageDirection != Vector2.zero ? lastDamageDirection : (Vector2?)null;
+
+            if (ExplosionPool.Instance != null)
+            {
+                ExplosionPool.Instance.GetExplosion(position, rot, visualEffects.explosionScale, impactDir);
+            }
+            else
+            {
+                GameObject explosion = Instantiate(visualEffects.explosionEffectPrefab, position, rot);
+                explosion.transform.localScale = Vector3.one * visualEffects.explosionScale;
+
+                if (impactDir.HasValue)
+                {
+                    ExplosionScript explosionScript = explosion.GetComponent<ExplosionScript>();
+                    if (explosionScript != null)
+                    {
+                        explosionScript.SetImpactDirection(impactDir.Value);
+                    }
+                }
+            }
+        }
+
+        // Scatter ship parts
+        _lastDamageDirection = lastDamageDirection;
+        ScatterShipParts();
+    }
+
+    /// <summary>
+    /// Returns true when this player is locally owned (not networked, or owned by this client).
+    /// Used to decide whether TakeDamage should play audio locally on the server.
+    /// </summary>
+    private bool _IsLocallyOwned()
+    {
+        NetMovement netMovement = GetComponent<NetMovement>();
+        return netMovement == null || !netMovement.IsSpawned || netMovement.IsOwner;
     }
 
     // ===== CHROMATIC ABERRATION =====

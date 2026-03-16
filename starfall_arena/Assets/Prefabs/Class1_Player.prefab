@@ -5000,7 +5000,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1578230554132079418}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 62899f850307741f2a39c98a8b639597, type: 3}
   m_Name: 
@@ -5530,7 +5530,7 @@ MonoBehaviour:
   isLocked: 0
   reflect:
     cooldown: 7
-    activeDuration: 1.5
+    activeDuration: 5
     shield: {fileID: 1692808081896564359}
     reflectedProjectileColor: {r: 0.8117648, g: 0.68235296, b: 0, a: 0}
     reflectedProjectileDamageMultiplier: 1.5
@@ -5599,6 +5599,7 @@ MonoBehaviour:
   _reconciliationThreshold: 0.01
   _interpolationBufferTicks: 2
   _maxCombatRewindTicks: 6
+  _primaryFireSound: {fileID: 11400000, guid: 80311ec3731e81d4c81d5e64fe8d23ea, type: 2}
 --- !u!1 &3501154216763360000
 GameObject:
   m_ObjectHideFlags: 0

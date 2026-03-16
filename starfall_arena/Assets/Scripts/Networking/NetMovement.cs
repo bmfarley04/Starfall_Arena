@@ -13,9 +13,14 @@ using System.Collections.Generic;
 ///
 /// When no network session is running (local multiplayer), this component
 /// does nothing — Player.FixedUpdate handles movement as before.
+///
+/// Split into partial classes:
+///   - NetMovement.cs          — Core lifecycle, tick loop, prediction, reconciliation, interpolation
+///   - NetMovement.Abilities.cs — Ability request/handler/broadcast RPCs
+///   - NetMovement.Combat.cs   — Projectile spawning, combat state, death, reflected projectiles, audio
 /// </summary>
 [RequireComponent(typeof(Rigidbody2D))]
-public class NetMovement : NetworkBehaviour
+public partial class NetMovement : NetworkBehaviour
 {
     private static readonly List<NetMovement> ActiveInstances = new List<NetMovement>();
 
@@ -32,6 +37,10 @@ public class NetMovement : NetworkBehaviour
     [Header("Combat Rewind")]
     [Tooltip("Maximum lag compensation window for projectile and beam hit validation, in ticks.")]
     [SerializeField] private int _maxCombatRewindTicks = 6;
+
+    [Header("Audio")]
+    [Tooltip("Sound played on remote clients when this player fires a basic projectile")]
+    [SerializeField] private SoundEffect _primaryFireSound;
 
     // ===== BUFFER SIZES =====
     // Client input buffer: 64 entries (~1 sec at 60 Hz) — sized for max expected RTT.
@@ -180,6 +189,8 @@ public class NetMovement : NetworkBehaviour
         }
     }
 
+    // ===== STATIC HELPERS =====
+
     public static bool TryGetPlayerByTag(string tag, out NetMovement movement)
     {
         foreach (NetMovement candidate in ActiveInstances)
@@ -204,6 +215,8 @@ public class NetMovement : NetworkBehaviour
     {
         return ActiveInstances;
     }
+
+    // ===== LAG COMPENSATION =====
 
     public int MaxCombatRewindTicks => Mathf.Max(0, _maxCombatRewindTicks);
 
@@ -241,29 +254,6 @@ public class NetMovement : NetworkBehaviour
         return Mathf.Max(bounds.extents.x, bounds.extents.y);
     }
 
-    public GameObject ResolveProjectileVisualPrefab(NetProjectileVisualType visualType)
-    {
-        switch (visualType)
-        {
-            case NetProjectileVisualType.Primary:
-                return _player != null ? _player.projectileWeapon.prefab : null;
-            case NetProjectileVisualType.GigaBlastTier1:
-                return GetComponent<GigaBlast>()?.gigaBlast.visual.tier1ProjectilePrefab;
-            case NetProjectileVisualType.GigaBlastTier2:
-                return GetComponent<GigaBlast>()?.gigaBlast.visual.tier2ProjectilePrefab;
-            case NetProjectileVisualType.GigaBlastTier3:
-                return GetComponent<GigaBlast>()?.gigaBlast.visual.tier3ProjectilePrefab;
-            case NetProjectileVisualType.GigaBlastTier4:
-                return GetComponent<GigaBlast>()?.gigaBlast.visual.tier4ProjectilePrefab;
-            case NetProjectileVisualType.Class2EmpoweredShot:
-                return GetComponent<EmpoweredShot>()?.empoweredShot.projectilePrefab;
-            case NetProjectileVisualType.Class2PhysicalProjectile:
-                return GetComponent<PhysicalProjectileAbility>()?.physicalProjectile.projectilePrefab;
-            default:
-                return null;
-        }
-    }
-
     private void AssignOwnerCameraAndTracking(PlayerInput playerInput)
     {
         CinemachineCamera targetCinemachine = FindFirstObjectByType<CinemachineCamera>();
@@ -298,268 +288,26 @@ public class NetMovement : NetworkBehaviour
             // Server ticks are driven by SubmitInputServerRpc for the owning client.
             // For the host (IsServer && IsOwner), the owner tick already ran and
             // the ServerRpc path handles authoritative sim. Nothing extra needed here.
+
+            // Run shield regen for client-owned players (Player.Update is disabled on
+            // server copies, so HandleShieldRegeneration never runs).
+            if (_player != null)
+            {
+                float prevShield = _player.currentShield;
+                _player.TickShieldRegeneration(Time.fixedDeltaTime);
+
+                // Drive regen visual on the host for the client's ship
+                bool isRegenerating = _player.currentShield > prevShield && _player.currentShield < _player.maxShield;
+                if (_player.shieldController != null)
+                {
+                    _player.shieldController.SetRegeneration(isRegenerating);
+                }
+            }
         }
 
         if (!IsOwner && !IsServer)
         {
             InterpolateRemote();
-        }
-    }
-
-    public void RequestPrimaryFire(NetFireRequest request)
-    {
-        if (!NetTickUtil.IsActive || !IsOwner)
-        {
-            return;
-        }
-
-        if (IsServer)
-        {
-            HandlePrimaryFireServer(request);
-            return;
-        }
-
-        SubmitPrimaryFireServerRpc(request);
-    }
-
-    public void RequestBeamState(bool isFiring)
-    {
-        if (!NetTickUtil.IsActive || !IsOwner)
-        {
-            return;
-        }
-
-        NetBeamState state = new NetBeamState
-        {
-            Tick = NetTickUtil.CurrentTick,
-            IsFiring = isFiring
-        };
-
-        if (IsServer)
-        {
-            HandleBeamStateServer(state);
-            return;
-        }
-
-        SubmitBeamStateServerRpc(state);
-    }
-
-    public void RequestFireTrailState(bool isActive)
-    {
-        if (!NetTickUtil.IsActive || !IsOwner)
-        {
-            return;
-        }
-
-        NetFireTrailState state = new NetFireTrailState
-        {
-            Tick = NetTickUtil.CurrentTick,
-            IsActive = isActive
-        };
-
-        if (IsServer)
-        {
-            HandleFireTrailStateServer(state);
-            return;
-        }
-
-        SubmitFireTrailStateServerRpc(state);
-    }
-
-    public void RequestReflectActivation()
-    {
-        if (!NetTickUtil.IsActive || !IsOwner)
-        {
-            return;
-        }
-
-        if (IsServer)
-        {
-            HandleReflectActivationServer();
-            return;
-        }
-
-        SubmitReflectActivationServerRpc();
-    }
-
-    public void RequestTeleport(Vector2 targetPosition)
-    {
-        if (!NetTickUtil.IsActive || !IsOwner)
-        {
-            return;
-        }
-
-        NetTeleportState state = new NetTeleportState
-        {
-            TargetPosition = targetPosition
-        };
-
-        if (IsServer)
-        {
-            HandleTeleportServer(state);
-            return;
-        }
-
-        SubmitTeleportServerRpc(state);
-    }
-
-    public void RequestClass2ShieldActivation()
-    {
-        if (!NetTickUtil.IsActive || !IsOwner)
-        {
-            return;
-        }
-
-        if (IsServer)
-        {
-            HandleClass2ShieldServer(new NetClass2ShieldState { IsActive = true });
-            return;
-        }
-
-        SubmitClass2ShieldServerRpc(new NetClass2ShieldState { IsActive = true });
-    }
-
-    public void RequestTractorBeamState(bool isActive)
-    {
-        if (!NetTickUtil.IsActive || !IsOwner)
-        {
-            return;
-        }
-
-        NetTractorBeamState state = new NetTractorBeamState
-        {
-            IsActive = isActive
-        };
-
-        if (IsServer)
-        {
-            HandleTractorBeamServer(state);
-            return;
-        }
-
-        SubmitTractorBeamServerRpc(state);
-    }
-
-    public void RequestTriggerBombLaunch(Vector2 spawnPosition, Vector2 velocity)
-    {
-        if (!NetTickUtil.IsActive || !IsOwner)
-        {
-            return;
-        }
-
-        NetTriggerBombLaunchState state = new NetTriggerBombLaunchState
-        {
-            SpawnPosition = spawnPosition,
-            Velocity = velocity
-        };
-
-        if (IsServer)
-        {
-            HandleTriggerBombLaunchServer(state);
-            return;
-        }
-
-        SubmitTriggerBombLaunchServerRpc(state);
-    }
-
-    public void RequestTriggerBombDetonate(Vector2 position)
-    {
-        if (!NetTickUtil.IsActive || !IsOwner)
-        {
-            return;
-        }
-
-        NetTriggerBombDetonateState state = new NetTriggerBombDetonateState
-        {
-            Position = position
-        };
-
-        if (IsServer)
-        {
-            HandleTriggerBombDetonateServer(state);
-            return;
-        }
-
-        SubmitTriggerBombDetonateServerRpc(state);
-    }
-
-    public void RequestFaerieShiftState(bool isActive)
-    {
-        if (!NetTickUtil.IsActive || !IsOwner)
-        {
-            return;
-        }
-
-        NetAbilityToggleState state = new NetAbilityToggleState { IsActive = isActive };
-        if (IsServer)
-        {
-            HandleFaerieShiftServer(state);
-            return;
-        }
-
-        SubmitFaerieShiftServerRpc(state);
-    }
-
-    public void RequestInvisibilityState(bool isActive)
-    {
-        if (!NetTickUtil.IsActive || !IsOwner)
-        {
-            return;
-        }
-
-        NetAbilityToggleState state = new NetAbilityToggleState { IsActive = isActive };
-        if (IsServer)
-        {
-            HandleInvisibilityServer(state);
-            return;
-        }
-
-        SubmitInvisibilityServerRpc(state);
-    }
-
-    public void SetInvisibilityStateAuthoritative(bool isActive)
-    {
-        if (!IsServer)
-        {
-            return;
-        }
-
-        HandleInvisibilityServer(new NetAbilityToggleState { IsActive = isActive });
-    }
-
-    public void SetMovementLockedAuthoritative(bool isLocked)
-    {
-        if (_player == null)
-        {
-            return;
-        }
-
-        _player.isMovementLocked = isLocked;
-        if (IsServer)
-        {
-            BroadcastMovementLockClientRpc(isLocked);
-        }
-    }
-
-    public void SetAbility4LockedAuthoritative(bool isLocked)
-    {
-        if (_player == null)
-        {
-            return;
-        }
-
-        if (isLocked)
-        {
-            _player.LockAbility4();
-        }
-        else
-        {
-            _player.UnlockAbility4();
-        }
-
-        if (IsServer)
-        {
-            BroadcastAbility4LockClientRpc(isLocked);
         }
     }
 
@@ -579,6 +327,10 @@ public class NetMovement : NetworkBehaviour
         {
             _player.GetVisualTiltState(out ownerVisualBankAngle, out ownerVisualPitchAngle);
         }
+
+        // Drive thruster visuals on the owner (Player.FixedUpdate skips the
+        // _isThrusting assignment when externalMovementControl is true).
+        _player.ApplyNetworkThrustState(_player.IsThrustPressed);
 
         // 1. Sample input from Player's read-only getters
         NetInputSnapshot input = new NetInputSnapshot
@@ -656,7 +408,8 @@ public class NetMovement : NetworkBehaviour
                 ownerVisualPitchAngle,
                 _serverFrictionTimer,
                 _serverAnchorDragAccumulator,
-                dt);
+                dt,
+                input.Thrust);
         }
         else
         {
@@ -696,6 +449,7 @@ public class NetMovement : NetworkBehaviour
         if (_player != null && !_player.enabled)
         {
             _player.ApplyExternalVisualTiltState(input.VisualBankAngle, input.VisualPitchAngle);
+            _player.ApplyNetworkThrustState(input.Thrust);
         }
 
         PublishAuthoritativeState(
@@ -706,290 +460,8 @@ public class NetMovement : NetworkBehaviour
             input.VisualPitchAngle,
             _serverFrictionTimer,
             _serverAnchorDragAccumulator,
-            dt);
-    }
-
-    [ServerRpc]
-    private void SubmitPrimaryFireServerRpc(NetFireRequest request, ServerRpcParams rpcParams = default)
-    {
-        HandlePrimaryFireServer(request);
-    }
-
-    [ServerRpc]
-    private void SubmitBeamStateServerRpc(NetBeamState state, ServerRpcParams rpcParams = default)
-    {
-        HandleBeamStateServer(state);
-    }
-
-    [ServerRpc]
-    private void SubmitFireTrailStateServerRpc(NetFireTrailState state, ServerRpcParams rpcParams = default)
-    {
-        HandleFireTrailStateServer(state);
-    }
-
-    [ServerRpc]
-    private void SubmitReflectActivationServerRpc(ServerRpcParams rpcParams = default)
-    {
-        HandleReflectActivationServer();
-    }
-
-    [ServerRpc]
-    private void SubmitTeleportServerRpc(NetTeleportState state, ServerRpcParams rpcParams = default)
-    {
-        HandleTeleportServer(state);
-    }
-
-    [ServerRpc]
-    private void SubmitClass2ShieldServerRpc(NetClass2ShieldState state, ServerRpcParams rpcParams = default)
-    {
-        HandleClass2ShieldServer(state);
-    }
-
-    [ServerRpc]
-    private void SubmitTractorBeamServerRpc(NetTractorBeamState state, ServerRpcParams rpcParams = default)
-    {
-        HandleTractorBeamServer(state);
-    }
-
-    [ServerRpc]
-    private void SubmitTriggerBombLaunchServerRpc(NetTriggerBombLaunchState state, ServerRpcParams rpcParams = default)
-    {
-        HandleTriggerBombLaunchServer(state);
-    }
-
-    [ServerRpc]
-    private void SubmitTriggerBombDetonateServerRpc(NetTriggerBombDetonateState state, ServerRpcParams rpcParams = default)
-    {
-        HandleTriggerBombDetonateServer(state);
-    }
-
-    [ServerRpc]
-    private void SubmitFaerieShiftServerRpc(NetAbilityToggleState state, ServerRpcParams rpcParams = default)
-    {
-        HandleFaerieShiftServer(state);
-    }
-
-    [ServerRpc]
-    private void SubmitInvisibilityServerRpc(NetAbilityToggleState state, ServerRpcParams rpcParams = default)
-    {
-        HandleInvisibilityServer(state);
-    }
-
-    // ===== CLIENT: RECONCILIATION (Owner) & INTERPOLATION BUFFER (Non-owner) =====
-
-    [ClientRpc]
-    private void BroadcastStateClientRpc(NetStateSnapshot serverState)
-    {
-        if (IsOwner)
-        {
-            Reconcile(serverState);
-        }
-        else if (!IsServer)
-        {
-            BufferInterpolationState(serverState);
-        }
-    }
-
-    [ClientRpc]
-    private void BroadcastProjectileSpawnClientRpc(NetProjectileSpawnData spawnData)
-    {
-        if (IsServer || (IsOwner && !IsServer))
-        {
-            return;
-        }
-
-        GameObject prefab = ResolveProjectileVisualPrefab(spawnData.VisualType);
-        if (prefab == null)
-        {
-            return;
-        }
-
-        GameObject projectileObject = Instantiate(prefab, spawnData.SpawnPosition, Quaternion.identity);
-        if (!projectileObject.TryGetComponent(out ProjectileScript projectile))
-        {
-            Destroy(projectileObject);
-            return;
-        }
-
-        projectile.targetTag = _player != null ? _player.enemyTag : string.Empty;
-        projectile.SetCosmeticOnly(true);
-        projectile.Initialize(
-            spawnData.Direction,
-            spawnData.InheritedVelocity,
-            spawnData.Speed,
-            spawnData.Damage,
-            spawnData.Lifetime,
-            spawnData.ImpactForce,
-            _player);
-
-        if (spawnData.CanPierce)
-        {
-            projectile.EnablePiercing(spawnData.PierceMultiplier);
-        }
-
-        if (spawnData.AppliesSlow)
-        {
-            projectile.EnableSlow(spawnData.SlowMultiplier, spawnData.SlowDuration);
-        }
-    }
-
-    [ClientRpc]
-    private void BroadcastBeamStateClientRpc(NetBeamState state)
-    {
-        if (IsOwner && !IsServer)
-        {
-            return;
-        }
-
-        Beam beamAbility = GetComponent<Beam>();
-        beamAbility?.ApplyNetworkBeamState(state.IsFiring, authoritative: false, requestedTick: state.Tick);
-    }
-
-    [ClientRpc]
-    private void BroadcastFireTrailStateClientRpc(NetFireTrailState state)
-    {
-        if (IsOwner && !IsServer)
-        {
-            return;
-        }
-
-        FireWall fireWall = GetComponent<FireWall>();
-        fireWall?.ApplyNetworkTrailState(state.IsActive, authoritative: false);
-    }
-
-    [ClientRpc]
-    private void BroadcastReflectActivationClientRpc()
-    {
-        if (IsOwner && !IsServer)
-        {
-            return;
-        }
-
-        Reflector reflector = GetComponent<Reflector>();
-        reflector?.ApplyNetworkReflectActivation(authoritative: false);
-    }
-
-    [ClientRpc]
-    private void BroadcastCombatStateClientRpc(float health, float shield, Vector2 hitPoint, int source, bool shieldHit, bool shieldBreak, float impactForce)
-    {
-        if (_player == null)
-        {
-            return;
-        }
-
-        DamageSource damageSource = (DamageSource)source;
-        _player.ApplyAuthoritativeCombatState(health, shield, hitPoint, damageSource, shieldHit, shieldBreak);
-    }
-
-    [ClientRpc]
-    private void BroadcastTeleportClientRpc(NetTeleportState state)
-    {
-        if (IsOwner && !IsServer)
-        {
-            return;
-        }
-
-        Teleport teleportAbility = GetComponent<Teleport>();
-        teleportAbility?.ApplyNetworkTeleport(state.TargetPosition, authoritative: false);
-    }
-
-    [ClientRpc]
-    private void BroadcastClass2ShieldClientRpc(NetClass2ShieldState state)
-    {
-        if (IsOwner && !IsServer)
-        {
-            return;
-        }
-
-        Class2Shield shieldAbility = GetComponent<Class2Shield>();
-        shieldAbility?.ApplyNetworkShieldActivation(authoritative: false);
-    }
-
-    [ClientRpc]
-    private void BroadcastTractorBeamClientRpc(NetTractorBeamState state)
-    {
-        if (IsOwner && !IsServer)
-        {
-            return;
-        }
-
-        TractorBeam tractorBeam = GetComponent<TractorBeam>();
-        tractorBeam?.ApplyNetworkTractorBeamState(state.IsActive, authoritative: false);
-    }
-
-    [ClientRpc]
-    private void BroadcastTriggerBombLaunchClientRpc(NetTriggerBombLaunchState state)
-    {
-        if (IsOwner && !IsServer)
-        {
-            return;
-        }
-
-        TriggerBomb triggerBomb = GetComponent<TriggerBomb>();
-        triggerBomb?.ApplyNetworkBombLaunch(state, authoritative: false);
-    }
-
-    [ClientRpc]
-    private void BroadcastTriggerBombDetonateClientRpc(NetTriggerBombDetonateState state)
-    {
-        if (IsOwner && !IsServer)
-        {
-            return;
-        }
-
-        TriggerBomb triggerBomb = GetComponent<TriggerBomb>();
-        triggerBomb?.ApplyNetworkBombDetonation(state, authoritative: false);
-    }
-
-    [ClientRpc]
-    private void BroadcastFaerieShiftClientRpc(NetAbilityToggleState state)
-    {
-        if (IsOwner && !IsServer)
-        {
-            return;
-        }
-
-        FaerieShift faerieShift = GetComponent<FaerieShift>();
-        faerieShift?.ApplyNetworkShiftState(state.IsActive, authoritative: false);
-    }
-
-    [ClientRpc]
-    private void BroadcastInvisibilityClientRpc(NetAbilityToggleState state)
-    {
-        if (IsOwner && !IsServer && state.IsActive)
-        {
-            return;
-        }
-
-        Invisibility invisibility = GetComponent<Invisibility>();
-        invisibility?.ApplyNetworkInvisibilityState(state.IsActive, authoritative: false);
-    }
-
-    [ClientRpc]
-    private void BroadcastMovementLockClientRpc(bool isLocked)
-    {
-        if (_player != null)
-        {
-            _player.isMovementLocked = isLocked;
-        }
-    }
-
-    [ClientRpc]
-    private void BroadcastAbility4LockClientRpc(bool isLocked)
-    {
-        if (_player == null)
-        {
-            return;
-        }
-
-        if (isLocked)
-        {
-            _player.LockAbility4();
-        }
-        else
-        {
-            _player.UnlockAbility4();
-        }
+            dt,
+            input.Thrust);
     }
 
     private void PublishAuthoritativeState(
@@ -1000,7 +472,8 @@ public class NetMovement : NetworkBehaviour
         float visualPitchAngle,
         float frictionTimer,
         float anchorDragAccumulator,
-        float dt)
+        float dt,
+        bool thrust)
     {
         Vector2 expectedPosition = _rb.position + velocity * dt;
         NetStateSnapshot state = new NetStateSnapshot
@@ -1014,6 +487,8 @@ public class NetMovement : NetworkBehaviour
             AnchorDragAccumulator = anchorDragAccumulator,
             FrictionTimer = frictionTimer,
             FrictionEnabled = _player != null && _player.IsFrictionEnabled,
+            Thrust = thrust,
+            Shield = _player != null ? _player.currentShield : 0f,
         };
 
         int histIdx = tick % SERVER_STATE_BUFFER_SIZE;
@@ -1023,232 +498,19 @@ public class NetMovement : NetworkBehaviour
         BroadcastStateClientRpc(state);
     }
 
-    private void HandlePrimaryFireServer(NetFireRequest request)
-    {
-        GameObject projectilePrefab = ResolveProjectileVisualPrefab(request.VisualType);
-        if (_player == null || projectilePrefab == null)
-        {
-            return;
-        }
-
-        float tickInterval = NetTickUtil.TickInterval > 0f ? NetTickUtil.TickInterval : Time.fixedDeltaTime;
-        int cooldownTicks = Mathf.Max(1, Mathf.CeilToInt(_player.PrimaryFireCooldown / Mathf.Max(0.0001f, tickInterval)));
-        bool isNewVolleyTick = request.Tick != _lastServerPrimaryFireTick;
-        if (isNewVolleyTick && request.Tick < _lastServerPrimaryFireTick + cooldownTicks)
-        {
-            return;
-        }
-
-        if (isNewVolleyTick)
-        {
-            _lastServerPrimaryFireTime = Time.time;
-            _lastServerPrimaryFireTick = request.Tick;
-        }
-
-        GameObject projectileObject = Instantiate(projectilePrefab, request.SpawnPosition, Quaternion.identity);
-        if (!projectileObject.TryGetComponent(out ProjectileScript projectile))
-        {
-            Destroy(projectileObject);
-            return;
-        }
-
-        projectile.targetTag = _player.enemyTag;
-        projectile.SetNetworkAuthority(this, request.Tick);
-        projectile.Initialize(
-            request.Direction,
-            request.InheritedVelocity,
-            request.Speed,
-            request.Damage,
-            request.Lifetime,
-            request.ImpactForce,
-            _player);
-
-        if (request.CanPierce)
-        {
-            projectile.EnablePiercing(request.PierceMultiplier);
-        }
-
-        if (request.AppliesSlow)
-        {
-            projectile.EnableSlow(request.SlowMultiplier, request.SlowDuration);
-        }
-
-        BroadcastProjectileSpawnClientRpc(new NetProjectileSpawnData
-        {
-            Tick = request.Tick,
-            SpawnPosition = request.SpawnPosition,
-            Direction = request.Direction,
-            InheritedVelocity = request.InheritedVelocity,
-            Speed = request.Speed,
-            Damage = request.Damage,
-            Lifetime = request.Lifetime,
-            ImpactForce = request.ImpactForce,
-            RecoilForce = request.RecoilForce,
-            ApplyRecoil = request.ApplyRecoil,
-            PierceMultiplier = request.PierceMultiplier,
-            SlowMultiplier = request.SlowMultiplier,
-            SlowDuration = request.SlowDuration,
-            CanPierce = request.CanPierce,
-            AppliesSlow = request.AppliesSlow,
-            VisualType = request.VisualType,
-        });
-
-        if (request.ApplyRecoil)
-        {
-            _player.ApplyRecoil(request.RecoilForce);
-        }
-    }
-
-    private void HandleBeamStateServer(NetBeamState state)
-    {
-        Beam beamAbility = GetComponent<Beam>();
-        if (beamAbility == null)
-        {
-            return;
-        }
-
-        beamAbility.ApplyNetworkBeamState(state.IsFiring, authoritative: true, requestedTick: state.Tick);
-        BroadcastBeamStateClientRpc(state);
-    }
-
-    private void HandleFireTrailStateServer(NetFireTrailState state)
-    {
-        FireWall fireWall = GetComponent<FireWall>();
-        if (fireWall == null)
-        {
-            return;
-        }
-
-        fireWall.ApplyNetworkTrailState(state.IsActive, authoritative: true);
-        BroadcastFireTrailStateClientRpc(state);
-    }
-
-    private void HandleReflectActivationServer()
-    {
-        Reflector reflector = GetComponent<Reflector>();
-        if (reflector == null)
-        {
-            return;
-        }
-
-        reflector.ApplyNetworkReflectActivation(authoritative: true);
-        BroadcastReflectActivationClientRpc();
-    }
-
-    private void HandleTeleportServer(NetTeleportState state)
-    {
-        Teleport teleportAbility = GetComponent<Teleport>();
-        if (teleportAbility == null)
-        {
-            return;
-        }
-
-        teleportAbility.ApplyNetworkTeleport(state.TargetPosition, authoritative: true);
-        BroadcastTeleportClientRpc(state);
-    }
-
-    private void HandleClass2ShieldServer(NetClass2ShieldState state)
-    {
-        Class2Shield shieldAbility = GetComponent<Class2Shield>();
-        if (shieldAbility == null || !state.IsActive)
-        {
-            return;
-        }
-
-        shieldAbility.ApplyNetworkShieldActivation(authoritative: true);
-        BroadcastClass2ShieldClientRpc(state);
-    }
-
-    private void HandleTractorBeamServer(NetTractorBeamState state)
-    {
-        TractorBeam tractorBeam = GetComponent<TractorBeam>();
-        if (tractorBeam == null)
-        {
-            return;
-        }
-
-        tractorBeam.ApplyNetworkTractorBeamState(state.IsActive, authoritative: true);
-        BroadcastTractorBeamClientRpc(state);
-    }
-
-    private void HandleTriggerBombLaunchServer(NetTriggerBombLaunchState state)
-    {
-        TriggerBomb triggerBomb = GetComponent<TriggerBomb>();
-        if (triggerBomb == null)
-        {
-            return;
-        }
-
-        triggerBomb.ApplyNetworkBombLaunch(state, authoritative: true);
-        BroadcastTriggerBombLaunchClientRpc(state);
-    }
-
-    private void HandleTriggerBombDetonateServer(NetTriggerBombDetonateState state)
-    {
-        TriggerBomb triggerBomb = GetComponent<TriggerBomb>();
-        if (triggerBomb == null)
-        {
-            return;
-        }
-
-        triggerBomb.ApplyNetworkBombDetonation(state, authoritative: true);
-        BroadcastTriggerBombDetonateClientRpc(state);
-    }
-
-    private void HandleFaerieShiftServer(NetAbilityToggleState state)
-    {
-        FaerieShift faerieShift = GetComponent<FaerieShift>();
-        if (faerieShift == null)
-        {
-            return;
-        }
-
-        faerieShift.ApplyNetworkShiftState(state.IsActive, authoritative: true);
-        BroadcastFaerieShiftClientRpc(state);
-    }
-
-    private void HandleInvisibilityServer(NetAbilityToggleState state)
-    {
-        Invisibility invisibility = GetComponent<Invisibility>();
-        if (invisibility == null)
-        {
-            return;
-        }
-
-        invisibility.ApplyNetworkInvisibilityState(state.IsActive, authoritative: true);
-        BroadcastInvisibilityClientRpc(state);
-    }
-
-    public void BroadcastFireHazardSpawn(NetFireHazardSpawnData spawnData)
-    {
-        if (!IsServer)
-        {
-            return;
-        }
-
-        BroadcastFireHazardSpawnClientRpc(spawnData);
-    }
+    // ===== STATE BROADCAST =====
 
     [ClientRpc]
-    private void BroadcastFireHazardSpawnClientRpc(NetFireHazardSpawnData spawnData)
+    private void BroadcastStateClientRpc(NetStateSnapshot serverState)
     {
-        if (IsServer)
+        if (IsOwner)
         {
-            return;
+            Reconcile(serverState);
         }
-
-        FireWall fireWall = GetComponent<FireWall>();
-        fireWall?.SpawnRemoteHazard(spawnData);
-    }
-
-    public void BroadcastCombatState(float health, float shield, Vector3 hitPoint, DamageSource source, bool shieldHit, bool shieldBreak, float impactForce)
-    {
-        if (!IsServer)
+        else if (!IsServer)
         {
-            return;
+            BufferInterpolationState(serverState);
         }
-
-        BroadcastCombatStateClientRpc(health, shield, hitPoint, (int)source, shieldHit, shieldBreak, impactForce);
     }
 
     // ===== RECONCILIATION =====
@@ -1340,6 +602,8 @@ public class NetMovement : NetworkBehaviour
         _interpCount = Mathf.Min(_interpCount + 1, _interpolationBuffer.Length);
     }
 
+    private float _remoteLastShield = -1f;
+
     private void InterpolateRemote()
     {
         if (_interpCount < 2) return; // need at least 2 snapshots to interpolate
@@ -1376,6 +640,26 @@ public class NetMovement : NetworkBehaviour
         transform.rotation = Quaternion.Euler(0, 0, interpRot);
         _rb.linearVelocity = interpVel; // for visual systems that read velocity
         _player?.ApplyExternalVisualTiltState(interpBank, interpPitch);
+
+        // Drive thruster visuals from authoritative thrust state
+        if (_player != null)
+        {
+            _player.ApplyNetworkThrustState(to.Thrust);
+        }
+
+        // Drive shield regen visuals from authoritative shield value
+        if (_player != null)
+        {
+            float prevShield = _remoteLastShield < 0f ? to.Shield : _remoteLastShield;
+            _player.ApplyNetworkShieldState(to.Shield);
+
+            bool isRegenerating = to.Shield > prevShield && to.Shield < _player.maxShield;
+            if (_player.shieldController != null)
+            {
+                _player.shieldController.SetRegeneration(isRegenerating);
+            }
+            _remoteLastShield = to.Shield;
+        }
 
         // When we've finished interpolating to 'to', advance
         if (t >= 1f)

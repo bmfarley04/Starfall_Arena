@@ -73,6 +73,12 @@ public struct NetStateSnapshot : INetworkSerializable
     /// <summary>Authoritative friction toggle state for debugging and replay context.</summary>
     public bool FrictionEnabled;
 
+    /// <summary>Whether the player is currently thrusting (for remote thruster visuals).</summary>
+    public bool Thrust;
+
+    /// <summary>Current shield value (for remote shield regen visuals).</summary>
+    public float Shield;
+
     public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
     {
         serializer.SerializeValue(ref Tick);
@@ -84,6 +90,8 @@ public struct NetStateSnapshot : INetworkSerializable
         serializer.SerializeValue(ref AnchorDragAccumulator);
         serializer.SerializeValue(ref FrictionTimer);
         serializer.SerializeValue(ref FrictionEnabled);
+        serializer.SerializeValue(ref Thrust);
+        serializer.SerializeValue(ref Shield);
     }
 }
 
@@ -277,5 +285,41 @@ public struct NetAbilityToggleState : INetworkSerializable
     public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
     {
         serializer.SerializeValue(ref IsActive);
+    }
+}
+
+public struct NetGigaBlastChargeState : INetworkSerializable
+{
+    public bool IsCharging;
+    public int Tier;
+
+    public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
+    {
+        serializer.SerializeValue(ref IsCharging);
+        serializer.SerializeValue(ref Tier);
+    }
+}
+
+public struct NetReflectedProjectileData : INetworkSerializable
+{
+    public Vector2 SpawnPosition;
+    public Vector2 Direction;
+    public float Speed;
+    public float Damage;
+    public float Lifetime;
+    public float ImpactForce;
+    public Color ReflectColor;
+    public NetProjectileVisualType VisualType;
+
+    public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
+    {
+        serializer.SerializeValue(ref SpawnPosition);
+        serializer.SerializeValue(ref Direction);
+        serializer.SerializeValue(ref Speed);
+        serializer.SerializeValue(ref Damage);
+        serializer.SerializeValue(ref Lifetime);
+        serializer.SerializeValue(ref ImpactForce);
+        serializer.SerializeValue(ref ReflectColor);
+        serializer.SerializeValue(ref VisualType);
     }
 }
