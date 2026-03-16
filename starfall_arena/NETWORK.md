@@ -231,6 +231,35 @@ Current behavior:
 
 This is intentionally a bridge step that keeps combat authority aligned with the already-implemented movement authority model without requiring every weapon prefab to become a separate NGO network object first.
 
+### Ring of Fire (RingOfFireManager)
+
+`RingOfFireManager` is networked as a `NetworkBehaviour` using `NetworkVariable`s for state sync.
+
+Server behavior:
+
+- runs all wave logic: wave chaining, interpolation, wave transitions, damage ticks
+- writes interpolated ring state (center, width, length, radius, shape type, active flag) to `NetworkVariable`s each frame
+- calls `Entity.TakeDamage()` for entities outside the safe zone; damage propagation to clients is handled by the existing `Entity` combat broadcast path
+
+Client behavior:
+
+- reads `NetworkVariable`s each frame and updates local display state
+- renders the line renderer boundary and unsafe-area mask from the synced values
+- initializes visuals on `OnNetworkSpawn` (late join) or via `OnValueChanged` callback when the ring activates
+- does not run wave logic, interpolation, or damage
+
+Non-networked behavior:
+
+- all original local behavior is preserved behind `NetMgr.IsNetworked` checks
+- runs identically to the pre-networking implementation
+
+Design notes:
+
+- `NetworkVariable`s are ideal here because ring state changes slowly (interpolated over wave durations of many seconds) and auto-sync to late joiners
+- no RPCs, tick-based sync, or prediction needed — the ring is not player-controlled
+- `IsInsideSafeZone()` works on all peers because clients update `_currentSafe*` fields from `NetworkVariable`s
+- the RingOfFireManager's GameObject requires a `NetworkObject` component in the Maps prefab
+
 ## Current Implementation Limits
 
 Based on the current repo, these pieces are not yet represented as fully integrated networking systems:

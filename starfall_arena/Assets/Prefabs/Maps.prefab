@@ -82,6 +82,8 @@ MonoBehaviour:
   animation:
     growDuration: 0.5
     shrinkDuration: 0.3
+  staticProps: []
+  ringOfFire: {fileID: 8022513949830934647}
 --- !u!114 &2599233855982751468
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -94,6 +96,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 215431e1afc4bdd47906f03b16005df5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RingOfFireManager
+  ShowTopMostFoldoutHeaderGroup: 1
   config:
     waves:
     - duration: 25
@@ -302,198 +305,6 @@ MonoBehaviour:
     maskExtent: 1000
     outsideMaskMaterial: {fileID: 2100000, guid: ed9b04cc44f5efd4eb81ac84c0e4c20e, type: 2}
     maskShaderZValue: 0.05
---- !u!1 &3221698777667135044
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 2343213754251622934}
-  - component: {fileID: 2081426313522932010}
-  - component: {fileID: 5552642662154852904}
-  - component: {fileID: 806460199084212530}
-  m_Layer: 0
-  m_Name: GalacticLeopard6(Clone)
-  m_TagString: Asteroid
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &2343213754251622934
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3221698777667135044}
-  serializedVersion: 2
-  m_LocalRotation: {x: -0.49107283, y: 0.15467498, z: 0.09426339, w: 0.8520784}
-  m_LocalPosition: {x: 46.4584, y: -55, z: 20}
-  m_LocalScale: {x: 0.6000001, y: 0.6, z: 0.6}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 347057026475290541}
-  m_LocalEulerAnglesHint: {x: -60, y: 20, z: 1}
---- !u!33 &2081426313522932010
-MeshFilter:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3221698777667135044}
-  m_Mesh: {fileID: 3925824414565109629, guid: 1b175bf36a00ee144a62d32d2894ded9, type: 3}
---- !u!23 &5552642662154852904
-MeshRenderer:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3221698777667135044}
-  m_Enabled: 1
-  m_CastShadows: 1
-  m_ReceiveShadows: 1
-  m_DynamicOccludee: 1
-  m_StaticShadowCaster: 0
-  m_MotionVectors: 1
-  m_LightProbeUsage: 1
-  m_ReflectionProbeUsage: 1
-  m_RayTracingMode: 2
-  m_RayTraceProcedural: 0
-  m_RayTracingAccelStructBuildFlagsOverride: 0
-  m_RayTracingAccelStructBuildFlags: 1
-  m_SmallMeshCulling: 1
-  m_ForceMeshLod: -1
-  m_MeshLodSelectionBias: 0
-  m_RenderingLayerMask: 1
-  m_RendererPriority: 0
-  m_Materials:
-  - {fileID: 2100000, guid: 0b258bf1789ddcf409516a9ba095f1fb, type: 2}
-  m_StaticBatchInfo:
-    firstSubMesh: 0
-    subMeshCount: 0
-  m_StaticBatchRoot: {fileID: 0}
-  m_ProbeAnchor: {fileID: 0}
-  m_LightProbeVolumeOverride: {fileID: 0}
-  m_ScaleInLightmap: 1
-  m_ReceiveGI: 1
-  m_PreserveUVs: 0
-  m_IgnoreNormalsForChartDetection: 0
-  m_ImportantGI: 0
-  m_StitchLightmapSeams: 0
-  m_SelectedEditorRenderState: 3
-  m_MinimumChartSize: 4
-  m_AutoUVMaxDistance: 0.5
-  m_AutoUVMaxAngle: 89
-  m_LightmapParameters: {fileID: 0}
-  m_GlobalIlluminationMeshLod: 0
-  m_SortingLayerID: 0
-  m_SortingLayer: 0
-  m_SortingOrder: 0
-  m_MaskInteraction: 0
-  m_AdditionalVertexStreams: {fileID: 0}
---- !u!60 &806460199084212530
-PolygonCollider2D:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3221698777667135044}
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Density: 1
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_ForceSendLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_ForceReceiveLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_ContactCaptureLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_CallbackLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_IsTrigger: 0
-  m_UsedByEffector: 0
-  m_CompositeOperation: 0
-  m_CompositeOrder: 0
-  m_Offset: {x: 0, y: 0}
-  m_SpriteTilingProperty:
-    border: {x: 0, y: 0, z: 0, w: 0}
-    pivot: {x: 0, y: 0}
-    oldSize: {x: 0, y: 0}
-    newSize: {x: 0, y: 0}
-    adaptiveTilingThreshold: 0
-    drawMode: 0
-    adaptiveTiling: 0
-  m_AutoTiling: 0
-  m_Points:
-    m_Paths:
-    - - {x: 23.478558, y: -14.360041}
-      - {x: 27.193296, y: -7.1780005}
-      - {x: 34.6258, y: 12.505011}
-      - {x: 28.505507, y: 18.348381}
-      - {x: 28.238478, y: 18.655504}
-      - {x: 29.667828, y: 21.881107}
-      - {x: 32.68703, y: 18.83097}
-      - {x: 33.57555, y: 18.584219}
-      - {x: 35.80943, y: 19.352207}
-      - {x: 39.471275, y: 22.974258}
-      - {x: 43.18253, y: 31.428104}
-      - {x: 43.597584, y: 34.51976}
-      - {x: 43.36397, y: 34.717056}
-      - {x: 43.61664, y: 34.944206}
-      - {x: 45.70918, y: 37.077362}
-      - {x: 49.345127, y: 45.46782}
-      - {x: 49.817898, y: 48.61768}
-      - {x: 44.46745, y: 53.92446}
-      - {x: 44.675297, y: 54.727814}
-      - {x: 44.385143, y: 55.268497}
-      - {x: 45.567635, y: 57.994534}
-      - {x: 44.99287, y: 63.803474}
-      - {x: 41.305927, y: 67.55263}
-      - {x: 45.808052, y: 77.78927}
-      - {x: 51.11512, y: 110.04254}
-      - {x: 40.708447, y: 109.87322}
-      - {x: 18.454554, y: 71.649895}
-      - {x: 11.321163, y: 64.115}
-      - {x: 8.487108, y: 58.79569}
-      - {x: -0.56137156, y: 48.232243}
-      - {x: -8.871825, y: 30.49894}
-      - {x: -10.184378, y: 18.86822}
-      - {x: -14.967887, y: 15.439611}
-      - {x: -20.422977, y: 4.501689}
-      - {x: -26.935501, y: -10.490416}
-      - {x: -26.874876, y: -17.584143}
-      - {x: -32.40213, y: -23.720406}
-      - {x: -36.844612, y: -32.416546}
-      - {x: -42.20541, y: -46.37318}
-      - {x: -41.56388, y: -52.621445}
-      - {x: -45.02631, y: -62.242764}
-      - {x: -56.59266, y: -80.18896}
-      - {x: -59.392616, y: -96.54408}
-      - {x: -44.976883, y: -110.34484}
-      - {x: -34.495552, y: -101.519196}
-      - {x: -21.77615, y: -94.037254}
-      - {x: -10.547011, y: -62.409283}
-      - {x: -12.103127, y: -54.554005}
-      - {x: 5.770936, y: -54.31881}
-      - {x: 18.293743, y: -24.684666}
-      - {x: 12.32081, y: -17.774155}
-      - {x: 13.435557, y: -14.371825}
-      - {x: 16.099205, y: -18.354992}
-      - {x: 20.771582, y: -16.725807}
-  m_UseDelaunayMesh: 1
 --- !u!1 &7879155641077518358
 GameObject:
   m_ObjectHideFlags: 0
@@ -524,8 +335,7 @@ Transform:
   m_LocalPosition: {x: 1.2142897, y: -2.72681, z: -22.16493}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 2343213754251622934}
+  m_Children: []
   m_Father: {fileID: 2241051889850896278}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &8482710781498108482
@@ -577,6 +387,12 @@ MonoBehaviour:
   animation:
     growDuration: 0.5
     shrinkDuration: 0.3
+  staticProps:
+  - prefab: {fileID: 7705512596803305488, guid: bbd46becf91587f45b714530e3330bed, type: 3}
+    position: {x: 46, y: -55, z: 20}
+    rotation: {x: -60, y: 20, z: 1}
+    scale: {x: 0.6, y: 0.6, z: 0.6}
+  ringOfFire: {fileID: 8022513949830934647}
 --- !u!114 &7403510840332534524
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -589,6 +405,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 215431e1afc4bdd47906f03b16005df5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RingOfFireManager
+  ShowTopMostFoldoutHeaderGroup: 1
   config:
     waves:
     - duration: 25
@@ -829,6 +646,7 @@ Transform:
   - {fileID: 1032401732064188100}
   - {fileID: 347057026475290541}
   - {fileID: 6548599234806605937}
+  - {fileID: 1290766653905464932}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &8349115255470493581
@@ -913,6 +731,8 @@ MonoBehaviour:
   animation:
     growDuration: 0.5
     shrinkDuration: 0.3
+  staticProps: []
+  ringOfFire: {fileID: 8022513949830934647}
 --- !u!114 &1841484504923890147
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -925,6 +745,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 215431e1afc4bdd47906f03b16005df5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RingOfFireManager
+  ShowTopMostFoldoutHeaderGroup: 1
   config:
     waves:
     - duration: 25
@@ -1133,3 +954,282 @@ MonoBehaviour:
     maskExtent: 1000
     outsideMaskMaterial: {fileID: 2100000, guid: ed9b04cc44f5efd4eb81ac84c0e4c20e, type: 2}
     maskShaderZValue: 0.05
+--- !u!1 &8856344515840683637
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1290766653905464932}
+  - component: {fileID: 8022513949830934647}
+  - component: {fileID: 8446236090977147253}
+  m_Layer: 0
+  m_Name: ringOfFire
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1290766653905464932
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8856344515840683637}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 1.2142897, y: -2.72681, z: -12.16493}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2241051889850896278}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &8022513949830934647
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8856344515840683637}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 215431e1afc4bdd47906f03b16005df5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RingOfFireManager
+  ShowTopMostFoldoutHeaderGroup: 1
+  config:
+    waves:
+    - duration: 25
+      stationary: 0
+      fireDamage: 3
+      damageTickInterval: 0.5
+      autoChainWithPrevious: 0
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 100
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 0
+    - duration: 15
+      stationary: 1
+      fireDamage: 3
+      damageTickInterval: 0.5
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 100
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 100
+    - duration: 25
+      stationary: 0
+      fireDamage: 6
+      damageTickInterval: 0.4
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 80
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+    - duration: 15
+      stationary: 1
+      fireDamage: 6
+      damageTickInterval: 0.4
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+    - duration: 13
+      stationary: 0
+      fireDamage: 9
+      damageTickInterval: 0.3
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 60
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+    - duration: 7
+      stationary: 1
+      fireDamage: 9
+      damageTickInterval: 0.3
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 50
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+    - duration: 13
+      stationary: 0
+      fireDamage: 12
+      damageTickInterval: 0.2
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 40
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+    - duration: 7
+      stationary: 1
+      fireDamage: 12
+      damageTickInterval: 0.2
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 50
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+    - duration: 10
+      stationary: 0
+      fireDamage: 15
+      damageTickInterval: 0.1
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 20
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+    - duration: 99999
+      stationary: 1
+      fireDamage: 15
+      damageTickInterval: 0.1
+      autoChainWithPrevious: 1
+      shapeType: 1
+      safeBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      endCenterBox:
+        centerPoint: {x: 0, y: 0}
+        width: 0
+        length: 0
+      safeCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 50
+      endCenterCircle:
+        centerPoint: {x: 0, y: 0}
+        radius: 75
+    autoStart: 1
+    fireLineMaterial: {fileID: 2100000, guid: 3ec3a6ee245fad5488f674cd61116782, type: 2}
+    lineWidth: 0
+    maskExtent: 1000
+    outsideMaskMaterial: {fileID: 2100000, guid: ed9b04cc44f5efd4eb81ac84c0e4c20e, type: 2}
+    maskShaderZValue: 0.05
+--- !u!114 &8446236090977147253
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8856344515840683637}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
+  GlobalObjectIdHash: 3199118339
+  InScenePlacedSourceGlobalObjectIdHash: 0
+  DeferredDespawnTick: 0
+  Ownership: 1
+  AlwaysReplicateAsRoot: 0
+  SynchronizeTransform: 1
+  ActiveSceneSynchronization: 0
+  SceneMigrationSynchronization: 0
+  SpawnWithObservers: 1
+  DontDestroyWithOwner: 0
+  AutoObjectParentSync: 1
+  SyncOwnerTransformWhenParented: 1
+  AllowOwnerToParent: 0
