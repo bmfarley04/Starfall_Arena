@@ -216,6 +216,42 @@ public partial class NetMovement : NetworkBehaviour
         return ActiveInstances;
     }
 
+    public void SetMovementLockedAuthoritative(bool isLocked)
+    {
+        if (!NetTickUtil.IsActive)
+        {
+            ApplyMovementLock(isLocked);
+            return;
+        }
+
+        if (IsServer)
+        {
+            ApplyMovementLock(isLocked);
+            BroadcastMovementLockClientRpc(isLocked);
+            return;
+        }
+
+        RequestMovementLockServerRpc(isLocked);
+    }
+
+    public void SetAbility4LockedAuthoritative(bool isLocked)
+    {
+        if (!NetTickUtil.IsActive)
+        {
+            ApplyAbility4Lock(isLocked);
+            return;
+        }
+
+        if (IsServer)
+        {
+            ApplyAbility4Lock(isLocked);
+            BroadcastAbility4LockClientRpc(isLocked);
+            return;
+        }
+
+        RequestAbility4LockServerRpc(isLocked);
+    }
+
     // ===== LAG COMPENSATION =====
 
     public int MaxCombatRewindTicks => Mathf.Max(0, _maxCombatRewindTicks);
@@ -269,6 +305,89 @@ public partial class NetMovement : NetworkBehaviour
         {
             playerInput.camera = mainCamera;
         }
+    }
+
+    private void ApplyMovementLock(bool isLocked)
+    {
+        if (_player == null)
+        {
+            _player = GetComponent<Player>();
+        }
+
+        if (_rb == null)
+        {
+            _rb = GetComponent<Rigidbody2D>();
+        }
+
+        if (_player == null)
+        {
+            return;
+        }
+
+        _player.isMovementLocked = isLocked;
+        if (isLocked && _rb != null)
+        {
+            _rb.linearVelocity = Vector2.zero;
+            _rb.angularVelocity = 0f;
+        }
+    }
+
+    private void ApplyAbility4Lock(bool isLocked)
+    {
+        if (_player == null)
+        {
+            _player = GetComponent<Player>();
+        }
+
+        if (_player == null)
+        {
+            return;
+        }
+
+        if (isLocked)
+        {
+            _player.LockAbility4();
+        }
+        else
+        {
+            _player.UnlockAbility4();
+        }
+    }
+
+    [ServerRpc(RequireOwnership = false)]
+    private void RequestMovementLockServerRpc(bool isLocked)
+    {
+        ApplyMovementLock(isLocked);
+        BroadcastMovementLockClientRpc(isLocked);
+    }
+
+    [ClientRpc]
+    private void BroadcastMovementLockClientRpc(bool isLocked)
+    {
+        if (IsServer)
+        {
+            return;
+        }
+
+        ApplyMovementLock(isLocked);
+    }
+
+    [ServerRpc(RequireOwnership = false)]
+    private void RequestAbility4LockServerRpc(bool isLocked)
+    {
+        ApplyAbility4Lock(isLocked);
+        BroadcastAbility4LockClientRpc(isLocked);
+    }
+
+    [ClientRpc]
+    private void BroadcastAbility4LockClientRpc(bool isLocked)
+    {
+        if (IsServer)
+        {
+            return;
+        }
+
+        ApplyAbility4Lock(isLocked);
     }
 
     // ===== TICK LOOP =====

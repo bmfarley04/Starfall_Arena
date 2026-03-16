@@ -123,7 +123,10 @@ public class NetworkSessionData : NetworkBehaviour
         {
             _selectionTimeRemaining = Mathf.Max(0f, _selectionTimeRemaining - Time.unscaledDeltaTime);
             NotifyTimerChanged();
-            BroadcastTimerClientRpc(_selectionTimeRemaining);
+            if (CanSendSessionRpcs())
+            {
+                BroadcastTimerClientRpc(_selectionTimeRemaining);
+            }
         }
 
         if (_selectionTimeRemaining <= 0f)
@@ -378,6 +381,15 @@ public class NetworkSessionData : NetworkBehaviour
         SetServerState(NetworkMatchState.LoadingGameplay, "Loading duel...");
         BroadcastSelections();
 
+        if (!Application.CanStreamedLevelBeLoaded(gameplaySceneName))
+        {
+            _gameplaySceneLoadRequested = false;
+            SetServerState(
+                NetworkMatchState.Error,
+                $"Gameplay scene '{gameplaySceneName}' is not in Build Settings.");
+            return;
+        }
+
         if (NetworkManager.Singleton != null && NetworkManager.Singleton.SceneManager != null)
         {
             NetworkManager.Singleton.SceneManager.LoadScene(gameplaySceneName, LoadSceneMode.Single);
@@ -421,7 +433,7 @@ public class NetworkSessionData : NetworkBehaviour
     {
         NotifySelectionsChanged();
 
-        if (IsServer)
+        if (CanSendSessionRpcs())
         {
             BroadcastSelectionsClientRpc(ToPayload(_shipSelections[0]), ToPayload(_shipSelections[1]));
         }
@@ -440,7 +452,10 @@ public class NetworkSessionData : NetworkBehaviour
     private void SetServerState(NetworkMatchState state, string statusMessage)
     {
         SyncLocalState(state, _selectionTimeRemaining, statusMessage);
-        BroadcastStateClientRpc((int)state, _selectionTimeRemaining, statusMessage ?? string.Empty);
+        if (CanSendSessionRpcs())
+        {
+            BroadcastStateClientRpc((int)state, _selectionTimeRemaining, statusMessage ?? string.Empty);
+        }
     }
 
     private void SyncLocalState(NetworkMatchState state, float selectionTimeRemaining, string statusMessage)
@@ -533,6 +548,14 @@ public class NetworkSessionData : NetworkBehaviour
         target.SlotIndex = payload.SlotIndex;
         target.ShipId = payload.ShipId.ToString();
         target.IsLockedIn = payload.IsLockedIn;
+    }
+
+    private bool CanSendSessionRpcs()
+    {
+        return IsServer &&
+               IsSpawned &&
+               NetworkManager.Singleton != null &&
+               NetworkManager.Singleton.IsListening;
     }
 
     [ServerRpc(RequireOwnership = false)]
