@@ -403,7 +403,7 @@ public partial class NetMovement
     [ClientRpc]
     private void BroadcastBeamStateClientRpc(NetBeamState state)
     {
-        if (IsOwner && !IsServer)
+        if (IsServer || IsOwner)
         {
             return;
         }
@@ -415,7 +415,7 @@ public partial class NetMovement
     [ClientRpc]
     private void BroadcastFireTrailStateClientRpc(NetFireTrailState state)
     {
-        if (IsOwner && !IsServer)
+        if (IsServer || IsOwner)
         {
             return;
         }
@@ -427,7 +427,7 @@ public partial class NetMovement
     [ClientRpc]
     private void BroadcastReflectActivationClientRpc()
     {
-        if (IsOwner && !IsServer)
+        if (IsServer || IsOwner)
         {
             return;
         }
@@ -439,7 +439,7 @@ public partial class NetMovement
     [ClientRpc]
     private void BroadcastTeleportClientRpc(NetTeleportState state)
     {
-        if (IsOwner && !IsServer)
+        if (IsServer || IsOwner)
         {
             return;
         }
@@ -451,7 +451,7 @@ public partial class NetMovement
     [ClientRpc]
     private void BroadcastClass2ShieldClientRpc(NetClass2ShieldState state)
     {
-        if (IsOwner && !IsServer)
+        if (IsServer || IsOwner)
         {
             return;
         }
@@ -463,7 +463,7 @@ public partial class NetMovement
     [ClientRpc]
     private void BroadcastTractorBeamClientRpc(NetTractorBeamState state)
     {
-        if (IsOwner && !IsServer)
+        if (IsServer || IsOwner)
         {
             return;
         }
@@ -475,7 +475,7 @@ public partial class NetMovement
     [ClientRpc]
     private void BroadcastTriggerBombLaunchClientRpc(NetTriggerBombLaunchState state)
     {
-        if (IsOwner && !IsServer)
+        if (IsServer || IsOwner)
         {
             return;
         }
@@ -487,7 +487,7 @@ public partial class NetMovement
     [ClientRpc]
     private void BroadcastTriggerBombDetonateClientRpc(NetTriggerBombDetonateState state)
     {
-        if (IsOwner && !IsServer)
+        if (IsServer || IsOwner)
         {
             return;
         }
@@ -499,7 +499,7 @@ public partial class NetMovement
     [ClientRpc]
     private void BroadcastFaerieShiftClientRpc(NetAbilityToggleState state)
     {
-        if (IsOwner && !IsServer)
+        if (IsServer || IsOwner)
         {
             return;
         }
@@ -511,10 +511,10 @@ public partial class NetMovement
     [ClientRpc]
     private void BroadcastInvisibilityClientRpc(NetAbilityToggleState state)
     {
-        if (IsOwner && !IsServer && state.IsActive)
-        {
-            return;
-        }
+        // Server already applied in handler. Owner skips activation (applied locally)
+        // but receives deactivation (server can force-end invisibility).
+        if (IsServer) return;
+        if (IsOwner && state.IsActive) return;
 
         Invisibility invisibility = GetComponent<Invisibility>();
         invisibility?.ApplyNetworkInvisibilityState(state.IsActive, authoritative: false);
