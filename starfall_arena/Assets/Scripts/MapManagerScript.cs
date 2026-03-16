@@ -159,6 +159,10 @@ public class MapManagerScript : MonoBehaviour
     [Tooltip("Optional static props (e.g. abandoned ships) to spawn with the map")]
     public MapProp[] staticProps;
 
+    [Header("Ring of Fire")]
+    [Tooltip("Optional Ring of Fire manager to activate/deactivate with this map")]
+    public RingOfFireManager ringOfFire;
+
     // ===== RUNTIME STATE =====
 
     private Transform asteroidsParent;                              // non-networked parent container
@@ -176,6 +180,9 @@ public class MapManagerScript : MonoBehaviour
 
     void OnEnable()
     {
+        if (ringOfFire != null)
+            ringOfFire.gameObject.SetActive(true);
+
         // Networked: only the server spawns — clients receive via NGO replication
         if (NetMgr.IsNetworked && !NetworkManager.Singleton.IsServer) return;
 
@@ -184,6 +191,12 @@ public class MapManagerScript : MonoBehaviour
 
     void OnDisable()
     {
+        if (ringOfFire != null)
+        {
+            ringOfFire.StopRingOfFire();
+            ringOfFire.gameObject.SetActive(false);
+        }
+
         ClearAsteroids();
     }
 
@@ -222,6 +235,21 @@ public class MapManagerScript : MonoBehaviour
         if (prefab == null) return;
         int id = prefab.GetInstanceID();
         if (_registeredPrefabIds.Contains(id)) return;
+
+        // Check if NGO already has this prefab registered (e.g. via DefaultNetworkPrefabs asset)
+        var netObj = prefab.GetComponent<NetworkObject>();
+        if (netObj != null)
+        {
+            foreach (var entry in NetworkManager.Singleton.NetworkConfig.Prefabs.Prefabs)
+            {
+                if (entry.Prefab == prefab)
+                {
+                    _registeredPrefabIds.Add(id);
+                    return;
+                }
+            }
+        }
+
         NetworkManager.Singleton.AddNetworkPrefab(prefab);
         _registeredPrefabIds.Add(id);
     }
