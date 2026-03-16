@@ -146,8 +146,10 @@ Current network payloads include:
   - authoritative visual pitch angle
   - anchor drag accumulator
   - friction timer
+  - thrust state (for remote thruster visuals)
+  - shield value (for remote shield regen visuals)
 
-These structs are intentionally minimal and focused on what movement replay needs.
+These structs are intentionally minimal and focused on what movement replay and visual sync needs.
 
 ## Current Movement Networking Flow
 
@@ -270,7 +272,7 @@ The existing movement implementation is a real first step toward that architectu
 ## Known Networking Notes
 
 - `Player.externalMovementControl` is the bridge that lets networking take over physics without discarding the existing input callbacks.
-- Remote proxies disable `Player` and rely on interpolation instead of duplicating gameplay logic client-side.
+- Remote proxies disable `Player` and rely on interpolation instead of duplicating gameplay logic client-side. Because `Player` is disabled, systems that normally run in `Player.Update()` must be driven externally by `NetMovement` for remote/server copies. Currently this includes thruster visuals (driven via `ApplyNetworkThrustState` from state snapshot thrust flag) and shield regeneration (driven via `TickShieldRegeneration` on the server, with shield value broadcast in state snapshots for remote regen visuals).
 - `Entity` banking/pitching on the 3D visual model now rides in `NetStateSnapshot`; remote proxies should consume the replicated visual tilt instead of recomputing it from interpolated root movement, or turns/recoil can look flat or mismatched.
 - For client-owned ships, the server/display side should forward the owner's reported visual tilt instead of recomputing bank from the server copy's root rotation, or the host view can over-bank badly.
 - Host mode requires special care to avoid double-simulating owner movement, and `NetMovement` already includes host-specific handling for that.

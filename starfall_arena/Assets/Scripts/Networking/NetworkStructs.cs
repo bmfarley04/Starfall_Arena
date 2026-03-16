@@ -73,6 +73,12 @@ public struct NetStateSnapshot : INetworkSerializable
     /// <summary>Authoritative friction toggle state for debugging and replay context.</summary>
     public bool FrictionEnabled;
 
+    /// <summary>Whether the player is currently thrusting (for remote thruster visuals).</summary>
+    public bool Thrust;
+
+    /// <summary>Current shield value (for remote shield regen visuals).</summary>
+    public float Shield;
+
     public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
     {
         serializer.SerializeValue(ref Tick);
@@ -84,6 +90,8 @@ public struct NetStateSnapshot : INetworkSerializable
         serializer.SerializeValue(ref AnchorDragAccumulator);
         serializer.SerializeValue(ref FrictionTimer);
         serializer.SerializeValue(ref FrictionEnabled);
+        serializer.SerializeValue(ref Thrust);
+        serializer.SerializeValue(ref Shield);
     }
 }
 

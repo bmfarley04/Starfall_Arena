@@ -288,6 +288,21 @@ public partial class NetMovement : NetworkBehaviour
             // Server ticks are driven by SubmitInputServerRpc for the owning client.
             // For the host (IsServer && IsOwner), the owner tick already ran and
             // the ServerRpc path handles authoritative sim. Nothing extra needed here.
+
+            // Run shield regen for client-owned players (Player.Update is disabled on
+            // server copies, so HandleShieldRegeneration never runs).
+            if (_player != null)
+            {
+                float prevShield = _player.currentShield;
+                _player.TickShieldRegeneration(Time.fixedDeltaTime);
+
+                // Drive regen visual on the host for the client's ship
+                bool isRegenerating = _player.currentShield > prevShield && _player.currentShield < _player.maxShield;
+                if (_player.shieldController != null)
+                {
+                    _player.shieldController.SetRegeneration(isRegenerating);
+                }
+            }
         }
 
         if (!IsOwner && !IsServer)
@@ -312,6 +327,10 @@ public partial class NetMovement : NetworkBehaviour
         {
             _player.GetVisualTiltState(out ownerVisualBankAngle, out ownerVisualPitchAngle);
         }
+
+        // Drive thruster visuals on the owner (Player.FixedUpdate skips the
+        // _isThrusting assignment when externalMovementControl is true).
+        _player.ApplyNetworkThrustState(_player.IsThrustPressed);
 
         // 1. Sample input from Player's read-only getters
         NetInputSnapshot input = new NetInputSnapshot
@@ -389,7 +408,8 @@ public partial class NetMovement : NetworkBehaviour
                 ownerVisualPitchAngle,
                 _serverFrictionTimer,
                 _serverAnchorDragAccumulator,
-                dt);
+                dt,
+                input.Thrust);
         }
         else
         {
@@ -429,6 +449,7 @@ public partial class NetMovement : NetworkBehaviour
         if (_player != null && !_player.enabled)
         {
             _player.ApplyExternalVisualTiltState(input.VisualBankAngle, input.VisualPitchAngle);
+            _player.ApplyNetworkThrustState(input.Thrust);
         }
 
         PublishAuthoritativeState(
@@ -439,7 +460,8 @@ public partial class NetMovement : NetworkBehaviour
             input.VisualPitchAngle,
             _serverFrictionTimer,
             _serverAnchorDragAccumulator,
-            dt);
+            dt,
+            input.Thrust);
     }
 
     private void PublishAuthoritativeState(
@@ -450,7 +472,8 @@ public partial class NetMovement : NetworkBehaviour
         float visualPitchAngle,
         float frictionTimer,
         float anchorDragAccumulator,
-        float dt)
+        float dt,
+        bool thrust)
     {
         Vector2 expectedPosition = _rb.position + velocity * dt;
         NetStateSnapshot state = new NetStateSnapshot
@@ -464,6 +487,8 @@ public partial class NetMovement : NetworkBehaviour
             AnchorDragAccumulator = anchorDragAccumulator,
             FrictionTimer = frictionTimer,
             FrictionEnabled = _player != null && _player.IsFrictionEnabled,
+            Thrust = thrust,
+            Shield = _player != null ? _player.currentShield : 0f,
         };
 
         int histIdx = tick % SERVER_STATE_BUFFER_SIZE;
@@ -577,6 +602,8 @@ public partial class NetMovement : NetworkBehaviour
         _interpCount = Mathf.Min(_interpCount + 1, _interpolationBuffer.Length);
     }
 
+    private float _remoteLastShield = -1f;
+
     private void InterpolateRemote()
     {
         if (_interpCount < 2) return; // need at least 2 snapshots to interpolate
@@ -613,6 +640,26 @@ public partial class NetMovement : NetworkBehaviour
         transform.rotation = Quaternion.Euler(0, 0, interpRot);
         _rb.linearVelocity = interpVel; // for visual systems that read velocity
         _player?.ApplyExternalVisualTiltState(interpBank, interpPitch);
+
+        // Drive thruster visuals from authoritative thrust state
+        if (_player != null)
+        {
+            _player.ApplyNetworkThrustState(to.Thrust);
+        }
+
+        // Drive shield regen visuals from authoritative shield value
+        if (_player != null)
+        {
+            float prevShield = _remoteLastShield < 0f ? to.Shield : _remoteLastShield;
+            _player.ApplyNetworkShieldState(to.Shield);
+
+            bool isRegenerating = to.Shield > prevShield && to.Shield < _player.maxShield;
+            if (_player.shieldController != null)
+            {
+                _player.shieldController.SetRegeneration(isRegenerating);
+            }
+            _remoteLastShield = to.Shield;
+        }
 
         // When we've finished interpolating to 'to', advance
         if (t >= 1f)

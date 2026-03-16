@@ -624,6 +624,26 @@ public abstract class Entity : MonoBehaviour
         ApplyVisualModelRotation();
     }
 
+    /// <summary>
+    /// Sets thrust state and updates thruster visuals. Used by NetMovement
+    /// to drive thruster effects on remote clients where Player is disabled.
+    /// </summary>
+    public void ApplyNetworkThrustState(bool isThrusting)
+    {
+        _isThrusting = isThrusting;
+        UpdateThrusters();
+    }
+
+    /// <summary>
+    /// Updates shield value and refreshes HUD. Used by NetMovement to sync
+    /// shield state on remote clients where Player.HandleShieldRegeneration doesn't run.
+    /// </summary>
+    public void ApplyNetworkShieldState(float shield)
+    {
+        currentShield = Mathf.Clamp(shield, 0f, maxShield);
+        OnShieldChanged();
+    }
+
     private void UpdateThrusters()
     {
         if (Time.deltaTime <= 0f) return;

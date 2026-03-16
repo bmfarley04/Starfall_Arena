@@ -788,6 +788,39 @@ public abstract class Player : Entity
         if (shieldController != null) shieldController.SetRegeneration(true);
     }
 
+    /// <summary>
+    /// Resets the shield regen delay timer. Called when authoritative damage
+    /// arrives via network RPC so the client's local regen timer stays in sync
+    /// with the server.
+    /// </summary>
+    public void ResetShieldRegenTimer()
+    {
+        _lastShieldHitTime = Time.time;
+    }
+
+    /// <summary>
+    /// Runs shield regen logic externally. Called by the server's NetMovement for
+    /// client-owned players whose Player component is disabled.
+    /// </summary>
+    public void TickShieldRegeneration(float deltaTime)
+    {
+        if (currentShield >= maxShield || maxShield <= 0)
+        {
+            return;
+        }
+
+        if (Time.time < _lastShieldHitTime + shieldRegen.regenDelay)
+        {
+            return;
+        }
+
+        currentShield += shieldRegen.regenRate * deltaTime;
+        if (currentShield > maxShield)
+        {
+            currentShield = maxShield;
+        }
+    }
+
     // ===== DAMAGE HANDLING =====
     public override void TakeDamage(float damage, float impactForce = 0f, Vector3 hitPoint = default, DamageSource source = DamageSource.Projectile)
     {

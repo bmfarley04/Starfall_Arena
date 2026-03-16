@@ -233,6 +233,11 @@ public partial class NetMovement
         DamageSource damageSource = (DamageSource)source;
         _player.ApplyAuthoritativeCombatState(health, shield, hitPoint, damageSource, shieldHit, shieldBreak);
 
+        // Reset the shield regen delay timer so the owner's local regen stays
+        // in sync with the server (TakeDamage only runs on the server, so the
+        // client's _lastShieldHitTime would never update otherwise).
+        _player.ResetShieldRegenTimer();
+
         // Play damage sounds on remote clients. Skip only for the host's own player,
         // which already plays audio in TakeDamage via shouldPlayLocalAudio.
         if (!(IsServer && IsOwner))
