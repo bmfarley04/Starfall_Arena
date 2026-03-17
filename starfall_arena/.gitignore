@@ -136,6 +136,7 @@ $RECYCLE.BIN/
 Final_Build/
 Final_Build2/
 build_v3/
+build/
 
 # End of https://www.toptal.com/developers/gitignore/api/unity,windows,macos
 
