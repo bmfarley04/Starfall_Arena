@@ -36,6 +36,102 @@ public struct NetworkShipSelectionStatePayload : INetworkSerializable
     }
 }
 
+public struct NetworkRoundEndStatePayload : INetworkSerializable
+{
+    public bool IsVisible;
+    public int WinningPlayer;
+    public float RoundDuration;
+    public float Player1Damage;
+    public float Player2Damage;
+    public float Player1Accuracy;
+    public float Player2Accuracy;
+
+    public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
+    {
+        serializer.SerializeValue(ref IsVisible);
+        serializer.SerializeValue(ref WinningPlayer);
+        serializer.SerializeValue(ref RoundDuration);
+        serializer.SerializeValue(ref Player1Damage);
+        serializer.SerializeValue(ref Player2Damage);
+        serializer.SerializeValue(ref Player1Accuracy);
+        serializer.SerializeValue(ref Player2Accuracy);
+    }
+}
+
+public struct NetworkAugmentSelectionStatePayload : INetworkSerializable
+{
+    public bool IsVisible;
+    public int Tier;
+    public int Player1OptionCount;
+    public FixedString64Bytes Player1Option1;
+    public FixedString64Bytes Player1Option2;
+    public FixedString64Bytes Player1Option3;
+    public int Player2OptionCount;
+    public FixedString64Bytes Player2Option1;
+    public FixedString64Bytes Player2Option2;
+    public FixedString64Bytes Player2Option3;
+    public bool Player1LockedIn;
+    public bool Player2LockedIn;
+    public FixedString64Bytes Player1ChosenAugmentId;
+    public FixedString64Bytes Player2ChosenAugmentId;
+
+    public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
+    {
+        serializer.SerializeValue(ref IsVisible);
+        serializer.SerializeValue(ref Tier);
+        serializer.SerializeValue(ref Player1OptionCount);
+        serializer.SerializeValue(ref Player1Option1);
+        serializer.SerializeValue(ref Player1Option2);
+        serializer.SerializeValue(ref Player1Option3);
+        serializer.SerializeValue(ref Player2OptionCount);
+        serializer.SerializeValue(ref Player2Option1);
+        serializer.SerializeValue(ref Player2Option2);
+        serializer.SerializeValue(ref Player2Option3);
+        serializer.SerializeValue(ref Player1LockedIn);
+        serializer.SerializeValue(ref Player2LockedIn);
+        serializer.SerializeValue(ref Player1ChosenAugmentId);
+        serializer.SerializeValue(ref Player2ChosenAugmentId);
+    }
+}
+
+public struct NetworkGameEndStatePayload : INetworkSerializable
+{
+    public bool IsVisible;
+    public int WinningPlayer;
+    public FixedString64Bytes Player1ShipId;
+    public FixedString64Bytes Player2ShipId;
+    public float GameDuration;
+    public int Player1Wins;
+    public int Player1Losses;
+    public float Player1DamageDealt;
+    public float Player1DamageTaken;
+    public float Player1Accuracy;
+    public int Player2Wins;
+    public int Player2Losses;
+    public float Player2DamageDealt;
+    public float Player2DamageTaken;
+    public float Player2Accuracy;
+
+    public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
+    {
+        serializer.SerializeValue(ref IsVisible);
+        serializer.SerializeValue(ref WinningPlayer);
+        serializer.SerializeValue(ref Player1ShipId);
+        serializer.SerializeValue(ref Player2ShipId);
+        serializer.SerializeValue(ref GameDuration);
+        serializer.SerializeValue(ref Player1Wins);
+        serializer.SerializeValue(ref Player1Losses);
+        serializer.SerializeValue(ref Player1DamageDealt);
+        serializer.SerializeValue(ref Player1DamageTaken);
+        serializer.SerializeValue(ref Player1Accuracy);
+        serializer.SerializeValue(ref Player2Wins);
+        serializer.SerializeValue(ref Player2Losses);
+        serializer.SerializeValue(ref Player2DamageDealt);
+        serializer.SerializeValue(ref Player2DamageTaken);
+        serializer.SerializeValue(ref Player2Accuracy);
+    }
+}
+
 public sealed class NetworkShipSelectionState
 {
     public ulong ClientId;
@@ -58,6 +154,10 @@ public class NetworkSessionData : NetworkBehaviour
     public event Action OnShipSelectionsChanged;
     public event Action<float> OnSelectionTimerChanged;
     public event Action<string> OnStatusMessageChanged;
+    public event Action<int> OnSelectedMapIndexChanged;
+    public event Action<NetworkRoundEndStatePayload> OnRoundEndPresentationChanged;
+    public event Action<NetworkAugmentSelectionStatePayload> OnAugmentSelectionPresentationChanged;
+    public event Action<NetworkGameEndStatePayload> OnGameEndPresentationChanged;
 
     private readonly NetworkShipSelectionState[] _shipSelections =
     {
@@ -69,6 +169,13 @@ public class NetworkSessionData : NetworkBehaviour
     private float _selectionTimeRemaining;
     private string _statusMessage = string.Empty;
     private bool _gameplaySceneLoadRequested;
+    private int _selectedMapIndex = -1;
+    private readonly string[][] _augmentOptionIds = { new string[3], new string[3] };
+    private readonly int[] _augmentOptionCounts = new int[2];
+    private readonly string[] _augmentChosenIds = new string[2];
+    private readonly bool[] _augmentChoicesLocked = new bool[2];
+    private bool _augmentPhaseActive;
+    private int _augmentTier = -1;
 
     public NetworkMatchState CurrentState => _currentState;
     public float SelectionTimeRemaining => _selectionTimeRemaining;
@@ -79,6 +186,10 @@ public class NetworkSessionData : NetworkBehaviour
         _shipSelections[0].ClientId != ulong.MaxValue &&
         _shipSelections[1].ClientId != ulong.MaxValue;
     public bool IsLocalPlayerLockedIn => TryGetLocalSelectionState(out NetworkShipSelectionState selection) && selection.IsLockedIn;
+    public int SelectedMapIndex => _selectedMapIndex;
+    public bool AreAugmentSelectionsResolved => !_augmentPhaseActive &&
+        !string.IsNullOrWhiteSpace(_augmentChosenIds[0]) &&
+        !string.IsNullOrWhiteSpace(_augmentChosenIds[1]);
     public ulong LocalClientId => NetworkManager.Singleton != null ? NetworkManager.Singleton.LocalClientId : ulong.MaxValue;
     public ulong HostClientId => NetworkManager.Singleton != null ? NetworkManager.ServerClientId : ulong.MaxValue;
     public NetworkShipSelectionState Player1Selection => _shipSelections[0];
@@ -114,7 +225,7 @@ public class NetworkSessionData : NetworkBehaviour
 
     private void Update()
     {
-        if (!IsServer || _currentState != NetworkMatchState.ShipSelect)
+        if (!IsServer || (_currentState != NetworkMatchState.ShipSelect && _currentState != NetworkMatchState.AugmentPhase))
         {
             return;
         }
@@ -131,7 +242,14 @@ public class NetworkSessionData : NetworkBehaviour
 
         if (_selectionTimeRemaining <= 0f)
         {
-            FinalizeShipSelections();
+            if (_currentState == NetworkMatchState.ShipSelect)
+            {
+                FinalizeShipSelections();
+            }
+            else if (_currentState == NetworkMatchState.AugmentPhase)
+            {
+                FinalizeAugmentSelections();
+            }
         }
     }
 
@@ -202,9 +320,14 @@ public class NetworkSessionData : NetworkBehaviour
     {
         _selectionTimeRemaining = 0f;
         _gameplaySceneLoadRequested = false;
+        _selectedMapIndex = -1;
+        _augmentPhaseActive = false;
+        _augmentTier = -1;
         ClearAllSelections();
+        ClearAugmentSelectionData();
         SyncLocalState(NetworkMatchState.TitleIdle, 0f, statusMessage);
         NotifySelectionsChanged();
+        OnSelectedMapIndexChanged?.Invoke(_selectedMapIndex);
     }
 
     public bool TryGetLocalSelectionState(out NetworkShipSelectionState selection)
@@ -268,10 +391,67 @@ public class NetworkSessionData : NetworkBehaviour
             return;
         }
 
-        if (!string.IsNullOrWhiteSpace(augmentId))
+        if (string.IsNullOrWhiteSpace(augmentId))
         {
-            SetStatusMessageLocal($"Selected augment {augmentId}.");
+            return;
         }
+
+        if (IsServer)
+        {
+            ApplyAugmentChoice(LocalClientId, augmentId);
+        }
+        else
+        {
+            SubmitAugmentChoiceServerRpc(augmentId);
+        }
+    }
+
+    public void StartAugmentSelectionServer(int tier, string[] player1OptionIds, string[] player2OptionIds, float selectionDuration)
+    {
+        if (!IsServer)
+        {
+            return;
+        }
+
+        _augmentTier = tier;
+        _augmentPhaseActive = true;
+        _selectionTimeRemaining = Mathf.Max(0f, selectionDuration);
+
+        CopyAugmentOptions(0, player1OptionIds);
+        CopyAugmentOptions(1, player2OptionIds);
+
+        for (int i = 0; i < _augmentChosenIds.Length; i++)
+        {
+            _augmentChosenIds[i] = string.Empty;
+            _augmentChoicesLocked[i] = false;
+        }
+
+        SetServerState(NetworkMatchState.AugmentPhase, "Choose your augment.");
+        BroadcastAugmentPresentation();
+    }
+
+    public string GetResolvedAugmentIdForSlot(int slotIndex)
+    {
+        if (slotIndex < 0 || slotIndex >= _augmentChosenIds.Length)
+        {
+            return string.Empty;
+        }
+
+        return _augmentChosenIds[slotIndex];
+    }
+
+    public void ClearResolvedAugmentSelectionsServer()
+    {
+        if (!IsServer)
+        {
+            return;
+        }
+
+        _augmentPhaseActive = false;
+        _augmentTier = -1;
+        _selectionTimeRemaining = 0f;
+        ClearAugmentSelectionData();
+        BroadcastAugmentPresentation();
     }
 
     public void MarkMatchStarted()
@@ -314,6 +494,123 @@ public class NetworkSessionData : NetworkBehaviour
     {
         _statusMessage = message ?? string.Empty;
         OnStatusMessageChanged?.Invoke(_statusMessage);
+    }
+
+    public void SetSelectedMapIndexServer(int mapIndex)
+    {
+        if (!IsServer)
+        {
+            return;
+        }
+
+        ApplySelectedMapIndexLocal(mapIndex);
+        if (CanSendSessionRpcs())
+        {
+            BroadcastSelectedMapClientRpc(mapIndex);
+        }
+    }
+
+    public void ShowRoundEndServer(int winningPlayer, float roundDuration, float player1Damage, float player2Damage, float player1Accuracy, float player2Accuracy)
+    {
+        if (!IsServer)
+        {
+            return;
+        }
+
+        NetworkRoundEndStatePayload payload = new NetworkRoundEndStatePayload
+        {
+            IsVisible = true,
+            WinningPlayer = winningPlayer,
+            RoundDuration = roundDuration,
+            Player1Damage = player1Damage,
+            Player2Damage = player2Damage,
+            Player1Accuracy = player1Accuracy,
+            Player2Accuracy = player2Accuracy
+        };
+
+        OnRoundEndPresentationChanged?.Invoke(payload);
+
+        if (CanSendSessionRpcs())
+        {
+            BroadcastRoundEndClientRpc(payload);
+        }
+    }
+
+    public void HideRoundEndServer()
+    {
+        if (!IsServer)
+        {
+            return;
+        }
+
+        NetworkRoundEndStatePayload payload = new NetworkRoundEndStatePayload { IsVisible = false };
+        OnRoundEndPresentationChanged?.Invoke(payload);
+        if (CanSendSessionRpcs())
+        {
+            BroadcastRoundEndClientRpc(payload);
+        }
+    }
+
+    public void ShowGameEndServer(
+        int winningPlayer,
+        ShipData player1Ship,
+        ShipData player2Ship,
+        float gameDuration,
+        int player1Wins,
+        int player1Losses,
+        float player1DamageDealt,
+        float player1DamageTaken,
+        float player1Accuracy,
+        int player2Wins,
+        int player2Losses,
+        float player2DamageDealt,
+        float player2DamageTaken,
+        float player2Accuracy)
+    {
+        if (!IsServer)
+        {
+            return;
+        }
+
+        NetworkGameEndStatePayload payload = new NetworkGameEndStatePayload
+        {
+            IsVisible = true,
+            WinningPlayer = winningPlayer,
+            Player1ShipId = player1Ship != null ? player1Ship.ShipId : string.Empty,
+            Player2ShipId = player2Ship != null ? player2Ship.ShipId : string.Empty,
+            GameDuration = gameDuration,
+            Player1Wins = player1Wins,
+            Player1Losses = player1Losses,
+            Player1DamageDealt = player1DamageDealt,
+            Player1DamageTaken = player1DamageTaken,
+            Player1Accuracy = player1Accuracy,
+            Player2Wins = player2Wins,
+            Player2Losses = player2Losses,
+            Player2DamageDealt = player2DamageDealt,
+            Player2DamageTaken = player2DamageTaken,
+            Player2Accuracy = player2Accuracy
+        };
+
+        OnGameEndPresentationChanged?.Invoke(payload);
+        if (CanSendSessionRpcs())
+        {
+            BroadcastGameEndClientRpc(payload);
+        }
+    }
+
+    public void HideGameEndServer()
+    {
+        if (!IsServer)
+        {
+            return;
+        }
+
+        NetworkGameEndStatePayload payload = new NetworkGameEndStatePayload { IsVisible = false };
+        OnGameEndPresentationChanged?.Invoke(payload);
+        if (CanSendSessionRpcs())
+        {
+            BroadcastGameEndClientRpc(payload);
+        }
     }
 
     private void StartShipSelectServer()
@@ -361,6 +658,29 @@ public class NetworkSessionData : NetworkBehaviour
         }
     }
 
+    private void ApplyAugmentChoice(ulong clientId, string augmentId)
+    {
+        if (_currentState != NetworkMatchState.AugmentPhase || !_augmentPhaseActive)
+        {
+            return;
+        }
+
+        int slot = GetOrAssignSlotIndex(clientId);
+        if (!IsAugmentChoiceValidForSlot(slot, augmentId))
+        {
+            return;
+        }
+
+        _augmentChosenIds[slot] = augmentId;
+        _augmentChoicesLocked[slot] = true;
+        BroadcastAugmentPresentation();
+
+        if (_augmentChoicesLocked[0] && _augmentChoicesLocked[1])
+        {
+            FinalizeAugmentSelections();
+        }
+    }
+
     private void FinalizeShipSelections()
     {
         if (!IsServer || _gameplaySceneLoadRequested)
@@ -396,6 +716,29 @@ public class NetworkSessionData : NetworkBehaviour
         }
     }
 
+    private void FinalizeAugmentSelections()
+    {
+        if (!IsServer || !_augmentPhaseActive)
+        {
+            return;
+        }
+
+        for (int slot = 0; slot < _augmentChosenIds.Length; slot++)
+        {
+            if (_augmentChoicesLocked[slot] && !string.IsNullOrWhiteSpace(_augmentChosenIds[slot]))
+            {
+                continue;
+            }
+
+            _augmentChosenIds[slot] = GetRandomAugmentOptionId(slot);
+            _augmentChoicesLocked[slot] = !string.IsNullOrWhiteSpace(_augmentChosenIds[slot]);
+        }
+
+        _selectionTimeRemaining = 0f;
+        _augmentPhaseActive = false;
+        BroadcastAugmentPresentation();
+    }
+
     private ShipData EnsureLockedSelection(NetworkShipSelectionState selection)
     {
         ShipData ship = selection.ShipData;
@@ -427,6 +770,51 @@ public class NetworkSessionData : NetworkBehaviour
         }
 
         return connectedPlayers >= 2;
+    }
+
+    private void CopyAugmentOptions(int slot, string[] optionIds)
+    {
+        if (slot < 0 || slot >= _augmentOptionIds.Length)
+        {
+            return;
+        }
+
+        _augmentOptionCounts[slot] = Mathf.Clamp(optionIds != null ? optionIds.Length : 0, 0, _augmentOptionIds[slot].Length);
+        for (int i = 0; i < _augmentOptionIds[slot].Length; i++)
+        {
+            _augmentOptionIds[slot][i] = i < _augmentOptionCounts[slot]
+                ? optionIds[i] ?? string.Empty
+                : string.Empty;
+        }
+    }
+
+    private string GetRandomAugmentOptionId(int slot)
+    {
+        if (slot < 0 || slot >= _augmentOptionIds.Length || _augmentOptionCounts[slot] <= 0)
+        {
+            return string.Empty;
+        }
+
+        int randomIndex = UnityEngine.Random.Range(0, _augmentOptionCounts[slot]);
+        return _augmentOptionIds[slot][randomIndex] ?? string.Empty;
+    }
+
+    private bool IsAugmentChoiceValidForSlot(int slot, string augmentId)
+    {
+        if (slot < 0 || slot >= _augmentOptionIds.Length || string.IsNullOrWhiteSpace(augmentId))
+        {
+            return false;
+        }
+
+        for (int i = 0; i < _augmentOptionCounts[slot]; i++)
+        {
+            if (_augmentOptionIds[slot][i] == augmentId)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private void BroadcastSelections()
@@ -531,6 +919,21 @@ public class NetworkSessionData : NetworkBehaviour
         }
     }
 
+    private void ClearAugmentSelectionData()
+    {
+        for (int slot = 0; slot < _augmentOptionIds.Length; slot++)
+        {
+            _augmentOptionCounts[slot] = 0;
+            _augmentChosenIds[slot] = string.Empty;
+            _augmentChoicesLocked[slot] = false;
+
+            for (int optionIndex = 0; optionIndex < _augmentOptionIds[slot].Length; optionIndex++)
+            {
+                _augmentOptionIds[slot][optionIndex] = string.Empty;
+            }
+        }
+    }
+
     private static NetworkShipSelectionStatePayload ToPayload(NetworkShipSelectionState selection)
     {
         return new NetworkShipSelectionStatePayload
@@ -550,6 +953,27 @@ public class NetworkSessionData : NetworkBehaviour
         target.IsLockedIn = payload.IsLockedIn;
     }
 
+    private NetworkAugmentSelectionStatePayload CreateAugmentPayload(bool isVisible)
+    {
+        return new NetworkAugmentSelectionStatePayload
+        {
+            IsVisible = isVisible,
+            Tier = _augmentTier,
+            Player1OptionCount = _augmentOptionCounts[0],
+            Player1Option1 = _augmentOptionIds[0][0],
+            Player1Option2 = _augmentOptionIds[0][1],
+            Player1Option3 = _augmentOptionIds[0][2],
+            Player2OptionCount = _augmentOptionCounts[1],
+            Player2Option1 = _augmentOptionIds[1][0],
+            Player2Option2 = _augmentOptionIds[1][1],
+            Player2Option3 = _augmentOptionIds[1][2],
+            Player1LockedIn = _augmentChoicesLocked[0],
+            Player2LockedIn = _augmentChoicesLocked[1],
+            Player1ChosenAugmentId = _augmentChosenIds[0],
+            Player2ChosenAugmentId = _augmentChosenIds[1]
+        };
+    }
+
     private bool CanSendSessionRpcs()
     {
         return IsServer &&
@@ -558,10 +982,33 @@ public class NetworkSessionData : NetworkBehaviour
                NetworkManager.Singleton.IsListening;
     }
 
+    private void ApplySelectedMapIndexLocal(int mapIndex)
+    {
+        _selectedMapIndex = mapIndex;
+        OnSelectedMapIndexChanged?.Invoke(_selectedMapIndex);
+    }
+
+    private void BroadcastAugmentPresentation()
+    {
+        NetworkAugmentSelectionStatePayload payload = CreateAugmentPayload(_augmentPhaseActive);
+        OnAugmentSelectionPresentationChanged?.Invoke(payload);
+
+        if (CanSendSessionRpcs())
+        {
+            BroadcastAugmentSelectionClientRpc(payload);
+        }
+    }
+
     [ServerRpc(RequireOwnership = false)]
     private void SubmitShipSelectionServerRpc(string shipId, bool lockIn, ServerRpcParams rpcParams = default)
     {
         ApplyShipSelection(rpcParams.Receive.SenderClientId, shipId, lockIn);
+    }
+
+    [ServerRpc(RequireOwnership = false)]
+    private void SubmitAugmentChoiceServerRpc(string augmentId, ServerRpcParams rpcParams = default)
+    {
+        ApplyAugmentChoice(rpcParams.Receive.SenderClientId, augmentId);
     }
 
     [ClientRpc]
@@ -604,5 +1051,63 @@ public class NetworkSessionData : NetworkBehaviour
 
         _selectionTimeRemaining = selectionTimeRemaining;
         NotifyTimerChanged();
+    }
+
+    [ClientRpc]
+    private void BroadcastSelectedMapClientRpc(int mapIndex)
+    {
+        if (IsServer)
+        {
+            return;
+        }
+
+        ApplySelectedMapIndexLocal(mapIndex);
+    }
+
+    [ClientRpc]
+    private void BroadcastRoundEndClientRpc(NetworkRoundEndStatePayload payload)
+    {
+        if (IsServer)
+        {
+            return;
+        }
+
+        OnRoundEndPresentationChanged?.Invoke(payload);
+    }
+
+    [ClientRpc]
+    private void BroadcastAugmentSelectionClientRpc(NetworkAugmentSelectionStatePayload payload)
+    {
+        if (IsServer)
+        {
+            return;
+        }
+
+        _augmentTier = payload.Tier;
+        _augmentPhaseActive = payload.IsVisible;
+        _augmentOptionCounts[0] = payload.Player1OptionCount;
+        _augmentOptionIds[0][0] = payload.Player1Option1.ToString();
+        _augmentOptionIds[0][1] = payload.Player1Option2.ToString();
+        _augmentOptionIds[0][2] = payload.Player1Option3.ToString();
+        _augmentOptionCounts[1] = payload.Player2OptionCount;
+        _augmentOptionIds[1][0] = payload.Player2Option1.ToString();
+        _augmentOptionIds[1][1] = payload.Player2Option2.ToString();
+        _augmentOptionIds[1][2] = payload.Player2Option3.ToString();
+        _augmentChoicesLocked[0] = payload.Player1LockedIn;
+        _augmentChoicesLocked[1] = payload.Player2LockedIn;
+        _augmentChosenIds[0] = payload.Player1ChosenAugmentId.ToString();
+        _augmentChosenIds[1] = payload.Player2ChosenAugmentId.ToString();
+        OnAugmentSelectionPresentationChanged?.Invoke(payload);
+    }
+
+    [ClientRpc]
+    private void BroadcastGameEndClientRpc(NetworkGameEndStatePayload payload)
+    {
+        if (IsServer)
+        {
+            return;
+        }
+
+        OnGameEndPresentationChanged?.Invoke(payload);
     }
 }

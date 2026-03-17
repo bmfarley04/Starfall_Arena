@@ -153,12 +153,24 @@ public class VersusScreenManager : MonoBehaviour
         ShipData player1Data = null;
         ShipData player2Data = null;
 
+        if (NetMgr.IsNetworked && NetworkSessionData.Instance != null)
+        {
+            player1Data = NetworkSessionData.Instance.Player1Selection != null
+                ? NetworkSessionData.Instance.Player1Selection.ShipData
+                : null;
+            player2Data = NetworkSessionData.Instance.Player2Selection != null
+                ? NetworkSessionData.Instance.Player2Selection.ShipData
+                : null;
+        }
+
         if (GameDataManager.Instance != null &&
             GameDataManager.Instance.selectedShipClasses != null &&
             GameDataManager.Instance.selectedShipClasses.Count >= 2)
         {
-            player1Data = GameDataManager.Instance.selectedShipClasses[0];
-            player2Data = GameDataManager.Instance.selectedShipClasses[1];
+            if (player1Data == null)
+                player1Data = GameDataManager.Instance.selectedShipClasses[0];
+            if (player2Data == null)
+                player2Data = GameDataManager.Instance.selectedShipClasses[1];
         }
 
         if (player1Data == null) player1Data = defaultShips.defaultPlayer1Ship;

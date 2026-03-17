@@ -109,6 +109,7 @@ public partial class NetMovement : NetworkBehaviour
             // Player stays enabled so input callbacks (OnThrust, OnLook, etc.) still fire.
             if (_player != null)
             {
+                _player.enabled = true;
                 _player.externalMovementControl = true;
                 _player.SetExternalVisualStateEnabled(false);
             }
@@ -120,7 +121,9 @@ public partial class NetMovement : NetworkBehaviour
             if (IsOwner && playerInput != null)
             {
                 playerInput.enabled = true;
+                playerInput.ActivateInput();
                 AssignOwnerCameraAndTracking(playerInput);
+                Debug.Log($"[NetMovement] Owner input activated for {name}. ControlScheme={playerInput.currentControlScheme}, Camera={(playerInput.camera != null ? playerInput.camera.name : "null")}, LocalClientId={NetworkManager.LocalClientId}");
             }
         }
         else if (!IsServer)
@@ -132,6 +135,15 @@ public partial class NetMovement : NetworkBehaviour
                 _player.enabled = false;
                 _player.SetExternalVisualStateEnabled(true);
             }
+
+            PlayerInput playerInput = GetComponent<PlayerInput>();
+            if (playerInput != null)
+            {
+                playerInput.DeactivateInput();
+                playerInput.enabled = false;
+            }
+
+            Debug.Log($"[NetMovement] Remote proxy configured for {name} on client. OwnerClientId={OwnerClientId}, LocalClientId={NetworkManager.LocalClientId}");
 
             // Make the Rigidbody kinematic so physics doesn't interfere with interpolation.
             _rb.bodyType = RigidbodyType2D.Kinematic;
@@ -293,18 +305,52 @@ public partial class NetMovement : NetworkBehaviour
     private void AssignOwnerCameraAndTracking(PlayerInput playerInput)
     {
         CinemachineCamera targetCinemachine = FindFirstObjectByType<CinemachineCamera>();
-        if (targetCinemachine == null)
+        if (targetCinemachine != null)
         {
-            return;
+            targetCinemachine.Target.TrackingTarget = transform;
         }
 
-        targetCinemachine.Target.TrackingTarget = transform;
-
-        Camera mainCamera = Camera.main;
+        Camera mainCamera = SelectGameplayCamera();
         if (mainCamera != null)
         {
             playerInput.camera = mainCamera;
         }
+    }
+
+    private Camera SelectGameplayCamera()
+    {
+        Camera mainCamera = Camera.main;
+        if (IsUsableGameplayCamera(mainCamera))
+        {
+            return mainCamera;
+        }
+
+        Camera[] cameras = FindObjectsByType<Camera>(FindObjectsSortMode.None);
+        foreach (Camera candidate in cameras)
+        {
+            if (IsUsableGameplayCamera(candidate))
+            {
+                return candidate;
+            }
+        }
+
+        return null;
+    }
+
+    private static bool IsUsableGameplayCamera(Camera candidate)
+    {
+        if (candidate == null || !candidate.isActiveAndEnabled)
+        {
+            return false;
+        }
+
+        string cameraName = candidate.name ?? string.Empty;
+        if (cameraName.Contains("UI"))
+        {
+            return false;
+        }
+
+        return true;
     }
 
     private void ApplyMovementLock(bool isLocked)
