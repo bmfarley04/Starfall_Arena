@@ -591,6 +591,7 @@ public partial class NetMovement
             return;
         }
 
+        spawnData.ServerSpawnTime = NetworkManager.Singleton.ServerTime.Time;
         BroadcastFireHazardSpawnClientRpc(spawnData);
     }
 
@@ -600,6 +601,14 @@ public partial class NetMovement
         if (IsServer)
         {
             return;
+        }
+
+        // Subtract the network transit time from the lifetime so hazards
+        // expire at the same real moment on server and client.
+        float elapsed = (float)(NetworkManager.Singleton.ServerTime.Time - spawnData.ServerSpawnTime);
+        if (elapsed > 0f)
+        {
+            spawnData.Lifetime = Mathf.Max(spawnData.Lifetime - elapsed, 0f);
         }
 
         FireWall fireWall = GetComponent<FireWall>();

@@ -28,6 +28,17 @@ public partial class NetMovement : NetworkBehaviour
         NetworkVariableReadPermission.Everyone,
         NetworkVariableWritePermission.Server);
 
+    /// <summary>
+    /// Replicated player index (1 = Player1, 2 = Player2). Used on clients to
+    /// set gameObject.tag and call RefreshCombatTags(), because Unity tags are
+    /// not replicated by NGO. Without this, remote proxies have wrong enemyTag
+    /// and cosmetic projectiles/beams pass through ships visually.
+    /// </summary>
+    private readonly NetworkVariable<byte> _networkPlayerIndex = new NetworkVariable<byte>(
+        0,
+        NetworkVariableReadPermission.Everyone,
+        NetworkVariableWritePermission.Server);
+
     // ===== CONFIGURATION =====
 
     [Header("Reconciliation")]
@@ -104,6 +115,14 @@ public partial class NetMovement : NetworkBehaviour
         }
 
         _movementLocked.OnValueChanged += HandleMovementLockedChanged;
+        _networkPlayerIndex.OnValueChanged += HandlePlayerIndexChanged;
+
+        // Apply player index if already set (e.g. late join where the
+        // NetworkVariable value arrives with the spawn snapshot).
+        if (_networkPlayerIndex.Value != 0)
+        {
+            ApplyPlayerIndex(_networkPlayerIndex.Value);
+        }
 
         if (IsOwner)
         {
@@ -198,6 +217,7 @@ public partial class NetMovement : NetworkBehaviour
         }
 
         _movementLocked.OnValueChanged -= HandleMovementLockedChanged;
+        _networkPlayerIndex.OnValueChanged -= HandlePlayerIndexChanged;
 
         base.OnNetworkDespawn();
     }
@@ -214,6 +234,37 @@ public partial class NetMovement : NetworkBehaviour
     private void HandleMovementLockedChanged(bool previousValue, bool newValue)
     {
         ApplyMovementLock(newValue);
+    }
+
+    private void HandlePlayerIndexChanged(byte previousValue, byte newValue)
+    {
+        ApplyPlayerIndex(newValue);
+    }
+
+    private void ApplyPlayerIndex(byte index)
+    {
+        if (index == 0) return;
+
+        string tag = index == 1 ? "Player1" : "Player2";
+        gameObject.tag = tag;
+
+        if (_player == null)
+        {
+            _player = GetComponent<Player>();
+        }
+
+        // RefreshCombatTags works on disabled components — it just sets string fields.
+        _player?.RefreshCombatTags();
+    }
+
+    /// <summary>
+    /// Called by the server (SceneManager) after spawning to replicate the player
+    /// tag to all clients via NetworkVariable.
+    /// </summary>
+    public void SetNetworkPlayerIndex(byte index)
+    {
+        if (!IsServer) return;
+        _networkPlayerIndex.Value = index;
     }
 
     // ===== STATIC HELPERS =====
