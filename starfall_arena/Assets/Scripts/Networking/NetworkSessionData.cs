@@ -230,6 +230,12 @@ public class NetworkSessionData : NetworkBehaviour
             return;
         }
 
+        if (_currentState == NetworkMatchState.ShipSelect && AreAllSelectionsLocked())
+        {
+            FinalizeShipSelections();
+            return;
+        }
+
         if (_selectionTimeRemaining > 0f)
         {
             _selectionTimeRemaining = Mathf.Max(0f, _selectionTimeRemaining - Time.unscaledDeltaTime);
@@ -651,11 +657,7 @@ public class NetworkSessionData : NetworkBehaviour
         selection.IsLockedIn = lockIn;
         selection.ClientId = clientId;
         BroadcastSelections();
-
-        if (AreAllSelectionsLocked())
-        {
-            FinalizeShipSelections();
-        }
+        TryAdvanceShipSelectServer();
     }
 
     private void ApplyAugmentChoice(ulong clientId, string augmentId)
@@ -770,6 +772,19 @@ public class NetworkSessionData : NetworkBehaviour
         }
 
         return connectedPlayers >= 2;
+    }
+
+    private void TryAdvanceShipSelectServer()
+    {
+        if (!IsServer || _currentState != NetworkMatchState.ShipSelect)
+        {
+            return;
+        }
+
+        if (AreAllSelectionsLocked())
+        {
+            FinalizeShipSelections();
+        }
     }
 
     private void CopyAugmentOptions(int slot, string[] optionIds)

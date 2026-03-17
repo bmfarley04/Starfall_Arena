@@ -87,13 +87,21 @@ public class ShipData : ScriptableObject
     [Tooltip("Ability 4 data (bottom-right ability button)")]
     public AbilityData ability4;
 
-    public string ShipId => _shipId;
+    public string ShipId => !string.IsNullOrWhiteSpace(_shipId) ? _shipId : name;
+
+    private void OnEnable()
+    {
+        if (string.IsNullOrWhiteSpace(_shipId) && !string.IsNullOrWhiteSpace(name))
+        {
+            _shipId = name;
+        }
+    }
 
     private void OnValidate()
     {
-        if (string.IsNullOrWhiteSpace(_shipId))
+        if (string.IsNullOrWhiteSpace(_shipId) && !string.IsNullOrWhiteSpace(name))
         {
-            _shipId = System.Guid.NewGuid().ToString("N");
+            _shipId = name;
         }
     }
 }

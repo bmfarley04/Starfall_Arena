@@ -221,6 +221,7 @@ This makes `ShipData` a bridge between:
 - versus presentation
 - gameplay spawning
 - HUD configuration
+- networked ship selection lookups now depend on `ShipData` exposing a deterministic stable ID; blank/generated-per-machine IDs will cause clients to fall back to stale ship data
 
 ## Current Architectural Notes
 

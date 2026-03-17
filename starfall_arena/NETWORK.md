@@ -106,6 +106,11 @@ It currently carries:
 
 This means client-visible non-movement match flow now depends on explicit session replication rather than assuming the host's local UI calls will appear automatically on clients.
 
+Ship-select timing note:
+
+- the server should advance out of ship select immediately once both connected players are locked in
+- the countdown is now only a fallback for missing or late selections, not a required wait even when both players already chose
+
 ### Network Scene Note
 
 The active network gameplay scene now assumes:

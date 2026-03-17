@@ -149,6 +149,11 @@ public class VersusScreenManager : MonoBehaviour
 
     private IEnumerator Start()
     {
+        if (NetMgr.IsNetworked && NetworkSessionData.Instance != null)
+        {
+            yield return WaitForAuthoritativeShipSelections(NetworkSessionData.Instance);
+        }
+
         // Resolve ship data from GameDataManager or fall back to defaults
         ShipData player1Data = null;
         ShipData player2Data = null;
@@ -295,6 +300,29 @@ public class VersusScreenManager : MonoBehaviour
         vsScreenCanvas.gameObject.SetActive(false);
 
         onVersusScreenComplete?.Invoke();
+    }
+
+    private static IEnumerator WaitForAuthoritativeShipSelections(NetworkSessionData session)
+    {
+        const float timeoutSeconds = 1.5f;
+        float elapsed = 0f;
+
+        while (elapsed < timeoutSeconds)
+        {
+            bool hasBothShips =
+                session.Player1Selection != null &&
+                session.Player2Selection != null &&
+                session.Player1Selection.ShipData != null &&
+                session.Player2Selection.ShipData != null;
+
+            if (hasBothShips)
+            {
+                yield break;
+            }
+
+            elapsed += Time.unscaledDeltaTime;
+            yield return null;
+        }
     }
 
     private IEnumerator SlideCardIn(RectTransform card, Vector2 targetPos, bool isLeft)
