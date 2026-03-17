@@ -4,7 +4,8 @@
       "Bash(dotnet build:*)",
       "mcp__ide__getDiagnostics",
       "Bash(find:*)",
-      "Bash(grep -E \"\\\\.\\(prefab|unity|cs\\)$\")"
+      "Bash(grep -E \"\\\\.\\(prefab|unity|cs\\)$\")",
+      "Bash(xargs grep:*)"
     ]
   }
 }

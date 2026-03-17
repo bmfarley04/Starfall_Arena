@@ -19,17 +19,24 @@ public struct IndicatorConfig
     [Range(0f, 20f)]
     public float rotationSmoothSpeed;
 
-    [Header("Visibility")]
+    [Header("Visibility (Local/Split-Screen)")]
     [Tooltip("If true, arrow will fade out when enemy is very close")]
     public bool fadeWhenClose;
 
-    [Tooltip("Distance at which arrow starts fading")]
+    [Tooltip("Distance at which arrow starts fading (local/split-screen)")]
     public float fadeStartDistance;
 
-    [Tooltip("Distance at which arrow is fully transparent")]
+    [Tooltip("Distance at which arrow is fully transparent (local/split-screen)")]
     public float fadeEndDistance;
 
-    [Header("Camera Culling")]
+    [Header("Visibility (Networked)")]
+    [Tooltip("Distance at which arrow starts fading in networked play (full screen view)")]
+    public float networkFadeStartDistance;
+
+    [Tooltip("Distance at which arrow is fully transparent in networked play (full screen view)")]
+    public float networkFadeEndDistance;
+
+    [Header("Camera Culling (Local/Split-Screen Only)")]
     [Tooltip("Layer for Player1's arrow. Should be 'Background2' (Player1 sees it, Player2 doesn't)")]
     public string player1Layer;
 
@@ -53,6 +60,8 @@ public class EnemyDirectionIndicator : MonoBehaviour
         fadeWhenClose = true,
         fadeStartDistance = 15f,
         fadeEndDistance = 5f,
+        networkFadeStartDistance = 30f,
+        networkFadeEndDistance = 10f,
         player1Layer = "Background2", // Player1 sees Background2, but not Background1
         player2Layer = "Background1"  // Player2 sees Background1, but not Background2
     };
@@ -61,6 +70,11 @@ public class EnemyDirectionIndicator : MonoBehaviour
     private GameObject _enemyShip;
     private SpriteRenderer _arrowRenderer;
     private float _targetAlpha = 1f;
+    private bool _isNetworked;
+    private bool _isLocalPlayer;
+    private bool _networkStateResolved;
+    private float _smoothedAngle;
+    private bool _angleInitialized;
 
     private void Awake()
     {
@@ -73,13 +87,49 @@ public class EnemyDirectionIndicator : MonoBehaviour
             {
                 Debug.LogWarning($"Arrow object on {gameObject.name} has no SpriteRenderer. Indicator will not be visible.", this);
             }
-
-            // Set arrow to player-specific layer so only this player's camera sees it
-            SetArrowLayer();
         }
         else
         {
             Debug.LogWarning($"No arrow object assigned to EnemyDirectionIndicator on {gameObject.name}", this);
+        }
+    }
+
+    /// <summary>
+    /// Resolves networked vs local state once the NetworkObject has been spawned.
+    /// Called lazily from the first Update because IsSpawned is false during Awake/Start.
+    /// </summary>
+    private void ResolveNetworkState()
+    {
+        _networkStateResolved = true;
+
+        NetMovement netMovement = GetComponent<NetMovement>();
+        _isNetworked = NetTickUtil.IsActive && netMovement != null && netMovement.IsSpawned;
+        _isLocalPlayer = !_isNetworked || netMovement.IsOwner;
+
+        if (indicator.arrowObject == null) return;
+
+        if (_isNetworked)
+        {
+            // In networked play there is a single camera with no split-screen culling.
+            // Only the local player needs an indicator; hide the remote player's arrow
+            // and force the local arrow to the Default layer so the camera can see it
+            // (the prefab may already be on a Background layer that the single camera culls).
+            if (_isLocalPlayer)
+            {
+                int defaultLayer = LayerMask.NameToLayer("Default");
+                indicator.arrowObject.layer = defaultLayer;
+                SetLayerRecursively(indicator.arrowObject.transform, defaultLayer);
+            }
+            else
+            {
+                indicator.arrowObject.SetActive(false);
+            }
+        }
+        else
+        {
+            // Local split-screen: use per-player layer culling so each camera
+            // only renders its own player's arrow.
+            SetArrowLayer();
         }
     }
 
@@ -144,6 +194,12 @@ public class EnemyDirectionIndicator : MonoBehaviour
 
     private void Update()
     {
+        // Resolve networked vs local state on first update (IsSpawned is false during Awake/Start)
+        if (!_networkStateResolved)
+        {
+            ResolveNetworkState();
+        }
+
         // Early exit if arrow object is missing
         if (indicator.arrowObject == null) return;
 
@@ -173,6 +229,9 @@ public class EnemyDirectionIndicator : MonoBehaviour
 
     private bool ShouldShowIndicator()
     {
+        // In networked play only the local player's indicator is shown
+        if (_isNetworked && !_isLocalPlayer) return false;
+
         // Don't show if player is dead
         if (_player.CurrentHealth <= 0) return false;
 
@@ -198,7 +257,22 @@ public class EnemyDirectionIndicator : MonoBehaviour
     {
         if (string.IsNullOrEmpty(_player.enemyTag)) return;
 
-        // Find the enemy by tag
+        if (_isNetworked)
+        {
+            // In networked play, tags are synced via NetworkVariable but may arrive
+            // after spawn. Use EnumeratePlayers to find the other player reliably.
+            foreach (NetMovement candidate in NetMovement.EnumeratePlayers())
+            {
+                if (candidate != null && candidate.gameObject != gameObject)
+                {
+                    _enemyShip = candidate.gameObject;
+                    return;
+                }
+            }
+            return;
+        }
+
+        // Local play: find the enemy by tag
         GameObject foundEnemy = GameObject.FindGameObjectWithTag(_player.enemyTag);
 
         if (foundEnemy != null)
@@ -211,47 +285,47 @@ public class EnemyDirectionIndicator : MonoBehaviour
     {
         if (_enemyShip == null) return;
 
-        // Calculate direction from player to enemy
-        Vector2 directionToEnemy = ((Vector2)_enemyShip.transform.position - (Vector2)transform.position).normalized;
+        // Calculate raw direction angle from player to enemy
+        Vector2 delta = (Vector2)_enemyShip.transform.position - (Vector2)transform.position;
+        float targetAngle = Mathf.Atan2(delta.y, delta.x) * Mathf.Rad2Deg;
 
-        // Calculate target position at the radius
-        Vector2 targetPosition = (Vector2)transform.position + directionToEnemy * indicator.indicatorRadius;
-
-        // Smoothly move arrow to target position
-        if (indicator.positionSmoothSpeed > 0)
+        // Smooth the direction angle to absorb network jitter
+        if (!_angleInitialized)
         {
-            indicator.arrowObject.transform.position = Vector2.Lerp(
-                indicator.arrowObject.transform.position,
-                targetPosition,
-                Time.deltaTime * indicator.positionSmoothSpeed
-            );
+            _smoothedAngle = targetAngle;
+            _angleInitialized = true;
+        }
+        else if (indicator.positionSmoothSpeed > 0)
+        {
+            _smoothedAngle = Mathf.LerpAngle(_smoothedAngle, targetAngle, Time.deltaTime * indicator.positionSmoothSpeed);
         }
         else
         {
-            indicator.arrowObject.transform.position = targetPosition;
+            _smoothedAngle = targetAngle;
         }
+
+        // Derive position from the smoothed angle
+        float rad = _smoothedAngle * Mathf.Deg2Rad;
+        Vector2 smoothedDirection = new Vector2(Mathf.Cos(rad), Mathf.Sin(rad));
+        Vector2 targetPosition = (Vector2)transform.position + smoothedDirection * indicator.indicatorRadius;
+
+        indicator.arrowObject.transform.position = (Vector3)targetPosition;
     }
 
     private void UpdateArrowRotation()
     {
-        if (_enemyShip == null) return;
+        // Arrow rotation follows the same smoothed angle (sprite points up, so subtract 90°)
+        float arrowAngle = _smoothedAngle - 90f;
 
-        // Calculate direction from arrow to enemy
-        Vector2 directionToEnemy = ((Vector2)_enemyShip.transform.position - (Vector2)indicator.arrowObject.transform.position).normalized;
-
-        // Calculate target rotation angle (assuming arrow sprite points up by default)
-        float targetAngle = Mathf.Atan2(directionToEnemy.y, directionToEnemy.x) * Mathf.Rad2Deg - 90f;
-
-        // Smoothly rotate arrow to point at enemy
         if (indicator.rotationSmoothSpeed > 0)
         {
             float currentAngle = indicator.arrowObject.transform.eulerAngles.z;
-            float smoothedAngle = Mathf.LerpAngle(currentAngle, targetAngle, Time.deltaTime * indicator.rotationSmoothSpeed);
-            indicator.arrowObject.transform.rotation = Quaternion.Euler(0, 0, smoothedAngle);
+            float smoothedRotation = Mathf.LerpAngle(currentAngle, arrowAngle, Time.deltaTime * indicator.rotationSmoothSpeed);
+            indicator.arrowObject.transform.rotation = Quaternion.Euler(0, 0, smoothedRotation);
         }
         else
         {
-            indicator.arrowObject.transform.rotation = Quaternion.Euler(0, 0, targetAngle);
+            indicator.arrowObject.transform.rotation = Quaternion.Euler(0, 0, arrowAngle);
         }
     }
 
@@ -261,23 +335,27 @@ public class EnemyDirectionIndicator : MonoBehaviour
 
         if (indicator.fadeWhenClose)
         {
+            // Use networked fade distances when in a networked session (full screen view)
+            float fadeStart = _isNetworked ? indicator.networkFadeStartDistance : indicator.fadeStartDistance;
+            float fadeEnd = _isNetworked ? indicator.networkFadeEndDistance : indicator.fadeEndDistance;
+
             // Calculate distance to enemy
             float distanceToEnemy = Vector2.Distance(transform.position, _enemyShip.transform.position);
 
             // Calculate target alpha based on distance
-            if (distanceToEnemy >= indicator.fadeStartDistance)
+            if (distanceToEnemy >= fadeStart)
             {
                 _targetAlpha = 1f;
             }
-            else if (distanceToEnemy <= indicator.fadeEndDistance)
+            else if (distanceToEnemy <= fadeEnd)
             {
                 _targetAlpha = 0f;
             }
             else
             {
                 // Linear interpolation between fade distances
-                float fadeRange = indicator.fadeStartDistance - indicator.fadeEndDistance;
-                float fadeProgress = (distanceToEnemy - indicator.fadeEndDistance) / fadeRange;
+                float fadeRange = fadeStart - fadeEnd;
+                float fadeProgress = (distanceToEnemy - fadeEnd) / fadeRange;
                 _targetAlpha = Mathf.Clamp01(fadeProgress);
             }
 

@@ -798,6 +798,15 @@ public class GameSceneManager : MonoBehaviour
 
         player.RefreshCombatTags();
 
+        // Replicate the player index to clients so remote proxies get the correct
+        // gameObject.tag and enemyTag (Unity tags are not replicated by NGO).
+        NetMovement netMovement = ship.GetComponent<NetMovement>();
+        if (netMovement != null)
+        {
+            byte playerIndex = (byte)(tag == "Player1" ? 1 : 2);
+            netMovement.SetNetworkPlayerIndex(playerIndex);
+        }
+
         if (existingAugments != null && existingAugments.Count > 0)
         {
             player.ImportAugmentLoadout(existingAugments, currentRound);
