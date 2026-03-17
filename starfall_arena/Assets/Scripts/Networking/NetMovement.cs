@@ -3,6 +3,7 @@ using Unity.Cinemachine;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using System.Collections.Generic;
+using System.Text;
 
 /// <summary>
 /// Core networked movement component. Attach to the player prefab alongside Player.
@@ -22,6 +23,9 @@ using System.Collections.Generic;
 [RequireComponent(typeof(Rigidbody2D))]
 public partial class NetMovement : NetworkBehaviour
 {
+    private const char AugmentEntrySeparator = ';';
+    private const char AugmentFieldSeparator = ':';
+
     private static readonly List<NetMovement> ActiveInstances = new List<NetMovement>();
     private readonly NetworkVariable<bool> _movementLocked = new NetworkVariable<bool>(
         false,
@@ -539,6 +543,8 @@ public partial class NetMovement : NetworkBehaviour
                     _player.shieldController.SetRegeneration(isRegenerating);
                 }
 
+                _player.TickAugmentEffects();
+
                 // Stop slow particle when slow expires
                 _player.TickSlowVisuals();
             }
@@ -728,6 +734,7 @@ public partial class NetMovement : NetworkBehaviour
             FrictionEnabled = _player != null && _player.IsFrictionEnabled,
             Thrust = thrust,
             Shield = _player != null ? _player.currentShield : 0f,
+            Health = _player != null ? _player.CurrentHealth : 0f,
         };
 
         int histIdx = tick % SERVER_STATE_BUFFER_SIZE;
@@ -744,6 +751,12 @@ public partial class NetMovement : NetworkBehaviour
     {
         if (IsOwner)
         {
+            if (_player != null)
+            {
+                _player.ApplyNetworkHealthState(serverState.Health);
+                _player.ApplyNetworkShieldState(serverState.Shield);
+            }
+
             Reconcile(serverState);
         }
         else if (!IsServer)
@@ -890,6 +903,7 @@ public partial class NetMovement : NetworkBehaviour
         if (_player != null)
         {
             float prevShield = _remoteLastShield < 0f ? to.Shield : _remoteLastShield;
+            _player.ApplyNetworkHealthState(to.Health);
             _player.ApplyNetworkShieldState(to.Shield);
 
             bool isRegenerating = to.Shield > prevShield && to.Shield < _player.maxShield;
@@ -898,6 +912,8 @@ public partial class NetMovement : NetworkBehaviour
                 _player.shieldController.SetRegeneration(isRegenerating);
             }
             _remoteLastShield = to.Shield;
+
+            _player.TickAugmentEffects();
 
             // Stop slow particle when slow expires
             _player.TickSlowVisuals();
@@ -908,5 +924,111 @@ public partial class NetMovement : NetworkBehaviour
         {
             _interpTimer -= totalDuration;
         }
+    }
+
+    public void SyncCurrentAugmentLoadoutAuthoritative(int currentRound, List<NetworkAugmentLoadoutEntry> entries)
+    {
+        if (!NetTickUtil.IsActive || !IsSpawned || !IsServer)
+        {
+            return;
+        }
+
+        BroadcastAugmentLoadoutClientRpc(SerializeAugmentLoadout(entries), currentRound);
+    }
+
+    [ClientRpc]
+    private void BroadcastAugmentLoadoutClientRpc(string serializedLoadout, int currentRound)
+    {
+        if (IsServer)
+        {
+            return;
+        }
+
+        if (_player == null)
+        {
+            _player = GetComponent<Player>();
+        }
+
+        if (_player == null)
+        {
+            return;
+        }
+
+        _player.ImportNetworkAugmentLoadout(DeserializeAugmentLoadout(serializedLoadout), currentRound);
+    }
+
+    private static string SerializeAugmentLoadout(List<NetworkAugmentLoadoutEntry> entries)
+    {
+        if (entries == null || entries.Count == 0)
+        {
+            return string.Empty;
+        }
+
+        StringBuilder builder = new StringBuilder(entries.Count * 40);
+        for (int i = 0; i < entries.Count; i++)
+        {
+            NetworkAugmentLoadoutEntry entry = entries[i];
+            if (entry == null || string.IsNullOrWhiteSpace(entry.augmentId))
+            {
+                continue;
+            }
+
+            if (builder.Length > 0)
+            {
+                builder.Append(AugmentEntrySeparator);
+            }
+
+            builder.Append(entry.augmentId);
+            builder.Append(AugmentFieldSeparator);
+            builder.Append(entry.roundAcquired);
+            builder.Append(AugmentFieldSeparator);
+            builder.Append(entry.stateFlags);
+        }
+
+        return builder.ToString();
+    }
+
+    private static List<NetworkAugmentLoadoutEntry> DeserializeAugmentLoadout(string serializedLoadout)
+    {
+        List<NetworkAugmentLoadoutEntry> entries = new List<NetworkAugmentLoadoutEntry>();
+        if (string.IsNullOrWhiteSpace(serializedLoadout))
+        {
+            return entries;
+        }
+
+        string[] serializedEntries = serializedLoadout.Split(AugmentEntrySeparator);
+        for (int i = 0; i < serializedEntries.Length; i++)
+        {
+            if (string.IsNullOrWhiteSpace(serializedEntries[i]))
+            {
+                continue;
+            }
+
+            string[] fields = serializedEntries[i].Split(AugmentFieldSeparator);
+            if (fields.Length < 2)
+            {
+                continue;
+            }
+
+            if (!int.TryParse(fields[1], out int roundAcquired))
+            {
+                continue;
+            }
+
+            byte stateFlags = 0;
+            if (fields.Length >= 3)
+            {
+                byte.TryParse(fields[2], out stateFlags);
+            }
+
+            entries.Add(new NetworkAugmentLoadoutEntry
+            {
+                augmentId = fields[0],
+                roundAcquired = roundAcquired,
+                stateFlags = stateFlags
+            });
+        }
+
+        return entries;
     }
 }

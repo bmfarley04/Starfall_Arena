@@ -14,4 +14,5 @@ public sealed class NetworkAugmentLoadoutEntry
 {
     public string augmentId;
     public int roundAcquired;
+    public byte stateFlags;
 }

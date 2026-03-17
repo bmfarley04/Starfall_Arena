@@ -275,6 +275,10 @@ public partial class NetMovement
 
         DamageSource damageSource = (DamageSource)source;
         _player.ApplyAuthoritativeCombatState(health, shield, hitPoint, damageSource, shieldHit, shieldBreak);
+        if (!IsServer)
+        {
+            _player.NotifyAuthoritativeDamageReceived(damageSource);
+        }
 
         // Reset the shield regen delay timer so the owner's local regen stays
         // in sync with the server (TakeDamage only runs on the server, so the

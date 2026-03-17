@@ -5,6 +5,8 @@ using StarfallArena.UI;
 [DisallowMultipleComponent]
 public class AugmentController : MonoBehaviour
 {
+    private const byte ArtificialFairyTriggeredFlag = 1 << 0;
+
     private Player _player;
     private readonly List<IAugmentRuntime> _runtimes = new List<IAugmentRuntime>();
     private int _currentRound;
@@ -90,7 +92,8 @@ public class AugmentController : MonoBehaviour
             entries.Add(new NetworkAugmentLoadoutEntry
             {
                 augmentId = runtime.Definition.augmentID,
-                roundAcquired = runtime.RoundAcquired
+                roundAcquired = runtime.RoundAcquired,
+                stateFlags = CreateStateFlags(runtime)
             });
         }
 
@@ -125,7 +128,7 @@ public class AugmentController : MonoBehaviour
                 continue;
             }
 
-            AcquireAugment(definition, entry.roundAcquired, null);
+            AcquireAugment(definition, entry.roundAcquired, CreatePersistentState(definition, entry));
         }
     }
 
@@ -187,5 +190,34 @@ public class AugmentController : MonoBehaviour
         _player.speedMultipliers.Clear();
         _player.rotationMultipliers.Clear();
         _player.SetAugmentVariables();
+    }
+
+    private static byte CreateStateFlags(IAugmentRuntime runtime)
+    {
+        if (runtime == null)
+        {
+            return 0;
+        }
+
+        object persistentState = runtime.CapturePersistentState();
+        if (persistentState is ArtificialFairyPersistentState fairyState && fairyState.triggered)
+        {
+            return ArtificialFairyTriggeredFlag;
+        }
+
+        return 0;
+    }
+
+    private static object CreatePersistentState(Augment definition, NetworkAugmentLoadoutEntry entry)
+    {
+        if (definition is ArtificialFairy)
+        {
+            return new ArtificialFairyPersistentState
+            {
+                triggered = (entry.stateFlags & ArtificialFairyTriggeredFlag) != 0
+            };
+        }
+
+        return null;
     }
 }
