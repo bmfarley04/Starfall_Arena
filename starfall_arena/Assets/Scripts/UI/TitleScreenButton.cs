@@ -69,6 +69,7 @@ public class TitleScreenButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
     public enum MenuTransitionType
     {
         ShipSelect,
+        LocalShipSelect,
         Controls,
         MainMenu,
         MainMenuFromShipSelect
@@ -297,6 +298,9 @@ public class TitleScreenButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
             {
                 case MenuTransitionType.ShipSelect:
                     click.titleScreenManager.TransitionToShipSelect();
+                    break;
+                case MenuTransitionType.LocalShipSelect:
+                    click.titleScreenManager.TransitionToLocalShipSelect();
                     break;
                 case MenuTransitionType.Controls:
                     click.titleScreenManager.TransitionToControls();

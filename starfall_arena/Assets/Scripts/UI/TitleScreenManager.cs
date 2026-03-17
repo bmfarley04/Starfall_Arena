@@ -279,6 +279,25 @@ public class TitleScreenManager : MonoBehaviour
             RunTransition(mainMenuCanvas, shipSelectCanvas, shipSelectFirstSelected));
     }
 
+    public void TransitionToLocalShipSelect()
+    {
+        if (_activeTransition != null) return;
+
+        _netMgr = NetMgr.Instance;
+        _netMgr?.CancelCurrentAttempt();
+
+        _sessionData = NetworkSessionData.Instance;
+        if (_sessionData != null)
+        {
+            _sessionData.ResetToTitleLocal();
+        }
+
+        HandleStatusMessageChanged(string.Empty);
+
+        _activeTransition = StartCoroutine(
+            RunTransition(mainMenuCanvas, shipSelectCanvas, shipSelectFirstSelected));
+    }
+
     public void TransitionToJoinGame()
     {
         if (_activeTransition != null || joinGameCanvas == null) return;

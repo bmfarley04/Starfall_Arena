@@ -2,12 +2,10 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
-using UnityEngine.InputSystem.Users;
 using TMPro;
 using StarfallArena.UI;
-using Unity.Netcode;
 
-public class GameSceneManager : MonoBehaviour
+public class LocalSceneManager : MonoBehaviour
 {
     [Header("Split Screen")]
     [SerializeField] private SplitScreenManager splitScreenManager;
@@ -124,19 +122,10 @@ public class GameSceneManager : MonoBehaviour
 
     // VS screen completion tracking
     private bool versusScreenDone = false;
-    private bool useNetworkSession = false;
-    private bool isAuthoritativeNetworkController = true;
-    private InputDevice _localPlayer1PrimaryDevice;
-    private InputDevice _localPlayer1SecondaryDevice;
-    private InputDevice _localPlayer2PrimaryDevice;
-    private InputDevice _localPlayer2SecondaryDevice;
 
     // ===== INITIALIZATION =====
     void Start()
     {
-        useNetworkSession = NetMgr.IsNetworked && NetworkManager.Singleton != null;
-        isAuthoritativeNetworkController = !useNetworkSession || NetworkManager.Singleton.IsServer;
-
         // Resolve ship data
         ResolveShipData();
 
@@ -157,7 +146,7 @@ public class GameSceneManager : MonoBehaviour
         SetPlayerHUDsActive(false);
 
         // Start in whole-screen mode for the VS screen
-        if (!useNetworkSession && splitScreenManager != null)
+        if (splitScreenManager != null)
         {
             splitScreenManager.ActivateWholeScreen();
         }
@@ -174,14 +163,8 @@ public class GameSceneManager : MonoBehaviour
             augmentSelectManager.onAugmentChosen += OnAugmentChosen;
         }
 
-        if (isAuthoritativeNetworkController)
-        {
-            StartCoroutine(GameLoop());
-        }
-        else
-        {
-            StartCoroutine(ClientNetworkPresentationLoop());
-        }
+        // Start the game loop
+        StartCoroutine(GameLoop());
     }
 
     private void ResolveShipData()
@@ -230,7 +213,7 @@ public class GameSceneManager : MonoBehaviour
             UpdateWinTrackers();
 
             // Go straight to split-screen
-            if (!useNetworkSession && splitScreenManager != null)
+            if (splitScreenManager != null)
             {
                 splitScreenManager.ActivateSplitScreen();
             }
@@ -242,7 +225,7 @@ public class GameSceneManager : MonoBehaviour
             yield return new WaitUntil(() => versusScreenDone);
 
             // VS screen is done — switch to split-screen for gameplay
-            if (!useNetworkSession && splitScreenManager != null)
+            if (splitScreenManager != null)
             {
                 splitScreenManager.ActivateSplitScreen();
             }
@@ -284,11 +267,13 @@ public class GameSceneManager : MonoBehaviour
             // Ability 4 lock/unlock
             if (currentRound < ability4UnlockRound)
             {
-                SetAbility4Locked(true);
+                player1.LockAbility4();
+                player2.LockAbility4();
             }
             else
             {
-                SetAbility4Locked(false);
+                player1.UnlockAbility4();
+                player2.UnlockAbility4();
             }
 
             // --- Map selection ---
@@ -301,7 +286,8 @@ public class GameSceneManager : MonoBehaviour
             yield return ShowCountdown();
 
             // --- Unlock players and start round ---
-            SetPlayersMovementLocked(false);
+            player1.isMovementLocked = false;
+            player2.isMovementLocked = false;
             roundStartTime = Time.time;
             roundOver = false;
             roundWinner = 0;
@@ -313,13 +299,13 @@ public class GameSceneManager : MonoBehaviour
             if (player1 != null)
             {
                 player1.PrepareForRoundEndFreeze();
-                SetPlayerMovementLocked(player1, true);
+                player1.isMovementLocked = true;
             }
 
             if (player2 != null)
             {
                 player2.PrepareForRoundEndFreeze();
-                SetPlayerMovementLocked(player2, true);
+                player2.isMovementLocked = true;
             }
 
             // Brief delay for death effects
@@ -396,10 +382,7 @@ public class GameSceneManager : MonoBehaviour
 
             // Capture gamepad references before players are destroyed
             // (PlayerInput components hold the device assignments)
-            if (!useNetworkSession)
-            {
-                CapturePlayerGamepads();
-            }
+            CapturePlayerGamepads();
 
             // Destroy current players (already hidden since TransitionToWholeScreen)
             DestroyPlayers();
@@ -430,7 +413,7 @@ public class GameSceneManager : MonoBehaviour
         if (player2 != null) player2.gameObject.SetActive(false);
 
         // Lerp both cameras back to the spawn point positions
-        if (!useNetworkSession && splitScreenManager != null)
+        if (splitScreenManager != null)
         {
             yield return splitScreenManager.LerpCamerasToPositions(
                 player1SpawnPoint.position,
@@ -443,7 +426,7 @@ public class GameSceneManager : MonoBehaviour
         yield return new WaitForSecondsRealtime(cameraLerpSettleDelay);
 
         // Swap to whole-screen + UI overlay cameras
-        if (!useNetworkSession && splitScreenManager != null)
+        if (splitScreenManager != null)
         {
             splitScreenManager.ActivateWholeScreen();
         }
@@ -475,14 +458,6 @@ public class GameSceneManager : MonoBehaviour
     // ===== PLAYER SPAWNING =====
     private IEnumerator SpawnPlayers()
     {
-        if (useNetworkSession)
-        {
-            yield return SpawnPlayersNetworked();
-            yield break;
-        }
-
-        ResolveLocalGameplayDevices();
-
         player1 = SpawnPlayer(player1Data, player1SpawnPoint, "Player1", player1Augments);
         player2 = SpawnPlayer(player2Data, player2SpawnPoint, "Player2", player2Augments);
 
@@ -493,24 +468,6 @@ public class GameSceneManager : MonoBehaviour
         }
 
         yield return null;
-    }
-
-    private IEnumerator SpawnPlayersNetworked()
-    {
-        NetworkSessionData session = NetworkSessionData.Instance;
-        if (!isAuthoritativeNetworkController || session == null)
-        {
-            yield break;
-        }
-
-        ulong player1Owner = session.Player1Selection.ClientId;
-        ulong player2Owner = session.Player2Selection.ClientId;
-
-        player1 = SpawnNetworkPlayer(player1Data, player1SpawnPoint, "Player1", player1Owner, player1Augments);
-        player2 = SpawnNetworkPlayer(player2Data, player2SpawnPoint, "Player2", player2Owner, player2Augments);
-
-        yield return null;
-        BindNetworkPresentation();
     }
 
     private Player SpawnPlayer(ShipData data, Transform spawnPoint, string tag, List<AugmentLoadoutEntry> existingAugments)
@@ -541,8 +498,6 @@ public class GameSceneManager : MonoBehaviour
         }
         player.SetCurrentRound(currentRound);
         player.isMovementLocked = true;
-
-        ConfigureLocalPlayerInput(player, tag);
 
         // Bind HUD directly from canvas reference (avoids inactive-object discovery issues)
         Canvas hudCanvas = (tag == "Player1") ? player1HUDCanvas : player2HUDCanvas;
@@ -597,133 +552,6 @@ public class GameSceneManager : MonoBehaviour
         return player;
     }
 
-    private void ResolveLocalGameplayDevices()
-    {
-        _localPlayer1PrimaryDevice = null;
-        _localPlayer1SecondaryDevice = null;
-        _localPlayer2PrimaryDevice = null;
-        _localPlayer2SecondaryDevice = null;
-
-        if (Gamepad.all.Count >= 2)
-        {
-            _localPlayer1PrimaryDevice = Gamepad.all[0];
-            _localPlayer2PrimaryDevice = Gamepad.all[1];
-            return;
-        }
-
-        if (Keyboard.current != null)
-        {
-            _localPlayer1PrimaryDevice = Keyboard.current;
-            if (Mouse.current != null)
-            {
-                _localPlayer1SecondaryDevice = Mouse.current;
-            }
-        }
-        else if (Gamepad.all.Count >= 1)
-        {
-            _localPlayer1PrimaryDevice = Gamepad.all[0];
-        }
-
-        if (Gamepad.all.Count >= 1)
-        {
-            _localPlayer2PrimaryDevice = Gamepad.all[0];
-        }
-    }
-
-    private void ConfigureLocalPlayerInput(Player player, string tag)
-    {
-        if (player == null)
-        {
-            return;
-        }
-
-        PlayerInput playerInput = player.GetComponent<PlayerInput>();
-        if (playerInput == null)
-        {
-            return;
-        }
-
-        playerInput.enabled = true;
-
-        InputDevice primaryDevice = tag == "Player1" ? _localPlayer1PrimaryDevice : _localPlayer2PrimaryDevice;
-        InputDevice secondaryDevice = tag == "Player1" ? _localPlayer1SecondaryDevice : _localPlayer2SecondaryDevice;
-        bool useKeyboardMouseScheme = primaryDevice is Keyboard;
-
-        if (playerInput.user.valid)
-        {
-            playerInput.user.UnpairDevices();
-        }
-
-        if (useKeyboardMouseScheme)
-        {
-            if (secondaryDevice != null)
-            {
-                playerInput.SwitchCurrentControlScheme("key+mouse", primaryDevice, secondaryDevice);
-            }
-            else if (primaryDevice != null)
-            {
-                playerInput.SwitchCurrentControlScheme("key+mouse", primaryDevice);
-            }
-        }
-        else if (primaryDevice != null)
-        {
-            playerInput.SwitchCurrentControlScheme("controller", primaryDevice);
-        }
-
-        if (primaryDevice != null)
-        {
-            InputUser.PerformPairingWithDevice(primaryDevice, playerInput.user);
-        }
-
-        if (secondaryDevice != null)
-        {
-            InputUser.PerformPairingWithDevice(secondaryDevice, playerInput.user);
-        }
-
-        playerInput.ActivateInput();
-    }
-
-    private Player SpawnNetworkPlayer(ShipData data, Transform spawnPoint, string tag, ulong ownerClientId, List<AugmentLoadoutEntry> existingAugments)
-    {
-        if (data == null || data.shipPrefab == null)
-        {
-            Debug.LogError($"Cannot network-spawn player: ShipData or shipPrefab is null for {tag}!");
-            return null;
-        }
-
-        GameObject ship = NetMgr.SpawnPlayerNetworked(
-            data.shipPrefab,
-            spawnPoint != null ? spawnPoint.position : Vector3.zero,
-            spawnPoint != null ? spawnPoint.rotation : Quaternion.identity,
-            ownerClientId);
-
-        if (ship == null)
-        {
-            return null;
-        }
-
-        ship.tag = tag;
-
-        Player player = ship.GetComponent<Player>();
-        if (player == null)
-        {
-            Debug.LogError($"Spawned network ship prefab for {tag} has no Player component!");
-            return null;
-        }
-
-        player.RefreshCombatTags();
-
-        if (existingAugments != null && existingAugments.Count > 0)
-        {
-            player.ImportAugmentLoadout(existingAugments, currentRound);
-        }
-
-        player.SetCurrentRound(currentRound);
-        SetPlayerMovementLocked(player, true);
-        player.onDeath += OnPlayerDeath;
-        return player;
-    }
-
     private void SavePlayerAugments()
     {
         if (player1 != null)
@@ -736,15 +564,6 @@ public class GameSceneManager : MonoBehaviour
     {
         DestroyPlayerAbilityHUD("Player1");
         DestroyPlayerAbilityHUD("Player2");
-
-        if (useNetworkSession)
-        {
-            DespawnPlayerNetworkObject(player1);
-            DespawnPlayerNetworkObject(player2);
-            player1 = null;
-            player2 = null;
-            return;
-        }
 
         if (player1 != null)
         {
@@ -978,11 +797,6 @@ public class GameSceneManager : MonoBehaviour
     {
         if (augmentSelectManager == null) yield break;
 
-        if (useNetworkSession)
-        {
-            NetworkSessionData.Instance?.MarkAugmentPhase();
-        }
-
         // Determine pick order: loser picks first
         int firstPicker = lastRoundLoser;
         int secondPicker = (firstPicker == 1) ? 2 : 1;
@@ -1060,11 +874,6 @@ public class GameSceneManager : MonoBehaviour
     {
         if (gameEndScreenManager == null) yield break;
 
-        if (useNetworkSession)
-        {
-            NetworkSessionData.Instance?.SetLocalState(NetworkMatchState.MatchComplete, "Match complete.");
-        }
-
         int winner = player1Wins >= winsRequired ? 1 : 2;
         int loser = winner == 1 ? 2 : 1;
 
@@ -1100,196 +909,6 @@ public class GameSceneManager : MonoBehaviour
         if (augmentSelectManager != null)
         {
             augmentSelectManager.onAugmentChosen -= OnAugmentChosen;
-        }
-    }
-
-    private IEnumerator ClientNetworkPresentationLoop()
-    {
-        while (true)
-        {
-            BindNetworkPresentation();
-            yield return new WaitForSeconds(0.25f);
-        }
-    }
-
-    private void BindNetworkPresentation()
-    {
-        if (!useNetworkSession)
-        {
-            return;
-        }
-
-        Player[] players = FindObjectsByType<Player>(FindObjectsSortMode.None);
-        Player localPlayer = null;
-        Player remotePlayer = null;
-
-        foreach (Player candidate in players)
-        {
-            NetMovement netMovement = candidate != null ? candidate.GetComponent<NetMovement>() : null;
-            if (netMovement == null || !netMovement.IsSpawned)
-            {
-                continue;
-            }
-
-            if (netMovement.IsOwner)
-            {
-                localPlayer = candidate;
-            }
-            else
-            {
-                remotePlayer = candidate;
-            }
-        }
-
-        if (localPlayer != null)
-        {
-            player1 = localPlayer;
-            BindPlayerToHud(localPlayer, player1HUDCanvas, "Player1", true);
-        }
-
-        if (remotePlayer != null)
-        {
-            player2 = remotePlayer;
-            BindPlayerToHud(remotePlayer, player2HUDCanvas, "Player2", false);
-        }
-
-        if (localPlayer != null || remotePlayer != null)
-        {
-            SetPlayerHUDsActive(true);
-        }
-    }
-
-    private void BindPlayerToHud(Player player, Canvas hudCanvas, string tag, bool usePrimaryAbilityCanvas)
-    {
-        if (player == null)
-        {
-            return;
-        }
-
-        if (hudCanvas != null)
-        {
-            PlayerHUD ph = hudCanvas.GetComponent<PlayerHUD>();
-            if (ph != null)
-            {
-                player.BindHUD(ph);
-            }
-        }
-
-        if (player == null || player.GetComponent<NetMovement>() == null)
-        {
-            return;
-        }
-
-        GameObject currentHudInstance = usePrimaryAbilityCanvas ? player1AbilityHUDInstance : player2AbilityHUDInstance;
-        if (currentHudInstance != null)
-        {
-            return;
-        }
-
-        ShipData data = tag == "Player1" ? player1Data : player2Data;
-        if (data == null || data.abilityHUDPrefab == null)
-        {
-            return;
-        }
-
-        GameObject hudObj = Instantiate(data.abilityHUDPrefab);
-        AbilityHUDPanel panel = hudObj.GetComponent<AbilityHUDPanel>();
-        if (panel != null)
-        {
-            player.BindAbilityHUD(panel);
-        }
-
-        Canvas abilityCanvas = hudObj.GetComponent<Canvas>();
-        if (abilityCanvas == null)
-        {
-            abilityCanvas = hudObj.GetComponentInChildren<Canvas>();
-        }
-
-        if (abilityCanvas != null)
-        {
-            abilityCanvas.worldCamera = Camera.main;
-        }
-
-        if (usePrimaryAbilityCanvas)
-        {
-            player1AbilityHUDInstance = hudObj;
-        }
-        else
-        {
-            player2AbilityHUDInstance = hudObj;
-        }
-    }
-
-    private void SetPlayersMovementLocked(bool isLocked)
-    {
-        SetPlayerMovementLocked(player1, isLocked);
-        SetPlayerMovementLocked(player2, isLocked);
-    }
-
-    private void SetPlayerMovementLocked(Player player, bool isLocked)
-    {
-        if (player == null)
-        {
-            return;
-        }
-
-        if (useNetworkSession)
-        {
-            NetMovement netMovement = player.GetComponent<NetMovement>();
-            if (netMovement != null)
-            {
-                netMovement.SetMovementLockedAuthoritative(isLocked);
-                return;
-            }
-        }
-
-        player.isMovementLocked = isLocked;
-    }
-
-    private void SetAbility4Locked(bool isLocked)
-    {
-        ApplyAbility4Lock(player1, isLocked);
-        ApplyAbility4Lock(player2, isLocked);
-    }
-
-    private void ApplyAbility4Lock(Player player, bool isLocked)
-    {
-        if (player == null)
-        {
-            return;
-        }
-
-        if (useNetworkSession)
-        {
-            NetMovement netMovement = player.GetComponent<NetMovement>();
-            if (netMovement != null)
-            {
-                netMovement.SetAbility4LockedAuthoritative(isLocked);
-                return;
-            }
-        }
-
-        if (isLocked)
-        {
-            player.LockAbility4();
-        }
-        else
-        {
-            player.UnlockAbility4();
-        }
-    }
-
-    private static void DespawnPlayerNetworkObject(Player player)
-    {
-        if (player == null)
-        {
-            return;
-        }
-
-        NetworkObject netObject = player.GetComponent<NetworkObject>();
-        if (netObject != null && netObject.IsSpawned && NetworkManager.Singleton != null && NetworkManager.Singleton.IsServer)
-        {
-            netObject.Despawn(true);
         }
     }
 }
