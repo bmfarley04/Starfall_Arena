@@ -160,13 +160,21 @@ public class Teleport : Ability
             StopCoroutine(_teleportCoroutine);
         }
 
-        _teleportCoroutine = StartCoroutine(ExecuteTeleport(targetPosition, authoritative));
+        // Preserve Z position — the network path transmits Vector2, so Z is lost.
+        // Restore it from the current transform so the ship stays at the correct depth.
+        Vector3 targetPosition3D = new Vector3(targetPosition.x, targetPosition.y, transform.position.z);
+        _teleportCoroutine = StartCoroutine(ExecuteTeleport(targetPosition3D, authoritative));
     }
 
     private System.Collections.IEnumerator ExecuteTeleport(Vector3 targetPosition, bool authoritative)
     {
         _isTeleporting = true;
-        bool shouldHideRenderersForThisInstance = _netMovement == null || _netMovement.IsOwner || authoritative;
+
+        // Only the local owner hides renderers during the instant position warp
+        // to avoid a visual stretch artifact. The server/host should NOT hide
+        // renderers on remote player copies — this was causing the other player
+        // to become invisible when the host processed a teleport with authoritative=true.
+        bool shouldHideRenderersForThisInstance = _netMovement == null || _netMovement.IsOwner;
 
         Vector3 originalScale = transform.localScale;
         Vector3 normalScale = originalScale * teleport.animation.normalScale;

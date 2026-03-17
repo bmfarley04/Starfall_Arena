@@ -323,7 +323,7 @@ public class GameSceneManager : MonoBehaviour
             }
 
             // --- Transition from whole-screen back to split-screen for gameplay ---
-            if (splitScreenManager != null)
+            if (!useNetworkSession && splitScreenManager != null)
             {
                 splitScreenManager.ActivateSplitScreen();
             }

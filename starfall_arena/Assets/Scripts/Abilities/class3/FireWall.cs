@@ -327,6 +327,16 @@ public class FireWall : Ability
             return;
         }
 
+        // Enforce max hazard limit on client to match server
+        if (fireTrail.maxActiveHazards > 0 && _activeHazards.Count >= fireTrail.maxActiveHazards)
+        {
+            if (_activeHazards[0] != null)
+            {
+                Destroy(_activeHazards[0]);
+            }
+            _activeHazards.RemoveAt(0);
+        }
+
         GameObject hazard = Instantiate(fireTrail.firePrefab, spawnData.SpawnPosition, Quaternion.identity);
         FireHazard fireHazard = hazard.GetComponent<FireHazard>();
         if (fireHazard != null)

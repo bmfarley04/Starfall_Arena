@@ -216,6 +216,12 @@ public struct NetFireHazardSpawnData : INetworkSerializable
     public float DamagePerSecond;
     public float Lifetime;
     public float ImpactForce;
+    /// <summary>
+    /// Server network time when the hazard was spawned, used by clients to
+    /// subtract transit latency from the visual lifetime so hazards expire
+    /// at the same moment on all machines.
+    /// </summary>
+    public double ServerSpawnTime;
 
     public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
     {
@@ -223,6 +229,7 @@ public struct NetFireHazardSpawnData : INetworkSerializable
         serializer.SerializeValue(ref DamagePerSecond);
         serializer.SerializeValue(ref Lifetime);
         serializer.SerializeValue(ref ImpactForce);
+        serializer.SerializeValue(ref ServerSpawnTime);
     }
 }
 
