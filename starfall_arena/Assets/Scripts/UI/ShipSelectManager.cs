@@ -1141,6 +1141,21 @@ public class ShipSelectManager : MonoBehaviour
         _isPreloaded = true;
     }
 
+    public void BeginGameplayScenePreload()
+    {
+        if (_useNetworkSession)
+        {
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(postSelection.gameplaySceneName))
+        {
+            return;
+        }
+
+        GameplayScenePreloader.GetOrCreate().BeginPreload(postSelection.gameplaySceneName);
+    }
+
     /// <summary>
     /// Prepare ship transform (position, rotation, scale) without activating it.
     /// This sets everything up so activation is instant later.
@@ -1733,7 +1748,7 @@ public class ShipSelectManager : MonoBehaviour
         {
             // Player 2 done - store both selections and transition to gameplay
             StoreSelectionsInGameData();
-            TransitionToGameplay();
+            yield return StartCoroutine(TransitionToGameplay());
         }
     }
 
@@ -1916,21 +1931,23 @@ public class ShipSelectManager : MonoBehaviour
     /// <summary>
     /// Transition to gameplay scene.
     /// </summary>
-    private void TransitionToGameplay()
+    private IEnumerator TransitionToGameplay()
     {
         if (_useNetworkSession)
         {
-            return;
+            yield break;
         }
 
         if (string.IsNullOrEmpty(postSelection.gameplaySceneName))
         {
             Debug.LogError("ShipSelectManager: No gameplay scene name configured!");
-            return;
+            yield break;
         }
 
         Debug.Log($"Transitioning to gameplay scene: {postSelection.gameplaySceneName}");
-        UnityEngine.SceneManagement.SceneManager.LoadScene(postSelection.gameplaySceneName);
+        yield return GameplayScenePreloader
+            .GetOrCreate()
+            .ActivateOrLoad(postSelection.gameplaySceneName);
     }
 
     private void Reset()
