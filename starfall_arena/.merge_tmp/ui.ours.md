@@ -62,9 +62,8 @@ Network migration note:
 
 - the manager now has an initial network-aware path where the server owns the main duel loop
 - local split-screen camera activation is skipped when a network session is active
-- only the local player's HUD/ability presentation is shown in the active network scene
-- round-end presentation is now broadcast to clients through the network session layer instead of only being shown on the host
-- round-end and game-end stats in network play should be remapped to the local player's perspective instead of showing the host's seat ordering to everyone
+- HUD binding can now repurpose the existing two-player HUD layout as local-player vs opponent instead of left/right split-screen seats
+- full client-side round UI synchronization is still an active follow-up area, so scene wiring and serialized UI references need extra validation during editor setup
 
 If a task changes duel progression, this file is usually relevant.
 
@@ -114,8 +113,7 @@ Networked-duel note:
 - the same screen now supports a synchronized network path
 - each client controls only their own preview and lock-in state
 - host/server authority decides when ship select begins, when it times out, and which final ship pair gets carried into gameplay
-- UI can now surface the shared countdown timer
-- keyboard shoulder-style fallback now supports both `Q/E` and `K/L` alongside controller shoulder navigation
+- UI can now surface countdown, local lock status, opponent wait state, and server status messaging
 
 Important architectural note:
 
@@ -146,7 +144,7 @@ It handles:
 
 - tiered augment pools
 - per-game randomized tier order
-- simultaneous network-aware selection
+- sequential two-player selection
 - gamepad-gated navigation
 - card animation and highlight behavior
 - timeout and countdown handling
@@ -155,11 +153,6 @@ It handles:
 Important system note:
 
 - augment selection is not just a UI surface; it is part of round progression and player advantage flow
-- in the active network duel flow, both players pick simultaneously on the same timer
-- the losing player receives 3 augment choices
-- the winning player receives 2 augment choices
-- those pools are separate, even when both players are drawing from the same tier for the round
-- augment cards should remain pointer-hoverable and mouse-clickable during the active flow
 
 ## HUD Architecture
 
@@ -221,7 +214,6 @@ This makes `ShipData` a bridge between:
 - versus presentation
 - gameplay spawning
 - HUD configuration
-- networked ship selection lookups now depend on `ShipData` exposing a deterministic stable ID; blank/generated-per-machine IDs will cause clients to fall back to stale ship data
 
 ## Current Architectural Notes
 
@@ -237,9 +229,4 @@ This makes `ShipData` a bridge between:
 - `ShipSelectManager` now expects only a countdown timer text reference for the networked ship-select path; once a player locks in, that client should no longer be able to change ships before the timer expires.
 - Bug note: the main `Host Game` button must not keep any legacy `ShipSelect` transition wiring in `TitleScreenButton`, or the UI will bypass the waiting screen and appear to host successfully when networking never actually started.
 - Bug note: the main `Local Multiplayer` button must not use direct scene loading to `SampleSceneSplitScreen`, or it will skip local ship select and never capture the two ship choices into `GameDataManager`.
-- Active network gameplay now expects a single local-view HUD presentation:
-- the primary HUD/ability canvas is the local player's
-- opponent HUD canvases are not used in the active network scene
-- round/game end screens can temporarily reuse one shared victory-style canvas in network mode until dedicated defeat variants are built
-- that shared canvas should show local-player-first stats on each machine
 - Bugs or pitfalls in menu flow, HUD binding, selection order, or round transitions should be documented here in the relevant section.

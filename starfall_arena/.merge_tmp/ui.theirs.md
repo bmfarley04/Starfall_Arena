@@ -232,14 +232,11 @@ This makes `ShipData` a bridge between:
 - Existing split-screen flow should be treated as transitional or legacy-oriented unless a task specifically targets it.
 - `TitleScreenManager` now needs serialized references for the join canvas, the host-waiting canvas, the IP input field, and optional status text in addition to the legacy main menu canvas.
 - `TitleScreenManager` now owns only the special hold-style join/waiting controls. The main title `Host Game` and `Join Game` controls should stay on the normal clickable title-button pattern.
-- Local multiplayer entry should use a title-menu transition into the existing `ShipSelectManager` flow rather than loading the split-screen gameplay scene directly, because the local path still expects sequential Player 1 then Player 2 ship confirmation before scene load.
-- Bug note: local gameplay ship prefabs currently ship with `PlayerInput` disabled for the network path, so local gameplay spawning must explicitly re-enable and pair devices or `SampleSceneSplitScreen` will load with both ships unresponsive.
 - `ShipSelectManager` now expects only a countdown timer text reference for the networked ship-select path; once a player locks in, that client should no longer be able to change ships before the timer expires.
 - Bug note: the main `Host Game` button must not keep any legacy `ShipSelect` transition wiring in `TitleScreenButton`, or the UI will bypass the waiting screen and appear to host successfully when networking never actually started.
-- Bug note: the main `Local Multiplayer` button must not use direct scene loading to `SampleSceneSplitScreen`, or it will skip local ship select and never capture the two ship choices into `GameDataManager`.
 - Active network gameplay now expects a single local-view HUD presentation:
-- the primary HUD/ability canvas is the local player's
-- opponent HUD canvases are not used in the active network scene
-- round/game end screens can temporarily reuse one shared victory-style canvas in network mode until dedicated defeat variants are built
-- that shared canvas should show local-player-first stats on each machine
+  - the primary HUD/ability canvas is the local player's
+  - opponent HUD canvases are not used in the active network scene
+  - round/game end screens can temporarily reuse one shared victory-style canvas in network mode until dedicated defeat variants are built
+  - that shared canvas should show local-player-first stats on each machine
 - Bugs or pitfalls in menu flow, HUD binding, selection order, or round transitions should be documented here in the relevant section.
