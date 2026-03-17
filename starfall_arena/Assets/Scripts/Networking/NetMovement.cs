@@ -23,6 +23,10 @@ using System.Collections.Generic;
 public partial class NetMovement : NetworkBehaviour
 {
     private static readonly List<NetMovement> ActiveInstances = new List<NetMovement>();
+    private readonly NetworkVariable<bool> _movementLocked = new NetworkVariable<bool>(
+        false,
+        NetworkVariableReadPermission.Everyone,
+        NetworkVariableWritePermission.Server);
 
     // ===== CONFIGURATION =====
 
@@ -99,6 +103,8 @@ public partial class NetMovement : NetworkBehaviour
             _lastServerFrictionEnabled = _player.IsFrictionEnabled;
         }
 
+        _movementLocked.OnValueChanged += HandleMovementLockedChanged;
+
         if (IsOwner)
         {
             // Owner: set up prediction buffers
@@ -166,6 +172,8 @@ public partial class NetMovement : NetworkBehaviour
         {
             _stateHistory = new NetStateSnapshot[SERVER_STATE_BUFFER_SIZE];
         }
+
+        ApplyMovementLock(_movementLocked.Value);
     }
 
     public override void OnNetworkDespawn()
@@ -189,6 +197,8 @@ public partial class NetMovement : NetworkBehaviour
             }
         }
 
+        _movementLocked.OnValueChanged -= HandleMovementLockedChanged;
+
         base.OnNetworkDespawn();
     }
 
@@ -199,6 +209,11 @@ public partial class NetMovement : NetworkBehaviour
         {
             _serverFrictionTimer = 0f;
         }
+    }
+
+    private void HandleMovementLockedChanged(bool previousValue, bool newValue)
+    {
+        ApplyMovementLock(newValue);
     }
 
     // ===== STATIC HELPERS =====
@@ -238,6 +253,7 @@ public partial class NetMovement : NetworkBehaviour
 
         if (IsServer)
         {
+            _movementLocked.Value = isLocked;
             ApplyMovementLock(isLocked);
             BroadcastMovementLockClientRpc(isLocked);
             return;
@@ -403,6 +419,7 @@ public partial class NetMovement : NetworkBehaviour
     [ServerRpc(RequireOwnership = false)]
     private void RequestMovementLockServerRpc(bool isLocked)
     {
+        _movementLocked.Value = isLocked;
         ApplyMovementLock(isLocked);
         BroadcastMovementLockClientRpc(isLocked);
     }

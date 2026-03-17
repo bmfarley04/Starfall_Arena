@@ -64,6 +64,7 @@ Network migration note:
 - local split-screen camera activation is skipped when a network session is active
 - only the local player's HUD/ability presentation is shown in the active network scene
 - round-end presentation is now broadcast to clients through the network session layer instead of only being shown on the host
+- round-start `ROUND X` and opening 3-2-1 presentation in network gameplay must also be broadcast through the network session layer so clients see the same intro timing as the host
 - round-end and game-end stats in network play should be remapped to the local player's perspective instead of showing the host's seat ordering to everyone
 
 If a task changes duel progression, this file is usually relevant.
@@ -232,6 +233,7 @@ This makes `ShipData` a bridge between:
 - Existing split-screen flow should be treated as transitional or legacy-oriented unless a task specifically targets it.
 - `TitleScreenManager` now needs serialized references for the join canvas, the host-waiting canvas, the IP input field, and optional status text in addition to the legacy main menu canvas.
 - `TitleScreenManager` now owns only the special hold-style join/waiting controls. The main title `Host Game` and `Join Game` controls should stay on the normal clickable title-button pattern.
+- Bug note: hold-to-go-back UI on nonstandard title/menu surfaces such as the controls canvas and game-end screen must listen for the same back input as the rest of the controller-first UI (`B` on keyboard, controller east / Circle). Do not swap these to confirm-style inputs like Enter or South/A for back-navigation prompts.
 - Local multiplayer entry should use a title-menu transition into the existing `ShipSelectManager` flow rather than loading the split-screen gameplay scene directly, because the local path still expects sequential Player 1 then Player 2 ship confirmation before scene load.
 - Bug note: local gameplay ship prefabs currently ship with `PlayerInput` disabled for the network path, so local gameplay spawning must explicitly re-enable and pair devices or `SampleSceneSplitScreen` will load with both ships unresponsive.
 - `ShipSelectManager` now expects only a countdown timer text reference for the networked ship-select path; once a player locks in, that client should no longer be able to change ships before the timer expires.
@@ -240,6 +242,9 @@ This makes `ShipData` a bridge between:
 - Active network gameplay now expects a single local-view HUD presentation:
 - the primary HUD/ability canvas is the local player's
 - opponent HUD canvases are not used in the active network scene
+- round-start text and countdown should be driven by a replicated network session cue rather than a host-only scene coroutine
 - round/game end screens can temporarily reuse one shared victory-style canvas in network mode until dedicated defeat variants are built
 - that shared canvas should show local-player-first stats on each machine
+- Bug note: in network gameplay, the local gameplay HUD must resolve its ability HUD prefab from the spawned `NetworkObject.OwnerClientId` / session slot, not from a hardcoded `Player1` canvas tag. Otherwise clients can instantiate the host ship's ability HUD and then keep it because the scene manager thinks a HUD already exists.
+- Bug note: round-intro movement locking in network gameplay must stay active for the full replicated intro window. Do not rely only on a transient spawn-time lock call, or clients can move before the countdown finishes.
 - Bugs or pitfalls in menu flow, HUD binding, selection order, or round transitions should be documented here in the relevant section.

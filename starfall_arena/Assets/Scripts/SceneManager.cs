@@ -130,6 +130,8 @@ public class GameSceneManager : MonoBehaviour
     private InputDevice _localPlayer1SecondaryDevice;
     private InputDevice _localPlayer2PrimaryDevice;
     private InputDevice _localPlayer2SecondaryDevice;
+    private Coroutine activeRoundIntroCoroutine;
+    private int lastRoundIntroSequenceId = -1;
 
     // ===== INITIALIZATION =====
     void Start()
@@ -141,6 +143,7 @@ public class GameSceneManager : MonoBehaviour
         if (session != null)
         {
             session.OnSelectedMapIndexChanged += HandleSelectedMapIndexChanged;
+            session.OnRoundStartPresentationChanged += HandleRoundStartPresentationChanged;
             session.OnRoundEndPresentationChanged += HandleRoundEndPresentationChanged;
             session.OnAugmentSelectionPresentationChanged += HandleAugmentSelectionPresentationChanged;
             session.OnGameEndPresentationChanged += HandleGameEndPresentationChanged;
@@ -347,11 +350,19 @@ public class GameSceneManager : MonoBehaviour
             // --- Map selection ---
             yield return ActivateRandomMap();
 
-            // --- Round text ---
-            yield return ShowRoundText(currentRound);
-
-            // --- Countdown ---
-            yield return ShowCountdown();
+            // --- Round intro presentation ---
+            if (useNetworkSession && NetworkSessionData.Instance != null)
+            {
+                SetPlayersMovementLocked(true);
+                NetworkSessionData.Instance.BroadcastRoundStartServer(currentRound);
+                yield return new WaitForSecondsRealtime(GetRoundIntroDuration());
+                NetworkSessionData.Instance.MarkMatchStarted();
+            }
+            else
+            {
+                yield return ShowRoundText(currentRound);
+                yield return ShowCountdown();
+            }
 
             // --- Unlock players and start round ---
             SetPlayersMovementLocked(false);
@@ -1046,6 +1057,12 @@ public class GameSceneManager : MonoBehaviour
         group.alpha = to;
     }
 
+    private float GetRoundIntroDuration()
+    {
+        float singleCountdownStep = Mathf.Max(0f, countdownInterval);
+        return (textFadeDuration * 2f) + roundTextDisplayDuration + (singleCountdownStep * 3f);
+    }
+
     // ===== AUGMENT SELECTION =====
     private IEnumerator DoAugmentSelection()
     {
@@ -1228,6 +1245,7 @@ public class GameSceneManager : MonoBehaviour
         if (session != null)
         {
             session.OnSelectedMapIndexChanged -= HandleSelectedMapIndexChanged;
+            session.OnRoundStartPresentationChanged -= HandleRoundStartPresentationChanged;
             session.OnRoundEndPresentationChanged -= HandleRoundEndPresentationChanged;
             session.OnAugmentSelectionPresentationChanged -= HandleAugmentSelectionPresentationChanged;
             session.OnGameEndPresentationChanged -= HandleGameEndPresentationChanged;
@@ -1306,6 +1324,45 @@ public class GameSceneManager : MonoBehaviour
         }
 
         roundEndScreenManager.HideRoundEndScreen();
+    }
+
+    private void HandleRoundStartPresentationChanged(NetworkRoundStartStatePayload payload)
+    {
+        if (!useNetworkSession)
+        {
+            return;
+        }
+
+        if (payload.SequenceId <= lastRoundIntroSequenceId)
+        {
+            return;
+        }
+
+        lastRoundIntroSequenceId = payload.SequenceId;
+
+        if (activeRoundIntroCoroutine != null)
+        {
+            StopCoroutine(activeRoundIntroCoroutine);
+        }
+
+        activeRoundIntroCoroutine = StartCoroutine(PlayNetworkRoundIntro(payload.RoundNumber));
+    }
+
+    private IEnumerator PlayNetworkRoundIntro(int roundNumber)
+    {
+        if (roundTextCanvasGroup != null)
+        {
+            roundTextCanvasGroup.alpha = 0f;
+        }
+
+        if (countdownCanvasGroup != null)
+        {
+            countdownCanvasGroup.alpha = 0f;
+        }
+
+        yield return ShowRoundText(roundNumber);
+        yield return ShowCountdown();
+        activeRoundIntroCoroutine = null;
     }
 
     private void HandleAugmentSelectionPresentationChanged(NetworkAugmentSelectionStatePayload payload)
@@ -1482,16 +1539,32 @@ public class GameSceneManager : MonoBehaviour
             return;
         }
 
-        GameObject currentHudInstance = usePrimaryAbilityCanvas ? player1AbilityHUDInstance : player2AbilityHUDInstance;
-        if (currentHudInstance != null)
+        ShipData data = ResolveAbilityHudShipData(player, tag);
+        if (data == null || data.abilityHUDPrefab == null)
         {
             return;
         }
 
-        ShipData data = tag == "Player1" ? player1Data : player2Data;
-        if (data == null || data.abilityHUDPrefab == null)
+        GameObject currentHudInstance = usePrimaryAbilityCanvas ? player1AbilityHUDInstance : player2AbilityHUDInstance;
+        if (currentHudInstance != null)
         {
-            return;
+            AbilityHUDPanel currentPanel = currentHudInstance.GetComponent<AbilityHUDPanel>();
+            if (currentHudInstance.name.StartsWith(data.abilityHUDPrefab.name) && currentPanel != null)
+            {
+                player.BindAbilityHUD(currentPanel);
+                return;
+            }
+
+            Destroy(currentHudInstance);
+
+            if (usePrimaryAbilityCanvas)
+            {
+                player1AbilityHUDInstance = null;
+            }
+            else
+            {
+                player2AbilityHUDInstance = null;
+            }
         }
 
         GameObject hudObj = Instantiate(data.abilityHUDPrefab);
@@ -1520,6 +1593,34 @@ public class GameSceneManager : MonoBehaviour
         {
             player2AbilityHUDInstance = hudObj;
         }
+    }
+
+    private ShipData ResolveAbilityHudShipData(Player player, string fallbackTag)
+    {
+        if (!useNetworkSession)
+        {
+            return fallbackTag == "Player1" ? player1Data : player2Data;
+        }
+
+        NetworkSessionData session = NetworkSessionData.Instance;
+        NetworkObject playerNetworkObject = player != null ? player.GetComponent<NetworkObject>() : null;
+        if (session == null || playerNetworkObject == null)
+        {
+            return fallbackTag == "Player1" ? player1Data : player2Data;
+        }
+
+        ulong ownerClientId = playerNetworkObject.OwnerClientId;
+        if (session.Player1Selection != null && session.Player1Selection.ClientId == ownerClientId)
+        {
+            return session.Player1Selection.ShipData ?? player1Data;
+        }
+
+        if (session.Player2Selection != null && session.Player2Selection.ClientId == ownerClientId)
+        {
+            return session.Player2Selection.ShipData ?? player2Data;
+        }
+
+        return fallbackTag == "Player1" ? player1Data : player2Data;
     }
 
     private void SetPlayersMovementLocked(bool isLocked)
