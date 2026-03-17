@@ -5303,7 +5303,7 @@ MonoBehaviour:
     speed: 30
     recoilForce: 2
     lifetime: 2
-    impactForce: 4
+    impactForce: 2
   visualEffects:
     visualModel: {fileID: 1770409303365008523}
     maxBankAngle: 90
@@ -5503,7 +5503,7 @@ MonoBehaviour:
       damagePerSecond: 30
       maxDistance: 60
       recoilForcePerSecond: 1
-      impactForce: 20
+      impactForce: 5
     offsetDistance: 1.7
     rotationMultiplier: 0.2
     fadeInDuration: 0.3
@@ -5530,7 +5530,7 @@ MonoBehaviour:
   isLocked: 0
   reflect:
     cooldown: 7
-    activeDuration: 5
+    activeDuration: 1.5
     shield: {fileID: 1692808081896564359}
     reflectedProjectileColor: {r: 0.8117648, g: 0.68235296, b: 0, a: 0}
     reflectedProjectileDamageMultiplier: 1.5
