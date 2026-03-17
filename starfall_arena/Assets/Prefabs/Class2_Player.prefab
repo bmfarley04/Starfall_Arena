@@ -23249,14 +23249,14 @@ MonoBehaviour:
     frictionDeceleration: 10
     debugMode: 0
   visualFeedback:
-    enableChromaticAberration: 1
+    enableChromaticAberration: 0
     maxChromaticIntensity: 0.3
     chromaticIntensityPerDamage: 0.1
     chromaticFadeSpeed: 2
     beamDetectionWindow: 0.2
     projectileMultiplier: 0.5
   screenShake:
-    enableScreenShake: 1
+    enableScreenShake: 0
     projectileShakeMultiplier: 0.1
     laserShakeMultiplier: 0.1
   hud:
