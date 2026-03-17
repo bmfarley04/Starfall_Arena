@@ -1028,11 +1028,11 @@ public class ShipSelectManager : MonoBehaviour
             navigateRight = _activeGamepad.rightShoulder.wasPressedThisFrame;
         }
 
-        // Keyboard fallback (Q/E for shoulders)
+        // Keyboard fallback (Q/E and K/L for shoulders)
         if (!navigateLeft && !navigateRight && Keyboard.current != null)
         {
-            navigateLeft = Keyboard.current.qKey.wasPressedThisFrame;
-            navigateRight = Keyboard.current.eKey.wasPressedThisFrame;
+            navigateLeft = Keyboard.current.qKey.wasPressedThisFrame || Keyboard.current.kKey.wasPressedThisFrame;
+            navigateRight = Keyboard.current.eKey.wasPressedThisFrame || Keyboard.current.lKey.wasPressedThisFrame;
         }
 
         if (navigateLeft)

@@ -59,13 +59,13 @@ public class GameSceneManager : MonoBehaviour
     [SerializeField] private int ability4UnlockRound = 3;
 
     [Header("Player HUD Canvases")]
-    [Tooltip("Canvas containing Player 1 health/shield bars")]
+    [Tooltip("Canvas containing the local player's health/shield bars in network mode")]
     [SerializeField] private Canvas player1HUDCanvas;
-    [Tooltip("Canvas containing Player 2 health/shield bars")]
+    [Tooltip("Unused in the active network scene. Can remain assigned for legacy/local setups.")]
     [SerializeField] private Canvas player2HUDCanvas;
-    [Tooltip("Canvas containing Player 1 ability icons")]
+    [Tooltip("Canvas containing the local player's ability icons in network mode")]
     [SerializeField] private Canvas player1AbilityCanvas;
-    [Tooltip("Canvas containing Player 2 ability icons")]
+    [Tooltip("Unused in the active network scene. Can remain assigned for legacy/local setups.")]
     [SerializeField] private Canvas player2AbilityCanvas;
 
     [Header("Win Trackers")]
@@ -132,6 +132,16 @@ public class GameSceneManager : MonoBehaviour
         useNetworkSession = NetMgr.IsNetworked && NetworkManager.Singleton != null;
         isAuthoritativeNetworkController = !useNetworkSession || NetworkManager.Singleton.IsServer;
 
+        NetworkSessionData session = NetworkSessionData.Instance;
+        if (session != null)
+        {
+            session.OnSelectedMapIndexChanged += HandleSelectedMapIndexChanged;
+            session.OnRoundEndPresentationChanged += HandleRoundEndPresentationChanged;
+            session.OnAugmentSelectionPresentationChanged += HandleAugmentSelectionPresentationChanged;
+            session.OnGameEndPresentationChanged += HandleGameEndPresentationChanged;
+            session.OnSelectionTimerChanged += HandleSessionTimerChanged;
+        }
+
         // Resolve ship data
         ResolveShipData();
 
@@ -160,6 +170,11 @@ public class GameSceneManager : MonoBehaviour
         // Subscribe to VS screen completion
         if (versusScreenManager != null)
         {
+            if (!versusScreenManager.gameObject.activeSelf)
+            {
+                versusScreenManager.gameObject.SetActive(true);
+            }
+
             versusScreenManager.onVersusScreenComplete.AddListener(OnVersusScreenComplete);
         }
 
@@ -181,16 +196,47 @@ public class GameSceneManager : MonoBehaviour
 
     private void ResolveShipData()
     {
+        if (useNetworkSession && NetworkSessionData.Instance != null)
+        {
+            ShipData sessionPlayer1Ship = NetworkSessionData.Instance.Player1Selection != null
+                ? NetworkSessionData.Instance.Player1Selection.ShipData
+                : null;
+            ShipData sessionPlayer2Ship = NetworkSessionData.Instance.Player2Selection != null
+                ? NetworkSessionData.Instance.Player2Selection.ShipData
+                : null;
+
+            if (sessionPlayer1Ship != null)
+            {
+                player1Data = sessionPlayer1Ship;
+            }
+
+            if (sessionPlayer2Ship != null)
+            {
+                player2Data = sessionPlayer2Ship;
+            }
+
+            Debug.Log($"[GameSceneManager] Network ship resolve from session: P1={(sessionPlayer1Ship != null ? sessionPlayer1Ship.shipName : "null")}, P2={(sessionPlayer2Ship != null ? sessionPlayer2Ship.shipName : "null")}");
+        }
+
         if (GameDataManager.Instance != null &&
             GameDataManager.Instance.selectedShipClasses != null &&
             GameDataManager.Instance.selectedShipClasses.Count >= 2)
         {
-            player1Data = GameDataManager.Instance.selectedShipClasses[0];
-            player2Data = GameDataManager.Instance.selectedShipClasses[1];
+            if (player1Data == null)
+            {
+                player1Data = GameDataManager.Instance.selectedShipClasses[0];
+            }
+
+            if (player2Data == null)
+            {
+                player2Data = GameDataManager.Instance.selectedShipClasses[1];
+            }
         }
 
         if (player1Data == null) player1Data = defaultPlayer1Ship;
         if (player2Data == null) player2Data = defaultPlayer2Ship;
+
+        Debug.Log($"[GameSceneManager] Final ship resolve: P1={(player1Data != null ? player1Data.shipName : "null")}, P2={(player2Data != null ? player2Data.shipName : "null")}");
     }
 
     // ===== GAME LOOP =====
@@ -233,8 +279,15 @@ public class GameSceneManager : MonoBehaviour
         else
         {
             // --- VS SCREEN (whole-screen mode, already active from Start) ---
-            // Wait for VS screen to complete (it runs automatically via its own Start())
-            yield return new WaitUntil(() => versusScreenDone);
+            // Wait for VS screen to complete only when a live manager is active.
+            if (versusScreenManager != null && versusScreenManager.gameObject.activeInHierarchy)
+            {
+                yield return new WaitUntil(() => versusScreenDone);
+            }
+            else
+            {
+                versusScreenDone = true;
+            }
 
             // VS screen is done — switch to split-screen for gameplay
             if (!useNetworkSession && splitScreenManager != null)
@@ -357,7 +410,15 @@ public class GameSceneManager : MonoBehaviour
             yield return TransitionToWholeScreen();
 
             // --- Show round end screen (now in whole-screen mode) ---
-            if (roundEndScreenManager != null)
+            if (useNetworkSession && NetworkSessionData.Instance != null)
+            {
+                NetworkSessionData.Instance.ShowRoundEndServer(
+                    roundWinner, roundDuration,
+                    p1RoundDmg, p2RoundDmg,
+                    p1RoundAcc, p2RoundAcc
+                );
+            }
+            else if (roundEndScreenManager != null)
             {
                 roundEndScreenManager.ShowRoundEndScreen(
                     roundWinner, roundDuration,
@@ -368,7 +429,11 @@ public class GameSceneManager : MonoBehaviour
 
             yield return new WaitForSecondsRealtime(roundEndScreenDuration);
 
-            if (roundEndScreenManager != null)
+            if (useNetworkSession && NetworkSessionData.Instance != null)
+            {
+                NetworkSessionData.Instance.HideRoundEndServer();
+            }
+            else if (roundEndScreenManager != null)
             {
                 roundEndScreenManager.HideRoundEndScreen();
             }
@@ -452,6 +517,15 @@ public class GameSceneManager : MonoBehaviour
     /// </summary>
     private void SetPlayerHUDsActive(bool active)
     {
+        if (useNetworkSession)
+        {
+            if (player1HUDCanvas != null) player1HUDCanvas.gameObject.SetActive(active);
+            if (player2HUDCanvas != null) player2HUDCanvas.gameObject.SetActive(false);
+            if (player1AbilityCanvas != null) player1AbilityCanvas.gameObject.SetActive(active);
+            if (player2AbilityCanvas != null) player2AbilityCanvas.gameObject.SetActive(false);
+            return;
+        }
+
         if (player1HUDCanvas != null) player1HUDCanvas.gameObject.SetActive(active);
         if (player2HUDCanvas != null) player2HUDCanvas.gameObject.SetActive(active);
         if (player1AbilityCanvas != null) player1AbilityCanvas.gameObject.SetActive(active);
@@ -813,29 +887,28 @@ public class GameSceneManager : MonoBehaviour
         if (maps == null || maps.Length == 0) yield break;
 
         // Pick a random map different from the current one if possible
-        GameObject newMapObj;
+        int newMapIndex;
         if (maps.Length == 1)
         {
-            newMapObj = maps[0];
+            newMapIndex = 0;
         }
         else
         {
             do
             {
-                newMapObj = maps[Random.Range(0, maps.Length)];
+                newMapIndex = Random.Range(0, maps.Length);
             }
-            while (newMapObj == activeMapObject);
+            while (maps[newMapIndex] == activeMapObject);
         }
 
-        activeMapObject = newMapObj;
-        activeMapScript = activeMapObject.GetComponent<MapManagerScript>();
-
-        activeMapObject.SetActive(true);
-        if (activeMapScript != null)
+        if (useNetworkSession)
         {
-            activeMapScript.SpawnAsteroids();
+            NetworkSessionData.Instance?.SetSelectedMapIndexServer(newMapIndex);
+            yield return null;
+            yield break;
         }
 
+        ApplySelectedMap(newMapIndex);
         yield return null;
     }
 
@@ -885,7 +958,34 @@ public class GameSceneManager : MonoBehaviour
 
         if (useNetworkSession)
         {
-            NetworkSessionData.Instance?.MarkAugmentPhase();
+            NetworkSessionData session = NetworkSessionData.Instance;
+            if (session == null || !isAuthoritativeNetworkController)
+            {
+                yield break;
+            }
+
+            int losingPlayer = lastRoundLoser;
+            int winningPlayer = losingPlayer == 1 ? 2 : 1;
+            int tier = augmentSelectManager.DrawNextTierForRound();
+
+            List<Augment> loserPool = augmentSelectManager.DrawRandomAugmentsForTier(tier, 3);
+            List<Augment> winnerPool = augmentSelectManager.DrawRandomAugmentsForTier(tier, 2);
+
+            string[] player1Options = losingPlayer == 1
+                ? loserPool.ConvertAll(augment => augment != null ? augment.augmentID : string.Empty).ToArray()
+                : winnerPool.ConvertAll(augment => augment != null ? augment.augmentID : string.Empty).ToArray();
+            string[] player2Options = losingPlayer == 2
+                ? loserPool.ConvertAll(augment => augment != null ? augment.augmentID : string.Empty).ToArray()
+                : winnerPool.ConvertAll(augment => augment != null ? augment.augmentID : string.Empty).ToArray();
+
+            session.StartAugmentSelectionServer(tier, player1Options, player2Options, augmentSelectManager.SelectionTimeLimit);
+            yield return new WaitUntil(() => session.AreAugmentSelectionsResolved);
+
+            ApplyAugmentToPlayer(1, GameDataManager.Instance != null ? GameDataManager.Instance.GetAugmentById(session.GetResolvedAugmentIdForSlot(0)) : null);
+            ApplyAugmentToPlayer(2, GameDataManager.Instance != null ? GameDataManager.Instance.GetAugmentById(session.GetResolvedAugmentIdForSlot(1)) : null);
+            session.ClearResolvedAugmentSelectionsServer();
+            yield return new WaitForSecondsRealtime(0.2f);
+            yield break;
         }
 
         // Determine pick order: loser picks first
@@ -927,6 +1027,12 @@ public class GameSceneManager : MonoBehaviour
 
     private void OnAugmentChosen(Augment augment, int index)
     {
+        if (useNetworkSession && NetworkSessionData.Instance != null && augment != null)
+        {
+            NetworkSessionData.Instance.RequestAugmentChoice(augment.augmentID);
+            return;
+        }
+
         chosenAugment = augment;
         chosenAugmentIndex = index;
         augmentChosen = true;
@@ -971,28 +1077,44 @@ public class GameSceneManager : MonoBehaviour
         }
 
         int winner = player1Wins >= winsRequired ? 1 : 2;
-        int loser = winner == 1 ? 2 : 1;
+        float player1Accuracy = p1TotalShotsFired > 0 ? (float)p1TotalShotsHit / p1TotalShotsFired * 100f : 0f;
+        float player2Accuracy = p2TotalShotsFired > 0 ? (float)p2TotalShotsHit / p2TotalShotsFired * 100f : 0f;
 
-        ShipData winnerShipData = winner == 1 ? player1Data : player2Data;
+        if (useNetworkSession && NetworkSessionData.Instance != null)
+        {
+            NetworkSessionData.Instance.ShowGameEndServer(
+                winner,
+                player1Data,
+                player2Data,
+                totalGameDuration,
+                player1Wins,
+                player2Wins,
+                p1TotalDamageDealt,
+                p1TotalDamageTaken,
+                player1Accuracy,
+                player2Wins,
+                player1Wins,
+                p2TotalDamageDealt,
+                p2TotalDamageTaken,
+                player2Accuracy);
+            yield break;
+        }
+
         int winnerWins = winner == 1 ? player1Wins : player2Wins;
         int winnerLosses = winner == 1 ? player2Wins : player1Wins;
-
         float winnerDamageDealt = winner == 1 ? p1TotalDamageDealt : p2TotalDamageDealt;
         float winnerDamageTaken = winner == 1 ? p1TotalDamageTaken : p2TotalDamageTaken;
-        int winnerShotsFired = winner == 1 ? p1TotalShotsFired : p2TotalShotsFired;
-        int winnerShotsHit = winner == 1 ? p1TotalShotsHit : p2TotalShotsHit;
-        float winnerAccuracy = winnerShotsFired > 0 ? (float)winnerShotsHit / winnerShotsFired * 100f : 0f;
+        float winnerAccuracy = winner == 1 ? player1Accuracy : player2Accuracy;
 
         gameEndScreenManager.ShowGameEndScreen(
             winner,
-            winnerShipData,
+            winner == 1 ? player1Data : player2Data,
             totalGameDuration,
             winnerWins,
             winnerLosses,
             winnerDamageDealt,
             winnerDamageTaken,
-            winnerAccuracy
-        );
+            winnerAccuracy);
     }
 
     // ===== CLEANUP =====
@@ -1006,6 +1128,197 @@ public class GameSceneManager : MonoBehaviour
         {
             augmentSelectManager.onAugmentChosen -= OnAugmentChosen;
         }
+
+        NetworkSessionData session = NetworkSessionData.Instance;
+        if (session != null)
+        {
+            session.OnSelectedMapIndexChanged -= HandleSelectedMapIndexChanged;
+            session.OnRoundEndPresentationChanged -= HandleRoundEndPresentationChanged;
+            session.OnAugmentSelectionPresentationChanged -= HandleAugmentSelectionPresentationChanged;
+            session.OnGameEndPresentationChanged -= HandleGameEndPresentationChanged;
+            session.OnSelectionTimerChanged -= HandleSessionTimerChanged;
+        }
+    }
+
+    private void HandleSelectedMapIndexChanged(int mapIndex)
+    {
+        if (!useNetworkSession)
+        {
+            return;
+        }
+
+        ApplySelectedMap(mapIndex);
+    }
+
+    private void ApplySelectedMap(int mapIndex)
+    {
+        if (maps == null || maps.Length == 0)
+        {
+            return;
+        }
+
+        if (mapIndex < 0 || mapIndex >= maps.Length)
+        {
+            return;
+        }
+
+        GameObject newMapObject = maps[mapIndex];
+        if (newMapObject == activeMapObject)
+        {
+            return;
+        }
+
+        if (activeMapObject != null)
+        {
+            activeMapObject.SetActive(false);
+        }
+
+        for (int i = 0; i < maps.Length; i++)
+        {
+            if (maps[i] != null && maps[i] != newMapObject)
+            {
+                maps[i].SetActive(false);
+            }
+        }
+
+        activeMapObject = newMapObject;
+        activeMapScript = activeMapObject != null ? activeMapObject.GetComponent<MapManagerScript>() : null;
+
+        if (activeMapObject != null)
+        {
+            activeMapObject.SetActive(true);
+        }
+    }
+
+    private void HandleRoundEndPresentationChanged(NetworkRoundEndStatePayload payload)
+    {
+        if (!useNetworkSession || roundEndScreenManager == null)
+        {
+            return;
+        }
+
+        if (payload.IsVisible)
+        {
+            SetPlayerHUDsActive(false);
+            roundEndScreenManager.ShowRoundEndScreen(
+                payload.WinningPlayer,
+                payload.RoundDuration,
+                payload.Player1Damage,
+                payload.Player2Damage,
+                payload.Player1Accuracy,
+                payload.Player2Accuracy);
+            return;
+        }
+
+        roundEndScreenManager.HideRoundEndScreen();
+    }
+
+    private void HandleAugmentSelectionPresentationChanged(NetworkAugmentSelectionStatePayload payload)
+    {
+        if (!useNetworkSession || augmentSelectManager == null)
+        {
+            return;
+        }
+
+        if (!payload.IsVisible)
+        {
+            augmentSelectManager.HideAugmentSelect();
+            return;
+        }
+
+        if (augmentSelectManager.IsShowing)
+        {
+            return;
+        }
+
+        NetworkSessionData session = NetworkSessionData.Instance;
+        if (session == null)
+        {
+            return;
+        }
+
+        int localSlot = session.GetLocalSlotIndex();
+        if (localSlot < 0)
+        {
+            return;
+        }
+
+        string[] optionIds = localSlot == 0
+            ? new[] { payload.Player1Option1.ToString(), payload.Player1Option2.ToString(), payload.Player1Option3.ToString() }
+            : new[] { payload.Player2Option1.ToString(), payload.Player2Option2.ToString(), payload.Player2Option3.ToString() };
+        int optionCount = localSlot == 0 ? payload.Player1OptionCount : payload.Player2OptionCount;
+
+        List<Augment> augments = new List<Augment>(optionCount);
+        for (int i = 0; i < optionCount; i++)
+        {
+            Augment augment = GameDataManager.Instance != null ? GameDataManager.Instance.GetAugmentById(optionIds[i]) : null;
+            if (augment != null)
+            {
+                augments.Add(augment);
+            }
+        }
+
+        if (augments.Count == 0)
+        {
+            return;
+        }
+
+        augmentSelectManager.ShowNetworkAugmentSelect(localSlot + 1, payload.Tier, augments);
+        augmentSelectManager.SetCountdownValue(session.SelectionTimeRemaining);
+    }
+
+    private void HandleSessionTimerChanged(float timeRemaining)
+    {
+        if (!useNetworkSession || augmentSelectManager == null || !augmentSelectManager.IsShowing)
+        {
+            return;
+        }
+
+        NetworkSessionData session = NetworkSessionData.Instance;
+        if (session == null || session.CurrentState != NetworkMatchState.AugmentPhase)
+        {
+            return;
+        }
+
+        augmentSelectManager.SetCountdownValue(timeRemaining);
+    }
+
+    private void HandleGameEndPresentationChanged(NetworkGameEndStatePayload payload)
+    {
+        if (!useNetworkSession || gameEndScreenManager == null)
+        {
+            return;
+        }
+
+        if (!payload.IsVisible)
+        {
+            gameEndScreenManager.HideGameEndScreen();
+            return;
+        }
+
+        NetworkSessionData session = NetworkSessionData.Instance;
+        int localSlot = session != null ? session.GetLocalSlotIndex() : 0;
+        bool localIsPlayer1 = localSlot != 1;
+
+        ShipData localShip = GameDataManager.Instance != null
+            ? GameDataManager.Instance.GetShipById(localIsPlayer1 ? payload.Player1ShipId.ToString() : payload.Player2ShipId.ToString())
+            : null;
+        int localPlayerNumber = localIsPlayer1 ? 1 : 2;
+        int localWins = localIsPlayer1 ? payload.Player1Wins : payload.Player2Wins;
+        int localLosses = localIsPlayer1 ? payload.Player1Losses : payload.Player2Losses;
+        float localDamageDealt = localIsPlayer1 ? payload.Player1DamageDealt : payload.Player2DamageDealt;
+        float localDamageTaken = localIsPlayer1 ? payload.Player1DamageTaken : payload.Player2DamageTaken;
+        float localAccuracy = localIsPlayer1 ? payload.Player1Accuracy : payload.Player2Accuracy;
+
+        gameEndScreenManager.ShowGameEndScreen(
+            localPlayerNumber,
+            localShip,
+            payload.GameDuration,
+            localWins,
+            localLosses,
+            localDamageDealt,
+            localDamageTaken,
+            localAccuracy);
     }
 
     private IEnumerator ClientNetworkPresentationLoop()
@@ -1026,7 +1339,6 @@ public class GameSceneManager : MonoBehaviour
 
         Player[] players = FindObjectsByType<Player>(FindObjectsSortMode.None);
         Player localPlayer = null;
-        Player remotePlayer = null;
 
         foreach (Player candidate in players)
         {
@@ -1040,10 +1352,6 @@ public class GameSceneManager : MonoBehaviour
             {
                 localPlayer = candidate;
             }
-            else
-            {
-                remotePlayer = candidate;
-            }
         }
 
         if (localPlayer != null)
@@ -1052,13 +1360,7 @@ public class GameSceneManager : MonoBehaviour
             BindPlayerToHud(localPlayer, player1HUDCanvas, "Player1", true);
         }
 
-        if (remotePlayer != null)
-        {
-            player2 = remotePlayer;
-            BindPlayerToHud(remotePlayer, player2HUDCanvas, "Player2", false);
-        }
-
-        if (localPlayer != null || remotePlayer != null)
+        if (localPlayer != null)
         {
             SetPlayerHUDsActive(true);
         }

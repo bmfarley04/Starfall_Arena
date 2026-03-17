@@ -100,8 +100,19 @@ public class RoundEndScreenManager : MonoBehaviour
             StopCoroutine(currentAnimation);
         }
 
+        bool useSingleNetworkCanvas = NetMgr.IsNetworked && player1Canvas != null;
+        int localPlayerNumber = 1;
+        if (useSingleNetworkCanvas && NetworkSessionData.Instance != null)
+        {
+            int localSlot = NetworkSessionData.Instance.GetLocalSlotIndex();
+            if (localSlot >= 0)
+            {
+                localPlayerNumber = localSlot + 1;
+            }
+        }
+
         // Determine which canvas to show and which stat sections to animate
-        if (winningPlayer == 1)
+        if (useSingleNetworkCanvas || winningPlayer == 1)
         {
             currentActiveCanvas = player1Canvas;
             currentDurationSection = p1_durationSection;
@@ -123,7 +134,14 @@ public class RoundEndScreenManager : MonoBehaviour
         }
 
         // Populate text fields
-        PopulateStats(winningPlayer, roundDuration, player1Damage, player2Damage, player1Accuracy, player2Accuracy);
+        PopulateStats(
+            useSingleNetworkCanvas ? localPlayerNumber : winningPlayer,
+            useSingleNetworkCanvas,
+            roundDuration,
+            player1Damage,
+            player2Damage,
+            player1Accuracy,
+            player2Accuracy);
 
         // Start spawn animation
         currentAnimation = StartCoroutine(SpawnAnimation());
@@ -145,37 +163,40 @@ public class RoundEndScreenManager : MonoBehaviour
         }
     }
 
-    private void PopulateStats(int winningPlayer, float roundDuration, float player1Damage, float player2Damage, float player1Accuracy, float player2Accuracy)
+    private void PopulateStats(int perspectivePlayer, bool usePrimaryCanvas, float roundDuration, float player1Damage, float player2Damage, float player1Accuracy, float player2Accuracy)
     {
         // Format duration as MM:SS
         int minutes = Mathf.FloorToInt(roundDuration / 60f);
         int seconds = Mathf.FloorToInt(roundDuration % 60f);
         string durationStr = $"{minutes}:{seconds:D2}";
 
-        // Format damage (whole numbers)
-        string p1DamageStr = Mathf.RoundToInt(player1Damage).ToString();
-        string p2DamageStr = Mathf.RoundToInt(player2Damage).ToString();
+        bool localIsPlayer1 = perspectivePlayer == 1;
+        float localDamage = localIsPlayer1 ? player1Damage : player2Damage;
+        float remoteDamage = localIsPlayer1 ? player2Damage : player1Damage;
+        float localAccuracy = localIsPlayer1 ? player1Accuracy : player2Accuracy;
+        float remoteAccuracy = localIsPlayer1 ? player2Accuracy : player1Accuracy;
 
-        // Format accuracy (1 decimal place)
-        string p1AccuracyStr = $"{player1Accuracy:F1}%";
-        string p2AccuracyStr = $"{player2Accuracy:F1}%";
+        string localDamageStr = Mathf.RoundToInt(localDamage).ToString();
+        string remoteDamageStr = Mathf.RoundToInt(remoteDamage).ToString();
+        string localAccuracyStr = $"{localAccuracy:F1}%";
+        string remoteAccuracyStr = $"{remoteAccuracy:F1}%";
 
         // Populate the appropriate canvas's text fields
-        if (winningPlayer == 1)
+        if (usePrimaryCanvas || perspectivePlayer == 1)
         {
             if (p1_durationText != null) p1_durationText.text = durationStr;
-            if (p1_player1DamageText != null) p1_player1DamageText.text = p1DamageStr;
-            if (p1_player2DamageText != null) p1_player2DamageText.text = p2DamageStr;
-            if (p1_player1AccuracyText != null) p1_player1AccuracyText.text = p1AccuracyStr;
-            if (p1_player2AccuracyText != null) p1_player2AccuracyText.text = p2AccuracyStr;
+            if (p1_player1DamageText != null) p1_player1DamageText.text = localDamageStr;
+            if (p1_player2DamageText != null) p1_player2DamageText.text = remoteDamageStr;
+            if (p1_player1AccuracyText != null) p1_player1AccuracyText.text = localAccuracyStr;
+            if (p1_player2AccuracyText != null) p1_player2AccuracyText.text = remoteAccuracyStr;
         }
         else
         {
             if (p2_durationText != null) p2_durationText.text = durationStr;
-            if (p2_player1DamageText != null) p2_player1DamageText.text = p1DamageStr;
-            if (p2_player2DamageText != null) p2_player2DamageText.text = p2DamageStr;
-            if (p2_player1AccuracyText != null) p2_player1AccuracyText.text = p1AccuracyStr;
-            if (p2_player2AccuracyText != null) p2_player2AccuracyText.text = p2AccuracyStr;
+            if (p2_player1DamageText != null) p2_player1DamageText.text = localDamageStr;
+            if (p2_player2DamageText != null) p2_player2DamageText.text = remoteDamageStr;
+            if (p2_player1AccuracyText != null) p2_player1AccuracyText.text = localAccuracyStr;
+            if (p2_player2AccuracyText != null) p2_player2AccuracyText.text = remoteAccuracyStr;
         }
     }
 

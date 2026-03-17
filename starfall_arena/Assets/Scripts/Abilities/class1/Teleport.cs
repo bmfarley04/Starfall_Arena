@@ -69,6 +69,8 @@ public class Teleport : Ability
     private Coroutine _teleportCoroutine;
     private bool _isTeleporting = false;
     private NetMovement _netMovement;
+    private readonly System.Collections.Generic.List<Renderer> _teleportRenderers = new System.Collections.Generic.List<Renderer>();
+    private readonly System.Collections.Generic.List<bool> _teleportRendererStates = new System.Collections.Generic.List<bool>();
 
     // ===== HUD STATE =====
     public override float GetHUDFillRatio()
@@ -154,6 +156,7 @@ public class Teleport : Ability
     {
         if (_teleportCoroutine != null)
         {
+            RestoreTeleportPresentationState();
             StopCoroutine(_teleportCoroutine);
         }
 
@@ -163,6 +166,7 @@ public class Teleport : Ability
     private System.Collections.IEnumerator ExecuteTeleport(Vector3 targetPosition, bool authoritative)
     {
         _isTeleporting = true;
+        bool shouldHideRenderersForThisInstance = _netMovement == null || _netMovement.IsOwner || authoritative;
 
         Vector3 originalScale = transform.localScale;
         Vector3 normalScale = originalScale * teleport.animation.normalScale;
@@ -209,12 +213,10 @@ public class Teleport : Ability
             teleport.exitSound.Play(player.GetAvailableAudioSource());
         }
 
-        SpriteRenderer spriteRenderer = GetComponentInChildren<SpriteRenderer>();
-        bool spriteWasEnabled = false;
-        if (spriteRenderer != null)
+        if (shouldHideRenderersForThisInstance)
         {
-            spriteWasEnabled = spriteRenderer.enabled;
-            spriteRenderer.enabled = false;
+            CacheTeleportRenderers();
+            SetTeleportRenderersVisible(false);
         }
 
         Vector3 previousPosition = transform.position;
@@ -259,9 +261,9 @@ public class Teleport : Ability
             teleport.arrivalSound.Play(player.GetAvailableAudioSource());
         }
 
-        if (spriteRenderer != null && spriteWasEnabled)
+        if (shouldHideRenderersForThisInstance)
         {
-            spriteRenderer.enabled = true;
+            SetTeleportRenderersVisible(true);
         }
 
         elapsed = 0f;
@@ -280,5 +282,64 @@ public class Teleport : Ability
         }
 
         _isTeleporting = false;
+        _teleportCoroutine = null;
+    }
+
+    private void CacheTeleportRenderers()
+    {
+        _teleportRenderers.Clear();
+        _teleportRendererStates.Clear();
+
+        Renderer[] renderers = GetComponentsInChildren<Renderer>(true);
+        foreach (Renderer renderer in renderers)
+        {
+            if (renderer == null)
+            {
+                continue;
+            }
+
+            _teleportRenderers.Add(renderer);
+            _teleportRendererStates.Add(renderer.enabled);
+        }
+    }
+
+    private void SetTeleportRenderersVisible(bool isVisible)
+    {
+        for (int i = 0; i < _teleportRenderers.Count; i++)
+        {
+            Renderer renderer = _teleportRenderers[i];
+            if (renderer == null)
+            {
+                continue;
+            }
+
+            if (!isVisible)
+            {
+                _teleportRendererStates[i] = renderer.enabled;
+                renderer.enabled = false;
+            }
+            else
+            {
+                renderer.enabled = i < _teleportRendererStates.Count && _teleportRendererStates[i];
+            }
+        }
+    }
+
+    private void RestoreTeleportPresentationState()
+    {
+        SetTeleportRenderersVisible(true);
+        _isTeleporting = false;
+        transform.localScale = Vector3.one * teleport.animation.normalScale;
+
+        Collider2D playerCollider = GetComponent<Collider2D>();
+        if (playerCollider != null)
+        {
+            playerCollider.enabled = true;
+        }
+    }
+
+    private void OnDisable()
+    {
+        RestoreTeleportPresentationState();
     }
 }

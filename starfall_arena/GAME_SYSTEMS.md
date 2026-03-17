@@ -373,6 +373,10 @@ Current augment flow:
 - runtime is tagged with the round acquired
 - round transitions export and import augment loadouts
 - runtime activation can expire based on augment duration in rounds
+- in the active network duel flow, augment choice is simultaneous instead of sequential
+- the losing player gets 3 choices
+- the winning player gets 2 choices
+- each player can receive a separate local pool for the same augment phase
 
 Network persistence note:
 
@@ -388,5 +392,6 @@ Network persistence note:
 - Weapon docs must distinguish between projectile-family weapons and beam weapons.
 - Ability behavior is component-based and distributed, so changes often require docs updates in both gameplay and UI/flow docs.
 - Bug note: modular abilities should initialize their cooldown timer in a ready state. If the base `Ability.lastUsedAbility` starts at `0`, newly spawned ships can have abilities appear broken until each cooldown elapses once.
+- Bug note: teleport-style abilities that hide renderers during their effect need an interruption-safe restore path, or a ship can remain hittable while visually invisible if the coroutine is stopped mid-ability.
 - `Assets/Scripts/3d` is future-facing groundwork for a more fully 3D version of the game, not a current core maintenance area.
 - Bugs in combat, ability timing, or augment behavior should be added here in the relevant section once discovered.

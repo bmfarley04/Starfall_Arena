@@ -92,6 +92,36 @@ Use it only in dedicated test scenes that still rely on:
 
 Do not use `NetMgrTest` for the production title-screen host/join flow.
 
+### NetworkSessionData
+
+`NetworkSessionData` is the persistent network session authority object.
+
+It currently carries:
+
+- synchronized ship-select state and timer
+- gameplay scene load state
+- selected map index replication
+- round-end presentation payloads
+- augment-phase presentation payloads, timers, and resolved choices
+
+This means client-visible non-movement match flow now depends on explicit session replication rather than assuming the host's local UI calls will appear automatically on clients.
+
+Ship-select timing note:
+
+- the server should advance out of ship select immediately once both connected players are locked in
+- the countdown is now only a fallback for missing or late selections, not a required wait even when both players already chose
+
+### Network Scene Note
+
+The active network gameplay scene now assumes:
+
+- one gameplay camera plus UI overlay, not split-screen cameras
+- one local HUD presentation only
+- server-selected map activation must be mirrored to clients by map index, because scene-object `SetActive` state is not replicated automatically
+- round-end presentation must be broadcast explicitly
+- augment selection is a synchronized timed phase with separate local pools for each player
+- game-end presentation must also be broadcast explicitly and remapped to local-player perspective on each client
+
 ### NetMovement
 
 `NetMovement` is the main implemented networked gameplay system right now.

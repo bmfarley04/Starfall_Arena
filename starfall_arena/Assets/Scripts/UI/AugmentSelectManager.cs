@@ -224,10 +224,14 @@ namespace StarfallArena.UI
 
         // Stick navigation cooldown (prevents rapid-fire from held stick)
         private bool _stickNavigated = false;
+        private bool _useExternalTimer = false;
 
         // Selection effect: cached original materials per card so we can restore
         private Dictionary<Image, Material> _originalContainerMaterials = new Dictionary<Image, Material>();
         private Dictionary<Image, Material> _originalIconMaterials = new Dictionary<Image, Material>();
+
+        public bool IsShowing => isShowing;
+        public float SelectionTimeLimit => selectionTimeLimit;
 
         private void OnValidate()
         {
@@ -577,6 +581,7 @@ namespace StarfallArena.UI
 
             isShowing = true;
             currentPickingPlayer = pickingPlayer;
+            _useExternalTimer = false;
 
             // Lock input to the picking player's gamepad
             SetActiveGamepad(pickingPlayer);
@@ -613,12 +618,64 @@ namespace StarfallArena.UI
             }
         }
 
+        public void ShowNetworkAugmentSelect(int pickingPlayer, int tier, List<Augment> augments)
+        {
+            if (augments == null || augments.Count == 0)
+            {
+                Debug.LogWarning("[AugmentSelect] No augments supplied for network selection.");
+                return;
+            }
+
+            if (isShowing)
+            {
+                HideAugmentSelect();
+            }
+
+            isShowing = true;
+            currentPickingPlayer = pickingPlayer;
+            currentTier = tier;
+            _useExternalTimer = true;
+
+            SetActiveGamepad(pickingPlayer);
+            DisableUIModuleNavigation();
+
+            selectedAugments = new List<Augment>(augments);
+            PopulateUI(currentTier, selectedAugments);
+            UpdateDisplayedOptionCount(currentTier, selectedAugments.Count);
+            UpdatePlayerChoiceUI(pickingPlayer);
+            ShowTierCanvas(currentTier);
+            StartCoroutine(AnimateEntrance(currentTier));
+
+            if (augmentAppearSound != null && audioSource != null)
+            {
+                augmentAppearSound.Play(audioSource);
+            }
+        }
+
         /// <summary>
         /// Returns the list of currently selected augments (for removing chosen augment from pool).
         /// </summary>
         public List<Augment> GetSelectedAugments()
         {
             return selectedAugments;
+        }
+
+        public int DrawNextTierForRound()
+        {
+            return SelectRandomTier();
+        }
+
+        public List<Augment> DrawRandomAugmentsForTier(int tier, int count)
+        {
+            return SelectRandomAugments(tier, count);
+        }
+
+        public void SetCountdownValue(float timeRemaining)
+        {
+            if (countdownTimerText != null)
+            {
+                countdownTimerText.text = Mathf.CeilToInt(Mathf.Max(0f, timeRemaining)).ToString();
+            }
         }
 
         /// <summary>
@@ -775,6 +832,7 @@ namespace StarfallArena.UI
             HideAllTiers();
             isShowing = false;
             _activeGamepad = null;
+            _useExternalTimer = false;
 
             // Re-enable the UI module navigation for other screens
             EnableUIModuleNavigation();
@@ -789,21 +847,14 @@ namespace StarfallArena.UI
         /// </summary>
         private void DisableUIModuleNavigation()
         {
-            if (_uiInputModule == null && EventSystem.current != null)
-                _uiInputModule = EventSystem.current.GetComponent<InputSystemUIInputModule>();
-
-            if (_uiInputModule != null)
-            {
-                _uiInputModule.enabled = false;
-            }
+            // Leave the UI module enabled so mouse hover/click continues to work.
+            // Controller navigation is still constrained by the manual active-gamepad polling.
         }
 
         private void EnableUIModuleNavigation()
         {
-            if (_uiInputModule != null)
-            {
-                _uiInputModule.enabled = true;
-            }
+            // Intentionally left as a no-op. We do not disable the UI module during augment
+            // selection anymore because pointer-based hover/click is part of the active flow.
         }
 
         // ===== SELECTION EFFECT =====
@@ -955,7 +1006,10 @@ namespace StarfallArena.UI
             if (countdownTimerText != null)
             {
                 countdownTimerText.color = c;
-                countdownTimerText.text = Mathf.CeilToInt(selectionTimeLimit).ToString();
+                if (!_useExternalTimer)
+                {
+                    countdownTimerText.text = Mathf.CeilToInt(selectionTimeLimit).ToString();
+                }
             }
         }
 
@@ -987,6 +1041,11 @@ namespace StarfallArena.UI
 
         private IEnumerator RunCountdownTimer()
         {
+            if (_useExternalTimer)
+            {
+                yield break;
+            }
+
             float remaining = selectionTimeLimit;
 
             while (remaining > 0f)
@@ -1107,7 +1166,7 @@ namespace StarfallArena.UI
         /// <summary>
         /// Selects 3 random augments from the specified tier without duplicates.
         /// </summary>
-        private List<Augment> SelectRandomAugments(int tier)
+        private List<Augment> SelectRandomAugments(int tier, int count = 3)
         {
             List<Augment> sourceList = tier switch
             {
@@ -1117,18 +1176,22 @@ namespace StarfallArena.UI
                 _ => tier1Augments
             };
 
-            if (sourceList.Count < 3)
+            if (count <= 0)
             {
-                Debug.LogError($"Tier {tier} has fewer than 3 augments! Cannot populate augment select.");
+                return new List<Augment>();
+            }
+
+            if (sourceList.Count < count)
+            {
+                Debug.LogError($"Tier {tier} has fewer than {count} augments! Cannot populate augment select.");
                 return new List<Augment>();
             }
 
             // Create copy to avoid modifying original list
             List<Augment> availableAugments = new List<Augment>(sourceList);
-            List<Augment> selected = new List<Augment>(3);
+            List<Augment> selected = new List<Augment>(count);
 
-            // Pick 3 random augments without replacement
-            for (int i = 0; i < 3; i++)
+            for (int i = 0; i < count; i++)
             {
                 int randomIndex = Random.Range(0, availableAugments.Count);
                 selected.Add(availableAugments[randomIndex]);
@@ -1143,35 +1206,89 @@ namespace StarfallArena.UI
         /// </summary>
         private void PopulateUI(int tier, List<Augment> augments)
         {
-            if (augments.Count < 3)
+            if (augments == null || augments.Count == 0)
             {
                 Debug.LogError("Not enough augments selected to populate UI!");
                 return;
             }
 
+            UpdateDisplayedOptionCount(tier, augments.Count);
+
             switch (tier)
             {
                 case 1:
                     SetUIElements(tier1Choice1Icon, tier1Choice1Name, tier1Choice1Description, augments[0]);
-                    SetUIElements(tier1Choice2Icon, tier1Choice2Name, tier1Choice2Description, augments[1]);
-                    SetUIElements(tier1Choice3Icon, tier1Choice3Name, tier1Choice3Description, augments[2]);
+                    SetOptionalUIElements(1, 1, augments, tier1Choice2Icon, tier1Choice2Name, tier1Choice2Description);
+                    SetOptionalUIElements(1, 2, augments, tier1Choice3Icon, tier1Choice3Name, tier1Choice3Description);
                     break;
 
                 case 2:
                     SetUIElements(tier2Choice1Icon, tier2Choice1Name, tier2Choice1Description, augments[0]);
-                    SetUIElements(tier2Choice2Icon, tier2Choice2Name, tier2Choice2Description, augments[1]);
-                    SetUIElements(tier2Choice3Icon, tier2Choice3Name, tier2Choice3Description, augments[2]);
+                    SetOptionalUIElements(2, 1, augments, tier2Choice2Icon, tier2Choice2Name, tier2Choice2Description);
+                    SetOptionalUIElements(2, 2, augments, tier2Choice3Icon, tier2Choice3Name, tier2Choice3Description);
                     break;
 
                 case 3:
                     SetUIElements(tier3Choice1Icon, tier3Choice1Name, tier3Choice1Description, augments[0]);
-                    SetUIElements(tier3Choice2Icon, tier3Choice2Name, tier3Choice2Description, augments[1]);
-                    SetUIElements(tier3Choice3Icon, tier3Choice3Name, tier3Choice3Description, augments[2]);
+                    SetOptionalUIElements(3, 1, augments, tier3Choice2Icon, tier3Choice2Name, tier3Choice2Description);
+                    SetOptionalUIElements(3, 2, augments, tier3Choice3Icon, tier3Choice3Name, tier3Choice3Description);
                     break;
             }
 
             // Re-enable all card buttons (may have been disabled from previous pick)
             ReEnableCardButtons(tier);
+        }
+
+        private void SetOptionalUIElements(int tier, int choiceIndex, List<Augment> augments, Image icon, TextMeshProUGUI nameText, TextMeshProUGUI descriptionText)
+        {
+            bool isActive = augments.Count > choiceIndex;
+            SetCardActive(tier, choiceIndex, isActive);
+
+            if (isActive)
+            {
+                SetUIElements(icon, nameText, descriptionText, augments[choiceIndex]);
+                return;
+            }
+
+            if (icon != null)
+            {
+                icon.sprite = null;
+            }
+
+            if (nameText != null)
+            {
+                nameText.text = string.Empty;
+            }
+
+            if (descriptionText != null)
+            {
+                descriptionText.text = string.Empty;
+            }
+        }
+
+        private void UpdateDisplayedOptionCount(int tier, int optionCount)
+        {
+            Button[] buttons = GetButtonsForTier(tier);
+            if (buttons == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < buttons.Length; i++)
+            {
+                SetCardActive(tier, i, i < optionCount);
+            }
+        }
+
+        private void SetCardActive(int tier, int index, bool isActive)
+        {
+            Button[] buttons = GetButtonsForTier(tier);
+            if (buttons == null || index < 0 || index >= buttons.Length || buttons[index] == null)
+            {
+                return;
+            }
+
+            buttons[index].gameObject.SetActive(isActive);
         }
 
         /// <summary>
