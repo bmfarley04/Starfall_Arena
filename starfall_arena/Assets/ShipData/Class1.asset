@@ -12,6 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4126ca0ce3c78694f95eed711408a84b, type: 3}
   m_Name: Class1
   m_EditorClassIdentifier: Assembly-CSharp::ShipData
+  _shipId: 9219fbe4c7a848e095b199627d5ab9f4
   shipName: VX-ATLAS
   shipModelPrefab: {fileID: 1578230554132079418, guid: f81809c87c380914eaab5f42e5ab6b69, type: 3}
   player1VSPrefab: {fileID: 1578230554132079418, guid: 981d58a2fa9701b419c367a25db94fb3, type: 3}

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Unity.Netcode;
 using UnityEngine;
 
 
@@ -38,10 +39,42 @@ public struct RingOfFireConfig
     }
 }
 
-public class RingOfFireManager : MonoBehaviour
+/// <summary>
+/// Networked shrinking safe zone ("battle royale storm") with server-authoritative
+/// wave progression and damage.
+/// When a network session is active:
+///   - Server:  runs wave logic, interpolation, and damage ticks; writes ring state
+///              to NetworkVariables each frame. Damage flows through Entity.TakeDamage()
+///              which already broadcasts to clients.
+///   - Client:  reads NetworkVariables to update local display (line renderer + mask).
+///              Late-joining clients receive correct state automatically.
+///
+/// When no network session is running, all logic runs locally as before —
+/// no NetworkVariables are read or written.
+///
+/// Setup: the GameObject must have a NetworkObject component when used in networked mode.
+///
+/// Round flow: call StopRingOfFire() then StartRingOfFire() from the server/host
+/// to restart between rounds. Clients are notified via NetworkVariable change callbacks.
+/// </summary>
+public class RingOfFireManager : NetworkBehaviour
 {
     [Header("Ring of Fire Configuration")]
     public RingOfFireConfig config;
+
+    // ===== NETWORK STATE =====
+    private NetworkVariable<Vector2> _netSafeCenter = new NetworkVariable<Vector2>(
+        default, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+    private NetworkVariable<float> _netSafeWidth = new NetworkVariable<float>(
+        0f, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+    private NetworkVariable<float> _netSafeLength = new NetworkVariable<float>(
+        0f, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+    private NetworkVariable<float> _netSafeRadius = new NetworkVariable<float>(
+        0f, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+    private NetworkVariable<int> _netShapeType = new NetworkVariable<int>(
+        0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+    private NetworkVariable<bool> _netRingActive = new NetworkVariable<bool>(
+        false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
     // Ring of Fire state
     private bool _ringOfFireActive = false;
@@ -89,14 +122,66 @@ public class RingOfFireManager : MonoBehaviour
     {
         if (config.autoStart && config.waves != null && config.waves.Count > 0)
         {
+            // In networked mode, clients defer to OnNetworkSpawn for visual init
+            if (NetMgr.IsNetworked && !NetworkManager.Singleton.IsServer) return;
             StartRingOfFire();
         }
     }
 
+    public override void OnNetworkSpawn()
+    {
+        base.OnNetworkSpawn();
+
+        if (IsServer)
+        {
+            // If ring was already started locally (via OnEnable before networking),
+            // sync current state to NetworkVariables now
+            if (_ringOfFireActive)
+            {
+                SyncStateToNetwork();
+            }
+        }
+        else
+        {
+            // Client: listen for ring activation changes
+            _netRingActive.OnValueChanged += OnRingActiveChanged;
+
+            // Handle late join: ring may already be active on the server
+            if (_netRingActive.Value)
+            {
+                InitializeClientVisuals();
+            }
+        }
+    }
+
+    public override void OnNetworkDespawn()
+    {
+        if (!IsServer)
+        {
+            _netRingActive.OnValueChanged -= OnRingActiveChanged;
+        }
+        base.OnNetworkDespawn();
+    }
+
     void Update()
     {
-        if (_ringOfFireActive)
-            UpdateRingOfFire();
+        if (NetMgr.IsNetworked)
+        {
+            if (IsServer)
+            {
+                if (_ringOfFireActive)
+                    UpdateRingOfFire();
+            }
+            else
+            {
+                UpdateClientVisuals();
+            }
+        }
+        else
+        {
+            if (_ringOfFireActive)
+                UpdateRingOfFire();
+        }
     }
 
     #region Ring of Fire
@@ -104,6 +189,8 @@ public class RingOfFireManager : MonoBehaviour
     [ContextMenu("Start Ring of Fire")]
     public void StartRingOfFire()
     {
+        if (NetMgr.IsNetworked && !NetworkManager.Singleton.IsServer) return;
+
         if (config.waves == null || config.waves.Count == 0)
         {
             Debug.LogWarning("Cannot start Ring of Fire: No waves configured!");
@@ -238,16 +325,26 @@ public class RingOfFireManager : MonoBehaviour
         InitializeLineRenderer();
         InitializeSafeZoneMask();
 
-        Debug.Log($"Ring of Fire started! Wave 1/{config.waves.Count}");
+        // Sync initial state to clients (guards against pre-spawn calls internally)
+        if (NetMgr.IsNetworked)
+        {
+            SyncStateToNetwork();
+        }
     }
 
     [ContextMenu("Stop Ring of Fire")]
     public void StopRingOfFire()
     {
+        if (NetMgr.IsNetworked && !NetworkManager.Singleton.IsServer) return;
+
         _ringOfFireActive = false;
         if (_lineObj != null) _lineObj.SetActive(false);
         if (_maskParent != null) _maskParent.SetActive(false);
-        Debug.Log("Ring of Fire stopped!");
+
+        if (NetMgr.IsNetworked)
+        {
+            SyncStateToNetwork();
+        }
     }
 
     private void UpdateRingOfFire()
@@ -261,6 +358,12 @@ public class RingOfFireManager : MonoBehaviour
         if (_currentShapeType == WaveShapeType.Box)
         {
             _currentSafeBox = new WaveBox(_currentSafeCenter, _currentSafeWidth, _currentSafeLength);
+        }
+
+        // Sync interpolated state to clients
+        if (NetMgr.IsNetworked)
+        {
+            SyncStateToNetwork();
         }
 
         // Update the visual line
@@ -521,6 +624,7 @@ public class RingOfFireManager : MonoBehaviour
 
     private void ApplyFireDamage()
     {
+        if (NetMgr.IsNetworked && !IsServer) return;
         if (_currentWaveIndex >= config.waves.Count) return;
 
         Wave currentWave = config.waves[_currentWaveIndex];
@@ -625,6 +729,71 @@ public class RingOfFireManager : MonoBehaviour
     public WaveShapeType GetCurrentShapeType() => _currentShapeType;
     
     public float GetCurrentSafeRadius() => _currentSafeRadius;
+
+    // ===== NETWORK HELPERS =====
+
+    private void SyncStateToNetwork()
+    {
+        if (!IsSpawned) return;
+
+        _netSafeCenter.Value = _currentSafeCenter;
+        _netSafeWidth.Value = _currentSafeWidth;
+        _netSafeLength.Value = _currentSafeLength;
+        _netSafeRadius.Value = _currentSafeRadius;
+        _netShapeType.Value = (int)_currentShapeType;
+        _netRingActive.Value = _ringOfFireActive;
+    }
+
+    private void UpdateClientVisuals()
+    {
+        if (_netRingActive.Value && _ringOfFireActive)
+        {
+            _currentShapeType = (WaveShapeType)_netShapeType.Value;
+            _currentSafeCenter = _netSafeCenter.Value;
+            _currentSafeWidth = _netSafeWidth.Value;
+            _currentSafeLength = _netSafeLength.Value;
+            _currentSafeRadius = _netSafeRadius.Value;
+
+            if (_currentShapeType == WaveShapeType.Box)
+                _currentSafeBox = new WaveBox(_currentSafeCenter, _currentSafeWidth, _currentSafeLength);
+
+            UpdateLineRendererVisuals();
+        }
+        else if (!_netRingActive.Value && _ringOfFireActive)
+        {
+            // Server stopped the ring
+            _ringOfFireActive = false;
+            if (_lineObj != null) _lineObj.SetActive(false);
+            if (_maskParent != null) _maskParent.SetActive(false);
+        }
+    }
+
+    private void InitializeClientVisuals()
+    {
+        _currentShapeType = (WaveShapeType)_netShapeType.Value;
+        _currentSafeCenter = _netSafeCenter.Value;
+        _currentSafeWidth = _netSafeWidth.Value;
+        _currentSafeLength = _netSafeLength.Value;
+        _currentSafeRadius = _netSafeRadius.Value;
+        _ringOfFireActive = true;
+
+        InitializeLineRenderer();
+        InitializeSafeZoneMask();
+    }
+
+    private void OnRingActiveChanged(bool previousValue, bool newValue)
+    {
+        if (newValue)
+        {
+            InitializeClientVisuals();
+        }
+        else
+        {
+            _ringOfFireActive = false;
+            if (_lineObj != null) _lineObj.SetActive(false);
+            if (_maskParent != null) _maskParent.SetActive(false);
+        }
+    }
 
     public int GetCurrentWaveIndex() => _currentWaveIndex;
 

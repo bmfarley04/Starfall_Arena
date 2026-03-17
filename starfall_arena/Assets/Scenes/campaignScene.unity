@@ -396,7 +396,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &1497365220
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -431,7 +431,7 @@ MonoBehaviour:
   cameraLerpDuration: 0.8
   cameraLerpSettleDelay: 0.2
   winsRequired: 3
-  ability4UnlockRound: 3
+  ability4UnlockRound: 1
   player1HUDCanvas: {fileID: 0}
   player2HUDCanvas: {fileID: 0}
   player1AbilityCanvas: {fileID: 0}
@@ -932,7 +932,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6103655459887012557, guid: abfa508411c696a41bfc218cec79c630, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6103655459887012557, guid: abfa508411c696a41bfc218cec79c630, type: 3}
+      propertyPath: m_TagString
+      value: Player1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -1028,6 +1032,10 @@ PrefabInstance:
       propertyPath: m_Camera
       value: 
       objectReference: {fileID: 1867909032}
+    - target: {fileID: 1732132673403547521, guid: dab56be66f149c34fbedb1fc28a943e6, type: 3}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 2235888782884863366, guid: dab56be66f149c34fbedb1fc28a943e6, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
@@ -1056,6 +1064,10 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: c7ce114f7cdf8734caa1bccec8f31bd5, type: 2}
+    - target: {fileID: 3851055056494921528, guid: dab56be66f149c34fbedb1fc28a943e6, type: 3}
+      propertyPath: GlobalObjectIdHash
+      value: 3817225663
+      objectReference: {fileID: 0}
     - target: {fileID: 4844527601853669723, guid: dab56be66f149c34fbedb1fc28a943e6, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 

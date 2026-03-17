@@ -226,9 +226,9 @@ public class FighterEnemyScript : Enemy
         if (shouldThrust)
         {
             _isThrusting = true;
-            Vector2 thrustDirection = transform.up; // Always thrust forward
-            _rb.AddForce(thrustDirection * movement.thrustForce);
             ApplyLateralDamping();
+            Vector2 thrustDirection = transform.up; // Always thrust forward
+            _rb.linearVelocity += thrustDirection * (movement.thrustForce / _rb.mass) * Time.fixedDeltaTime;
         }
         else
         {
@@ -835,10 +835,10 @@ public class FighterEnemyScript : Enemy
 
     #region Damage Response
 
-    public override void TakeDamage(float damage, float impactForce = 0f, Vector3 hitPoint = default, DamageSource source = DamageSource.Projectile)
+    public override void TakeDamage(float damage, float impactForce = 0f, Vector3 hitPoint = default, DamageSource source = DamageSource.Projectile, Entity attacker = null, int accuracyAttackId = Player.InvalidAttackId)
     {
         _lastDamageTime = Time.time;
-        base.TakeDamage(damage, impactForce, hitPoint, source);
+        base.TakeDamage(damage, impactForce, hitPoint, source, attacker, accuracyAttackId);
     }
 
     #endregion
@@ -918,8 +918,8 @@ public class FighterEnemyScript : Enemy
         // Random left/right
         if (Random.value > 0.5f) dodgeDirection = -dodgeDirection;
 
-        // Apply impulse
-        _rb.AddForce(dodgeDirection * dodgeImpulseForce, ForceMode2D.Impulse);
+        // Direct velocity change (deterministic equivalent of ForceMode2D.Impulse)
+        _rb.linearVelocity += dodgeDirection * (dodgeImpulseForce / _rb.mass);
     }
 
     #endregion

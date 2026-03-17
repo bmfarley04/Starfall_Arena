@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
+using Unity.Netcode;
 
 /// <summary>
 /// A fire hazard zone that damages entities that enter it.
@@ -32,6 +33,8 @@ public class FireHazard : MonoBehaviour
     private SpriteRenderer _spriteRenderer;
     private ParticleSystem _particleSystem;
     private float _originalAlpha;
+    private bool _isCosmeticOnly = false;
+    private Player _owner;
 
     private void Awake()
     {
@@ -52,13 +55,19 @@ public class FireHazard : MonoBehaviour
     /// <summary>
     /// Initialize the fire hazard with combat settings.
     /// </summary>
-    public void Initialize(string enemyTag, float dps, float duration, float force)
+    public void Initialize(string enemyTag, float dps, float duration, float force, Player owner = null)
     {
         targetTag = enemyTag;
         damagePerSecond = dps;
         lifetime = duration;
         impactForce = force;
+        _owner = owner;
         _spawnTime = Time.time;
+    }
+
+    public void SetCosmeticOnly(bool isCosmeticOnly)
+    {
+        _isCosmeticOnly = isCosmeticOnly;
     }
 
     private void Update()
@@ -99,6 +108,16 @@ public class FireHazard : MonoBehaviour
 
     private void FixedUpdate()
     {
+        if (_isCosmeticOnly)
+        {
+            return;
+        }
+
+        if (NetTickUtil.IsActive && (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsServer))
+        {
+            return;
+        }
+
         // Apply damage to all entities currently inside the hazard
         float damageThisFrame = damagePerSecond * Time.fixedDeltaTime;
         
@@ -109,7 +128,7 @@ public class FireHazard : MonoBehaviour
         {
             if (entity != null)
             {
-                entity.TakeDamage(damageThisFrame, impactForce, transform.position, DamageSource.Other);
+                entity.TakeDamage(damageThisFrame, impactForce, transform.position, DamageSource.Other, _owner, Player.InvalidAttackId);
             }
         }
         
