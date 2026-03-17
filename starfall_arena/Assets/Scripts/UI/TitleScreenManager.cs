@@ -150,10 +150,15 @@ public class TitleScreenManager : MonoBehaviour
             _sessionData.OnSessionStateChanged += HandleSessionStateChanged;
             _sessionData.OnStatusMessageChanged += HandleStatusMessageChanged;
 
-            if (!NetMgr.IsNetworked)
+            // Always reset session data when loading the title screen.
+            // If a prior networked game didn't fully shut down, force cleanup now
+            // so the player can host or join a fresh session.
+            if (NetMgr.IsNetworked && _netMgr != null)
             {
-                _sessionData.ResetToTitleLocal();
+                _netMgr.ShutdownToTitle();
             }
+
+            _sessionData.ResetToTitleLocal();
         }
 
         ResetHoldVisuals();
