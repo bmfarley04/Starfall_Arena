@@ -86,14 +86,13 @@ public class EmpoweredShot : Ability
 
     private void FireEmpoweredShot()
     {
-        player.shotsFired += player.turrets.Length;
-
         float damage = player.projectileWeapon.damage * empoweredShot.damageMultiplier;
         float speed = player.projectileWeapon.speed * empoweredShot.speedMultiplier;
         float impactForce = player.projectileWeapon.impactForce * empoweredShot.impactMultiplier;
         float recoil = player.projectileWeapon.recoilForce * empoweredShot.recoilMultiplier;
 
         bool useNetworkPath = NetTickUtil.IsActive && _netMovement != null && _netMovement.IsSpawned && _netMovement.IsOwner;
+        int attackId = useNetworkPath ? Player.InvalidAttackId : player.BeginTrackedAttack();
         for (int i = 0; i < player.turrets.Length; i++)
         {
             Transform turret = player.turrets[i];
@@ -157,7 +156,8 @@ public class EmpoweredShot : Ability
                     damage,
                     empoweredShot.lifetime,
                     impactForce,
-                    player
+                    player,
+                    attackId
                 );
 
                 projectileScript.EnableSlow(empoweredShot.slowMultiplier, empoweredShot.slowDuration);

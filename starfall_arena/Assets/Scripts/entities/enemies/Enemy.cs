@@ -567,10 +567,10 @@ public abstract class Enemy : Entity
     }
 
     // ===== DAMAGE & DEATH =====
-    public override void TakeDamage(float damage, float impactForce = 0f, Vector3 hitPoint = default, DamageSource source = DamageSource.Projectile)
+    public override void TakeDamage(float damage, float impactForce = 0f, Vector3 hitPoint = default, DamageSource source = DamageSource.Projectile, Entity attacker = null, int accuracyAttackId = Player.InvalidAttackId)
     {
         PlayHitSound(source);
-        base.TakeDamage(damage, impactForce, hitPoint, source);
+        base.TakeDamage(damage, impactForce, hitPoint, source, attacker, accuracyAttackId);
     }
 
     protected override void Die()

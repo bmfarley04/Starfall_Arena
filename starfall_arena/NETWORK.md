@@ -127,6 +127,7 @@ The active network gameplay scene now assumes:
 - round-end presentation must be broadcast explicitly
 - augment selection is a synchronized timed phase with separate local pools for each player
 - game-end presentation must also be broadcast explicitly and remapped to local-player perspective on each client
+- local result presentation should be derived from `payload.WinningPlayer` versus the local slot, while the actual game-end canvas selection can still stay slot-based (`player1` on host, `player2` on remote client)
 
 ### NetMovement
 
@@ -322,6 +323,7 @@ The existing movement implementation is a real first step toward that architectu
 - `Player.externalMovementControl` is the bridge that lets networking take over physics without discarding the existing input callbacks.
 - Remote proxies disable `Player` and rely on interpolation instead of duplicating gameplay logic client-side. Because `Player` is disabled, systems that normally run in `Player.Update()` must be driven externally by `NetMovement` for remote/server copies. Currently this includes thruster visuals (driven via `ApplyNetworkThrustState` from state snapshot thrust flag) and shield regeneration (driven via `TickShieldRegeneration` on the server, with shield value broadcast in state snapshots for remote regen visuals).
 - Bug note: round-intro movement locking in network gameplay must not rely only on a one-shot RPC during spawn. If the owner misses that transient lock state, they can move during the opening countdown. Keep the authoritative movement-lock state persisted on `NetMovement` so newly spawned owners apply it immediately on `OnNetworkSpawn`.
+- Bug note: HUD/win-indicator visuals are not implicitly synchronized by NGO just because the match state changed on the server. Client HUD layering needs deterministic local canvas camera/sorting setup, and round-win indicators need an explicit replicated payload/event for the current win counts.
 - `Entity` banking/pitching on the 3D visual model now rides in `NetStateSnapshot`; remote proxies should consume the replicated visual tilt instead of recomputing it from interpolated root movement, or turns/recoil can look flat or mismatched.
 - For client-owned ships, the server/display side should forward the owner's reported visual tilt instead of recomputing bank from the server copy's root rotation, or the host view can over-bank badly.
 - Host mode requires special care to avoid double-simulating owner movement, and `NetMovement` already includes host-specific handling for that.

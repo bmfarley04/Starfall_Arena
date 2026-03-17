@@ -295,7 +295,7 @@ public abstract class Entity : MonoBehaviour
     }
 
     // ===== DAMAGE SYSTEM =====
-    public virtual void TakeDamage(float damage, float impactForce = 0f, Vector3 hitPoint = default, DamageSource source = DamageSource.Projectile)
+    public virtual void TakeDamage(float damage, float impactForce = 0f, Vector3 hitPoint = default, DamageSource source = DamageSource.Projectile, Entity attacker = null, int accuracyAttackId = Player.InvalidAttackId)
     {
         if (_isDead) return;
 
@@ -321,6 +321,8 @@ public abstract class Entity : MonoBehaviour
         bool hasShield = currentShield > 0 && !shieldIgnored;
         bool shieldTookHit = false;
         bool shieldBroke = false;
+        float appliedShieldDamage = 0f;
+        float appliedHealthDamage = 0f;
 
         if (hasShield)
         {
@@ -328,6 +330,7 @@ public abstract class Entity : MonoBehaviour
 
             float shieldDamage = Mathf.Min(currentShield, damage);
             currentShield -= shieldDamage;
+            appliedShieldDamage = shieldDamage;
             shieldTookHit = shieldDamage > 0f;
             OnShieldChanged();
 
@@ -347,6 +350,7 @@ public abstract class Entity : MonoBehaviour
 
             if (shieldDamage >= damage)
             {
+                RecordDamageStats(attacker, accuracyAttackId, appliedShieldDamage);
                 BroadcastAuthoritativeCombatState(hitPoint, source, shieldTookHit, shieldBroke, impactForce);
                 return;
             }
@@ -356,6 +360,7 @@ public abstract class Entity : MonoBehaviour
 
         if (!healthIgnored)
         {
+            appliedHealthDamage = Mathf.Min(currentHealth, damage);
             currentHealth -= damage;
         }
         OnHealthChanged();
@@ -365,6 +370,7 @@ public abstract class Entity : MonoBehaviour
             Die();
         }
 
+        RecordDamageStats(attacker, accuracyAttackId, appliedShieldDamage + appliedHealthDamage);
         BroadcastAuthoritativeCombatState(hitPoint, source, shieldTookHit, shieldBroke, impactForce);
     }
 
@@ -408,7 +414,7 @@ public abstract class Entity : MonoBehaviour
     /// Deals damage directly to health, bypassing shields entirely.
     /// Used by physical projectiles that ignore shields.
     /// </summary>
-    public virtual void TakeDirectDamage(float damage, float impactForce = 0f, Vector3 hitPoint = default, DamageSource source = DamageSource.Projectile)
+    public virtual void TakeDirectDamage(float damage, float impactForce = 0f, Vector3 hitPoint = default, DamageSource source = DamageSource.Projectile, Entity attacker = null, int accuracyAttackId = Player.InvalidAttackId)
     {
         if (_isDead) return;
 
@@ -428,8 +434,10 @@ public abstract class Entity : MonoBehaviour
             _lastDamageDirection = Vector2.zero;
         }
 
+        float appliedHealthDamage = 0f;
         if (!healthIgnored)
         {
+            appliedHealthDamage = Mathf.Min(currentHealth, damage);
             currentHealth -= damage;
         }
         OnHealthChanged();
@@ -439,7 +447,27 @@ public abstract class Entity : MonoBehaviour
             Die();
         }
 
+        RecordDamageStats(attacker, accuracyAttackId, appliedHealthDamage);
         BroadcastAuthoritativeCombatState(hitPoint, source, false, false, impactForce);
+    }
+
+    protected void RecordDamageStats(Entity attacker, int accuracyAttackId, float appliedDamage)
+    {
+        if (appliedDamage <= 0f)
+        {
+            return;
+        }
+
+        if (this is Player targetPlayer)
+        {
+            targetPlayer.RecordDamageTaken(appliedDamage);
+
+            if (attacker is Player attackingPlayer)
+            {
+                attackingPlayer.RecordDamageDealt(appliedDamage);
+                attackingPlayer.RegisterAttackHit(accuracyAttackId);
+            }
+        }
     }
 
     public void ApplyAuthoritativeCombatState(float health, float shield, Vector2 hitPoint, DamageSource source, bool shieldHit, bool shieldBreak)

@@ -8,6 +8,7 @@ using UnityEngine.Rendering.Universal;
 using StarfallArena.UI;
 using TMPro;
 using System;
+using System.Collections;
 
 [System.Serializable]
 public struct ShieldRegenConfig
@@ -152,6 +153,7 @@ public abstract class Player : Entity
     [HideInInspector] public bool externalMovementControl = false;
 
     // ===== STAT TRACKING =====
+    public const int InvalidAttackId = -1;
     [HideInInspector] public int shotsFired;
     [HideInInspector] public int shotsHit;
     [HideInInspector] public float damageDealt;
@@ -183,6 +185,8 @@ public abstract class Player : Entity
     private bool _isAnchored = false;
     private float _anchorDragAccumulator = 0f;
     private PlayerInput _playerInput;
+    private int _nextAttackId = 1;
+    private readonly HashSet<int> _registeredHitAttackIds = new HashSet<int>();
 
     // Public getter so augments and other systems can check whether the player is anchored
     public bool IsAnchored => _isAnchored;
@@ -668,8 +672,6 @@ public abstract class Player : Entity
         NetMovement netMovement = GetComponent<NetMovement>();
         if (NetTickUtil.IsActive && netMovement != null && netMovement.IsSpawned && netMovement.IsOwner)
         {
-            shotsFired += turrets.Length;
-
             for (int turretIndex = 0; turretIndex < turrets.Length; turretIndex++)
             {
                 Transform turret = turrets[turretIndex];
@@ -727,7 +729,7 @@ public abstract class Player : Entity
             return;
         }
 
-        shotsFired += turrets.Length;
+        int attackId = BeginTrackedAttack();
 
         foreach (var turret in turrets)
         {
@@ -743,7 +745,8 @@ public abstract class Player : Entity
                     projectileWeapon.damage,
                     projectileWeapon.lifetime,
                     projectileWeapon.impactForce,
-                    this
+                    this,
+                    attackId
                 );
             }
         }
@@ -822,7 +825,7 @@ public abstract class Player : Entity
     }
 
     // ===== DAMAGE HANDLING =====
-    public override void TakeDamage(float damage, float impactForce = 0f, Vector3 hitPoint = default, DamageSource source = DamageSource.Projectile)
+    public override void TakeDamage(float damage, float impactForce = 0f, Vector3 hitPoint = default, DamageSource source = DamageSource.Projectile, Entity attacker = null, int accuracyAttackId = InvalidAttackId)
     {
         if (abilities.Any(a => a != null && a.HasDamageMitigation() == true))
         {
@@ -835,13 +838,11 @@ public abstract class Player : Entity
             activeAbility.ApplyTakeDamageMultiplier(ref damage);
         }
 
-        damageTaken += damage;
-
         float previousShield = currentShield;
 
         _lastShieldHitTime = Time.time;
 
-        base.TakeDamage(damage, impactForce, hitPoint, source);
+        base.TakeDamage(damage, impactForce, hitPoint, source, attacker, accuracyAttackId);
 
         // In networked play, TakeDamage only runs on the server. Audio for non-owner
         // players is handled by PlayNetworkDamageSounds via BroadcastCombatStateClientRpc.
@@ -1082,9 +1083,19 @@ public abstract class Player : Entity
 
     public void PrepareForRoundEndFreeze()
     {
+        _isThrustPressed = false;
         _isFiring = false;
         _isThrusting = false;
         _lookInput = Vector2.zero;
+        _frictionTimer = 0f;
+
+        foreach (var ability in abilities)
+        {
+            if (ability != null)
+            {
+                ability.Die();
+            }
+        }
 
         if (_rb != null)
         {
@@ -1218,6 +1229,63 @@ public abstract class Player : Entity
         shotsHit = 0;
         damageDealt = 0f;
         damageTaken = 0f;
+        _nextAttackId = 1;
+        _registeredHitAttackIds.Clear();
+    }
+
+    public bool HasStatsAuthority()
+    {
+        if (!NetTickUtil.IsActive)
+        {
+            return true;
+        }
+
+        NetMovement netMovement = GetComponent<NetMovement>();
+        return netMovement == null || netMovement.IsServer;
+    }
+
+    public int BeginTrackedAttack(bool countsTowardAccuracy = true)
+    {
+        if (!countsTowardAccuracy || !HasStatsAuthority())
+        {
+            return InvalidAttackId;
+        }
+
+        shotsFired++;
+        return _nextAttackId++;
+    }
+
+    public void RegisterAttackHit(int attackId)
+    {
+        if (!HasStatsAuthority() || attackId == InvalidAttackId)
+        {
+            return;
+        }
+
+        if (_registeredHitAttackIds.Add(attackId))
+        {
+            shotsHit++;
+        }
+    }
+
+    public void RecordDamageDealt(float amount)
+    {
+        if (!HasStatsAuthority() || amount <= 0f)
+        {
+            return;
+        }
+
+        damageDealt += amount;
+    }
+
+    public void RecordDamageTaken(float amount)
+    {
+        if (!HasStatsAuthority() || amount <= 0f)
+        {
+            return;
+        }
+
+        damageTaken += amount;
     }
 
     // ===== HUD AUTO-DISCOVERY =====

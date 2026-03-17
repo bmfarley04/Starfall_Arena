@@ -220,6 +220,8 @@ public class Beam : Ability
 
     public override void Die()
     {
+        ApplyNetworkBeamState(false, authoritative: NetTickUtil.IsActive && _netMovement != null && _netMovement.IsServer);
+
         if (_laserBeamSource != null && _laserBeamSource.isPlaying)
         {
             _laserBeamSource.Stop();

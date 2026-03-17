@@ -132,6 +132,8 @@ public class TitleScreenManager : MonoBehaviour
     private float _submitHoldTime;
     private float _backHoldTime;
     private bool _navigationLatch;
+    private bool _submitTriggeredWhileHeld;
+    private HoldActionButton _resolvedControlsBackButton;
 
     private IEnumerator Start()
     {
@@ -498,7 +500,14 @@ public class TitleScreenManager : MonoBehaviour
         if (activeButton.target == null || !submitHeld)
         {
             _submitHoldTime = 0f;
+            _submitTriggeredWhileHeld = false;
             UpdateFill(activeButton.fillImage, 1f);
+            return;
+        }
+
+        if (_submitTriggeredWhileHeld)
+        {
+            UpdateFill(activeButton.fillImage, 0f);
             return;
         }
 
@@ -511,7 +520,8 @@ public class TitleScreenManager : MonoBehaviour
         }
 
         _submitHoldTime = 0f;
-        UpdateFill(activeButton.fillImage, 1f);
+        _submitTriggeredWhileHeld = true;
+        UpdateFill(activeButton.fillImage, 0f);
 
         if (activeButton.target == joinConfirmButton.target)
         {
@@ -666,7 +676,7 @@ public class TitleScreenManager : MonoBehaviour
     {
         if (_activeCanvas == controlsCanvas)
         {
-            return joinBackButton;
+            return GetControlsBackButton();
         }
 
         if (_activeCanvas == joinGameCanvas)
@@ -682,10 +692,49 @@ public class TitleScreenManager : MonoBehaviour
         return default;
     }
 
+    private HoldActionButton GetControlsBackButton()
+    {
+        if (_resolvedControlsBackButton.target != null)
+        {
+            return _resolvedControlsBackButton;
+        }
+
+        if (controlsCanvas == null)
+        {
+            return default;
+        }
+
+        RectTransform[] controlsChildren = controlsCanvas.GetComponentsInChildren<RectTransform>(true);
+        foreach (RectTransform child in controlsChildren)
+        {
+            if (child == null || !child.name.Equals("Back", System.StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            Image fillImage = child.GetComponent<Image>();
+            if (fillImage == null)
+            {
+                fillImage = child.GetComponentInChildren<Image>(true);
+            }
+
+            _resolvedControlsBackButton = new HoldActionButton
+            {
+                target = child.gameObject,
+                fillImage = fillImage
+            };
+
+            return _resolvedControlsBackButton;
+        }
+
+        return default;
+    }
+
     private void ResetHoldVisuals()
     {
         _submitHoldTime = 0f;
         _backHoldTime = 0f;
+        _submitTriggeredWhileHeld = false;
         ResetSubmitFillVisuals(null);
         ResetBackFillVisuals(null);
     }

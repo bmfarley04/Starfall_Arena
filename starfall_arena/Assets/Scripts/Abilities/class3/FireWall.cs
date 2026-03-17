@@ -293,7 +293,8 @@ public class FireWall : Ability
                 player.enemyTag,
                 fireTrail.damagePerSecond,
                 fireTrail.fireDuration,
-                fireTrail.impactForce
+                fireTrail.impactForce,
+                player
             );
 
             bool authoritativeHazard = !NetTickUtil.IsActive || (_netMovement != null && _netMovement.IsServer);
@@ -331,7 +332,7 @@ public class FireWall : Ability
         FireHazard fireHazard = hazard.GetComponent<FireHazard>();
         if (fireHazard != null)
         {
-            fireHazard.Initialize(player.enemyTag, spawnData.DamagePerSecond, spawnData.Lifetime, spawnData.ImpactForce);
+            fireHazard.Initialize(player.enemyTag, spawnData.DamagePerSecond, spawnData.Lifetime, spawnData.ImpactForce, player);
             fireHazard.SetCosmeticOnly(true);
         }
 

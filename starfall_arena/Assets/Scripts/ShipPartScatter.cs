@@ -23,6 +23,7 @@ public class ShipPartScatter : MonoBehaviour
     private Vector3 _rotationVelocity;
     private Vector3 _initialRotationVelocity;
     private Rigidbody2D _rb;
+    private bool _persistAfterScatter;
 
     [Header("Visual Effect")]
     [Tooltip("Part lifetime before despawn (seconds)")]
@@ -41,6 +42,11 @@ public class ShipPartScatter : MonoBehaviour
 
     [Tooltip("Angular drag")]
     public float angularDrag = 0.3f;
+
+    public void SetPersistAfterScatter(bool persistAfterScatter)
+    {
+        _persistAfterScatter = persistAfterScatter;
+    }
 
     public void Scatter(Vector2 damageDirection)
     {
@@ -108,7 +114,7 @@ public class ShipPartScatter : MonoBehaviour
         float shrinkDuration = lifetime * (1f - shrinkStartTime);
         float initialSpeed = _rb.linearVelocity.magnitude;
 
-        while (elapsed < lifetime)
+        while (_persistAfterScatter || elapsed < lifetime)
         {
             elapsed += Time.deltaTime;
 
@@ -122,6 +128,12 @@ public class ShipPartScatter : MonoBehaviour
 
             // Apply 3D rotation manually
             transform.Rotate(_rotationVelocity * Time.deltaTime, Space.World);
+
+            if (_persistAfterScatter)
+            {
+                yield return null;
+                continue;
+            }
 
             // Scale shrinking phase
             if (elapsed >= shrinkStartDelay)

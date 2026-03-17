@@ -177,14 +177,12 @@ public class FaerieShift : Ability
 
     public override void Die()
     {
-        base.Die();
-
-        // Reset scale if player dies while shifted
         if (_isActive && player != null)
         {
-            player.transform.localScale = _originalScale;
-            _isActive = false;
+            DeactivateShift();
         }
+
+        base.Die();
     }
 
     public void ApplyNetworkShiftState(bool isActive, bool authoritative)

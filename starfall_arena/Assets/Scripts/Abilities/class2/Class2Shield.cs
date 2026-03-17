@@ -129,6 +129,17 @@ public class Class2Shield : Ability
 
     public override void Die()
     {
+        if (_shieldCoroutine != null)
+        {
+            StopCoroutine(_shieldCoroutine);
+            _shieldCoroutine = null;
+        }
+
+        if (shieldConfig.shield != null && shieldConfig.shield.IsActive())
+        {
+            shieldConfig.shield.Deactivate();
+        }
+
         if (_shieldSource != null && _shieldSource.isPlaying)
         {
             _shieldSource.Stop();

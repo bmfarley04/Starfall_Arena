@@ -74,6 +74,12 @@ Important design note:
 
 The player base is the true center of current duel gameplay.
 
+Stats note:
+
+- match stats are now authoritative-damage based rather than projectile-payload based
+- `damageDealt` and `damageTaken` are recorded from the actual shield-plus-hull damage that was successfully applied
+- in network play, combat stats should only be mutated on the server-authoritative gameplay path
+
 Input note:
 
 - controller-first design remains the default
@@ -288,6 +294,13 @@ Networked combat note:
 - `FireWall` hazards now treat the server-spawned hazard as gameplay truth in network play; remote client hazards are cosmetic-only
 - `Reflector` activation is now forwarded to the server in network sessions so reflection decisions happen on the authoritative side
 - `TriggerBomb`, `FaerieShift`, and `Invisibility` now also route through the network combat/state framework so Class3 ability state is no longer local-only during network play
+- combat accuracy now uses per-attack rules instead of per-projectile rules:
+  - Class1 counts primary-fire volleys and `GigaBlast`
+  - Class1 `Beam` damage contributes to damage stats but does not affect accuracy
+  - Class2 counts primary-fire volleys, `EmpoweredShot`, and `PhysicalProjectile`
+  - Class3 counts primary-fire volleys and `TriggerBomb`
+  - multi-projectile volleys count as one attack, and any hit within that volley awards the full hit credit
+- reflected projectiles now transfer damage credit to the reflecting player, but they should not inherit the original projectile's accuracy credit
 - Bug note: `Class3_Player.prefab` friction tuning must stay aligned with the shared `Player` friction system. If `frictionDelay` or `frictionDeceleration` are left at zero, the Class3 friction toggle will look broken even when the network/input code is correct.
 - Bug note: `Invisibility` should explicitly hide and restore ship renderers during activation instead of relying on layer changes alone. The layer swap is still needed for targeting/filtering, but by itself it is not reliable enough as player-facing feedback.
 - Bug note: `Invisibility` is enemy-facing concealment, not self-blindness. The owning player should keep seeing their own ship, and invisibility should immediately break when Class3 takes another offensive action such as primary fire, `FireWall`, `FaerieShift`, or `TriggerBomb`.
@@ -393,5 +406,6 @@ Network persistence note:
 - Ability behavior is component-based and distributed, so changes often require docs updates in both gameplay and UI/flow docs.
 - Bug note: modular abilities should initialize their cooldown timer in a ready state. If the base `Ability.lastUsedAbility` starts at `0`, newly spawned ships can have abilities appear broken until each cooldown elapses once.
 - Bug note: teleport-style abilities that hide renderers during their effect need an interruption-safe restore path, or a ship can remain hittable while visually invisible if the coroutine is stopped mid-ability.
+- Bug note: if duel stats ever start diverging again, check for damage sources bypassing `Entity.TakeDamage(...)` / `TakeDirectDamage(...)` without passing the attacking player through. That was the root cause of mismatched dealt-vs-taken totals and missing ability/reflection credit.
 - `Assets/Scripts/3d` is future-facing groundwork for a more fully 3D version of the game, not a current core maintenance area.
 - Bugs in combat, ability timing, or augment behavior should be added here in the relevant section once discovered.
