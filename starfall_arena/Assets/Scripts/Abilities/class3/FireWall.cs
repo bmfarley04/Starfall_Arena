@@ -211,6 +211,17 @@ public class FireWall : Ability
             {
                 _isActive = true;
                 _lastSpawnPosition = transform.position;
+
+                // Create a group with audio source so remote hazards get tracked
+                // and the group-based audio management in Update() works.
+                AudioSource groupAudioSource = gameObject.AddComponent<AudioSource>();
+                groupAudioSource.playOnAwake = false;
+                groupAudioSource.loop = true;
+                groupAudioSource.spatialBlend = 0f;
+                _currentGroup = new FireHazardGroup(groupAudioSource);
+                _hazardGroups.Add(_currentGroup);
+
+                StartFireLoopSound();
                 return;
             }
 
@@ -238,9 +249,11 @@ public class FireWall : Ability
         groupAudioSource.playOnAwake = false;
         groupAudioSource.loop = true;
         groupAudioSource.spatialBlend = 0f;
-        
+
         _currentGroup = new FireHazardGroup(groupAudioSource);
         _hazardGroups.Add(_currentGroup);
+
+        StartFireLoopSound();
 
         // Spawn initial fire hazard
         SpawnFireHazard();
@@ -250,6 +263,7 @@ public class FireWall : Ability
     {
         _isActive = false;
         _currentGroup = null;
+        StopFireLoopSound();
     }
 
     private void SpawnFireHazard()
@@ -320,6 +334,13 @@ public class FireWall : Ability
             fireHazard.Initialize(player.enemyTag, spawnData.DamagePerSecond, spawnData.Lifetime, spawnData.ImpactForce);
             fireHazard.SetCosmeticOnly(true);
         }
+
+        _activeHazards.Add(hazard);
+
+        if (_currentGroup != null)
+        {
+            _currentGroup.hazards.Add(hazard);
+        }
     }
 
     public override bool IsAbilityActive()
@@ -373,6 +394,29 @@ public class FireWall : Ability
     }
 
     // ===== AUDIO =====
+
+    private void StartFireLoopSound()
+    {
+        if (fireTrail.fireLoopSound != null && _fireLoopSource != null)
+        {
+            _fireLoopSource.volume = 0f;
+            fireTrail.fireLoopSound.Play(_fireLoopSource);
+            _soundFadeCoroutine = StartCoroutine(FadeVolume(fireTrail.fireLoopSound.volume));
+        }
+    }
+
+    private void StopFireLoopSound()
+    {
+        if (_fireLoopSource != null && _fireLoopSource.isPlaying)
+        {
+            if (_soundFadeCoroutine != null)
+            {
+                StopCoroutine(_soundFadeCoroutine);
+            }
+            _soundFadeCoroutine = StartCoroutine(FadeVolume(0f, stopAfterFade: true));
+        }
+    }
+
     private System.Collections.IEnumerator FadeVolume(float targetVolume, bool stopAfterFade = false)
     {
         if (_fireLoopSource == null) yield break;
