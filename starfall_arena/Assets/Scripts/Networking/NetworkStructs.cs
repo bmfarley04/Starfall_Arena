@@ -79,6 +79,9 @@ public struct NetStateSnapshot : INetworkSerializable
     /// <summary>Current shield value (for remote shield regen visuals).</summary>
     public float Shield;
 
+    /// <summary>Current health value (for augment-driven healing and HUD sync).</summary>
+    public float Health;
+
     public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
     {
         serializer.SerializeValue(ref Tick);
@@ -92,6 +95,7 @@ public struct NetStateSnapshot : INetworkSerializable
         serializer.SerializeValue(ref FrictionEnabled);
         serializer.SerializeValue(ref Thrust);
         serializer.SerializeValue(ref Shield);
+        serializer.SerializeValue(ref Health);
     }
 }
 

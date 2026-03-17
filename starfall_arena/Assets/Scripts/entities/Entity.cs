@@ -684,6 +684,12 @@ public abstract class Entity : MonoBehaviour
         OnShieldChanged();
     }
 
+    public void ApplyNetworkHealthState(float health)
+    {
+        currentHealth = Mathf.Clamp(health, 0f, maxHealth);
+        OnHealthChanged();
+    }
+
     private void UpdateThrusters()
     {
         if (Time.deltaTime <= 0f) return;
@@ -752,6 +758,16 @@ public abstract class Entity : MonoBehaviour
     {
         currentRound = round;
         _augmentController?.SetCurrentRound(round);
+    }
+
+    public void TickAugmentEffects()
+    {
+        _augmentController?.ExecuteEffects();
+    }
+
+    public void NotifyAuthoritativeDamageReceived(DamageSource source)
+    {
+        _augmentController?.OnTakeDamage(0f, 0f, transform.position, source);
     }
 
     public void SetShieldValue(float value, bool notify = true, bool clampToMax = true)
@@ -879,6 +895,7 @@ public abstract class Entity : MonoBehaviour
         SetCurrentRound(currentRound);
         augments.Add(augment);
         _augmentController?.AcquireAugment(augment, currentRound);
+        BroadcastNetworkAugmentLoadout();
     }
 
     public void ImportAugmentLoadout(List<AugmentLoadoutEntry> entries, int round)
@@ -896,6 +913,7 @@ public abstract class Entity : MonoBehaviour
         }
 
         _augmentController?.ImportLoadout(entries, round);
+        BroadcastNetworkAugmentLoadout();
     }
 
     public List<AugmentLoadoutEntry> ExportAugmentLoadout()
@@ -941,6 +959,22 @@ public abstract class Entity : MonoBehaviour
         }
 
         _augmentController?.ImportNetworkLoadout(entries, round);
+    }
+
+    private void BroadcastNetworkAugmentLoadout()
+    {
+        if (!NetTickUtil.IsActive)
+        {
+            return;
+        }
+
+        NetMovement netMovement = GetComponent<NetMovement>();
+        if (netMovement == null || !netMovement.IsServer)
+        {
+            return;
+        }
+
+        netMovement.SyncCurrentAugmentLoadoutAuthoritative(currentRound, ExportNetworkAugmentLoadout());
     }
 
     public void SetAugmentVariables()

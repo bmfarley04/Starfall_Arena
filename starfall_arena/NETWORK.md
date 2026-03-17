@@ -255,6 +255,7 @@ Current behavior:
 - the server receives fire/start/stop requests for projectile, beam, fire-trail, and reflect actions
 - the server spawns and owns the real gameplay projectile / beam / fire hazard behavior
 - non-owning clients receive cosmetic spawn/state RPCs so they can render the same weapon events without applying gameplay damage
+- networked augment loadouts are also pushed from the server to each player replica after spawn and on live augment acquisition so owner/proxy copies do not silently miss augment runtimes
 
 This is intentionally a bridge step that keeps combat authority aligned with the already-implemented movement authority model without requiring every weapon prefab to become a separate NGO network object first.
 
@@ -322,6 +323,7 @@ The existing movement implementation is a real first step toward that architectu
 
 - `Player.externalMovementControl` is the bridge that lets networking take over physics without discarding the existing input callbacks.
 - Remote proxies disable `Player` and rely on interpolation instead of duplicating gameplay logic client-side. Because `Player` is disabled, systems that normally run in `Player.Update()` must be driven externally by `NetMovement` for remote/server copies. Currently this includes thruster visuals (driven via `ApplyNetworkThrustState` from state snapshot thrust flag) and shield regeneration (driven via `TickShieldRegeneration` on the server, with shield value broadcast in state snapshots for remote regen visuals).
+- The same disabled-copy rule now applies to augments: `ExecuteEffects()` runtimes are manually ticked by `NetMovement` on server-authoritative non-owner copies and on remote proxies, instead of assuming `Entity.FixedUpdate()` is still running there.
 - Bug note: round-intro movement locking in network gameplay must not rely only on a one-shot RPC during spawn. If the owner misses that transient lock state, they can move during the opening countdown. Keep the authoritative movement-lock state persisted on `NetMovement` so newly spawned owners apply it immediately on `OnNetworkSpawn`.
 - Bug note: HUD/win-indicator visuals are not implicitly synchronized by NGO just because the match state changed on the server. Client HUD layering needs deterministic local canvas camera/sorting setup, and round-win indicators need an explicit replicated payload/event for the current win counts.
 - `Entity` banking/pitching on the 3D visual model now rides in `NetStateSnapshot`; remote proxies should consume the replicated visual tilt instead of recomputing it from interpolated root movement, or turns/recoil can look flat or mismatched.
@@ -329,6 +331,8 @@ The existing movement implementation is a real first step toward that architectu
 - Host mode requires special care to avoid double-simulating owner movement, and `NetMovement` already includes host-specific handling for that.
 - Host mode now also needs special care for combat visuals versus gameplay authority: owner-side local weapon visuals must not be allowed to double-apply gameplay recoil or damage when the host is also the authoritative server.
 - `ProjectileScript`, `LaserBeam`, and `FireHazard` now have a split between cosmetic-only instances and server-authoritative gameplay instances during network sessions. Future combat work should preserve that separation instead of letting client visuals deal damage directly.
+- `NetStateSnapshot` now carries both shield and health so augment-driven healing / max-health changes stay visible on non-authoritative copies instead of living only on the server.
+- Bug note: if a networked augment seems to work only for the host, check both halves of the integration: the server copy must execute the runtime even when `Player` is disabled, and the client copies must receive the augment loadout/state explicitly because NGO does not replicate those `AugmentController` runtimes for you.
 - Bug note: the title-screen join flow can be triggered by more than one UI/input path on the same client. Guard repeated join presses while `_awaitingClientConnect` is true, otherwise a second `StartClientForMenu()` call will hit NGO after the first call already set `IsListening` and falsely report that a session is already active.
 - Any networking migration work should assume full-network play is the target and treat old split-screen assumptions as secondary unless specifically required.
 - Ability ClientRpc guards must use `if (IsServer || IsOwner) return;`, NOT `if (IsOwner && !IsServer) return;`. The latter fails to catch the host (IsServer && IsOwner), causing double-execution: the server handler already applied the ability, then the RPC applies it again. For abilities with coroutines (Teleport, Reflector), this stops the first coroutine mid-execution, corrupting state (e.g. Teleport's collider stays permanently disabled because the second coroutine captures the already-disabled collider and never re-enables it).

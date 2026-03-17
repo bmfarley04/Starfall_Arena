@@ -394,8 +394,16 @@ Current augment flow:
 Network persistence note:
 
 - the repo now also has a minimal `NetworkAugmentLoadoutEntry` shape that carries stable augment ID plus round acquired for network-safe export/import
-- this is intentionally narrower than the local `AugmentLoadoutEntry` because opaque runtime `object` state is not safe for NGO/session transport
+- networked player copies now also receive replicated augment loadouts from the authoritative server after spawn and whenever a live player gains a new augment
+- the network-safe loadout still stays narrower than the local `AugmentLoadoutEntry`, but it now includes explicit state flags for supported one-shot runtimes such as `ArtificialFairy`
 - augments with richer mutable runtime state still need explicit serializer support before they can be treated as fully network-persistent across all networked round transitions
+
+Network execution note:
+
+- augment gameplay remains server authoritative
+- owner clients and remote proxies still need local runtime instances for HUD, stat, and presentation consistency
+- augments that use `ExecuteEffects()` must keep working when `Player` is disabled on non-owner network copies, because `NetMovement` now manually ticks augment runtimes on those copies
+- augments that react to taking damage should assume the real damage event happens on the server; client copies are refreshed from the authoritative combat/state sync path rather than from local `TakeDamage(...)`
 
 ## Known Architectural Notes
 
