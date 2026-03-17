@@ -156,6 +156,11 @@ public class NetMgr : MonoBehaviour
             return false;
         }
 
+        if (_awaitingClientConnect)
+        {
+            return false;
+        }
+
         if (NetworkManager.Singleton.IsListening)
         {
             NotifyConnectionFailed("A network session is already active.");
