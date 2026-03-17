@@ -237,8 +237,10 @@ public class GameEndScreenManager : MonoBehaviour
             Destroy(spawnedShipModel);
         }
 
+        bool useSingleNetworkCanvas = NetMgr.IsNetworked && player1Canvas != null;
+
         // Determine which canvas to show and which stat sections to animate
-        if (winningPlayer == 1)
+        if (useSingleNetworkCanvas || winningPlayer == 1)
         {
             currentActiveCanvas = player1Canvas;
             currentShipSpawnPoint = player1ShipSpawnPoint;
@@ -265,6 +267,11 @@ public class GameEndScreenManager : MonoBehaviour
             };
         }
 
+        if (useSingleNetworkCanvas && currentShipSpawnPoint == null)
+        {
+            currentShipSpawnPoint = player2ShipSpawnPoint;
+        }
+
         if (currentActiveCanvas == null)
         {
             Debug.LogError($"Player {winningPlayer} canvas is not assigned!");
@@ -289,7 +296,7 @@ public class GameEndScreenManager : MonoBehaviour
         ResetReturnFillUI();
 
         // Populate text fields
-        PopulateStats(winningPlayer, gameDuration, wins, losses, damageDealt, damageTaken, accuracy);
+        PopulateStats(winningPlayer, useSingleNetworkCanvas, gameDuration, wins, losses, damageDealt, damageTaken, accuracy);
 
         // Spawn ship model (but keep it off-screen)
         SpawnShipModel(shipData);
@@ -314,7 +321,7 @@ public class GameEndScreenManager : MonoBehaviour
         }
     }
 
-    private void PopulateStats(int winningPlayer, float gameDuration, int wins, int losses, float damageDealt, float damageTaken, float accuracy)
+    private void PopulateStats(int perspectivePlayer, bool usePrimaryCanvas, float gameDuration, int wins, int losses, float damageDealt, float damageTaken, float accuracy)
     {
         // Format duration as MM:SS
         int minutes = Mathf.FloorToInt(gameDuration / 60f);
@@ -332,7 +339,7 @@ public class GameEndScreenManager : MonoBehaviour
         string accuracyStr = $"{accuracy:F1}%";
 
         // Populate the appropriate canvas's text fields
-        if (winningPlayer == 1)
+        if (usePrimaryCanvas || perspectivePlayer == 1)
         {
             if (p1_durationText != null) p1_durationText.text = durationStr;
             if (p1_finalRecordText != null) p1_finalRecordText.text = recordStr;
