@@ -635,9 +635,9 @@ public class GameEndScreenManager : MonoBehaviour
 
         bool returnPressed = false;
 
-        foreach (var pad in Gamepad.all)
+        foreach (Gamepad pad in Gamepad.all)
         {
-            if (pad != null && pad.added && pad.aButton.isPressed)
+            if (pad != null && pad.added && pad.buttonEast.isPressed)
             {
                 returnPressed = true;
                 break;
@@ -646,7 +646,7 @@ public class GameEndScreenManager : MonoBehaviour
 
         if (Keyboard.current != null)
         {
-            returnPressed = returnPressed || Keyboard.current.enterKey.isPressed;
+            returnPressed = returnPressed || Keyboard.current.bKey.isPressed;
         }
 
         if (returnPressed)
