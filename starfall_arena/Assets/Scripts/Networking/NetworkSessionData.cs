@@ -58,6 +58,18 @@ public struct NetworkRoundEndStatePayload : INetworkSerializable
     }
 }
 
+public struct NetworkRoundStartStatePayload : INetworkSerializable
+{
+    public int SequenceId;
+    public int RoundNumber;
+
+    public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
+    {
+        serializer.SerializeValue(ref SequenceId);
+        serializer.SerializeValue(ref RoundNumber);
+    }
+}
+
 public struct NetworkAugmentSelectionStatePayload : INetworkSerializable
 {
     public bool IsVisible;
@@ -155,6 +167,7 @@ public class NetworkSessionData : NetworkBehaviour
     public event Action<float> OnSelectionTimerChanged;
     public event Action<string> OnStatusMessageChanged;
     public event Action<int> OnSelectedMapIndexChanged;
+    public event Action<NetworkRoundStartStatePayload> OnRoundStartPresentationChanged;
     public event Action<NetworkRoundEndStatePayload> OnRoundEndPresentationChanged;
     public event Action<NetworkAugmentSelectionStatePayload> OnAugmentSelectionPresentationChanged;
     public event Action<NetworkGameEndStatePayload> OnGameEndPresentationChanged;
@@ -176,6 +189,7 @@ public class NetworkSessionData : NetworkBehaviour
     private readonly bool[] _augmentChoicesLocked = new bool[2];
     private bool _augmentPhaseActive;
     private int _augmentTier = -1;
+    private int _roundStartSequenceId = 0;
 
     public NetworkMatchState CurrentState => _currentState;
     public float SelectionTimeRemaining => _selectionTimeRemaining;
@@ -539,6 +553,28 @@ public class NetworkSessionData : NetworkBehaviour
         if (CanSendSessionRpcs())
         {
             BroadcastRoundEndClientRpc(payload);
+        }
+    }
+
+    public void BroadcastRoundStartServer(int roundNumber)
+    {
+        if (!IsServer)
+        {
+            return;
+        }
+
+        NetworkRoundStartStatePayload payload = new NetworkRoundStartStatePayload
+        {
+            SequenceId = ++_roundStartSequenceId,
+            RoundNumber = roundNumber
+        };
+
+        SetServerState(NetworkMatchState.RoundTransition, $"Round {roundNumber} starting.");
+        OnRoundStartPresentationChanged?.Invoke(payload);
+
+        if (CanSendSessionRpcs())
+        {
+            BroadcastRoundStartClientRpc(payload);
         }
     }
 
@@ -1077,6 +1113,17 @@ public class NetworkSessionData : NetworkBehaviour
         }
 
         ApplySelectedMapIndexLocal(mapIndex);
+    }
+
+    [ClientRpc]
+    private void BroadcastRoundStartClientRpc(NetworkRoundStartStatePayload payload)
+    {
+        if (IsServer)
+        {
+            return;
+        }
+
+        OnRoundStartPresentationChanged?.Invoke(payload);
     }
 
     [ClientRpc]

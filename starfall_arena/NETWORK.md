@@ -106,6 +106,11 @@ It currently carries:
 
 This means client-visible non-movement match flow now depends on explicit session replication rather than assuming the host's local UI calls will appear automatically on clients.
 
+Round-start note:
+
+- round intro presentation in network gameplay must also be broadcast explicitly
+- the `ROUND X` banner and 3-2-1 countdown should be triggered from `NetworkSessionData`, not only from the host's local scene coroutine
+
 Ship-select timing note:
 
 - the server should advance out of ship select immediately once both connected players are locked in
@@ -118,6 +123,7 @@ The active network gameplay scene now assumes:
 - one gameplay camera plus UI overlay, not split-screen cameras
 - one local HUD presentation only
 - server-selected map activation must be mirrored to clients by map index, because scene-object `SetActive` state is not replicated automatically
+- round-start presentation must be broadcast explicitly so clients see the same `ROUND X` banner and opening countdown as the host
 - round-end presentation must be broadcast explicitly
 - augment selection is a synchronized timed phase with separate local pools for each player
 - game-end presentation must also be broadcast explicitly and remapped to local-player perspective on each client
@@ -315,6 +321,7 @@ The existing movement implementation is a real first step toward that architectu
 
 - `Player.externalMovementControl` is the bridge that lets networking take over physics without discarding the existing input callbacks.
 - Remote proxies disable `Player` and rely on interpolation instead of duplicating gameplay logic client-side. Because `Player` is disabled, systems that normally run in `Player.Update()` must be driven externally by `NetMovement` for remote/server copies. Currently this includes thruster visuals (driven via `ApplyNetworkThrustState` from state snapshot thrust flag) and shield regeneration (driven via `TickShieldRegeneration` on the server, with shield value broadcast in state snapshots for remote regen visuals).
+- Bug note: round-intro movement locking in network gameplay must not rely only on a one-shot RPC during spawn. If the owner misses that transient lock state, they can move during the opening countdown. Keep the authoritative movement-lock state persisted on `NetMovement` so newly spawned owners apply it immediately on `OnNetworkSpawn`.
 - `Entity` banking/pitching on the 3D visual model now rides in `NetStateSnapshot`; remote proxies should consume the replicated visual tilt instead of recomputing it from interpolated root movement, or turns/recoil can look flat or mismatched.
 - For client-owned ships, the server/display side should forward the owner's reported visual tilt instead of recomputing bank from the server copy's root rotation, or the host view can over-bank badly.
 - Host mode requires special care to avoid double-simulating owner movement, and `NetMovement` already includes host-specific handling for that.

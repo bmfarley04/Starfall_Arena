@@ -480,11 +480,11 @@ public class TitleScreenManager : MonoBehaviour
         }
 
         bool submitHeld =
-            (Gamepad.current != null && Gamepad.current.buttonSouth.isPressed) ||
+            IsAnyGamepadButtonHeld(gamepad => gamepad.buttonSouth.isPressed) ||
             (Keyboard.current != null && Keyboard.current.xKey.isPressed);
 
         bool backHeld =
-            (Gamepad.current != null && Gamepad.current.buttonEast.isPressed) ||
+            IsAnyGamepadButtonHeld(gamepad => gamepad.buttonEast.isPressed) ||
             (Keyboard.current != null && Keyboard.current.bKey.isPressed);
 
         HandleSubmitHold(submitHeld);
@@ -819,6 +819,24 @@ public class TitleScreenManager : MonoBehaviour
         {
             image.fillAmount = 1f;
         }
+    }
+
+    private static bool IsAnyGamepadButtonHeld(System.Func<Gamepad, bool> buttonPredicate)
+    {
+        if (buttonPredicate == null)
+        {
+            return false;
+        }
+
+        foreach (Gamepad gamepad in Gamepad.all)
+        {
+            if (gamepad != null && gamepad.added && buttonPredicate(gamepad))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private void OnDestroy()
