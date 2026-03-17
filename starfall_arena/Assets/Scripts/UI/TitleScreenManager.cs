@@ -301,6 +301,8 @@ public class TitleScreenManager : MonoBehaviour
 
         HandleStatusMessageChanged(string.Empty);
 
+        shipSelectManager?.BeginGameplayScenePreload();
+
         _activeTransition = StartCoroutine(
             RunTransition(mainMenuCanvas, shipSelectCanvas, shipSelectFirstSelected));
     }
@@ -398,6 +400,7 @@ public class TitleScreenManager : MonoBehaviour
             shipSelectManager.enabled = true;
             shipSelectManager.ResetToPlayer1(); // Reset to Player 1 state when entering ship select
             shipSelectManager.PreloadShipData();
+            shipSelectManager.BeginGameplayScenePreload();
             // DON'T disable component - keep it enabled so ship stays active
             // The canvas is hidden anyway, so component being enabled doesn't matter
         }
