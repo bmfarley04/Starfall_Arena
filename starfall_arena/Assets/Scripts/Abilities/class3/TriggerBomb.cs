@@ -52,6 +52,7 @@ public class TriggerBomb : Ability
     private Rigidbody2D _activeBombRb;
     private Coroutine _autoDetonateCoroutine;
     private NetMovement _netMovement;
+    private int _activeAttackId = Player.InvalidAttackId;
 
     protected override void Awake()
     {
@@ -167,6 +168,11 @@ public class TriggerBomb : Ability
             Destroy(_activeBomb);
         }
 
+        if (!NetTickUtil.IsActive || authoritative)
+        {
+            _activeAttackId = player.BeginTrackedAttack();
+        }
+
         _activeBomb = Instantiate(bomb.bombPrefab, state.SpawnPosition, transform.rotation);
         _activeBombRb = _activeBomb.GetComponent<Rigidbody2D>();
         if (_activeBombRb != null)
@@ -231,11 +237,11 @@ public class TriggerBomb : Ability
                 Entity entity = col.GetComponent<Entity>();
                 if (entity != null)
                 {
-                    if (col.CompareTag(player.enemyTag))
-                    {
-                        entity.TakeDamage(bomb.explosionDamage, bomb.explosionImpactForce, explosionPosition, DamageSource.Explosion);
+                        if (col.CompareTag(player.enemyTag))
+                        {
+                            entity.TakeDamage(bomb.explosionDamage, bomb.explosionImpactForce, explosionPosition, DamageSource.Explosion, player, _activeAttackId);
+                        }
                     }
-                }
 
                 if (col.CompareTag("Asteroid"))
                 {
@@ -258,6 +264,7 @@ public class TriggerBomb : Ability
         Destroy(_activeBomb);
         _activeBomb = null;
         _activeBombRb = null;
+        _activeAttackId = Player.InvalidAttackId;
 
         _lastBombTime = Time.time;
     }
@@ -298,6 +305,8 @@ public class TriggerBomb : Ability
             _activeBomb = null;
             _activeBombRb = null;
         }
+
+        _activeAttackId = Player.InvalidAttackId;
     }
 
     void OnDrawGizmosSelected()

@@ -17,6 +17,7 @@ public class ProjectileScript : MonoBehaviour
     protected NetMovement _networkAuthority;
     protected int _requestedFireTick = -1;
     protected int _spawnServerTick = -1;
+    protected int _accuracyAttackId = Player.InvalidAttackId;
     protected bool _isCosmeticOnly = false;
     private Vector2 _previousPosition;
 
@@ -45,13 +46,14 @@ public class ProjectileScript : MonoBehaviour
         Destroy(gameObject, _lifetime);
     }
 
-    public void Initialize(Vector3 direction, Vector2 shipVelocity, float speed, float damage, float lifetime, float impactForce, Entity shooter = null)
+    public void Initialize(Vector3 direction, Vector2 shipVelocity, float speed, float damage, float lifetime, float impactForce, Entity shooter = null, int accuracyAttackId = Player.InvalidAttackId)
     {
         _damage = damage;
         _lifetime = lifetime;
         _impactForce = impactForce;
         _direction = direction.normalized;
         _shooter = shooter;
+        _accuracyAttackId = accuracyAttackId;
 
         Vector2 ownVelocity = _direction * speed;
         _rb.linearVelocity = ownVelocity + shipVelocity;
@@ -112,6 +114,7 @@ public class ProjectileScript : MonoBehaviour
     {
         targetTag = newTargetTag;
         _shooter = newShooter;
+        _accuracyAttackId = Player.InvalidAttackId;
         _direction = -_direction;
         _rb.linearVelocity = -_rb.linearVelocity;
 
@@ -214,13 +217,6 @@ public class ProjectileScript : MonoBehaviour
             {
                 ApplyDamageToEntity(damageable, transform.position, collider);
 
-                // Stat tracking for shooter accuracy
-                if (_shooter is Player shooterPlayer)
-                {
-                    shooterPlayer.shotsHit++;
-                    shooterPlayer.damageDealt += _damage;
-                }
-
                 // Apply slow effect if enabled
                 if (_appliesSlow)
                 {
@@ -284,7 +280,7 @@ public class ProjectileScript : MonoBehaviour
 
     protected virtual void ApplyDamageToEntity(Entity damageable, Vector2 hitPoint, Collider2D collider)
     {
-        damageable.TakeDamage(_damage, _impactForce, hitPoint);
+        damageable.TakeDamage(_damage, _impactForce, hitPoint, DamageSource.Projectile, _shooter, _accuracyAttackId);
         ApplyImpactForce(collider);
     }
 
@@ -357,12 +353,6 @@ public class ProjectileScript : MonoBehaviour
             }
         }
         ApplyDamageToEntity(damageable, hitPoint, targetCollider);
-
-        if (_shooter is Player shooterPlayer)
-        {
-            shooterPlayer.shotsHit++;
-            shooterPlayer.damageDealt += _damage;
-        }
 
         if (_appliesSlow)
         {

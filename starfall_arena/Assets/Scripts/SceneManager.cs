@@ -126,6 +126,7 @@ public class GameSceneManager : MonoBehaviour
     private bool versusScreenDone = false;
     private bool useNetworkSession = false;
     private bool isAuthoritativeNetworkController = true;
+    private Camera networkPresentationCamera;
     private InputDevice _localPlayer1PrimaryDevice;
     private InputDevice _localPlayer1SecondaryDevice;
     private InputDevice _localPlayer2PrimaryDevice;
@@ -145,6 +146,7 @@ public class GameSceneManager : MonoBehaviour
             session.OnSelectedMapIndexChanged += HandleSelectedMapIndexChanged;
             session.OnRoundStartPresentationChanged += HandleRoundStartPresentationChanged;
             session.OnRoundEndPresentationChanged += HandleRoundEndPresentationChanged;
+            session.OnWinStateChanged += HandleWinStateChanged;
             session.OnAugmentSelectionPresentationChanged += HandleAugmentSelectionPresentationChanged;
             session.OnGameEndPresentationChanged += HandleGameEndPresentationChanged;
             session.OnSelectionTimerChanged += HandleSessionTimerChanged;
@@ -168,6 +170,7 @@ public class GameSceneManager : MonoBehaviour
 
         // Hide player HUD canvases initially (will be shown when players spawn)
         SetPlayerHUDsActive(false);
+        ConfigureNetworkHudCanvases();
 
         // Start in whole-screen mode for the VS screen
         if (!useNetworkSession && splitScreenManager != null)
@@ -277,6 +280,7 @@ public class GameSceneManager : MonoBehaviour
 
             // Sync win trackers with simulated wins
             UpdateWinTrackers();
+            NetworkSessionData.Instance?.BroadcastWinStateServer(player1Wins, player2Wins);
 
             // Go straight to split-screen
             if (!useNetworkSession && splitScreenManager != null)
@@ -469,6 +473,7 @@ public class GameSceneManager : MonoBehaviour
             }
 
             UpdateWinTrackers();
+            NetworkSessionData.Instance?.BroadcastWinStateServer(player1Wins, player2Wins);
 
             // Capture gamepad references before players are destroyed
             // (PlayerInput components hold the device assignments)
@@ -539,6 +544,8 @@ public class GameSceneManager : MonoBehaviour
             if (player2HUDCanvas != null) player2HUDCanvas.gameObject.SetActive(false);
             if (player1AbilityCanvas != null) player1AbilityCanvas.gameObject.SetActive(active);
             if (player2AbilityCanvas != null) player2AbilityCanvas.gameObject.SetActive(false);
+            if (player1AbilityHUDInstance != null) player1AbilityHUDInstance.SetActive(active);
+            if (player2AbilityHUDInstance != null) player2AbilityHUDInstance.SetActive(false);
             return;
         }
 
@@ -546,6 +553,8 @@ public class GameSceneManager : MonoBehaviour
         if (player2HUDCanvas != null) player2HUDCanvas.gameObject.SetActive(active);
         if (player1AbilityCanvas != null) player1AbilityCanvas.gameObject.SetActive(active);
         if (player2AbilityCanvas != null) player2AbilityCanvas.gameObject.SetActive(active);
+        if (player1AbilityHUDInstance != null) player1AbilityHUDInstance.SetActive(active);
+        if (player2AbilityHUDInstance != null) player2AbilityHUDInstance.SetActive(active);
     }
 
     /// <summary>
@@ -555,6 +564,79 @@ public class GameSceneManager : MonoBehaviour
     {
         if (player1WinTracker != null) player1WinTracker.SetWins(player1Wins);
         if (player2WinTracker != null) player2WinTracker.SetWins(player2Wins);
+    }
+
+    private void ConfigureNetworkHudCanvases()
+    {
+        if (!useNetworkSession)
+        {
+            return;
+        }
+
+        Camera uiCamera = ResolveNetworkPresentationCamera();
+        ConfigureNetworkCameraCanvas(player1HUDCanvas, uiCamera, 200);
+        ConfigureNetworkCameraCanvas(player2HUDCanvas, uiCamera, 210);
+    }
+
+    private Camera ResolveNetworkPresentationCamera()
+    {
+        if (networkPresentationCamera != null)
+        {
+            return networkPresentationCamera;
+        }
+
+        Camera[] cameras = FindObjectsByType<Camera>(FindObjectsSortMode.None);
+        foreach (Camera candidate in cameras)
+        {
+            if (candidate != null && candidate.name == "UICamera")
+            {
+                networkPresentationCamera = candidate;
+                return networkPresentationCamera;
+            }
+        }
+
+        if (player1HUDCanvas != null && player1HUDCanvas.worldCamera != null)
+        {
+            networkPresentationCamera = player1HUDCanvas.worldCamera;
+            return networkPresentationCamera;
+        }
+
+        networkPresentationCamera = Camera.main;
+        return networkPresentationCamera;
+    }
+
+    private static void ConfigureNetworkCameraCanvas(Canvas canvas, Camera uiCamera, int sortingOrder)
+    {
+        if (canvas == null)
+        {
+            return;
+        }
+
+        canvas.renderMode = RenderMode.ScreenSpaceCamera;
+        canvas.worldCamera = uiCamera;
+        canvas.planeDistance = 100f;
+        canvas.overrideSorting = true;
+        canvas.sortingOrder = sortingOrder;
+    }
+
+    private void ConfigureNetworkCameraCanvasHierarchy(GameObject root, int baseSortingOrder)
+    {
+        if (root == null)
+        {
+            return;
+        }
+
+        Canvas[] canvases = root.GetComponentsInChildren<Canvas>(true);
+        if (canvases == null || canvases.Length == 0)
+        {
+            return;
+        }
+
+        Camera uiCamera = ResolveNetworkPresentationCamera();
+        for (int i = 0; i < canvases.Length; i++)
+        {
+            ConfigureNetworkCameraCanvas(canvases[i], uiCamera, baseSortingOrder + i);
+        }
     }
 
     // ===== PLAYER SPAWNING =====
@@ -1192,6 +1274,8 @@ public class GameSceneManager : MonoBehaviour
     {
         if (gameEndScreenManager == null) yield break;
 
+        SetPlayerHUDsActive(false);
+
         if (useNetworkSession)
         {
             NetworkSessionData.Instance?.SetLocalState(NetworkMatchState.MatchComplete, "Match complete.");
@@ -1229,6 +1313,7 @@ public class GameSceneManager : MonoBehaviour
 
         gameEndScreenManager.ShowGameEndScreen(
             winner,
+            winner,
             winner == 1 ? player1Data : player2Data,
             totalGameDuration,
             winnerWins,
@@ -1256,6 +1341,7 @@ public class GameSceneManager : MonoBehaviour
             session.OnSelectedMapIndexChanged -= HandleSelectedMapIndexChanged;
             session.OnRoundStartPresentationChanged -= HandleRoundStartPresentationChanged;
             session.OnRoundEndPresentationChanged -= HandleRoundEndPresentationChanged;
+            session.OnWinStateChanged -= HandleWinStateChanged;
             session.OnAugmentSelectionPresentationChanged -= HandleAugmentSelectionPresentationChanged;
             session.OnGameEndPresentationChanged -= HandleGameEndPresentationChanged;
             session.OnSelectionTimerChanged -= HandleSessionTimerChanged;
@@ -1333,6 +1419,18 @@ public class GameSceneManager : MonoBehaviour
         }
 
         roundEndScreenManager.HideRoundEndScreen();
+    }
+
+    private void HandleWinStateChanged(NetworkWinStatePayload payload)
+    {
+        if (!useNetworkSession)
+        {
+            return;
+        }
+
+        player1Wins = payload.Player1Wins;
+        player2Wins = payload.Player2Wins;
+        UpdateWinTrackers();
     }
 
     private void HandleRoundStartPresentationChanged(NetworkRoundStartStatePayload payload)
@@ -1457,6 +1555,8 @@ public class GameSceneManager : MonoBehaviour
             return;
         }
 
+        SetPlayerHUDsActive(false);
+
         NetworkSessionData session = NetworkSessionData.Instance;
         int localSlot = session != null ? session.GetLocalSlotIndex() : 0;
         bool localIsPlayer1 = localSlot != 1;
@@ -1472,6 +1572,7 @@ public class GameSceneManager : MonoBehaviour
         float localAccuracy = localIsPlayer1 ? payload.Player1Accuracy : payload.Player2Accuracy;
 
         gameEndScreenManager.ShowGameEndScreen(
+            payload.WinningPlayer,
             localPlayerNumber,
             localShip,
             payload.GameDuration,
@@ -1497,6 +1598,15 @@ public class GameSceneManager : MonoBehaviour
         {
             return;
         }
+
+        NetworkSessionData session = NetworkSessionData.Instance;
+        if (session != null && session.CurrentState == NetworkMatchState.MatchComplete)
+        {
+            SetPlayerHUDsActive(false);
+            return;
+        }
+
+        ConfigureNetworkHudCanvases();
 
         Player[] players = FindObjectsByType<Player>(FindObjectsSortMode.None);
         Player localPlayer = null;
@@ -1560,7 +1670,10 @@ public class GameSceneManager : MonoBehaviour
             AbilityHUDPanel currentPanel = currentHudInstance.GetComponent<AbilityHUDPanel>();
             if (currentHudInstance.name.StartsWith(data.abilityHUDPrefab.name) && currentPanel != null)
             {
-                player.BindAbilityHUD(currentPanel);
+                if (currentPanel.BoundPlayer != player)
+                {
+                    player.BindAbilityHUD(currentPanel);
+                }
                 return;
             }
 
@@ -1591,7 +1704,12 @@ public class GameSceneManager : MonoBehaviour
 
         if (abilityCanvas != null)
         {
-            abilityCanvas.worldCamera = Camera.main;
+            abilityCanvas.worldCamera = ResolveNetworkPresentationCamera();
+        }
+
+        if (useNetworkSession)
+        {
+            ConfigureNetworkCameraCanvasHierarchy(hudObj, 300);
         }
 
         if (usePrimaryAbilityCanvas)

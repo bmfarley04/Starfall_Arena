@@ -93,9 +93,8 @@ public class PhysicalProjectileAbility : Ability
 
     private void FirePhysicalProjectile()
     {
-        player.shotsFired++;
-
         bool useNetworkPath = NetTickUtil.IsActive && _netMovement != null && _netMovement.IsSpawned && _netMovement.IsOwner;
+        int attackId = useNetworkPath ? Player.InvalidAttackId : player.BeginTrackedAttack();
         if (useNetworkPath)
         {
             if (!_netMovement.IsServer)
@@ -113,10 +112,11 @@ public class PhysicalProjectileAbility : Ability
                         transform.up,
                         Vector2.zero,
                         physicalProjectile.speed,
-                        physicalProjectile.damage,
-                        physicalProjectile.lifetime,
-                        physicalProjectile.impactForce,
-                        player);
+                    physicalProjectile.damage,
+                    physicalProjectile.lifetime,
+                    physicalProjectile.impactForce,
+                    player,
+                    attackId);
                 }
             }
 
@@ -165,7 +165,8 @@ public class PhysicalProjectileAbility : Ability
                 physicalProjectile.damage,
                 physicalProjectile.lifetime,
                 physicalProjectile.impactForce,
-                player
+                player,
+                attackId
             );
         }
 

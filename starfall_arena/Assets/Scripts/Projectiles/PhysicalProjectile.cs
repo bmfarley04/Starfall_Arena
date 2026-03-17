@@ -9,7 +9,7 @@ public class PhysicalProjectile : ProjectileScript
 {
     protected override void ApplyDamageToEntity(Entity damageable, Vector2 hitPoint, Collider2D collider)
     {
-        damageable.TakeDirectDamage(_damage, _impactForce, hitPoint);
+        damageable.TakeDirectDamage(_damage, _impactForce, hitPoint, DamageSource.Projectile, _shooter, _accuracyAttackId);
         ApplyImpactForce(collider);
     }
 
@@ -44,7 +44,7 @@ public class PhysicalProjectile : ProjectileScript
             if (damageable != null)
             {
                 // Deal damage directly to health, bypassing shields
-                damageable.TakeDirectDamage(_damage, _impactForce, transform.position);
+                damageable.TakeDirectDamage(_damage, _impactForce, transform.position, DamageSource.Projectile, _shooter, _accuracyAttackId);
                 ApplyImpactForce(collider);
 
                 // Apply slow effect if enabled

@@ -70,6 +70,18 @@ public struct NetworkRoundStartStatePayload : INetworkSerializable
     }
 }
 
+public struct NetworkWinStatePayload : INetworkSerializable
+{
+    public int Player1Wins;
+    public int Player2Wins;
+
+    public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
+    {
+        serializer.SerializeValue(ref Player1Wins);
+        serializer.SerializeValue(ref Player2Wins);
+    }
+}
+
 public struct NetworkAugmentSelectionStatePayload : INetworkSerializable
 {
     public bool IsVisible;
@@ -169,6 +181,7 @@ public class NetworkSessionData : NetworkBehaviour
     public event Action<int> OnSelectedMapIndexChanged;
     public event Action<NetworkRoundStartStatePayload> OnRoundStartPresentationChanged;
     public event Action<NetworkRoundEndStatePayload> OnRoundEndPresentationChanged;
+    public event Action<NetworkWinStatePayload> OnWinStateChanged;
     public event Action<NetworkAugmentSelectionStatePayload> OnAugmentSelectionPresentationChanged;
     public event Action<NetworkGameEndStatePayload> OnGameEndPresentationChanged;
 
@@ -590,6 +603,26 @@ public class NetworkSessionData : NetworkBehaviour
         if (CanSendSessionRpcs())
         {
             BroadcastRoundEndClientRpc(payload);
+        }
+    }
+
+    public void BroadcastWinStateServer(int player1Wins, int player2Wins)
+    {
+        if (!IsServer)
+        {
+            return;
+        }
+
+        NetworkWinStatePayload payload = new NetworkWinStatePayload
+        {
+            Player1Wins = Mathf.Max(0, player1Wins),
+            Player2Wins = Mathf.Max(0, player2Wins)
+        };
+
+        OnWinStateChanged?.Invoke(payload);
+        if (CanSendSessionRpcs())
+        {
+            BroadcastWinStateClientRpc(payload);
         }
     }
 
@@ -1135,6 +1168,17 @@ public class NetworkSessionData : NetworkBehaviour
         }
 
         OnRoundEndPresentationChanged?.Invoke(payload);
+    }
+
+    [ClientRpc]
+    private void BroadcastWinStateClientRpc(NetworkWinStatePayload payload)
+    {
+        if (IsServer)
+        {
+            return;
+        }
+
+        OnWinStateChanged?.Invoke(payload);
     }
 
     [ClientRpc]

@@ -34,6 +34,7 @@ public class FireHazard : MonoBehaviour
     private ParticleSystem _particleSystem;
     private float _originalAlpha;
     private bool _isCosmeticOnly = false;
+    private Player _owner;
 
     private void Awake()
     {
@@ -54,12 +55,13 @@ public class FireHazard : MonoBehaviour
     /// <summary>
     /// Initialize the fire hazard with combat settings.
     /// </summary>
-    public void Initialize(string enemyTag, float dps, float duration, float force)
+    public void Initialize(string enemyTag, float dps, float duration, float force, Player owner = null)
     {
         targetTag = enemyTag;
         damagePerSecond = dps;
         lifetime = duration;
         impactForce = force;
+        _owner = owner;
         _spawnTime = Time.time;
     }
 
@@ -126,7 +128,7 @@ public class FireHazard : MonoBehaviour
         {
             if (entity != null)
             {
-                entity.TakeDamage(damageThisFrame, impactForce, transform.position, DamageSource.Other);
+                entity.TakeDamage(damageThisFrame, impactForce, transform.position, DamageSource.Other, _owner, Player.InvalidAttackId);
             }
         }
         

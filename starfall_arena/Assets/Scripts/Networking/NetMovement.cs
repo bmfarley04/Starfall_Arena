@@ -92,6 +92,9 @@ public partial class NetMovement : NetworkBehaviour
     private int _lastReceivedServerTick = -1;
     private float _lastServerPrimaryFireTime = -999f;
     private int _lastServerPrimaryFireTick = -999999;
+    private int _lastServerAccuracyVolleyTick = -999999;
+    private NetProjectileVisualType _lastServerAccuracyVolleyType;
+    private int _lastServerAccuracyAttackId = Player.InvalidAttackId;
     private bool _lastOwnerFrictionEnabled;
     private bool _lastServerFrictionEnabled;
 

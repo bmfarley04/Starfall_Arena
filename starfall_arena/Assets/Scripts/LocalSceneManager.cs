@@ -444,6 +444,8 @@ public class LocalSceneManager : MonoBehaviour
         if (player2HUDCanvas != null) player2HUDCanvas.gameObject.SetActive(active);
         if (player1AbilityCanvas != null) player1AbilityCanvas.gameObject.SetActive(active);
         if (player2AbilityCanvas != null) player2AbilityCanvas.gameObject.SetActive(active);
+        if (player1AbilityHUDInstance != null) player1AbilityHUDInstance.SetActive(active);
+        if (player2AbilityHUDInstance != null) player2AbilityHUDInstance.SetActive(active);
     }
 
     /// <summary>
@@ -874,6 +876,8 @@ public class LocalSceneManager : MonoBehaviour
     {
         if (gameEndScreenManager == null) yield break;
 
+        SetPlayerHUDsActive(false);
+
         int winner = player1Wins >= winsRequired ? 1 : 2;
         int loser = winner == 1 ? 2 : 1;
 
@@ -888,6 +892,7 @@ public class LocalSceneManager : MonoBehaviour
         float winnerAccuracy = winnerShotsFired > 0 ? (float)winnerShotsHit / winnerShotsFired * 100f : 0f;
 
         gameEndScreenManager.ShowGameEndScreen(
+            winner,
             winner,
             winnerShipData,
             totalGameDuration,

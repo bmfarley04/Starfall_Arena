@@ -212,7 +212,7 @@ public class LaserBeam : MonoBehaviour
                     float impactForceThisFrame = _impactForce * Time.deltaTime;
 
                     // Apply damage with LaserBeam source to skip OnHit() and preserve shield alpha
-                    damageable.TakeDamage(damageThisFrame, impactForceThisFrame, validHit.Value.point, DamageSource.LaserBeam);
+                    damageable.TakeDamage(damageThisFrame, impactForceThisFrame, validHit.Value.point, DamageSource.LaserBeam, _shooter, Player.InvalidAttackId);
 
                     // Apply impact force continuously (deterministic velocity change)
                     Rigidbody2D targetRb = validHit.Value.collider.GetComponent<Rigidbody2D>();
@@ -265,7 +265,7 @@ public class LaserBeam : MonoBehaviour
             {
                 float damageThisFrame = _damagePerSecond * Time.deltaTime;
                 float impactForceThisFrame = _impactForce * Time.deltaTime;
-                lagCompTarget.TakeDamage(damageThisFrame, impactForceThisFrame, lagCompHitPoint, DamageSource.LaserBeam);
+                lagCompTarget.TakeDamage(damageThisFrame, impactForceThisFrame, lagCompHitPoint, DamageSource.LaserBeam, _shooter, Player.InvalidAttackId);
 
                 Rigidbody2D targetRb = lagCompTarget.GetComponent<Rigidbody2D>();
                 if (targetRb != null)

@@ -14,6 +14,8 @@ namespace StarfallArena.UI
         [Tooltip("UI slot for ability 4")]
         [SerializeField] private AbilitySlotUI slot4;
 
+        public Player BoundPlayer { get; private set; }
+
         public void Bind(Player player)
         {
             if (player == null)
@@ -21,6 +23,8 @@ namespace StarfallArena.UI
                 Debug.LogWarning("AbilityHUDPanel.Bind called with null player!", this);
                 return;
             }
+
+            BoundPlayer = player;
 
             if (slot1 != null) slot1.Bind(player, 1);
             if (slot2 != null) slot2.Bind(player, 2);

@@ -239,6 +239,8 @@ public class Invisibility : Ability
 
     public override void Die()
     {
+        ApplyNetworkInvisibilityState(false, authoritative: NetTickUtil.IsActive && _netMovement != null && _netMovement.IsServer);
+
         // Stop sound
         if (_audioSource != null && _audioSource.isPlaying)
         {

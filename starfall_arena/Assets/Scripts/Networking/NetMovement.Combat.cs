@@ -99,6 +99,8 @@ public partial class NetMovement
             _lastServerPrimaryFireTick = request.Tick;
         }
 
+        int accuracyAttackId = ResolveServerAccuracyAttackId(request.Tick, request.VisualType);
+
         GameObject projectileObject = Instantiate(projectilePrefab, request.SpawnPosition, Quaternion.identity);
         if (!projectileObject.TryGetComponent(out ProjectileScript projectile))
         {
@@ -115,7 +117,8 @@ public partial class NetMovement
             request.Damage,
             request.Lifetime,
             request.ImpactForce,
-            _player);
+            _player,
+            accuracyAttackId);
 
         if (request.CanPierce)
         {
@@ -157,6 +160,41 @@ public partial class NetMovement
         if (request.ApplyRecoil)
         {
             _player.ApplyRecoil(request.RecoilForce);
+        }
+    }
+
+    private int ResolveServerAccuracyAttackId(int requestTick, NetProjectileVisualType visualType)
+    {
+        if (_player == null || !CountsTowardAccuracy(visualType))
+        {
+            return Player.InvalidAttackId;
+        }
+
+        if (_lastServerAccuracyVolleyTick == requestTick && _lastServerAccuracyVolleyType == visualType)
+        {
+            return _lastServerAccuracyAttackId;
+        }
+
+        _lastServerAccuracyVolleyTick = requestTick;
+        _lastServerAccuracyVolleyType = visualType;
+        _lastServerAccuracyAttackId = _player.BeginTrackedAttack();
+        return _lastServerAccuracyAttackId;
+    }
+
+    private static bool CountsTowardAccuracy(NetProjectileVisualType visualType)
+    {
+        switch (visualType)
+        {
+            case NetProjectileVisualType.Primary:
+            case NetProjectileVisualType.GigaBlastTier1:
+            case NetProjectileVisualType.GigaBlastTier2:
+            case NetProjectileVisualType.GigaBlastTier3:
+            case NetProjectileVisualType.GigaBlastTier4:
+            case NetProjectileVisualType.Class2EmpoweredShot:
+            case NetProjectileVisualType.Class2PhysicalProjectile:
+                return true;
+            default:
+                return false;
         }
     }
 

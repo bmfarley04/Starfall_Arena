@@ -66,6 +66,7 @@ Network migration note:
 - round-end presentation is now broadcast to clients through the network session layer instead of only being shown on the host
 - round-start `ROUND X` and opening 3-2-1 presentation in network gameplay must also be broadcast through the network session layer so clients see the same intro timing as the host
 - round-end and game-end stats in network play should be remapped to the local player's perspective instead of showing the host's seat ordering to everyone
+- game-end presentation now also resolves victory/defeat text from the local player's result, not from the server winner slot alone
 
 If a task changes duel progression, this file is usually relevant.
 
@@ -200,6 +201,24 @@ Supporting UI scripts include pieces like:
 
 These are smaller helpers, but they still shape player-facing clarity and should be documented when behavior changes meaningfully.
 
+### Hold-Buttons
+
+Several menu flows use custom hold-buttons instead of standard TMP button components.
+
+Current behavior:
+
+- the controls-screen back affordance is a hold-button
+- the join-game confirm/back affordances are hold-buttons
+- the host-waiting back affordance is a hold-button
+- the game-end return-to-title affordance is a hold-button
+- these controls are built from images plus a draining fill image, not from a TMP button component
+- input handling for these hold-buttons lives in manager scripts such as `TitleScreenManager` and `GameEndScreenManager`, not in the TMP UI element itself
+
+Bug note:
+
+- do not assume a hold-button can be fixed by editing TMP button settings, submit events, or navigation alone; first confirm which image object is acting as the hold-button target and which image is acting as the fill
+- when adding or changing a hold-button, document its input mapping and keep the serialized target/fill references aligned with the actual image hierarchy in the scene
+
 ## UI Data Architecture
 
 ### ShipData
@@ -233,7 +252,7 @@ This makes `ShipData` a bridge between:
 - Existing split-screen flow should be treated as transitional or legacy-oriented unless a task specifically targets it.
 - `TitleScreenManager` now needs serialized references for the join canvas, the host-waiting canvas, the IP input field, and optional status text in addition to the legacy main menu canvas.
 - `TitleScreenManager` now owns only the special hold-style join/waiting controls. The main title `Host Game` and `Join Game` controls should stay on the normal clickable title-button pattern.
-- Bug note: hold-to-go-back UI on nonstandard title/menu surfaces such as the controls canvas and game-end screen must listen for the same back input as the rest of the controller-first UI (`B` on keyboard, controller east / Circle). Do not swap these to confirm-style inputs like Enter or South/A for back-navigation prompts.
+- Bug note: hold-to-go-back UI on nonstandard title/menu surfaces such as the controls canvas must listen for the same back input as the rest of the controller-first UI (`B` on keyboard, controller east / Circle). The game-end return hold should also keep keyboard `X` support alongside controller Circle for parity with the project's existing hold-button keyboard prompts. Do not swap these flows to Enter or South/A-only input.
 - Local multiplayer entry should use a title-menu transition into the existing `ShipSelectManager` flow rather than loading the split-screen gameplay scene directly, because the local path still expects sequential Player 1 then Player 2 ship confirmation before scene load.
 - Bug note: local gameplay ship prefabs currently ship with `PlayerInput` disabled for the network path, so local gameplay spawning must explicitly re-enable and pair devices or `SampleSceneSplitScreen` will load with both ships unresponsive.
 - `ShipSelectManager` now expects only a countdown timer text reference for the networked ship-select path; once a player locks in, that client should no longer be able to change ships before the timer expires.
@@ -243,8 +262,16 @@ This makes `ShipData` a bridge between:
 - the primary HUD/ability canvas is the local player's
 - opponent HUD canvases are not used in the active network scene
 - round-start text and countdown should be driven by a replicated network session cue rather than a host-only scene coroutine
-- round/game end screens can temporarily reuse one shared victory-style canvas in network mode until dedicated defeat variants are built
-- that shared canvas should show local-player-first stats on each machine
+- game-end screens should use the local player's canvas slot in network mode for now (`player1` canvas on host, `player2` canvas on the remote client)
+- each game-end canvas now needs its own serialized result-label text reference so the screen can show `VICTORY` or `DEFEAT` per machine
+- round-end screens should keep the legacy local-multiplayer winner-canvas behavior, but in network mode they now use the local player's canvas slot (`player1` on host, `player2` on remote client), show owner-perspective stats, and need a per-canvas result label for `WIN` / `LOSS`
+- defeat presentation can reuse ship-part scatter from the ship preview prefab, but only if that prefab's visual pieces include `ShipPartScatter` components
+- local-player-first stats should still be shown on each machine
+- Bug note: game-end presentation in both local and network flow must explicitly hide gameplay HUD canvases and any runtime-instantiated ability HUD objects before showing the final screen, or the client HUD can reappear under the end-screen canvas.
 - Bug note: in network gameplay, the local gameplay HUD must resolve its ability HUD prefab from the spawned `NetworkObject.OwnerClientId` / session slot, not from a hardcoded `Player1` canvas tag. Otherwise clients can instantiate the host ship's ability HUD and then keep it because the scene manager thinks a HUD already exists.
+- Bug note: the client HUD presentation refresh must not re-bind an already-bound `AbilityHUDPanel` to the same local player every polling tick. Rebinding resets the slot visuals, which makes locked or cooling-down ability 4 flicker between ready and cooldown on clients.
 - Bug note: round-intro movement locking in network gameplay must stay active for the full replicated intro window. Do not rely only on a transient spawn-time lock call, or clients can move before the countdown finishes.
+- Bug note: round-end freeze must explicitly clear latched player input and stop active abilities, not just zero velocity. Otherwise held thrust or other hold-style actions can keep simulating into the round-end window until the player object is destroyed.
+- Bug note: the network gameplay HUD and runtime ability HUDs must be forced into a deterministic camera/sorting configuration on each client. Leaving them as `Screen Space - Camera` canvases with implicit camera assignment or default sorting can make asteroid/map visuals render over client HUD elements even when the host looks correct.
+- Bug note: top-right win indicators in network gameplay need explicit replicated win-count updates. Host-local `UpdateWinTrackers()` calls do not automatically refresh client visuals unless the counts are broadcast through the session layer.
 - Bugs or pitfalls in menu flow, HUD binding, selection order, or round transitions should be documented here in the relevant section.

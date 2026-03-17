@@ -152,6 +152,17 @@ public class Reflector : Ability
 
     public override void Die()
     {
+        if (_reflectCoroutine != null)
+        {
+            StopCoroutine(_reflectCoroutine);
+            _reflectCoroutine = null;
+        }
+
+        if (reflect.shield != null && reflect.shield.IsActive())
+        {
+            reflect.shield.Deactivate();
+        }
+
         base.Die();
         if (_reflectShieldSource != null && _reflectShieldSource.isPlaying)
         {

@@ -316,6 +316,12 @@ public class GigaBlast : Ability
 
     public override void Die()
     {
+        _isCharging = false;
+        _isRemoteCharge = false;
+        _currentChargeTier = 0;
+        StopAllChargeParticles();
+        StopChargeSound();
+
         base.Die();
 
         if (_gigaBlastChargeSource != null && _gigaBlastChargeSource.isPlaying)
@@ -455,6 +461,7 @@ public class GigaBlast : Ability
         Vector3 spawnPosition = transform.position + transform.up * gigaBlast.offsetDistance;
 
         bool useNetworkPath = NetTickUtil.IsActive && _netMovement != null && _netMovement.IsSpawned && _netMovement.IsOwner;
+        int attackId = useNetworkPath ? Player.InvalidAttackId : player.BeginTrackedAttack();
         if (useNetworkPath)
         {
             Vector3 direction = transform.up;
@@ -472,7 +479,8 @@ public class GigaBlast : Ability
                         finalDamage,
                         gigaBlast.timing.projectileLifetime,
                         finalImpact,
-                        player);
+                        player,
+                        attackId);
 
                     if (tier >= 3)
                     {
@@ -538,7 +546,8 @@ public class GigaBlast : Ability
                 finalDamage,
                 gigaBlast.timing.projectileLifetime,
                 finalImpact,
-                player
+                player,
+                attackId
             );
 
             if (tier >= 3)
