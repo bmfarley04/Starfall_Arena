@@ -17,7 +17,7 @@ public class Ability : MonoBehaviour
     protected Player player;
     protected LayerMask originalLayer;
     protected LayerMask thisPlayerLayer;
-    protected float lastUsedAbility = 0;
+    protected float lastUsedAbility = -999f;
     protected virtual void Awake()
     {
         player = GetComponent<Player>();
@@ -39,7 +39,6 @@ public class Ability : MonoBehaviour
 
     public virtual void UseAbility(InputValue value)
     {
-        Debug.Log("Ability activated for " + stats.duration + " seconds.");
     }
 
     [HideInInspector] public bool isLocked = false;
@@ -48,20 +47,16 @@ public class Ability : MonoBehaviour
     {
         if (isLocked)
         {
-            Debug.Log($"❌ Ability locked!");
             return false;
         }
         if (Time.time < lastUsedAbility + stats.cooldown)
         {
-            Debug.Log($"❌ Ability on cooldown: {(lastUsedAbility + stats.cooldown - Time.time):F1}s remaining (lastUsedAbility={lastUsedAbility}, stats.cooldown={stats.cooldown}, Time.time={Time.time})");
             return false;
         }
         if (isDisabledByOtherAbility)
         {
-            Debug.Log("❌ Cannot use ability: another active ability is disabling this one.");
             return false;
         }
-        Debug.Log("✓ CanUseAbility passed all checks");
         return true;
     }
     public virtual bool IsAbilityActive()

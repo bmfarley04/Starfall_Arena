@@ -9,8 +9,14 @@ EditorBuildSettings:
     path: Assets/Scenes/titleScreenTest.unity
     guid: a4237098fca92e34ba6e2fa3a1044cd0
   - enabled: 1
+    path: Assets/Scenes/networkScene.unity
+    guid: 7393cd9aafa7d624cbecfd41daa88c41
+  - enabled: 1
     path: Assets/Scenes/SampleSceneSplitScreen.unity
     guid: 7ff85cb1fba47584e9b1ba8acf7f987d
+  - enabled: 0
+    path: Assets/Scenes/networkMovementTest.unity
+    guid: 3979344b511dd4dbd83a316f5efc33c9
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   m_UseUCBPForAssetBundles: 0

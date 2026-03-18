@@ -69,7 +69,6 @@ public abstract class AugmentRuntimeBase : IAugmentRuntime
         {
             typeMultiplier.Add(Definition.augmentID, mult);
             player.SetAugmentVariables();
-            Debug.Log($"{Definition.augmentName} activated: x{mult}");
         }
     }
 
@@ -80,12 +79,10 @@ public abstract class AugmentRuntimeBase : IAugmentRuntime
         if (!typeMultiplier.ContainsKey(Definition.augmentID))
         {
             typeMultiplier.Add(Definition.augmentID, mult);
-            Debug.Log($"{Definition.augmentName} activated: x{mult}");
         }
         else
         {
             typeMultiplier[Definition.augmentID] = mult;
-            Debug.Log($"{Definition.augmentName} refreshed: x{mult}");
         }
 
         player.SetAugmentVariables();
@@ -99,7 +96,6 @@ public abstract class AugmentRuntimeBase : IAugmentRuntime
         {
             typeMultiplier.Remove(Definition.augmentID);
             player.SetAugmentVariables();
-            Debug.Log($"{Definition.augmentName} deactivated: returned to normal");
         }
     }
 }

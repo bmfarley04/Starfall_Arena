@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
+using Unity.Netcode;
 
 /// <summary>
 /// A fire hazard zone that damages entities that enter it.
@@ -45,9 +46,11 @@ public class FireHazard : MonoBehaviour
     private float _originalAlpha;
     private Rigidbody2D _rb;
     private Vector2 _initialVelocity;
-    private bool _capturedInitialVelocity;
+    private bool _capturedInitialVelocity = false;
     private AudioSource _loopSource;
-    private bool _loopStarted;
+    private bool _loopStarted = false;
+    private Entity _owner;
+    private bool _isCosmeticOnly = false;
 
     private void Awake()
     {
@@ -71,16 +74,44 @@ public class FireHazard : MonoBehaviour
     /// <summary>
     /// Initialize the fire hazard with combat settings.
     /// </summary>
-    public void Initialize(string enemyTag, float dps, float duration, float force, float slowRate = 1f)
+    public void Initialize(string enemyTag, float dps, float duration, float force)
+    {
+        InitializeCore(enemyTag, dps, duration, force);
+    }
+
+    /// <summary>
+    /// Initialize with a custom velocity slow rate.
+    /// </summary>
+    public void Initialize(string enemyTag, float dps, float duration, float force, float slowRate)
+    {
+        velocitySlowRate = slowRate;
+        InitializeCore(enemyTag, dps, duration, force);
+    }
+
+    /// <summary>
+    /// Initialize with an owning entity reference for damage attribution.
+    /// </summary>
+    public void Initialize(string enemyTag, float dps, float duration, float force, Entity owner)
+    {
+        _owner = owner;
+        InitializeCore(enemyTag, dps, duration, force);
+    }
+
+    private void InitializeCore(string enemyTag, float dps, float duration, float force)
     {
         targetTag = enemyTag;
         damagePerSecond = dps;
         lifetime = duration;
         impactForce = force;
-        velocitySlowRate = slowRate;
         _spawnTime = Time.time;
         _capturedInitialVelocity = false;
+        CaptureInitialVelocity();
         StartLoopSound();
+    }
+
+    public void SetCosmeticOnly(bool isCosmeticOnly)
+    {
+        _isCosmeticOnly = isCosmeticOnly;
     }
 
     private void Update()
@@ -121,8 +152,12 @@ public class FireHazard : MonoBehaviour
 
     private void FixedUpdate()
     {
-        CaptureInitialVelocity();
         ApplyVelocityDampening();
+
+        if (!CanApplyGameplay())
+        {
+            return;
+        }
 
         // Apply damage to all entities currently inside the hazard
         float damageThisFrame = damagePerSecond * Time.fixedDeltaTime;
@@ -134,7 +169,7 @@ public class FireHazard : MonoBehaviour
         {
             if (entity != null)
             {
-                entity.TakeDamage(damageThisFrame, impactForce, transform.position, DamageSource.Other);
+                entity.TakeDamage(damageThisFrame, impactForce, transform.position, DamageSource.Other, _owner, Player.InvalidAttackId);
             }
         }
         
@@ -229,6 +264,11 @@ public class FireHazard : MonoBehaviour
 
     private void OnTriggerEnter2D(Collider2D other)
     {
+        if (!CanApplyGameplay())
+        {
+            return;
+        }
+
         if (string.IsNullOrEmpty(targetTag)) return;
         
         if (other.CompareTag(targetTag))
@@ -243,6 +283,11 @@ public class FireHazard : MonoBehaviour
 
     private void OnTriggerExit2D(Collider2D other)
     {
+        if (!CanApplyGameplay())
+        {
+            return;
+        }
+
         if (string.IsNullOrEmpty(targetTag)) return;
         
         if (other.CompareTag(targetTag))
@@ -253,5 +298,20 @@ public class FireHazard : MonoBehaviour
                 _entitiesInside.Remove(entity);
             }
         }
+    }
+
+    private bool CanApplyGameplay()
+    {
+        if (_isCosmeticOnly)
+        {
+            return false;
+        }
+
+        if (!NetTickUtil.IsActive)
+        {
+            return true;
+        }
+
+        return NetworkManager.Singleton == null || NetworkManager.Singleton.IsServer;
     }
 }

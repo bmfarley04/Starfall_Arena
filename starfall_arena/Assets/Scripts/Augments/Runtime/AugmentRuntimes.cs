@@ -74,7 +74,6 @@ public sealed class AutoShieldsRuntime : AugmentRuntimeBase
             }
 
             _lastUsedRound = player.currentRound;
-            Debug.Log($"{Definition.augmentName} restored shields for {player.gameObject.name} (round {player.currentRound})");
         }
     }
 }
@@ -155,13 +154,11 @@ public sealed class EvasionRuntime : AugmentRuntimeBase
         if (!shieldIgnored && UnityEngine.Random.value < _definition.shieldIgnoreChance)
         {
             shieldIgnored = true;
-            Debug.Log($"{player.name} evaded shield damage!");
         }
 
         if (!healthIgnored && UnityEngine.Random.value < _definition.healthIgnoreChance)
         {
             healthIgnored = true;
-            Debug.Log($"{player.name} evaded damage!");
         }
     }
 
@@ -172,7 +169,6 @@ public sealed class EvasionRuntime : AugmentRuntimeBase
         if (!healthIgnored && UnityEngine.Random.value < _definition.healthIgnoreChance)
         {
             healthIgnored = true;
-            Debug.Log($"{player.name} evaded direct damage!");
         }
     }
 }
@@ -209,7 +205,6 @@ public sealed class RegeneratorRuntime : AugmentRuntimeBase
             {
                 float amount = _definition.healRate * Time.deltaTime;
                 player.Heal(amount);
-                Debug.Log($"[Regenerator] Healing player for {amount:F1} HP (current: {player.CurrentHealth}/{player.maxHealth})");
             }
         }
         else
@@ -221,7 +216,6 @@ public sealed class RegeneratorRuntime : AugmentRuntimeBase
     public override void OnTakeDamage(float damage, float impactForce, Vector3 hitPoint, DamageSource source)
     {
         _lastDamageTime = Time.time;
-        Debug.Log($"[Regenerator] Player took damage, interrupting healing until {_lastDamageTime + _definition.damageInterruptCooldown}");
     }
 }
 
@@ -262,14 +256,11 @@ public sealed class ReinforcedHullRuntime : AugmentRuntimeBase
         player.Heal(_appliedAmount);
 
         _isApplied = true;
-        Debug.Log($"{Definition.augmentName} applied: +{_appliedAmount} max health");
     }
 
     private void RemoveHealthBonus()
     {
         player.SetMaxHealthAndClampCurrent(player.maxHealth - _appliedAmount);
-
-        Debug.Log($"{Definition.augmentName} removed: -{_appliedAmount} max health");
 
         _appliedAmount = 0f;
         _isApplied = false;

@@ -2,6 +2,8 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
+using UnityEngine.UI;
+using TMPro;
 
 /// <summary>
 /// Orchestrates the title screen intro and menu transitions.
@@ -51,6 +53,19 @@ public class TitleScreenManager : MonoBehaviour
         public float enterStartScale;
     }
 
+    [System.Serializable]
+    public struct HoldActionButton
+    {
+        public GameObject target;
+        public Image fillImage;
+    }
+
+    [System.Serializable]
+    public struct NavigationGroup
+    {
+        public GameObject[] targets;
+    }
+
     [Header("Menu Canvases")]
     [Tooltip("Main menu canvas (buttons, title). Also used for intro fade-in.")]
     [SerializeField] private CanvasGroup mainMenuCanvas;
@@ -73,6 +88,33 @@ public class TitleScreenManager : MonoBehaviour
     [Tooltip("First selected button on the ship select screen (for controller navigation)")]
     [SerializeField] private GameObject shipSelectFirstSelected;
 
+    [Tooltip("Join-game canvas that contains the IP field and connect button")]
+    [SerializeField] private CanvasGroup joinGameCanvas;
+
+    [Tooltip("First selected button or input field on the join-game canvas")]
+    [SerializeField] private GameObject joinGameFirstSelected;
+
+    [Tooltip("Waiting-room canvas shown to the host after starting a LAN duel")]
+    [SerializeField] private CanvasGroup hostWaitingCanvas;
+
+    [Tooltip("First selected button on the host waiting canvas")]
+    [SerializeField] private GameObject hostWaitingFirstSelected;
+
+    [Header("Networking UI")]
+    [SerializeField] private TMP_InputField ipAddressInputField;
+    [SerializeField] private TextMeshProUGUI networkStatusText;
+
+    [Header("Hold Actions")]
+    [SerializeField] private float submitHoldDuration = 1f;
+    [SerializeField] private float backHoldDuration = 1f;
+    [SerializeField] private HoldActionButton joinConfirmButton;
+    [SerializeField] private HoldActionButton joinBackButton;
+    [SerializeField] private HoldActionButton waitingBackButton;
+
+    [Header("Manual Navigation")]
+    [SerializeField] private NavigationGroup joinGameNavigation;
+    [SerializeField] private NavigationGroup hostWaitingNavigation;
+
     [Header("Intro: Scene Fade In")]
     [SerializeField] private SceneFadeConfig sceneFade;
 
@@ -85,9 +127,37 @@ public class TitleScreenManager : MonoBehaviour
     private float _overlayAlpha = 1f;
     private Coroutine _activeTransition;
     private CanvasGroup _activeCanvas;
+    private NetMgr _netMgr;
+    private NetworkSessionData _sessionData;
+    private float _submitHoldTime;
+    private float _backHoldTime;
+    private bool _navigationLatch;
+    private bool _submitTriggeredWhileHeld;
+    private HoldActionButton _resolvedControlsBackButton;
 
     private IEnumerator Start()
     {
+        _netMgr = NetMgr.Instance;
+        _sessionData = NetworkSessionData.Instance;
+
+        if (_netMgr != null)
+        {
+            _netMgr.OnConnectionFailed += HandleConnectionFailed;
+        }
+
+        if (_sessionData != null)
+        {
+            _sessionData.OnSessionStateChanged += HandleSessionStateChanged;
+            _sessionData.OnStatusMessageChanged += HandleStatusMessageChanged;
+
+            if (!NetMgr.IsNetworked)
+            {
+                _sessionData.ResetToTitleLocal();
+            }
+        }
+
+        ResetHoldVisuals();
+
         _overlayAlpha = 1f;
 
         // CRITICAL: Deactivate canvas GameObjects to prevent ANY events during intro
@@ -95,11 +165,15 @@ public class TitleScreenManager : MonoBehaviour
         mainMenuCanvas.gameObject.SetActive(false);
         controlsCanvas.gameObject.SetActive(false);
         shipSelectCanvas.gameObject.SetActive(false);
+        if (joinGameCanvas != null) joinGameCanvas.gameObject.SetActive(false);
+        if (hostWaitingCanvas != null) hostWaitingCanvas.gameObject.SetActive(false);
 
         // Hide all canvases at start (when we activate them later)
         SetCanvasHidden(mainMenuCanvas);
         SetCanvasHidden(controlsCanvas);
         SetCanvasHidden(shipSelectCanvas);
+        SetCanvasHidden(joinGameCanvas);
+        SetCanvasHidden(hostWaitingCanvas);
 
         // PRELOAD: Spawn ship models NOW (at scene load) so they're ready instantly
         // This eliminates any loading delay when entering ship select
@@ -207,6 +281,85 @@ public class TitleScreenManager : MonoBehaviour
             RunTransition(mainMenuCanvas, shipSelectCanvas, shipSelectFirstSelected));
     }
 
+    public void TransitionToLocalShipSelect()
+    {
+        if (_activeTransition != null) return;
+
+        _netMgr = NetMgr.Instance;
+        _netMgr?.CancelCurrentAttempt();
+
+        _sessionData = NetworkSessionData.Instance;
+        if (_sessionData != null)
+        {
+            _sessionData.ResetToTitleLocal();
+        }
+
+        HandleStatusMessageChanged(string.Empty);
+
+        shipSelectManager?.BeginGameplayScenePreload();
+
+        _activeTransition = StartCoroutine(
+            RunTransition(mainMenuCanvas, shipSelectCanvas, shipSelectFirstSelected));
+    }
+
+    public void TransitionToJoinGame()
+    {
+        if (_activeTransition != null || joinGameCanvas == null) return;
+        _activeTransition = StartCoroutine(
+            RunTransition(mainMenuCanvas, joinGameCanvas, joinGameFirstSelected));
+    }
+
+    public void TransitionToOnlineMenuFromJoin()
+    {
+        if (_activeTransition != null || joinGameCanvas == null) return;
+        _activeTransition = StartCoroutine(
+            RunTransition(joinGameCanvas, mainMenuCanvas, mainMenuFirstSelected));
+    }
+
+    public void StartHostingFlow()
+    {
+        if (hostWaitingCanvas == null || _activeTransition != null) return;
+
+        _netMgr = NetMgr.Instance;
+        _sessionData = NetworkSessionData.Instance;
+        if (_netMgr == null || !_netMgr.StartHostForMenu())
+        {
+            return;
+        }
+
+        CanvasGroup source = _activeCanvas ?? mainMenuCanvas;
+        _activeTransition = StartCoroutine(
+            RunTransition(source, hostWaitingCanvas, hostWaitingFirstSelected));
+    }
+
+    public void StartJoinFlow()
+    {
+        string address = ipAddressInputField != null ? ipAddressInputField.text : string.Empty;
+        _netMgr = NetMgr.Instance;
+        _sessionData = NetworkSessionData.Instance;
+        bool started = _netMgr != null && _netMgr.StartClientForMenu(address);
+        if (started)
+        {
+            HandleStatusMessageChanged("Connecting to host...");
+        }
+    }
+
+    public void CancelNetworkFlow()
+    {
+        _netMgr = NetMgr.Instance;
+        _netMgr?.CancelCurrentAttempt();
+        HandleStatusMessageChanged(string.Empty);
+
+        if (_activeCanvas == hostWaitingCanvas)
+        {
+            TransitionCanvas(hostWaitingCanvas, mainMenuCanvas, mainMenuFirstSelected);
+        }
+        else if (_activeCanvas == joinGameCanvas)
+        {
+            TransitionCanvas(joinGameCanvas, mainMenuCanvas, mainMenuFirstSelected);
+        }
+    }
+
     public void TransitionToMainMenuFromShipSelect()
     {
         if (_activeTransition != null) return;
@@ -242,6 +395,7 @@ public class TitleScreenManager : MonoBehaviour
             shipSelectManager.enabled = true;
             shipSelectManager.ResetToPlayer1(); // Reset to Player 1 state when entering ship select
             shipSelectManager.PreloadShipData();
+            shipSelectManager.BeginGameplayScenePreload();
             // DON'T disable component - keep it enabled so ship stays active
             // The canvas is hidden anyway, so component being enabled doesn't matter
         }
@@ -313,24 +467,100 @@ public class TitleScreenManager : MonoBehaviour
 
     private void Update()
     {
-        if (_activeTransition != null) return;
-        if (_activeCanvas == null || _activeCanvas == mainMenuCanvas) return;
-
-        // Don't handle cancel for ship select - it uses hold buttons
-        if (_activeCanvas == shipSelectCanvas) return;
-
-        bool cancelPressed = false;
-
-        if (Gamepad.current != null)
-            cancelPressed = Gamepad.current.buttonEast.wasPressedThisFrame;
-
-        if (!cancelPressed && Keyboard.current != null)
-            cancelPressed = Keyboard.current.escapeKey.wasPressedThisFrame;
-
-        if (cancelPressed)
+        if (_activeTransition != null)
         {
-            // Return to main menu from controls screen
+            ResetHoldVisuals();
+            return;
+        }
+
+        if (_activeCanvas == null || _activeCanvas == shipSelectCanvas)
+        {
+            ResetHoldVisuals();
+            return;
+        }
+
+        if (_activeCanvas != mainMenuCanvas)
+        {
+            HandleManualNavigation();
+        }
+
+        bool submitHeld =
+            IsAnyGamepadButtonHeld(gamepad => gamepad.buttonSouth.isPressed) ||
+            (Keyboard.current != null && Keyboard.current.xKey.isPressed);
+
+        bool backHeld =
+            IsAnyGamepadButtonHeld(gamepad => gamepad.buttonEast.isPressed) ||
+            (Keyboard.current != null && Keyboard.current.bKey.isPressed);
+
+        HandleSubmitHold(submitHeld);
+        HandleBackHold(backHeld);
+    }
+
+    private void HandleSubmitHold(bool submitHeld)
+    {
+        HoldActionButton activeButton = GetActiveSubmitButton();
+        ResetSubmitFillVisuals(activeButton.fillImage);
+        if (activeButton.target == null || !submitHeld)
+        {
+            _submitHoldTime = 0f;
+            _submitTriggeredWhileHeld = false;
+            UpdateFill(activeButton.fillImage, 1f);
+            return;
+        }
+
+        if (_submitTriggeredWhileHeld)
+        {
+            UpdateFill(activeButton.fillImage, 0f);
+            return;
+        }
+
+        _submitHoldTime += Time.unscaledDeltaTime;
+        UpdateFill(activeButton.fillImage, 1f - Mathf.Clamp01(_submitHoldTime / Mathf.Max(0.001f, submitHoldDuration)));
+
+        if (_submitHoldTime < submitHoldDuration)
+        {
+            return;
+        }
+
+        _submitHoldTime = 0f;
+        _submitTriggeredWhileHeld = true;
+        UpdateFill(activeButton.fillImage, 0f);
+
+        if (activeButton.target == joinConfirmButton.target)
+        {
+            StartJoinFlow();
+        }
+    }
+
+    private void HandleBackHold(bool backHeld)
+    {
+        HoldActionButton activeButton = GetActiveBackButton();
+        ResetBackFillVisuals(activeButton.fillImage);
+        if (activeButton.target == null || !backHeld)
+        {
+            _backHoldTime = 0f;
+            UpdateFill(activeButton.fillImage, 1f);
+            return;
+        }
+
+        _backHoldTime += Time.unscaledDeltaTime;
+        UpdateFill(activeButton.fillImage, 1f - Mathf.Clamp01(_backHoldTime / Mathf.Max(0.001f, backHoldDuration)));
+
+        if (_backHoldTime < backHoldDuration)
+        {
+            return;
+        }
+
+        _backHoldTime = 0f;
+        UpdateFill(activeButton.fillImage, 1f);
+
+        if (_activeCanvas == controlsCanvas)
+        {
             TransitionToMainMenu();
+        }
+        else
+        {
+            CancelNetworkFlow();
         }
     }
 
@@ -368,5 +598,310 @@ public class TitleScreenManager : MonoBehaviour
         menuTransition.pauseDuration = 0.15f;
         menuTransition.enterDuration = 0.4f;
         menuTransition.enterStartScale = 0.9f;
+    }
+
+    private void HandleConnectionFailed(string message)
+    {
+        HandleStatusMessageChanged(message);
+    }
+
+    private void HandleSessionStateChanged(NetworkMatchState state)
+    {
+        switch (state)
+        {
+            case NetworkMatchState.ShipSelect:
+                if (!NetMgr.IsNetworked || _sessionData == null || !_sessionData.HasBothPlayersConnected)
+                {
+                    return;
+                }
+
+                TransitionToShipSelectFromCurrent();
+                break;
+            case NetworkMatchState.Disconnected:
+            case NetworkMatchState.Error:
+                if (_activeCanvas == hostWaitingCanvas || _activeCanvas == joinGameCanvas)
+                {
+                    TransitionCanvas(_activeCanvas, mainMenuCanvas, mainMenuFirstSelected);
+                }
+                break;
+        }
+    }
+
+    private void HandleStatusMessageChanged(string message)
+    {
+        if (networkStatusText != null)
+        {
+            networkStatusText.text = message ?? string.Empty;
+        }
+    }
+
+    private void TransitionToShipSelectFromCurrent()
+    {
+        if (_activeTransition != null || shipSelectCanvas == null) return;
+
+        CanvasGroup source = _activeCanvas ?? mainMenuCanvas;
+        if (source == shipSelectCanvas) return;
+
+        _activeTransition = StartCoroutine(
+            RunTransition(source, shipSelectCanvas, shipSelectFirstSelected));
+    }
+
+    private void TransitionCanvas(CanvasGroup from, CanvasGroup to, GameObject firstSelected)
+    {
+        if (from == null || to == null || _activeTransition != null)
+        {
+            return;
+        }
+
+        _activeTransition = StartCoroutine(RunTransition(from, to, firstSelected));
+    }
+
+    private HoldActionButton GetActiveSubmitButton()
+    {
+        GameObject selected = EventSystem.current != null ? EventSystem.current.currentSelectedGameObject : null;
+        if (_activeCanvas == joinGameCanvas)
+        {
+            if (selected == null)
+            {
+                return joinConfirmButton;
+            }
+
+            if (selected == joinConfirmButton.target || selected == ipAddressInputField?.gameObject)
+            {
+                return joinConfirmButton;
+            }
+        }
+
+        return default;
+    }
+
+    private HoldActionButton GetActiveBackButton()
+    {
+        if (_activeCanvas == controlsCanvas)
+        {
+            return GetControlsBackButton();
+        }
+
+        if (_activeCanvas == joinGameCanvas)
+        {
+            return joinBackButton;
+        }
+
+        if (_activeCanvas == hostWaitingCanvas)
+        {
+            return waitingBackButton;
+        }
+
+        return default;
+    }
+
+    private HoldActionButton GetControlsBackButton()
+    {
+        if (_resolvedControlsBackButton.target != null)
+        {
+            return _resolvedControlsBackButton;
+        }
+
+        if (controlsCanvas == null)
+        {
+            return default;
+        }
+
+        RectTransform[] controlsChildren = controlsCanvas.GetComponentsInChildren<RectTransform>(true);
+        foreach (RectTransform child in controlsChildren)
+        {
+            if (child == null || !child.name.Equals("Back", System.StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            Image fillImage = child.GetComponent<Image>();
+            if (fillImage == null)
+            {
+                fillImage = child.GetComponentInChildren<Image>(true);
+            }
+
+            _resolvedControlsBackButton = new HoldActionButton
+            {
+                target = child.gameObject,
+                fillImage = fillImage
+            };
+
+            return _resolvedControlsBackButton;
+        }
+
+        return default;
+    }
+
+    private void ResetHoldVisuals()
+    {
+        _submitHoldTime = 0f;
+        _backHoldTime = 0f;
+        _submitTriggeredWhileHeld = false;
+        ResetSubmitFillVisuals(null);
+        ResetBackFillVisuals(null);
+    }
+
+    private void HandleManualNavigation()
+    {
+        NavigationGroup group = GetActiveNavigationGroup();
+        if (group.targets == null || group.targets.Length == 0)
+        {
+            return;
+        }
+
+        Vector2 navigationInput = Vector2.zero;
+        if (Gamepad.current != null)
+        {
+            navigationInput = Gamepad.current.dpad.ReadValue();
+            if (navigationInput == Vector2.zero)
+            {
+                navigationInput = Gamepad.current.leftStick.ReadValue();
+            }
+        }
+
+        if (Keyboard.current != null)
+        {
+            if (Keyboard.current.leftArrowKey.isPressed || Keyboard.current.aKey.isPressed)
+            {
+                navigationInput.x = -1f;
+            }
+            else if (Keyboard.current.rightArrowKey.isPressed || Keyboard.current.dKey.isPressed)
+            {
+                navigationInput.x = 1f;
+            }
+
+            if (Keyboard.current.upArrowKey.isPressed || Keyboard.current.wKey.isPressed)
+            {
+                navigationInput.y = 1f;
+            }
+            else if (Keyboard.current.downArrowKey.isPressed || Keyboard.current.sKey.isPressed)
+            {
+                navigationInput.y = -1f;
+            }
+        }
+
+        bool hasNavigation = Mathf.Abs(navigationInput.x) > 0.5f || Mathf.Abs(navigationInput.y) > 0.5f;
+        if (!hasNavigation)
+        {
+            _navigationLatch = false;
+            return;
+        }
+
+        if (_navigationLatch)
+        {
+            return;
+        }
+
+        _navigationLatch = true;
+
+        int direction = ResolveNavigationDirection(navigationInput);
+        if (direction == 0)
+        {
+            return;
+        }
+
+        GameObject current = EventSystem.current != null ? EventSystem.current.currentSelectedGameObject : null;
+        int currentIndex = System.Array.IndexOf(group.targets, current);
+        if (currentIndex < 0)
+        {
+            currentIndex = 0;
+        }
+        else
+        {
+            currentIndex = (currentIndex + direction + group.targets.Length) % group.targets.Length;
+        }
+
+        RefreshSelection(group.targets[currentIndex]);
+    }
+
+    private NavigationGroup GetActiveNavigationGroup()
+    {
+        if (_activeCanvas == joinGameCanvas)
+        {
+            return joinGameNavigation;
+        }
+
+        if (_activeCanvas == hostWaitingCanvas)
+        {
+            return hostWaitingNavigation;
+        }
+
+        return default;
+    }
+
+    private static int ResolveNavigationDirection(Vector2 navigationInput)
+    {
+        if (Mathf.Abs(navigationInput.x) >= Mathf.Abs(navigationInput.y))
+        {
+            if (navigationInput.x > 0.5f) return 1;
+            if (navigationInput.x < -0.5f) return -1;
+        }
+        else
+        {
+            if (navigationInput.y < -0.5f) return 1;
+            if (navigationInput.y > 0.5f) return -1;
+        }
+
+        return 0;
+    }
+
+    private void ResetSubmitFillVisuals(Image activeImage)
+    {
+        ResetFillIfInactive(joinConfirmButton.fillImage, activeImage);
+    }
+
+    private void ResetBackFillVisuals(Image activeImage)
+    {
+        ResetFillIfInactive(joinBackButton.fillImage, activeImage);
+        ResetFillIfInactive(waitingBackButton.fillImage, activeImage);
+    }
+
+    private static void UpdateFill(Image image, float amount)
+    {
+        if (image != null)
+        {
+            image.fillAmount = amount;
+        }
+    }
+
+    private static void ResetFillIfInactive(Image image, Image activeImage)
+    {
+        if (image != null && image != activeImage)
+        {
+            image.fillAmount = 1f;
+        }
+    }
+
+    private static bool IsAnyGamepadButtonHeld(System.Func<Gamepad, bool> buttonPredicate)
+    {
+        if (buttonPredicate == null)
+        {
+            return false;
+        }
+
+        foreach (Gamepad gamepad in Gamepad.all)
+        {
+            if (gamepad != null && gamepad.added && buttonPredicate(gamepad))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private void OnDestroy()
+    {
+        if (_netMgr != null)
+        {
+            _netMgr.OnConnectionFailed -= HandleConnectionFailed;
+        }
+
+        if (_sessionData != null)
+        {
+            _sessionData.OnSessionStateChanged -= HandleSessionStateChanged;
+            _sessionData.OnStatusMessageChanged -= HandleStatusMessageChanged;
+        }
     }
 }

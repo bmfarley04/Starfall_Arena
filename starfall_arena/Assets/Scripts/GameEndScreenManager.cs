@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.InputSystem;
@@ -38,6 +39,9 @@ public class GameEndScreenManager : MonoBehaviour
     [SerializeField] private CanvasGroup player2Canvas;
 
     [Header("Player 1 Canvas Text Fields")]
+    [Tooltip("Victory/defeat label in Player 1 canvas")]
+    [SerializeField] private TextMeshProUGUI p1_resultText;
+
     [Tooltip("Duration text in Player 1 canvas")]
     [SerializeField] private TextMeshProUGUI p1_durationText;
 
@@ -54,6 +58,9 @@ public class GameEndScreenManager : MonoBehaviour
     [SerializeField] private TextMeshProUGUI p1_accuracyText;
 
     [Header("Player 2 Canvas Text Fields")]
+    [Tooltip("Victory/defeat label in Player 2 canvas")]
+    [SerializeField] private TextMeshProUGUI p2_resultText;
+
     [Tooltip("Duration text in Player 2 canvas")]
     [SerializeField] private TextMeshProUGUI p2_durationText;
 
@@ -99,6 +106,24 @@ public class GameEndScreenManager : MonoBehaviour
 
     [Tooltip("Delay after stats finish before ship warps in")]
     [SerializeField] private float delayBeforeShipWarp = 0.2f;
+
+    [Tooltip("Direction used when scattering the losing ship preview")]
+    [SerializeField] private Vector2 defeatScatterDirection = new Vector2(0.6f, 0.8f);
+
+    [Tooltip("Scales down the normal ship-part scatter force for the defeat screen")]
+    [SerializeField] private float defeatScatterForceMultiplier = 0.35f;
+
+    [Tooltip("Extra drag multiplier applied to defeat-screen ship parts so they linger near center")]
+    [SerializeField] private float defeatScatterDragMultiplier = 1.4f;
+
+    [Tooltip("Small offset that biases the defeat scatter origin toward the bottom-left of the ship pose")]
+    [SerializeField] private Vector3 defeatScatterOriginOffset = new Vector3(-0.6f, -0.55f, 0f);
+
+    [Tooltip("How far defeat-screen ship parts may drift from the center when they spawn")]
+    [SerializeField] private float defeatScatterSpawnRadius = 0.6f;
+
+    [Tooltip("Narrows the scatter cone for the defeat screen so parts mostly float together")]
+    [SerializeField] private float defeatScatterConeAngle = 38f;
 
     [Tooltip("Maximum Y scale multiplier at start of warp (ship length stretch)")]
     [SerializeField] private float warpMaxStretchY = 5f;
@@ -154,6 +179,8 @@ public class GameEndScreenManager : MonoBehaviour
     private CanvasGroup[] currentStatSections;
     private GameObject spawnedShipModel;
     private Transform currentShipSpawnPoint;
+    private bool currentPresentationIsVictory;
+    private readonly List<GameObject> spawnedScatterParts = new List<GameObject>();
     private AudioSource _audioSource;
     private float _returnHoldTime = 0f;
     private bool _canReturnToTitle = false;
@@ -188,6 +215,7 @@ public class GameEndScreenManager : MonoBehaviour
         {
             ShowGameEndScreen(
                 debugWinningPlayer,
+                debugWinningPlayer,
                 debugShipData,
                 debugDuration,
                 debugWins,
@@ -205,18 +233,20 @@ public class GameEndScreenManager : MonoBehaviour
     }
 
     /// <summary>
-    /// Displays the game end screen with the provided stats and winning ship
+    /// Displays the game end screen using the supplied winner and local perspective.
     /// </summary>
     /// <param name="winningPlayer">1 or 2</param>
+    /// <param name="perspectivePlayer">The local player slot whose canvas/stats should be shown</param>
     /// <param name="shipData">Ship data containing the model prefab to display</param>
     /// <param name="gameDuration">Total game duration in seconds</param>
-    /// <param name="wins">Number of rounds won</param>
-    /// <param name="losses">Number of rounds lost</param>
-    /// <param name="damageDealt">Total damage dealt by winner</param>
-    /// <param name="damageTaken">Total damage taken by winner</param>
+    /// <param name="wins">Number of rounds won from the local perspective</param>
+    /// <param name="losses">Number of rounds lost from the local perspective</param>
+    /// <param name="damageDealt">Total damage dealt from the local perspective</param>
+    /// <param name="damageTaken">Total damage taken from the local perspective</param>
     /// <param name="accuracy">Accuracy percentage (0-100)</param>
     public void ShowGameEndScreen(
         int winningPlayer,
+        int perspectivePlayer,
         ShipData shipData,
         float gameDuration,
         int wins,
@@ -232,13 +262,12 @@ public class GameEndScreenManager : MonoBehaviour
         }
 
         // Clean up any existing ship model
-        if (spawnedShipModel != null)
-        {
-            Destroy(spawnedShipModel);
-        }
+        CleanupShipPresentation();
+
+        bool isLocalVictory = winningPlayer == perspectivePlayer;
 
         // Determine which canvas to show and which stat sections to animate
-        if (winningPlayer == 1)
+        if (perspectivePlayer == 1)
         {
             currentActiveCanvas = player1Canvas;
             currentShipSpawnPoint = player1ShipSpawnPoint;
@@ -267,7 +296,7 @@ public class GameEndScreenManager : MonoBehaviour
 
         if (currentActiveCanvas == null)
         {
-            Debug.LogError($"Player {winningPlayer} canvas is not assigned!");
+            Debug.LogError($"Player {perspectivePlayer} canvas is not assigned!");
             return;
         }
 
@@ -279,19 +308,20 @@ public class GameEndScreenManager : MonoBehaviour
 
         if (currentShipSpawnPoint == null)
         {
-            Debug.LogError($"Player {winningPlayer} ship spawn point is not assigned!");
+            Debug.LogError($"Player {perspectivePlayer} ship spawn point is not assigned!");
             return;
         }
 
+        currentPresentationIsVictory = isLocalVictory;
         _canReturnToTitle = false;
         _isLoadingTitle = false;
         _returnHoldTime = 0f;
         ResetReturnFillUI();
 
         // Populate text fields
-        PopulateStats(winningPlayer, gameDuration, wins, losses, damageDealt, damageTaken, accuracy);
+        PopulateStats(perspectivePlayer, isLocalVictory, gameDuration, wins, losses, damageDealt, damageTaken, accuracy);
 
-        // Spawn ship model (but keep it off-screen)
+        // Spawn ship model for the result presentation.
         SpawnShipModel(shipData);
 
         // Start spawn animation
@@ -314,7 +344,7 @@ public class GameEndScreenManager : MonoBehaviour
         }
     }
 
-    private void PopulateStats(int winningPlayer, float gameDuration, int wins, int losses, float damageDealt, float damageTaken, float accuracy)
+    private void PopulateStats(int perspectivePlayer, bool isVictory, float gameDuration, int wins, int losses, float damageDealt, float damageTaken, float accuracy)
     {
         // Format duration as MM:SS
         int minutes = Mathf.FloorToInt(gameDuration / 60f);
@@ -332,8 +362,11 @@ public class GameEndScreenManager : MonoBehaviour
         string accuracyStr = $"{accuracy:F1}%";
 
         // Populate the appropriate canvas's text fields
-        if (winningPlayer == 1)
+        string resultLabel = isVictory ? "VICTORY" : "DEFEAT";
+
+        if (perspectivePlayer == 1)
         {
+            if (p1_resultText != null) p1_resultText.text = resultLabel;
             if (p1_durationText != null) p1_durationText.text = durationStr;
             if (p1_finalRecordText != null) p1_finalRecordText.text = recordStr;
             if (p1_damageDealtText != null) p1_damageDealtText.text = damageDealtStr;
@@ -342,6 +375,7 @@ public class GameEndScreenManager : MonoBehaviour
         }
         else
         {
+            if (p2_resultText != null) p2_resultText.text = resultLabel;
             if (p2_durationText != null) p2_durationText.text = durationStr;
             if (p2_finalRecordText != null) p2_finalRecordText.text = recordStr;
             if (p2_damageDealtText != null) p2_damageDealtText.text = damageDealtStr;
@@ -366,11 +400,18 @@ public class GameEndScreenManager : MonoBehaviour
             component.enabled = false;
         }
 
-        // Position ship off-screen using fixed offset
-        Vector3 warpStartPosition = currentShipSpawnPoint.position + warpStartOffset;
-        spawnedShipModel.transform.position = warpStartPosition;
+        if (currentPresentationIsVictory)
+        {
+            // Position ship off-screen using fixed offset for the warp-in.
+            Vector3 warpStartPosition = currentShipSpawnPoint.position + warpStartOffset;
+            spawnedShipModel.transform.position = warpStartPosition;
+        }
+        else
+        {
+            spawnedShipModel.transform.position = currentShipSpawnPoint.position;
+        }
 
-        // Initially hide the ship
+        // Keep the preview hidden until the presentation phase reaches the ship moment.
         spawnedShipModel.SetActive(false);
     }
 
@@ -435,12 +476,20 @@ public class GameEndScreenManager : MonoBehaviour
             }
         }
 
-        // Phase 4: Wait, then warp in ship
+        // Phase 4: Wait, then show the ship result presentation.
         yield return new WaitForSecondsRealtime(delayBeforeShipWarp);
 
         if (spawnedShipModel != null)
         {
-            yield return StartCoroutine(WarpInShip());
+            if (currentPresentationIsVictory)
+            {
+                yield return StartCoroutine(WarpInShip());
+            }
+            else if (!TryScatterDefeatedShip())
+            {
+                spawnedShipModel.transform.position = currentShipSpawnPoint.position + warpStartOffset;
+                yield return StartCoroutine(WarpInShip());
+            }
         }
 
         // Phase 5: Enable hold-to-return input
@@ -555,6 +604,69 @@ public class GameEndScreenManager : MonoBehaviour
         SetShipAlpha(renderers, originalColors, 1f);
     }
 
+    private bool TryScatterDefeatedShip()
+    {
+        if (spawnedShipModel == null)
+        {
+            return false;
+        }
+
+        spawnedShipModel.SetActive(true);
+        spawnedShipModel.transform.position = currentShipSpawnPoint.position;
+        spawnedShipModel.transform.rotation = currentShipSpawnPoint.rotation;
+
+        ShipPartScatter[] parts = spawnedShipModel.GetComponentsInChildren<ShipPartScatter>(true);
+        if (parts.Length == 0)
+        {
+            return false;
+        }
+
+        Vector2 scatterDirection = defeatScatterDirection.sqrMagnitude > 0.0001f
+            ? defeatScatterDirection.normalized
+            : Vector2.up;
+
+        foreach (ShipPartScatter part in parts)
+        {
+            if (part == null)
+            {
+                continue;
+            }
+
+            float originalMinForce = part.minScatterForce;
+            float originalMaxForce = part.maxScatterForce;
+            float originalDrag = part.drag;
+            float originalConeAngle = part.scatterConeAngle;
+
+            part.minScatterForce *= Mathf.Max(0f, defeatScatterForceMultiplier);
+            part.maxScatterForce *= Mathf.Max(0f, defeatScatterForceMultiplier);
+            part.drag *= Mathf.Max(1f, defeatScatterDragMultiplier);
+            part.scatterConeAngle = Mathf.Max(0f, defeatScatterConeAngle);
+            part.SetPersistAfterScatter(true);
+            part.enabled = true;
+            spawnedScatterParts.Add(part.gameObject);
+            part.Scatter(scatterDirection);
+
+            Vector2 localOffset2D = Random.insideUnitCircle * Mathf.Max(0f, defeatScatterSpawnRadius);
+            Vector3 spawnOffset = defeatScatterOriginOffset + new Vector3(localOffset2D.x, localOffset2D.y, 10f);
+            part.transform.position = currentShipSpawnPoint.position + spawnOffset;
+
+            Rigidbody2D partRb = part.GetComponent<Rigidbody2D>();
+            if (partRb != null)
+            {
+                partRb.angularDamping *= 1.25f;
+            }
+
+            part.minScatterForce = originalMinForce;
+            part.maxScatterForce = originalMaxForce;
+            part.drag = originalDrag;
+            part.scatterConeAngle = originalConeAngle;
+        }
+
+        Destroy(spawnedShipModel);
+        spawnedShipModel = null;
+        return true;
+    }
+
     private void SetShipAlpha(Renderer[] renderers, Color[][] originalColors, float alpha)
     {
         for (int i = 0; i < renderers.Length; i++)
@@ -606,11 +718,7 @@ public class GameEndScreenManager : MonoBehaviour
         currentActiveCanvas.gameObject.SetActive(false);
 
         // Clean up ship model
-        if (spawnedShipModel != null)
-        {
-            Destroy(spawnedShipModel);
-            spawnedShipModel = null;
-        }
+        CleanupShipPresentation();
 
         currentActiveCanvas = null;
         currentAnimation = null;
@@ -628,9 +736,9 @@ public class GameEndScreenManager : MonoBehaviour
 
         bool returnPressed = false;
 
-        foreach (var pad in Gamepad.all)
+        foreach (Gamepad pad in Gamepad.all)
         {
-            if (pad != null && pad.added && pad.aButton.isPressed)
+            if (pad != null && pad.added && pad.buttonEast.isPressed)
             {
                 returnPressed = true;
                 break;
@@ -639,7 +747,7 @@ public class GameEndScreenManager : MonoBehaviour
 
         if (Keyboard.current != null)
         {
-            returnPressed = returnPressed || Keyboard.current.enterKey.isPressed;
+            returnPressed = returnPressed || Keyboard.current.bKey.isPressed || Keyboard.current.xKey.isPressed;
         }
 
         if (returnPressed)
@@ -732,6 +840,25 @@ public class GameEndScreenManager : MonoBehaviour
     private float EaseOutCubic(float t)
     {
         return 1f - Mathf.Pow(1f - t, 3f);
+    }
+
+    private void CleanupShipPresentation()
+    {
+        if (spawnedShipModel != null)
+        {
+            Destroy(spawnedShipModel);
+            spawnedShipModel = null;
+        }
+
+        for (int i = spawnedScatterParts.Count - 1; i >= 0; i--)
+        {
+            if (spawnedScatterParts[i] != null)
+            {
+                Destroy(spawnedScatterParts[i]);
+            }
+        }
+
+        spawnedScatterParts.Clear();
     }
 
     private void Reset()

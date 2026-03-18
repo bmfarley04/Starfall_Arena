@@ -7,8 +7,28 @@ using UnityEngine;
 /// </summary>
 public class PhysicalProjectile : ProjectileScript
 {
+    protected override void ApplyDamageToEntity(Entity damageable, Vector2 hitPoint, Collider2D collider)
+    {
+        damageable.TakeDirectDamage(_damage, _impactForce, hitPoint, DamageSource.Projectile, _shooter, _accuracyAttackId);
+        ApplyImpactForce(collider);
+    }
+
     protected override void OnTriggerEnter2D(Collider2D collider)
     {
+        if (_isCosmeticOnly)
+        {
+            if (collider.CompareTag(targetTag) || collider.CompareTag("Asteroid"))
+            {
+                HandleCosmeticImpact();
+            }
+            return;
+        }
+
+        if (NetTickUtil.IsActive && (_networkAuthority == null || !_networkAuthority.IsServer))
+        {
+            return;
+        }
+
         // Check for ship collision
         if (collider.CompareTag(targetTag))
         {
@@ -24,7 +44,7 @@ public class PhysicalProjectile : ProjectileScript
             if (damageable != null)
             {
                 // Deal damage directly to health, bypassing shields
-                damageable.TakeDirectDamage(_damage, _impactForce, transform.position);
+                damageable.TakeDirectDamage(_damage, _impactForce, transform.position, DamageSource.Projectile, _shooter, _accuracyAttackId);
                 ApplyImpactForce(collider);
 
                 // Apply slow effect if enabled
@@ -56,7 +76,7 @@ public class PhysicalProjectile : ProjectileScript
             var asteroid = collider.GetComponent<AsteroidScript>();
             if (asteroid != null)
             {
-                asteroid.TakeDamage(_damage, _impactForce, transform.position);
+                asteroid.RequestDamage(_damage, _impactForce, transform.position);
             }
 
             if (_visualController != null)
@@ -77,13 +97,14 @@ public class PhysicalProjectile : ProjectileScript
         }
     }
 
-    private void ApplyImpactForce(Collider2D collider)
+    protected override void ApplyImpactForce(Collider2D collider)
     {
         Rigidbody2D targetRb = collider.GetComponent<Rigidbody2D>();
         if (targetRb != null)
         {
+            // Direct velocity change (deterministic equivalent of ForceMode2D.Impulse)
             Vector2 forceDirection = _direction.normalized;
-            targetRb.AddForce(forceDirection * _impactForce, ForceMode2D.Impulse);
+            targetRb.linearVelocity += forceDirection * (_impactForce / targetRb.mass);
         }
     }
 }

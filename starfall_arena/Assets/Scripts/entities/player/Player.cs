@@ -8,6 +8,7 @@ using UnityEngine.Rendering.Universal;
 using StarfallArena.UI;
 using TMPro;
 using System;
+using System.Collections;
 
 [System.Serializable]
 public struct ShieldRegenConfig
@@ -24,6 +25,9 @@ public struct InputConfig
     [Tooltip("Deadzone threshold for controller look input (0-1)")]
     [Range(0f, 1f)]
     public float controllerLookDeadzone;
+
+    [Tooltip("Logs which aiming path is active and the values driving rotation.")]
+    public bool debugRotation;
 }
 
 [System.Serializable]
@@ -141,7 +145,15 @@ public abstract class Player : Entity
     // ===== MOVEMENT LOCK =====
     [HideInInspector] public bool isMovementLocked = false;
 
+    /// <summary>
+    /// When true, Player skips its own movement and rotation logic in FixedUpdate/Update.
+    /// Used by external systems (e.g. NetMovement) that take over physics control.
+    /// Input callbacks (OnThrust, OnLook, etc.) still fire so external systems can read input state.
+    /// </summary>
+    [HideInInspector] public bool externalMovementControl = false;
+
     // ===== STAT TRACKING =====
+    public const int InvalidAttackId = -1;
     [HideInInspector] public int shotsFired;
     [HideInInspector] public int shotsHit;
     [HideInInspector] public float damageDealt;
@@ -150,6 +162,7 @@ public abstract class Player : Entity
     // PUBLIC GET PROTECTED SET
     public string thisPlayerTag { get; protected set; }
     public string enemyTag { get; protected set; }
+    public float PrimaryFireCooldown => fireCooldown;
 
     // ===== PRIVATE STATE =====
     private List<Ability> abilities;
@@ -170,16 +183,29 @@ public abstract class Player : Entity
     private AudioSource _beamHitLoopSource;
     private float _originalRotationSpeed;
     private bool _isAnchored = false;
+    private float _anchorDragAccumulator = 0f;
+    private PlayerInput _playerInput;
+    private int _nextAttackId = 1;
+    private readonly HashSet<int> _registeredHitAttackIds = new HashSet<int>();
 
     // Public getter so augments and other systems can check whether the player is anchored
     public bool IsAnchored => _isAnchored;
+
+    // ===== READ-ONLY INPUT STATE (for external systems like NetMovement) =====
+    public bool IsThrustPressed => _isThrustPressed;
+    public Vector2 LookInput => _lookInput;
+    public bool IsFrictionEnabled => _frictionEnabled;
+    public float FrictionTimer => _frictionTimer;
+    public System.Action<bool> onFrictionToggled;
 
     // ===== INITIALIZATION =====
     protected override void Awake()
     {
         base.Awake();
+
         abilities = new List<Ability> { ability1, ability2, ability3, ability4 };
         _originalRotationSpeed = movement.rotationSpeed;
+        _playerInput = GetComponent<PlayerInput>();
         RefreshCombatTags();
 
         _lastShieldHitTime = -shieldRegen.regenDelay;
@@ -315,7 +341,10 @@ public abstract class Player : Entity
 
         if (isMovementLocked) return;
 
-        HandleRotation();
+        UpdateAimInputFromActiveControlScheme();
+
+        if (!externalMovementControl)
+            HandleRotation();
         HandleShieldRegeneration();
 
         if (_beamHitLoopSource != null && _beamHitLoopSource.isPlaying)
@@ -336,6 +365,7 @@ public abstract class Player : Entity
     protected override void FixedUpdate()
     {
         if (isMovementLocked) return;
+        if (externalMovementControl) { base.FixedUpdate(); return; }
 
         if (abilities.Any(a => a != null && a.HasThrustMitigation() == true))
         {
@@ -355,9 +385,16 @@ public abstract class Player : Entity
         if (movePressed)
         {
             _isThrusting = true;
-            Vector2 thrustDirection = transform.up;
-            _rb.AddForce(thrustDirection * movement.thrustForce * slowMult);
+
+            // Dampen lateral (sideways) drift on the existing velocity first,
+            // then add thrust.  This matches the old force-based timing where
+            // AddForce was integrated by the physics engine AFTER user code ran.
             ApplyLateralDamping();
+
+            Vector2 thrustDirection = transform.up;
+            float acceleration = (movement.thrustForce * slowMult) / _rb.mass;
+            _rb.linearVelocity += thrustDirection * acceleration * Time.fixedDeltaTime;
+
             _frictionTimer = 0f;
         }
         else
@@ -380,7 +417,13 @@ public abstract class Player : Entity
         }
         if (_isAnchored)
         {
-            _rb.linearDamping += .1f;
+            // Manual drag that replicates Unity's per-step linear drag formula:
+            //   velocity *= 1 / (1 + drag * dt)
+            // The accumulator grows each tick just like the old
+            // "_rb.linearDamping += .1f" did, producing identical braking.
+            _anchorDragAccumulator += 0.1f;
+            float dragFactor = 1f / (1f + _anchorDragAccumulator * Time.fixedDeltaTime);
+            _rb.linearVelocity *= dragFactor;
         }
 
         // Apply slow to max speed
@@ -446,11 +489,18 @@ public abstract class Player : Entity
         _lookInput = value.Get<Vector2>();
     }
 
-    void OnToggleFriction()
+    void OnFriction(InputValue value)
     {
+        if (isMovementLocked || !value.isPressed) return;
+
         _frictionEnabled = !_frictionEnabled;
         _frictionTimer = 0f;
-        Debug.Log($"friction: {(_frictionEnabled ? "ON" : "OFF")}");
+        onFrictionToggled?.Invoke(_frictionEnabled);
+    }
+
+    void OnToggleFriction(InputValue value)
+    {
+        OnFriction(value);
     }
 
     void OnThrust(InputValue value)
@@ -480,9 +530,27 @@ public abstract class Player : Entity
     // ===== ROTATION =====
     protected virtual void HandleRotation()
     {
-        if (_lookInput.magnitude > input.controllerLookDeadzone)
+        string controlScheme = GetActiveControlScheme();
+
+        if (input.debugRotation)
         {
-            RotateWithController();
+            Debug.Log(
+                $"[PlayerRotation] object={name} scheme={controlScheme} lookInput={_lookInput} mousePresent={Mouse.current != null} playerInputEnabled={(_playerInput != null && _playerInput.enabled)}",
+                this);
+        }
+
+        if (controlScheme == "controller")
+        {
+            if (_lookInput.magnitude > input.controllerLookDeadzone)
+            {
+                RotateWithController();
+            }
+            return;
+        }
+
+        if (controlScheme == "key+mouse" && _lookInput.sqrMagnitude > 0.0001f)
+        {
+            RotateTowardAimInput();
         }
     }
 
@@ -504,13 +572,77 @@ public abstract class Player : Entity
         movement.rotationSpeed = originalRotationSpeed;
     }
 
+    protected virtual bool ShouldRotateWithMouse()
+    {
+        return Mouse.current != null && (_playerInput == null || _playerInput.enabled);
+    }
+
+    protected virtual string GetActiveControlScheme()
+    {
+        if (_playerInput == null || !_playerInput.enabled)
+        {
+            return string.Empty;
+        }
+
+        return _playerInput.currentControlScheme ?? string.Empty;
+    }
+
+    protected virtual void RotateTowardAimInput()
+    {
+        float targetAngle = Mathf.Atan2(_lookInput.y, _lookInput.x) * Mathf.Rad2Deg;
+        float currentAngle = transform.eulerAngles.z;
+        float newAngle = Mathf.MoveTowardsAngle(currentAngle, targetAngle + ROTATION_OFFSET, movement.rotationSpeed * Time.deltaTime);
+
+        if (input.debugRotation)
+        {
+            Debug.Log(
+                $"[PlayerRotation] aim object={name} lookInput={_lookInput} currentAngle={currentAngle:F2} targetAngle={(targetAngle + ROTATION_OFFSET):F2} newAngle={newAngle:F2}",
+                this);
+        }
+
+        transform.rotation = Quaternion.Euler(0f, 0f, newAngle);
+    }
+
+    protected virtual void UpdateAimInputFromActiveControlScheme()
+    {
+        string controlScheme = GetActiveControlScheme();
+
+        if (controlScheme != "key+mouse" || !ShouldRotateWithMouse())
+        {
+            return;
+        }
+
+        Camera aimCamera = _playerInput != null && _playerInput.camera != null
+            ? _playerInput.camera
+            : Camera.main;
+
+        if (aimCamera == null)
+        {
+            return;
+        }
+
+        Vector2 mouseScreenPosition = Mouse.current.position.ReadValue();
+        Vector3 mouseWorldPosition = aimCamera.ScreenToWorldPoint(mouseScreenPosition);
+        Vector2 aimDirection = mouseWorldPosition - transform.position;
+
+        _lookInput = aimDirection.sqrMagnitude > 0.0001f
+            ? aimDirection.normalized
+            : Vector2.zero;
+
+        if (input.debugRotation)
+        {
+            Debug.Log(
+                $"[PlayerRotation] mouse sample object={name} camera={aimCamera.name} mouseScreen={mouseScreenPosition} mouseWorld={mouseWorldPosition} sampledLookInput={_lookInput}",
+                this);
+        }
+    }
+
     // Anchor
     void OnAnchor(InputValue value)
     {
         if (value.isPressed)
         {
             thrusters.invertColors = true;
-            Debug.Log("Anchor Activated: Rotate " + movement.rotationSpeed);
             movement.rotationSpeed *= 3;
             _isAnchored = true;
         }
@@ -518,9 +650,8 @@ public abstract class Player : Entity
         {
             thrusters.invertColors = false;
             _isAnchored = false;
-            _rb.linearDamping = 0f;
+            _anchorDragAccumulator = 0f;
             movement.rotationSpeed = _originalRotationSpeed;
-            Debug.Log("Anchor Deactivated: Rotate " + _originalRotationSpeed);
         }
     }
 
@@ -529,13 +660,76 @@ public abstract class Player : Entity
     {
         if (isMovementLocked) return;
 
+        Invisibility invisibility = ability2 as Invisibility;
+        invisibility?.BreakInvisibilityFromAction();
+
         if (projectileWeapon.prefab == null)
             return;
 
         if (Time.time < _lastFireTime + fireCooldown)
             return;
 
-        shotsFired += turrets.Length;
+        NetMovement netMovement = GetComponent<NetMovement>();
+        if (NetTickUtil.IsActive && netMovement != null && netMovement.IsSpawned && netMovement.IsOwner)
+        {
+            for (int turretIndex = 0; turretIndex < turrets.Length; turretIndex++)
+            {
+                Transform turret = turrets[turretIndex];
+                Vector3 direction = GetFireDirection(turret);
+                if (!netMovement.IsServer)
+                {
+                    GameObject cosmeticProjectile = Instantiate(projectileWeapon.prefab, turret.position, Quaternion.identity);
+                    if (cosmeticProjectile.TryGetComponent(out ProjectileScript cosmeticScript))
+                    {
+                        cosmeticScript.targetTag = enemyTag;
+                        cosmeticScript.SetCosmeticOnly(true);
+                        cosmeticScript.Initialize(
+                            direction,
+                            Vector2.zero,
+                            projectileWeapon.speed,
+                            projectileWeapon.damage,
+                            projectileWeapon.lifetime,
+                            projectileWeapon.impactForce,
+                            this);
+                    }
+                }
+
+                netMovement.RequestPrimaryFire(new NetFireRequest
+                {
+                    Tick = NetTickUtil.CurrentTick,
+                    SpawnPosition = turret.position,
+                    Direction = direction.normalized,
+                    InheritedVelocity = Vector2.zero,
+                    Speed = projectileWeapon.speed,
+                    Damage = projectileWeapon.damage,
+                    Lifetime = projectileWeapon.lifetime,
+                    ImpactForce = projectileWeapon.impactForce,
+                    RecoilForce = projectileWeapon.recoilForce,
+                    ApplyRecoil = turretIndex == 0,
+                    PierceMultiplier = 1f,
+                    SlowMultiplier = 1f,
+                    SlowDuration = 0f,
+                    CanPierce = false,
+                    AppliesSlow = false,
+                    VisualType = NetProjectileVisualType.Primary,
+                });
+            }
+
+            if (!netMovement.IsServer)
+            {
+                ApplyRecoil(projectileWeapon.recoilForce);
+            }
+
+            if (projectileFireSound != null)
+            {
+                projectileFireSound.Play(GetAvailableAudioSource());
+            }
+
+            _lastFireTime = Time.time;
+            return;
+        }
+
+        int attackId = BeginTrackedAttack();
 
         foreach (var turret in turrets)
         {
@@ -551,7 +745,8 @@ public abstract class Player : Entity
                     projectileWeapon.damage,
                     projectileWeapon.lifetime,
                     projectileWeapon.impactForce,
-                    this
+                    this,
+                    attackId
                 );
             }
         }
@@ -596,8 +791,41 @@ public abstract class Player : Entity
         if (shieldController != null) shieldController.SetRegeneration(true);
     }
 
+    /// <summary>
+    /// Resets the shield regen delay timer. Called when authoritative damage
+    /// arrives via network RPC so the client's local regen timer stays in sync
+    /// with the server.
+    /// </summary>
+    public void ResetShieldRegenTimer()
+    {
+        _lastShieldHitTime = Time.time;
+    }
+
+    /// <summary>
+    /// Runs shield regen logic externally. Called by the server's NetMovement for
+    /// client-owned players whose Player component is disabled.
+    /// </summary>
+    public void TickShieldRegeneration(float deltaTime)
+    {
+        if (currentShield >= maxShield || maxShield <= 0)
+        {
+            return;
+        }
+
+        if (Time.time < _lastShieldHitTime + shieldRegen.regenDelay)
+        {
+            return;
+        }
+
+        currentShield += shieldRegen.regenRate * deltaTime;
+        if (currentShield > maxShield)
+        {
+            currentShield = maxShield;
+        }
+    }
+
     // ===== DAMAGE HANDLING =====
-    public override void TakeDamage(float damage, float impactForce = 0f, Vector3 hitPoint = default, DamageSource source = DamageSource.Projectile)
+    public override void TakeDamage(float damage, float impactForce = 0f, Vector3 hitPoint = default, DamageSource source = DamageSource.Projectile, Entity attacker = null, int accuracyAttackId = InvalidAttackId)
     {
         if (abilities.Any(a => a != null && a.HasDamageMitigation() == true))
         {
@@ -610,35 +838,42 @@ public abstract class Player : Entity
             activeAbility.ApplyTakeDamageMultiplier(ref damage);
         }
 
-        damageTaken += damage;
-
         float previousShield = currentShield;
 
         _lastShieldHitTime = Time.time;
 
-        base.TakeDamage(damage, impactForce, hitPoint, source);
+        base.TakeDamage(damage, impactForce, hitPoint, source, attacker, accuracyAttackId);
 
-        if (source == DamageSource.LaserBeam)
+        // In networked play, TakeDamage only runs on the server. Audio for non-owner
+        // players is handled by PlayNetworkDamageSounds via BroadcastCombatStateClientRpc.
+        // Only play audio here for the host's own player to avoid looping sounds on
+        // disabled Player components that can never auto-stop.
+        bool shouldPlayLocalAudio = !NetTickUtil.IsActive || _IsLocallyOwned();
+
+        if (shouldPlayLocalAudio)
         {
-            if (beamHitLoopSound != null && _beamHitLoopSource != null && !_beamHitLoopSource.isPlaying)
+            if (source == DamageSource.LaserBeam)
             {
-                beamHitLoopSound.Play(_beamHitLoopSource);
-            }
-        }
-        else
-        {
-            if (previousShield > 0f)
-            {
-                if (shieldDamageSound != null)
+                if (beamHitLoopSound != null && _beamHitLoopSource != null && !_beamHitLoopSource.isPlaying)
                 {
-                    shieldDamageSound.Play(GetAvailableAudioSource());
+                    beamHitLoopSound.Play(_beamHitLoopSource);
                 }
             }
             else
             {
-                if (hullDamageSound != null)
+                if (previousShield > 0f)
                 {
-                    hullDamageSound.Play(GetAvailableAudioSource());
+                    if (shieldDamageSound != null)
+                    {
+                        shieldDamageSound.Play(GetAvailableAudioSource());
+                    }
+                }
+                else
+                {
+                    if (hullDamageSound != null)
+                    {
+                        hullDamageSound.Play(GetAvailableAudioSource());
+                    }
                 }
             }
         }
@@ -675,6 +910,99 @@ public abstract class Player : Entity
         }
 
         base.Die();
+    }
+
+    // ===== NETWORK AUDIO/VFX REPLICATION =====
+
+    /// <summary>
+    /// Called on non-owner clients via BroadcastCombatStateClientRpc to play damage sounds.
+    /// </summary>
+    public void PlayNetworkDamageSounds(DamageSource source, bool shieldHit)
+    {
+        if (source == DamageSource.LaserBeam)
+        {
+            // Only start the beam hit loop when Player.Update() is running (enabled),
+            // because the auto-stop relies on Update(). On the host, non-owner Player
+            // components are disabled, so starting a loop here would never stop.
+            if (enabled && beamHitLoopSound != null && _beamHitLoopSource != null && !_beamHitLoopSource.isPlaying)
+            {
+                beamHitLoopSound.Play(_beamHitLoopSource);
+            }
+            _lastDamageTime = Time.time;
+        }
+        else
+        {
+            if (shieldHit)
+            {
+                if (shieldDamageSound != null)
+                {
+                    shieldDamageSound.Play(GetAvailableAudioSource());
+                }
+            }
+            else
+            {
+                if (hullDamageSound != null)
+                {
+                    hullDamageSound.Play(GetAvailableAudioSource());
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Called on non-server clients via BroadcastDeathClientRpc to play death effects.
+    /// </summary>
+    public void PlayNetworkDeathEffects(Vector2 position, float rotation, Vector2 lastDamageDirection)
+    {
+        if (_beamHitLoopSource != null && _beamHitLoopSource.isPlaying)
+        {
+            _beamHitLoopSource.Stop();
+        }
+
+        if (explosionSound != null)
+        {
+            explosionSound.PlayAtPoint(position);
+        }
+
+        // Spawn explosion VFX
+        if (visualEffects.explosionEffectPrefab != null)
+        {
+            Quaternion rot = Quaternion.Euler(0, 0, rotation);
+            Vector2? impactDir = lastDamageDirection != Vector2.zero ? lastDamageDirection : (Vector2?)null;
+
+            if (ExplosionPool.Instance != null)
+            {
+                ExplosionPool.Instance.GetExplosion(position, rot, visualEffects.explosionScale, impactDir);
+            }
+            else
+            {
+                GameObject explosion = Instantiate(visualEffects.explosionEffectPrefab, position, rot);
+                explosion.transform.localScale = Vector3.one * visualEffects.explosionScale;
+
+                if (impactDir.HasValue)
+                {
+                    ExplosionScript explosionScript = explosion.GetComponent<ExplosionScript>();
+                    if (explosionScript != null)
+                    {
+                        explosionScript.SetImpactDirection(impactDir.Value);
+                    }
+                }
+            }
+        }
+
+        // Scatter ship parts
+        _lastDamageDirection = lastDamageDirection;
+        ScatterShipParts();
+    }
+
+    /// <summary>
+    /// Returns true when this player is locally owned (not networked, or owned by this client).
+    /// Used to decide whether TakeDamage should play audio locally on the server.
+    /// </summary>
+    private bool _IsLocallyOwned()
+    {
+        NetMovement netMovement = GetComponent<NetMovement>();
+        return netMovement == null || !netMovement.IsSpawned || netMovement.IsOwner;
     }
 
     // ===== CHROMATIC ABERRATION =====
@@ -755,9 +1083,19 @@ public abstract class Player : Entity
 
     public void PrepareForRoundEndFreeze()
     {
+        _isThrustPressed = false;
         _isFiring = false;
         _isThrusting = false;
         _lookInput = Vector2.zero;
+        _frictionTimer = 0f;
+
+        foreach (var ability in abilities)
+        {
+            if (ability != null)
+            {
+                ability.Die();
+            }
+        }
 
         if (_rb != null)
         {
@@ -769,7 +1107,7 @@ public abstract class Player : Entity
         {
             _isAnchored = false;
             movement.rotationSpeed = _originalRotationSpeed;
-            _rb.linearDamping = 0f;
+            _anchorDragAccumulator = 0f;
             thrusters.invertColors = false;
         }
 
@@ -826,6 +1164,34 @@ public abstract class Player : Entity
         }
     }
 
+    public bool TryProcessIncomingProjectileCollision(Collider2D collider)
+    {
+        ProjectileScript projectile = collider != null ? collider.GetComponent<ProjectileScript>() : null;
+        string originalTargetTag = projectile != null ? projectile.targetTag : string.Empty;
+        bool processed = false;
+
+        if (abilities.Any(a => a != null && a.HasCollisionModification()))
+        {
+            foreach (var ability in abilities.Where(a => a != null && a.HasCollisionModification()))
+            {
+                ability.ProcessCollisionModification(collider);
+                processed = true;
+
+                if (projectile == null)
+                {
+                    return true;
+                }
+
+                if (projectile.targetTag != thisPlayerTag)
+                {
+                    return true;
+                }
+            }
+        }
+
+        return processed && projectile == null;
+    }
+
     // ===== HUD =====
     private void InitializeHUD()
     {
@@ -863,6 +1229,63 @@ public abstract class Player : Entity
         shotsHit = 0;
         damageDealt = 0f;
         damageTaken = 0f;
+        _nextAttackId = 1;
+        _registeredHitAttackIds.Clear();
+    }
+
+    public bool HasStatsAuthority()
+    {
+        if (!NetTickUtil.IsActive)
+        {
+            return true;
+        }
+
+        NetMovement netMovement = GetComponent<NetMovement>();
+        return netMovement == null || netMovement.IsServer;
+    }
+
+    public int BeginTrackedAttack(bool countsTowardAccuracy = true)
+    {
+        if (!countsTowardAccuracy || !HasStatsAuthority())
+        {
+            return InvalidAttackId;
+        }
+
+        shotsFired++;
+        return _nextAttackId++;
+    }
+
+    public void RegisterAttackHit(int attackId)
+    {
+        if (!HasStatsAuthority() || attackId == InvalidAttackId)
+        {
+            return;
+        }
+
+        if (_registeredHitAttackIds.Add(attackId))
+        {
+            shotsHit++;
+        }
+    }
+
+    public void RecordDamageDealt(float amount)
+    {
+        if (!HasStatsAuthority() || amount <= 0f)
+        {
+            return;
+        }
+
+        damageDealt += amount;
+    }
+
+    public void RecordDamageTaken(float amount)
+    {
+        if (!HasStatsAuthority() || amount <= 0f)
+        {
+            return;
+        }
+
+        damageTaken += amount;
     }
 
     // ===== HUD AUTO-DISCOVERY =====

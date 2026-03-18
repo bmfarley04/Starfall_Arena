@@ -74,11 +74,13 @@ public class FireWall : Ability
     private FireHazardGroup _currentGroup;
     private AudioSource _fireLoopSource;
     private Coroutine _soundFadeCoroutine;
+    private NetMovement _netMovement;
 
     protected override void Awake()
     {
         base.Awake();
         _currentCapacity = 0f;
+        _netMovement = GetComponent<NetMovement>();
 
         _fireLoopSource = gameObject.AddComponent<AudioSource>();
         _fireLoopSource.playOnAwake = false;
@@ -133,6 +135,11 @@ public class FireWall : Ability
 
     void FixedUpdate()
     {
+        if (NetTickUtil.IsActive && (_netMovement == null || !_netMovement.IsServer))
+        {
+            return;
+        }
+
         if (_isActive)
         {
             // Drain capacity while active
@@ -149,7 +156,6 @@ public class FireWall : Ability
             // Stop if capacity is full (overheated)
             if (_currentCapacity >= fireTrail.capacity)
             {
-                Debug.Log("Fire trail capacity full! Stopping.");
                 StopFireTrail();
             }
         }
@@ -158,33 +164,83 @@ public class FireWall : Ability
     public override void UseAbility(InputValue value)
     {
         base.UseAbility(value);
-        Debug.Log($"Fire Trail input received - isPressed: {value.isPressed}");
+
+        (player?.ability2 as Invisibility)?.BreakInvisibilityFromAction();
+
+        bool useNetworkPath = NetTickUtil.IsActive && _netMovement != null && _netMovement.IsSpawned && _netMovement.IsOwner;
 
         if (value.isPressed)
         {
             if (_currentCapacity >= fireTrail.capacity)
             {
-                Debug.Log("Cannot activate fire trail: capacity full (overheated)");
                 return;
             }
 
             if (!_isActive && fireTrail.firePrefab != null)
             {
-                StartFireTrail();
+                ApplyNetworkTrailState(true, authoritative: useNetworkPath && _netMovement.IsServer);
+                if (useNetworkPath)
+                {
+                    _netMovement.RequestFireTrailState(true);
+                }
             }
         }
         else
         {
             if (_isActive)
             {
-                StopFireTrail();
+                ApplyNetworkTrailState(false, authoritative: useNetworkPath && _netMovement.IsServer);
+                if (useNetworkPath)
+                {
+                    _netMovement.RequestFireTrailState(false);
+                }
             }
+        }
+    }
+
+    public void ApplyNetworkTrailState(bool isActive, bool authoritative)
+    {
+        if (isActive)
+        {
+            if (_isActive)
+            {
+                return;
+            }
+
+            if (NetTickUtil.IsActive && !authoritative)
+            {
+                _isActive = true;
+                _lastSpawnPosition = transform.position;
+
+                // Create a group with audio source so remote hazards get tracked
+                // and the group-based audio management in Update() works.
+                AudioSource groupAudioSource = gameObject.AddComponent<AudioSource>();
+                groupAudioSource.playOnAwake = false;
+                groupAudioSource.loop = true;
+                groupAudioSource.spatialBlend = 0f;
+                _currentGroup = new FireHazardGroup(groupAudioSource);
+                _hazardGroups.Add(_currentGroup);
+
+                StartFireLoopSound();
+                return;
+            }
+
+            if (fireTrail.firePrefab != null)
+            {
+                StartFireTrail();
+            }
+
+            return;
+        }
+
+        if (_isActive)
+        {
+            StopFireTrail();
         }
     }
 
     private void StartFireTrail()
     {
-        Debug.Log("Starting fire trail");
         _isActive = true;
         _lastSpawnPosition = transform.position;
 
@@ -193,9 +249,11 @@ public class FireWall : Ability
         groupAudioSource.playOnAwake = false;
         groupAudioSource.loop = true;
         groupAudioSource.spatialBlend = 0f;
-        
+
         _currentGroup = new FireHazardGroup(groupAudioSource);
         _hazardGroups.Add(_currentGroup);
+
+        StartFireLoopSound();
 
         // Spawn initial fire hazard
         SpawnFireHazard();
@@ -203,9 +261,9 @@ public class FireWall : Ability
 
     private void StopFireTrail()
     {
-        Debug.Log("Stopping fire trail");
         _isActive = false;
         _currentGroup = null;
+        StopFireLoopSound();
     }
 
     private void SpawnFireHazard()
@@ -235,13 +293,61 @@ public class FireWall : Ability
                 player.enemyTag,
                 fireTrail.damagePerSecond,
                 fireTrail.fireDuration,
-                fireTrail.impactForce
+                fireTrail.impactForce,
+                player
             );
+
+            bool authoritativeHazard = !NetTickUtil.IsActive || (_netMovement != null && _netMovement.IsServer);
+            fireHazardComponent.SetCosmeticOnly(!authoritativeHazard);
         }
 
         _activeHazards.Add(hazard);
         
         // Add to current group if active
+        if (_currentGroup != null)
+        {
+            _currentGroup.hazards.Add(hazard);
+        }
+
+        if (NetTickUtil.IsActive && _netMovement != null && _netMovement.IsServer)
+        {
+            _netMovement.BroadcastFireHazardSpawn(new NetFireHazardSpawnData
+            {
+                SpawnPosition = spawnPosition,
+                DamagePerSecond = fireTrail.damagePerSecond,
+                Lifetime = fireTrail.fireDuration,
+                ImpactForce = fireTrail.impactForce,
+            });
+        }
+    }
+
+    public void SpawnRemoteHazard(NetFireHazardSpawnData spawnData)
+    {
+        if (fireTrail.firePrefab == null)
+        {
+            return;
+        }
+
+        // Enforce max hazard limit on client to match server
+        if (fireTrail.maxActiveHazards > 0 && _activeHazards.Count >= fireTrail.maxActiveHazards)
+        {
+            if (_activeHazards[0] != null)
+            {
+                Destroy(_activeHazards[0]);
+            }
+            _activeHazards.RemoveAt(0);
+        }
+
+        GameObject hazard = Instantiate(fireTrail.firePrefab, spawnData.SpawnPosition, Quaternion.identity);
+        FireHazard fireHazard = hazard.GetComponent<FireHazard>();
+        if (fireHazard != null)
+        {
+            fireHazard.Initialize(player.enemyTag, spawnData.DamagePerSecond, spawnData.Lifetime, spawnData.ImpactForce, player);
+            fireHazard.SetCosmeticOnly(true);
+        }
+
+        _activeHazards.Add(hazard);
+
         if (_currentGroup != null)
         {
             _currentGroup.hazards.Add(hazard);
@@ -299,6 +405,29 @@ public class FireWall : Ability
     }
 
     // ===== AUDIO =====
+
+    private void StartFireLoopSound()
+    {
+        if (fireTrail.fireLoopSound != null && _fireLoopSource != null)
+        {
+            _fireLoopSource.volume = 0f;
+            fireTrail.fireLoopSound.Play(_fireLoopSource);
+            _soundFadeCoroutine = StartCoroutine(FadeVolume(fireTrail.fireLoopSound.volume));
+        }
+    }
+
+    private void StopFireLoopSound()
+    {
+        if (_fireLoopSource != null && _fireLoopSource.isPlaying)
+        {
+            if (_soundFadeCoroutine != null)
+            {
+                StopCoroutine(_soundFadeCoroutine);
+            }
+            _soundFadeCoroutine = StartCoroutine(FadeVolume(0f, stopAfterFade: true));
+        }
+    }
+
     private System.Collections.IEnumerator FadeVolume(float targetVolume, bool stopAfterFade = false)
     {
         if (_fireLoopSource == null) yield break;

@@ -22754,6 +22754,12 @@ GameObject:
   - component: {fileID: 4666615493065647755}
   - component: {fileID: 8085225750662115640}
   - component: {fileID: -3963956792995412482}
+  - component: {fileID: 120001}
+  - component: {fileID: 120002}
+  - component: {fileID: 120003}
+  - component: {fileID: 120004}
+  - component: {fileID: -1102226346479689617}
+  - component: {fileID: 7124832029880107913}
   m_Layer: 0
   m_Name: Class2_Player
   m_TagString: Player2
@@ -22846,7 +22852,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6103655459887012557}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 62899f850307741f2a39c98a8b639597, type: 3}
   m_Name: 
@@ -22865,7 +22871,7 @@ MonoBehaviour:
       m_Calls: []
   m_ActionEvents: []
   m_NeverAutoSwitchControlSchemes: 0
-  m_DefaultControlScheme: controller
+  m_DefaultControlScheme: key+mouse
   m_DefaultActionMap: basic
   m_SplitScreenIndex: -1
   m_Camera: {fileID: 0}
@@ -23223,33 +23229,34 @@ MonoBehaviour:
   slowEffectVisuals:
     slowParticleSystem: {fileID: 358170878837530469}
   currentShield: 0
-  ability1: {fileID: 0}
-  ability2: {fileID: 0}
-  ability3: {fileID: 0}
-  ability4: {fileID: 0}
+  ability1: {fileID: 120001}
+  ability2: {fileID: 120002}
+  ability3: {fileID: 120003}
+  ability4: {fileID: 120004}
   abilitySlots:
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
+  - {fileID: 11500000, guid: 1f4fbef07e444b618e7a5f0c1d9a4c31, type: 3}
+  - {fileID: 11500000, guid: b2c9f9f1a944485ba84b2d26b18f0e11, type: 3}
+  - {fileID: 11500000, guid: 7c9bdf68867e4e68a4b1f7db8c4a4dd1, type: 3}
+  - {fileID: 11500000, guid: e5a633c590f44ea8a51e9d7099d8a2c7, type: 3}
   shieldRegen:
     regenDelay: 5
     regenRate: 20
   input:
     controllerLookDeadzone: 0.1
+    debugRotation: 0
   friction:
     frictionDelay: 0.25
     frictionDeceleration: 10
     debugMode: 0
   visualFeedback:
-    enableChromaticAberration: 1
+    enableChromaticAberration: 0
     maxChromaticIntensity: 0.3
     chromaticIntensityPerDamage: 0.1
     chromaticFadeSpeed: 2
     beamDetectionWindow: 0.2
     projectileMultiplier: 0.5
   screenShake:
-    enableScreenShake: 1
+    enableScreenShake: 0
     projectileShakeMultiplier: 0.1
     laserShakeMultiplier: 0.1
   hud:
@@ -23264,52 +23271,11 @@ MonoBehaviour:
   explosionSound: {fileID: 11400000, guid: 52e8c58e387b89849affa74c78d6d899, type: 2}
   audioSourcePoolSize: 10
   isMovementLocked: 0
+  externalMovementControl: 0
   shotsFired: 0
   shotsHit: 0
   damageDealt: 0
   damageTaken: 0
-  abilities:
-    empoweredShot:
-      cooldown: 3
-      projectilePrefab: {fileID: 7408310672554650858, guid: b70f92a21ddd6224ca6109894d3ea756, type: 3}
-      damageMultiplier: 1.2
-      speedMultiplier: 1.5
-      impactMultiplier: 1
-      recoilMultiplier: 1
-      lifetime: 2
-      slowMultiplier: 0.25
-      slowDuration: 2
-      fireSound: {fileID: 11400000, guid: 24862794776e6b34daca8bf8af7518f7, type: 2}
-    shield:
-      cooldown: 7
-      activeDuration: 2
-      shield: {fileID: 8024714333940929033}
-      shieldColor: {r: 0.31764707, g: 0.8235294, b: 0.1254902, a: 0}
-      shieldLoopSound: {fileID: 0}
-      shieldHitSound: {fileID: 11400000, guid: 6a5f04ee6bc536848a1d144945dd48e8, type: 2}
-    tractorBeam:
-      cooldown: 15
-      duration: 2
-      coneHalfAngle: 25
-      coneRange: 30
-      pullSpeed: 5
-      freezeTargetMovement: 1
-      beamColor: {r: 0.31764707, g: 0.8235294, b: 0.1254902, a: 0.078431375}
-      coneMaterial: {fileID: 2100000, guid: f4d89c6693f5efc48838eb825948178f, type: 2}
-      coneSegments: 8
-      coneOffset: {x: 0, y: 0, z: 5}
-      suctionParticles: {fileID: 7803267935673130348}
-      beamLoopSound: {fileID: 11400000, guid: 6f42d3b3662519e4b8d7879cc5c73f94, type: 2}
-    physicalProjectile:
-      cooldown: 14
-      spawnPoint: {fileID: 873564872842125562}
-      projectilePrefab: {fileID: 8799755727349527462, guid: 6a4cfca68788048498cc8ddfee032389, type: 3}
-      damage: 60
-      speed: 60
-      lifetime: 3
-      impactForce: 15
-      recoilForce: 8
-      fireSound: {fileID: 11400000, guid: 1c6219777ed08db40ba3595ac35e0b2d, type: 2}
   _fireCooldown: 1
   convergenceDistance: 20
 --- !u!114 &-3963956792995412482
@@ -23332,8 +23298,157 @@ MonoBehaviour:
     fadeWhenClose: 1
     fadeStartDistance: 30
     fadeEndDistance: 25
+    networkFadeStartDistance: 40
+    networkFadeEndDistance: 35
     player1Layer: Player1UI
     player2Layer: Player2UI
+--- !u!114 &120001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6103655459887012557}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1f4fbef07e444b618e7a5f0c1d9a4c31, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EmpoweredShot
+  stats:
+    cooldown: 0
+    duration: 0
+  isLocked: 0
+  empoweredShot:
+    cooldown: 3
+    projectilePrefab: {fileID: 7408310672554650858, guid: b70f92a21ddd6224ca6109894d3ea756, type: 3}
+    damageMultiplier: 1.2
+    speedMultiplier: 1.5
+    impactMultiplier: 1
+    recoilMultiplier: 1
+    lifetime: 2
+    slowMultiplier: 0.25
+    slowDuration: 2
+    fireSound: {fileID: 11400000, guid: 24862794776e6b34daca8bf8af7518f7, type: 2}
+--- !u!114 &120002
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6103655459887012557}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b2c9f9f1a944485ba84b2d26b18f0e11, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Class2Shield
+  stats:
+    cooldown: 0
+    duration: 0
+  isLocked: 0
+  shieldConfig:
+    cooldown: 7
+    activeDuration: 2
+    shield: {fileID: 8024714333940929033}
+    shieldColor: {r: 0.31764707, g: 0.8235294, b: 0.1254902, a: 0}
+    shieldLoopSound: {fileID: 0}
+    shieldHitSound: {fileID: 11400000, guid: 6a5f04ee6bc536848a1d144945dd48e8, type: 2}
+--- !u!114 &120003
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6103655459887012557}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7c9bdf68867e4e68a4b1f7db8c4a4dd1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TractorBeam
+  stats:
+    cooldown: 0
+    duration: 0
+  isLocked: 0
+  tractorBeam:
+    cooldown: 15
+    duration: 2
+    coneHalfAngle: 25
+    coneRange: 30
+    pullSpeed: 5
+    freezeTargetMovement: 1
+    beamColor: {r: 0.31764707, g: 0.8235294, b: 0.1254902, a: 0.078431375}
+    coneMaterial: {fileID: 2100000, guid: f4d89c6693f5efc48838eb825948178f, type: 2}
+    coneSegments: 8
+    coneOffset: {x: 0, y: 0, z: 5}
+    suctionParticles: {fileID: 7803267935673130348}
+    beamLoopSound: {fileID: 11400000, guid: 6f42d3b3662519e4b8d7879cc5c73f94, type: 2}
+--- !u!114 &120004
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6103655459887012557}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e5a633c590f44ea8a51e9d7099d8a2c7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PhysicalProjectileAbility
+  stats:
+    cooldown: 0
+    duration: 0
+  isLocked: 0
+  physicalProjectile:
+    cooldown: 14
+    spawnPoint: {fileID: 873564872842125562}
+    projectilePrefab: {fileID: 8799755727349527462, guid: 6a4cfca68788048498cc8ddfee032389, type: 3}
+    damage: 60
+    speed: 60
+    lifetime: 3
+    impactForce: 15
+    recoilForce: 8
+    fireSound: {fileID: 11400000, guid: 1c6219777ed08db40ba3595ac35e0b2d, type: 2}
+--- !u!114 &-1102226346479689617
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6103655459887012557}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
+  GlobalObjectIdHash: 1681595070
+  InScenePlacedSourceGlobalObjectIdHash: 0
+  DeferredDespawnTick: 0
+  Ownership: 1
+  AlwaysReplicateAsRoot: 0
+  SynchronizeTransform: 1
+  ActiveSceneSynchronization: 0
+  SceneMigrationSynchronization: 1
+  SpawnWithObservers: 1
+  DontDestroyWithOwner: 0
+  AutoObjectParentSync: 1
+  SyncOwnerTransformWhenParented: 1
+  AllowOwnerToParent: 0
+--- !u!114 &7124832029880107913
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6103655459887012557}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 27b03cdfe300648459fc773032a0c731, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NetMovement
+  ShowTopMostFoldoutHeaderGroup: 1
+  _reconciliationThreshold: 0.01
+  _interpolationBufferTicks: 2
+  _maxCombatRewindTicks: 6
+  _primaryFireSound: {fileID: 11400000, guid: 0f50595e413d8184e8aabe486091f954, type: 2}
 --- !u!1 &6183319790727871496
 GameObject:
   m_ObjectHideFlags: 0
