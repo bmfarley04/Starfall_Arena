@@ -915,9 +915,9 @@ MonoBehaviour:
     prefab: {fileID: 1778989562205518720, guid: 66b860383726bef4caafd3235c84af1b, type: 3}
     baseDamage: 5
     damage: 0
-    speed: 20
-    recoilForce: 0
-    lifetime: 5
+    speed: 18
+    recoilForce: 0.2
+    lifetime: 4
     impactForce: 2
   visualEffects:
     visualModel: {fileID: 0}
@@ -971,11 +971,11 @@ MonoBehaviour:
     healthText: {fileID: 0}
     shieldBar: {fileID: 0}
     shieldText: {fileID: 0}
-  projectileFireSound: {fileID: 0}
-  shieldDamageSound: {fileID: 0}
-  hullDamageSound: {fileID: 0}
-  beamHitLoopSound: {fileID: 0}
-  explosionSound: {fileID: 0}
+  projectileFireSound: {fileID: 11400000, guid: 57819dd80f286f449ab67ee7903aed76, type: 2}
+  shieldDamageSound: {fileID: 11400000, guid: bb3e59ae2c57bf54d81487cd94160a68, type: 2}
+  hullDamageSound: {fileID: 11400000, guid: 45698c72b711ab947a22e89c9f6848d0, type: 2}
+  beamHitLoopSound: {fileID: 11400000, guid: c2635de459d5fd44594ecb3e303fa4b5, type: 2}
+  explosionSound: {fileID: 11400000, guid: 52e8c58e387b89849affa74c78d6d899, type: 2}
   audioSourcePoolSize: 10
   isMovementLocked: 0
   shotsFired: 0
@@ -1059,8 +1059,8 @@ MonoBehaviour:
     stunDuration: 0.1
     knockbackForce: 20
     selfRecoil: 4
-    activateSound: {fileID: 0}
-    hitSound: {fileID: 0}
+    activateSound: {fileID: 11400000, guid: 7f8407fb4aece1049b48a4f68052ad53, type: 2}
+    hitSound: {fileID: 11400000, guid: e56726f0ab5bf82439ff0a3835c63af3, type: 2}
     breakSound: {fileID: 11400000, guid: 34b4d9597ef31884e88c5b76564b5e70, type: 2}
     breakChargeSound: {fileID: 11400000, guid: 4d9b0a7430958fc4f885a1f4b051d3ea, type: 2}
 --- !u!114 &1887452519756409650

@@ -41,6 +41,7 @@ public class Class5 : Player, IChargeProvider
 
     private float _lastChargeGainTime;
     private Coroutine _fourthChargeSoundCoroutine;
+    private Coroutine _projectileSoundBurstCoroutine;
 
     /// <inheritdoc/>
     public bool TrySpendCharges(int amount)
@@ -212,5 +213,66 @@ public class Class5 : Player, IChargeProvider
     protected override Vector3 GetFireDirection(Transform turret)
     {
         return turret.up;
+    }
+
+    protected override void TryFireProjectile()
+    {
+        if (isMovementLocked) return;
+
+        if (projectileWeapon.prefab == null)
+            return;
+
+        if (Time.time < _lastFireTime + fireCooldown)
+            return;
+
+        shotsFired += turrets.Length;
+
+        foreach (var turret in turrets)
+        {
+            GameObject projectile = Instantiate(projectileWeapon.prefab, turret.position, transform.rotation);
+
+            if (projectile.TryGetComponent<ProjectileScript>(out var projectileScript))
+            {
+                projectileScript.targetTag = enemyTag;
+                projectileScript.Initialize(
+                    GetFireDirection(turret),
+                    Vector2.zero,
+                    projectileWeapon.speed,
+                    projectileWeapon.damage,
+                    projectileWeapon.lifetime,
+                    projectileWeapon.impactForce,
+                    this
+                );
+            }
+        }
+        ApplyRecoil(projectileWeapon.recoilForce);
+
+        if (projectileFireSound != null)
+        {
+            if (_projectileSoundBurstCoroutine != null)
+            {
+                StopCoroutine(_projectileSoundBurstCoroutine);
+            }
+            _projectileSoundBurstCoroutine = StartCoroutine(PlayProjectileFireSoundBurst());
+        }
+
+        _lastFireTime = Time.time;
+    }
+
+    private IEnumerator PlayProjectileFireSoundBurst()
+    {
+        const int burstCount = 4;
+        const float burstSpacing = 0.06f;
+
+        for (int i = 0; i < burstCount; i++)
+        {
+            projectileFireSound.Play(GetAvailableAudioSource());
+            if (i < burstCount - 1)
+            {
+                yield return new WaitForSeconds(burstSpacing);
+            }
+        }
+
+        _projectileSoundBurstCoroutine = null;
     }
 }
