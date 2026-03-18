@@ -92,25 +92,20 @@ public class ChronoStep : Ability
         _chargeProvider = player as IChargeProvider;
     }
 
-    // ===== UPDATE — auto-release on hold timeout =====
+    // ===== UPDATE — no hold timeout in toggle mode =====
     protected void Update()
     {
-        if (_isHolding && Time.time >= _holdStartTime + teleport.maxHoldDuration)
-        {
-            Debug.Log("ChronoStep: max hold duration reached, auto-releasing waypoint");
-            CommitTeleport();
-        }
     }
 
     // ===== ABILITY BASE OVERRIDES =====
     public override bool TryUseAbility(InputValue value)
     {
-        // On press: plant the waypoint (costs the charge or checks cooldown).
-        // On release: always allowed — just commits whatever is pending.
-        if (value.isPressed)
-        {
-            if (_isTeleporting || _isHolding) return false;
+        if (!value.isPressed) return false;
+        if (_isTeleporting) return false;
 
+        // Planting path requires resources; teleporting path does not.
+        if (!_isHolding)
+        {
             if (_chargeProvider != null)
             {
                 if (!_chargeProvider.TrySpendCharges(1))
@@ -127,30 +122,23 @@ public class ChronoStep : Ability
                     return false;
                 }
             }
+        }
 
-            UseAbility(value);
-            return true;
-        }
-        else
-        {
-            // Release path — no resource check needed
-            UseAbility(value);
-            return true;
-        }
+        UseAbility(value);
+        return true;
     }
 
     public override void UseAbility(InputValue value)
     {
-        if (value.isPressed)
+        if (!value.isPressed) return;
+
+        if (!_isHolding)
         {
             PlantWaypoint();
         }
         else
         {
-            if (_isHolding)
-            {
-                CommitTeleport();
-            }
+            CommitTeleport();
         }
     }
 

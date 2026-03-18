@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.Serialization;
+using System.Collections;
 
 public class DarkMatter : Ability
 {
@@ -20,6 +21,8 @@ public class DarkMatter : Ability
         public float forwardOffset;
         [Tooltip("Initial launch speed for the flame pocket (0 = stationary)")]
         public float launchSpeed;
+        [Tooltip("Multiplier controlling how quickly the dark matter slows during its lifetime (1 = stop by end, <1 slower, >1 faster)")]
+        public float slowRate;
 
         [Header("Charges")]
         [Tooltip("Minimum number of charges required to cast Dark Matter")]
@@ -27,6 +30,8 @@ public class DarkMatter : Ability
 
         [Header("Audio")]
         public SoundEffect fireSound;
+        [Tooltip("Looping sound played from each dark matter hazard during its lifetime")]
+        public SoundEffect loopSound;
     }
 
     [Header("Ability - Dark Matter")]
@@ -35,6 +40,8 @@ public class DarkMatter : Ability
 
     private IChargeProvider _chargeProvider;
     private int _chargesSpentThisCast = 1;
+    private Coroutine _chargeSoundCoroutine;
+    private const float CHARGE_SOUND_SPACING = 0.06f;
 
     protected override void Awake()
     {
@@ -43,6 +50,10 @@ public class DarkMatter : Ability
         if (darkMatter.chargesRequired <= 0)
         {
             darkMatter.chargesRequired = 1;
+        }
+        if (darkMatter.slowRate <= 0f)
+        {
+            darkMatter.slowRate = 1f;
         }
     }
 
@@ -90,6 +101,13 @@ public class DarkMatter : Ability
     {
         base.UseAbility(value);
 
+        // Play a use sound for each charge with slight offsets
+        if (_chargeSoundCoroutine != null)
+        {
+            StopCoroutine(_chargeSoundCoroutine);
+        }
+        _chargeSoundCoroutine = StartCoroutine(PlayChargeUseSounds(_chargesSpentThisCast));
+
         if (darkMatter.flamePrefab == null)
         {
             Debug.LogWarning("DarkMatter: flamePrefab not assigned.");
@@ -123,8 +141,9 @@ public class DarkMatter : Ability
 
             if (hazard.TryGetComponent<FireHazard>(out var fireHazard))
             {
-                fireHazard.disableVelocityDampening = true;
-                fireHazard.Initialize(player.enemyTag, darkMatter.damagePerSecond, hazardDuration, darkMatter.impactForce);
+                fireHazard.disableVelocityDampening = darkMatter.slowRate <= 0f;
+                fireHazard.Initialize(player.enemyTag, darkMatter.damagePerSecond, hazardDuration, darkMatter.impactForce, darkMatter.slowRate);
+                fireHazard.SetLoopSound(darkMatter.loopSound);
             }
 
             Rigidbody2D rb = hazard.GetComponent<Rigidbody2D>();
@@ -140,10 +159,19 @@ public class DarkMatter : Ability
             }
             seeker.Initialize(player.enemyTag, darkMatter.launchSpeed, hazardDuration, 0.1f);
         }
+    }
 
-        if (darkMatter.fireSound != null)
+    private IEnumerator PlayChargeUseSounds(int charges)
+    {
+        if (darkMatter.fireSound == null || player == null) yield break;
+
+        for (int i = 0; i < charges; i++)
         {
             darkMatter.fireSound.Play(player.GetAvailableAudioSource());
+            if (i < charges - 1)
+            {
+                yield return new WaitForSeconds(CHARGE_SOUND_SPACING);
+            }
         }
     }
 

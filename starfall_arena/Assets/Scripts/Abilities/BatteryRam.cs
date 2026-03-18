@@ -34,6 +34,8 @@ public class BatteryRam : Ability
         public SoundEffect activateSound;
         public SoundEffect hitSound;
         public SoundEffect breakSound;
+        [Tooltip("Sound played when the ram breaks and grants a charge")]
+        public SoundEffect breakChargeSound;
     }
 
     [Header("Ability - Battery Ram")]
@@ -210,7 +212,7 @@ public class BatteryRam : Ability
         _activeRam.transform.rotation = transform.rotation;
     }
 
-    private void BreakRam(bool broken)
+    private void BreakRam(bool broken, bool grantedCharge = false)
     {
         if (!_ramActive) return;
 
@@ -226,9 +228,12 @@ public class BatteryRam : Ability
         if (broken)
         {
             lastUsedAbility = Time.time;
-            if (ram.breakSound != null)
+            SoundEffect soundToPlay = grantedCharge && ram.breakChargeSound != null
+                ? ram.breakChargeSound
+                : ram.breakSound;
+            if (soundToPlay != null)
             {
-                ram.breakSound.Play(player.GetAvailableAudioSource());
+                soundToPlay.Play(player.GetAvailableAudioSource());
             }
         }
     }
@@ -271,9 +276,9 @@ public class BatteryRam : Ability
             }
         }
 
-        GrantImpactCharge(true);
+        bool grantedCharge = GrantImpactCharge(true);
         ApplySelfRecoil(-direction);
-        BreakRam(true);
+        BreakRam(true, grantedCharge);
     }
 
     internal void HandleEntityHit(Entity entity)
@@ -302,9 +307,9 @@ public class BatteryRam : Ability
             ram.hitSound.Play(player.GetAvailableAudioSource());
         }
 
-        GrantImpactCharge(entity is Player);
+        bool grantedCharge = GrantImpactCharge(entity is Player);
         ApplySelfRecoil(-direction);
-        BreakRam(true);
+        BreakRam(true, grantedCharge);
     }
 
     private void ApplySelfRecoil(Vector2 direction)
@@ -333,10 +338,12 @@ public class BatteryRam : Ability
         }
     }
 
-    private void GrantImpactCharge(bool shouldGrant)
+    private bool GrantImpactCharge(bool shouldGrant)
     {
-        if (!shouldGrant || _chargeProvider == null) return;
+        if (!shouldGrant || _chargeProvider == null) return false;
+        int before = _chargeProvider.CurrentCharges;
         _chargeProvider.GainCharges(1);
+        return _chargeProvider.CurrentCharges > before;
     }
 }
 

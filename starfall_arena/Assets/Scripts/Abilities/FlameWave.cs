@@ -19,6 +19,8 @@ public class FlameWave : Ability
         public float forwardOffset;
         [Tooltip("Initial launch speed for the flame pocket (0 = stationary)")]
         public float launchSpeed;
+        [Tooltip("Multiplier controlling how quickly the flame pocket slows during its lifetime (1 = stop by end, <1 slower, >1 faster)")]
+        public float slowRate;
 
         [Header("Charges")]
         [Tooltip("Number of charges required to cast Flame Wave")]
@@ -26,6 +28,8 @@ public class FlameWave : Ability
 
         [Header("Audio")]
         public SoundEffect fireSound;
+        [Tooltip("Looping sound played from each flame hazard during its lifetime")]
+        public SoundEffect loopSound;
     }
 
     [Header("Ability - Flame Wave")]
@@ -40,6 +44,10 @@ public class FlameWave : Ability
         if (flameWave.chargesRequired <= 0)
         {
             flameWave.chargesRequired = 1;
+        }
+        if (flameWave.slowRate <= 0f)
+        {
+            flameWave.slowRate = 1f;
         }
     }
 
@@ -107,7 +115,8 @@ public class FlameWave : Ability
 
             if (hazard.TryGetComponent<FireHazard>(out var fireHazard))
             {
-                fireHazard.Initialize(player.enemyTag, flameWave.damagePerSecond, flameWave.duration, flameWave.impactForce);
+                fireHazard.Initialize(player.enemyTag, flameWave.damagePerSecond, flameWave.duration, flameWave.impactForce, flameWave.slowRate);
+                fireHazard.SetLoopSound(flameWave.loopSound);
             }
 
             Rigidbody2D rb = hazard.GetComponent<Rigidbody2D>();

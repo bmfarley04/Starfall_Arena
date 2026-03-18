@@ -25,6 +25,14 @@ public class FireHazard : MonoBehaviour
     [Tooltip("Duration of fade out effect before destruction (seconds)")]
     public float fadeOutDuration = 0.5f;
 
+    [Header("Movement Settings")]
+    [Tooltip("Multiplier controlling how quickly the hazard slows over its lifetime (1 = stop by end, <1 slower, >1 faster)")]
+    public float velocitySlowRate = 1f;
+
+    [Header("Audio")]
+    [Tooltip("Looping sound played for the hazard lifetime (optional)")]
+    public SoundEffect loopSound;
+
     [HideInInspector]
     public bool disableVelocityDampening = false;
 
@@ -38,6 +46,8 @@ public class FireHazard : MonoBehaviour
     private Rigidbody2D _rb;
     private Vector2 _initialVelocity;
     private bool _capturedInitialVelocity;
+    private AudioSource _loopSource;
+    private bool _loopStarted;
 
     private void Awake()
     {
@@ -55,19 +65,22 @@ public class FireHazard : MonoBehaviour
     {
         _spawnTime = Time.time;
         CaptureInitialVelocity();
+        StartLoopSound();
     }
 
     /// <summary>
     /// Initialize the fire hazard with combat settings.
     /// </summary>
-    public void Initialize(string enemyTag, float dps, float duration, float force)
+    public void Initialize(string enemyTag, float dps, float duration, float force, float slowRate = 1f)
     {
         targetTag = enemyTag;
         damagePerSecond = dps;
         lifetime = duration;
         impactForce = force;
+        velocitySlowRate = slowRate;
         _spawnTime = Time.time;
         _capturedInitialVelocity = false;
+        StartLoopSound();
     }
 
     private void Update()
@@ -149,7 +162,13 @@ public class FireHazard : MonoBehaviour
             return;
         }
 
-        float targetSpeed = Mathf.Lerp(initialSpeed, 0f, t);
+        float slowRate = Mathf.Max(velocitySlowRate, 0f);
+        if (slowRate <= 0f)
+        {
+            return;
+        }
+
+        float targetSpeed = Mathf.Lerp(initialSpeed, 0f, Mathf.Clamp01(t * slowRate));
         Vector2 currentDirection;
 
         if (_rb.linearVelocity.sqrMagnitude > 0.0001f)
@@ -177,6 +196,35 @@ public class FireHazard : MonoBehaviour
 
         _initialVelocity = _rb.linearVelocity;
         _capturedInitialVelocity = true;
+    }
+
+    public void SetLoopSound(SoundEffect sound)
+    {
+        loopSound = sound;
+        _loopStarted = false;
+        StartLoopSound();
+    }
+
+    private void StartLoopSound()
+    {
+        if (_loopStarted || loopSound == null || loopSound.clip == null)
+        {
+            return;
+        }
+
+        if (_loopSource == null)
+        {
+            _loopSource = gameObject.AddComponent<AudioSource>();
+            _loopSource.playOnAwake = false;
+            _loopSource.loop = true;
+            _loopSource.spatialBlend = 0f;
+        }
+
+        _loopSource.clip = loopSound.clip;
+        _loopSource.volume = loopSound.volume;
+        _loopSource.pitch = Random.Range(loopSound.minPitch, loopSound.maxPitch);
+        _loopSource.Play();
+        _loopStarted = true;
     }
 
     private void OnTriggerEnter2D(Collider2D other)
