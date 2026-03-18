@@ -285,7 +285,7 @@ ParticleSystem:
       serializedVersion: 2
       minMaxState: 0
       minColor: {r: 1, g: 1, b: 1, a: 1}
-      maxColor: {r: 1, g: 0.5307353, b: 0.39215684, a: 1}
+      maxColor: {r: 0.33333337, g: 0.48859218, b: 1, a: 1}
       maxGradient:
         serializedVersion: 2
         key0: {r: 1, g: 1, b: 1, a: 1}
@@ -5223,7 +5223,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 658b7a5eecdb7bf4ab6f953a6690ceb0, type: 2}
+  - {fileID: -876546973899608171, guid: 44b22ce060cb642bc9f24b0339cd6723, type: 3}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -5259,8 +5259,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6c69aa69e566ed9479d0c430c26157d5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ShieldController
-  shieldColor: {r: 0, g: 0.5294118, b: 1, a: 1}
-  inflationAmount: 0.1
+  shieldColor: {r: 0.3863867, g: 0.2783019, b: 1, a: 1}
+  inflationAmount: 0.25
   shieldVisibleDuration: 0.6
   rippleDuration: 0.5
   regenMaxAlpha: 0.2
@@ -5728,8 +5728,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Class5
   currentRound: 0
   augments: []
-  maxHealth: 100
-  maxShield: 50
+  maxHealth: 50
+  maxShield: 200
   shieldController: {fileID: 6883781326606379909}
   movement:
     thrustForce: 15
