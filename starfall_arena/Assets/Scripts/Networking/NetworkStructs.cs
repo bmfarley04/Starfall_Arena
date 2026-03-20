@@ -347,6 +347,27 @@ public struct NetGigaBlastChargeState : INetworkSerializable
     }
 }
 
+public struct NetBatteryRamState : INetworkSerializable
+{
+    public int Tick;
+    public bool IsActive;
+    public bool Broken;
+    public bool GrantedCharge;
+    /// <summary>
+    /// When true, the owning client skips this broadcast (used when the owner already predicted locally).
+    /// </summary>
+    public bool SkipOwner;
+
+    public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
+    {
+        serializer.SerializeValue(ref Tick);
+        serializer.SerializeValue(ref IsActive);
+        serializer.SerializeValue(ref Broken);
+        serializer.SerializeValue(ref GrantedCharge);
+        serializer.SerializeValue(ref SkipOwner);
+    }
+}
+
 public struct NetReflectedProjectileData : INetworkSerializable
 {
     public Vector2 SpawnPosition;

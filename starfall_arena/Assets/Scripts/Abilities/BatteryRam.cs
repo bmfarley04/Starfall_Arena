@@ -46,10 +46,54 @@ public class BatteryRam : Ability
     private float _ramStartTime;
     private float _currentHealth;
     private IChargeProvider _chargeProvider;
+    private NetMovement _netMovement;
+
+    private bool HasNetworkPath()
+    {
+        return NetTickUtil.IsActive && _netMovement != null && _netMovement.IsSpawned;
+    }
+
+    private bool HasRamAuthority()
+    {
+        return !NetTickUtil.IsActive || (_netMovement != null && _netMovement.IsSpawned && _netMovement.IsServer);
+    }
+
+    private NetBatteryRamState BuildRamState(bool isActive, bool broken, bool grantedCharge, bool skipOwner)
+    {
+        return new NetBatteryRamState
+        {
+            Tick = NetTickUtil.IsActive ? NetTickUtil.CurrentTick : -1,
+            IsActive = isActive,
+            Broken = broken,
+            GrantedCharge = grantedCharge,
+            SkipOwner = skipOwner
+        };
+    }
+
+    private void BroadcastServerRamState(NetBatteryRamState state)
+    {
+        if (!HasNetworkPath() || !HasRamAuthority())
+        {
+            return;
+        }
+
+        _netMovement.BroadcastBatteryRamState(state);
+    }
+
+    private void BroadcastServerRamEnd(bool broken, bool grantedCharge, bool skipOwner)
+    {
+        BroadcastServerRamState(BuildRamState(false, broken, grantedCharge, skipOwner));
+    }
+
+    internal bool ShouldProcessCollisions()
+    {
+        return HasRamAuthority();
+    }
 
     protected override void Awake()
     {
         base.Awake();
+        _netMovement = GetComponent<NetMovement>();
         _chargeProvider = player as IChargeProvider;
         // Start off cooldown at match start
         lastUsedAbility = -ram.cooldown;
@@ -71,13 +115,46 @@ public class BatteryRam : Ability
 
         if (ram.maxDuration > 0f && Time.time >= _ramStartTime + ram.maxDuration)
         {
-            BreakRam(false);
+            if (HasRamAuthority())
+            {
+                var state = BuildRamState(false, false, false, skipOwner: false);
+                ApplyNetworkRamState(state, authoritative: true);
+                BroadcastServerRamState(state);
+            }
         }
+    }
+
+    public void ApplyNetworkRamState(NetBatteryRamState state, bool authoritative)
+    {
+        if (state.IsActive)
+        {
+            if (_ramActive && _activeRam != null)
+            {
+                return;
+            }
+
+            ActivateRam();
+            return;
+        }
+
+        if (!_ramActive && !state.Broken)
+        {
+            return;
+        }
+
+        BreakRam(state.Broken, state.GrantedCharge);
     }
 
     public override bool TryUseAbility(InputValue value)
     {
         if (isLocked || isDisabledByOtherAbility)
+        {
+            return false;
+        }
+
+        bool useNetworkPath = HasNetworkPath();
+
+        if (useNetworkPath && (_netMovement == null || !_netMovement.IsOwner))
         {
             return false;
         }
@@ -95,6 +172,19 @@ public class BatteryRam : Ability
                 return false;
             }
 
+            if (useNetworkPath)
+            {
+                var state = BuildRamState(true, false, false, skipOwner: true);
+
+                if (!_netMovement.IsServer)
+                {
+                    ApplyNetworkRamState(state, authoritative: false);
+                }
+
+                _netMovement.RequestBatteryRamState(state);
+                return true;
+            }
+
             UseAbility(value);
             return true;
         }
@@ -102,7 +192,21 @@ public class BatteryRam : Ability
         {
             if (_ramActive)
             {
-                BreakRam(false);
+                if (useNetworkPath)
+                {
+                    var state = BuildRamState(false, false, false, skipOwner: true);
+
+                    if (!_netMovement.IsServer)
+                    {
+                        ApplyNetworkRamState(state, authoritative: false);
+                    }
+
+                    _netMovement.RequestBatteryRamState(state);
+                }
+                else
+                {
+                    BreakRam(false);
+                }
                 return true;
             }
         }
@@ -142,7 +246,16 @@ public class BatteryRam : Ability
     public override void Die()
     {
         base.Die();
-        BreakRam(true);
+        if (_ramActive)
+        {
+            bool broadcastState = HasNetworkPath() && HasRamAuthority();
+            BreakRam(true);
+
+            if (broadcastState)
+            {
+                BroadcastServerRamEnd(broken: true, grantedCharge: false, skipOwner: false);
+            }
+        }
     }
 
     private void ActivateRam()
@@ -240,7 +353,7 @@ public class BatteryRam : Ability
 
     internal void HandleProjectileHit(ProjectileScript projectile)
     {
-        if (!_ramActive) return;
+        if (!_ramActive || !HasRamAuthority()) return;
         if (projectile != null)
         {
             var shooter = projectile.GetShooter();
@@ -252,12 +365,17 @@ public class BatteryRam : Ability
             Destroy(projectile.gameObject);
         }
 
-        ApplyRamDamage(1f);
+        bool ramBroken = ApplyRamDamage(1f);
+
+        if (ramBroken)
+        {
+            BroadcastServerRamEnd(broken: true, grantedCharge: false, skipOwner: false);
+        }
     }
 
     internal void HandleAsteroidHit(AsteroidScript asteroid, Collider2D collider)
     {
-        if (!_ramActive) return;
+        if (!_ramActive || !HasRamAuthority()) return;
 
         Vector2 direction = asteroid != null
             ? (Vector2)(asteroid.transform.position - transform.position).normalized
@@ -279,11 +397,12 @@ public class BatteryRam : Ability
         bool grantedCharge = GrantImpactCharge(true);
         ApplySelfRecoil(-direction);
         BreakRam(true, grantedCharge);
+        BroadcastServerRamEnd(broken: true, grantedCharge: grantedCharge, skipOwner: false);
     }
 
     internal void HandleEntityHit(Entity entity)
     {
-        if (!_ramActive || entity == null || entity == player) return;
+        if (!_ramActive || entity == null || entity == player || !HasRamAuthority()) return;
 
         Vector2 direction = (entity.transform.position - transform.position).normalized;
         if (direction == Vector2.zero)
@@ -310,6 +429,7 @@ public class BatteryRam : Ability
         bool grantedCharge = GrantImpactCharge(entity is Player);
         ApplySelfRecoil(-direction);
         BreakRam(true, grantedCharge);
+        BroadcastServerRamEnd(broken: true, grantedCharge: grantedCharge, skipOwner: false);
     }
 
     private void ApplySelfRecoil(Vector2 direction)
@@ -323,7 +443,7 @@ public class BatteryRam : Ability
         }
     }
 
-    private void ApplyRamDamage(float amount)
+    private bool ApplyRamDamage(float amount)
     {
         _currentHealth -= amount;
 
@@ -332,10 +452,14 @@ public class BatteryRam : Ability
             ram.hitSound.Play(player.GetAvailableAudioSource());
         }
 
-        if (_currentHealth <= 0f)
+        bool ramBroken = _currentHealth <= 0f;
+
+        if (ramBroken)
         {
             BreakRam(true);
         }
+
+        return ramBroken;
     }
 
     private bool GrantImpactCharge(bool shouldGrant)
@@ -376,7 +500,7 @@ public class BatteryRamCollider : MonoBehaviour
 
     internal void HandleTrigger(Collider2D other)
     {
-        if (_ability == null || !_ability.IsAbilityActive()) return;
+        if (_ability == null || !_ability.IsAbilityActive() || !_ability.ShouldProcessCollisions()) return;
         if (other.transform.IsChildOf(_ability.transform)) return;
 
         var projectile = other.GetComponent<ProjectileScript>();

@@ -257,6 +257,34 @@ public partial class NetMovement
         SubmitDarkMatterCastServerRpc(state);
     }
 
+    public void RequestBatteryRamState(NetBatteryRamState state)
+    {
+        if (!NetTickUtil.IsActive || !IsOwner)
+        {
+            return;
+        }
+
+        state.Tick = NetTickUtil.CurrentTick;
+
+        if (IsServer)
+        {
+            HandleBatteryRamStateServer(state);
+            return;
+        }
+
+        SubmitBatteryRamStateServerRpc(state);
+    }
+
+    public void BroadcastBatteryRamState(NetBatteryRamState state)
+    {
+        if (!IsServer)
+        {
+            return;
+        }
+
+        BroadcastBatteryRamStateClientRpc(state);
+    }
+
     // ===== ABILITY SERVER RPCs =====
 
     [ServerRpc]
@@ -329,6 +357,12 @@ public partial class NetMovement
     private void SubmitDarkMatterCastServerRpc(NetDarkMatterCastState state, ServerRpcParams rpcParams = default)
     {
         HandleDarkMatterCastServer(state);
+    }
+
+    [ServerRpc]
+    private void SubmitBatteryRamStateServerRpc(NetBatteryRamState state, ServerRpcParams rpcParams = default)
+    {
+        HandleBatteryRamStateServer(state);
     }
 
     // ===== ABILITY SERVER HANDLERS =====
@@ -485,6 +519,18 @@ public partial class NetMovement
 
         // Server spends charges and spawns authoritative hazards, then broadcasts spawns.
         darkMatter.ApplyNetworkDarkMatterCast(state.ChargesSpent, authoritative: true, chargesAlreadySpent: false);
+    }
+
+    private void HandleBatteryRamStateServer(NetBatteryRamState state)
+    {
+        BatteryRam batteryRam = GetComponent<BatteryRam>();
+        if (batteryRam == null)
+        {
+            return;
+        }
+
+        batteryRam.ApplyNetworkRamState(state, authoritative: true);
+        BroadcastBatteryRamStateClientRpc(state);
     }
 
     // ===== ABILITY CLIENT RPC BROADCASTS =====
@@ -650,6 +696,23 @@ public partial class NetMovement
 
         DarkMatter darkMatter = GetComponent<DarkMatter>();
         darkMatter?.SpawnRemoteHazard(spawnData);
+    }
+
+    [ClientRpc]
+    private void BroadcastBatteryRamStateClientRpc(NetBatteryRamState state)
+    {
+        if (IsServer)
+        {
+            return;
+        }
+
+        if (IsOwner && state.SkipOwner)
+        {
+            return;
+        }
+
+        BatteryRam batteryRam = GetComponent<BatteryRam>();
+        batteryRam?.ApplyNetworkRamState(state, authoritative: false);
     }
 
     // ===== FIRE HAZARD (Firewall-specific) =====

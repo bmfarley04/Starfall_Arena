@@ -200,6 +200,8 @@ Current network payloads include:
 - `NetDarkMatterHazardSpawnData`
   - spawn position, direction, DPS, lifetime, impact force, slow rate, launch speed
   - dampening flag plus server spawn time so clients subtract transit latency from the hazard lifetime
+- `NetBatteryRamState`
+  - tick, active flag, broken flag, charge-grant flag, and an owner-skip flag so the owner can predict locally while server echoes state to the rest
 
 These structs are intentionally minimal and focused on what movement replay and visual sync needs.
 
