@@ -19499,7 +19499,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NetworkSessionData
   ShowTopMostFoldoutHeaderGroup: 1
-  selectionDurationSeconds: 20
+  selectionDurationSeconds: 30
   gameplaySceneName: networkScene
 --- !u!4 &711762873
 Transform:

@@ -55,7 +55,7 @@ public class ClassStarter : Player
     // ===== PRIMARY WEAPON =====
     [Header("Primary Weapon Settings")]
     [Tooltip("Cooldown between normal fire shots (seconds)")]
-    public new float fireCooldown = 0.5f;
+    [SerializeField] private float _fireCooldown = 0.5f;
 
     // ===== ABILITIES =====
     [Header("Abilities")]
@@ -68,6 +68,7 @@ public class ClassStarter : Player
     protected override void Awake()
     {
         base.Awake();
+        fireCooldown = _fireCooldown;
     }
 
     // ===== UPDATE LOOP =====
