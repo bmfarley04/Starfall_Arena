@@ -1,7 +1,5 @@
 using System.Collections;
-using System;
 using System.Collections.Generic;
-using UnityEditor;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -9,6 +7,9 @@ using UnityEngine.InputSystem;
 // ===== CLASS5 IMPLEMENTATION =====
 public class Class5 : Player, IChargeProvider
 {
+    internal const int ProjectileBurstCount = 4;
+    internal const float ProjectileBurstSpacing = 0.06f;
+
     // ===== PRIMARY WEAPON =====
     [Header("Primary Weapon Settings")]
     [Tooltip("Cooldown between normal fire shots (seconds)")]
@@ -42,47 +43,57 @@ public class Class5 : Player, IChargeProvider
     private float _lastChargeGainTime;
     private Coroutine _fourthChargeSoundCoroutine;
     private Coroutine _projectileSoundBurstCoroutine;
+    private NetMovement _netMovement;
 
     /// <inheritdoc/>
     public bool TrySpendCharges(int amount)
     {
+        if (amount <= 0) return true;
         if (CurrentCharges < amount) return false;
-        LoseCharges(amount);
-        PlaySpendChargeSound();
-        return true;
+
+        int applied = ApplyChargeDelta(-amount, playAudio: true, broadcast: true);
+        return applied < 0;
     }
     /// <inheritdoc/>
     public void GainCharges(int amount)
     {
         if (amount <= 0) return;
-        if (CurrentCharges < MaxCharges)
-        {
-            int previous = CurrentCharges;
-            CurrentCharges += amount;
-            if (CurrentCharges > MaxCharges) CurrentCharges = MaxCharges;
-            _lastChargeGainTime = Time.time;
-            if (CurrentCharges > previous)
-            {
-                PlayGainChargeSound();
-            }
-            Debug.Log($"Gained charges: {amount}. Current charges: {CurrentCharges}/{MaxCharges}");
-        }
-        UpdateAbilityChargeVisuals();
+        ApplyChargeDelta(amount, playAudio: true, broadcast: true);
     }
 
     // ===== INITIALIZATION =====
     protected override void Awake()
     {
         base.Awake();
-        MaxCharges = abilityChargePrefabs.Count;
+        _netMovement = GetComponent<NetMovement>();
+        if (abilityChargePrefabs != null && abilityChargePrefabs.Count > 0)
+        {
+            MaxCharges = abilityChargePrefabs.Count;
+        }
         _lastChargeGainTime = Time.time;
+        UpdateAbilityChargeVisuals();
+    }
+
+    protected override void Start()
+    {
+        base.Start();
+
+        // Push initial charge state to clients once the NetworkObject is spawned.
+        if (ShouldHandleChargesLocally())
+        {
+            ApplyChargeDelta(0, playAudio: false, broadcast: true, forceBroadcast: true);
+        }
     }
 
     // ===== UPDATE LOOP =====
     protected override void Update()
     {
         base.Update();
-        HandleChargeRegen();
+
+        if (ShouldHandleChargesLocally())
+        {
+            HandleChargeRegen();
+        }
     }
 
     protected override void FixedUpdate()
@@ -100,29 +111,50 @@ public class Class5 : Player, IChargeProvider
         }
     }
 
+    /// <summary>
+    /// Called by NetMovement on the server when the Player component is disabled
+    /// (client-owned characters) so passive charge regen still runs.
+    /// </summary>
+    public void ServerTickCharges()
+    {
+        if (ShouldHandleChargesLocally())
+        {
+            HandleChargeRegen();
+        }
+    }
+
     private void LoseCharges(int amount)
     {
-        if (CurrentCharges > 0)
-        {
-            CurrentCharges -= amount;
-            if (CurrentCharges < 0) CurrentCharges = 0;
-            _lastChargeGainTime = Time.time;
-            Debug.Log($"Lost charges: {amount}. Current charges: {CurrentCharges}/{MaxCharges}");
-        }
-        UpdateAbilityChargeVisuals();
+        ApplyChargeDelta(-Mathf.Abs(amount), playAudio: true, broadcast: true);
     }
 
     private void UpdateAbilityChargeVisuals()
     {
         for (int i = 0; i < abilityChargePrefabs.Count; i++)
         {
-            abilityChargePrefabs[i].SetActive(i < CurrentCharges);
+            if (abilityChargePrefabs[i] != null)
+            {
+                abilityChargePrefabs[i].SetActive(i < CurrentCharges);
+            }
         }
     }
 
     private void PlayGainChargeSound()
     {
         if (CurrentCharges <= 0) return;
+
+        if (!isActiveAndEnabled && _netMovement != null)
+        {
+            _netMovement.PlayClass5ChargeAudio(
+                CurrentCharges,
+                gainChargeSound1,
+                gainChargeSound2,
+                gainChargeSound3,
+                gainChargeSound4,
+                fourthChargeComboSpacing,
+                isSpend: false);
+            return;
+        }
 
         if (_fourthChargeSoundCoroutine != null)
         {
@@ -206,6 +238,20 @@ public class Class5 : Player, IChargeProvider
     {
         if (spendChargeSound != null)
         {
+            if (!isActiveAndEnabled && _netMovement != null)
+            {
+                _netMovement.PlayClass5ChargeAudio(
+                    CurrentCharges,
+                    gainChargeSound1,
+                    gainChargeSound2,
+                    gainChargeSound3,
+                    gainChargeSound4,
+                    fourthChargeComboSpacing,
+                    isSpend: true,
+                    spendChargeSound);
+                return;
+            }
+
             PlaySoundEffect(spendChargeSound);
         }
     }
@@ -239,18 +285,89 @@ public class Class5 : Player, IChargeProvider
 
     private IEnumerator PlayProjectileFireSoundBurst(SoundEffect fireSound)
     {
-        const int burstCount = 4;
-        const float burstSpacing = 0.06f;
-
-        for (int i = 0; i < burstCount; i++)
+        for (int i = 0; i < ProjectileBurstCount; i++)
         {
             fireSound.Play(GetAvailableAudioSource());
-            if (i < burstCount - 1)
+            if (i < ProjectileBurstCount - 1)
             {
-                yield return new WaitForSeconds(burstSpacing);
+                yield return new WaitForSeconds(ProjectileBurstSpacing);
             }
         }
 
         _projectileSoundBurstCoroutine = null;
     }
+
+    private bool ShouldHandleChargesLocally()
+    {
+        // Offline/local play OR this peer is authoritative server/host.
+        if (!NetTickUtil.IsActive) return true;
+        if (_netMovement == null || !_netMovement.IsSpawned) return true;
+        return _netMovement.IsServer;
+    }
+
+
+    private int ApplyChargeDelta(int delta, bool playAudio, bool broadcast, bool forceBroadcast = false)
+    {
+        if (delta == 0) return 0;
+
+        int previous = CurrentCharges;
+        if (delta < 0 && CurrentCharges < -delta)
+        {
+            return 0;
+        }
+
+        CurrentCharges = Mathf.Clamp(CurrentCharges + delta, 0, MaxCharges);
+        _lastChargeGainTime = Time.time;
+
+        int appliedDelta = CurrentCharges - previous;
+        if (playAudio && appliedDelta != 0)
+        {
+            if (appliedDelta > 0)
+            {
+                PlayGainChargeSound();
+            }
+            else
+            {
+                PlaySpendChargeSound();
+            }
+        }
+
+        UpdateAbilityChargeVisuals();
+
+        bool shouldBroadcast = broadcast && _netMovement != null && _netMovement.IsSpawned && _netMovement.IsServer && NetTickUtil.IsActive;
+        if (shouldBroadcast && (appliedDelta != 0 || forceBroadcast))
+        {
+            _netMovement.BroadcastClass5ChargeState(CurrentCharges, appliedDelta, playAudio || forceBroadcast);
+        }
+
+        Debug.Log($"Charges delta={delta} applied={appliedDelta}. Current: {CurrentCharges}/{MaxCharges}");
+        return appliedDelta;
+    }
+
+    /// <summary>
+    /// Authoritative network callback from NetMovement to sync charge count and audio.
+    /// </summary>
+    public void ApplyNetworkChargeState(int currentCharges, int delta, bool playAudio)
+    {
+        int previous = CurrentCharges;
+        CurrentCharges = Mathf.Clamp(currentCharges, 0, MaxCharges);
+        _lastChargeGainTime = Time.time;
+
+        int effectiveDelta = delta != 0 ? delta : CurrentCharges - previous;
+
+        if (playAudio && effectiveDelta != 0)
+        {
+            if (effectiveDelta > 0)
+            {
+                PlayGainChargeSound();
+            }
+            else
+            {
+                PlaySpendChargeSound();
+            }
+        }
+
+        UpdateAbilityChargeVisuals();
+    }
+
 }

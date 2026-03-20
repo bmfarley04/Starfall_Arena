@@ -605,6 +605,16 @@ public partial class NetMovement
         BroadcastBatteryRamStateClientRpc(state);
     }
 
+    public void BroadcastClass5ChargeState(int currentCharges, int delta, bool playAudio)
+    {
+        if (!IsServer)
+        {
+            return;
+        }
+
+        BroadcastClass5ChargeStateClientRpc(currentCharges, delta, playAudio);
+    }
+
     // ===== ABILITY CLIENT RPC BROADCASTS =====
 
     [ClientRpc]
@@ -828,6 +838,19 @@ public partial class NetMovement
 
         BatteryRam batteryRam = GetComponent<BatteryRam>();
         batteryRam?.ApplyNetworkRamState(state, authoritative: false);
+    }
+
+    [ClientRpc]
+    private void BroadcastClass5ChargeStateClientRpc(int currentCharges, int delta, bool playAudio)
+    {
+        if (IsServer)
+        {
+            return;
+        }
+
+        Class5 class5 = GetComponent<Class5>();
+        bool shouldPlayAudio = playAudio && !(IsOwner && delta < 0);
+        class5?.ApplyNetworkChargeState(currentCharges, delta, shouldPlayAudio);
     }
 
     // ===== FIRE HAZARD (Firewall-specific) =====

@@ -124,6 +124,13 @@ public partial class NetMovement : NetworkBehaviour
         _movementLocked.OnValueChanged += HandleMovementLockedChanged;
         _networkPlayerIndex.OnValueChanged += HandlePlayerIndexChanged;
 
+        // Seed Class5 charge visuals/audio state for all peers once the NetworkObject is live.
+        if (IsServer && _player is Class5 class5Server)
+        {
+            class5Server.ApplyNetworkChargeState(class5Server.CurrentCharges, 0, playAudio: false);
+            BroadcastClass5ChargeState(class5Server.CurrentCharges, 0, playAudio: false);
+        }
+
         // Apply player index if already set (e.g. late join where the
         // NetworkVariable value arrives with the spawn snapshot).
         if (_networkPlayerIndex.Value != 0)
@@ -547,6 +554,12 @@ public partial class NetMovement : NetworkBehaviour
 
                 // Stop slow particle when slow expires
                 _player.TickSlowVisuals();
+
+                // Keep Class5 charge regen authoritative on the server even when Player is disabled.
+                if (_player is Class5 class5)
+                {
+                    class5.ServerTickCharges();
+                }
             }
         }
 

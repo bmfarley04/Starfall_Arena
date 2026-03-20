@@ -1,3 +1,4 @@
+using System.Collections;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -7,6 +8,9 @@ using UnityEngine;
 /// </summary>
 public partial class NetMovement
 {
+    private Coroutine _class5FireSoundCoroutine;
+    private Coroutine _class5ChargeSoundCoroutine;
+
     // ===== PROJECTILE VISUAL & AUDIO RESOLUTION =====
 
     public GameObject ResolveProjectileVisualPrefab(NetProjectileVisualType visualType)
@@ -134,7 +138,14 @@ public partial class NetMovement
         if (!IsOwner && _player != null)
         {
             SoundEffect fireSound = ResolveFireSound(request.VisualType);
-            fireSound?.Play(_player.GetAvailableAudioSource());
+            if (_player is Class5)
+            {
+                PlayClass5FireSoundBurst(fireSound);
+            }
+            else
+            {
+                fireSound?.Play(_player.GetAvailableAudioSource());
+            }
         }
 
         BroadcastProjectileSpawnClientRpc(new NetProjectileSpawnData
@@ -244,8 +255,132 @@ public partial class NetMovement
         if (_player != null)
         {
             SoundEffect fireSound = ResolveFireSound(spawnData.VisualType);
-            fireSound?.Play(_player.GetAvailableAudioSource());
+            if (_player is Class5)
+            {
+                PlayClass5FireSoundBurst(fireSound);
+            }
+            else
+            {
+                fireSound?.Play(_player.GetAvailableAudioSource());
+            }
         }
+    }
+
+    private void PlayClass5FireSoundBurst(SoundEffect fireSound)
+    {
+        if (fireSound == null || _player == null)
+        {
+            return;
+        }
+
+        if (_class5FireSoundCoroutine != null)
+        {
+            StopCoroutine(_class5FireSoundCoroutine);
+        }
+
+        _class5FireSoundCoroutine = StartCoroutine(PlayClass5FireSoundBurstRoutine(fireSound));
+    }
+
+    private IEnumerator PlayClass5FireSoundBurstRoutine(SoundEffect fireSound)
+    {
+        for (int i = 0; i < Class5.ProjectileBurstCount; i++)
+        {
+            fireSound.Play(_player.GetAvailableAudioSource());
+            if (i < Class5.ProjectileBurstCount - 1)
+            {
+                yield return new WaitForSeconds(Class5.ProjectileBurstSpacing);
+            }
+        }
+
+        _class5FireSoundCoroutine = null;
+    }
+
+    public void PlayClass5ChargeAudio(
+        int currentCharges,
+        SoundEffect gain1,
+        SoundEffect gain2,
+        SoundEffect gain3,
+        SoundEffect gain4,
+        float comboSpacing,
+        bool isSpend,
+        SoundEffect spendSound = null)
+    {
+        if (_player == null)
+        {
+            return;
+        }
+
+        if (isSpend)
+        {
+            spendSound?.Play(_player.GetAvailableAudioSource());
+            return;
+        }
+
+        // Gain path
+        if (_class5ChargeSoundCoroutine != null)
+        {
+            StopCoroutine(_class5ChargeSoundCoroutine);
+        }
+
+        if (currentCharges >= Class5.ProjectileBurstCount)
+        {
+            SoundEffect[] sounds =
+            {
+                gain1,
+                gain2,
+                gain3,
+                gain4 != null ? gain4 : gain1
+            };
+
+            _class5ChargeSoundCoroutine = StartCoroutine(PlayClass5ChargeCombo(sounds, comboSpacing));
+            return;
+        }
+
+        SoundEffect oneShot = currentCharges switch
+        {
+            1 => gain1,
+            2 => gain2,
+            3 => gain3,
+            _ => gain4 != null ? gain4 : gain1
+        };
+
+        oneShot?.Play(_player.GetAvailableAudioSource());
+    }
+
+    private IEnumerator PlayClass5ChargeCombo(SoundEffect[] sounds, float comboSpacing)
+    {
+        float spacing = comboSpacing > 0f ? comboSpacing : 0.05f;
+        float pitch = 1f;
+        foreach (SoundEffect effect in sounds)
+        {
+            if (effect != null)
+            {
+                pitch = Random.Range(effect.minPitch, effect.maxPitch);
+                break;
+            }
+        }
+
+        for (int i = 0; i < sounds.Length; i++)
+        {
+            SoundEffect effect = sounds[i];
+            if (effect != null)
+            {
+                AudioSource source = _player.GetAvailableAudioSource();
+                if (source != null)
+                {
+                    source.clip = effect.clip;
+                    source.volume = effect.volume;
+                    source.pitch = pitch;
+                    source.Play();
+                }
+            }
+            if (i < sounds.Length - 1)
+            {
+                yield return new WaitForSeconds(spacing);
+            }
+        }
+
+        _class5ChargeSoundCoroutine = null;
     }
 
     // ===== COMBAT STATE =====
