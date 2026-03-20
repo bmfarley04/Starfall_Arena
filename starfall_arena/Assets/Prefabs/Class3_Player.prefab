@@ -483,7 +483,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8073042944126910331}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 62899f850307741f2a39c98a8b639597, type: 3}
   m_Name: 
@@ -849,7 +849,7 @@ MonoBehaviour:
   shotsHit: 0
   damageDealt: 0
   damageTaken: 0
-  fireCooldown: 1
+  _fireCooldown: 0.7
 --- !u!114 &4120815541869784891
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -43,6 +43,11 @@ public class PhysicalProjectile : ProjectileScript
             var damageable = collider.GetComponent<Entity>();
             if (damageable != null)
             {
+                if (!TryRegisterEntityHit(damageable))
+                {
+                    return;
+                }
+
                 // Deal damage directly to health, bypassing shields
                 damageable.TakeDirectDamage(_damage, _impactForce, transform.position, DamageSource.Projectile, _shooter, _accuracyAttackId);
                 ApplyImpactForce(collider);
@@ -76,6 +81,11 @@ public class PhysicalProjectile : ProjectileScript
             var asteroid = collider.GetComponent<AsteroidScript>();
             if (asteroid != null)
             {
+                if (!TryRegisterAsteroidHit(asteroid))
+                {
+                    return;
+                }
+
                 asteroid.RequestDamage(_damage, _impactForce, transform.position);
             }
 
