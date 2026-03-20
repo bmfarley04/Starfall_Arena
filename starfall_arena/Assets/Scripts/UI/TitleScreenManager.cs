@@ -150,10 +150,15 @@ public class TitleScreenManager : MonoBehaviour
             _sessionData.OnSessionStateChanged += HandleSessionStateChanged;
             _sessionData.OnStatusMessageChanged += HandleStatusMessageChanged;
 
-            if (!NetMgr.IsNetworked)
+            // Always reset session data when loading the title screen.
+            // If a prior networked game didn't fully shut down, force cleanup now
+            // so the player can host or join a fresh session.
+            if (NetMgr.IsNetworked && _netMgr != null)
             {
-                _sessionData.ResetToTitleLocal();
+                _netMgr.ShutdownToTitle();
             }
+
+            _sessionData.ResetToTitleLocal();
         }
 
         ResetHoldVisuals();
@@ -174,15 +179,6 @@ public class TitleScreenManager : MonoBehaviour
         SetCanvasHidden(shipSelectCanvas);
         SetCanvasHidden(joinGameCanvas);
         SetCanvasHidden(hostWaitingCanvas);
-
-        // PRELOAD: Spawn ship models NOW (at scene load) so they're ready instantly
-        // This eliminates any loading delay when entering ship select
-        if (shipSelectManager != null)
-        {
-            shipSelectManager.gameObject.SetActive(true); // Activate to allow method call
-            shipSelectManager.SpawnShipsAtSceneLoad();
-            shipSelectManager.gameObject.SetActive(true); // Keep active but component disabled
-        }
 
         // Phase 1: Scene fades from black
         yield return new WaitForSecondsRealtime(sceneFade.delay);

@@ -198,10 +198,16 @@ public class Beam : Ability
         }
     }
 
+    public override float GetRotationMultiplier()
+    {
+        if (_activeBeam == null) return 1f;
+        return beam.rotationMultiplier;
+    }
+
     public override void ApplyRotationMultiplier()
     {
         base.ApplyRotationMultiplier();
-        player.movement.rotationSpeed *= beam.rotationMultiplier;
+        player.movement.rotationSpeed *= GetRotationMultiplier();
     }
 
     public override bool IsAbilityActive()

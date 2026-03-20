@@ -187,8 +187,10 @@ public class VersusScreenManager : MonoBehaviour
         if (player2ShipNameText != null && player2Data != null)
             player2ShipNameText.text = player2Data.shipName;
 
-        // Spawn ship models (inactive until reveal phase)
+        // Spread preview ship instantiation across frames so scene activation has less work to do at once.
+        yield return null;
         _player1ShipInstance = SpawnShipModel(player1Data, player1ShipDisplay, true);
+        yield return null;
         _player2ShipInstance = SpawnShipModel(player2Data, player2ShipDisplay, false);
 
         // Store rest positions and set initial state

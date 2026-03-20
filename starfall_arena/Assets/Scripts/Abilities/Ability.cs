@@ -94,6 +94,16 @@ public class Ability : MonoBehaviour
 
 
 
+    public virtual float GetRotationMultiplier()
+    {
+        return 1f;
+    }
+
+    public virtual float GetThrustMultiplier()
+    {
+        return 1f;
+    }
+
     public virtual void ApplyRotationMultiplier()
     {
     }
