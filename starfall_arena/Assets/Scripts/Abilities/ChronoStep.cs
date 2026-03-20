@@ -263,6 +263,12 @@ public class ChronoStep : Ability
         }
     }
 
+    private void OnDisable()
+    {
+        // Ensure round transitions or disables clear lingering waypoint markers/state
+        CancelWaypoint();
+    }
+
     private bool ShouldUseNetworkPath()
     {
         return NetTickUtil.IsActive && _netMovement != null && _netMovement.IsSpawned && _netMovement.IsOwner;

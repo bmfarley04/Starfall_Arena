@@ -418,6 +418,7 @@ Network execution note:
 - Ability behavior is component-based and distributed, so changes often require docs updates in both gameplay and UI/flow docs.
 - Bug note: modular abilities should initialize their cooldown timer in a ready state. If the base `Ability.lastUsedAbility` starts at `0`, newly spawned ships can have abilities appear broken until each cooldown elapses once.
 - Bug note: teleport-style abilities that hide renderers during their effect need an interruption-safe restore path, or a ship can remain hittable while visually invisible if the coroutine is stopped mid-ability.
+- Bug note: Chrono Step waypoints must be cleared on round transitions. The component now clears state in `OnDisable()` to avoid leaving waypoint markers between rounds; if markers persist, ensure the ability component is disabled during round freeze.
 - Bug note: if duel stats ever start diverging again, check for damage sources bypassing `Entity.TakeDamage(...)` / `TakeDirectDamage(...)` without passing the attacking player through. That was the root cause of mismatched dealt-vs-taken totals and missing ability/reflection credit.
 - `Assets/Scripts/3d` is future-facing groundwork for a more fully 3D version of the game, not a current core maintenance area.
 - Bugs in combat, ability timing, or augment behavior should be added here in the relevant section once discovered.
