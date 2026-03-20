@@ -92,6 +92,14 @@ public sealed class GameplayScenePreloader : MonoBehaviour
             yield break;
         }
 
+        // Clear stale preload if the operation already completed (e.g. the coroutine
+        // was killed by a scene unload before it could clean up).
+        if (_preloadOperation != null && _preloadOperation.isDone)
+        {
+            _preloadOperation = null;
+            _preloadedSceneName = null;
+        }
+
         if (_preloadOperation != null &&
             string.Equals(_preloadedSceneName, sceneName, System.StringComparison.Ordinal))
         {

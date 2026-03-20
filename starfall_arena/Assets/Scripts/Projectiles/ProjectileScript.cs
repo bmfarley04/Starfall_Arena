@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections.Generic;
 
 [RequireComponent(typeof(Rigidbody2D))]
 public class ProjectileScript : MonoBehaviour
@@ -27,6 +28,11 @@ public class ProjectileScript : MonoBehaviour
 
     // Reflection tracking
     protected bool _isReflected = false;
+
+    // Prevent piercing projectiles from repeatedly damaging the same target
+    // across multiple trigger/sweep evaluations during a single flight.
+    private readonly HashSet<int> _hitEntityIds = new HashSet<int>();
+    private readonly HashSet<int> _hitAsteroidIds = new HashSet<int>();
 
     // Slow effect
     protected bool _appliesSlow = false;
@@ -126,6 +132,11 @@ public class ProjectileScript : MonoBehaviour
             _visualController.ResetVisualState();
             _visualController.SetProjectileColor(reflectColor);
         }
+
+        // Reflection starts a new ownership/damage phase, so prior hit suppression
+        // should not block valid post-reflect hits.
+        _hitEntityIds.Clear();
+        _hitAsteroidIds.Clear();
     }
 
     public void EnablePiercing(float damageMultiplierPerHit)
@@ -215,6 +226,11 @@ public class ProjectileScript : MonoBehaviour
             var damageable = collider.GetComponent<Entity>();
             if (damageable != null)
             {
+                if (!TryRegisterEntityHit(damageable))
+                {
+                    return;
+                }
+
                 ApplyDamageToEntity(damageable, transform.position, collider);
 
                 // Apply slow effect if enabled
@@ -246,6 +262,11 @@ public class ProjectileScript : MonoBehaviour
             var asteroid = collider.GetComponent<AsteroidScript>();
             if (asteroid != null)
             {
+                if (!TryRegisterAsteroidHit(asteroid))
+                {
+                    return;
+                }
+
                 asteroid.RequestDamage(_damage, _impactForce, transform.position);
             }
 
@@ -352,6 +373,12 @@ public class ProjectileScript : MonoBehaviour
                 return;
             }
         }
+
+        if (!TryRegisterEntityHit(damageable))
+        {
+            return;
+        }
+
         ApplyDamageToEntity(damageable, hitPoint, targetCollider);
 
         if (_appliesSlow)
@@ -392,6 +419,16 @@ public class ProjectileScript : MonoBehaviour
         float t = Vector2.Dot(point - from, segment) / segmentSqrMagnitude;
         t = Mathf.Clamp01(t);
         return from + segment * t;
+    }
+
+    protected bool TryRegisterEntityHit(Entity target)
+    {
+        return target != null && _hitEntityIds.Add(target.GetInstanceID());
+    }
+
+    protected bool TryRegisterAsteroidHit(AsteroidScript asteroid)
+    {
+        return asteroid != null && _hitAsteroidIds.Add(asteroid.GetInstanceID());
     }
 
     void OnDestroy()

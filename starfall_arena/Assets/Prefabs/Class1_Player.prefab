@@ -5290,7 +5290,7 @@ MonoBehaviour:
   shieldController: {fileID: 487621983904113540}
   movement:
     thrustForce: 40
-    maxSpeed: 18
+    maxSpeed: 16
     rotationSpeed: 400
     lateralDamping: 0.92
   turrets:
@@ -5372,6 +5372,7 @@ MonoBehaviour:
   shotsHit: 0
   damageDealt: 0
   damageTaken: 0
+  _fireCooldown: 0.7
 --- !u!114 &6100440838757200110
 MonoBehaviour:
   m_ObjectHideFlags: 0

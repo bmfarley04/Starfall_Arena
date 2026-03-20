@@ -192,6 +192,13 @@ public partial class NetMovement : NetworkBehaviour
                 _player.enabled = false;
                 _player.SetExternalVisualStateEnabled(false);
             }
+
+            PlayerInput playerInput = GetComponent<PlayerInput>();
+            if (playerInput != null)
+            {
+                playerInput.DeactivateInput();
+                playerInput.enabled = false;
+            }
         }
 
         if (IsServer)
