@@ -5,6 +5,7 @@ using UnityEngine.InputSystem;
 
 
 // ===== CLASS5 IMPLEMENTATION =====
+[RequireComponent(typeof(Class5NetworkBridge))]
 public class Class5 : Player, IChargeProvider
 {
     internal const int ProjectileBurstCount = 4;
@@ -43,7 +44,7 @@ public class Class5 : Player, IChargeProvider
     private float _lastChargeGainTime;
     private Coroutine _fourthChargeSoundCoroutine;
     private Coroutine _projectileSoundBurstCoroutine;
-    private NetMovement _netMovement;
+    private Class5NetworkBridge _bridge;
 
     /// <inheritdoc/>
     public bool TrySpendCharges(int amount)
@@ -65,7 +66,7 @@ public class Class5 : Player, IChargeProvider
     protected override void Awake()
     {
         base.Awake();
-        _netMovement = GetComponent<NetMovement>();
+        _bridge = GetComponent<Class5NetworkBridge>();
         if (abilityChargePrefabs != null && abilityChargePrefabs.Count > 0)
         {
             MaxCharges = abilityChargePrefabs.Count;
@@ -143,9 +144,9 @@ public class Class5 : Player, IChargeProvider
     {
         if (CurrentCharges <= 0) return;
 
-        if (!isActiveAndEnabled && _netMovement != null)
+        if (!isActiveAndEnabled && _bridge != null)
         {
-            _netMovement.PlayClass5ChargeAudio(
+            _bridge?.PlayChargeAudioForProxy(
                 CurrentCharges,
                 gainChargeSound1,
                 gainChargeSound2,
@@ -238,9 +239,9 @@ public class Class5 : Player, IChargeProvider
     {
         if (spendChargeSound != null)
         {
-            if (!isActiveAndEnabled && _netMovement != null)
+            if (!isActiveAndEnabled && _bridge != null)
             {
-                _netMovement.PlayClass5ChargeAudio(
+                _bridge?.PlayChargeAudioForProxy(
                     CurrentCharges,
                     gainChargeSound1,
                     gainChargeSound2,
@@ -301,8 +302,8 @@ public class Class5 : Player, IChargeProvider
     {
         // Offline/local play OR this peer is authoritative server/host.
         if (!NetTickUtil.IsActive) return true;
-        if (_netMovement == null || !_netMovement.IsSpawned) return true;
-        return _netMovement.IsServer;
+        if (_bridge == null || !_bridge.IsSpawned) return true;
+        return _bridge.IsServer;
     }
 
 
@@ -334,10 +335,10 @@ public class Class5 : Player, IChargeProvider
 
         UpdateAbilityChargeVisuals();
 
-        bool shouldBroadcast = broadcast && _netMovement != null && _netMovement.IsSpawned && _netMovement.IsServer && NetTickUtil.IsActive;
+        bool shouldBroadcast = broadcast && _bridge != null && _bridge.IsSpawned && _bridge.IsServer && NetTickUtil.IsActive;
         if (shouldBroadcast && (appliedDelta != 0 || forceBroadcast))
         {
-            _netMovement.BroadcastClass5ChargeState(CurrentCharges, appliedDelta, playAudio || forceBroadcast);
+            _bridge.BroadcastChargeState(CurrentCharges, appliedDelta, playAudio || forceBroadcast);
         }
 
         Debug.Log($"Charges delta={delta} applied={appliedDelta}. Current: {CurrentCharges}/{MaxCharges}");
