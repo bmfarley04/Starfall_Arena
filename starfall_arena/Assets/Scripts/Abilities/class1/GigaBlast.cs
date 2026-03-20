@@ -271,12 +271,12 @@ public class GigaBlast : Ability
         return Time.time < _lastGigaBlastTime + gigaBlast.timing.cooldown;
     }
 
-    public override void ApplyRotationMultiplier()
+    public override float GetRotationMultiplier()
     {
-        base.ApplyRotationMultiplier();
+        if (!_isCharging) return 1f;
         float chargeTime = Time.time - _chargeStartTime;
         int tier = GetChargeTier(chargeTime);
-        float rotationMultiplier = tier switch
+        return tier switch
         {
             1 => gigaBlast.movementPenalties.tier1RotationMultiplier,
             2 => gigaBlast.movementPenalties.tier2RotationMultiplier,
@@ -284,8 +284,28 @@ public class GigaBlast : Ability
             4 => gigaBlast.movementPenalties.tier4RotationMultiplier,
             _ => 1f
         };
-        player.movement.rotationSpeed *= rotationMultiplier;
     }
+
+    public override void ApplyRotationMultiplier()
+    {
+        base.ApplyRotationMultiplier();
+        player.movement.rotationSpeed *= GetRotationMultiplier();
+    }
+    public override float GetThrustMultiplier()
+    {
+        if (!_isCharging) return 1f;
+        float chargeTime = Time.time - _chargeStartTime;
+        int tier = GetChargeTier(chargeTime);
+        return tier switch
+        {
+            1 => gigaBlast.movementPenalties.tier1ThrustMultiplier,
+            2 => gigaBlast.movementPenalties.tier2ThrustMultiplier,
+            3 => gigaBlast.movementPenalties.tier3ThrustMultiplier,
+            4 => gigaBlast.movementPenalties.tier4ThrustMultiplier,
+            _ => 1f
+        };
+    }
+
     public override void ApplyThrustMultiplier()
     {
         base.ApplyThrustMultiplier();
@@ -293,17 +313,7 @@ public class GigaBlast : Ability
         _originalThrustForce = player.movement.thrustForce;
         if (_isCharging)
         {
-            float chargeTime = Time.time - _chargeStartTime;
-            int tier = GetChargeTier(chargeTime);
-            float thrustMultiplier = tier switch
-            {
-                1 => gigaBlast.movementPenalties.tier1ThrustMultiplier,
-                2 => gigaBlast.movementPenalties.tier2ThrustMultiplier,
-                3 => gigaBlast.movementPenalties.tier3ThrustMultiplier,
-                4 => gigaBlast.movementPenalties.tier4ThrustMultiplier,
-                _ => 1f
-            };
-            player.movement.thrustForce *= thrustMultiplier;
+            player.movement.thrustForce *= GetThrustMultiplier();
         }
     }
 
