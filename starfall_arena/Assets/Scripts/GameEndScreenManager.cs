@@ -782,6 +782,8 @@ public class GameEndScreenManager : MonoBehaviour
             holdReturn.confirmSound.Play(_audioSource);
         }
 
+        // Shut down the network session fully so the host can re-host cleanly
+        NetMgr.Instance?.ShutdownToTitle();
         StartCoroutine(LoadSceneDelayed(titleSceneName, sceneLoadDelay));
     }
 
