@@ -57,6 +57,7 @@ It currently owns:
 - ability 4 unlock timing
 - round-end and game-end UI coordination
 - cumulative stat collection across rounds
+- rolling-average FPS and ping label updates for the gameplay scene overlay
 
 Network migration note:
 
@@ -275,4 +276,6 @@ This makes `ShipData` a bridge between:
 - Bug note: round-end freeze must explicitly clear latched player input and stop active abilities, not just zero velocity. Otherwise held thrust or other hold-style actions can keep simulating into the round-end window until the player object is destroyed.
 - Bug note: the network gameplay HUD and runtime ability HUDs must be forced into a deterministic camera/sorting configuration on each client. Leaving them as `Screen Space - Camera` canvases with implicit camera assignment or default sorting can make asteroid/map visuals render over client HUD elements even when the host looks correct.
 - Bug note: top-right win indicators in network gameplay need explicit replicated win-count updates. Host-local `UpdateWinTrackers()` calls do not automatically refresh client visuals unless the counts are broadcast through the session layer.
+- Bug note: the client-side network HUD rebinding loop must stop re-showing gameplay HUD/ability UI during non-combat presentation states such as augment selection. If polling only checks "local player exists", the client can resurrect the gameplay ability HUD underneath whole-screen UI even though the scene manager already hid it for the phase.
+- Bug note: gameplay-scene FPS/ping overlay text is now updated by `GameSceneManager`, and it must be hidden when the game-end screen is shown so the final presentation is not rendered with leftover live-match telemetry.
 - Bugs or pitfalls in menu flow, HUD binding, selection order, or round transitions should be documented here in the relevant section.
