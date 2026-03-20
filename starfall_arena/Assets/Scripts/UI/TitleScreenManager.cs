@@ -180,15 +180,6 @@ public class TitleScreenManager : MonoBehaviour
         SetCanvasHidden(joinGameCanvas);
         SetCanvasHidden(hostWaitingCanvas);
 
-        // PRELOAD: Spawn ship models NOW (at scene load) so they're ready instantly
-        // This eliminates any loading delay when entering ship select
-        if (shipSelectManager != null)
-        {
-            shipSelectManager.gameObject.SetActive(true); // Activate to allow method call
-            shipSelectManager.SpawnShipsAtSceneLoad();
-            shipSelectManager.gameObject.SetActive(true); // Keep active but component disabled
-        }
-
         // Phase 1: Scene fades from black
         yield return new WaitForSecondsRealtime(sceneFade.delay);
         yield return RunSceneFade();

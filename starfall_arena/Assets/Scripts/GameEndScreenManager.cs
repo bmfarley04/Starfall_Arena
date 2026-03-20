@@ -318,6 +318,8 @@ public class GameEndScreenManager : MonoBehaviour
         _returnHoldTime = 0f;
         ResetReturnFillUI();
 
+        BeginTitleScenePreload();
+
         // Populate text fields
         PopulateStats(perspectivePlayer, isLocalVictory, gameDuration, wins, losses, damageDealt, damageTaken, accuracy);
 
@@ -785,6 +787,16 @@ public class GameEndScreenManager : MonoBehaviour
         StartCoroutine(LoadSceneDelayed(titleSceneName, sceneLoadDelay));
     }
 
+    private void BeginTitleScenePreload()
+    {
+        if (string.IsNullOrWhiteSpace(titleSceneName))
+        {
+            return;
+        }
+
+        GameplayScenePreloader.GetOrCreate().BeginPreload(titleSceneName);
+    }
+
     private void ResetReturnFillUI()
     {
         if (returnHoldUI.player1ReturnFill != null)
@@ -825,7 +837,7 @@ public class GameEndScreenManager : MonoBehaviour
             Unity.Netcode.NetworkManager.Singleton.Shutdown();
         }
 
-        UnityEngine.SceneManagement.SceneManager.LoadScene(sceneName);
+        yield return GameplayScenePreloader.GetOrCreate().ActivateOrLoad(sceneName);
     }
 
     // Easing functions

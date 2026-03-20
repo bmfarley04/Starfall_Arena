@@ -1091,11 +1091,12 @@ public class ShipSelectManager : MonoBehaviour
             yield break;
         }
 
-        // Store original material
+        // Store original material so custom per-scene overrides can still be restored.
         Material originalMaterial = buttonImage.material;
 
-        // Apply pressed material (instantiate to avoid modifying the asset)
-        buttonImage.material = new Material(navigationEffects.buttonPressedMaterial);
+        // Reuse the assigned material asset. Cloning here allocates a new material every tap,
+        // which is unnecessary for menu-only flash swaps and adds avoidable memory churn.
+        buttonImage.material = navigationEffects.buttonPressedMaterial;
 
         // Wait for flash duration
         yield return new WaitForSecondsRealtime(navigationEffects.flashDuration);
@@ -1103,7 +1104,7 @@ public class ShipSelectManager : MonoBehaviour
         // Revert to normal material
         if (navigationEffects.buttonNormalMaterial != null)
         {
-            buttonImage.material = new Material(navigationEffects.buttonNormalMaterial);
+            buttonImage.material = navigationEffects.buttonNormalMaterial;
         }
         else
         {
@@ -1150,7 +1151,7 @@ public class ShipSelectManager : MonoBehaviour
     /// </summary>
     private void PrepareShipTransform(int index)
     {
-        if (_shipModelInstances == null || index < 0 || index >= _shipModelInstances.Length)
+        if (!EnsureShipModelInstance(index))
             return;
 
         GameObject selectedShip = _shipModelInstances[index];
@@ -1319,22 +1320,20 @@ public class ShipSelectManager : MonoBehaviour
     }
 
     /// <summary>
-    /// PUBLIC: Called by TitleScreenManager at scene load to spawn ships early.
-    /// This eliminates any loading delay when entering ship select.
+    /// PUBLIC: Legacy entry point retained for scene wiring compatibility.
+    /// Ship previews are now spawned lazily so the title screen does not pay the full ship-select cost up front.
     /// </summary>
     public void SpawnShipsAtSceneLoad()
     {
-        SpawnAllShipModels();
+        EnsureShipArrayInitialized();
     }
 
     /// <summary>
-    /// Spawn all ship models (deactivated).
-    /// Only spawns once - subsequent calls are ignored.
+    /// Ensure the preview-instance array exists without instantiating every ship immediately.
     /// </summary>
-    private void SpawnAllShipModels()
+    private void EnsureShipArrayInitialized()
     {
-        // ONLY spawn once - prevent duplicate spawning
-        if (_shipModelInstances != null && _shipModelInstances.Length > 0)
+        if (_shipModelInstances != null)
             return;
 
         if (availableShips == null || availableShips.Length == 0)
@@ -1344,35 +1343,55 @@ public class ShipSelectManager : MonoBehaviour
         }
 
         _shipModelInstances = new GameObject[availableShips.Length];
+    }
 
-        for (int i = 0; i < availableShips.Length; i++)
+    /// <summary>
+    /// Instantiate the requested preview ship on first use.
+    /// </summary>
+    private bool EnsureShipModelInstance(int index)
+    {
+        EnsureShipArrayInitialized();
+        if (_shipModelInstances == null || index < 0 || index >= _shipModelInstances.Length)
         {
-            if (availableShips[i].shipModelPrefab == null)
-            {
-                Debug.LogWarning($"ShipSelectManager: Ship {i} has no model prefab assigned");
-                continue;
-            }
-
-            GameObject instance = Instantiate(
-                availableShips[i].shipModelPrefab,
-                shipModel.shipModelParent != null ? shipModel.shipModelParent : transform
-            );
-
-            instance.name = $"ShipModel_{availableShips[i].shipName}";
-            instance.SetActive(false);
-
-            // Disable all scripts on the ship model (visual preview only)
-            MonoBehaviour[] scripts = instance.GetComponentsInChildren<MonoBehaviour>();
-            foreach (var script in scripts)
-                script.enabled = false;
-
-            // Re-enable preview controller (it's designed to work independently)
-            Class1PreviewController previewController = instance.GetComponent<Class1PreviewController>();
-            if (previewController != null)
-                previewController.enabled = true;
-
-            _shipModelInstances[i] = instance;
+            return false;
         }
+
+        if (_shipModelInstances[index] != null)
+        {
+            return true;
+        }
+
+        if (availableShips[index] == null || availableShips[index].shipModelPrefab == null)
+        {
+            Debug.LogWarning($"ShipSelectManager: Ship {index} has no model prefab assigned");
+            return false;
+        }
+
+        GameObject instance = Instantiate(
+            availableShips[index].shipModelPrefab,
+            shipModel.shipModelParent != null ? shipModel.shipModelParent : transform
+        );
+
+        instance.name = $"ShipModel_{availableShips[index].shipName}";
+        instance.SetActive(false);
+
+        // These prefabs are gameplay-authored, so instantiate only the one we need and strip behavior immediately.
+        MonoBehaviour[] scripts = instance.GetComponentsInChildren<MonoBehaviour>(true);
+        foreach (var script in scripts)
+        {
+            if (script != null)
+            {
+                script.enabled = false;
+            }
+        }
+
+        // Re-enable preview controller (it's designed to work independently)
+        Class1PreviewController previewController = instance.GetComponent<Class1PreviewController>();
+        if (previewController != null)
+            previewController.enabled = true;
+
+        _shipModelInstances[index] = instance;
+        return true;
     }
 
     /// <summary>
@@ -1380,7 +1399,7 @@ public class ShipSelectManager : MonoBehaviour
     /// </summary>
     private void ShowShipModel(int index)
     {
-        if (_shipModelInstances == null || index < 0 || index >= _shipModelInstances.Length)
+        if (!EnsureShipModelInstance(index))
         {
             Debug.LogWarning($"[ShowShipModel] Cannot show ship {index} - instances null: {_shipModelInstances == null}, length: {_shipModelInstances?.Length ?? 0}");
             return;

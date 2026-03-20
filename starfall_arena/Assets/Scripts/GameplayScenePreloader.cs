@@ -3,7 +3,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 
 /// <summary>
-/// Keeps a gameplay scene warm in the background during menu flows so activation is fast later.
+/// Keeps a single local scene warm in the background during menu flows so activation is fast later.
 /// This is intentionally local-flow only; network scene loading still goes through NGO.
 /// </summary>
 public sealed class GameplayScenePreloader : MonoBehaviour
