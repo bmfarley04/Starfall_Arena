@@ -236,6 +236,27 @@ public partial class NetMovement
         SubmitGigaBlastChargeServerRpc(state);
     }
 
+    public void RequestDarkMatterCast(int chargesSpent)
+    {
+        if (!NetTickUtil.IsActive || !IsOwner)
+        {
+            return;
+        }
+
+        NetDarkMatterCastState state = new NetDarkMatterCastState
+        {
+            ChargesSpent = Mathf.Max(chargesSpent, 1)
+        };
+
+        if (IsServer)
+        {
+            HandleDarkMatterCastServer(state);
+            return;
+        }
+
+        SubmitDarkMatterCastServerRpc(state);
+    }
+
     // ===== ABILITY SERVER RPCs =====
 
     [ServerRpc]
@@ -302,6 +323,12 @@ public partial class NetMovement
     private void SubmitInvisibilityServerRpc(NetAbilityToggleState state, ServerRpcParams rpcParams = default)
     {
         HandleInvisibilityServer(state);
+    }
+
+    [ServerRpc]
+    private void SubmitDarkMatterCastServerRpc(NetDarkMatterCastState state, ServerRpcParams rpcParams = default)
+    {
+        HandleDarkMatterCastServer(state);
     }
 
     // ===== ABILITY SERVER HANDLERS =====
@@ -448,6 +475,18 @@ public partial class NetMovement
         BroadcastInvisibilityClientRpc(state);
     }
 
+    private void HandleDarkMatterCastServer(NetDarkMatterCastState state)
+    {
+        DarkMatter darkMatter = GetComponent<DarkMatter>();
+        if (darkMatter == null)
+        {
+            return;
+        }
+
+        // Server spends charges and spawns authoritative hazards, then broadcasts spawns.
+        darkMatter.ApplyNetworkDarkMatterCast(state.ChargesSpent, authoritative: true, chargesAlreadySpent: false);
+    }
+
     // ===== ABILITY CLIENT RPC BROADCASTS =====
 
     [ClientRpc]
@@ -580,6 +619,37 @@ public partial class NetMovement
 
         Invisibility invisibility = GetComponent<Invisibility>();
         invisibility?.ApplyNetworkInvisibilityState(state.IsActive, authoritative: false);
+    }
+
+    // ===== DARK MATTER HAZARD =====
+
+    public void BroadcastDarkMatterHazardSpawn(NetDarkMatterHazardSpawnData spawnData)
+    {
+        if (!IsServer)
+        {
+            return;
+        }
+
+        spawnData.ServerSpawnTime = NetworkManager.Singleton.ServerTime.Time;
+        BroadcastDarkMatterHazardSpawnClientRpc(spawnData);
+    }
+
+    [ClientRpc]
+    private void BroadcastDarkMatterHazardSpawnClientRpc(NetDarkMatterHazardSpawnData spawnData)
+    {
+        if (IsServer || IsOwner)
+        {
+            return;
+        }
+
+        float elapsed = (float)(NetworkManager.Singleton.ServerTime.Time - spawnData.ServerSpawnTime);
+        if (elapsed > 0f)
+        {
+            spawnData.Lifetime = Mathf.Max(spawnData.Lifetime - elapsed, 0f);
+        }
+
+        DarkMatter darkMatter = GetComponent<DarkMatter>();
+        darkMatter?.SpawnRemoteHazard(spawnData);
     }
 
     // ===== FIRE HAZARD (Firewall-specific) =====

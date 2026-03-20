@@ -197,6 +197,9 @@ Current network payloads include:
   - friction timer
   - thrust state (for remote thruster visuals)
   - shield value (for remote shield regen visuals)
+- `NetDarkMatterHazardSpawnData`
+  - spawn position, direction, DPS, lifetime, impact force, slow rate, launch speed
+  - dampening flag plus server spawn time so clients subtract transit latency from the hazard lifetime
 
 These structs are intentionally minimal and focused on what movement replay and visual sync needs.
 
@@ -255,6 +258,7 @@ Current behavior:
 - the server receives fire/start/stop requests for projectile, beam, fire-trail, and reflect actions
 - the server spawns and owns the real gameplay projectile / beam / fire hazard behavior
 - non-owning clients receive cosmetic spawn/state RPCs so they can render the same weapon events without applying gameplay damage
+- Dark Matter follows this path: the owner predicts hazards locally, the server spends charges and spawns authoritative hazards, and hazard lifetimes are latency-adjusted on clients using the server spawn time
 - networked augment loadouts are also pushed from the server to each player replica after spawn and on live augment acquisition so owner/proxy copies do not silently miss augment runtimes
 
 This is intentionally a bridge step that keeps combat authority aligned with the already-implemented movement authority model without requiring every weapon prefab to become a separate NGO network object first.

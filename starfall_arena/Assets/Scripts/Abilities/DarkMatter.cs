@@ -41,12 +41,15 @@ public class DarkMatter : Ability
     private IChargeProvider _chargeProvider;
     private int _chargesSpentThisCast = 1;
     private Coroutine _chargeSoundCoroutine;
+    private NetMovement _netMovement;
+    private bool _chargesSpentLocally;
     private const float CHARGE_SOUND_SPACING = 0.06f;
 
     protected override void Awake()
     {
         base.Awake();
         _chargeProvider = player as IChargeProvider;
+        _netMovement = GetComponent<NetMovement>();
         if (darkMatter.chargesRequired <= 0)
         {
             darkMatter.chargesRequired = 1;
@@ -69,29 +72,14 @@ public class DarkMatter : Ability
             return false;
         }
 
-        if (_chargeProvider != null)
-        {
-            int availableCharges = _chargeProvider.CurrentCharges;
-            if (availableCharges < darkMatter.chargesRequired)
-            {
-                Debug.Log("❌ DarkMatter: not enough charges.");
-                return false;
-            }
+        _chargesSpentLocally = false;
 
-            if (!_chargeProvider.TrySpendCharges(availableCharges))
-            {
-                Debug.Log("❌ DarkMatter: failed to spend charges.");
-                return false;
-            }
-
-            _chargesSpentThisCast = Mathf.Max(availableCharges, 1);
-        }
-        else
+        if (!TryConsumeCharges(out _chargesSpentThisCast, spendNow: true))
         {
-            Debug.LogWarning("DarkMatter: player does not provide charges; assuming 1 charge for duration scaling.");
-            _chargesSpentThisCast = Mathf.Max(darkMatter.chargesRequired, 1);
+            return false;
         }
 
+        _chargesSpentLocally = true;
         lastUsedAbility = Time.time;
         UseAbility(value);
         return true;
@@ -101,64 +89,28 @@ public class DarkMatter : Ability
     {
         base.UseAbility(value);
 
-        // Play a use sound for each charge with slight offsets
         if (_chargeSoundCoroutine != null)
         {
             StopCoroutine(_chargeSoundCoroutine);
         }
         _chargeSoundCoroutine = StartCoroutine(PlayChargeUseSounds(_chargesSpentThisCast));
 
-        if (darkMatter.flamePrefab == null)
+        bool netActive = NetTickUtil.IsActive && _netMovement != null && _netMovement.IsSpawned;
+        bool isOwner = netActive && _netMovement.IsOwner;
+        bool isServer = netActive && _netMovement.IsServer;
+
+        if (netActive && isOwner)
         {
-            Debug.LogWarning("DarkMatter: flamePrefab not assigned.");
+            ApplyNetworkDarkMatterCast(_chargesSpentThisCast, authoritative: isServer, chargesAlreadySpent: _chargesSpentLocally);
+
+            if (!isServer)
+            {
+                _netMovement.RequestDarkMatterCast(_chargesSpentThisCast);
+            }
             return;
         }
 
-        if (player == null || player.turrets == null || player.turrets.Length == 0)
-        {
-            Debug.LogWarning("DarkMatter: no turrets available to spawn dark matter.");
-            return;
-        }
-
-        float hazardDuration = Mathf.Max(0.1f, darkMatter.duration * Mathf.Max(_chargesSpentThisCast, 1));
-
-        foreach (Transform turret in player.turrets)
-        {
-            if (turret == null) continue;
-
-            Transform target = FindNearestEnemy(turret.position);
-            Vector3 direction = target != null ? (target.position - turret.position) : turret.up;
-            if (direction == Vector3.zero)
-            {
-                direction = transform.up;
-            }
-            direction = direction.normalized;
-
-            Vector3 spawnPosition = turret.position + direction * darkMatter.forwardOffset;
-            Quaternion rotation = Quaternion.LookRotation(Vector3.forward, direction);
-
-            GameObject hazard = Instantiate(darkMatter.flamePrefab, spawnPosition, rotation);
-
-            if (hazard.TryGetComponent<FireHazard>(out var fireHazard))
-            {
-                fireHazard.disableVelocityDampening = darkMatter.slowRate <= 0f;
-                fireHazard.Initialize(player.enemyTag, darkMatter.damagePerSecond, hazardDuration, darkMatter.impactForce, darkMatter.slowRate);
-                fireHazard.SetLoopSound(darkMatter.loopSound);
-            }
-
-            Rigidbody2D rb = hazard.GetComponent<Rigidbody2D>();
-            if (rb != null && darkMatter.launchSpeed > 0f)
-            {
-                rb.linearVelocity = (Vector2)direction * darkMatter.launchSpeed;
-            }
-
-            var seeker = hazard.GetComponent<DarkMatterSeeker>();
-            if (seeker == null)
-            {
-                seeker = hazard.AddComponent<DarkMatterSeeker>();
-            }
-            seeker.Initialize(player.enemyTag, darkMatter.launchSpeed, hazardDuration, 0.1f);
-        }
+        ApplyNetworkDarkMatterCast(_chargesSpentThisCast, authoritative: true, chargesAlreadySpent: _chargesSpentLocally);
     }
 
     private IEnumerator PlayChargeUseSounds(int charges)
@@ -178,6 +130,117 @@ public class DarkMatter : Ability
     public override bool IsAbilityActive()
     {
         return false;
+    }
+
+    public void ApplyNetworkDarkMatterCast(int requestedCharges, bool authoritative, bool chargesAlreadySpent = false)
+    {
+        if (darkMatter.flamePrefab == null)
+        {
+            Debug.LogWarning("DarkMatter: flamePrefab not assigned.");
+            return;
+        }
+
+        if (player == null || player.turrets == null || player.turrets.Length == 0)
+        {
+            Debug.LogWarning("DarkMatter: no turrets available to spawn dark matter.");
+            return;
+        }
+
+        int chargesToUse = Mathf.Max(1, Mathf.Max(requestedCharges, darkMatter.chargesRequired));
+
+        if (authoritative && _chargeProvider != null && !chargesAlreadySpent)
+        {
+            int availableCharges = _chargeProvider.CurrentCharges;
+            if (availableCharges < darkMatter.chargesRequired)
+            {
+                return;
+            }
+
+            chargesToUse = Mathf.Clamp(chargesToUse, darkMatter.chargesRequired, availableCharges);
+            if (!_chargeProvider.TrySpendCharges(chargesToUse))
+            {
+                return;
+            }
+        }
+
+        _chargesSpentThisCast = chargesToUse;
+
+        float hazardDuration = Mathf.Max(0.1f, darkMatter.duration * Mathf.Max(chargesToUse, 1));
+
+        foreach (Transform turret in player.turrets)
+        {
+            if (turret == null) continue;
+
+            Transform target = FindNearestEnemy(turret.position);
+            Vector3 direction = target != null ? (target.position - turret.position) : turret.up;
+            if (direction == Vector3.zero)
+            {
+                direction = transform.up;
+            }
+            direction = direction.normalized;
+
+            NetDarkMatterHazardSpawnData spawnData = new NetDarkMatterHazardSpawnData
+            {
+                SpawnPosition = turret.position + direction * darkMatter.forwardOffset,
+                Direction = direction,
+                DamagePerSecond = darkMatter.damagePerSecond,
+                Lifetime = hazardDuration,
+                ImpactForce = darkMatter.impactForce,
+                SlowRate = darkMatter.slowRate,
+                LaunchSpeed = darkMatter.launchSpeed,
+                DisableDampening = darkMatter.slowRate <= 0f,
+            };
+
+            SpawnDarkMatterHazard(spawnData, authoritative);
+
+            if (NetTickUtil.IsActive && _netMovement != null && _netMovement.IsServer)
+            {
+                _netMovement.BroadcastDarkMatterHazardSpawn(spawnData);
+            }
+        }
+    }
+
+    public void SpawnRemoteHazard(NetDarkMatterHazardSpawnData spawnData)
+    {
+        SpawnDarkMatterHazard(spawnData, authoritative: false);
+    }
+
+    private void SpawnDarkMatterHazard(NetDarkMatterHazardSpawnData spawnData, bool authoritative)
+    {
+        Vector3 direction3 = spawnData.Direction;
+        if (direction3 == Vector3.zero)
+        {
+            direction3 = transform.up;
+        }
+        direction3 = direction3.normalized;
+
+        Quaternion rotation = Quaternion.LookRotation(Vector3.forward, direction3);
+        GameObject hazard = Instantiate(darkMatter.flamePrefab, spawnData.SpawnPosition, rotation);
+
+        if (hazard.TryGetComponent<FireHazard>(out var fireHazard))
+        {
+            fireHazard.disableVelocityDampening = spawnData.DisableDampening;
+            fireHazard.Initialize(player.enemyTag, spawnData.DamagePerSecond, spawnData.Lifetime, spawnData.ImpactForce, spawnData.SlowRate);
+            fireHazard.SetLoopSound(darkMatter.loopSound);
+
+            if (NetTickUtil.IsActive)
+            {
+                fireHazard.SetCosmeticOnly(!authoritative);
+            }
+        }
+
+        Rigidbody2D rb = hazard.GetComponent<Rigidbody2D>();
+        if (rb != null && spawnData.LaunchSpeed > 0f)
+        {
+            rb.linearVelocity = (Vector2)direction3 * spawnData.LaunchSpeed;
+        }
+
+        var seeker = hazard.GetComponent<DarkMatterSeeker>();
+        if (seeker == null)
+        {
+            seeker = hazard.AddComponent<DarkMatterSeeker>();
+        }
+        seeker.Initialize(player.enemyTag, spawnData.LaunchSpeed, spawnData.Lifetime, 0.1f);
     }
 
     private Transform FindNearestEnemy(Vector3 origin)
@@ -213,5 +276,33 @@ public class DarkMatter : Ability
         }
 
         return nearest;
+    }
+
+    private bool TryConsumeCharges(out int chargesSpent, bool spendNow)
+    {
+        chargesSpent = Mathf.Max(darkMatter.chargesRequired, 1);
+
+        if (_chargeProvider == null)
+        {
+            Debug.LogWarning("DarkMatter: player does not provide charges; assuming minimum for duration scaling.");
+            return true;
+        }
+
+        int availableCharges = _chargeProvider.CurrentCharges;
+        if (availableCharges < darkMatter.chargesRequired)
+        {
+            Debug.Log("❌ DarkMatter: not enough charges.");
+            return false;
+        }
+
+        chargesSpent = Mathf.Max(1, Mathf.Max(availableCharges, darkMatter.chargesRequired));
+
+        if (spendNow && !_chargeProvider.TrySpendCharges(chargesSpent))
+        {
+            Debug.Log("❌ DarkMatter: failed to spend charges.");
+            return false;
+        }
+
+        return true;
     }
 }
