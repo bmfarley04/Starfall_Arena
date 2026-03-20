@@ -587,6 +587,7 @@ public partial class NetMovement : NetworkBehaviour
             FrictionEnabled = _player.IsFrictionEnabled,
             VisualBankAngle = ownerVisualBankAngle,
             VisualPitchAngle = ownerVisualPitchAngle,
+            AbilityRotationMultiplier = _player.GetAbilityRotationMultiplier(),
         };
 
         if (input.FrictionEnabled != _lastOwnerFrictionEnabled)
@@ -609,7 +610,8 @@ public partial class NetMovement : NetworkBehaviour
             ref _ownerFrictionTimer, ref _ownerAnchorDragAccumulator,
             in input,
             in _player.movement, in _player.friction, in _player.input,
-            _rb.mass, dt, _player.GetSlowMultiplier());
+            _rb.mass, dt, _player.GetSlowMultiplier(),
+            abilityRotationMultiplier: input.AbilityRotationMultiplier);
 
         // 4. Apply velocity and rotation only — let physics integrate position
         _rb.linearVelocity = velocity;
@@ -686,7 +688,8 @@ public partial class NetMovement : NetworkBehaviour
             ref _serverFrictionTimer, ref _serverAnchorDragAccumulator,
             in input,
             in _player.movement, in _player.friction, in _player.input,
-            _rb.mass, dt, _player.GetSlowMultiplier());
+            _rb.mass, dt, _player.GetSlowMultiplier(),
+            abilityRotationMultiplier: input.AbilityRotationMultiplier);
 
         // Apply velocity and rotation only — let physics integrate position
         _rb.linearVelocity = velocity;
@@ -807,7 +810,8 @@ public partial class NetMovement : NetworkBehaviour
                 ref frictionTimer, ref anchorDragAccumulator,
                 in input,
                 in _player.movement, in _player.friction, in _player.input,
-                _rb.mass, dt, _player.GetSlowMultiplier());
+                _rb.mass, dt, _player.GetSlowMultiplier(),
+                abilityRotationMultiplier: input.AbilityRotationMultiplier);
 
             // Manually integrate position (no physics step during replay)
             MovementSimulation.IntegratePosition(ref position, velocity, dt);

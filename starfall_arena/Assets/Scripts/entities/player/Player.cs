@@ -198,6 +198,20 @@ public abstract class Player : Entity
     public float FrictionTimer => _frictionTimer;
     public System.Action<bool> onFrictionToggled;
 
+    /// <summary>
+    /// Returns the rotation multiplier from the currently active ability (if any).
+    /// Used by the networked movement path to apply ability rotation penalties/boosts.
+    /// </summary>
+    public float GetAbilityRotationMultiplier()
+    {
+        var activeAbility = abilities.FirstOrDefault(a => a != null && a.IsAbilityActive());
+        if (activeAbility != null)
+        {
+            return activeAbility.GetRotationMultiplier();
+        }
+        return 1f;
+    }
+
     // ===== INITIALIZATION =====
     protected override void Awake()
     {

@@ -158,12 +158,15 @@ public class FaerieShift : Ability
         }
     }
 
+    public override float GetRotationMultiplier()
+    {
+        if (!_isActive) return 1f;
+        return config.rotationMultiplier;
+    }
+
     public override void ApplyRotationMultiplier()
     {
-        if (_isActive)
-        {
-            player.movement.rotationSpeed *= config.rotationMultiplier;
-        }
+        player.movement.rotationSpeed *= GetRotationMultiplier();
     }
 
     public override void ApplyTakeDamageMultiplier(ref float damage)
