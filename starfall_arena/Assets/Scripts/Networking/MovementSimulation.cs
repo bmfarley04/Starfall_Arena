@@ -38,6 +38,7 @@ public static class MovementSimulation
     /// <param name="dt">Time step (seconds) for this tick.</param>
     /// <param name="slowMultiplier">Current slow effect multiplier (1 = normal).</param>
     /// <param name="anchorRotationMultiplier">Rotation speed multiplier while anchored (e.g. 3).</param>
+    /// <param name="abilityRotationMultiplier">Rotation speed multiplier from active ability (1 = no modifier).</param>
     public static void SimulateTick(
         ref Vector2 velocity,
         ref Vector2 position,
@@ -51,7 +52,9 @@ public static class MovementSimulation
         float mass,
         float dt,
         float slowMultiplier = 1f,
-        float anchorRotationMultiplier = 3f)
+        float anchorRotationMultiplier = 3f,
+        float abilityRotationMultiplier = 1f,
+        float abilityThrustMultiplier = 1f)
     {
         // --- Forward direction from current rotation ---
         float rotRad = (rotation + 90f) * Mathf.Deg2Rad; // +90 because Unity's "up" = +90° offset
@@ -64,7 +67,7 @@ public static class MovementSimulation
             ApplyLateralDamping(ref velocity, forward, moveCfg.lateralDamping);
 
             // Thrust acceleration
-            float acceleration = (moveCfg.thrustForce * slowMultiplier) / mass;
+            float acceleration = (moveCfg.thrustForce * abilityThrustMultiplier * slowMultiplier) / mass;
             velocity += forward * acceleration * dt;
 
             frictionTimer = 0f;
@@ -104,7 +107,7 @@ public static class MovementSimulation
         // ===== 4. ROTATION =====
         if (input.LookInput.magnitude > inputCfg.controllerLookDeadzone)
         {
-            float effectiveRotationSpeed = moveCfg.rotationSpeed;
+            float effectiveRotationSpeed = moveCfg.rotationSpeed * abilityRotationMultiplier;
             if (input.Anchor)
             {
                 effectiveRotationSpeed *= anchorRotationMultiplier;
