@@ -1,0 +1,47 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4126ca0ce3c78694f95eed711408a84b, type: 3}
+  m_Name: Class5
+  m_EditorClassIdentifier: Assembly-CSharp::ShipData
+  _shipId: dd9c5330a88e4a73b454960df08cc2b7
+  shipName: ATOMIC BLAZE
+  shipModelPrefab: {fileID: 8270235200235412842, guid: 602c5f437ef3e30408a97971a376f7c5, type: 3}
+  player1VSPrefab: {fileID: 8270235200235412842, guid: e77ead2ba82deba42aabf69b3a354946, type: 3}
+  player2VSPrefab: {fileID: 8270235200235412842, guid: 007b5a8b216dcf14f9187bf78d86dcfe, type: 3}
+  shipPrefab: {fileID: 8270235200235412842, guid: 21d3566236d085e4c863a6517e23b71a, type: 3}
+  player1VSPositionOffset: {x: -30, y: 0, z: 0}
+  player2VSPositionOffset: {x: -5, y: 0, z: 0}
+  abilityHUDPrefab: {fileID: 6476359621877627330, guid: f53fde3eb430bc0459c8424569d2ddc7, type: 3}
+  stats:
+    damage: 50
+    hull: 50
+    shield: 200
+    speed: 18
+  ability1:
+    abilityName: FLAME WAVE
+    abilityDescription: Use one charge launch a wave of flames from your turrets.
+    abilityIcon: {fileID: 0}
+  ability2:
+    abilityName: BATTERY RAM
+    abilityDescription: Create a ram in front of you. Hitting a non-projectile gains
+      a charge.
+    abilityIcon: {fileID: 0}
+  ability3:
+    abilityName: CHRONO STEP
+    abilityDescription: 'Use one charge to leave a waypoint. Then teleport to that
+      waypoint. '
+    abilityIcon: {fileID: 0}
+  ability4:
+    abilityName: DARK MATTER
+    abilityDescription: Use ALL charges to create dark matter that seeks the opponent
+      based on charges used.
+    abilityIcon: {fileID: 0}
