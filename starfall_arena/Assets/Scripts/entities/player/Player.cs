@@ -212,6 +212,20 @@ public abstract class Player : Entity
         return 1f;
     }
 
+    /// <summary>
+    /// Returns the thrust multiplier from the currently active ability (if any).
+    /// Used by the networked movement path to apply ability speed boosts/penalties.
+    /// </summary>
+    public float GetAbilityThrustMultiplier()
+    {
+        var activeAbility = abilities.FirstOrDefault(a => a != null && a.IsAbilityActive());
+        if (activeAbility != null)
+        {
+            return activeAbility.GetThrustMultiplier();
+        }
+        return 1f;
+    }
+
     // ===== INITIALIZATION =====
     protected override void Awake()
     {

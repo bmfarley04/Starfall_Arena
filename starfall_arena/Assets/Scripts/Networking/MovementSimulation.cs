@@ -53,7 +53,8 @@ public static class MovementSimulation
         float dt,
         float slowMultiplier = 1f,
         float anchorRotationMultiplier = 3f,
-        float abilityRotationMultiplier = 1f)
+        float abilityRotationMultiplier = 1f,
+        float abilityThrustMultiplier = 1f)
     {
         // --- Forward direction from current rotation ---
         float rotRad = (rotation + 90f) * Mathf.Deg2Rad; // +90 because Unity's "up" = +90° offset
@@ -66,7 +67,7 @@ public static class MovementSimulation
             ApplyLateralDamping(ref velocity, forward, moveCfg.lateralDamping);
 
             // Thrust acceleration
-            float acceleration = (moveCfg.thrustForce * slowMultiplier) / mass;
+            float acceleration = (moveCfg.thrustForce * abilityThrustMultiplier * slowMultiplier) / mass;
             velocity += forward * acceleration * dt;
 
             frictionTimer = 0f;

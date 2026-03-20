@@ -137,6 +137,12 @@ public class FaerieShift : Ability
         return _isActive;
     }
 
+    public override float GetThrustMultiplier()
+    {
+        if (!_isActive) return 1f;
+        return config.speedMultiplier;
+    }
+
     public override void ApplyThrustMultiplier()
     {
         if (_isActive)

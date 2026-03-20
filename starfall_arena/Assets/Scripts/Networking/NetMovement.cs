@@ -588,6 +588,7 @@ public partial class NetMovement : NetworkBehaviour
             VisualBankAngle = ownerVisualBankAngle,
             VisualPitchAngle = ownerVisualPitchAngle,
             AbilityRotationMultiplier = _player.GetAbilityRotationMultiplier(),
+            AbilityThrustMultiplier = _player.GetAbilityThrustMultiplier(),
         };
 
         if (input.FrictionEnabled != _lastOwnerFrictionEnabled)
@@ -611,7 +612,8 @@ public partial class NetMovement : NetworkBehaviour
             in input,
             in _player.movement, in _player.friction, in _player.input,
             _rb.mass, dt, _player.GetSlowMultiplier(),
-            abilityRotationMultiplier: input.AbilityRotationMultiplier);
+            abilityRotationMultiplier: input.AbilityRotationMultiplier,
+            abilityThrustMultiplier: input.AbilityThrustMultiplier);
 
         // 4. Apply velocity and rotation only — let physics integrate position
         _rb.linearVelocity = velocity;
@@ -689,7 +691,8 @@ public partial class NetMovement : NetworkBehaviour
             in input,
             in _player.movement, in _player.friction, in _player.input,
             _rb.mass, dt, _player.GetSlowMultiplier(),
-            abilityRotationMultiplier: input.AbilityRotationMultiplier);
+            abilityRotationMultiplier: input.AbilityRotationMultiplier,
+            abilityThrustMultiplier: input.AbilityThrustMultiplier);
 
         // Apply velocity and rotation only — let physics integrate position
         _rb.linearVelocity = velocity;
@@ -811,7 +814,8 @@ public partial class NetMovement : NetworkBehaviour
                 in input,
                 in _player.movement, in _player.friction, in _player.input,
                 _rb.mass, dt, _player.GetSlowMultiplier(),
-                abilityRotationMultiplier: input.AbilityRotationMultiplier);
+                abilityRotationMultiplier: input.AbilityRotationMultiplier,
+                abilityThrustMultiplier: input.AbilityThrustMultiplier);
 
             // Manually integrate position (no physics step during replay)
             MovementSimulation.IntegratePosition(ref position, velocity, dt);

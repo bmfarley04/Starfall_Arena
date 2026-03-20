@@ -31,6 +31,9 @@ public struct NetInputSnapshot : INetworkSerializable
     /// <summary>Rotation speed multiplier from active ability (1 = no modifier).</summary>
     public float AbilityRotationMultiplier;
 
+    /// <summary>Thrust force multiplier from active ability (1 = no modifier).</summary>
+    public float AbilityThrustMultiplier;
+
     public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
     {
         serializer.SerializeValue(ref Tick);
@@ -41,6 +44,7 @@ public struct NetInputSnapshot : INetworkSerializable
         serializer.SerializeValue(ref VisualBankAngle);
         serializer.SerializeValue(ref VisualPitchAngle);
         serializer.SerializeValue(ref AbilityRotationMultiplier);
+        serializer.SerializeValue(ref AbilityThrustMultiplier);
     }
 }
 
