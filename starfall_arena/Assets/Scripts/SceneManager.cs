@@ -69,6 +69,21 @@ public class GameSceneManager : MonoBehaviour
     [Tooltip("Unused in the active network scene. Can remain assigned for legacy/local setups.")]
     [SerializeField] private Canvas player2AbilityCanvas;
 
+    [Header("Performance UI")]
+    [Tooltip("Text field formatted as '[number] FPS'")]
+    [SerializeField] private TextMeshProUGUI fpsText;
+    [Tooltip("Text field formatted as '[number] ms'")]
+    [SerializeField] private TextMeshProUGUI pingText;
+    [Tooltip("How often the rolling-average FPS/ping labels are refreshed")]
+    [Min(0.05f)]
+    [SerializeField] private float performanceDisplayRefreshInterval = 0.25f;
+    [Tooltip("How many frame samples are used in the FPS rolling average")]
+    [Min(1)]
+    [SerializeField] private int fpsRollingSampleCount = 30;
+    [Tooltip("How many transport RTT samples are used in the ping rolling average")]
+    [Min(1)]
+    [SerializeField] private int pingRollingSampleCount = 12;
+
     [Header("Win Trackers")]
     [Tooltip("WinTracker component on Player 1's win indicator rectangles")]
     [SerializeField] private StarfallArena.UI.WinTracker player1WinTracker;
@@ -133,6 +148,12 @@ public class GameSceneManager : MonoBehaviour
     private InputDevice _localPlayer2SecondaryDevice;
     private Coroutine activeRoundIntroCoroutine;
     private int lastRoundIntroSequenceId = -1;
+    private readonly Queue<float> _fpsSamples = new Queue<float>();
+    private readonly Queue<float> _pingSamples = new Queue<float>();
+    private float _fpsSampleSum;
+    private float _pingSampleSum;
+    private float _performanceDisplayTimer;
+    private bool _hidePerformanceStats;
 
     // ===== INITIALIZATION =====
     void Start()
@@ -171,6 +192,8 @@ public class GameSceneManager : MonoBehaviour
         // Hide player HUD canvases initially (will be shown when players spawn)
         SetPlayerHUDsActive(false);
         ConfigureNetworkHudCanvases();
+        SetPerformanceStatsActive(true);
+        UpdatePerformanceStatsText(forceRefresh: true);
 
         // Start in whole-screen mode for the VS screen
         if (!useNetworkSession && splitScreenManager != null)
@@ -203,6 +226,11 @@ public class GameSceneManager : MonoBehaviour
         {
             StartCoroutine(ClientNetworkPresentationLoop());
         }
+    }
+
+    private void Update()
+    {
+        UpdatePerformanceStats();
     }
 
     private void ResolveShipData()
@@ -551,6 +579,106 @@ public class GameSceneManager : MonoBehaviour
         if (player2AbilityCanvas != null) player2AbilityCanvas.gameObject.SetActive(active);
         if (player1AbilityHUDInstance != null) player1AbilityHUDInstance.SetActive(active);
         if (player2AbilityHUDInstance != null) player2AbilityHUDInstance.SetActive(active);
+    }
+
+    private void SetPerformanceStatsActive(bool active)
+    {
+        bool shouldShow = active && !_hidePerformanceStats;
+
+        if (fpsText != null)
+        {
+            fpsText.gameObject.SetActive(shouldShow);
+        }
+
+        if (pingText != null)
+        {
+            pingText.gameObject.SetActive(shouldShow);
+        }
+    }
+
+    private void UpdatePerformanceStats()
+    {
+        float deltaTime = Time.unscaledDeltaTime;
+        if (deltaTime > Mathf.Epsilon)
+        {
+            AddRollingSample(_fpsSamples, ref _fpsSampleSum, 1f / deltaTime, Mathf.Max(1, fpsRollingSampleCount));
+        }
+
+        AddRollingSample(_pingSamples, ref _pingSampleSum, GetCurrentPingMilliseconds(), Mathf.Max(1, pingRollingSampleCount));
+
+        _performanceDisplayTimer += deltaTime;
+        if (_performanceDisplayTimer < performanceDisplayRefreshInterval)
+        {
+            return;
+        }
+
+        _performanceDisplayTimer = 0f;
+        UpdatePerformanceStatsText(forceRefresh: false);
+    }
+
+    private void UpdatePerformanceStatsText(bool forceRefresh)
+    {
+        bool shouldShow = !_hidePerformanceStats;
+        if (!shouldShow)
+        {
+            SetPerformanceStatsActive(false);
+            return;
+        }
+
+        if (!forceRefresh && fpsText == null && pingText == null)
+        {
+            return;
+        }
+
+        SetPerformanceStatsActive(true);
+
+        if (fpsText != null)
+        {
+            float averageFps = _fpsSamples.Count > 0 ? _fpsSampleSum / _fpsSamples.Count : 0f;
+            fpsText.text = $"{Mathf.RoundToInt(averageFps)} FPS";
+        }
+
+        if (pingText != null)
+        {
+            float averagePing = _pingSamples.Count > 0 ? _pingSampleSum / _pingSamples.Count : 0f;
+            pingText.text = $"{Mathf.RoundToInt(averagePing)} ms";
+        }
+    }
+
+    private float GetCurrentPingMilliseconds()
+    {
+        if (!useNetworkSession || NetworkManager.Singleton == null)
+        {
+            return 0f;
+        }
+
+        Unity.Netcode.Transports.UTP.UnityTransport transport =
+            NetworkManager.Singleton.NetworkConfig.NetworkTransport as Unity.Netcode.Transports.UTP.UnityTransport;
+        if (transport == null)
+        {
+            return 0f;
+        }
+
+        ulong currentRttMs = transport.GetCurrentRtt(NetworkManager.ServerClientId);
+
+        // This project wanted the displayed "ping" to be a one-way estimate rather than full RTT.
+        return currentRttMs * 0.5f;
+    }
+
+    private static void AddRollingSample(Queue<float> samples, ref float sum, float value, int maxSamples)
+    {
+        if (samples == null)
+        {
+            return;
+        }
+
+        samples.Enqueue(value);
+        sum += value;
+
+        while (samples.Count > maxSamples)
+        {
+            sum -= samples.Dequeue();
+        }
     }
 
     /// <summary>
@@ -1270,7 +1398,9 @@ public class GameSceneManager : MonoBehaviour
     {
         if (gameEndScreenManager == null) yield break;
 
+        _hidePerformanceStats = true;
         SetPlayerHUDsActive(false);
+        SetPerformanceStatsActive(false);
 
         if (useNetworkSession)
         {
@@ -1547,11 +1677,15 @@ public class GameSceneManager : MonoBehaviour
 
         if (!payload.IsVisible)
         {
+            _hidePerformanceStats = false;
+            SetPerformanceStatsActive(true);
             gameEndScreenManager.HideGameEndScreen();
             return;
         }
 
+        _hidePerformanceStats = true;
         SetPlayerHUDsActive(false);
+        SetPerformanceStatsActive(false);
 
         NetworkSessionData session = NetworkSessionData.Instance;
         int localSlot = session != null ? session.GetLocalSlotIndex() : 0;
@@ -1596,7 +1730,8 @@ public class GameSceneManager : MonoBehaviour
         }
 
         NetworkSessionData session = NetworkSessionData.Instance;
-        if (session != null && session.CurrentState == NetworkMatchState.MatchComplete)
+        if (session != null &&
+            (session.CurrentState == NetworkMatchState.MatchComplete || session.CurrentState == NetworkMatchState.AugmentPhase))
         {
             SetPlayerHUDsActive(false);
             return;
