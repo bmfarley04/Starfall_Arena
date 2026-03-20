@@ -247,6 +247,24 @@ public struct NetTeleportState : INetworkSerializable
     }
 }
 
+public enum NetChronoStepAction : byte
+{
+    Plant = 0,
+    Teleport = 1,
+}
+
+public struct NetChronoStepState : INetworkSerializable
+{
+    public NetChronoStepAction Action;
+    public Vector2 Waypoint;
+
+    public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
+    {
+        serializer.SerializeValue(ref Action);
+        serializer.SerializeValue(ref Waypoint);
+    }
+}
+
 public struct NetClass2ShieldState : INetworkSerializable
 {
     public bool IsActive;

@@ -1,8 +1,9 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using Unity.Netcode;
 
 /// <summary>
-/// Chrono Step – Hold to plant a waypoint at the press location.
+/// Chrono Step ï¿½ Hold to plant a waypoint at the press location.
 /// Release (or let the hold timeout) to teleport back to that waypoint.
 /// On Class5 / any ship with IChargeProvider the ability costs one charge
 /// and has no cooldown; all other ships use a standard cooldown.
@@ -13,7 +14,7 @@ public class ChronoStep : Ability
     public struct TeleportAbilityConfig
     {
         [Header("Timing")]
-        [Tooltip("Cooldown between uses (seconds) — ignored on charge-based ships")]
+        [Tooltip("Cooldown between uses (seconds) ï¿½ ignored on charge-based ships")]
         public float cooldown;
         [Tooltip("Maximum hold duration before the waypoint auto-releases (seconds)")]
         public float maxHoldDuration;
@@ -84,15 +85,17 @@ public class ChronoStep : Ability
 
     // Charge-based or cooldown-based, resolved once in Awake
     private IChargeProvider _chargeProvider;
+    private NetMovement _netMovement;
 
     // ===== INITIALIZATION =====
     protected override void Awake()
     {
         base.Awake();
         _chargeProvider = player as IChargeProvider;
+        _netMovement = GetComponent<NetMovement>();
     }
 
-    // ===== UPDATE — no hold timeout in toggle mode =====
+    // ===== UPDATE ï¿½ no hold timeout in toggle mode =====
     protected void Update()
     {
     }
@@ -187,42 +190,54 @@ public class ChronoStep : Ability
     // ===== WAYPOINT LOGIC =====
     private void PlantWaypoint()
     {
-        _waypoint = transform.position;
-        _waypoint.z = transform.position.z;
-        _isHolding = true;
-        _holdStartTime = Time.time;
+        Vector3 waypoint = transform.position;
+        waypoint.z = transform.position.z;
 
-        if (teleport.visual.waypointMarkerPrefab != null)
+        NetChronoStepState state = new NetChronoStepState
         {
-            _waypointMarkerInstance = Instantiate(teleport.visual.waypointMarkerPrefab, _waypoint, Quaternion.identity);
+            Action = NetChronoStepAction.Plant,
+            Waypoint = new Vector2(waypoint.x, waypoint.y)
+        };
+
+        if (ShouldUseNetworkPath())
+        {
+            // Apply immediately for responsiveness on the owning client.
+            if (!_netMovement.IsServer)
+            {
+                ApplyNetworkChronoStepState(state, authoritative: false);
+            }
+
+            _netMovement.RequestChronoStepState(state);
+            return;
         }
 
-        if (teleport.waypointSound != null)
-        {
-            teleport.waypointSound.Play(player.GetAvailableAudioSource());
-        }
-
-        Debug.Log($"ChronoStep: waypoint planted at {_waypoint}");
+        ApplyNetworkChronoStepState(state, authoritative: true);
     }
 
     private void CommitTeleport()
     {
         if (!_isHolding) return;
 
-        _isHolding = false;
-        ClearWaypointMarker();
-
-        if (_teleportCoroutine != null)
+        Vector3 target = _waypoint;
+        NetChronoStepState state = new NetChronoStepState
         {
-            StopCoroutine(_teleportCoroutine);
-        }
-        _teleportCoroutine = StartCoroutine(ExecuteTeleport(_waypoint));
+            Action = NetChronoStepAction.Teleport,
+            Waypoint = new Vector2(target.x, target.y)
+        };
 
-        // Record time for cooldown-based ships only
-        if (_chargeProvider == null)
+        if (ShouldUseNetworkPath())
         {
-            _lastTeleportTime = Time.time;
+            // Apply immediately on the owning client for responsiveness.
+            if (!_netMovement.IsServer)
+            {
+                ApplyNetworkChronoStepState(state, authoritative: false);
+            }
+
+            _netMovement.RequestChronoStepState(state);
+            return;
         }
+
+        ApplyNetworkChronoStepState(state, authoritative: true);
     }
 
     private void CancelWaypoint()
@@ -245,6 +260,59 @@ public class ChronoStep : Ability
         {
             Destroy(_waypointMarkerInstance);
             _waypointMarkerInstance = null;
+        }
+    }
+
+    private bool ShouldUseNetworkPath()
+    {
+        return NetTickUtil.IsActive && _netMovement != null && _netMovement.IsSpawned && _netMovement.IsOwner;
+    }
+
+    public void ApplyNetworkChronoStepState(NetChronoStepState state, bool authoritative)
+    {
+        switch (state.Action)
+        {
+            case NetChronoStepAction.Plant:
+                ClearWaypointMarker();
+                _waypoint = new Vector3(state.Waypoint.x, state.Waypoint.y, transform.position.z);
+                _isHolding = true;
+                _holdStartTime = Time.time;
+
+                if (teleport.visual.waypointMarkerPrefab != null)
+                {
+                    _waypointMarkerInstance = Instantiate(teleport.visual.waypointMarkerPrefab, _waypoint, Quaternion.identity);
+                }
+
+                if (teleport.waypointSound != null)
+                {
+                    teleport.waypointSound.Play(player.GetAvailableAudioSource());
+                }
+
+                Debug.Log($"ChronoStep: waypoint planted at {_waypoint}");
+                break;
+
+            case NetChronoStepAction.Teleport:
+                if (!_isHolding)
+                {
+                    return;
+                }
+
+                _isHolding = false;
+                ClearWaypointMarker();
+
+                if (_teleportCoroutine != null)
+                {
+                    StopCoroutine(_teleportCoroutine);
+                }
+
+                Vector3 targetPosition = new Vector3(state.Waypoint.x, state.Waypoint.y, transform.position.z);
+                _teleportCoroutine = StartCoroutine(ExecuteTeleport(targetPosition));
+
+                if (_chargeProvider == null)
+                {
+                    _lastTeleportTime = Time.time;
+                }
+                break;
         }
     }
 
@@ -294,10 +362,11 @@ public class ChronoStep : Ability
             teleport.exitSound.Play(player.GetAvailableAudioSource());
         }
 
-        // Hide sprite during warp
+        // Hide sprite during warp only for the local owner to avoid invisibility on the host
+        bool shouldHideSprite = _netMovement == null || _netMovement.IsOwner;
         SpriteRenderer spriteRenderer = GetComponentInChildren<SpriteRenderer>();
         bool spriteWasEnabled = false;
-        if (spriteRenderer != null)
+        if (spriteRenderer != null && shouldHideSprite)
         {
             spriteWasEnabled = spriteRenderer.enabled;
             spriteRenderer.enabled = false;
@@ -363,5 +432,6 @@ public class ChronoStep : Ability
         }
 
         _isTeleporting = false;
+        _teleportCoroutine = null;
     }
 }

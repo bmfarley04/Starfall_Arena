@@ -90,6 +90,22 @@ public partial class NetMovement
         SubmitTeleportServerRpc(state);
     }
 
+    public void RequestChronoStepState(NetChronoStepState state)
+    {
+        if (!NetTickUtil.IsActive || !IsOwner)
+        {
+            return;
+        }
+
+        if (IsServer)
+        {
+            HandleChronoStepServer(state);
+            return;
+        }
+
+        SubmitChronoStepServerRpc(state);
+    }
+
     public void RequestClass2ShieldActivation()
     {
         if (!NetTickUtil.IsActive || !IsOwner)
@@ -318,6 +334,12 @@ public partial class NetMovement
     }
 
     [ServerRpc]
+    private void SubmitChronoStepServerRpc(NetChronoStepState state, ServerRpcParams rpcParams = default)
+    {
+        HandleChronoStepServer(state);
+    }
+
+    [ServerRpc]
     private void SubmitClass2ShieldServerRpc(NetClass2ShieldState state, ServerRpcParams rpcParams = default)
     {
         HandleClass2ShieldServer(state);
@@ -435,6 +457,18 @@ public partial class NetMovement
 
         teleportAbility.ApplyNetworkTeleport(state.TargetPosition, authoritative: true);
         BroadcastTeleportClientRpc(state);
+    }
+
+    private void HandleChronoStepServer(NetChronoStepState state)
+    {
+        ChronoStep chronoStep = GetComponent<ChronoStep>();
+        if (chronoStep == null)
+        {
+            return;
+        }
+
+        chronoStep.ApplyNetworkChronoStepState(state, authoritative: true);
+        BroadcastChronoStepClientRpc(state);
     }
 
     private void HandleClass2ShieldServer(NetClass2ShieldState state)
@@ -593,6 +627,18 @@ public partial class NetMovement
 
         Teleport teleportAbility = GetComponent<Teleport>();
         teleportAbility?.ApplyNetworkTeleport(state.TargetPosition, authoritative: false);
+    }
+
+    [ClientRpc]
+    private void BroadcastChronoStepClientRpc(NetChronoStepState state)
+    {
+        if (IsServer || IsOwner)
+        {
+            return;
+        }
+
+        ChronoStep chronoStep = GetComponent<ChronoStep>();
+        chronoStep?.ApplyNetworkChronoStepState(state, authoritative: false);
     }
 
     [ClientRpc]
