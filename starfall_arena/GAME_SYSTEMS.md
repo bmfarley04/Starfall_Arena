@@ -90,6 +90,8 @@ Input note:
 
 `Class1` is currently the simplest concrete player class and inherits almost all live behavior from `Player` plus attached abilities.
 
+`Class1` now exposes its primary-fire cooldown through a class-local serialized backing field and applies that value into the shared `Player` runtime field during `Awake()`. This matches the safer ship-class tuning pattern already used by `Class2`.
+
 `Class2` now also uses the modular ability-component pattern, with its empowered shot, shield, tractor beam, and physical projectile implemented as separate scripts under `Assets/Scripts/Abilities/class2` while the ship class keeps only its custom primary-fire convergence and slot-4 lock behavior.
 
 `Class3` exists in the repo and should be treated as real ship-class architecture, but the current docs should center on the duel systems that are active now rather than implying every class is equally production-complete.
@@ -302,6 +304,8 @@ Networked combat note:
   - multi-projectile volleys count as one attack, and any hit within that volley awards the full hit credit
 - reflected projectiles now transfer damage credit to the reflecting player, but they should not inherit the original projectile's accuracy credit
 - Bug note: `Class3_Player.prefab` friction tuning must stay aligned with the shared `Player` friction system. If `frictionDelay` or `frictionDeceleration` are left at zero, the Class3 friction toggle will look broken even when the network/input code is correct.
+- Bug note: ship classes must not declare a second serialized field named `fireCooldown` when `Player` already owns the runtime cooldown field. Unity can report "The same field name is serialized multiple times" for that shadowed-name pattern, which breaks inspector editing. Use a class-local backing field such as `_fireCooldown` and copy it into `Player.fireCooldown` in `Awake()`.
+- Bug note: networked piercing projectiles must suppress repeat hits on the same target for the lifetime of that flight. Local play relies on `OnTriggerEnter2D`, but the network path uses repeated server-side sweeps against rewind history. Without a per-projectile hit registry, a piercing `GigaBlast` can damage the same player on successive server ticks and look like an instant kill even though the configured single-hit damage is correct.
 - Bug note: `Invisibility` should explicitly hide and restore ship renderers during activation instead of relying on layer changes alone. The layer swap is still needed for targeting/filtering, but by itself it is not reliable enough as player-facing feedback.
 - Bug note: `Invisibility` is enemy-facing concealment, not self-blindness. The owning player should keep seeing their own ship, and invisibility should immediately break when Class3 takes another offensive action such as primary fire, `FireWall`, `FaerieShift`, or `TriggerBomb`.
 

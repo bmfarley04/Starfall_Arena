@@ -23276,7 +23276,7 @@ MonoBehaviour:
   shotsHit: 0
   damageDealt: 0
   damageTaken: 0
-  _fireCooldown: 1
+  _fireCooldown: 0.7
   convergenceDistance: 20
 --- !u!114 &-3963956792995412482
 MonoBehaviour:

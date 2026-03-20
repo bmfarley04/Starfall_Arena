@@ -849,7 +849,7 @@ MonoBehaviour:
   shotsHit: 0
   damageDealt: 0
   damageTaken: 0
-  fireCooldown: 1
+  _fireCooldown: 0.7
 --- !u!114 &4120815541869784891
 MonoBehaviour:
   m_ObjectHideFlags: 0
