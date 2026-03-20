@@ -219,54 +219,32 @@ public class Class5 : Player, IChargeProvider
     {
         if (isMovementLocked) return;
 
-        if (projectileWeapon.prefab == null)
-            return;
+        // Suppress the base class's single-shot audio so we can play a 4-shot burst instead.
+        SoundEffect originalFireSound = projectileFireSound;
+        projectileFireSound = null;
 
-        if (Time.time < _lastFireTime + fireCooldown)
-            return;
+        float previousFireTime = _lastFireTime;
+        base.TryFireProjectile();
+        projectileFireSound = originalFireSound;
 
-        shotsFired += turrets.Length;
+        if (originalFireSound == null) return;
+        if (Mathf.Approximately(_lastFireTime, previousFireTime)) return; // base did not fire
 
-        foreach (var turret in turrets)
+        if (_projectileSoundBurstCoroutine != null)
         {
-            GameObject projectile = Instantiate(projectileWeapon.prefab, turret.position, transform.rotation);
-
-            if (projectile.TryGetComponent<ProjectileScript>(out var projectileScript))
-            {
-                projectileScript.targetTag = enemyTag;
-                projectileScript.Initialize(
-                    GetFireDirection(turret),
-                    Vector2.zero,
-                    projectileWeapon.speed,
-                    projectileWeapon.damage,
-                    projectileWeapon.lifetime,
-                    projectileWeapon.impactForce,
-                    this
-                );
-            }
+            StopCoroutine(_projectileSoundBurstCoroutine);
         }
-        ApplyRecoil(projectileWeapon.recoilForce);
-
-        if (projectileFireSound != null)
-        {
-            if (_projectileSoundBurstCoroutine != null)
-            {
-                StopCoroutine(_projectileSoundBurstCoroutine);
-            }
-            _projectileSoundBurstCoroutine = StartCoroutine(PlayProjectileFireSoundBurst());
-        }
-
-        _lastFireTime = Time.time;
+        _projectileSoundBurstCoroutine = StartCoroutine(PlayProjectileFireSoundBurst(originalFireSound));
     }
 
-    private IEnumerator PlayProjectileFireSoundBurst()
+    private IEnumerator PlayProjectileFireSoundBurst(SoundEffect fireSound)
     {
         const int burstCount = 4;
         const float burstSpacing = 0.06f;
 
         for (int i = 0; i < burstCount; i++)
         {
-            projectileFireSound.Play(GetAvailableAudioSource());
+            fireSound.Play(GetAvailableAudioSource());
             if (i < burstCount - 1)
             {
                 yield return new WaitForSeconds(burstSpacing);
