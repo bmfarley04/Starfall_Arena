@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4126ca0ce3c78694f95eed711408a84b, type: 3}
   m_Name: Class5
   m_EditorClassIdentifier: Assembly-CSharp::ShipData
-  _shipId: dd9c5330a88e4a73b454960df08cc2b7
+  _shipId: a7b3e1f06c4d48e5b912d7f8c3a6e049
   shipName: ATOMIC BLAZE
   shipModelPrefab: {fileID: 8270235200235412842, guid: 602c5f437ef3e30408a97971a376f7c5, type: 3}
   player1VSPrefab: {fileID: 8270235200235412842, guid: e77ead2ba82deba42aabf69b3a354946, type: 3}

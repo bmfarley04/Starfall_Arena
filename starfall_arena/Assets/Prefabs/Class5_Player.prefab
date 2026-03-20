@@ -5294,6 +5294,7 @@ GameObject:
   - component: {fileID: 5751580293887161649}
   - component: {fileID: 448999726444519623}
   - component: {fileID: 2272332766847865751}
+  - component: {fileID: 6660980600719597170}
   m_Layer: 0
   m_Name: Class5_Player
   m_TagString: Player2
@@ -5392,7 +5393,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8270235200235412842}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 62899f850307741f2a39c98a8b639597, type: 3}
   m_Name: 
@@ -5708,7 +5709,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EnemyDirectionIndicator
   indicator:
     arrowObject: {fileID: 2067789279908022369}
-    indicatorRadius: 3
+    indicatorRadius: 6
     positionSmoothSpeed: 20
     rotationSmoothSpeed: 20
     fadeWhenClose: 1
@@ -5825,7 +5826,7 @@ MonoBehaviour:
   shotsHit: 0
   damageDealt: 0
   damageTaken: 0
-  fireCooldown: 0.75
+  fireCooldown: 1
   abilityChargePrefabs:
   - {fileID: 1457040702652971243}
   - {fileID: 8993949037083405930}
@@ -6002,6 +6003,19 @@ MonoBehaviour:
   _interpolationBufferTicks: 2
   _maxCombatRewindTicks: 6
   _primaryFireSound: {fileID: 11400000, guid: 57819dd80f286f449ab67ee7903aed76, type: 2}
+--- !u!114 &6660980600719597170
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8270235200235412842}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 147ed88c3df1e4a429d5be04ec0519d6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Class5NetworkBridge
+  ShowTopMostFoldoutHeaderGroup: 1
 --- !u!1 &8670132325785847231
 GameObject:
   m_ObjectHideFlags: 0
