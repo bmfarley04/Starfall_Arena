@@ -36,11 +36,15 @@ public class FlameWave : Ability
     public FlameWaveConfig flameWave;
 
     private IChargeProvider _chargeProvider;
+    private NetMovement _netMovement;
+    private bool _chargesSpentLocally;
+    private int _chargesSpentThisCast = 1;
 
     protected override void Awake()
     {
         base.Awake();
         _chargeProvider = player as IChargeProvider;
+        _netMovement = GetComponent<NetMovement>();
         if (flameWave.chargesRequired <= 0)
         {
             flameWave.chargesRequired = 1;
@@ -63,11 +67,27 @@ public class FlameWave : Ability
             return false;
         }
 
+        _chargesSpentLocally = false;
+        _chargesSpentThisCast = Mathf.Max(flameWave.chargesRequired, 1);
+
+        bool netActive = NetTickUtil.IsActive && _netMovement != null && _netMovement.IsSpawned;
+        bool isOwner = netActive && _netMovement.IsOwner;
+
         if (_chargeProvider != null)
         {
-            if (!_chargeProvider.TrySpendCharges(flameWave.chargesRequired))
+            if (!netActive || isOwner)
             {
-                Debug.Log("❌ FlameWave: not enough charges.");
+                if (!_chargeProvider.TrySpendCharges(_chargesSpentThisCast))
+                {
+                    Debug.Log("❌ FlameWave: not enough charges.");
+                    return false;
+                }
+
+                _chargesSpentLocally = true;
+            }
+            else
+            {
+                Debug.LogWarning("FlameWave: non-owner tried to cast while networking is active.");
                 return false;
             }
         }
@@ -85,6 +105,32 @@ public class FlameWave : Ability
     {
         base.UseAbility(value);
 
+        bool netActive = NetTickUtil.IsActive && _netMovement != null && _netMovement.IsSpawned;
+        bool isOwner = netActive && _netMovement.IsOwner;
+        bool isServer = netActive && _netMovement.IsServer;
+
+        if (netActive && isOwner)
+        {
+            ApplyNetworkFlameWaveCast(_chargesSpentThisCast, authoritative: isServer, chargesAlreadySpent: _chargesSpentLocally);
+
+            if (!isServer)
+            {
+                _netMovement.RequestFlameWaveCast(_chargesSpentThisCast);
+            }
+
+            return;
+        }
+
+        ApplyNetworkFlameWaveCast(_chargesSpentThisCast, authoritative: true, chargesAlreadySpent: _chargesSpentLocally);
+    }
+
+    public override bool IsAbilityActive()
+    {
+        return false;
+    }
+
+    public void ApplyNetworkFlameWaveCast(int requestedCharges, bool authoritative, bool chargesAlreadySpent)
+    {
         if (flameWave.flamePrefab == null)
         {
             Debug.LogWarning("FlameWave: flamePrefab not assigned.");
@@ -97,9 +143,34 @@ public class FlameWave : Ability
             return;
         }
 
+        int chargesToUse = Mathf.Max(1, Mathf.Max(requestedCharges, flameWave.chargesRequired));
+
+        if (authoritative && _chargeProvider != null && !chargesAlreadySpent)
+        {
+            int availableCharges = _chargeProvider.CurrentCharges;
+            if (availableCharges < flameWave.chargesRequired)
+            {
+                Debug.Log("❌ FlameWave: not enough charges on server.");
+                return;
+            }
+
+            chargesToUse = Mathf.Clamp(chargesToUse, flameWave.chargesRequired, availableCharges);
+            if (!_chargeProvider.TrySpendCharges(chargesToUse))
+            {
+                Debug.Log("❌ FlameWave: failed to spend charges on server.");
+                return;
+            }
+        }
+
+        _chargesSpentThisCast = chargesToUse;
+        float hazardDuration = Mathf.Max(0.1f, flameWave.duration);
+
         foreach (Transform turret in player.turrets)
         {
-            if (turret == null) continue;
+            if (turret == null)
+            {
+                continue;
+            }
 
             Vector3 direction = turret.up;
             if (direction == Vector3.zero)
@@ -108,21 +179,23 @@ public class FlameWave : Ability
             }
             direction = direction.normalized;
 
-            Vector3 spawnPosition = turret.position + direction * flameWave.forwardOffset;
-            Quaternion rotation = Quaternion.LookRotation(Vector3.forward, direction);
-
-            GameObject hazard = Instantiate(flameWave.flamePrefab, spawnPosition, rotation);
-
-            if (hazard.TryGetComponent<FireHazard>(out var fireHazard))
+            NetFlameWaveHazardSpawnData spawnData = new NetFlameWaveHazardSpawnData
             {
-                fireHazard.Initialize(player.enemyTag, flameWave.damagePerSecond, flameWave.duration, flameWave.impactForce, flameWave.slowRate);
-                fireHazard.SetLoopSound(flameWave.loopSound);
-            }
+                SpawnPosition = turret.position + direction * flameWave.forwardOffset,
+                Direction = direction,
+                DamagePerSecond = flameWave.damagePerSecond,
+                Lifetime = hazardDuration,
+                ImpactForce = flameWave.impactForce,
+                SlowRate = flameWave.slowRate,
+                LaunchSpeed = flameWave.launchSpeed,
+                DisableDampening = flameWave.slowRate <= 0f,
+            };
 
-            Rigidbody2D rb = hazard.GetComponent<Rigidbody2D>();
-            if (rb != null && flameWave.launchSpeed > 0f)
+            SpawnFlameHazard(spawnData, authoritative);
+
+            if (NetTickUtil.IsActive && _netMovement != null && _netMovement.IsServer)
             {
-                rb.linearVelocity = (Vector2)direction * flameWave.launchSpeed;
+                _netMovement.BroadcastFlameWaveHazardSpawn(spawnData);
             }
         }
 
@@ -132,8 +205,39 @@ public class FlameWave : Ability
         }
     }
 
-    public override bool IsAbilityActive()
+    public void SpawnRemoteHazard(NetFlameWaveHazardSpawnData spawnData)
     {
-        return false;
+        SpawnFlameHazard(spawnData, authoritative: false);
+    }
+
+    private void SpawnFlameHazard(NetFlameWaveHazardSpawnData spawnData, bool authoritative)
+    {
+        Vector3 direction = spawnData.Direction;
+        if (direction == Vector3.zero)
+        {
+            direction = transform.up;
+        }
+        direction = direction.normalized;
+
+        Quaternion rotation = Quaternion.LookRotation(Vector3.forward, direction);
+        GameObject hazard = Instantiate(flameWave.flamePrefab, spawnData.SpawnPosition, rotation);
+
+        if (hazard.TryGetComponent<FireHazard>(out var fireHazard))
+        {
+            fireHazard.disableVelocityDampening = spawnData.DisableDampening;
+            fireHazard.Initialize(player.enemyTag, spawnData.DamagePerSecond, spawnData.Lifetime, spawnData.ImpactForce, spawnData.SlowRate);
+            fireHazard.SetLoopSound(flameWave.loopSound);
+
+            if (NetTickUtil.IsActive)
+            {
+                fireHazard.SetCosmeticOnly(!authoritative);
+            }
+        }
+
+        Rigidbody2D rb = hazard.GetComponent<Rigidbody2D>();
+        if (rb != null && spawnData.LaunchSpeed > 0f)
+        {
+            rb.linearVelocity = (Vector2)direction * spawnData.LaunchSpeed;
+        }
     }
 }

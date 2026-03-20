@@ -273,6 +273,27 @@ public partial class NetMovement
         SubmitDarkMatterCastServerRpc(state);
     }
 
+    public void RequestFlameWaveCast(int chargesSpent)
+    {
+        if (!NetTickUtil.IsActive || !IsOwner)
+        {
+            return;
+        }
+
+        NetFlameWaveCastState state = new NetFlameWaveCastState
+        {
+            ChargesSpent = Mathf.Max(chargesSpent, 1)
+        };
+
+        if (IsServer)
+        {
+            HandleFlameWaveCastServer(state);
+            return;
+        }
+
+        SubmitFlameWaveCastServerRpc(state);
+    }
+
     public void RequestBatteryRamState(NetBatteryRamState state)
     {
         if (!NetTickUtil.IsActive || !IsOwner)
@@ -385,6 +406,12 @@ public partial class NetMovement
     private void SubmitBatteryRamStateServerRpc(NetBatteryRamState state, ServerRpcParams rpcParams = default)
     {
         HandleBatteryRamStateServer(state);
+    }
+
+    [ServerRpc]
+    private void SubmitFlameWaveCastServerRpc(NetFlameWaveCastState state, ServerRpcParams rpcParams = default)
+    {
+        HandleFlameWaveCastServer(state);
     }
 
     // ===== ABILITY SERVER HANDLERS =====
@@ -553,6 +580,17 @@ public partial class NetMovement
 
         // Server spends charges and spawns authoritative hazards, then broadcasts spawns.
         darkMatter.ApplyNetworkDarkMatterCast(state.ChargesSpent, authoritative: true, chargesAlreadySpent: false);
+    }
+
+    private void HandleFlameWaveCastServer(NetFlameWaveCastState state)
+    {
+        FlameWave flameWave = GetComponent<FlameWave>();
+        if (flameWave == null)
+        {
+            return;
+        }
+
+        flameWave.ApplyNetworkFlameWaveCast(state.ChargesSpent, authoritative: true, chargesAlreadySpent: false);
     }
 
     private void HandleBatteryRamStateServer(NetBatteryRamState state)
@@ -742,6 +780,37 @@ public partial class NetMovement
 
         DarkMatter darkMatter = GetComponent<DarkMatter>();
         darkMatter?.SpawnRemoteHazard(spawnData);
+    }
+
+    // ===== FLAME WAVE HAZARD =====
+
+    public void BroadcastFlameWaveHazardSpawn(NetFlameWaveHazardSpawnData spawnData)
+    {
+        if (!IsServer)
+        {
+            return;
+        }
+
+        spawnData.ServerSpawnTime = NetworkManager.Singleton.ServerTime.Time;
+        BroadcastFlameWaveHazardSpawnClientRpc(spawnData);
+    }
+
+    [ClientRpc]
+    private void BroadcastFlameWaveHazardSpawnClientRpc(NetFlameWaveHazardSpawnData spawnData)
+    {
+        if (IsServer || IsOwner)
+        {
+            return;
+        }
+
+        float elapsed = (float)(NetworkManager.Singleton.ServerTime.Time - spawnData.ServerSpawnTime);
+        if (elapsed > 0f)
+        {
+            spawnData.Lifetime = Mathf.Max(spawnData.Lifetime - elapsed, 0f);
+        }
+
+        FlameWave flameWave = GetComponent<FlameWave>();
+        flameWave?.SpawnRemoteHazard(spawnData);
     }
 
     [ClientRpc]

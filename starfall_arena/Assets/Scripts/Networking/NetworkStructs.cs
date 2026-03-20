@@ -317,6 +317,42 @@ public struct NetDarkMatterCastState : INetworkSerializable
     }
 }
 
+public struct NetFlameWaveCastState : INetworkSerializable
+{
+    public int ChargesSpent;
+
+    public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
+    {
+        serializer.SerializeValue(ref ChargesSpent);
+    }
+}
+
+public struct NetFlameWaveHazardSpawnData : INetworkSerializable
+{
+    public Vector2 SpawnPosition;
+    public Vector2 Direction;
+    public float DamagePerSecond;
+    public float Lifetime;
+    public float ImpactForce;
+    public float SlowRate;
+    public float LaunchSpeed;
+    public bool DisableDampening;
+    public double ServerSpawnTime;
+
+    public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
+    {
+        serializer.SerializeValue(ref SpawnPosition);
+        serializer.SerializeValue(ref Direction);
+        serializer.SerializeValue(ref DamagePerSecond);
+        serializer.SerializeValue(ref Lifetime);
+        serializer.SerializeValue(ref ImpactForce);
+        serializer.SerializeValue(ref SlowRate);
+        serializer.SerializeValue(ref LaunchSpeed);
+        serializer.SerializeValue(ref DisableDampening);
+        serializer.SerializeValue(ref ServerSpawnTime);
+    }
+}
+
 public struct NetDarkMatterHazardSpawnData : INetworkSerializable
 {
     public Vector2 SpawnPosition;

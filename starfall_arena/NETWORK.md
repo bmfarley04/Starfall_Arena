@@ -200,6 +200,11 @@ Current network payloads include:
 - `NetDarkMatterHazardSpawnData`
   - spawn position, direction, DPS, lifetime, impact force, slow rate, launch speed
   - dampening flag plus server spawn time so clients subtract transit latency from the hazard lifetime
+- `NetFlameWaveCastState`
+  - charge request payload for Flame Wave when the owner is not the server
+- `NetFlameWaveHazardSpawnData`
+  - spawn position, direction, DPS, lifetime, impact force, slow rate, launch speed
+  - dampening flag plus server spawn time so clients subtract transit latency from the hazard lifetime
 - `NetBatteryRamState`
   - tick, active flag, broken flag, charge-grant flag, and an owner-skip flag so the owner can predict locally while server echoes state to the rest
 
@@ -261,6 +266,7 @@ Current behavior:
 - the server spawns and owns the real gameplay projectile / beam / fire hazard behavior
 - non-owning clients receive cosmetic spawn/state RPCs so they can render the same weapon events without applying gameplay damage
 - Dark Matter follows this path: the owner predicts hazards locally, the server spends charges and spawns authoritative hazards, and hazard lifetimes are latency-adjusted on clients using the server spawn time
+- Flame Wave now follows the same pattern as Dark Matter: owner prediction is cosmetic, the server is authoritative for spending charges and spawning hazards, and client lifetimes are corrected by subtracting transit time from the spawn payload
 - networked augment loadouts are also pushed from the server to each player replica after spawn and on live augment acquisition so owner/proxy copies do not silently miss augment runtimes
 
 This is intentionally a bridge step that keeps combat authority aligned with the already-implemented movement authority model without requiring every weapon prefab to become a separate NGO network object first.
