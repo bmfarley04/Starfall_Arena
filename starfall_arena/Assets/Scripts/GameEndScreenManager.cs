@@ -318,6 +318,8 @@ public class GameEndScreenManager : MonoBehaviour
         _returnHoldTime = 0f;
         ResetReturnFillUI();
 
+        BeginTitleScenePreload();
+
         // Populate text fields
         PopulateStats(perspectivePlayer, isLocalVictory, gameDuration, wins, losses, damageDealt, damageTaken, accuracy);
 
@@ -787,6 +789,16 @@ public class GameEndScreenManager : MonoBehaviour
         StartCoroutine(LoadSceneDelayed(titleSceneName, sceneLoadDelay));
     }
 
+    private void BeginTitleScenePreload()
+    {
+        if (string.IsNullOrWhiteSpace(titleSceneName))
+        {
+            return;
+        }
+
+        GameplayScenePreloader.GetOrCreate().BeginPreload(titleSceneName);
+    }
+
     private void ResetReturnFillUI()
     {
         if (returnHoldUI.player1ReturnFill != null)
@@ -813,7 +825,21 @@ public class GameEndScreenManager : MonoBehaviour
     private IEnumerator LoadSceneDelayed(string sceneName, float delay)
     {
         yield return new WaitForSecondsRealtime(delay);
-        UnityEngine.SceneManagement.SceneManager.LoadScene(sceneName);
+
+        // Shut down the network session before returning to title so the title screen
+        // starts in a clean state and the player can host/join again.
+        NetMgr netMgr = NetMgr.Instance;
+        if (netMgr != null)
+        {
+            netMgr.ShutdownToTitle();
+        }
+        else if (Unity.Netcode.NetworkManager.Singleton != null &&
+                 Unity.Netcode.NetworkManager.Singleton.IsListening)
+        {
+            Unity.Netcode.NetworkManager.Singleton.Shutdown();
+        }
+
+        yield return GameplayScenePreloader.GetOrCreate().ActivateOrLoad(sceneName);
     }
 
     // Easing functions

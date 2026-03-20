@@ -258,6 +258,7 @@ This makes `ShipData` a bridge between:
 - `ShipSelectManager` now expects only a countdown timer text reference for the networked ship-select path; once a player locks in, that client should no longer be able to change ships before the timer expires.
 - Bug note: the main `Host Game` button must not keep any legacy `ShipSelect` transition wiring in `TitleScreenButton`, or the UI will bypass the waiting screen and appear to host successfully when networking never actually started.
 - Bug note: the main `Local Multiplayer` button must not use direct scene loading to `SampleSceneSplitScreen`, or it will skip local ship select and never capture the two ship choices into `GameDataManager`.
+- Bug note: title-screen performance can regress badly on lower-spec hardware if `TitleScreenManager` eagerly spawns every ship-select preview model at scene start while return-to-title still uses a blocking `SceneManager.LoadScene`. In that setup, gameplay-to-title waits are usually dominated by title scene activation, asset upload, and preview-object initialization rather than by the ship-select-to-gameplay preload path. Avoid treating gameplay async preload as proof the menu return path is cheap; profile title-scene startup separately and keep menu preview content lazy or pooled.
 - Active network gameplay now expects a single local-view HUD presentation:
 - the primary HUD/ability canvas is the local player's
 - opponent HUD canvases are not used in the active network scene

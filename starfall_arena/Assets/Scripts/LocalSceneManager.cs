@@ -187,8 +187,6 @@ public class LocalSceneManager : MonoBehaviour
         // --- DEBUG: Skip VS screen and jump to a specific round ---
         if (debugStartAtRound >= 1)
         {
-            Debug.Log($"[DEBUG] Skipping VS screen, starting at round {debugStartAtRound}");
-
             // Disable VS screen if it auto-started
             if (versusScreenManager != null)
             {
@@ -747,11 +745,6 @@ public class LocalSceneManager : MonoBehaviour
         activeMapScript = activeMapObject.GetComponent<MapManagerScript>();
 
         activeMapObject.SetActive(true);
-        if (activeMapScript != null)
-        {
-            activeMapScript.SpawnAsteroids();
-        }
-
         yield return null;
     }
 

@@ -326,7 +326,16 @@ public class TitleScreenButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
     private IEnumerator LoadSceneDelayed(string sceneName, float delay)
     {
         yield return new WaitForSecondsRealtime(delay);
-        UnityEngine.SceneManagement.SceneManager.LoadScene(sceneName);
+        AsyncOperation loadOperation = UnityEngine.SceneManagement.SceneManager.LoadSceneAsync(sceneName);
+        if (loadOperation == null)
+        {
+            yield break;
+        }
+
+        while (!loadOperation.isDone)
+        {
+            yield return null;
+        }
     }
 
     private void FadeHoverElements(float targetAlpha, float circleDuration, float overlayDuration)
