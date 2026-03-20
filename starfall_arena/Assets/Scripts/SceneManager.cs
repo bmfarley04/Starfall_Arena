@@ -226,7 +226,6 @@ public class GameSceneManager : MonoBehaviour
                 player2Data = sessionPlayer2Ship;
             }
 
-            Debug.Log($"[GameSceneManager] Network ship resolve from session: P1={(sessionPlayer1Ship != null ? sessionPlayer1Ship.shipName : "null")}, P2={(sessionPlayer2Ship != null ? sessionPlayer2Ship.shipName : "null")}");
         }
 
         if (GameDataManager.Instance != null &&
@@ -247,7 +246,6 @@ public class GameSceneManager : MonoBehaviour
         if (player1Data == null) player1Data = defaultPlayer1Ship;
         if (player2Data == null) player2Data = defaultPlayer2Ship;
 
-        Debug.Log($"[GameSceneManager] Final ship resolve: P1={(player1Data != null ? player1Data.shipName : "null")}, P2={(player2Data != null ? player2Data.shipName : "null")}");
     }
 
     // ===== GAME LOOP =====
@@ -256,8 +254,6 @@ public class GameSceneManager : MonoBehaviour
         // --- DEBUG: Skip VS screen and jump to a specific round ---
         if (debugStartAtRound >= 1)
         {
-            Debug.Log($"[DEBUG] Skipping VS screen, starting at round {debugStartAtRound}");
-
             // Disable VS screen if it auto-started
             if (versusScreenManager != null)
             {

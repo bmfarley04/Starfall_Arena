@@ -526,8 +526,6 @@ public class ShipSelectManager : MonoBehaviour
 
     private void OnEnable()
     {
-        Debug.Log("[OnEnable] ShipSelectManager enabled!");
-
         // Disable EventSystem's automatic navigation (stick input) - we handle navigation manually
         DisableEventSystemNavigation();
 
@@ -549,7 +547,6 @@ public class ShipSelectManager : MonoBehaviour
         // If not preloaded, load UI data first
         if (!_isPreloaded)
         {
-            Debug.Log("[OnEnable] Not preloaded, loading ship data...");
             LoadShipDataOnly(_currentShipIndex);
             // Will show ship when TitleScreenManager calls ActivateShipWhenVisible
         }
@@ -562,8 +559,6 @@ public class ShipSelectManager : MonoBehaviour
         StartCoroutine(ClearSelectionNextFrame());
 
         RefreshNetworkSessionUI();
-
-        Debug.Log("[OnEnable] Complete (ship will activate when canvas is visible)!");
     }
 
     /// <summary>
@@ -572,7 +567,6 @@ public class ShipSelectManager : MonoBehaviour
     /// </summary>
     public void ActivateShipWhenVisible()
     {
-        Debug.Log($"[ActivateShipWhenVisible] Activating ship {_currentShipIndex} NOW!");
         ShowShipModel(_currentShipIndex);
         _isPreloaded = false; // Reset flag
     }
@@ -608,8 +602,6 @@ public class ShipSelectManager : MonoBehaviour
 
     private void OnDisable()
     {
-        Debug.Log("[OnDisable] ShipSelectManager disabled!");
-
         // Stop active preview before leaving ship select
         if (_currentPreviewController != null)
         {
@@ -646,7 +638,6 @@ public class ShipSelectManager : MonoBehaviour
         _uiInputModule = EventSystem.current.GetComponent<InputSystemUIInputModule>();
         if (_uiInputModule != null)
         {
-            Debug.Log("[DisableEventSystemNavigation] Disabling automatic navigation");
             // Store original state
             // Disable move action so EventSystem doesn't respond to stick/D-pad automatically
             if (_uiInputModule.move != null)
@@ -663,7 +654,6 @@ public class ShipSelectManager : MonoBehaviour
     {
         if (_uiInputModule != null && _uiInputModule.move != null)
         {
-            Debug.Log("[RestoreEventSystemNavigation] Re-enabling automatic navigation");
             _uiInputModule.move.action.Enable();
         }
     }
@@ -1130,8 +1120,6 @@ public class ShipSelectManager : MonoBehaviour
     /// </summary>
     public void PreloadShipData()
     {
-        Debug.Log("[PreloadShipData] Loading ship UI data (ship will activate when canvas is visible)");
-
         // Load UI data (text, stats, abilities)
         LoadShipDataOnly(_currentShipIndex);
 
@@ -1168,8 +1156,6 @@ public class ShipSelectManager : MonoBehaviour
         GameObject selectedShip = _shipModelInstances[index];
         if (selectedShip != null)
         {
-            Debug.Log($"[PrepareShipTransform] Preparing ship {index} transform (still inactive)");
-
             // Set position, scale, rotation while ship is inactive
             selectedShip.transform.position = shipModel.displayPosition;
             selectedShip.transform.localScale = Vector3.one * shipModel.displayScale;
@@ -1338,7 +1324,6 @@ public class ShipSelectManager : MonoBehaviour
     /// </summary>
     public void SpawnShipsAtSceneLoad()
     {
-        Debug.Log("[SpawnShipsAtSceneLoad] Called by TitleScreenManager at scene start");
         SpawnAllShipModels();
     }
 
@@ -1395,16 +1380,11 @@ public class ShipSelectManager : MonoBehaviour
     /// </summary>
     private void ShowShipModel(int index)
     {
-        Debug.Log($"[ShowShipModel] Called with index {index}. Current ship index: {_currentShipIndex}");
-        Debug.Log($"[ShowShipModel] Stack trace: {System.Environment.StackTrace}");
-
         if (_shipModelInstances == null || index < 0 || index >= _shipModelInstances.Length)
         {
             Debug.LogWarning($"[ShowShipModel] Cannot show ship {index} - instances null: {_shipModelInstances == null}, length: {_shipModelInstances?.Length ?? 0}");
             return;
         }
-
-        Debug.Log($"[ShowShipModel] Total ship instances: {_shipModelInstances.Length}");
 
         // Stop active preview before switching ships
         if (_currentPreviewController != null)
@@ -1418,9 +1398,7 @@ public class ShipSelectManager : MonoBehaviour
         {
             if (_shipModelInstances[i] != null)
             {
-                bool wasActive = _shipModelInstances[i].activeSelf;
                 _shipModelInstances[i].SetActive(false);
-                Debug.Log($"[ShowShipModel] Ship {i} ({_shipModelInstances[i].name}) - was active: {wasActive}, now deactivated");
             }
         }
 
@@ -1428,17 +1406,12 @@ public class ShipSelectManager : MonoBehaviour
         GameObject selectedShip = _shipModelInstances[index];
         if (selectedShip != null)
         {
-            Debug.Log($"[ShowShipModel] BEFORE SetActive - Ship {index} active state: {selectedShip.activeSelf}, activeInHierarchy: {selectedShip.activeInHierarchy}");
-
             // CRITICAL: Activate the ship GameObject
             selectedShip.SetActive(true);
-
-            Debug.Log($"[ShowShipModel] AFTER SetActive - Ship {index} active state: {selectedShip.activeSelf}, activeInHierarchy: {selectedShip.activeInHierarchy}");
 
             // Ensure parent is also active (in case ship is child of inactive parent)
             if (selectedShip.transform.parent != null)
             {
-                Debug.Log($"[ShowShipModel] Parent: {selectedShip.transform.parent.name}, parent active: {selectedShip.transform.parent.gameObject.activeSelf}");
                 selectedShip.transform.parent.gameObject.SetActive(true);
             }
 
@@ -1450,8 +1423,6 @@ public class ShipSelectManager : MonoBehaviour
             _targetRotation = Quaternion.Euler(shipModel.displayRotation);
             _currentRotation = _targetRotation;
             selectedShip.transform.rotation = _currentRotation;
-
-            Debug.Log($"[ShowShipModel] Ship {index} ({selectedShip.name}) FINAL STATE: activeSelf={selectedShip.activeSelf}, position={selectedShip.transform.position}, scale={selectedShip.transform.localScale}");
         }
         else
         {
@@ -1464,21 +1435,15 @@ public class ShipSelectManager : MonoBehaviour
     /// </summary>
     private void HideAllShipModels()
     {
-        Debug.Log($"[HideAllShipModels] Called! Stack trace: {System.Environment.StackTrace}");
-
         if (_shipModelInstances == null)
         {
-            Debug.Log("[HideAllShipModels] Ship instances array is null");
             return;
         }
-
-        Debug.Log($"[HideAllShipModels] Hiding {_shipModelInstances.Length} ships");
 
         foreach (var model in _shipModelInstances)
         {
             if (model != null)
             {
-                Debug.Log($"[HideAllShipModels] Deactivating {model.name}, was active: {model.activeSelf}");
                 model.SetActive(false);
             }
         }
@@ -1652,7 +1617,6 @@ public class ShipSelectManager : MonoBehaviour
         if (_currentPlayer == PlayerSelectState.Player1)
         {
             // Player 1 going back - return to main menu with proper transition
-            Debug.Log("Player 1 backing out - returning to main menu");
             TitleScreenManager titleScreen = FindObjectOfType<TitleScreenManager>();
             if (titleScreen != null)
                 titleScreen.TransitionToMainMenuFromShipSelect();
@@ -1660,7 +1624,6 @@ public class ShipSelectManager : MonoBehaviour
         else
         {
             // Player 2 going back - return to Player 1 selection
-            Debug.Log("Player 2 backing out - returning to Player 1 selection");
             _currentPlayer = PlayerSelectState.Player1;
             SetActiveGamepadForCurrentPlayer();
             _player2Selection = null;
@@ -1719,12 +1682,10 @@ public class ShipSelectManager : MonoBehaviour
         if (_currentPlayer == PlayerSelectState.Player1)
         {
             _player1Selection = selectedShip;
-            Debug.Log($"Player 1 selected: {selectedShip.shipName}");
         }
         else
         {
             _player2Selection = selectedShip;
-            Debug.Log($"Player 2 selected: {selectedShip.shipName}");
         }
 
         // Wait for confirmation delay
@@ -1860,8 +1821,6 @@ public class ShipSelectManager : MonoBehaviour
     /// </summary>
     private IEnumerator SpinShipAnimation()
     {
-        Debug.Log($"[SpinShipAnimation] Starting spin animation for ship {_currentShipIndex}");
-
         if (_shipModelInstances == null || _currentShipIndex >= _shipModelInstances.Length)
         {
             Debug.LogWarning($"[SpinShipAnimation] Invalid ship instances or index");
@@ -1881,13 +1840,9 @@ public class ShipSelectManager : MonoBehaviour
             yield break;
         }
 
-        Debug.Log($"[SpinShipAnimation] Spinning ship: {currentShip.name}");
-
         Vector3 startEuler = currentShip.transform.rotation.eulerAngles;
         float startY = startEuler.y;
         float endY = startY + 360f;
-
-        Debug.Log($"[SpinShipAnimation] Start Y: {startY}, End Y: {endY}");
 
         float elapsed = 0f;
         while (elapsed < postSelection.spinDuration)
@@ -1910,8 +1865,6 @@ public class ShipSelectManager : MonoBehaviour
         // Update rotation tracking
         _currentRotation = currentShip.transform.rotation;
         _targetRotation = _currentRotation;
-
-        Debug.Log($"[SpinShipAnimation] Spin complete! Final rotation: {currentShip.transform.rotation.eulerAngles}");
     }
 
     /// <summary>
@@ -1944,7 +1897,6 @@ public class ShipSelectManager : MonoBehaviour
             yield break;
         }
 
-        Debug.Log($"Transitioning to gameplay scene: {postSelection.gameplaySceneName}");
         yield return GameplayScenePreloader
             .GetOrCreate()
             .ActivateOrLoad(postSelection.gameplaySceneName);
