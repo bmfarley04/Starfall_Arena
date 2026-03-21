@@ -66,6 +66,13 @@ public class ShipData : ScriptableObject
     [Tooltip("Additive position offset when this ship is displayed on the Player 2 VS card")]
     public Vector3 player2VSPositionOffset;
 
+    [Header("VS Screen Rotation Offsets")]
+    [Tooltip("Additive Euler rotation offset when this ship is displayed on the Player 1 VS card")]
+    public Vector3 player1VSRotationOffset;
+
+    [Tooltip("Additive Euler rotation offset when this ship is displayed on the Player 2 VS card")]
+    public Vector3 player2VSRotationOffset;
+
     [Header("Ability HUD")]
     [Tooltip("Canvas prefab for this ship's ability HUD (unique per ship class)")]
     public GameObject abilityHUDPrefab;

@@ -112,6 +112,7 @@ public class GameSceneManager : MonoBehaviour
     // Runtime-instantiated ability HUD instances (one per player)
     private GameObject player1AbilityHUDInstance;
     private GameObject player2AbilityHUDInstance;
+    private ulong _boundNetworkHudObjectId = ulong.MaxValue;
 
     // Augment persistence between rounds
     private List<AugmentLoadoutEntry> player1Augments = new List<AugmentLoadoutEntry>();
@@ -218,11 +219,16 @@ public class GameSceneManager : MonoBehaviour
             augmentSelectManager.onAugmentChosen += OnAugmentChosen;
         }
 
+        if (useNetworkSession)
+        {
+            StartCoroutine(ClientNetworkPresentationLoop());
+        }
+
         if (isAuthoritativeNetworkController)
         {
             StartCoroutine(GameLoop());
         }
-        else
+        else if (!useNetworkSession)
         {
             StartCoroutine(ClientNetworkPresentationLoop());
         }
@@ -530,9 +536,15 @@ public class GameSceneManager : MonoBehaviour
     /// </summary>
     private IEnumerator TransitionToWholeScreen()
     {
-        // Deactivate ship visuals (hide models but keep references alive for stat capture)
-        if (player1 != null) player1.gameObject.SetActive(false);
-        if (player2 != null) player2.gameObject.SetActive(false);
+        // Local-only flow can safely deactivate whole player objects here.
+        // In network play this is a host-local scene change, not replicated state:
+        // disabling spawned NetworkObjects can leave frozen ghost ships on clients
+        // and stale NetMovement entries on the server during the round transition.
+        if (!useNetworkSession)
+        {
+            if (player1 != null) player1.gameObject.SetActive(false);
+            if (player2 != null) player2.gameObject.SetActive(false);
+        }
 
         // Lerp both cameras back to the spawn point positions
         if (!useNetworkSession && splitScreenManager != null)
@@ -801,7 +813,31 @@ public class GameSceneManager : MonoBehaviour
         player2 = SpawnNetworkPlayer(player2Data, player2SpawnPoint, "Player2", player2Owner, player2Augments);
 
         yield return null;
+        yield return WaitForLocalNetworkHudTarget();
         BindNetworkPresentation();
+    }
+
+    private IEnumerator WaitForLocalNetworkHudTarget()
+    {
+        if (!useNetworkSession)
+        {
+            yield break;
+        }
+
+        const float timeoutSeconds = 1.5f;
+        float deadline = Time.realtimeSinceStartup + timeoutSeconds;
+
+        while (Time.realtimeSinceStartup < deadline)
+        {
+            if (TryFindLocalOwnedNetworkPlayer(out _))
+            {
+                yield break;
+            }
+
+            yield return null;
+        }
+
+        Debug.LogWarning("[GameSceneManager] Timed out waiting for the local network player before HUD bind. HUD binding will still be attempted with current scene state.");
     }
 
     private Player SpawnPlayer(ShipData data, Transform spawnPoint, string tag, List<AugmentLoadoutEntry> existingAugments)
@@ -1733,15 +1769,47 @@ public class GameSceneManager : MonoBehaviour
         if (session != null &&
             (session.CurrentState == NetworkMatchState.MatchComplete || session.CurrentState == NetworkMatchState.AugmentPhase))
         {
+            ClearLocalNetworkHudBinding(destroyAbilityHudInstance: false);
             SetPlayerHUDsActive(false);
             return;
         }
 
         ConfigureNetworkHudCanvases();
+        TryFindLocalOwnedNetworkPlayer(out Player localPlayer);
+
+        if (localPlayer == null)
+        {
+            // The losing client has a gap between death/despawn and the next owner
+            // spawn. If we keep the old bindings alive through that gap, the HUD can
+            // stay attached to the dead player object's last replicated stats and the
+            // old ability panel can remain hidden for the entire next round.
+            ClearLocalNetworkHudBinding(destroyAbilityHudInstance: true);
+            SetPlayerHUDsActive(false);
+            return;
+        }
+
+        NetworkObject localPlayerNetworkObject = localPlayer.GetComponent<NetworkObject>();
+        ulong localPlayerObjectId = localPlayerNetworkObject != null ? localPlayerNetworkObject.NetworkObjectId : ulong.MaxValue;
+        bool localPlayerChanged = _boundNetworkHudObjectId != localPlayerObjectId;
+
+        if (localPlayerChanged)
+        {
+            ClearLocalNetworkHudBinding(destroyAbilityHudInstance: true);
+        }
+
+        player1 = localPlayer;
+        NetMovement localNetMovement = localPlayer.GetComponent<NetMovement>();
+        localNetMovement?.EnsureOwnerLocalControlReady();
+        BindPlayerToHud(localPlayer, player1HUDCanvas, "Player1", true);
+        _boundNetworkHudObjectId = localPlayerObjectId;
+        SetPlayerHUDsActive(true);
+    }
+
+    private bool TryFindLocalOwnedNetworkPlayer(out Player localPlayer)
+    {
+        localPlayer = null;
 
         Player[] players = FindObjectsByType<Player>(FindObjectsSortMode.None);
-        Player localPlayer = null;
-
         foreach (Player candidate in players)
         {
             NetMovement netMovement = candidate != null ? candidate.GetComponent<NetMovement>() : null;
@@ -1750,21 +1818,31 @@ public class GameSceneManager : MonoBehaviour
                 continue;
             }
 
-            if (netMovement.IsOwner)
+            if (!netMovement.IsOwner)
             {
-                localPlayer = candidate;
+                continue;
             }
+
+            localPlayer = candidate;
+            return true;
         }
 
-        if (localPlayer != null)
+        return false;
+    }
+
+    private void ClearLocalNetworkHudBinding(bool destroyAbilityHudInstance)
+    {
+        if (!useNetworkSession)
         {
-            player1 = localPlayer;
-            BindPlayerToHud(localPlayer, player1HUDCanvas, "Player1", true);
+            return;
         }
 
-        if (localPlayer != null)
+        player1 = null;
+        _boundNetworkHudObjectId = ulong.MaxValue;
+
+        if (destroyAbilityHudInstance)
         {
-            SetPlayerHUDsActive(true);
+            DestroyPlayerAbilityHUD("Player1");
         }
     }
 
