@@ -4083,6 +4083,7 @@ MonoBehaviour:
     regenRate: 20
   input:
     controllerLookDeadzone: 0.1
+    debugRotation: 0
   friction:
     frictionDelay: 0.25
     frictionDeceleration: 10
@@ -4110,10 +4111,12 @@ MonoBehaviour:
   explosionSound: {fileID: 0}
   audioSourcePoolSize: 10
   isMovementLocked: 0
+  externalMovementControl: 0
   shotsFired: 0
   shotsHit: 0
   damageDealt: 0
   damageTaken: 0
+  _fireCooldown: 0.5
 --- !u!82 &53772339
 AudioSource:
   m_ObjectHideFlags: 0
@@ -29970,6 +29973,11 @@ MonoBehaviour:
   player2HUDCanvas: {fileID: 2008779531}
   player1AbilityCanvas: {fileID: 0}
   player2AbilityCanvas: {fileID: 0}
+  fpsText: {fileID: 0}
+  pingText: {fileID: 0}
+  performanceDisplayRefreshInterval: 0.25
+  fpsRollingSampleCount: 30
+  pingRollingSampleCount: 12
   player1WinTracker: {fileID: 798331406}
   player2WinTracker: {fileID: 16507106}
   debugStartAtRound: 0
@@ -32542,7 +32550,7 @@ Camera:
   m_Depth: 1
   m_CullingMask:
     serializedVersion: 2
-    m_Bits: 32
+    m_Bits: 8388640
   m_RenderingPath: -1
   m_TargetTexture: {fileID: 0}
   m_TargetDisplay: 0
@@ -49131,7 +49139,7 @@ Camera:
   m_Depth: 0
   m_CullingMask:
     serializedVersion: 2
-    m_Bits: 11534487
+    m_Bits: 3145879
   m_RenderingPath: -1
   m_TargetTexture: {fileID: 0}
   m_TargetDisplay: 0
