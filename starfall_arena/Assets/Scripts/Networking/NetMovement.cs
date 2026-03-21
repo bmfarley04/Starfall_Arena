@@ -220,6 +220,13 @@ public partial class NetMovement : NetworkBehaviour
             {
                 _player.externalMovementControl = false;
                 _player.SetExternalVisualStateEnabled(false);
+
+                PlayerInput playerInput = GetComponent<PlayerInput>();
+                if (playerInput != null)
+                {
+                    playerInput.DeactivateInput();
+                    playerInput.enabled = false;
+                }
             }
             else
             {
@@ -234,6 +241,40 @@ public partial class NetMovement : NetworkBehaviour
         _networkPlayerIndex.OnValueChanged -= HandlePlayerIndexChanged;
 
         base.OnNetworkDespawn();
+    }
+
+    public override void OnDestroy()
+    {
+        ActiveInstances.Remove(this);
+        base.OnDestroy();
+    }
+
+    public void EnsureOwnerLocalControlReady()
+    {
+        if (!IsOwner)
+        {
+            return;
+        }
+
+        if (_player == null)
+        {
+            _player = GetComponent<Player>();
+        }
+
+        if (_player != null)
+        {
+            _player.enabled = true;
+            _player.externalMovementControl = true;
+            _player.SetExternalVisualStateEnabled(false);
+        }
+
+        PlayerInput playerInput = GetComponent<PlayerInput>();
+        if (playerInput != null)
+        {
+            playerInput.enabled = true;
+            playerInput.ActivateInput();
+            AssignOwnerCameraAndTracking(playerInput);
+        }
     }
 
     private void HandleFrictionToggled(bool isEnabled)
@@ -288,6 +329,11 @@ public partial class NetMovement : NetworkBehaviour
         foreach (NetMovement candidate in ActiveInstances)
         {
             if (candidate == null || candidate._player == null)
+            {
+                continue;
+            }
+
+            if (!candidate.IsSpawned || !candidate.gameObject.activeInHierarchy)
             {
                 continue;
             }

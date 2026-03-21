@@ -18,8 +18,10 @@ MonoBehaviour:
   player1VSPrefab: {fileID: 8270235200235412842, guid: e77ead2ba82deba42aabf69b3a354946, type: 3}
   player2VSPrefab: {fileID: 8270235200235412842, guid: 007b5a8b216dcf14f9187bf78d86dcfe, type: 3}
   shipPrefab: {fileID: 8270235200235412842, guid: 21d3566236d085e4c863a6517e23b71a, type: 3}
-  player1VSPositionOffset: {x: -30, y: 0, z: 0}
-  player2VSPositionOffset: {x: -5, y: 0, z: 0}
+  player1VSPositionOffset: {x: 0.2, y: 0, z: 0}
+  player2VSPositionOffset: {x: -0.2, y: 0, z: 0}
+  player1VSRotationOffset: {x: -10, y: -3.5, z: -4}
+  player2VSRotationOffset: {x: -10, y: 3.5, z: 4}
   abilityHUDPrefab: {fileID: 6476359621877627330, guid: f53fde3eb430bc0459c8424569d2ddc7, type: 3}
   stats:
     damage: 50

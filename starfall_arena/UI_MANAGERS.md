@@ -231,6 +231,8 @@ It currently carries:
 - ship name
 - menu preview prefab references
 - versus-screen prefab references
+- per-seat additive versus-screen position offsets
+- per-seat additive versus-screen rotation offsets
 - gameplay ship prefab
 - ability HUD prefab
 - displayed stat values
@@ -243,6 +245,7 @@ This makes `ShipData` a bridge between:
 - gameplay spawning
 - HUD configuration
 - networked ship selection lookups now depend on `ShipData` exposing a deterministic stable ID; blank/generated-per-machine IDs will cause clients to fall back to stale ship data
+- versus preview transforms should keep shared base framing in `VersusScreenManager` and use `ShipData` offsets only for ship-specific correction; replacing the base rotation per ship makes cards drift into inconsistent framing and turns a data-tuning problem into scene-specific reauthoring
 
 ## Current Architectural Notes
 
@@ -277,5 +280,9 @@ This makes `ShipData` a bridge between:
 - Bug note: the network gameplay HUD and runtime ability HUDs must be forced into a deterministic camera/sorting configuration on each client. Leaving them as `Screen Space - Camera` canvases with implicit camera assignment or default sorting can make asteroid/map visuals render over client HUD elements even when the host looks correct.
 - Bug note: top-right win indicators in network gameplay need explicit replicated win-count updates. Host-local `UpdateWinTrackers()` calls do not automatically refresh client visuals unless the counts are broadcast through the session layer.
 - Bug note: the client-side network HUD rebinding loop must stop re-showing gameplay HUD/ability UI during non-combat presentation states such as augment selection. If polling only checks "local player exists", the client can resurrect the gameplay ability HUD underneath whole-screen UI even though the scene manager already hid it for the phase.
+- Bug note: the network gameplay HUD on clients must treat a local-player respawn as a full rebind, not as "same owner, keep existing HUD." The losing client has a brief no-owner gap after death; if the old HUD/ability panel survives that gap, the next round can stay stuck on the dead ship's last health/shield values and a hidden ability panel because the new player belongs to the same client but is a different `NetworkObject`.
+- Bug note: the host's network gameplay HUD bind cannot rely on a single "wait one frame, then bind" call after respawn. The host authoritative scene manager does not run the client polling loop, so if the new owner object has not completed network spawn yet, the host can enter the round with the previous round's zeroed health/shield text and no runtime ability HUD until another explicit bind happens.
+- Bug note: when a host-owned network player despawns between rounds, its old `PlayerInput` must be explicitly deactivated. Leaving the dead owner's input component alive into the respawn window can prevent the new host-owned ship from becoming the active local control/HUD target, which shows up as missing ability HUD, stale `0` stats, and nonresponsive host input.
+- Bug note: `SegmentedBar` damage-flash visuals must be cleared when a HUD is rebound for a new round/player. Reinitializing only the fill alpha is not enough; any in-flight flash coroutine or temporary flash material can survive the previous round and make a fresh full bar render with stale white/depleted-looking segments.
 - Bug note: gameplay-scene FPS/ping overlay text is now updated by `GameSceneManager`, and it must be hidden when the game-end screen is shown so the final presentation is not rendered with leftover live-match telemetry.
 - Bugs or pitfalls in menu flow, HUD binding, selection order, or round transitions should be documented here in the relevant section.
