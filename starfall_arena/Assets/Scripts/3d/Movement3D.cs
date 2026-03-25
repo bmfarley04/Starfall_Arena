@@ -1,252 +1,189 @@
+using Unity.Cinemachine;
 using UnityEngine;
 using UnityEngine.InputSystem;
-using Unity.Cinemachine;
 
-[RequireComponent(typeof(Rigidbody))]
-public class Movement3D : MonoBehaviour
+[RequireComponent(typeof(ShipFlight3D))]
+public class Movement3D : Player3D
 {
-    [System.Serializable]
-    public struct VisualEffects3DConfig
+    [Header("Legacy Flight Settings")]
+    [SerializeField] private ShipFlightConfig3D flightConfig = new ShipFlightConfig3D
     {
-        [Header("Visual Model")]
-        [Tooltip("Child transform containing the ship mesh. Banking and pitch lean are applied here.")]
-        public Transform visualModel;
+        thrustAcceleration = 50f,
+        maxSpeed = 100f,
+        pitchSpeed = 2.5f,
+        yawSpeed = 2.5f,
+        invertY = true,
+        minRotationMultiplierAtMaxSpeed = 0.1f
+    };
 
-        [Header("Banking (Roll)")]
-        [Tooltip("Maximum roll angle applied to the visual model when yawing")]
-        public float maxBankAngle;
-        [Tooltip("How strongly yaw angular velocity drives the bank. Negative values invert the direction.")]
-        public float bankSensitivity;
-        [Tooltip("Smoothing speed for bank interpolation")]
-        public float bankSmoothing;
+    [Header("Legacy Flight Assist")]
+    [SerializeField] private ShipFlightAssistConfig3D flightAssistConfig = new ShipFlightAssistConfig3D
+    {
+        frictionDeceleration = 20f,
+        activeAngularDamping = 2f
+    };
 
-        [Header("Pitch Lean")]
-        [Tooltip("Maximum additional pitch lean applied to the visual model when pitching")]
-        public float maxPitchLeanAngle;
-        [Tooltip("How strongly pitch angular velocity drives the lean. Negative values invert the direction.")]
-        public float pitchLeanSensitivity;
-        [Tooltip("Smoothing speed for pitch lean interpolation")]
-        public float pitchLeanSmoothing;
-
-        [Header("Acceleration Response")]
-        [Tooltip("How strongly forward/backward linear acceleration drives pitch lean (thrust start/stop, braking)")]
-        public float forwardAccelPitchSensitivity;
-        [Tooltip("How strongly lateral linear acceleration drives banking (centripetal force from turning at speed)")]
-        public float lateralAccelBankSensitivity;
-    }
-
-    [Header("Engine Parameters")]
-    [SerializeField] private float thrustAcceleration = 50f;
-    [SerializeField] private float maxSpeed = 100f;
-
-    [Header("Handling Parameters")]
-    [SerializeField] private float pitchSpeed = 2.5f;
-    [SerializeField] private float yawSpeed = 2.5f;
-    [SerializeField] private bool invertY = true;
-    [Tooltip("Rotation speed multiplier applied at max speed. 0 = can't rotate at all, 1 = full speed always.")]
-    [SerializeField, Range(0f, 1f)] private float minRotationMultiplierAtMaxSpeed = 0.1f;
-
-    [Header("Flight Assist (Friction)")]
-    [Tooltip("How fast velocity bleeds off when not thrusting (units/s²). Does not affect max speed while thrusting.")]
-    [SerializeField] private float frictionDeceleration = 20f;
-    [Tooltip("Angular damping applied to rotation when friction is active")]
-    [SerializeField] private float activeAngularDamping = 2.0f;
-    private bool isFrictionEnabled = false;
-
-    [Header("Dynamic Camera Settings")]
+    [Header("Legacy Camera")]
     [SerializeField] private CinemachineCamera virtualCamera;
-    [SerializeField] private float minZOffset = -10f;
-    [SerializeField] private float maxZOffset = -16f;
-    [SerializeField] private float minFOV = 40f;
-    [SerializeField] private float maxFOV = 70f;
-    [SerializeField] private float cameraLerpSpeed = 5f;
+    [SerializeField] private PlayerCameraRigConfig3D cameraConfig = new PlayerCameraRigConfig3D
+    {
+        minZOffset = -10f,
+        maxZOffset = -16f,
+        minFOV = 40f,
+        maxFOV = 70f,
+        cameraLerpSpeed = 5f
+    };
 
-    [Header("VFX Settings")]
-    [SerializeField] private ParticleSystem speedDustParticles;
-    [SerializeField] private float maxDustEmissionRate = 200f;
-    [SerializeField, Range(0f, 1f)] private float dustSpeedThreshold = 0.5f; // Sets the activation floor
+    [Header("Legacy Speed VFX")]
+    [SerializeField] private ShipSpeedEffects3DConfig speedEffects = new ShipSpeedEffects3DConfig
+    {
+        maxDustEmissionRate = 200f,
+        dustSpeedThreshold = 0.5f
+    };
 
-    [Header("Visual Effects")]
+    [Header("Legacy Visual Effects")]
     [SerializeField] private VisualEffects3DConfig visualEffects;
 
-    private Rigidbody rb;
-    private CinemachineFollow followComponent;
-    private Vector2 lookInput;
-    private float thrustInput;
+    [Header("Legacy Thruster Effects")]
+    [SerializeField] private ThrusterEffects3DConfig thrusterEffects;
 
-    // Visual state
-    private float _currentBankAngle;
-    private float _currentPitchLeanAngle;
-    private Quaternion _visualBaseLocalRotation;
-    private Vector3 _previousVelocity;
-    private Vector3 _linearAcceleration;
-
-    private void Awake()
+    protected override void Awake()
     {
-        rb = GetComponent<Rigidbody>();
+        EnsureArchitectureComponents();
+        base.Awake();
+        ApplyLegacyConfiguration();
+    }
 
-        rb.useGravity = false;
-        rb.linearDamping = 0f;
-        rb.angularDamping = 0f;
-        rb.interpolation = RigidbodyInterpolation.Interpolate;
+    private void Reset()
+    {
+        EnsureArchitectureComponents();
+        ApplyLegacyConfiguration();
+    }
 
-        if (virtualCamera != null)
+    private void OnValidate()
+    {
+        if (!Application.isPlaying)
         {
-            followComponent = virtualCamera.GetComponent<CinemachineFollow>();
-        }
-
-        if (speedDustParticles != null)
-        {
-            var emission = speedDustParticles.emission;
-            emission.rateOverTime = 0f;
-        }
-
-        if (visualEffects.visualModel != null)
-        {
-            _visualBaseLocalRotation = visualEffects.visualModel.localRotation;
-        }
-        else
-        {
-            _visualBaseLocalRotation = Quaternion.identity;
-            Debug.LogWarning($"Visual model not assigned on {gameObject.name}. Banking/pitch lean will not work.", this);
+            EnsureArchitectureComponents();
+            ApplyLegacyConfiguration();
         }
     }
 
     public void OnFreeLook(InputValue value)
     {
-        lookInput = value.Get<Vector2>();
+        if (playerInput3D != null)
+        {
+            playerInput3D.OnFreeLook(value);
+        }
+        else if (shipFlight != null)
+        {
+            shipFlight.SetLookInput(value.Get<Vector2>());
+        }
     }
 
     public void OnThrust(InputValue value)
     {
-        thrustInput = value.Get<float>();
+        if (playerInput3D != null)
+        {
+            playerInput3D.OnThrust(value);
+        }
+        else if (shipFlight != null)
+        {
+            shipFlight.SetThrustInput(value.Get<float>());
+        }
     }
 
     public void OnToggleFriction(InputValue value)
     {
-        if (value.isPressed)
+        if (playerInput3D != null)
         {
-            isFrictionEnabled = !isFrictionEnabled;
-            rb.angularDamping = isFrictionEnabled ? activeAngularDamping : 0f;
+            playerInput3D.OnToggleFriction(value);
+        }
+        else if (shipFlight != null && value.isPressed)
+        {
+            shipFlight.ToggleFriction();
         }
     }
 
-    private void FixedUpdate()
+    public void OnFire(InputValue value)
     {
-        HandleRotation();
-        HandleThrust();
-
-        _linearAcceleration = (rb.linearVelocity - _previousVelocity) / Time.fixedDeltaTime;
-        _previousVelocity = rb.linearVelocity;
-    }
-
-    private void Update()
-    {
-        HandleVisuals();
-    }
-
-    private void LateUpdate()
-    {
-        UpdateVisualRotation();
-    }
-
-    private void HandleRotation()
-    {
-        float speedPercent = rb.linearVelocity.magnitude / maxSpeed;
-        float rotMult = Mathf.Lerp(1f, minRotationMultiplierAtMaxSpeed, speedPercent);
-
-        float pitch = lookInput.y * pitchSpeed * rotMult * (invertY ? -1f : 1f);
-        float yaw = lookInput.x * yawSpeed * rotMult;
-
-        Vector3 localAngularVelocity = new Vector3(pitch, yaw, 0f);
-        rb.angularVelocity = transform.TransformDirection(localAngularVelocity);
-    }
-
-    private void HandleThrust()
-    {
-        if (thrustInput > 0.05f)
+        if (playerInput3D != null)
         {
-            rb.linearVelocity += transform.forward * (thrustInput * thrustAcceleration * Time.fixedDeltaTime);
-        }
-        else if (isFrictionEnabled)
-        {
-            rb.linearVelocity = Vector3.MoveTowards(rb.linearVelocity, Vector3.zero, frictionDeceleration * Time.fixedDeltaTime);
-        }
-
-        if (rb.linearVelocity.magnitude > maxSpeed)
-        {
-            rb.linearVelocity = rb.linearVelocity.normalized * maxSpeed;
+            playerInput3D.OnFire(value);
         }
     }
 
-    private void HandleVisuals()
+    private void EnsureArchitectureComponents()
     {
-        // 1. Calculate ONLY the forward component of our velocity
-        float forwardSpeed = Vector3.Dot(rb.linearVelocity, transform.forward);
-
-        // 2. Clamp it between 0 and maxSpeed so moving backward doesn't cause negative visual math
-        float clampedForwardSpeed = Mathf.Clamp(forwardSpeed, 0f, maxSpeed);
-
-        // 3. Get the percentage based purely on forward momentum
-        float forwardSpeedPercent = clampedForwardSpeed / maxSpeed;
-
-        // 4. Update Camera
-        if (virtualCamera != null && followComponent != null)
+        shipFlight ??= GetComponent<ShipFlight3D>();
+        if (shipFlight == null)
         {
-            float targetZ = Mathf.Lerp(minZOffset, maxZOffset, forwardSpeedPercent);
-            float targetFOV = Mathf.Lerp(minFOV, maxFOV, forwardSpeedPercent);
-
-            Vector3 currentOffset = followComponent.FollowOffset;
-            currentOffset.z = Mathf.Lerp(currentOffset.z, targetZ, Time.deltaTime * cameraLerpSpeed);
-            followComponent.FollowOffset = currentOffset;
-
-            virtualCamera.Lens.FieldOfView = Mathf.Lerp(virtualCamera.Lens.FieldOfView, targetFOV, Time.deltaTime * cameraLerpSpeed);
+            shipFlight = gameObject.AddComponent<ShipFlight3D>();
         }
 
-        // 5. Update Dust Particles
-        if (speedDustParticles != null)
+        shipVisualTilt ??= GetComponent<ShipVisualTilt3D>();
+        if (shipVisualTilt == null)
         {
-            float normalizedDustEmission = Mathf.InverseLerp(dustSpeedThreshold, 1f, forwardSpeedPercent);
+            shipVisualTilt = gameObject.AddComponent<ShipVisualTilt3D>();
+        }
 
-            var emission = speedDustParticles.emission;
-            emission.rateOverTime = normalizedDustEmission * maxDustEmissionRate;
+        shipThrusterVfx ??= GetComponent<ShipThrusterVfx3D>();
+        if (shipThrusterVfx == null)
+        {
+            shipThrusterVfx = gameObject.AddComponent<ShipThrusterVfx3D>();
+        }
+
+        shipSpeedFx ??= GetComponent<ShipSpeedFx3D>();
+        if (shipSpeedFx == null)
+        {
+            shipSpeedFx = gameObject.AddComponent<ShipSpeedFx3D>();
+        }
+
+        playerInput3D ??= GetComponent<PlayerInput3D>();
+        if (playerInput3D == null)
+        {
+            playerInput3D = gameObject.AddComponent<PlayerInput3D>();
+        }
+
+        playerCameraRig3D ??= GetComponent<PlayerCameraRig3D>();
+        if (playerCameraRig3D == null)
+        {
+            playerCameraRig3D = gameObject.AddComponent<PlayerCameraRig3D>();
         }
     }
 
-    private void UpdateVisualRotation()
+    private void ApplyLegacyConfiguration()
     {
-        if (visualEffects.visualModel == null) return;
-        if (Time.deltaTime <= 0f) return;
+        if (shipFlight != null)
+        {
+            shipFlight.SetFlightConfig(flightConfig);
+            shipFlight.SetFlightAssistConfig(flightAssistConfig);
+            shipFlight.SetInputSource(playerInput3D);
+        }
 
-        // Extract yaw and pitch components from world-space angular velocity
-        // by projecting onto the ship's local axes.
-        float yawAngVel   = Vector3.Dot(rb.angularVelocity, transform.up);
-        float pitchAngVel = Vector3.Dot(rb.angularVelocity, transform.right);
+        if (shipVisualTilt != null)
+        {
+            shipVisualTilt.SetShipFlight(shipFlight);
+            shipVisualTilt.SetVisualEffects(visualEffects);
+        }
 
-        // Decompose linear acceleration into local axes.
-        float forwardAccel = Vector3.Dot(_linearAcceleration, transform.forward);
-        float lateralAccel = Vector3.Dot(_linearAcceleration, transform.right);
+        if (shipThrusterVfx != null)
+        {
+            shipThrusterVfx.SetShipFlight(shipFlight);
+            shipThrusterVfx.SetThrusterEffects(thrusterEffects);
+        }
 
-        // Banking: yaw angular velocity (spinning in place) + lateral linear acceleration (turning at speed).
-        float targetBankAngle = Mathf.Clamp(
-            (-yawAngVel * visualEffects.bankSensitivity) + (-lateralAccel * visualEffects.lateralAccelBankSensitivity),
-            -visualEffects.maxBankAngle,
-            visualEffects.maxBankAngle
-        );
+        if (shipSpeedFx != null)
+        {
+            shipSpeedFx.SetShipFlight(shipFlight);
+            shipSpeedFx.SetSpeedEffects(speedEffects);
+        }
 
-        // Pitch lean: pitch angular velocity + forward linear acceleration (thrust start/stop, braking).
-        float targetPitchLeanAngle = Mathf.Clamp(
-            (pitchAngVel * visualEffects.pitchLeanSensitivity) + (-forwardAccel * visualEffects.forwardAccelPitchSensitivity),
-            -visualEffects.maxPitchLeanAngle,
-            visualEffects.maxPitchLeanAngle
-        );
-
-        _currentBankAngle = Mathf.Lerp(_currentBankAngle, targetBankAngle, Time.deltaTime * visualEffects.bankSmoothing);
-        _currentPitchLeanAngle = Mathf.Lerp(_currentPitchLeanAngle, targetPitchLeanAngle, Time.deltaTime * visualEffects.pitchLeanSmoothing);
-
-        // Combine: pitch lean around local X, bank around local Z, applied on top of the base local rotation.
-        Quaternion pitchQuat = Quaternion.AngleAxis(_currentPitchLeanAngle, Vector3.right);
-        Quaternion bankQuat  = Quaternion.AngleAxis(_currentBankAngle, Vector3.forward);
-        visualEffects.visualModel.localRotation = _visualBaseLocalRotation * pitchQuat * bankQuat;
+        if (playerCameraRig3D != null)
+        {
+            playerCameraRig3D.SetShipFlight(shipFlight);
+            playerCameraRig3D.SetCamera(virtualCamera);
+            playerCameraRig3D.SetCameraConfig(cameraConfig);
+        }
     }
 }
