@@ -21,11 +21,13 @@ public class ProjectileWeapon3D : MonoBehaviour
     [SerializeField] private Camera aimCamera;
     [SerializeField] private LayerMask aimCollisionMask = ~0;
     [SerializeField] private float maxAimDistance = 1000f;
+    [SerializeField] private float screenCenterConvergenceDistance = 150f;
 
     [Header("Muzzle FX")]
     [SerializeField] private GameObject muzzleEffectPrefab;
     [SerializeField] private float muzzleEffectLifetime = 2f;
     [SerializeField] private bool parentMuzzleEffectToMuzzle = true;
+    [SerializeField] private Vector3 projectileSpawnLocalOffset = new Vector3(0f, 0f, 2f);
     [SerializeField] private Vector3 muzzleEffectLocalOffset = new Vector3(0f, 0f, 1.5f);
 
     [Header("Pooling")]
@@ -33,6 +35,12 @@ public class ProjectileWeapon3D : MonoBehaviour
     [SerializeField] private int muzzleEffectPrewarmCount = 4;
 
     private float _lastFireTime = -999f;
+
+    private struct AimSolution
+    {
+        public Vector3 point;
+        public Vector3 direction;
+    }
 
     public ProjectileWeaponConfig3D WeaponConfig => weaponConfig;
     public float CooldownRemaining => Mathf.Max(0f, (_lastFireTime + weaponConfig.cooldown) - Time.time);
@@ -78,13 +86,13 @@ public class ProjectileWeapon3D : MonoBehaviour
             ? weaponConfig.muzzles
             : new[] { transform };
 
-        Vector3 aimPoint = ResolveAimPoint();
+        AimSolution aim = ResolveAimSolution();
 
         foreach (Transform muzzle in muzzles)
         {
             Transform spawnMuzzle = muzzle != null ? muzzle : transform;
             SpawnMuzzleEffect(spawnMuzzle);
-            SpawnProjectile(spawnMuzzle, aimPoint);
+            SpawnProjectile(spawnMuzzle, aim);
         }
 
         if (shipFlight != null && weaponConfig.recoilForce > 0f)
@@ -96,10 +104,11 @@ public class ProjectileWeapon3D : MonoBehaviour
         return true;
     }
 
-    private void SpawnProjectile(Transform muzzle, Vector3 aimPoint)
+    private void SpawnProjectile(Transform muzzle, AimSolution aim)
     {
-        Vector3 fireDirection = ResolveFireDirection(muzzle, aimPoint);
-        GameObject projectileObject = GameObjectPool3D.Spawn(weaponConfig.projectilePrefab, muzzle.position, Quaternion.LookRotation(fireDirection, transform.up));
+        Vector3 spawnPosition = ResolveProjectileSpawnPosition(muzzle);
+        Vector3 fireDirection = ResolveFireDirection(muzzle, spawnPosition, aim);
+        GameObject projectileObject = GameObjectPool3D.Spawn(weaponConfig.projectilePrefab, spawnPosition, Quaternion.LookRotation(fireDirection, transform.up));
         if (!projectileObject.TryGetComponent(out Projectile3D projectile))
         {
             Debug.LogWarning($"Projectile prefab {weaponConfig.projectilePrefab.name} is missing Projectile3D.", projectileObject);
@@ -119,33 +128,54 @@ public class ProjectileWeapon3D : MonoBehaviour
         );
     }
 
-    private Vector3 ResolveAimPoint()
+    private Vector3 ResolveProjectileSpawnPosition(Transform muzzle)
+    {
+        return muzzle.position
+            + (transform.right * projectileSpawnLocalOffset.x)
+            + (transform.up * projectileSpawnLocalOffset.y)
+            + (transform.forward * projectileSpawnLocalOffset.z);
+    }
+
+    private AimSolution ResolveAimSolution()
     {
         if (aimMode != ProjectileAimMode3D.ScreenCenter || aimCamera == null)
         {
-            return transform.position + transform.forward * maxAimDistance;
+            return new AimSolution
+            {
+                point = transform.position + (transform.forward * maxAimDistance),
+                direction = transform.forward
+            };
         }
 
         Ray centerRay = aimCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
         if (Physics.Raycast(centerRay, out RaycastHit hit, maxAimDistance, aimCollisionMask, QueryTriggerInteraction.Ignore))
         {
-            return hit.point;
+            float convergenceDistance = Mathf.Max(screenCenterConvergenceDistance, hit.distance);
+            return new AimSolution
+            {
+                point = centerRay.origin + (centerRay.direction * convergenceDistance),
+                direction = centerRay.direction
+            };
         }
 
-        return centerRay.origin + (centerRay.direction * maxAimDistance);
+        return new AimSolution
+        {
+            point = centerRay.origin + (centerRay.direction * Mathf.Max(screenCenterConvergenceDistance, maxAimDistance)),
+            direction = centerRay.direction
+        };
     }
 
-    private Vector3 ResolveFireDirection(Transform muzzle, Vector3 aimPoint)
+    private Vector3 ResolveFireDirection(Transform muzzle, Vector3 spawnPosition, AimSolution aim)
     {
         if (aimMode == ProjectileAimMode3D.MuzzleForward)
         {
             return muzzle.forward;
         }
 
-        Vector3 direction = aimPoint - muzzle.position;
+        Vector3 direction = aim.point - spawnPosition;
         if (direction.sqrMagnitude <= 0.0001f)
         {
-            return transform.forward;
+            return aim.direction.sqrMagnitude > 0.0001f ? aim.direction.normalized : transform.forward;
         }
 
         return direction.normalized;

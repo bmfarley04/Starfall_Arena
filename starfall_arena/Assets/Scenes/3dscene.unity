@@ -380,7 +380,7 @@ Transform:
   m_GameObject: {fileID: 773417010}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.8, z: -4.28}
+  m_LocalPosition: {x: 0, y: 0.8, z: -6.28}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -417,7 +417,7 @@ MonoBehaviour:
     AngularDampingMode: 0
     RotationDamping: {x: 0.1, y: 0.1, z: 0.1}
     QuaternionDamping: 1
-  FollowOffset: {x: 0, y: 0.8, z: -10}
+  FollowOffset: {x: 0, y: 0.8, z: -12}
 --- !u!1001 &792701132
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -444,7 +444,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4921488969581594012, guid: c09f383b827ea58459fb098ba4147315, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0
+      value: -7.05
       objectReference: {fileID: 0}
     - target: {fileID: 4921488969581594012, guid: c09f383b827ea58459fb098ba4147315, type: 3}
       propertyPath: m_LocalPosition.z
@@ -5837,7 +5837,7 @@ Transform:
   m_GameObject: {fileID: 1867909027}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.8, z: -4.28}
+  m_LocalPosition: {x: 0, y: 0.8, z: -6.28}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -6140,7 +6140,7 @@ MonoBehaviour:
   shipFlight: {fileID: 2102793412}
   virtualCamera: {fileID: 773417013}
   cameraConfig:
-    minZOffset: -8
+    minZOffset: -12
     maxZOffset: -16
     minFOV: 30
     maxFOV: 45
@@ -6471,9 +6471,12 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 4294967295
   maxAimDistance: 1000
+  screenCenterConvergenceDistance: 150
   muzzleEffectPrefab: {fileID: 100004, guid: 45116fb1512dc704b99d70267628129a, type: 3}
-  muzzleEffectLifetime: 2
+  muzzleEffectLifetime: 0.05
   parentMuzzleEffectToMuzzle: 1
+  projectileSpawnLocalOffset: {x: 0, y: 0, z: 2}
+  muzzleEffectLocalOffset: {x: 0, y: 0, z: 1.5}
   projectilePrewarmCount: 12
   muzzleEffectPrewarmCount: 4
 --- !u!1001 &6632817810544565794
