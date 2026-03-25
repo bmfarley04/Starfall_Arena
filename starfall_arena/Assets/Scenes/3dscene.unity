@@ -6450,7 +6450,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectileWeapon3D
   weaponConfig:
-    projectilePrefab: {fileID: 100004, guid: 64703ac190f718b4abd5d10cb23c96ce, type: 3}
+    projectilePrefab: {fileID: 100004, guid: 8ec6c25d4bc8ae143b513d8332f121e8, type: 3}
     muzzles:
     - {fileID: 744452896}
     - {fileID: 1481032058}
@@ -6465,6 +6465,17 @@ MonoBehaviour:
     recoilForce: 0
   owner: {fileID: 2102793411}
   shipFlight: {fileID: 2102793412}
+  aimMode: 1
+  aimCamera: {fileID: 0}
+  aimCollisionMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  maxAimDistance: 1000
+  muzzleEffectPrefab: {fileID: 100004, guid: 45116fb1512dc704b99d70267628129a, type: 3}
+  muzzleEffectLifetime: 2
+  parentMuzzleEffectToMuzzle: 1
+  projectilePrewarmCount: 12
+  muzzleEffectPrewarmCount: 4
 --- !u!1001 &6632817810544565794
 PrefabInstance:
   m_ObjectHideFlags: 0

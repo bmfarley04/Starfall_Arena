@@ -99,10 +99,11 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 400004}
-  - component: {fileID: 11400000}
   - component: {fileID: 11400002}
+  - component: {fileID: -8953170887350285723}
+  - component: {fileID: 7041065036281314365}
   m_Layer: 0
-  m_Name: laser_impulse_projectile_001_example
+  m_Name: 3dnormal
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -125,28 +126,6 @@ Transform:
   - {fileID: 400002}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &11400000
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 100004}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 71d84e8c92ffdf1438c9798f91d60981, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  fxType: 11
-  layerMask:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  lifeTime: 1
-  despawnDelay: 0
-  velocity: 300
-  RaycastAdvance: 2
-  DelayDespawn: 0
-  delayedParticles: []
 --- !u!114 &11400002
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -165,6 +144,48 @@ MonoBehaviour:
   MaxScale: 1.3
   MinRotation: -360
   MaxRotaion: 360
+--- !u!65 &-8953170887350285723
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 100004}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 0.25, y: 0.25, z: 0.7}
+  m_Center: {x: 0, y: 0, z: -0.3}
+--- !u!114 &7041065036281314365
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 100004}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c18ada91552c8549b32155bd0c21269, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Projectile3D
+  targetTag: 
+  hitEffectPrefab: {fileID: 0}
+  hitEffectLifetime: 2
+  hitEffectOffset: 0.02
+  alignHitEffectToSurface: 1
+  collisionMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  collisionRadiusScale: 0.5
 --- !u!1 &1000010589384354
 GameObject:
   m_ObjectHideFlags: 0
