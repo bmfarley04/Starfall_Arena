@@ -1,6 +1,5 @@
 using UnityEngine;
 
-[RequireComponent(typeof(Collider))]
 public class Projectile3D : MonoBehaviour, IPooledObject3D
 {
     private static readonly RaycastHit[] HitBuffer = new RaycastHit[16];
@@ -16,9 +15,8 @@ public class Projectile3D : MonoBehaviour, IPooledObject3D
 
     [Header("Collision")]
     [SerializeField] private LayerMask collisionMask = ~0;
-    [SerializeField] private float collisionRadiusScale = 0.5f;
+    [SerializeField] private float hitscanRadius = 0.1f;
 
-    protected Collider _projectileCollider;
     protected float _damage;
     protected float _lifetime;
     protected float _impactForce;
@@ -26,14 +24,6 @@ public class Projectile3D : MonoBehaviour, IPooledObject3D
     protected Vector3 _velocity;
     protected Entity3D _shooter;
     protected float _age;
-    protected float _collisionRadius;
-
-    protected virtual void Awake()
-    {
-        _projectileCollider = GetComponent<Collider>();
-        _projectileCollider.isTrigger = true;
-        _collisionRadius = Mathf.Max(0.01f, _projectileCollider.bounds.extents.magnitude * collisionRadiusScale);
-    }
 
     protected virtual void Update()
     {
@@ -107,7 +97,7 @@ public class Projectile3D : MonoBehaviour, IPooledObject3D
 
         int hitCount = Physics.SphereCastNonAlloc(
             origin,
-            _collisionRadius,
+            Mathf.Max(0f, hitscanRadius),
             _direction,
             HitBuffer,
             stepDistance,
@@ -144,12 +134,12 @@ public class Projectile3D : MonoBehaviour, IPooledObject3D
             return false;
         }
 
-        if (hit.collider == _projectileCollider)
+        if (_shooter != null && hit.collider.transform.IsChildOf(_shooter.transform))
         {
             return false;
         }
 
-        if (_shooter != null && hit.collider.transform.IsChildOf(_shooter.transform))
+        if (hit.collider.transform == transform || hit.collider.transform.IsChildOf(transform))
         {
             return false;
         }
@@ -160,17 +150,46 @@ public class Projectile3D : MonoBehaviour, IPooledObject3D
     private void ProcessHit(RaycastHit hit)
     {
         Collider other = hit.collider;
-        if (!string.IsNullOrEmpty(targetTag) && other.CompareTag(targetTag))
+        Entity3D damageable = ResolveHitEntity(other);
+        if (damageable != null && IsMatchingTarget(damageable))
         {
-            Entity3D damageable = other.GetComponent<Entity3D>();
-            if (damageable != null)
-            {
-                ApplyDamageToEntity(damageable, hit.point, other);
-            }
+            ApplyDamageToEntity(damageable, hit.point, other);
         }
 
         SpawnHitEffect(hit);
         DespawnSelf();
+    }
+
+    private Entity3D ResolveHitEntity(Collider hitCollider)
+    {
+        if (hitCollider == null)
+        {
+            return null;
+        }
+
+        Entity3D entity = hitCollider.GetComponent<Entity3D>();
+        if (entity != null)
+        {
+            return entity;
+        }
+
+        if (hitCollider.attachedRigidbody != null)
+        {
+            entity = hitCollider.attachedRigidbody.GetComponent<Entity3D>();
+            if (entity != null)
+            {
+                return entity;
+            }
+        }
+
+        return hitCollider.GetComponentInParent<Entity3D>();
+    }
+
+    private bool IsMatchingTarget(Entity3D entity)
+    {
+        return entity != null
+            && !string.IsNullOrEmpty(targetTag)
+            && entity.CompareTag(targetTag);
     }
 
     private void SpawnHitEffect(RaycastHit hit)

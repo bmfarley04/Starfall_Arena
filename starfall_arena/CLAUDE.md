@@ -24,7 +24,7 @@ The game needs to ship to PS4-class hardware, so systems should be designed with
 
 ## Documentation Index
 
-Load the smallest relevant set of docs for the task.
+Load the smallest relevant set of docs for the task. If it is noted that we are working in the 3d game implementation, you should primarily reference just the 3D files. 
 
 - `AGENTS.md`
   - Start here for repo rules and documentation routing.
@@ -107,6 +107,7 @@ When writing or changing code in this repo:
 - prefer `SoundEffect` ScriptableObjects for audio configuration rather than scattering raw clip/volume setup through gameplay code
 - prefer performance-conscious patterns such as object pooling and avoiding unnecessary allocations, repeated instantiation/destruction, or overly expensive per-frame work
 - remove redundant fields, duplicate settings, and unnecessary complexity when possible
+- after making edits, ALWAYS tell the user what to change in editor to faciliate the changes. 
 
 ## Debugging Rule
 

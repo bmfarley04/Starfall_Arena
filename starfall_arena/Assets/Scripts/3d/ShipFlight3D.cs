@@ -24,6 +24,11 @@ public class ShipFlight3D : MonoBehaviour
     [SerializeField] private MonoBehaviour inputSourceBehaviour;
     [SerializeField] private bool frictionEnabled;
 
+    [Header("Flight Plane")]
+    [SerializeField] private bool lockToWorldYPlane = true;
+    [SerializeField] private bool captureInitialWorldY = true;
+    [SerializeField] private float lockedWorldY;
+
     private Rigidbody _rb;
     private IShipFlightInputSource _inputSource;
     private Vector2 _lookInput;
@@ -37,7 +42,7 @@ public class ShipFlight3D : MonoBehaviour
     public bool IsFrictionEnabled => frictionEnabled;
     public Vector3 LinearVelocity => _rb != null ? _rb.linearVelocity : Vector3.zero;
     public Vector3 LinearAcceleration => _linearAcceleration;
-    public float ForwardSpeed => Vector3.Dot(LinearVelocity, transform.forward);
+    public float ForwardSpeed => Vector3.Dot(LinearVelocity, GetPlanarForward());
     public float ForwardSpeedNormalized => flight.maxSpeed > 0f ? Mathf.Clamp01(Mathf.Clamp(ForwardSpeed, 0f, flight.maxSpeed) / flight.maxSpeed) : 0f;
     public bool IsApplyingThrust => _thrustInput > 0.05f;
 
@@ -46,6 +51,7 @@ public class ShipFlight3D : MonoBehaviour
         _rb = GetComponent<Rigidbody>();
         ConfigureRigidbody();
         SetInputSource(inputSourceBehaviour);
+        CacheLockedWorldYIfNeeded();
         _previousVelocity = _rb.linearVelocity;
     }
 
@@ -67,6 +73,7 @@ public class ShipFlight3D : MonoBehaviour
         PullInputFromSource();
         HandleRotation();
         HandleThrust();
+        EnforceFlightPlane();
 
         _linearAcceleration = (_rb.linearVelocity - _previousVelocity) / Time.fixedDeltaTime;
         _previousVelocity = _rb.linearVelocity;
@@ -123,7 +130,8 @@ public class ShipFlight3D : MonoBehaviour
             return;
         }
 
-        _rb.linearVelocity -= transform.forward * recoilForce;
+        _rb.linearVelocity -= GetPlanarForward() * recoilForce;
+        EnforceFlightPlane();
     }
 
     private void ConfigureRigidbody()
@@ -166,7 +174,7 @@ public class ShipFlight3D : MonoBehaviour
     {
         if (_thrustInput > 0.05f)
         {
-            _rb.linearVelocity += transform.forward * (_thrustInput * flight.thrustAcceleration * Time.fixedDeltaTime);
+            _rb.linearVelocity += GetPlanarForward() * (_thrustInput * flight.thrustAcceleration * Time.fixedDeltaTime);
         }
         else if (frictionEnabled)
         {
@@ -177,5 +185,46 @@ public class ShipFlight3D : MonoBehaviour
         {
             _rb.linearVelocity = _rb.linearVelocity.normalized * flight.maxSpeed;
         }
+    }
+
+    private void CacheLockedWorldYIfNeeded()
+    {
+        if (captureInitialWorldY)
+        {
+            lockedWorldY = transform.position.y;
+        }
+    }
+
+    private void EnforceFlightPlane()
+    {
+        if (_rb == null || !lockToWorldYPlane)
+        {
+            return;
+        }
+
+        Vector3 linearVelocity = _rb.linearVelocity;
+        if (!Mathf.Approximately(linearVelocity.y, 0f))
+        {
+            linearVelocity.y = 0f;
+            _rb.linearVelocity = linearVelocity;
+        }
+
+        Vector3 position = _rb.position;
+        if (!Mathf.Approximately(position.y, lockedWorldY))
+        {
+            position.y = lockedWorldY;
+            _rb.position = position;
+        }
+    }
+
+    private Vector3 GetPlanarForward()
+    {
+        Vector3 planarForward = Vector3.ProjectOnPlane(transform.forward, Vector3.up);
+        if (planarForward.sqrMagnitude <= 0.0001f)
+        {
+            return Vector3.forward;
+        }
+
+        return planarForward.normalized;
     }
 }
