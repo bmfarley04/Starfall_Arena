@@ -8,6 +8,9 @@ public abstract class Entity3D : MonoBehaviour
     [SerializeField] protected float maxShield = 50f;
     [SerializeField] protected ShieldController shieldController;
 
+    [Header("Abilities")]
+    [SerializeField] protected Ability3D[] abilities = new Ability3D[4];
+
     [Header("3D Systems")]
     [SerializeField] protected ShipFlight3D shipFlight;
     [SerializeField] protected ShipVisualTilt3D shipVisualTilt;
@@ -23,8 +26,15 @@ public abstract class Entity3D : MonoBehaviour
     public ShipThrusterVfx3D ThrusterVfx => shipThrusterVfx;
     public ShipSpeedFx3D SpeedFx => shipSpeedFx;
     public ProjectileWeapon3D PrimaryWeapon => primaryWeapon;
+    public Ability3D[] Abilities => abilities;
     public float CurrentHealth => currentHealth;
     public float CurrentShield => currentShield;
+
+    public Ability3D GetAbility(int index)
+    {
+        if (index < 0 || index >= abilities.Length) return null;
+        return abilities[index];
+    }
 
     protected virtual void Awake()
     {
@@ -99,6 +109,13 @@ public abstract class Entity3D : MonoBehaviour
 
     protected virtual void Die()
     {
+        for (int i = 0; i < abilities.Length; i++)
+        {
+            if (abilities[i] != null)
+            {
+                abilities[i].Die();
+            }
+        }
         Destroy(gameObject);
     }
 
