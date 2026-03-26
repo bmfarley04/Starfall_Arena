@@ -117,6 +117,7 @@ When debugging:
 - ask the user to report the debug output when their help is needed to confirm runtime behavior
 - keep debug logging focused on the specific uncertainty being investigated
 - remove or comment out temporary debug statements once the issue is understood or resolved
+- When running builds or tests, do not leave temporary .dotnet or bin/obj folders in the root. Use the existing Unity structure or clean up after yourself
 
 ## Codebase Orientation
 
