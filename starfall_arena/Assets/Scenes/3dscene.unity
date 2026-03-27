@@ -581,15 +581,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 400004, guid: 8ec6c25d4bc8ae143b513d8332f121e8, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -4.4007607
+      value: -3.09
       objectReference: {fileID: 0}
     - target: {fileID: 400004, guid: 8ec6c25d4bc8ae143b513d8332f121e8, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0.5000007
+      value: 0.62
       objectReference: {fileID: 0}
     - target: {fileID: 400004, guid: 8ec6c25d4bc8ae143b513d8332f121e8, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 24.412746
+      value: 8.57
       objectReference: {fileID: 0}
     - target: {fileID: 400004, guid: 8ec6c25d4bc8ae143b513d8332f121e8, type: 3}
       propertyPath: m_LocalRotation.w
@@ -1160,6 +1160,10 @@ PrefabInstance:
       propertyPath: virtualCamera
       value: 
       objectReference: {fileID: 773417013}
+    - target: {fileID: 6928815812079169362, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      propertyPath: aimMode
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 7427501341343801484, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
@@ -1204,13 +1208,17 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 8405341609283334870, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: c7ce114f7cdf8734caa1bccec8f31bd5, type: 2}
     - target: {fileID: 9023730634269657982, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
       propertyPath: m_LocalRotation.w
-      value: -0.9848077
+      value: -0.9961947
       objectReference: {fileID: 0}
     - target: {fileID: 9023730634269657982, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
       propertyPath: m_LocalRotation.x
-      value: 0.17364846
+      value: 0.08715596
       objectReference: {fileID: 0}
     - target: {fileID: 9023730634269657982, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
       propertyPath: m_LocalRotation.y
@@ -1222,7 +1230,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 9023730634269657982, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
-      value: 340
+      value: 350
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -1257,21 +1265,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0bcc1084633ada24b99d28f0b4f4506d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Beam3D
-  stats:
-    cooldown: 0
-    duration: 0
   isLocked: 0
   beam:
-    beamPrefab: {fileID: 100000, guid: 306efe897372b3c4abef1c82fb1ba325, type: 3}
+    beamPrefab: {fileID: 100000, guid: 7767d0d49caff014ba0e057220a05183, type: 3}
     targetTag: Enemy
     damagePerSecond: 100
     maxDistance: 1000
     recoilForcePerSecond: 0
     impactForce: 0
     offsetDistance: 1.6
+    verticalOffset: 0.4
     muzzle: {fileID: 1661888555}
     rotationMultiplier: 0.3
-    capacity: 100
+    capacity: 100000
     drainRate: 0
     regenRate: 20
 --- !u!1001 &6632817810544565794

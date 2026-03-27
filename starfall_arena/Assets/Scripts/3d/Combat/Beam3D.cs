@@ -14,6 +14,8 @@ public class Beam3D : Ability3D
         public float recoilForcePerSecond;
         public float impactForce;
         public float offsetDistance;
+        [Tooltip("Vertical offset from the muzzle anchor along its local up axis (positive = up).")]
+        public float verticalOffset;
         [Tooltip("Optional muzzle transform for beam origin. Falls back to entity transform if unset.")]
         public Transform muzzle;
         [Tooltip("Rotation speed multiplier when beam is active (0.3 = 70% slower)")]
@@ -34,6 +36,8 @@ public class Beam3D : Ability3D
     private LaserBeam3D _activeBeam;
     private float _currentBeamCapacity;
 
+    private bool UsesBeamCapacity => beam.capacity > 0f && beam.drainRate > 0f;
+
     protected override void Awake()
     {
         base.Awake();
@@ -42,7 +46,7 @@ public class Beam3D : Ability3D
 
     void Update()
     {
-        if (_activeBeam == null && _currentBeamCapacity > 0f)
+        if (_activeBeam == null && _currentBeamCapacity > 0f && beam.regenRate > 0f)
         {
             _currentBeamCapacity = Mathf.Max(_currentBeamCapacity - beam.regenRate * Time.deltaTime, 0f);
         }
@@ -58,20 +62,26 @@ public class Beam3D : Ability3D
                 entity.Flight.ApplyRecoil(recoilForceThisFrame);
             }
 
-            _currentBeamCapacity = Mathf.Min(_currentBeamCapacity + beam.drainRate * Time.fixedDeltaTime, beam.capacity);
-
-            if (_currentBeamCapacity >= beam.capacity)
+            if (UsesBeamCapacity)
             {
-                StopBeam();
+                _currentBeamCapacity = Mathf.Min(_currentBeamCapacity + beam.drainRate * Time.fixedDeltaTime, beam.capacity);
+
+                if (_currentBeamCapacity >= beam.capacity)
+                {
+                    StopBeam();
+                }
             }
         }
     }
+
+    protected override bool HandlesReleaseInput() => true;
+    protected override bool ShouldMarkAbilityUsedOnPress(InputValue value) => false;
 
     public override void UseAbility(InputValue value)
     {
         if (value.isPressed)
         {
-            if (_currentBeamCapacity >= beam.capacity)
+            if (UsesBeamCapacity && _currentBeamCapacity >= beam.capacity)
             {
                 return;
             }
@@ -108,7 +118,8 @@ public class Beam3D : Ability3D
             beam.impactForce,
             entity,
             beam.muzzle != null ? beam.muzzle : entity.transform,
-            beam.offsetDistance);
+            beam.offsetDistance,
+            beam.verticalOffset);
 
         _activeBeam.StartFiring();
     }
@@ -143,7 +154,7 @@ public class Beam3D : Ability3D
     public override bool IsResourceBased() => true;
     public override float GetHUDFillRatio()
     {
-        if (beam.capacity <= 0f) return 0f;
+        if (!UsesBeamCapacity) return 0f;
         return _currentBeamCapacity / beam.capacity;
     }
     public override bool IsOnCooldown() => false;

@@ -42,6 +42,8 @@ Load the smallest relevant set of docs for the task. If it is noted that we are 
 - Working on the fuller 3D implementation path, perspective-camera gameplay, 3D ship movement, 3D combat readability, or translating an existing 2D/2.5D system into 3D:
   - Read `3D.md` first
   - Then load `GAME_SYSTEMS.md`, `UI_MANAGERS.md`, and/or `NETWORK.md` only as needed for the shared system being translated
+  - Keep code edits inside `Assets/Scripts/3d` by default
+  - If the fix appears to require changing non-3D code, ask the user for permission before editing outside `Assets/Scripts/3d`
 - Working on player movement, duel flow, combat feel, damage, shields, projectiles, abilities, or augments:
   - Read `GAME_SYSTEMS.md`
 - Working on menus, ship select, augment select, HUD, round flow, or manager responsibilities:
@@ -96,6 +98,7 @@ When updating docs:
 When writing or changing code in this repo:
 
 - prefer the simplest solution that fully solves the stated task
+- when a task is explicitly scoped to the 3D implementation path, do not edit non-3D gameplay scripts without first getting the user's permission
 - prioritize readability and maintainability over cleverness
 - keep gameplay code iteration-friendly for future tuning
 - treat performance as a core requirement, especially for PS4-targeted gameplay paths

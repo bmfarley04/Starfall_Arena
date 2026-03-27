@@ -3,17 +3,6 @@ using UnityEngine.InputSystem;
 
 public class Ability3D : MonoBehaviour
 {
-    [System.Serializable]
-    public struct AbilityStats3D
-    {
-        [Tooltip("Cooldown time between uses (seconds)")]
-        public float cooldown;
-        [Tooltip("Duration of ability effect (seconds)")]
-        public float duration;
-    }
-
-    public AbilityStats3D stats;
-
     protected Entity3D entity;
     protected float lastUsedAbility = -999f;
     protected bool isDisabledByOtherAbility = false;
@@ -22,18 +11,27 @@ public class Ability3D : MonoBehaviour
     protected virtual void Awake()
     {
         entity = GetComponent<Entity3D>();
-        lastUsedAbility = -stats.cooldown;
+        SetInitialCooldownState(GetCooldownDuration());
     }
 
     public virtual bool TryUseAbility(InputValue value)
     {
-        if (CanUseAbility())
+        if (!value.isPressed)
         {
-            lastUsedAbility = Time.time;
-            UseAbility(value);
-            return true;
+            return TryHandleRelease(value);
         }
-        return false;
+
+        if (!CanUseAbility())
+        {
+            return false;
+        }
+
+        if (ShouldMarkAbilityUsedOnPress(value))
+        {
+            MarkAbilityUsed();
+        }
+        UseAbility(value);
+        return true;
     }
 
     public virtual void UseAbility(InputValue value)
@@ -46,7 +44,7 @@ public class Ability3D : MonoBehaviour
         {
             return false;
         }
-        if (Time.time < lastUsedAbility + stats.cooldown)
+        if (IsOnCooldown())
         {
             return false;
         }
@@ -59,7 +57,8 @@ public class Ability3D : MonoBehaviour
 
     public virtual bool IsAbilityActive()
     {
-        return Time.time < lastUsedAbility + stats.duration;
+        float activeDuration = GetActiveDuration();
+        return activeDuration > 0f && Time.time < lastUsedAbility + activeDuration;
     }
 
     protected virtual bool IsAnyOtherAbilityActive()
@@ -110,10 +109,11 @@ public class Ability3D : MonoBehaviour
 
     public virtual float GetHUDFillRatio()
     {
-        if (stats.cooldown <= 0f) return 0f;
+        float cooldown = GetCooldownDuration();
+        if (cooldown <= 0f) return 0f;
         float elapsed = Time.time - lastUsedAbility;
-        if (elapsed >= stats.cooldown) return 0f;
-        return 1f - (elapsed / stats.cooldown);
+        if (elapsed >= cooldown) return 0f;
+        return 1f - (elapsed / cooldown);
     }
 
     public virtual bool IsResourceBased()
@@ -123,7 +123,48 @@ public class Ability3D : MonoBehaviour
 
     public virtual bool IsOnCooldown()
     {
-        if (stats.cooldown <= 0f) return false;
-        return Time.time < lastUsedAbility + stats.cooldown;
+        float cooldown = GetCooldownDuration();
+        return cooldown > 0f && Time.time < lastUsedAbility + cooldown;
+    }
+
+    protected virtual float GetCooldownDuration()
+    {
+        return 0f;
+    }
+
+    protected virtual float GetActiveDuration()
+    {
+        return 0f;
+    }
+
+    protected virtual bool HandlesReleaseInput()
+    {
+        return false;
+    }
+
+    protected virtual bool TryHandleRelease(InputValue value)
+    {
+        if (!HandlesReleaseInput())
+        {
+            return false;
+        }
+
+        UseAbility(value);
+        return true;
+    }
+
+    protected virtual bool ShouldMarkAbilityUsedOnPress(InputValue value)
+    {
+        return true;
+    }
+
+    protected void MarkAbilityUsed()
+    {
+        lastUsedAbility = Time.time;
+    }
+
+    protected void SetInitialCooldownState(float cooldown)
+    {
+        lastUsedAbility = cooldown > 0f ? -cooldown : -999f;
     }
 }

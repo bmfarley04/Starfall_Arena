@@ -1,20 +1,22 @@
 using UnityEngine;
 
-[RequireComponent(typeof(LineRenderer))]
 public class LaserBeam3D : MonoBehaviour
 {
+    [Header("Beam Visual - Core")]
+    [Tooltip("Inner beam mesh (capsule). Bright core of the beam.")]
+    [SerializeField] private Transform beamCore;
+    [Tooltip("Radius of the core beam")]
+    [SerializeField] private float coreRadius = 0.15f;
+
+    [Header("Beam Visual - Glow")]
+    [Tooltip("Outer beam mesh (capsule). Larger, more transparent glow layer.")]
+    [SerializeField] private Transform beamGlow;
+    [Tooltip("Radius of the glow beam")]
+    [SerializeField] private float glowRadius = 0.4f;
+
     [Header("Effect Prefabs")]
     [SerializeField] private GameObject impactEffectPrefab;
     [SerializeField] private GameObject muzzleEffectPrefab;
-
-    [Header("Beam Width")]
-    [Tooltip("Width of the beam LineRenderer")]
-    [SerializeField] private float beamWidth = 0.5f;
-
-    [Header("UV Animation")]
-    [SerializeField] private bool animateUV;
-    [SerializeField] private float uvSpeed = 1f;
-    [SerializeField] private float uvTilingPerUnit = 0.1f;
 
     [Header("Shield Effects")]
     [SerializeField] private float laserHitInterval = 0.2f;
@@ -22,7 +24,6 @@ public class LaserBeam3D : MonoBehaviour
     [Header("Collision")]
     [SerializeField] private LayerMask collisionMask = ~0;
 
-    private LineRenderer _lineRenderer;
     private bool _isFiring;
     private string _targetTag;
     private float _maxDistance;
@@ -31,10 +32,9 @@ public class LaserBeam3D : MonoBehaviour
     private float _impactForce;
     private Entity3D _shooter;
     private Transform _positionAnchor;
+    private Transform _directionSource;
     private float _anchorOffset;
-    private Camera _aimCamera;
-    private float _convergenceDistance;
-    private float _uvOffset;
+    private float _verticalOffset;
     private float _timeSinceLastShieldHit;
     private ShieldController _currentTargetShield;
 
@@ -43,19 +43,19 @@ public class LaserBeam3D : MonoBehaviour
 
     void Awake()
     {
-        _lineRenderer = GetComponent<LineRenderer>();
-        if (_lineRenderer != null)
+        if (beamCore != null)
         {
-            _lineRenderer.enabled = false;
-            _lineRenderer.startWidth = beamWidth;
-            _lineRenderer.endWidth = beamWidth;
+            beamCore.gameObject.SetActive(false);
+        }
+        if (beamGlow != null)
+        {
+            beamGlow.gameObject.SetActive(false);
         }
     }
 
     public void Initialize(string targetTag, float damagePerSecond, float maxDistance,
         float recoilForcePerSecond, float impactForce, Entity3D shooter,
-        Transform positionAnchor = null, float anchorOffset = 0f,
-        Camera aimCamera = null, float convergenceDistance = 150f)
+        Transform positionAnchor = null, float anchorOffset = 0f, float verticalOffset = 0f)
     {
         _targetTag = targetTag;
         _damagePerSecond = damagePerSecond;
@@ -64,9 +64,9 @@ public class LaserBeam3D : MonoBehaviour
         _impactForce = impactForce;
         _shooter = shooter;
         _positionAnchor = positionAnchor != null ? positionAnchor : shooter.transform;
+        _directionSource = shooter.transform;
         _anchorOffset = anchorOffset;
-        _aimCamera = aimCamera != null ? aimCamera : Camera.main;
-        _convergenceDistance = convergenceDistance;
+        _verticalOffset = verticalOffset;
     }
 
     public float GetRecoilForcePerSecond()
@@ -77,9 +77,14 @@ public class LaserBeam3D : MonoBehaviour
     public void StartFiring()
     {
         _isFiring = true;
-        if (_lineRenderer != null)
+
+        if (beamCore != null)
         {
-            _lineRenderer.enabled = true;
+            beamCore.gameObject.SetActive(true);
+        }
+        if (beamGlow != null)
+        {
+            beamGlow.gameObject.SetActive(true);
         }
 
         if (muzzleEffectPrefab != null)
@@ -98,9 +103,14 @@ public class LaserBeam3D : MonoBehaviour
     public void StopFiring()
     {
         _isFiring = false;
-        if (_lineRenderer != null)
+
+        if (beamCore != null)
         {
-            _lineRenderer.enabled = false;
+            beamCore.gameObject.SetActive(false);
+        }
+        if (beamGlow != null)
+        {
+            beamGlow.gameObject.SetActive(false);
         }
 
         _timeSinceLastShieldHit = 0f;
@@ -127,27 +137,12 @@ public class LaserBeam3D : MonoBehaviour
         }
 
         FireBeam();
-
-        if (animateUV && _lineRenderer != null)
-        {
-            _uvOffset += Time.deltaTime * uvSpeed;
-            if (_uvOffset > 1f)
-            {
-                _uvOffset -= 1f;
-            }
-            _lineRenderer.material.SetVector("_Offset", new Vector2(_uvOffset, 0f));
-        }
     }
 
     private void FireBeam()
     {
-        if (_lineRenderer == null)
-        {
-            return;
-        }
-
-        Vector3 origin = _positionAnchor.position + _positionAnchor.forward * _anchorOffset;
-        Vector3 aimDirection = ResolveAimDirection(origin);
+        Vector3 aimDirection = _directionSource.forward;
+        Vector3 origin = _positionAnchor.position + aimDirection * _anchorOffset + _positionAnchor.up * _verticalOffset;
 
         bool hitSomething = Physics.Raycast(origin, aimDirection, out RaycastHit hit, _maxDistance, collisionMask, QueryTriggerInteraction.Ignore);
 
@@ -157,11 +152,11 @@ public class LaserBeam3D : MonoBehaviour
             hitSomething = false;
         }
 
-        Vector3 endPosition;
+        float beamLength;
 
         if (hitSomething)
         {
-            endPosition = hit.point;
+            beamLength = hit.distance;
 
             Entity3D damageable = ResolveHitEntity(hit.collider);
             if (damageable != null && IsMatchingTarget(damageable))
@@ -169,7 +164,6 @@ public class LaserBeam3D : MonoBehaviour
                 float damageThisFrame = _damagePerSecond * Time.deltaTime;
                 damageable.TakeDamage(damageThisFrame, hit.point, _shooter);
 
-                // Apply impact force
                 Rigidbody targetRb = hit.collider.attachedRigidbody;
                 if (targetRb != null && _impactForce > 0f)
                 {
@@ -177,11 +171,9 @@ public class LaserBeam3D : MonoBehaviour
                     targetRb.linearVelocity += aimDirection * impactForceThisFrame;
                 }
 
-                // Shield hit effects at intervals
                 UpdateShieldHitEffects(damageable, hit.point);
             }
 
-            // Position impact effect at hit point
             if (_impactInstance != null)
             {
                 _impactInstance.SetActive(true);
@@ -191,7 +183,7 @@ public class LaserBeam3D : MonoBehaviour
         }
         else
         {
-            endPosition = origin + aimDirection * _maxDistance;
+            beamLength = _maxDistance;
             _timeSinceLastShieldHit = 0f;
             _currentTargetShield = null;
 
@@ -201,9 +193,30 @@ public class LaserBeam3D : MonoBehaviour
             }
         }
 
-        // Update line renderer
-        _lineRenderer.SetPosition(0, origin);
-        _lineRenderer.SetPosition(1, endPosition);
+        // Position and scale beam visuals
+        // Capsule default is 2 units tall along its local Y axis.
+        // We orient it so local Y points along aimDirection, then scale Y to match beam length.
+        // Position offset = half the length along aimDirection so the base stays at origin.
+        Quaternion beamRotation = Quaternion.LookRotation(aimDirection, Vector3.up)
+                                * Quaternion.Euler(90f, 0f, 0f); // rotate so capsule Y aligns with forward
+        Vector3 beamCenter = origin + aimDirection * (beamLength * 0.5f);
+        float halfLength = beamLength * 0.5f;
+
+        if (beamCore != null)
+        {
+            beamCore.position = beamCenter;
+            beamCore.rotation = beamRotation;
+            float coreDiameter = coreRadius * 2f;
+            beamCore.localScale = new Vector3(coreDiameter, halfLength, coreDiameter);
+        }
+
+        if (beamGlow != null)
+        {
+            beamGlow.position = beamCenter;
+            beamGlow.rotation = beamRotation;
+            float glowDiameter = glowRadius * 2f;
+            beamGlow.localScale = new Vector3(glowDiameter, halfLength, glowDiameter);
+        }
 
         // Position muzzle effect at beam origin
         if (_muzzleInstance != null)
@@ -211,41 +224,6 @@ public class LaserBeam3D : MonoBehaviour
             _muzzleInstance.transform.position = origin;
             _muzzleInstance.transform.rotation = Quaternion.LookRotation(aimDirection, Vector3.up);
         }
-
-        // Scale UV to beam length
-        float beamLength = Vector3.Distance(origin, endPosition);
-        _lineRenderer.material.SetTextureScale("_BaseMap", new Vector2(beamLength * uvTilingPerUnit, 1f));
-    }
-
-    private Vector3 ResolveAimDirection(Vector3 beamOrigin)
-    {
-        if (_aimCamera == null)
-        {
-            return _positionAnchor.forward;
-        }
-
-        Ray centerRay = _aimCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
-
-        // Find convergence point from camera center, matching ProjectileWeapon3D
-        float convergeDist = _convergenceDistance;
-        if (Physics.Raycast(centerRay, out RaycastHit hit, _maxDistance, collisionMask, QueryTriggerInteraction.Ignore))
-        {
-            convergeDist = Mathf.Max(_convergenceDistance, hit.distance);
-        }
-        else
-        {
-            convergeDist = Mathf.Max(_convergenceDistance, _maxDistance);
-        }
-
-        Vector3 convergencePoint = centerRay.origin + centerRay.direction * convergeDist;
-        Vector3 direction = convergencePoint - beamOrigin;
-
-        if (direction.sqrMagnitude <= 0.0001f)
-        {
-            return centerRay.direction;
-        }
-
-        return direction.normalized;
     }
 
     private void UpdateShieldHitEffects(Entity3D target, Vector3 hitPoint)
