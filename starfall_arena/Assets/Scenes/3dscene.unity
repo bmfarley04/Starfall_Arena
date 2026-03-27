@@ -176,9 +176,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LightningBolt3D
   bolt:
-    startPoint: {fileID: 0}
-    endPoint: {fileID: 0}
-    quadWidth: 0.6
+    startPoint: {fileID: 1034527830}
+    endPoint: {fileID: 597285366}
+    quadWidth: 1
   lightningMaterial: {fileID: 2100000, guid: a7d3dfe10f1a470ca6f6ef55ac672cc4, type: 2}
   activeOnSplitState: 1
   baseIntensityMultiplier: 1
@@ -249,7 +249,7 @@ GameObject:
   m_CorrespondingSourceObject: {fileID: 2568558604607578100, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
   m_PrefabInstance: {fileID: 1993409379330085426}
   m_PrefabAsset: {fileID: 0}
---- !u!1 &442670622
+--- !u!1 &597285365
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -257,108 +257,60 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 442670623}
-  - component: {fileID: 442670626}
-  - component: {fileID: 442670625}
-  - component: {fileID: 442670624}
+  - component: {fileID: 597285366}
   m_Layer: 0
-  m_Name: bolt1 (3)
+  m_Name: t1 (5)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &442670623
+--- !u!4 &597285366
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 442670622}
+  m_GameObject: {fileID: 597285365}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.6270001, y: -0.398, z: -0.415}
+  m_LocalPosition: {x: -0.671, y: -1.091, z: -1.463}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 1899993637}
+  m_Father: {fileID: 1380808457}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &442670624
-MonoBehaviour:
+--- !u!1 &605985267
+GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 442670622}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 923f76ee5b6ce234baf0958527f7dce2, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::LightningBolt3D
-  bolt:
-    startPoint: {fileID: 0}
-    endPoint: {fileID: 0}
-    quadWidth: 0.6
-  lightningMaterial: {fileID: 2100000, guid: a7d3dfe10f1a470ca6f6ef55ac672cc4, type: 2}
-  activeOnSplitState: 1
-  baseIntensityMultiplier: 1
---- !u!23 &442670625
-MeshRenderer:
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 605985268}
+  m_Layer: 0
+  m_Name: t1
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &605985268
+Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 442670622}
-  m_Enabled: 1
-  m_CastShadows: 1
-  m_ReceiveShadows: 1
-  m_DynamicOccludee: 1
-  m_StaticShadowCaster: 0
-  m_MotionVectors: 1
-  m_LightProbeUsage: 1
-  m_ReflectionProbeUsage: 1
-  m_RayTracingMode: 2
-  m_RayTraceProcedural: 0
-  m_RayTracingAccelStructBuildFlagsOverride: 0
-  m_RayTracingAccelStructBuildFlags: 1
-  m_SmallMeshCulling: 1
-  m_ForceMeshLod: -1
-  m_MeshLodSelectionBias: 0
-  m_RenderingLayerMask: 1
-  m_RendererPriority: 0
-  m_Materials:
-  - {fileID: 2100000, guid: a7d3dfe10f1a470ca6f6ef55ac672cc4, type: 2}
-  m_StaticBatchInfo:
-    firstSubMesh: 0
-    subMeshCount: 0
-  m_StaticBatchRoot: {fileID: 0}
-  m_ProbeAnchor: {fileID: 0}
-  m_LightProbeVolumeOverride: {fileID: 0}
-  m_ScaleInLightmap: 1
-  m_ReceiveGI: 1
-  m_PreserveUVs: 0
-  m_IgnoreNormalsForChartDetection: 0
-  m_ImportantGI: 0
-  m_StitchLightmapSeams: 1
-  m_SelectedEditorRenderState: 3
-  m_MinimumChartSize: 4
-  m_AutoUVMaxDistance: 0.5
-  m_AutoUVMaxAngle: 89
-  m_LightmapParameters: {fileID: 0}
-  m_GlobalIlluminationMeshLod: 0
-  m_SortingLayerID: 0
-  m_SortingLayer: 0
-  m_SortingOrder: 0
-  m_MaskInteraction: 0
-  m_AdditionalVertexStreams: {fileID: 0}
---- !u!33 &442670626
-MeshFilter:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 442670622}
-  m_Mesh: {fileID: 10210, guid: 0000000000000000e000000000000000, type: 0}
+  m_GameObject: {fileID: 605985267}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0.24, y: -0.14, z: 1.54}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1380808457}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &773417010
 GameObject:
   m_ObjectHideFlags: 0
@@ -669,9 +621,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LightningBolt3D
   bolt:
-    startPoint: {fileID: 0}
-    endPoint: {fileID: 0}
-    quadWidth: 0.6
+    startPoint: {fileID: 962471066}
+    endPoint: {fileID: 1514979991}
+    quadWidth: 1
   lightningMaterial: {fileID: 2100000, guid: a7d3dfe10f1a470ca6f6ef55ac672cc4, type: 2}
   activeOnSplitState: 1
   baseIntensityMultiplier: 1
@@ -742,6 +694,37 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 1493440020577353942, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
   m_PrefabInstance: {fileID: 1993409379330085426}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &962471065
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 962471066}
+  m_Layer: 0
+  m_Name: t1 (2)
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &962471066
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 962471065}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1380808457}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &978722946
 GameObject:
   m_ObjectHideFlags: 0
@@ -834,6 +817,37 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: f2f20bfc5e92ed248840a296d28c9e76, type: 3}
+--- !u!1 &1034527829
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1034527830}
+  m_Layer: 0
+  m_Name: t1 (4)
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1034527830
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1034527829}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0.052, y: -0.019, z: -0.849}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1380808457}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!4 &1097950686 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 8226611592555908524, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
@@ -867,7 +881,7 @@ Transform:
   m_GameObject: {fileID: 1232313485}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: 0.05766323, w: 0.99833614}
-  m_LocalPosition: {x: 0.341, y: -0.304, z: -0.908}
+  m_LocalPosition: {x: 0.408, y: -0.521, z: -4.405}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -886,9 +900,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LightningBolt3D
   bolt:
-    startPoint: {fileID: 1726455197}
-    endPoint: {fileID: 978722947}
-    quadWidth: 0.6
+    startPoint: {fileID: 605985268}
+    endPoint: {fileID: 1424294967}
+    quadWidth: 1
   lightningMaterial: {fileID: 2100000, guid: a7d3dfe10f1a470ca6f6ef55ac672cc4, type: 2}
   activeOnSplitState: 1
   baseIntensityMultiplier: 1
@@ -959,6 +973,68 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 2154160195120135421, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
   m_PrefabInstance: {fileID: 1993409379330085426}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &1424294966
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1424294967}
+  m_Layer: 0
+  m_Name: t1 (1)
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1424294967
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1424294966}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -0.24, y: -1.12, z: 0.892}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1380808457}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1514979990
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1514979991}
+  m_Layer: 0
+  m_Name: t1 (3)
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1514979991
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1514979990}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0.093, y: -1.594, z: -0.111}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1380808457}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!4 &1589894714 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 1731811727607058467, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
@@ -1286,7 +1362,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SplitStateLightningRig3D
   bolts: []
-  activateOnStart: 1
+  activateOnStart: 0
   splitStateIntensity: 1
 --- !u!4 &1899993637
 Transform:
@@ -1296,16 +1372,15 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1899993635}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.11253, y: 0.22063, z: 5.80544}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0.17953, y: 0.22063, z: 0.08544016}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1232313486}
   - {fileID: 923501172}
   - {fileID: 98139709}
-  - {fileID: 442670623}
-  m_Father: {fileID: 0}
+  m_Father: {fileID: 2745255904368457554}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!4 &2055973262 stripped
 Transform:
@@ -1475,6 +1550,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Class1_Player
       objectReference: {fileID: 0}
+    - target: {fileID: 3261048947178620207, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      propertyPath: mouseLookSensitivity
+      value: 0.2
+      objectReference: {fileID: 0}
     - target: {fileID: 3760524061682020281, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
       propertyPath: virtualCamera
       value: 
@@ -1533,7 +1612,28 @@ PrefabInstance:
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
-    m_AddedGameObjects: []
+    m_AddedGameObjects:
+    - targetCorrespondingSourceObject: {fileID: 7427501341343801484, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1899993637}
+    - targetCorrespondingSourceObject: {fileID: 2154160195120135421, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 605985268}
+    - targetCorrespondingSourceObject: {fileID: 2154160195120135421, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1424294967}
+    - targetCorrespondingSourceObject: {fileID: 2154160195120135421, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 962471066}
+    - targetCorrespondingSourceObject: {fileID: 2154160195120135421, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1514979991}
+    - targetCorrespondingSourceObject: {fileID: 2154160195120135421, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1034527830}
+    - targetCorrespondingSourceObject: {fileID: 2154160195120135421, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 597285366}
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 2568558604607578100, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
       insertIndex: -1
@@ -1683,6 +1783,5 @@ SceneRoots:
   - {fileID: 1993409379330085426}
   - {fileID: 1839579953}
   - {fileID: 792701132}
-  - {fileID: 1899993637}
   - {fileID: 1726455197}
   - {fileID: 978722947}
