@@ -5,6 +5,7 @@ public class EnemyAIFlightController3D : MonoBehaviour, IShipFlightInputSource
     [Header("3D Enemy AI")]
     [SerializeField] private ShipFlight3D shipFlight;
     [SerializeField] private ProjectileWeapon3D primaryWeapon;
+    [SerializeField] private Entity3D entity;
     [SerializeField] private Transform target;
     [SerializeField] private string targetTag = "Player";
     [SerializeField] private float detectionRange = 150f;
@@ -23,6 +24,7 @@ public class EnemyAIFlightController3D : MonoBehaviour, IShipFlightInputSource
     {
         shipFlight ??= GetComponent<ShipFlight3D>();
         primaryWeapon ??= GetComponent<ProjectileWeapon3D>();
+        entity ??= GetComponent<Entity3D>();
 
         if (shipFlight != null)
         {
@@ -88,7 +90,7 @@ public class EnemyAIFlightController3D : MonoBehaviour, IShipFlightInputSource
 
         _thrustInput = distance > preferredDistance ? 1f : 0f;
 
-        if (primaryWeapon != null && IsAimedAtTarget(toTarget))
+        if (primaryWeapon != null && (entity == null || !entity.IsPrimaryFireDisabledByAbility()) && IsAimedAtTarget(toTarget))
         {
             primaryWeapon.TryFire();
         }

@@ -22,6 +22,7 @@ public class ShipFlight3D : MonoBehaviour
     };
 
     [SerializeField] private MonoBehaviour inputSourceBehaviour;
+    [SerializeField] private Entity3D entity;
     [SerializeField] private bool frictionEnabled;
 
     [Header("Flight Plane")]
@@ -49,6 +50,7 @@ public class ShipFlight3D : MonoBehaviour
     private void Awake()
     {
         _rb = GetComponent<Rigidbody>();
+        entity ??= GetComponent<Entity3D>();
         ConfigureRigidbody();
         SetInputSource(inputSourceBehaviour);
         CacheLockedWorldYIfNeeded();
@@ -162,6 +164,10 @@ public class ShipFlight3D : MonoBehaviour
     {
         float speedPercent = flight.maxSpeed > 0f ? _rb.linearVelocity.magnitude / flight.maxSpeed : 0f;
         float rotMult = Mathf.Lerp(1f, flight.minRotationMultiplierAtMaxSpeed, Mathf.Clamp01(speedPercent));
+        if (entity != null)
+        {
+            rotMult *= entity.GetCombinedRotationMultiplier();
+        }
 
         float pitch = _lookInput.y * flight.pitchSpeed * rotMult * (flight.invertY ? -1f : 1f);
         float yaw = _lookInput.x * flight.yawSpeed * rotMult;
@@ -172,9 +178,11 @@ public class ShipFlight3D : MonoBehaviour
 
     private void HandleThrust()
     {
+        float thrustMultiplier = entity != null ? entity.GetCombinedThrustMultiplier() : 1f;
+
         if (_thrustInput > 0.05f)
         {
-            _rb.linearVelocity += GetPlanarForward() * (_thrustInput * flight.thrustAcceleration * Time.fixedDeltaTime);
+            _rb.linearVelocity += GetPlanarForward() * (_thrustInput * flight.thrustAcceleration * thrustMultiplier * Time.fixedDeltaTime);
         }
         else if (frictionEnabled)
         {

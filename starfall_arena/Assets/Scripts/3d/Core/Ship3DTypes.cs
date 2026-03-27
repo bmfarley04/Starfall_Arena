@@ -125,6 +125,22 @@ public struct ProjectileWeaponConfig3D
     public float recoilForce;
 }
 
+public struct ProjectileFireRequest3D
+{
+    public GameObject projectilePrefab;
+    public Transform[] muzzles;
+    public Transform spawnAnchor;
+    public string targetTag;
+    public float speed;
+    public float damage;
+    public float lifetime;
+    public float impactForce;
+    public float recoilForce;
+    public float forwardOffset;
+    public float verticalOffset;
+    public System.Action<Projectile3D> onProjectileSpawned;
+}
+
 public class PooledObject3D : MonoBehaviour
 {
     [SerializeField] private GameObject sourcePrefab;

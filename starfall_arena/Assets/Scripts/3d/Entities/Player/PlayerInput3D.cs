@@ -29,7 +29,7 @@ public class PlayerInput3D : MonoBehaviour, IShipFlightInputSource
 
     private void Update()
     {
-        if (_fireHeld && primaryWeapon != null)
+        if (_fireHeld && primaryWeapon != null && (entity == null || !entity.IsPrimaryFireDisabledByAbility()))
         {
             primaryWeapon.TryFire();
         }

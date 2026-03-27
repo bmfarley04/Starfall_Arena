@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 public class Projectile3D : MonoBehaviour, IPooledObject3D
@@ -24,6 +25,7 @@ public class Projectile3D : MonoBehaviour, IPooledObject3D
     protected Vector3 _velocity;
     protected Entity3D _shooter;
     protected float _age;
+    protected readonly HashSet<int> _hitEntityIds = new HashSet<int>();
 
     protected virtual void Update()
     {
@@ -62,6 +64,7 @@ public class Projectile3D : MonoBehaviour, IPooledObject3D
         _shooter = shooter;
         _velocity = (_direction * speed) + shipVelocity;
         _age = 0f;
+        _hitEntityIds.Clear();
 
         transform.rotation = Quaternion.LookRotation(_direction, Vector3.up);
     }
@@ -69,11 +72,13 @@ public class Projectile3D : MonoBehaviour, IPooledObject3D
     public void OnSpawnedFromPool()
     {
         _age = 0f;
+        _hitEntityIds.Clear();
     }
 
     public void OnDespawnedToPool()
     {
         _velocity = Vector3.zero;
+        _hitEntityIds.Clear();
     }
 
     protected virtual void ApplyDamageToEntity(Entity3D damageable, Vector3 hitPoint, Collider collider)
@@ -127,7 +132,7 @@ public class Projectile3D : MonoBehaviour, IPooledObject3D
         return foundHit;
     }
 
-    private bool IsValidHit(RaycastHit hit)
+    protected virtual bool IsValidHit(RaycastHit hit)
     {
         if (hit.collider == null)
         {
@@ -147,7 +152,7 @@ public class Projectile3D : MonoBehaviour, IPooledObject3D
         return true;
     }
 
-    private void ProcessHit(RaycastHit hit)
+    protected virtual void ProcessHit(RaycastHit hit)
     {
         Collider other = hit.collider;
         ReflectShield3D reflectShield = ResolveReflectShield(other);
@@ -166,7 +171,7 @@ public class Projectile3D : MonoBehaviour, IPooledObject3D
         DespawnSelf();
     }
 
-    private Entity3D ResolveHitEntity(Collider hitCollider)
+    protected Entity3D ResolveHitEntity(Collider hitCollider)
     {
         if (hitCollider == null)
         {
@@ -191,7 +196,7 @@ public class Projectile3D : MonoBehaviour, IPooledObject3D
         return hitCollider.GetComponentInParent<Entity3D>();
     }
 
-    private ReflectShield3D ResolveReflectShield(Collider hitCollider)
+    protected ReflectShield3D ResolveReflectShield(Collider hitCollider)
     {
         if (hitCollider == null)
         {
@@ -216,14 +221,14 @@ public class Projectile3D : MonoBehaviour, IPooledObject3D
         return hitCollider.GetComponentInParent<ReflectShield3D>();
     }
 
-    private bool IsMatchingTarget(Entity3D entity)
+    protected bool IsMatchingTarget(Entity3D entity)
     {
         return entity != null
             && !string.IsNullOrEmpty(targetTag)
             && entity.CompareTag(targetTag);
     }
 
-    private void SpawnHitEffect(RaycastHit hit)
+    protected void SpawnHitEffect(RaycastHit hit)
     {
         if (hitEffectPrefab == null)
         {
@@ -241,6 +246,11 @@ public class Projectile3D : MonoBehaviour, IPooledObject3D
         {
             pooled.ScheduleDespawn(hitEffectLifetime);
         }
+    }
+
+    protected bool TryRegisterEntityHit(Entity3D target)
+    {
+        return target != null && _hitEntityIds.Add(target.GetInstanceID());
     }
 
     protected void DespawnSelf()

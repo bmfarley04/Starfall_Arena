@@ -72,64 +72,104 @@ public class ProjectileWeapon3D : MonoBehaviour
 
     public bool TryFire()
     {
-        if (weaponConfig.projectilePrefab == null)
-        {
-            return false;
-        }
-
         if (Time.time < _lastFireTime + weaponConfig.cooldown)
         {
             return false;
         }
 
-        Transform[] muzzles = weaponConfig.muzzles != null && weaponConfig.muzzles.Length > 0
-            ? weaponConfig.muzzles
-            : new[] { transform };
+        return Fire(BuildDefaultFireRequest(), consumeCooldown: true);
+    }
+
+    public bool Fire(ProjectileFireRequest3D request, bool consumeCooldown = false)
+    {
+        if (request.projectilePrefab == null)
+        {
+            return false;
+        }
+
+        Transform[] muzzles = request.muzzles != null && request.muzzles.Length > 0
+            ? request.muzzles
+            : weaponConfig.muzzles != null && weaponConfig.muzzles.Length > 0
+                ? weaponConfig.muzzles
+                : new[] { transform };
+
+        string resolvedTargetTag = !string.IsNullOrEmpty(request.targetTag)
+            ? request.targetTag
+            : weaponConfig.targetTag;
 
         AimSolution aim = ResolveAimSolution();
-
-        foreach (Transform muzzle in muzzles)
+        for (int i = 0; i < muzzles.Length; i++)
         {
-            Transform spawnMuzzle = muzzle != null ? muzzle : transform;
+            Transform spawnMuzzle = muzzles[i] != null ? muzzles[i] : transform;
             SpawnMuzzleEffect(spawnMuzzle);
-            SpawnProjectile(spawnMuzzle, aim);
+            SpawnProjectile(spawnMuzzle, aim, request, resolvedTargetTag);
         }
 
-        if (shipFlight != null && weaponConfig.recoilForce > 0f)
+        if (shipFlight != null && request.recoilForce > 0f)
         {
-            shipFlight.ApplyRecoil(weaponConfig.recoilForce);
+            shipFlight.ApplyRecoil(request.recoilForce);
         }
 
-        _lastFireTime = Time.time;
+        if (consumeCooldown)
+        {
+            _lastFireTime = Time.time;
+        }
+
         return true;
     }
 
-    private void SpawnProjectile(Transform muzzle, AimSolution aim)
+    private ProjectileFireRequest3D BuildDefaultFireRequest()
     {
-        Vector3 spawnPosition = ResolveProjectileSpawnPosition(muzzle);
+        return new ProjectileFireRequest3D
+        {
+            projectilePrefab = weaponConfig.projectilePrefab,
+            muzzles = weaponConfig.muzzles,
+            spawnAnchor = null,
+            targetTag = weaponConfig.targetTag,
+            speed = weaponConfig.speed,
+            damage = weaponConfig.damage,
+            lifetime = weaponConfig.lifetime,
+            impactForce = weaponConfig.impactForce,
+            recoilForce = weaponConfig.recoilForce,
+            forwardOffset = 0f,
+            verticalOffset = 0f
+        };
+    }
+
+    private void SpawnProjectile(Transform muzzle, AimSolution aim, ProjectileFireRequest3D request, string targetTag)
+    {
+        Vector3 spawnPosition = ResolveProjectileSpawnPosition(muzzle, request);
         Vector3 fireDirection = ResolveFireDirection(muzzle, spawnPosition, aim);
-        GameObject projectileObject = GameObjectPool3D.Spawn(weaponConfig.projectilePrefab, spawnPosition, Quaternion.LookRotation(fireDirection, transform.up));
+        GameObject projectileObject = GameObjectPool3D.Spawn(request.projectilePrefab, spawnPosition, Quaternion.LookRotation(fireDirection, transform.up));
         if (!projectileObject.TryGetComponent(out Projectile3D projectile))
         {
-            Debug.LogWarning($"Projectile prefab {weaponConfig.projectilePrefab.name} is missing Projectile3D.", projectileObject);
+            Debug.LogWarning($"Projectile prefab {request.projectilePrefab.name} is missing Projectile3D.", projectileObject);
             return;
         }
 
         Vector3 inheritedVelocity = shipFlight != null ? shipFlight.LinearVelocity : Vector3.zero;
-        projectile.targetTag = weaponConfig.targetTag;
+        projectile.targetTag = targetTag;
         projectile.Initialize(
             fireDirection,
             inheritedVelocity,
-            weaponConfig.speed,
-            weaponConfig.damage,
-            weaponConfig.lifetime,
-            weaponConfig.impactForce,
+            request.speed,
+            request.damage,
+            request.lifetime,
+            request.impactForce,
             owner
         );
+        request.onProjectileSpawned?.Invoke(projectile);
     }
 
-    private Vector3 ResolveProjectileSpawnPosition(Transform muzzle)
+    private Vector3 ResolveProjectileSpawnPosition(Transform muzzle, ProjectileFireRequest3D request)
     {
+        if (request.spawnAnchor != null)
+        {
+            return request.spawnAnchor.position
+                + (request.spawnAnchor.forward * request.forwardOffset)
+                + (request.spawnAnchor.up * request.verticalOffset);
+        }
+
         return muzzle.position
             + (transform.right * projectileSpawnLocalOffset.x)
             + (transform.up * projectileSpawnLocalOffset.y)

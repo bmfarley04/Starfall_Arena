@@ -36,6 +36,54 @@ public abstract class Entity3D : MonoBehaviour
         return abilities[index];
     }
 
+    public float GetCombinedRotationMultiplier()
+    {
+        float multiplier = 1f;
+        for (int i = 0; i < abilities.Length; i++)
+        {
+            Ability3D ability = abilities[i];
+            if (ability == null)
+            {
+                continue;
+            }
+
+            multiplier *= ability.GetRotationMultiplier();
+        }
+
+        return multiplier;
+    }
+
+    public float GetCombinedThrustMultiplier()
+    {
+        float multiplier = 1f;
+        for (int i = 0; i < abilities.Length; i++)
+        {
+            Ability3D ability = abilities[i];
+            if (ability == null)
+            {
+                continue;
+            }
+
+            multiplier *= ability.GetThrustMultiplier();
+        }
+
+        return multiplier;
+    }
+
+    public bool IsPrimaryFireDisabledByAbility()
+    {
+        for (int i = 0; i < abilities.Length; i++)
+        {
+            Ability3D ability = abilities[i];
+            if (ability != null && ability.DisablePrimaryFire())
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     protected virtual void Awake()
     {
         shipFlight ??= GetComponent<ShipFlight3D>();
