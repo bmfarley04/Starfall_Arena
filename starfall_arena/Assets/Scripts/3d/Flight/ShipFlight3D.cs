@@ -36,6 +36,9 @@ public class ShipFlight3D : MonoBehaviour
     private float _thrustInput;
     private Vector3 _previousVelocity;
     private Vector3 _linearAcceleration;
+    private Vector3 _recentRecoilVelocityDelta;
+    private Vector3 _recoilVelocityDeltaThisStep;
+    private Vector3 _lastFixedStepRecoilVelocityDelta;
 
     public Rigidbody Rigidbody => _rb;
     public Vector2 LookInput => _lookInput;
@@ -43,6 +46,8 @@ public class ShipFlight3D : MonoBehaviour
     public bool IsFrictionEnabled => frictionEnabled;
     public Vector3 LinearVelocity => _rb != null ? _rb.linearVelocity : Vector3.zero;
     public Vector3 LinearAcceleration => _linearAcceleration;
+    public Vector3 RecentRecoilVelocityDelta => _recentRecoilVelocityDelta;
+    public Vector3 LastFixedStepRecoilAcceleration => Time.fixedDeltaTime > 0f ? _lastFixedStepRecoilVelocityDelta / Time.fixedDeltaTime : Vector3.zero;
     public float ForwardSpeed => Vector3.Dot(LinearVelocity, GetPlanarForward());
     public float ForwardSpeedNormalized => flight.maxSpeed > 0f ? Mathf.Clamp01(Mathf.Clamp(ForwardSpeed, 0f, flight.maxSpeed) / flight.maxSpeed) : 0f;
     public bool IsApplyingThrust => _thrustInput > 0.05f;
@@ -70,6 +75,16 @@ public class ShipFlight3D : MonoBehaviour
         }
     }
 
+    private void Update()
+    {
+        if (Time.deltaTime <= 0f)
+        {
+            return;
+        }
+
+        _recentRecoilVelocityDelta = Vector3.Lerp(_recentRecoilVelocityDelta, Vector3.zero, Time.deltaTime * 5f);
+    }
+
     private void FixedUpdate()
     {
         PullInputFromSource();
@@ -79,6 +94,8 @@ public class ShipFlight3D : MonoBehaviour
 
         _linearAcceleration = (_rb.linearVelocity - _previousVelocity) / Time.fixedDeltaTime;
         _previousVelocity = _rb.linearVelocity;
+        _lastFixedStepRecoilVelocityDelta = _recoilVelocityDeltaThisStep;
+        _recoilVelocityDeltaThisStep = Vector3.zero;
     }
 
     public void SetFlightConfig(ShipFlightConfig3D config)
@@ -132,7 +149,10 @@ public class ShipFlight3D : MonoBehaviour
             return;
         }
 
-        _rb.linearVelocity -= GetPlanarForward() * recoilForce;
+        Vector3 recoilVelocityDelta = -GetPlanarForward() * recoilForce;
+        _rb.linearVelocity += recoilVelocityDelta;
+        _recentRecoilVelocityDelta += recoilVelocityDelta;
+        _recoilVelocityDeltaThisStep += recoilVelocityDelta;
         EnforceFlightPlane();
     }
 

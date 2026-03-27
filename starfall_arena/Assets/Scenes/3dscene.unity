@@ -252,6 +252,75 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6c69aa69e566ed9479d0c430c26157d5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ShieldController
+--- !u!1001 &591076079
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 100000, guid: bb53a97e46babb543940bc8fc9c854cc, type: 3}
+      propertyPath: m_Name
+      value: pulsewave_005
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: bb53a97e46babb543940bc8fc9c854cc, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 5.693152
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: bb53a97e46babb543940bc8fc9c854cc, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: -0.016323354
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: bb53a97e46babb543940bc8fc9c854cc, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -3.389601
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: bb53a97e46babb543940bc8fc9c854cc, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: bb53a97e46babb543940bc8fc9c854cc, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0.000000021855694
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: bb53a97e46babb543940bc8fc9c854cc, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: bb53a97e46babb543940bc8fc9c854cc, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: bb53a97e46babb543940bc8fc9c854cc, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: bb53a97e46babb543940bc8fc9c854cc, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: bb53a97e46babb543940bc8fc9c854cc, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 11400000, guid: bb53a97e46babb543940bc8fc9c854cc, type: 3}
+      propertyPath: DebugLoop
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 11400000, guid: bb53a97e46babb543940bc8fc9c854cc, type: 3}
+      propertyPath: ScaleTime
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 11400000, guid: bb53a97e46babb543940bc8fc9c854cc, type: 3}
+      propertyPath: FadeOutTime
+      value: 0.5
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: bb53a97e46babb543940bc8fc9c854cc, type: 3}
 --- !u!1 &773417010
 GameObject:
   m_ObjectHideFlags: 0
@@ -1207,6 +1276,58 @@ PrefabInstance:
       propertyPath: m_Camera
       value: 
       objectReference: {fileID: 1867909032}
+    - target: {fileID: 472506789794357844, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      propertyPath: gigaBlast.projectileScaling.tier2SpeedMultiplier
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 472506789794357844, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      propertyPath: gigaBlast.projectileScaling.tier1DamageMultiplier
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 472506789794357844, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      propertyPath: gigaBlast.projectileScaling.tier1ImpactMultiplier
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 472506789794357844, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      propertyPath: gigaBlast.projectileScaling.tier1RecoilMultiplier
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 472506789794357844, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      propertyPath: gigaBlast.projectileScaling.tier2DamageMultiplier
+      value: 6
+      objectReference: {fileID: 0}
+    - target: {fileID: 472506789794357844, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      propertyPath: gigaBlast.projectileScaling.tier2ImpactMultiplier
+      value: 6
+      objectReference: {fileID: 0}
+    - target: {fileID: 472506789794357844, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      propertyPath: gigaBlast.projectileScaling.tier2RecoilMultiplier
+      value: 6
+      objectReference: {fileID: 0}
+    - target: {fileID: 472506789794357844, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      propertyPath: gigaBlast.projectileScaling.tier3DamageMultiplier
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 472506789794357844, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      propertyPath: gigaBlast.projectileScaling.tier3ImpactMultiplier
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 472506789794357844, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      propertyPath: gigaBlast.projectileScaling.tier3RecoilMultiplier
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 472506789794357844, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      propertyPath: gigaBlast.projectileScaling.tier4DamageMultiplier
+      value: 16
+      objectReference: {fileID: 0}
+    - target: {fileID: 472506789794357844, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      propertyPath: gigaBlast.projectileScaling.tier4ImpactMultiplier
+      value: 16
+      objectReference: {fileID: 0}
+    - target: {fileID: 472506789794357844, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      propertyPath: gigaBlast.projectileScaling.tier4RecoilMultiplier
+      value: 16
+      objectReference: {fileID: 0}
     - target: {fileID: 2568558604607578100, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
       propertyPath: m_Name
       value: Class1_Player
@@ -1215,6 +1336,18 @@ PrefabInstance:
       propertyPath: virtualCamera
       value: 
       objectReference: {fileID: 773417013}
+    - target: {fileID: 6928815812079169362, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      propertyPath: weaponConfig.damage
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 6928815812079169362, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      propertyPath: weaponConfig.impactForce
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 6928815812079169362, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      propertyPath: weaponConfig.recoilForce
+      value: 0.5
+      objectReference: {fileID: 0}
     - target: {fileID: 7427501341343801484, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
@@ -1374,3 +1507,4 @@ SceneRoots:
   - {fileID: 947228773}
   - {fileID: 1711409980}
   - {fileID: 207358653}
+  - {fileID: 591076079}

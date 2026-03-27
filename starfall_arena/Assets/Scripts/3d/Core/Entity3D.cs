@@ -8,6 +8,10 @@ public abstract class Entity3D : MonoBehaviour
     [SerializeField] protected float maxShield = 50f;
     [SerializeField] protected ShieldController shieldController;
 
+    [Header("3D Visual Feedback")]
+    [Tooltip("Multiplier for how much recoil/impulse affects visual pitch independent of thrust pitch.")]
+    [SerializeField] protected float impulseRecoilPitchSensitivity = 1f;
+
     [Header("Abilities")]
     [SerializeField] protected Ability3D[] abilities = new Ability3D[4];
 
@@ -29,6 +33,7 @@ public abstract class Entity3D : MonoBehaviour
     public Ability3D[] Abilities => abilities;
     public float CurrentHealth => currentHealth;
     public float CurrentShield => currentShield;
+    public float ImpulseRecoilPitchSensitivity => impulseRecoilPitchSensitivity;
 
     public Ability3D GetAbility(int index)
     {

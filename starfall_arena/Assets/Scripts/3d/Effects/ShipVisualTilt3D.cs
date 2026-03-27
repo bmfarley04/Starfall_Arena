@@ -2,6 +2,7 @@ using UnityEngine;
 
 public class ShipVisualTilt3D : MonoBehaviour
 {
+    [SerializeField] private Entity3D entity;
     [SerializeField] private ShipFlight3D shipFlight;
     [SerializeField] private VisualEffects3DConfig visualEffects;
 
@@ -14,6 +15,11 @@ public class ShipVisualTilt3D : MonoBehaviour
         if (shipFlight == null)
         {
             shipFlight = GetComponent<ShipFlight3D>();
+        }
+
+        if (entity == null)
+        {
+            entity = GetComponent<Entity3D>();
         }
 
         CacheBaseRotation();
@@ -59,8 +65,10 @@ public class ShipVisualTilt3D : MonoBehaviour
 
         float yawAngVel = Vector3.Dot(angularVelocity, transform.up);
         float pitchAngVel = Vector3.Dot(angularVelocity, transform.right);
-        float forwardAccel = Vector3.Dot(linearAcceleration, transform.forward);
+        Vector3 recoilAcceleration = shipFlight.LastFixedStepRecoilAcceleration;
+        float forwardAccel = Vector3.Dot(linearAcceleration - recoilAcceleration, transform.forward);
         float lateralAccel = Vector3.Dot(linearAcceleration, transform.right);
+        float recoilImpulse = Vector3.Dot(shipFlight.RecentRecoilVelocityDelta, transform.forward);
 
         float targetBankAngle = Mathf.Clamp(
             (-yawAngVel * visualEffects.bankSensitivity) + (-lateralAccel * visualEffects.lateralAccelBankSensitivity),
@@ -69,7 +77,9 @@ public class ShipVisualTilt3D : MonoBehaviour
         );
 
         float targetPitchLeanAngle = Mathf.Clamp(
-            (pitchAngVel * visualEffects.pitchLeanSensitivity) + (-forwardAccel * visualEffects.forwardAccelPitchSensitivity),
+            (pitchAngVel * visualEffects.pitchLeanSensitivity)
+            + (forwardAccel * visualEffects.forwardAccelPitchSensitivity)
+            + (recoilImpulse * GetImpulseRecoilPitchSensitivity()),
             -visualEffects.maxPitchLeanAngle,
             visualEffects.maxPitchLeanAngle
         );
@@ -80,5 +90,15 @@ public class ShipVisualTilt3D : MonoBehaviour
         Quaternion pitchQuat = Quaternion.AngleAxis(_currentPitchLeanAngle, Vector3.right);
         Quaternion bankQuat = Quaternion.AngleAxis(_currentBankAngle, Vector3.forward);
         visualEffects.visualModel.localRotation = _visualBaseLocalRotation * pitchQuat * bankQuat;
+    }
+
+    private float GetImpulseRecoilPitchSensitivity()
+    {
+        if (entity != null)
+        {
+            return entity.ImpulseRecoilPitchSensitivity;
+        }
+
+        return 1f;
     }
 }
