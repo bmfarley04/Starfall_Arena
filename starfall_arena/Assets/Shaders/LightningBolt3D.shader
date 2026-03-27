@@ -20,9 +20,7 @@ Shader "Custom/LightningBolt3D"
         _CoreIntensity  ("Core Brightness",        Range(1.0,  8.0))  = 3.0
 
         [Header(Bolt Scaling)]
-        [Tooltip(Set automatically by LightningBolt3D.cs each frame)]
         _BoltLength ("Bolt World Length (set by script)", Float) = 5.0
-        [Tooltip(Reference length in world units for noise density calibration)]
         _RefLength  ("Reference Length (world units)",    Float) = 5.0
 
         [Header(Lightning Shape)]
@@ -40,6 +38,7 @@ Shader "Custom/LightningBolt3D"
         _Speed      ("Morph Speed",  Range(0.1, 4.0))  = 1.2
         _ReseedRate ("Reseed Rate",  Range(0.05, 2.0)) = 0.4
         _Flicker    ("Flicker Amount", Range(0.0, 0.5)) = 0.12
+        [HideInInspector] _ExternalIntensity ("External Intensity", Range(0.0, 8.0)) = 1.0
 
         [Header(Branching)]
         _BranchesPerBolt    ("Max Branches Per Bolt",              Range(0,   8))    = 3
@@ -57,9 +56,7 @@ Shader "Custom/LightningBolt3D"
         _SubBranchLengthMax ("Sub-branch Length Max (UV)",         Range(0.005, 0.15)) = 0.06
 
         [Header(Cylindrical Depth)]
-        [Tooltip(How strongly the bolt core is shaded as a cylinder. 0=flat, 1=full cylinder shading)]
         _CylinderHighlight  ("Cylinder Highlight Strength",   Range(0.0,  1.0))  = 0.6
-        [Tooltip(UV offset of the specular highlight from the bolt center. Positive = one side, negative = other)]
         _SpecularOffset     ("Specular Offset (UV)",          Range(-0.03, 0.03)) = 0.004
         _SpecularIntensity  ("Specular Intensity",            Range(0.0,  4.0))  = 2.0
 
@@ -74,6 +71,7 @@ Shader "Custom/LightningBolt3D"
             "Queue"          = "Transparent"
             "RenderType"     = "Transparent"
             "IgnoreProjector"= "True"
+            "RenderPipeline" = "UniversalPipeline"
         }
 
         Cull     Off    // Visible from both sides; billboard can be viewed either way
@@ -117,6 +115,7 @@ Shader "Custom/LightningBolt3D"
             float  _MaxDisplacement;
 
             float  _Speed, _ReseedRate, _Flicker;
+            float  _ExternalIntensity;
 
             float  _BranchesPerBolt, _BranchChance;
             float  _BranchLengthMin,    _BranchLengthMax;
@@ -442,6 +441,9 @@ Shader "Custom/LightningBolt3D"
                 // Core contributes most (it's the hard visible line),
                 // glow/specular contribute subtly.
                 float alpha = saturate(totalCore * 0.5 + totalGlow * 0.3 + totalSpec * 0.25);
+
+                finalColor *= _ExternalIntensity;
+                alpha = saturate(alpha * _ExternalIntensity);
 
                 // Discard fully dark fragments for fill-rate savings on large quads.
                 clip(alpha - 0.001);

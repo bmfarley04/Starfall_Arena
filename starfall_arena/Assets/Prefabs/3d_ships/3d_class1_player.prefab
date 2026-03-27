@@ -280,6 +280,7 @@ GameObject:
   - component: {fileID: 5373532230695115810}
   - component: {fileID: 6369695681249732700}
   - component: {fileID: 472506789794357844}
+  - component: {fileID: 5104438160426859549}
   m_Layer: 0
   m_Name: 3d_class1_player
   m_TagString: Enemy
@@ -539,9 +540,15 @@ MonoBehaviour:
   shipThrusterVfx: {fileID: 3538944680820626273}
   shipSpeedFx: {fileID: 3934790730732665131}
   primaryWeapon: {fileID: 6928815812079169362}
-  deathEffects: {fileID: 0}
+  deathEffects: {fileID: 9194935005271649546}
   playerInput3D: {fileID: 3261048947178620207}
   playerCameraRig3D: {fileID: 3760524061682020281}
+  audioConfig:
+    shieldDamageSound: {fileID: 11400000, guid: fd2754dd24955964c99c8be0471fb1d2, type: 2}
+    hullDamageSound: {fileID: 11400000, guid: f9265c3e881424f4da91b40830f8b194, type: 2}
+    beamHitLoopSound: {fileID: 11400000, guid: cdf6af1d1d05cdd4d8cf3ea5f244f9f2, type: 2}
+    beamHitLoopStopDelay: 0.2
+    audioSourcePoolSize: 4
 --- !u!114 &2269080399608317416
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -565,7 +572,7 @@ MonoBehaviour:
     frictionDeceleration: 20
     activeAngularDamping: 2
   inputSourceBehaviour: {fileID: 3261048947178620207}
-  entity: {fileID: 0}
+  entity: {fileID: 1753171253810675368}
   frictionEnabled: 0
   lockToWorldYPlane: 1
   captureInitialWorldY: 1
@@ -645,7 +652,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: '::'
   shipFlight: {fileID: 2269080399608317416}
   primaryWeapon: {fileID: 6928815812079169362}
-  entity: {fileID: 0}
+  entity: {fileID: 1753171253810675368}
 --- !u!114 &3760524061682020281
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -681,7 +688,7 @@ MonoBehaviour:
   explosion:
     prefab: {fileID: 100014, guid: d96258cdf841f5e4d8af97dce9661d8c, type: 3}
     scale: 1
-    sound: {fileID: 0}
+    sound: {fileID: 11400000, guid: 52e8c58e387b89849affa74c78d6d899, type: 2}
   deathSoundSpatialBlend: 1
   scatterRoot: {fileID: 9023730634269657982}
   scatterChance: 1
@@ -727,6 +734,7 @@ MonoBehaviour:
   muzzleEffectLocalOffset: {x: 0, y: 0, z: 1.5}
   projectilePrewarmCount: 12
   muzzleEffectPrewarmCount: 4
+  fireSound: {fileID: 11400000, guid: 80311ec3731e81d4c81d5e64fe8d23ea, type: 2}
 --- !u!114 &6766116784638287846
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -754,6 +762,8 @@ MonoBehaviour:
     capacity: 100000
     drainRate: 0
     regenRate: 20
+    fireLoopSound: {fileID: 11400000, guid: 2e4ef6af0cbd6bf4091e3bcdb76e99fd, type: 2}
+  beamLoopAudioSource: {fileID: 7028201276721733789}
 --- !u!114 &5373532230695115810
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -773,6 +783,7 @@ MonoBehaviour:
     shield: {fileID: 1105708909720134415}
     reflectedProjectileColor: {r: 0.77254903, g: 0.6392157, b: 0.05490196, a: 0}
     reflectedProjectileDamageMultiplier: 2
+    reflectedProjectileSound: {fileID: 11400000, guid: 9eb877fd117843243bf3853dc3a30234, type: 2}
 --- !u!114 &6369695681249732700
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -810,9 +821,9 @@ MonoBehaviour:
         playbackMode: 0
         burstCount: 3
         burstInterval: 0.1
-    exitSound: {fileID: 0}
-    arrivalSound: {fileID: 0}
-  audioSource: {fileID: 0}
+    exitSound: {fileID: 11400000, guid: bc1b416aa39b9084fb712befa92ac7f8, type: 2}
+    arrivalSound: {fileID: 11400000, guid: b5df1b844f0088a48bf54cac1c479aa8, type: 2}
+  audioSource: {fileID: 7028201276721733789}
 --- !u!114 &472506789794357844
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -882,14 +893,75 @@ MonoBehaviour:
     offsetDistance: 0
     verticalOffset: 0
     muzzle: {fileID: 8856779165183346799}
-    chargeSound: {fileID: 0}
+    chargeSound: {fileID: 11400000, guid: c0ca32b488e896048b9506d3930a6f0c, type: 2}
     chargeSoundFadeDuration: 0.2
-    tier1FireSound: {fileID: 0}
-    tier2FireSound: {fileID: 0}
-    tier3FireSound: {fileID: 0}
-    tier4FireSound: {fileID: 0}
+    tier1FireSound: {fileID: 11400000, guid: 589e6a0df75d28849a496fbf6c74d2ad, type: 2}
+    tier2FireSound: {fileID: 11400000, guid: e7e42ed280f0c0c4b8350f72738de054, type: 2}
+    tier3FireSound: {fileID: 11400000, guid: f7365c957976a8b4e82cabcacd75dc73, type: 2}
+    tier4FireSound: {fileID: 11400000, guid: c16249345c8cb574d9b6150b6a225ff9, type: 2}
   projectileWeapon: {fileID: 6928815812079169362}
-  chargeAudioSource: {fileID: 0}
+  chargeAudioSource: {fileID: 7028201276721733789}
+--- !u!114 &5104438160426859549
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2568558604607578100}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c5d379f28ce4c83a1aa6beeb1184e19, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GigablastChargeEdgeGlow3D
+  player: {fileID: 1753171253810675368}
+  gigaBlast: {fileID: 0}
+  edgeColor: {r: 0.2, g: 0.6, b: 1, a: 1}
+  useTierColors: 1
+  tierColors:
+    tier1Color: {r: 2, g: 2, b: 2, a: 1}
+    tier2Color: {r: 1.2727598, g: 1.4491552, b: 2.0136201, a: 1}
+    tier3Color: {r: 1.3548113, g: 2.0813046, b: 1.5511608, a: 1}
+    tier4Color: {r: 1.5136858, g: 1.1325613, b: 1.9467814, a: 1}
+  coreThicknessMin: 0.01
+  coreThicknessMax: 0.03
+  coreSoftness: 1
+  coreIntensity: 0
+  haloThicknessMin: 0.045
+  haloThicknessMax: 0.12
+  haloSoftness: 1
+  haloIntensity: 0.03
+  cornerBoost: 0.22
+  edgeBiasHorizontal: 1
+  edgeBiasVertical: 0.85
+  fadeInSpeed: 3
+  fadeOutSpeed: 4
+  chargeRemap:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  pulseWhileCharging: 1
+  pulseAmplitude: 0.1
+  pulseSpeed: 6
 --- !u!1 &5908017529148435922
 GameObject:
   m_ObjectHideFlags: 0

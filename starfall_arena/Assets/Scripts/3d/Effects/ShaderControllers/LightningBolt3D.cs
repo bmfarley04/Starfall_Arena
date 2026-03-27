@@ -37,6 +37,10 @@ public class LightningBolt3D : MonoBehaviour
     [Header("Material")]
     [Tooltip("Material using the Custom/LightningBolt3D shader.")]
     [SerializeField] private Material lightningMaterial;
+    [Tooltip("If true, SplitStateLightningRig3D will toggle this bolt with the split-state effect.")]
+    [SerializeField] private bool activeOnSplitState = true;
+    [Tooltip("Per-bolt intensity multiplier applied on top of the rig-level split-state intensity.")]
+    [SerializeField] [Min(0f)] private float baseIntensityMultiplier = 1f;
 
     // -------------------------------------------------------------------------
     // Private state
@@ -48,6 +52,8 @@ public class LightningBolt3D : MonoBehaviour
     private Camera       _mainCamera;
     private MaterialPropertyBlock _propBlock;
     private bool         _meshInitialized;
+    private bool         _isVisible;
+    private float        _runtimeIntensityMultiplier = 1f;
 
     // Pre-allocated to avoid per-frame GC pressure.
     private readonly Vector3[] _vertices = new Vector3[4];
@@ -65,6 +71,7 @@ public class LightningBolt3D : MonoBehaviour
 
     // Shader property ID — cached to avoid repeated string hashing.
     private static readonly int ShaderBoltLength = Shader.PropertyToID("_BoltLength");
+    private static readonly int ShaderExternalIntensity = Shader.PropertyToID("_ExternalIntensity");
 
     // -------------------------------------------------------------------------
     // Unity lifecycle
@@ -80,11 +87,10 @@ public class LightningBolt3D : MonoBehaviour
         _mesh.MarkDynamic();    // Hint to Unity that vertices will change every frame.
         _meshFilter.mesh = _mesh;
 
-        if (lightningMaterial != null)
-            _meshRenderer.sharedMaterial = lightningMaterial;
+        ApplySharedMaterial();
 
-        // Start hidden; Activate() enables rendering.
-        _meshRenderer.enabled = false;
+        // Honor any visibility request that may have been issued before Awake ran.
+        _meshRenderer.enabled = _isVisible;
     }
 
     private void Start()
@@ -115,17 +121,35 @@ public class LightningBolt3D : MonoBehaviour
     /// <summary>Enables lightning rendering. Call when entering anchor mode.</summary>
     public void Activate()
     {
-        _meshRenderer.enabled = true;
+        SetVisibility(true);
     }
 
     /// <summary>Disables lightning rendering. Call when leaving anchor mode.</summary>
     public void Deactivate()
     {
-        _meshRenderer.enabled = false;
+        SetVisibility(false);
     }
 
     /// <summary>Returns true while the bolt is visible.</summary>
     public bool IsActive => _meshRenderer != null && _meshRenderer.enabled;
+    public bool ActiveOnSplitState => activeOnSplitState;
+
+    /// <summary>
+    /// Called by split-state presentation to show/hide the bolt and scale its
+    /// final brightness without creating a per-instance material copy.
+    /// </summary>
+    public void SetSplitStateActive(bool isActive, float intensityMultiplier = 1f)
+    {
+        _runtimeIntensityMultiplier = Mathf.Max(0f, intensityMultiplier);
+        SetVisibility(activeOnSplitState && isActive);
+    }
+
+    /// <summary>Overrides the shared material reference used by this bolt.</summary>
+    public void SetLightningMaterial(Material material)
+    {
+        lightningMaterial = material;
+        ApplySharedMaterial();
+    }
 
     // -------------------------------------------------------------------------
     // Quad construction
@@ -190,6 +214,41 @@ public class LightningBolt3D : MonoBehaviour
         // so multiple LightningBolt3D components can share one Material asset.
         _meshRenderer.GetPropertyBlock(_propBlock);
         _propBlock.SetFloat(ShaderBoltLength, boltLength);
+        _propBlock.SetFloat(ShaderExternalIntensity, baseIntensityMultiplier * _runtimeIntensityMultiplier);
         _meshRenderer.SetPropertyBlock(_propBlock);
+    }
+
+    private void OnValidate()
+    {
+        if (!Application.isPlaying && TryGetComponent(out MeshRenderer meshRenderer))
+        {
+            _meshRenderer = meshRenderer;
+            ApplySharedMaterial();
+        }
+    }
+
+    private void SetVisibility(bool isVisible)
+    {
+        _isVisible = isVisible;
+
+        if (_meshRenderer == null)
+        {
+            return;
+        }
+
+        _meshRenderer.enabled = isVisible;
+
+        if (isVisible)
+        {
+            UpdateQuad();
+        }
+    }
+
+    private void ApplySharedMaterial()
+    {
+        if (_meshRenderer != null && lightningMaterial != null)
+        {
+            _meshRenderer.sharedMaterial = lightningMaterial;
+        }
     }
 }
