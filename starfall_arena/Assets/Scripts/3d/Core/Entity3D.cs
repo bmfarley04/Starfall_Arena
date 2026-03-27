@@ -33,6 +33,8 @@ public abstract class Entity3D : MonoBehaviour
     protected float currentHealth;
     protected float currentShield;
     protected Vector3 lastDamageDirection;
+    protected float currentSlowMultiplier = 1f;
+    protected float slowEndTime;
 
     private bool _isDead;
 
@@ -45,6 +47,8 @@ public abstract class Entity3D : MonoBehaviour
     public float CurrentHealth => currentHealth;
     public float CurrentShield => currentShield;
     public float ImpulseRecoilPitchSensitivity => impulseRecoilPitchSensitivity;
+    public float CurrentSlowMultiplier => GetSlowMultiplier();
+    public bool IsSlowed => Time.time < slowEndTime && currentSlowMultiplier < 1f;
 
     public Ability3D GetAbility(int index)
     {
@@ -112,6 +116,8 @@ public abstract class Entity3D : MonoBehaviour
         currentHealth = maxHealth;
         currentShield = maxShield;
         lastDamageDirection = Vector3.zero;
+        currentSlowMultiplier = 1f;
+        slowEndTime = 0f;
     }
 
     public virtual void TakeDamage(float damage, Vector3 hitPoint, Entity3D attacker = null, DamageSource3D source = DamageSource3D.Projectile)
@@ -173,6 +179,32 @@ public abstract class Entity3D : MonoBehaviour
         {
             Die();
         }
+    }
+
+    public void ApplySlow(float slowMultiplier, float duration)
+    {
+        float clampedMultiplier = Mathf.Clamp01(slowMultiplier);
+        if (duration <= 0f || clampedMultiplier >= 1f)
+        {
+            return;
+        }
+
+        if (clampedMultiplier < currentSlowMultiplier || Time.time + duration > slowEndTime)
+        {
+            currentSlowMultiplier = clampedMultiplier;
+            slowEndTime = Time.time + duration;
+        }
+    }
+
+    public float GetSlowMultiplier()
+    {
+        if (Time.time >= slowEndTime)
+        {
+            currentSlowMultiplier = 1f;
+            slowEndTime = 0f;
+        }
+
+        return currentSlowMultiplier;
     }
 
     protected virtual void Die()

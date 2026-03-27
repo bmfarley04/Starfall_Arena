@@ -200,20 +200,22 @@ public class ShipFlight3D : MonoBehaviour
     private void HandleThrust()
     {
         float thrustMultiplier = entity != null ? entity.GetCombinedThrustMultiplier() : 1f;
+        float slowMultiplier = entity != null ? entity.GetSlowMultiplier() : 1f;
         _effectiveThrustInput = thrustMultiplier > 0f ? _thrustInput : 0f;
 
         if (_effectiveThrustInput > 0.05f)
         {
-            _rb.linearVelocity += GetPlanarForward() * (_effectiveThrustInput * flight.thrustAcceleration * thrustMultiplier * Time.fixedDeltaTime);
+            _rb.linearVelocity += GetPlanarForward() * (_effectiveThrustInput * flight.thrustAcceleration * thrustMultiplier * slowMultiplier * Time.fixedDeltaTime);
         }
         else if (frictionEnabled)
         {
             _rb.linearVelocity = Vector3.MoveTowards(_rb.linearVelocity, Vector3.zero, flightAssist.frictionDeceleration * Time.fixedDeltaTime);
         }
 
-        if (_rb.linearVelocity.magnitude > flight.maxSpeed)
+        float effectiveMaxSpeed = flight.maxSpeed * slowMultiplier;
+        if (_rb.linearVelocity.magnitude > effectiveMaxSpeed)
         {
-            _rb.linearVelocity = _rb.linearVelocity.normalized * flight.maxSpeed;
+            _rb.linearVelocity = _rb.linearVelocity.normalized * effectiveMaxSpeed;
         }
     }
 

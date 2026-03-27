@@ -1,6 +1,11 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+public interface IProjectileImpactHandler3D
+{
+    bool TryHandleProjectileImpact(Projectile3D projectile, RaycastHit hit);
+}
+
 public class Projectile3D : MonoBehaviour, IPooledObject3D
 {
     private static readonly RaycastHit[] HitBuffer = new RaycastHit[16];
@@ -25,6 +30,9 @@ public class Projectile3D : MonoBehaviour, IPooledObject3D
     protected Vector3 _velocity;
     protected Entity3D _shooter;
     protected float _age;
+    protected bool _appliesSlow;
+    protected float _slowMultiplier = 1f;
+    protected float _slowDuration;
     protected readonly HashSet<int> _hitEntityIds = new HashSet<int>();
 
     protected virtual void Update()
@@ -64,9 +72,19 @@ public class Projectile3D : MonoBehaviour, IPooledObject3D
         _shooter = shooter;
         _velocity = (_direction * speed) + shipVelocity;
         _age = 0f;
+        _appliesSlow = false;
+        _slowMultiplier = 1f;
+        _slowDuration = 0f;
         _hitEntityIds.Clear();
 
         transform.rotation = Quaternion.LookRotation(_direction, Vector3.up);
+    }
+
+    public void EnableSlow(float slowMultiplier, float slowDuration)
+    {
+        _appliesSlow = true;
+        _slowMultiplier = slowMultiplier;
+        _slowDuration = slowDuration;
     }
 
     public void OnSpawnedFromPool()
@@ -78,6 +96,9 @@ public class Projectile3D : MonoBehaviour, IPooledObject3D
     public void OnDespawnedToPool()
     {
         _velocity = Vector3.zero;
+        _appliesSlow = false;
+        _slowMultiplier = 1f;
+        _slowDuration = 0f;
         _hitEntityIds.Clear();
     }
 
@@ -155,6 +176,12 @@ public class Projectile3D : MonoBehaviour, IPooledObject3D
     protected virtual void ProcessHit(RaycastHit hit)
     {
         Collider other = hit.collider;
+        IProjectileImpactHandler3D impactHandler = ResolveImpactHandler(other);
+        if (impactHandler != null && impactHandler.TryHandleProjectileImpact(this, hit))
+        {
+            return;
+        }
+
         ReflectShield3D reflectShield = ResolveReflectShield(other);
         if (reflectShield != null && reflectShield.TryReflectProjectile(this, hit.point))
         {
@@ -165,6 +192,10 @@ public class Projectile3D : MonoBehaviour, IPooledObject3D
         if (damageable != null && IsMatchingTarget(damageable))
         {
             ApplyDamageToEntity(damageable, hit.point, other);
+            if (_appliesSlow)
+            {
+                damageable.ApplySlow(_slowMultiplier, _slowDuration);
+            }
         }
 
         SpawnHitEffect(hit);
@@ -219,6 +250,31 @@ public class Projectile3D : MonoBehaviour, IPooledObject3D
         }
 
         return hitCollider.GetComponentInParent<ReflectShield3D>();
+    }
+
+    protected IProjectileImpactHandler3D ResolveImpactHandler(Collider hitCollider)
+    {
+        if (hitCollider == null)
+        {
+            return null;
+        }
+
+        IProjectileImpactHandler3D impactHandler = hitCollider.GetComponent<IProjectileImpactHandler3D>();
+        if (impactHandler != null)
+        {
+            return impactHandler;
+        }
+
+        if (hitCollider.attachedRigidbody != null)
+        {
+            impactHandler = hitCollider.attachedRigidbody.GetComponentInChildren<IProjectileImpactHandler3D>(true);
+            if (impactHandler != null)
+            {
+                return impactHandler;
+            }
+        }
+
+        return hitCollider.GetComponentInParent<IProjectileImpactHandler3D>();
     }
 
     protected bool IsMatchingTarget(Entity3D entity)
