@@ -54,6 +54,7 @@ public class LightningBolt3D : MonoBehaviour
     private bool         _meshInitialized;
     private bool         _isVisible;
     private float        _runtimeIntensityMultiplier = 1f;
+    private bool         _hasLoggedMissingAnchors;
 
     // Pre-allocated to avoid per-frame GC pressure.
     private readonly Vector3[] _vertices = new Vector3[4];
@@ -82,6 +83,7 @@ public class LightningBolt3D : MonoBehaviour
         _meshFilter   = GetComponent<MeshFilter>();
         _meshRenderer = GetComponent<MeshRenderer>();
         _propBlock    = new MaterialPropertyBlock();
+        _isVisible    = _meshRenderer != null && _meshRenderer.enabled;
 
         _mesh = new Mesh { name = "LightningBoltQuad" };
         _mesh.MarkDynamic();    // Hint to Unity that vertices will change every frame.
@@ -103,7 +105,10 @@ public class LightningBolt3D : MonoBehaviour
         // LateUpdate ensures the quad is rebuilt after any physics/animation
         // that may have moved the anchor Transforms this frame.
         if (!_meshRenderer.enabled) return;
-        if (bolt.startPoint == null || bolt.endPoint == null) return;
+        if (!HasValidAnchors())
+        {
+            return;
+        }
 
         UpdateQuad();
     }
@@ -157,6 +162,16 @@ public class LightningBolt3D : MonoBehaviour
 
     private void UpdateQuad()
     {
+        if (!HasValidAnchors())
+        {
+            if (_meshRenderer != null)
+            {
+                _meshRenderer.enabled = false;
+            }
+
+            return;
+        }
+
         // Resolve camera lazily (scene changes, etc.)
         if (_mainCamera == null)
         {
@@ -242,6 +257,24 @@ public class LightningBolt3D : MonoBehaviour
         {
             UpdateQuad();
         }
+    }
+
+    private bool HasValidAnchors()
+    {
+        bool hasAnchors = bolt.startPoint != null && bolt.endPoint != null;
+        if (hasAnchors)
+        {
+            _hasLoggedMissingAnchors = false;
+            return true;
+        }
+
+        if (!_hasLoggedMissingAnchors)
+        {
+            Debug.LogWarning($"{nameof(LightningBolt3D)} on '{name}' is missing a start or end anchor. Assign both transforms before enabling the bolt.", this);
+            _hasLoggedMissingAnchors = true;
+        }
+
+        return false;
     }
 
     private void ApplySharedMaterial()

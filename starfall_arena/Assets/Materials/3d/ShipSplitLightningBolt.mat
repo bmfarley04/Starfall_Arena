@@ -28,42 +28,42 @@ Material:
     m_Floats:
     - _BoltLength: 5
     - _BranchAngleSpread: 0.4
-    - _BranchChance: 0.425
+    - _BranchChance: 0.748
     - _BranchForwardBias: 0.527
     - _BranchGlowRadius: 0.03
     - _BranchLengthMax: 0.17
-    - _BranchLengthMin: 0.06
+    - _BranchLengthMin: 0.052
     - _BranchOutwardBias: 0.84
     - _BranchThicknessMax: 0.008
     - _BranchThicknessMin: 0.0025
-    - _BranchesPerBolt: 7.56
-    - _CoreIntensity: 3.8
-    - _CoreThickness: 0.012
+    - _BranchesPerBolt: 2
+    - _CoreIntensity: 5.88
+    - _CoreThickness: 0.0122
     - _CylinderHighlight: 0.6
-    - _DetailAmp: 0.012
-    - _DetailFreq: 28
+    - _DetailAmp: 0.001
+    - _DetailFreq: 10
     - _EndFadeWidth: 0.06
     - _ExternalIntensity: 1
-    - _Flicker: 0.16
-    - _GlowIntensity: 2.35
-    - _GlowRadius: 0.1
-    - _MaxDisplacement: 0.3
+    - _Flicker: 0.369
+    - _GlowIntensity: 3.69
+    - _GlowRadius: 0.032
+    - _MaxDisplacement: 0.193
     - _MicroAmp: 0.004
-    - _MicroFreq: 70
+    - _MicroFreq: 53.5
     - _RefLength: 5
-    - _ReseedRate: 0.45
+    - _ReseedRate: 0.536
     - _SpecularIntensity: 1.8
     - _SpecularOffset: 0.003
-    - _Speed: 1.35
+    - _Speed: 4
     - _SubBranchChance: 0.35
     - _SubBranchLengthMax: 0.07
     - _SubBranchLengthMin: 0.025
-    - _WanderAmp: 0.065
-    - _WanderFreq: 2.8
-    - _ZigzagAmp: 0.034
-    - _ZigzagFreq: 14
+    - _WanderAmp: 0.024
+    - _WanderFreq: 8
+    - _ZigzagAmp: 0.0179
+    - _ZigzagFreq: 23.3
     m_Colors:
-    - _BoltColor: {r: 0.9098039, g: 0.97730356, b: 1, a: 1}
-    - _BoltGlowColor: {r: 0.1607843, g: 0.7192609, b: 1, a: 1}
+    - _BoltColor: {r: 0.39308167, g: 0.707251, b: 1, a: 1}
+    - _BoltGlowColor: {r: 0, g: 0.66355133, b: 1, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

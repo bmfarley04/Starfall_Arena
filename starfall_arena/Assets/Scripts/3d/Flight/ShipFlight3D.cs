@@ -39,6 +39,7 @@ public class ShipFlight3D : MonoBehaviour
     private Vector3 _recentRecoilVelocityDelta;
     private Vector3 _recoilVelocityDeltaThisStep;
     private Vector3 _lastFixedStepRecoilVelocityDelta;
+    private float _effectiveThrustInput;
 
     public Rigidbody Rigidbody => _rb;
     public Vector2 LookInput => _lookInput;
@@ -50,7 +51,7 @@ public class ShipFlight3D : MonoBehaviour
     public Vector3 LastFixedStepRecoilAcceleration => Time.fixedDeltaTime > 0f ? _lastFixedStepRecoilVelocityDelta / Time.fixedDeltaTime : Vector3.zero;
     public float ForwardSpeed => Vector3.Dot(LinearVelocity, GetPlanarForward());
     public float ForwardSpeedNormalized => flight.maxSpeed > 0f ? Mathf.Clamp01(Mathf.Clamp(ForwardSpeed, 0f, flight.maxSpeed) / flight.maxSpeed) : 0f;
-    public bool IsApplyingThrust => _thrustInput > 0.05f;
+    public bool IsApplyingThrust => _effectiveThrustInput > 0.05f;
 
     private void Awake()
     {
@@ -199,10 +200,11 @@ public class ShipFlight3D : MonoBehaviour
     private void HandleThrust()
     {
         float thrustMultiplier = entity != null ? entity.GetCombinedThrustMultiplier() : 1f;
+        _effectiveThrustInput = thrustMultiplier > 0f ? _thrustInput : 0f;
 
-        if (_thrustInput > 0.05f)
+        if (_effectiveThrustInput > 0.05f)
         {
-            _rb.linearVelocity += GetPlanarForward() * (_thrustInput * flight.thrustAcceleration * thrustMultiplier * Time.fixedDeltaTime);
+            _rb.linearVelocity += GetPlanarForward() * (_effectiveThrustInput * flight.thrustAcceleration * thrustMultiplier * Time.fixedDeltaTime);
         }
         else if (frictionEnabled)
         {

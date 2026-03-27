@@ -54,7 +54,7 @@ public abstract class Entity3D : MonoBehaviour
 
     public float GetCombinedRotationMultiplier()
     {
-        float multiplier = 1f;
+        float multiplier = GetExternalRotationMultiplier();
         for (int i = 0; i < abilities.Length; i++)
         {
             Ability3D ability = abilities[i];
@@ -71,7 +71,7 @@ public abstract class Entity3D : MonoBehaviour
 
     public float GetCombinedThrustMultiplier()
     {
-        float multiplier = 1f;
+        float multiplier = GetExternalThrustMultiplier();
         for (int i = 0; i < abilities.Length; i++)
         {
             Ability3D ability = abilities[i];
@@ -214,5 +214,15 @@ public abstract class Entity3D : MonoBehaviour
 
     protected virtual void OnShieldChanged()
     {
+    }
+
+    protected virtual float GetExternalRotationMultiplier()
+    {
+        return 1f;
+    }
+
+    protected virtual float GetExternalThrustMultiplier()
+    {
+        return 1f;
     }
 }
