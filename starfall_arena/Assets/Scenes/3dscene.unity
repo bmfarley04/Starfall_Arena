@@ -119,6 +119,93 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
+--- !u!1 &44684563 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 2038336792849209498, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+  m_PrefabInstance: {fileID: 1993409379330085426}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &44684567
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 44684563}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c13462e1caaf4d01a0b9477f3670afd1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShipPartScatter3D
+  minScatterForce: 5
+  maxScatterForce: 10
+  horizontalScatterAngle: 45
+  verticalScatterAngle: 20
+  upwardVelocityBias: 1
+  minAngularVelocity: 90
+  maxAngularVelocity: 360
+  lifetime: 8
+  shrinkStartTime: 0.95
+  mass: 0.5
+  linearDamping: 0.5
+  angularDamping: 0.3
+--- !u!1 &79760071 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 2778794627222243438, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+  m_PrefabInstance: {fileID: 1993409379330085426}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &79760075
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 79760071}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c13462e1caaf4d01a0b9477f3670afd1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShipPartScatter3D
+  minScatterForce: 5
+  maxScatterForce: 10
+  horizontalScatterAngle: 45
+  verticalScatterAngle: 20
+  upwardVelocityBias: 1
+  minAngularVelocity: 90
+  maxAngularVelocity: 360
+  lifetime: 8
+  shrinkStartTime: 0.95
+  mass: 0.5
+  linearDamping: 0.5
+  angularDamping: 0.3
+--- !u!1 &112351241 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 7936871143211758333, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+  m_PrefabInstance: {fileID: 1993409379330085426}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &112351245
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 112351241}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c13462e1caaf4d01a0b9477f3670afd1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShipPartScatter3D
+  minScatterForce: 5
+  maxScatterForce: 10
+  horizontalScatterAngle: 45
+  verticalScatterAngle: 20
+  upwardVelocityBias: 1
+  minAngularVelocity: 90
+  maxAngularVelocity: 360
+  lifetime: 8
+  shrinkStartTime: 0.95
+  mass: 0.5
+  linearDamping: 0.5
+  angularDamping: 0.3
 --- !u!1001 &207358653
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -180,6 +267,40 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 2c8c77a42527039409251785211da1c6, type: 3}
+--- !u!1 &288223238 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 296115639785817362, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+  m_PrefabInstance: {fileID: 1993409379330085426}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &288223242
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 288223238}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c13462e1caaf4d01a0b9477f3670afd1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShipPartScatter3D
+  minScatterForce: 5
+  maxScatterForce: 10
+  horizontalScatterAngle: 45
+  verticalScatterAngle: 20
+  upwardVelocityBias: 1
+  minAngularVelocity: 90
+  maxAngularVelocity: 360
+  lifetime: 8
+  shrinkStartTime: 0.95
+  mass: 0.5
+  linearDamping: 0.5
+  angularDamping: 0.3
+--- !u!1 &353152873 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 2568558604607578100, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+  m_PrefabInstance: {fileID: 1993409379330085426}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &445513809
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -252,75 +373,35 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6c69aa69e566ed9479d0c430c26157d5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ShieldController
---- !u!1001 &591076079
-PrefabInstance:
+--- !u!1 &474093484 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 5355219633298694447, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+  m_PrefabInstance: {fileID: 1993409379330085426}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &474093488
+MonoBehaviour:
   m_ObjectHideFlags: 0
-  serializedVersion: 2
-  m_Modification:
-    serializedVersion: 3
-    m_TransformParent: {fileID: 0}
-    m_Modifications:
-    - target: {fileID: 100000, guid: bb53a97e46babb543940bc8fc9c854cc, type: 3}
-      propertyPath: m_Name
-      value: pulsewave_005
-      objectReference: {fileID: 0}
-    - target: {fileID: 400000, guid: bb53a97e46babb543940bc8fc9c854cc, type: 3}
-      propertyPath: m_LocalPosition.x
-      value: 5.693152
-      objectReference: {fileID: 0}
-    - target: {fileID: 400000, guid: bb53a97e46babb543940bc8fc9c854cc, type: 3}
-      propertyPath: m_LocalPosition.y
-      value: -0.016323354
-      objectReference: {fileID: 0}
-    - target: {fileID: 400000, guid: bb53a97e46babb543940bc8fc9c854cc, type: 3}
-      propertyPath: m_LocalPosition.z
-      value: -3.389601
-      objectReference: {fileID: 0}
-    - target: {fileID: 400000, guid: bb53a97e46babb543940bc8fc9c854cc, type: 3}
-      propertyPath: m_LocalRotation.w
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 400000, guid: bb53a97e46babb543940bc8fc9c854cc, type: 3}
-      propertyPath: m_LocalRotation.x
-      value: 0.000000021855694
-      objectReference: {fileID: 0}
-    - target: {fileID: 400000, guid: bb53a97e46babb543940bc8fc9c854cc, type: 3}
-      propertyPath: m_LocalRotation.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 400000, guid: bb53a97e46babb543940bc8fc9c854cc, type: 3}
-      propertyPath: m_LocalRotation.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 400000, guid: bb53a97e46babb543940bc8fc9c854cc, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 400000, guid: bb53a97e46babb543940bc8fc9c854cc, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 400000, guid: bb53a97e46babb543940bc8fc9c854cc, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 11400000, guid: bb53a97e46babb543940bc8fc9c854cc, type: 3}
-      propertyPath: DebugLoop
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 11400000, guid: bb53a97e46babb543940bc8fc9c854cc, type: 3}
-      propertyPath: ScaleTime
-      value: 5
-      objectReference: {fileID: 0}
-    - target: {fileID: 11400000, guid: bb53a97e46babb543940bc8fc9c854cc, type: 3}
-      propertyPath: FadeOutTime
-      value: 5
-      objectReference: {fileID: 0}
-    m_RemovedComponents: []
-    m_RemovedGameObjects: []
-    m_AddedGameObjects: []
-    m_AddedComponents: []
-  m_SourcePrefab: {fileID: 100100000, guid: bb53a97e46babb543940bc8fc9c854cc, type: 3}
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 474093484}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c13462e1caaf4d01a0b9477f3670afd1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShipPartScatter3D
+  minScatterForce: 5
+  maxScatterForce: 10
+  horizontalScatterAngle: 45
+  verticalScatterAngle: 20
+  upwardVelocityBias: 1
+  minAngularVelocity: 90
+  maxAngularVelocity: 360
+  lifetime: 8
+  shrinkStartTime: 0.95
+  mass: 0.5
+  linearDamping: 0.5
+  angularDamping: 0.3
 --- !u!1 &773417010
 GameObject:
   m_ObjectHideFlags: 0
@@ -455,6 +536,35 @@ MonoBehaviour:
     RotationDamping: {x: 0.1, y: 0.1, z: 0.1}
     QuaternionDamping: 1
   FollowOffset: {x: 0, y: 0.8, z: -12}
+--- !u!1 &791347701 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 2639258349431812709, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+  m_PrefabInstance: {fileID: 1993409379330085426}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &791347705
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 791347701}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c13462e1caaf4d01a0b9477f3670afd1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShipPartScatter3D
+  minScatterForce: 5
+  maxScatterForce: 10
+  horizontalScatterAngle: 45
+  verticalScatterAngle: 20
+  upwardVelocityBias: 1
+  minAngularVelocity: 90
+  maxAngularVelocity: 360
+  lifetime: 8
+  shrinkStartTime: 0.95
+  mass: 0.5
+  linearDamping: 0.5
+  angularDamping: 0.3
 --- !u!1001 &792701132
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -584,6 +694,64 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 0
   m_CollisionDetection: 0
+--- !u!1 &928210614 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 466225082678736681, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+  m_PrefabInstance: {fileID: 1993409379330085426}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &928210618
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 928210614}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c13462e1caaf4d01a0b9477f3670afd1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShipPartScatter3D
+  minScatterForce: 5
+  maxScatterForce: 10
+  horizontalScatterAngle: 45
+  verticalScatterAngle: 20
+  upwardVelocityBias: 1
+  minAngularVelocity: 90
+  maxAngularVelocity: 360
+  lifetime: 8
+  shrinkStartTime: 0.95
+  mass: 0.5
+  linearDamping: 0.5
+  angularDamping: 0.3
+--- !u!1 &932014456 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 1493440020577131766, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+  m_PrefabInstance: {fileID: 1993409379330085426}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &932014460
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 932014456}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c13462e1caaf4d01a0b9477f3670afd1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShipPartScatter3D
+  minScatterForce: 5
+  maxScatterForce: 10
+  horizontalScatterAngle: 45
+  verticalScatterAngle: 20
+  upwardVelocityBias: 1
+  minAngularVelocity: 90
+  maxAngularVelocity: 360
+  lifetime: 8
+  shrinkStartTime: 0.95
+  mass: 0.5
+  linearDamping: 0.5
+  angularDamping: 0.3
 --- !u!1001 &947228773
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -645,6 +813,64 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: a660fab271b103540a666a2b2eae6a15, type: 3}
+--- !u!1 &989686281 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 2040152540869507691, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+  m_PrefabInstance: {fileID: 1993409379330085426}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &989686285
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 989686281}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c13462e1caaf4d01a0b9477f3670afd1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShipPartScatter3D
+  minScatterForce: 5
+  maxScatterForce: 10
+  horizontalScatterAngle: 45
+  verticalScatterAngle: 20
+  upwardVelocityBias: 1
+  minAngularVelocity: 90
+  maxAngularVelocity: 360
+  lifetime: 8
+  shrinkStartTime: 0.95
+  mass: 0.5
+  linearDamping: 0.5
+  angularDamping: 0.3
+--- !u!1 &1010997471 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 3074059719685606080, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+  m_PrefabInstance: {fileID: 1993409379330085426}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1010997475
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1010997471}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c13462e1caaf4d01a0b9477f3670afd1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShipPartScatter3D
+  minScatterForce: 5
+  maxScatterForce: 10
+  horizontalScatterAngle: 45
+  verticalScatterAngle: 20
+  upwardVelocityBias: 1
+  minAngularVelocity: 90
+  maxAngularVelocity: 360
+  lifetime: 8
+  shrinkStartTime: 0.95
+  mass: 0.5
+  linearDamping: 0.5
+  angularDamping: 0.3
 --- !u!1001 &1024413160
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -706,6 +932,35 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: f2f20bfc5e92ed248840a296d28c9e76, type: 3}
+--- !u!1 &1097950681 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 8226611592555417996, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+  m_PrefabInstance: {fileID: 1993409379330085426}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1097950685
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1097950681}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c13462e1caaf4d01a0b9477f3670afd1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShipPartScatter3D
+  minScatterForce: 5
+  maxScatterForce: 10
+  horizontalScatterAngle: 45
+  verticalScatterAngle: 20
+  upwardVelocityBias: 1
+  minAngularVelocity: 90
+  maxAngularVelocity: 360
+  lifetime: 8
+  shrinkStartTime: 0.95
+  mass: 0.5
+  linearDamping: 0.5
+  angularDamping: 0.3
 --- !u!1 &1168193707 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 2568558604607578100, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
@@ -792,6 +1047,7 @@ MonoBehaviour:
   shipThrusterVfx: {fileID: 1168193712}
   shipSpeedFx: {fileID: 1168193711}
   primaryWeapon: {fileID: 1168193708}
+  deathEffects: {fileID: 0}
   aiFlightController: {fileID: 0}
 --- !u!114 &1168193723
 MonoBehaviour:
@@ -807,6 +1063,156 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::StupidTurret3D
   primaryWeapon: {fileID: 1168193708}
   fireContinuously: 1
+--- !u!1 &1242212746 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 4374707146123382946, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+  m_PrefabInstance: {fileID: 1993409379330085426}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1242212750
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1242212746}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c13462e1caaf4d01a0b9477f3670afd1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShipPartScatter3D
+  minScatterForce: 5
+  maxScatterForce: 10
+  horizontalScatterAngle: 45
+  verticalScatterAngle: 20
+  upwardVelocityBias: 1
+  minAngularVelocity: 90
+  maxAngularVelocity: 360
+  lifetime: 8
+  shrinkStartTime: 0.95
+  mass: 0.5
+  linearDamping: 0.5
+  angularDamping: 0.3
+--- !u!1 &1371764606 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 8815087236200473364, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+  m_PrefabInstance: {fileID: 1993409379330085426}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1371764610
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1371764606}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c13462e1caaf4d01a0b9477f3670afd1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShipPartScatter3D
+  minScatterForce: 5
+  maxScatterForce: 10
+  horizontalScatterAngle: 45
+  verticalScatterAngle: 20
+  upwardVelocityBias: 1
+  minAngularVelocity: 90
+  maxAngularVelocity: 360
+  lifetime: 8
+  shrinkStartTime: 0.95
+  mass: 0.5
+  linearDamping: 0.5
+  angularDamping: 0.3
+--- !u!1 &1380808452 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 2154160195120160989, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+  m_PrefabInstance: {fileID: 1993409379330085426}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1380808456
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1380808452}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c13462e1caaf4d01a0b9477f3670afd1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShipPartScatter3D
+  minScatterForce: 5
+  maxScatterForce: 10
+  horizontalScatterAngle: 45
+  verticalScatterAngle: 20
+  upwardVelocityBias: 1
+  minAngularVelocity: 90
+  maxAngularVelocity: 360
+  lifetime: 8
+  shrinkStartTime: 0.95
+  mass: 0.5
+  linearDamping: 0.5
+  angularDamping: 0.3
+--- !u!4 &1508862647 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 9023730634269657982, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+  m_PrefabInstance: {fileID: 1993409379330085426}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &1589894709 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 7546392358181653930, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+  m_PrefabInstance: {fileID: 1993409379330085426}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1589894713
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1589894709}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c13462e1caaf4d01a0b9477f3670afd1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShipPartScatter3D
+  minScatterForce: 5
+  maxScatterForce: 10
+  horizontalScatterAngle: 45
+  verticalScatterAngle: 20
+  upwardVelocityBias: 1
+  minAngularVelocity: 90
+  maxAngularVelocity: 360
+  lifetime: 8
+  shrinkStartTime: 0.95
+  mass: 0.5
+  linearDamping: 0.5
+  angularDamping: 0.3
+--- !u!1 &1685145269 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 2317277030687090478, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+  m_PrefabInstance: {fileID: 1993409379330085426}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1685145273
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1685145269}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c13462e1caaf4d01a0b9477f3670afd1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShipPartScatter3D
+  minScatterForce: 5
+  maxScatterForce: 10
+  horizontalScatterAngle: 45
+  verticalScatterAngle: 20
+  upwardVelocityBias: 1
+  minAngularVelocity: 90
+  maxAngularVelocity: 360
+  lifetime: 8
+  shrinkStartTime: 0.95
+  mass: 0.5
+  linearDamping: 0.5
+  angularDamping: 0.3
 --- !u!1001 &1711409980
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -868,6 +1274,35 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 8755bd3565087b84797d8ebcde63e2f4, type: 3}
+--- !u!1 &1722122155 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 1459893933869721594, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+  m_PrefabInstance: {fileID: 1993409379330085426}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1722122159
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1722122155}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c13462e1caaf4d01a0b9477f3670afd1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShipPartScatter3D
+  minScatterForce: 5
+  maxScatterForce: 10
+  horizontalScatterAngle: 45
+  verticalScatterAngle: 20
+  upwardVelocityBias: 1
+  minAngularVelocity: 90
+  maxAngularVelocity: 360
+  lifetime: 8
+  shrinkStartTime: 0.95
+  mass: 0.5
+  linearDamping: 0.5
+  angularDamping: 0.3
 --- !u!1001 &1839579953
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1138,6 +1573,35 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &2055973257 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 79500029053182568, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+  m_PrefabInstance: {fileID: 1993409379330085426}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &2055973261
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2055973257}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c13462e1caaf4d01a0b9477f3670afd1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShipPartScatter3D
+  minScatterForce: 5
+  maxScatterForce: 10
+  horizontalScatterAngle: 45
+  verticalScatterAngle: 20
+  upwardVelocityBias: 1
+  minAngularVelocity: 90
+  maxAngularVelocity: 360
+  lifetime: 8
+  shrinkStartTime: 0.95
+  mass: 0.5
+  linearDamping: 0.5
+  angularDamping: 0.3
 --- !u!1 &2086397162
 GameObject:
   m_ObjectHideFlags: 0
@@ -1349,6 +1813,34 @@ PrefabInstance:
       propertyPath: entity
       value: 
       objectReference: {fileID: 2745255904368457566}
+    - target: {fileID: 6369695681249732700, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      propertyPath: teleport.visual.arrivalPulsewave.prefab
+      value: 
+      objectReference: {fileID: 100000, guid: a122a04deff12b84283aa74dcc80cf98, type: 3}
+    - target: {fileID: 6369695681249732700, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      propertyPath: teleport.visual.departurePulsewave.prefab
+      value: 
+      objectReference: {fileID: 100000, guid: 251b1f767b5c1a04095c3fb0330a6f5c, type: 3}
+    - target: {fileID: 6369695681249732700, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      propertyPath: teleport.visual.arrivalPulsewave.burstCount
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 6369695681249732700, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      propertyPath: teleport.visual.departurePulsewave.burstCount
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 6369695681249732700, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      propertyPath: teleport.visual.arrivalPulsewave.burstInterval
+      value: 0.1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6369695681249732700, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      propertyPath: teleport.visual.departurePulsewave.playbackMode
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6369695681249732700, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      propertyPath: teleport.visual.departurePulsewave.burstInterval
+      value: 0.1
+      objectReference: {fileID: 0}
     - target: {fileID: 6928815812079169362, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
       propertyPath: weaponConfig.damage
       value: 5
@@ -1404,7 +1896,64 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 2568558604607578100, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2745255904368457571}
+    - targetCorrespondingSourceObject: {fileID: 3074059719685606080, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1010997475}
+    - targetCorrespondingSourceObject: {fileID: 2639258349431812709, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 791347705}
+    - targetCorrespondingSourceObject: {fileID: 2040152540869507691, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 989686285}
+    - targetCorrespondingSourceObject: {fileID: 5355219633298694447, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 474093488}
+    - targetCorrespondingSourceObject: {fileID: 4374707146123382946, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1242212750}
+    - targetCorrespondingSourceObject: {fileID: 79500029053182568, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2055973261}
+    - targetCorrespondingSourceObject: {fileID: 2317277030687090478, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1685145273}
+    - targetCorrespondingSourceObject: {fileID: 2038336792849209498, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 44684567}
+    - targetCorrespondingSourceObject: {fileID: 7546392358181653930, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1589894713}
+    - targetCorrespondingSourceObject: {fileID: 8815087236200473364, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1371764610}
+    - targetCorrespondingSourceObject: {fileID: 466225082678736681, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 928210618}
+    - targetCorrespondingSourceObject: {fileID: 2154160195120160989, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1380808456}
+    - targetCorrespondingSourceObject: {fileID: 1493440020577131766, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 932014460}
+    - targetCorrespondingSourceObject: {fileID: 1459893933869721594, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1722122159}
+    - targetCorrespondingSourceObject: {fileID: 8226611592555417996, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1097950685}
+    - targetCorrespondingSourceObject: {fileID: 296115639785817362, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 288223242}
+    - targetCorrespondingSourceObject: {fileID: 2778794627222243438, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 79760075}
+    - targetCorrespondingSourceObject: {fileID: 7936871143211758333, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 112351245}
   m_SourcePrefab: {fileID: 100100000, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
 --- !u!4 &2745255904368457554 stripped
 Transform:
@@ -1416,12 +1965,31 @@ MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 1753171253810675368, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
   m_PrefabInstance: {fileID: 1993409379330085426}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
+  m_GameObject: {fileID: 353152873}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 472a711a0b2023940b16aa210d0274a3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: '::'
+--- !u!114 &2745255904368457571
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 353152873}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7db2445f66bd4ee28f0d35ef2674cf0a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DeathEffects3D
+  explosion:
+    prefab: {fileID: 100002, guid: 2f47b5cc2c5d54c40b29b62ba825671a, type: 3}
+    scale: 1
+    sound: {fileID: 0}
+  deathSoundSpatialBlend: 1
+  scatterRoot: {fileID: 1508862647}
+  scatterChance: 1
 --- !u!1001 &6632817810544565794
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1531,4 +2099,3 @@ SceneRoots:
   - {fileID: 947228773}
   - {fileID: 1711409980}
   - {fileID: 207358653}
-  - {fileID: 591076079}

@@ -21,9 +21,13 @@ public abstract class Entity3D : MonoBehaviour
     [SerializeField] protected ShipThrusterVfx3D shipThrusterVfx;
     [SerializeField] protected ShipSpeedFx3D shipSpeedFx;
     [SerializeField] protected ProjectileWeapon3D primaryWeapon;
+    [SerializeField] protected DeathEffects3D deathEffects;
 
     protected float currentHealth;
     protected float currentShield;
+    protected Vector3 lastDamageDirection;
+
+    private bool _isDead;
 
     public ShipFlight3D Flight => shipFlight;
     public ShipVisualTilt3D VisualTilt => shipVisualTilt;
@@ -96,18 +100,21 @@ public abstract class Entity3D : MonoBehaviour
         shipThrusterVfx ??= GetComponent<ShipThrusterVfx3D>();
         shipSpeedFx ??= GetComponent<ShipSpeedFx3D>();
         primaryWeapon ??= GetComponent<ProjectileWeapon3D>();
+        deathEffects ??= GetComponent<DeathEffects3D>();
         shieldController ??= GetComponentInChildren<ShieldController>(true);
         currentHealth = maxHealth;
         currentShield = maxShield;
+        lastDamageDirection = Vector3.zero;
     }
 
     public virtual void TakeDamage(float damage, Vector3 hitPoint, Entity3D attacker = null)
     {
-        Debug.Log("take damage called on " + gameObject.name + " with damage: " + damage);
-        if (damage <= 0f || currentHealth <= 0f)
+        if (damage <= 0f || currentHealth <= 0f || _isDead)
         {
             return;
         }
+
+        lastDamageDirection = ResolveDamageDirection(hitPoint);
 
         if (currentShield > 0f)
         {
@@ -146,11 +153,12 @@ public abstract class Entity3D : MonoBehaviour
 
     public virtual void TakeDirectDamage(float damage, Vector3 hitPoint, Entity3D attacker = null)
     {
-        if (damage <= 0f || currentHealth <= 0f)
+        if (damage <= 0f || currentHealth <= 0f || _isDead)
         {
             return;
         }
 
+        lastDamageDirection = ResolveDamageDirection(hitPoint);
         currentHealth = Mathf.Max(0f, currentHealth - damage);
         OnHealthChanged();
 
@@ -162,6 +170,13 @@ public abstract class Entity3D : MonoBehaviour
 
     protected virtual void Die()
     {
+        if (_isDead)
+        {
+            return;
+        }
+
+        _isDead = true;
+
         for (int i = 0; i < abilities.Length; i++)
         {
             if (abilities[i] != null)
@@ -169,7 +184,21 @@ public abstract class Entity3D : MonoBehaviour
                 abilities[i].Die();
             }
         }
+
+        deathEffects?.PlayDeathEffects(lastDamageDirection);
+
         Destroy(gameObject);
+    }
+
+    private Vector3 ResolveDamageDirection(Vector3 hitPoint)
+    {
+        if (hitPoint == Vector3.zero)
+        {
+            return Vector3.zero;
+        }
+
+        Vector3 damageDirection = transform.position - hitPoint;
+        return damageDirection.sqrMagnitude > 0.0001f ? damageDirection.normalized : Vector3.zero;
     }
 
     protected virtual void OnHealthChanged()

@@ -55,8 +55,23 @@ public class Teleport3D : Ability3D
             public bool enableScreenShake;
             [Tooltip("Screen shake strength.")]
             public float screenShakeStrength;
-            [Tooltip("Optional origin and destination effects.")]
-            public GameObject[] effects;
+            [Tooltip("Pulsewave effect played at the teleport origin.")]
+            public PulsewaveEffectConfig departurePulsewave;
+            [Tooltip("Pulsewave effect played at the teleport destination.")]
+            public PulsewaveEffectConfig arrivalPulsewave;
+
+            [System.Serializable]
+            public struct PulsewaveEffectConfig
+            {
+                [Tooltip("Pulsewave prefab to spawn for this teleport phase.")]
+                public GameObject prefab;
+                [Tooltip("Whether the pulsewave should expand out or collapse inward.")]
+                public TeleportPulsewaveEffect3D.PlaybackMode playbackMode;
+                [Tooltip("How many pulsewaves to spawn in sequence for this teleport phase.")]
+                public int burstCount;
+                [Tooltip("Delay between each pulsewave spawn in the burst.")]
+                public float burstInterval;
+            }
         }
     }
 
@@ -142,7 +157,7 @@ public class Teleport3D : Ability3D
         }
 
         yield return AnimateScale(originalScale, originSqueezeScale, teleport.animation.shrinkDuration);
-        SpawnEffect(0, transform.position);
+        StartEffectBurst(teleport.visual.departurePulsewave, transform.position);
         PlaySound(teleport.exitSound);
 
         CacheRenderers();
@@ -162,7 +177,7 @@ public class Teleport3D : Ability3D
             _impulseSource.GenerateImpulse(teleport.visual.screenShakeStrength);
         }
 
-        SpawnEffect(1, transform.position);
+        StartEffectBurst(teleport.visual.arrivalPulsewave, transform.position);
         PlaySound(teleport.arrivalSound);
 
         SetRenderersVisible(true);
@@ -224,20 +239,35 @@ public class Teleport3D : Ability3D
         return Vector3.forward;
     }
 
-    private void SpawnEffect(int index, Vector3 position)
+    private void StartEffectBurst(TeleportAbilityConfig3D.VisualConfig.PulsewaveEffectConfig effectConfig, Vector3 position)
     {
-        if (teleport.visual.effects == null || index < 0 || index >= teleport.visual.effects.Length)
+        if (effectConfig.prefab == null)
         {
             return;
         }
 
-        GameObject effectPrefab = teleport.visual.effects[index];
-        if (effectPrefab == null)
+        StartCoroutine(SpawnEffectBurst(effectConfig, position));
+    }
+
+    private IEnumerator SpawnEffectBurst(TeleportAbilityConfig3D.VisualConfig.PulsewaveEffectConfig effectConfig, Vector3 position)
+    {
+        if (effectConfig.prefab == null)
         {
-            return;
+            yield break;
         }
 
-        Instantiate(effectPrefab, position, Quaternion.identity);
+        int burstCount = Mathf.Max(1, effectConfig.burstCount);
+        float burstInterval = Mathf.Max(0f, effectConfig.burstInterval);
+
+        for (int i = 0; i < burstCount; i++)
+        {
+            TeleportPulsewaveEffect3D.Spawn(effectConfig.prefab, position, Quaternion.identity, effectConfig.playbackMode);
+
+            if (i < burstCount - 1 && burstInterval > 0f)
+            {
+                yield return new WaitForSeconds(burstInterval);
+            }
+        }
     }
 
     private void PlaySound(SoundEffect soundEffect)
