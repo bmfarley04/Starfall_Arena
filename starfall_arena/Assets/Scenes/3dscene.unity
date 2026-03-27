@@ -306,15 +306,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 11400000, guid: bb53a97e46babb543940bc8fc9c854cc, type: 3}
       propertyPath: DebugLoop
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 11400000, guid: bb53a97e46babb543940bc8fc9c854cc, type: 3}
       propertyPath: ScaleTime
-      value: 0.5
+      value: 5
       objectReference: {fileID: 0}
     - target: {fileID: 11400000, guid: bb53a97e46babb543940bc8fc9c854cc, type: 3}
       propertyPath: FadeOutTime
-      value: 0.5
+      value: 5
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -781,6 +781,7 @@ MonoBehaviour:
   maxHealth: 100
   maxShield: 100
   shieldController: {fileID: 468470888}
+  impulseRecoilPitchSensitivity: 1
   abilities:
   - {fileID: 0}
   - {fileID: 0}
@@ -1326,7 +1327,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 472506789794357844, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
       propertyPath: gigaBlast.projectileScaling.tier4RecoilMultiplier
-      value: 16
+      value: 20
+      objectReference: {fileID: 0}
+    - target: {fileID: 1753171253810675368, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      propertyPath: maxShield
+      value: 100
+      objectReference: {fileID: 0}
+    - target: {fileID: 1753171253810675368, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      propertyPath: impulseRecoilPitchSensitivity
+      value: 10
       objectReference: {fileID: 0}
     - target: {fileID: 2568558604607578100, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
       propertyPath: m_Name
@@ -1336,6 +1345,10 @@ PrefabInstance:
       propertyPath: virtualCamera
       value: 
       objectReference: {fileID: 773417013}
+    - target: {fileID: 5585566392220985068, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      propertyPath: entity
+      value: 
+      objectReference: {fileID: 2745255904368457566}
     - target: {fileID: 6928815812079169362, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
       propertyPath: weaponConfig.damage
       value: 5
@@ -1398,6 +1411,17 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 7427501341343801484, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
   m_PrefabInstance: {fileID: 1993409379330085426}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &2745255904368457566 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 1753171253810675368, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+  m_PrefabInstance: {fileID: 1993409379330085426}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 472a711a0b2023940b16aa210d0274a3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: '::'
 --- !u!1001 &6632817810544565794
 PrefabInstance:
   m_ObjectHideFlags: 0
