@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-public class Beam3D : Ability3D
+public class Beam3D : Ability3D, IReticleSpinSource3D
 {
     [System.Serializable]
     public struct BeamAbilityConfig3D
@@ -159,6 +159,16 @@ public class Beam3D : Ability3D
     public override bool IsAbilityActive()
     {
         return _activeBeam != null;
+    }
+
+    public bool IsReticleSpinActive()
+    {
+        return _activeBeam != null;
+    }
+
+    public float GetReticleSpinPulseTime()
+    {
+        return float.NegativeInfinity;
     }
 
     public override bool DisablePrimaryFire()

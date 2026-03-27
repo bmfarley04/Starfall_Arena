@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-public class GigaBlast3D : Ability3D
+public class GigaBlast3D : Ability3D, IReticleSpinSource3D
 {
     [System.Serializable]
     public struct GigaBlastAbilityConfig3D
@@ -193,6 +193,7 @@ public class GigaBlast3D : Ability3D
     private float _chargeStartTime;
     private int _currentChargeTier;
     private Coroutine _chargeFadeCoroutine;
+    private float _lastReticleSpinPulseTime = float.NegativeInfinity;
 
     public bool IsCharging => _isCharging;
     public float CurrentChargeTime => GetCurrentChargeTime();
@@ -279,6 +280,16 @@ public class GigaBlast3D : Ability3D
     public override bool IsAbilityActive()
     {
         return _isCharging;
+    }
+
+    public bool IsReticleSpinActive()
+    {
+        return false;
+    }
+
+    public float GetReticleSpinPulseTime()
+    {
+        return _lastReticleSpinPulseTime;
     }
 
     public override float GetRotationMultiplier()
@@ -409,6 +420,7 @@ public class GigaBlast3D : Ability3D
             return false;
         }
 
+        _lastReticleSpinPulseTime = Time.time;
         GetFireSoundForTier(tier)?.PlayAtPoint(transform.position);
         return true;
     }

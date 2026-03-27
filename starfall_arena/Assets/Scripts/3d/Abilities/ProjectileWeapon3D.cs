@@ -10,6 +10,7 @@ public class ProjectileWeapon3D : MonoBehaviour
         lifetime = 5f,
         impactForce = 0f,
         recoilForce = 0f,
+        energyCost = 18f,
         targetTag = "Enemy"
     };
 
@@ -38,6 +39,7 @@ public class ProjectileWeapon3D : MonoBehaviour
     [SerializeField] private SoundEffect fireSound;
 
     private float _lastFireTime = -999f;
+    private float _lastSuccessfulFireTime = -999f;
 
     private struct AimSolution
     {
@@ -47,6 +49,9 @@ public class ProjectileWeapon3D : MonoBehaviour
 
     public ProjectileWeaponConfig3D WeaponConfig => weaponConfig;
     public float CooldownRemaining => Mathf.Max(0f, (_lastFireTime + weaponConfig.cooldown) - Time.time);
+    public float LastFireTime => _lastFireTime;
+    public float LastSuccessfulFireTime => _lastSuccessfulFireTime;
+    public Camera AimCamera => aimCamera;
 
     private void Awake()
     {
@@ -80,7 +85,18 @@ public class ProjectileWeapon3D : MonoBehaviour
             return false;
         }
 
-        return Fire(BuildDefaultFireRequest(), consumeCooldown: true);
+        ProjectileFireRequest3D request = BuildDefaultFireRequest();
+        if (request.projectilePrefab == null)
+        {
+            return false;
+        }
+
+        if (owner != null && !owner.TrySpendPrimaryWeaponEnergy(weaponConfig.energyCost))
+        {
+            return false;
+        }
+
+        return Fire(request, consumeCooldown: true);
     }
 
     public bool Fire(ProjectileFireRequest3D request, bool consumeCooldown = false)
@@ -114,6 +130,7 @@ public class ProjectileWeapon3D : MonoBehaviour
         }
 
         fireSound?.PlayAtPoint(transform.position);
+        _lastSuccessfulFireTime = Time.time;
 
         if (consumeCooldown)
         {
@@ -139,6 +156,17 @@ public class ProjectileWeapon3D : MonoBehaviour
             forwardOffset = 0f,
             verticalOffset = 0f
         };
+    }
+
+    public Ray GetScreenCenterAimRay()
+    {
+        Camera resolvedCamera = aimCamera != null ? aimCamera : Camera.main;
+        if (resolvedCamera == null)
+        {
+            return new Ray(transform.position, transform.forward);
+        }
+
+        return resolvedCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
     }
 
     private void SpawnProjectile(Transform muzzle, AimSolution aim, ProjectileFireRequest3D request, string targetTag)

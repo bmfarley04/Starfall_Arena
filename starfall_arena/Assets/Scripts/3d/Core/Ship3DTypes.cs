@@ -123,6 +123,8 @@ public struct ProjectileWeaponConfig3D
     public float lifetime;
     public float impactForce;
     public float recoilForce;
+    [Tooltip("Overheat added per base projectile fired. This is ignored by ability-specific projectile requests for now.")]
+    public float energyCost;
 }
 
 public struct ProjectileFireRequest3D

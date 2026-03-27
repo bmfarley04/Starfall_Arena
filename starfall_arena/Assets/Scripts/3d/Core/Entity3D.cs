@@ -10,10 +10,24 @@ public enum DamageSource3D
 [RequireComponent(typeof(ShipFlight3D))]
 public abstract class Entity3D : MonoBehaviour
 {
+    private const float MaxPrimaryWeaponEnergyCapacity = 100f;
+
+    [System.Serializable]
+    private struct PrimaryWeaponEnergyConfig3D
+    {
+        [Tooltip("How quickly the primary-weapon overheat meter cools back toward zero when not actively building heat.")]
+        public float recoveryPerSecond;
+    }
+
     [Header("3D Combat")]
     [SerializeField] protected float maxHealth = 100f;
     [SerializeField] protected float maxShield = 50f;
     [SerializeField] protected ShieldController shieldController;
+    [Header("Primary Weapon Energy")]
+    [SerializeField] private PrimaryWeaponEnergyConfig3D primaryWeaponEnergy = new PrimaryWeaponEnergyConfig3D
+    {
+        recoveryPerSecond = 60f
+    };
 
     [Header("3D Visual Feedback")]
     [Tooltip("Multiplier for how much recoil/impulse affects visual pitch independent of thrust pitch.")]
@@ -32,6 +46,7 @@ public abstract class Entity3D : MonoBehaviour
 
     protected float currentHealth;
     protected float currentShield;
+    protected float currentPrimaryWeaponEnergy;
     protected Vector3 lastDamageDirection;
     protected float currentSlowMultiplier = 1f;
     protected float slowEndTime;
@@ -46,6 +61,9 @@ public abstract class Entity3D : MonoBehaviour
     public Ability3D[] Abilities => abilities;
     public float CurrentHealth => currentHealth;
     public float CurrentShield => currentShield;
+    public float CurrentPrimaryWeaponEnergy => currentPrimaryWeaponEnergy;
+    public float MaxPrimaryWeaponEnergy => MaxPrimaryWeaponEnergyCapacity;
+    public float CurrentPrimaryWeaponEnergyNormalized => currentPrimaryWeaponEnergy / MaxPrimaryWeaponEnergyCapacity;
     public float ImpulseRecoilPitchSensitivity => impulseRecoilPitchSensitivity;
     public float CurrentSlowMultiplier => GetSlowMultiplier();
     public bool IsSlowed => Time.time < slowEndTime && currentSlowMultiplier < 1f;
@@ -115,9 +133,15 @@ public abstract class Entity3D : MonoBehaviour
         shieldController ??= GetComponentInChildren<ShieldController>(true);
         currentHealth = maxHealth;
         currentShield = maxShield;
+        currentPrimaryWeaponEnergy = 0f;
         lastDamageDirection = Vector3.zero;
         currentSlowMultiplier = 1f;
         slowEndTime = 0f;
+    }
+
+    private void LateUpdate()
+    {
+        RecoverPrimaryWeaponEnergy(Time.deltaTime);
     }
 
     public virtual void TakeDamage(float damage, Vector3 hitPoint, Entity3D attacker = null, DamageSource3D source = DamageSource3D.Projectile)
@@ -207,6 +231,56 @@ public abstract class Entity3D : MonoBehaviour
         return currentSlowMultiplier;
     }
 
+    public bool CanSpendPrimaryWeaponEnergy(float cost)
+    {
+        float clampedCost = Mathf.Max(0f, cost);
+        if (clampedCost <= 0f)
+        {
+            return true;
+        }
+
+        return currentPrimaryWeaponEnergy + clampedCost <= MaxPrimaryWeaponEnergyCapacity + 0.001f;
+    }
+
+    public bool TrySpendPrimaryWeaponEnergy(float cost)
+    {
+        float clampedCost = Mathf.Max(0f, cost);
+        if (!CanSpendPrimaryWeaponEnergy(clampedCost))
+        {
+            return false;
+        }
+
+        if (clampedCost <= 0f)
+        {
+            return true;
+        }
+
+        currentPrimaryWeaponEnergy = Mathf.Min(MaxPrimaryWeaponEnergyCapacity, currentPrimaryWeaponEnergy + clampedCost);
+        OnPrimaryWeaponEnergyChanged();
+        return true;
+    }
+
+    public void RecoverPrimaryWeaponEnergy(float deltaTime)
+    {
+        if (deltaTime <= 0f || currentPrimaryWeaponEnergy <= 0f)
+        {
+            return;
+        }
+
+        float recoveryRate = Mathf.Max(0f, primaryWeaponEnergy.recoveryPerSecond);
+        if (recoveryRate <= 0f)
+        {
+            return;
+        }
+
+        float previousEnergy = currentPrimaryWeaponEnergy;
+        currentPrimaryWeaponEnergy = Mathf.Max(0f, currentPrimaryWeaponEnergy - (recoveryRate * deltaTime));
+        if (!Mathf.Approximately(previousEnergy, currentPrimaryWeaponEnergy))
+        {
+            OnPrimaryWeaponEnergyChanged();
+        }
+    }
+
     protected virtual void Die()
     {
         if (_isDead)
@@ -245,6 +319,10 @@ public abstract class Entity3D : MonoBehaviour
     }
 
     protected virtual void OnShieldChanged()
+    {
+    }
+
+    protected virtual void OnPrimaryWeaponEnergyChanged()
     {
     }
 
