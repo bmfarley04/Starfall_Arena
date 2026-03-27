@@ -1021,14 +1021,20 @@ MonoBehaviour:
   player: {fileID: 2745255904368457566}
   gigaBlast: {fileID: 0}
   edgeColor: {r: 0.2, g: 0.6, b: 1, a: 1}
+  useTierColors: 1
+  tierColors:
+    tier1Color: {r: 2, g: 2, b: 2, a: 1}
+    tier2Color: {r: 0.96226394, g: 1.2023677, b: 2, a: 1}
+    tier3Color: {r: 0.83647776, g: 2, b: 1.1421876, a: 1}
+    tier4Color: {r: 1.3240595, g: 0.78616333, b: 2, a: 1}
   coreThicknessMin: 0.01
   coreThicknessMax: 0.03
-  coreSoftness: 0.012
-  coreIntensity: 2.6
+  coreSoftness: 1
+  coreIntensity: 0.015
   haloThicknessMin: 0.045
   haloThicknessMax: 0.12
-  haloSoftness: 0.08
-  haloIntensity: 1.1
+  haloSoftness: 1
+  haloIntensity: 0.03
   cornerBoost: 0.22
   edgeBiasHorizontal: 1
   edgeBiasVertical: 0.85

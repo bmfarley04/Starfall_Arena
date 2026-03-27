@@ -4,6 +4,15 @@ using UnityEngine;
 [RequireComponent(typeof(PlayerCameraRig3D))]
 public class GigablastChargeEdgeGlow3D : MonoBehaviour
 {
+    [System.Serializable]
+    public struct TierColorConfig
+    {
+        [ColorUsage(true, true)] public Color tier1Color;
+        [ColorUsage(true, true)] public Color tier2Color;
+        [ColorUsage(true, true)] public Color tier3Color;
+        [ColorUsage(true, true)] public Color tier4Color;
+    }
+
     private static readonly int EdgeColorId = Shader.PropertyToID("_GigablastEdgeGlow_EdgeColor");
     private static readonly int Params1Id = Shader.PropertyToID("_GigablastEdgeGlow_Params1");
     private static readonly int Params2Id = Shader.PropertyToID("_GigablastEdgeGlow_Params2");
@@ -19,17 +28,25 @@ public class GigablastChargeEdgeGlow3D : MonoBehaviour
     [Header("Glow")]
     [ColorUsage(true, true)]
     [SerializeField] private Color edgeColor = new Color(0.2f, 0.6f, 1f, 1f);
+    [SerializeField] private bool useTierColors = true;
+    [SerializeField] private TierColorConfig tierColors = new TierColorConfig
+    {
+        tier1Color = new Color(0.2f, 0.6f, 1f, 1f),
+        tier2Color = new Color(0.35f, 0.75f, 1f, 1f),
+        tier3Color = new Color(0.85f, 0.65f, 1f, 1f),
+        tier4Color = new Color(1f, 0.82f, 0.45f, 1f)
+    };
 
     [Header("Core Border")]
     [SerializeField, Range(0f, 0.25f)] private float coreThicknessMin = 0.01f;
     [SerializeField, Range(0f, 0.25f)] private float coreThicknessMax = 0.03f;
-    [SerializeField, Range(0.001f, 0.15f)] private float coreSoftness = 0.012f;
+    [SerializeField, Min(0.001f)] private float coreSoftness = 0.012f;
     [SerializeField, Min(0f)] private float coreIntensity = 2.6f;
 
     [Header("Halo")]
     [SerializeField, Range(0f, 0.3f)] private float haloThicknessMin = 0.045f;
     [SerializeField, Range(0f, 0.3f)] private float haloThicknessMax = 0.12f;
-    [SerializeField, Range(0.001f, 0.25f)] private float haloSoftness = 0.08f;
+    [SerializeField, Min(0.001f)] private float haloSoftness = 0.08f;
     [SerializeField, Min(0f)] private float haloIntensity = 1.1f;
 
     [Header("Shape")]
@@ -49,6 +66,7 @@ public class GigablastChargeEdgeGlow3D : MonoBehaviour
 
     private float _currentCharge;
     private bool _warnedMissingGigablast;
+    private Color _currentEdgeColor;
 
     public static bool IsEffectVisible { get; private set; }
 
@@ -81,6 +99,7 @@ public class GigablastChargeEdgeGlow3D : MonoBehaviour
 
         ResolveReferences();
         _currentCharge = 0f;
+        _currentEdgeColor = ResolveTierColor(0);
         ApplyShaderGlobals(0f);
     }
 
@@ -105,6 +124,8 @@ public class GigablastChargeEdgeGlow3D : MonoBehaviour
         float targetCharge = gigaBlast.IsCharging ? EvaluateCharge(gigaBlast.NormalizedChargeProgress) : 0f;
         float speed = gigaBlast.IsCharging ? fadeInSpeed : fadeOutSpeed;
         _currentCharge = Mathf.MoveTowards(_currentCharge, targetCharge, speed * Time.deltaTime);
+        Color targetColor = ResolveTierColor(gigaBlast.IsCharging ? gigaBlast.CurrentChargeTier : 0);
+        _currentEdgeColor = Color.Lerp(_currentEdgeColor, targetColor, 1f - Mathf.Exp(-speed * Time.deltaTime));
         ApplyShaderGlobals(_currentCharge);
     }
 
@@ -170,7 +191,7 @@ public class GigablastChargeEdgeGlow3D : MonoBehaviour
             pulse += Mathf.Sin(Time.time * pulseSpeed) * pulseAmplitude * pulseWeight;
         }
 
-        Shader.SetGlobalColor(EdgeColorId, edgeColor);
+        Shader.SetGlobalColor(EdgeColorId, _currentEdgeColor);
         Shader.SetGlobalVector(Params1Id, new Vector4(
             charge,
             coreThicknessMin,
@@ -238,5 +259,22 @@ public class GigablastChargeEdgeGlow3D : MonoBehaviour
         Debug.LogWarning(
             "GigablastChargeEdgeGlow3D could not find a GigaBlast3D source. Assign the ability directly or keep the component on the same player object as Player3D.",
             this);
+    }
+
+    private Color ResolveTierColor(int tier)
+    {
+        if (!useTierColors)
+        {
+            return edgeColor;
+        }
+
+        return tier switch
+        {
+            1 => tierColors.tier1Color,
+            2 => tierColors.tier2Color,
+            3 => tierColors.tier3Color,
+            4 => tierColors.tier4Color,
+            _ => edgeColor
+        };
     }
 }
