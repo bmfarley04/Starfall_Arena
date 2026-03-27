@@ -57,8 +57,16 @@ public class DeathEffects3D : MonoBehaviour
     {
         if (explosion.prefab != null)
         {
-            GameObject spawnedExplosion = Instantiate(explosion.prefab, transform.position, transform.rotation);
+            GameObject spawnedExplosion = GameObjectPool3D.Spawn(explosion.prefab, transform.position, transform.rotation);
             spawnedExplosion.transform.localScale = Vector3.one * Mathf.Max(0.01f, explosion.scale);
+
+            TimedEffectCleanup3D cleanup = spawnedExplosion.GetComponent<TimedEffectCleanup3D>();
+            if (cleanup == null)
+            {
+                cleanup = spawnedExplosion.AddComponent<TimedEffectCleanup3D>();
+            }
+
+            cleanup.BeginCleanup();
         }
 
         PlayDeathSound();

@@ -72,7 +72,7 @@ MonoBehaviour:
   collisionMask:
     serializedVersion: 2
     m_Bits: 1
-  hitscanRadius: 1
+  hitscanRadius: 0.5
 --- !u!1 &7325712522472464580
 GameObject:
   m_ObjectHideFlags: 0

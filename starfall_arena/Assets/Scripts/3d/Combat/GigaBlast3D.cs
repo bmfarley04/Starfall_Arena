@@ -198,6 +198,7 @@ public class GigaBlast3D : Ability3D
     {
         base.Awake();
         projectileWeapon ??= entity != null ? entity.PrimaryWeapon : GetComponent<ProjectileWeapon3D>();
+        ResetAllChargeParticlesToIdle();
 
         if (chargeAudioSource == null)
         {
@@ -575,15 +576,34 @@ public class GigaBlast3D : Ability3D
             _ => null
         };
 
-        particleSystem?.Stop(true, ParticleSystemStopBehavior.StopEmitting);
+        if (particleSystem != null)
+        {
+            particleSystem.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+        }
     }
 
     private void StopAllChargeParticles()
     {
-        gigaBlast.visual.tier1ParticleSystem?.Stop(true, ParticleSystemStopBehavior.StopEmitting);
-        gigaBlast.visual.tier2ParticleSystem?.Stop(true, ParticleSystemStopBehavior.StopEmitting);
-        gigaBlast.visual.tier3ParticleSystem?.Stop(true, ParticleSystemStopBehavior.StopEmitting);
-        gigaBlast.visual.tier4ParticleSystem?.Stop(true, ParticleSystemStopBehavior.StopEmitting);
+        StopChargeParticle(gigaBlast.visual.tier1ParticleSystem);
+        StopChargeParticle(gigaBlast.visual.tier2ParticleSystem);
+        StopChargeParticle(gigaBlast.visual.tier3ParticleSystem);
+        StopChargeParticle(gigaBlast.visual.tier4ParticleSystem);
+    }
+
+    private void ResetAllChargeParticlesToIdle()
+    {
+        StopAllChargeParticles();
+    }
+
+    private static void StopChargeParticle(ParticleSystem particleSystem)
+    {
+        if (particleSystem == null)
+        {
+            return;
+        }
+
+        particleSystem.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+        particleSystem.Clear(true);
     }
 
     private void StartChargeSound()
