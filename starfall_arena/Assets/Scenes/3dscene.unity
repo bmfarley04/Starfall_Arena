@@ -1024,13 +1024,13 @@ MonoBehaviour:
   useTierColors: 1
   tierColors:
     tier1Color: {r: 2, g: 2, b: 2, a: 1}
-    tier2Color: {r: 0.96226394, g: 1.2023677, b: 2, a: 1}
-    tier3Color: {r: 0.83647776, g: 2, b: 1.1421876, a: 1}
-    tier4Color: {r: 1.3240595, g: 0.78616333, b: 2, a: 1}
+    tier2Color: {r: 1.2727598, g: 1.4491552, b: 2.0136201, a: 1}
+    tier3Color: {r: 1.3548113, g: 2.0813046, b: 1.5511608, a: 1}
+    tier4Color: {r: 1.5136858, g: 1.1325613, b: 1.9467814, a: 1}
   coreThicknessMin: 0.01
   coreThicknessMax: 0.03
   coreSoftness: 1
-  coreIntensity: 0.015
+  coreIntensity: 0
   haloThicknessMin: 0.045
   haloThicknessMax: 0.12
   haloSoftness: 1
