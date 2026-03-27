@@ -150,6 +150,12 @@ public class Projectile3D : MonoBehaviour, IPooledObject3D
     private void ProcessHit(RaycastHit hit)
     {
         Collider other = hit.collider;
+        ReflectShield3D reflectShield = ResolveReflectShield(other);
+        if (reflectShield != null && reflectShield.TryReflectProjectile(this, hit.point))
+        {
+            return;
+        }
+
         Entity3D damageable = ResolveHitEntity(other);
         if (damageable != null && IsMatchingTarget(damageable))
         {
@@ -183,6 +189,31 @@ public class Projectile3D : MonoBehaviour, IPooledObject3D
         }
 
         return hitCollider.GetComponentInParent<Entity3D>();
+    }
+
+    private ReflectShield3D ResolveReflectShield(Collider hitCollider)
+    {
+        if (hitCollider == null)
+        {
+            return null;
+        }
+
+        ReflectShield3D shield = hitCollider.GetComponent<ReflectShield3D>();
+        if (shield != null)
+        {
+            return shield;
+        }
+
+        if (hitCollider.attachedRigidbody != null)
+        {
+            shield = hitCollider.attachedRigidbody.GetComponentInChildren<ReflectShield3D>(true);
+            if (shield != null)
+            {
+                return shield;
+            }
+        }
+
+        return hitCollider.GetComponentInParent<ReflectShield3D>();
     }
 
     private bool IsMatchingTarget(Entity3D entity)

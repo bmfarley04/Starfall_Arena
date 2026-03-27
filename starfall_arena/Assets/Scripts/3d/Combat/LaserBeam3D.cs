@@ -22,6 +22,7 @@ public class LaserBeam3D : MonoBehaviour
     [SerializeField] private float laserHitInterval = 0.2f;
 
     [Header("Collision")]
+    [SerializeField] private float hitscanRadius = 1f;
     [SerializeField] private LayerMask collisionMask = ~0;
 
     private bool _isFiring;
@@ -144,7 +145,7 @@ public class LaserBeam3D : MonoBehaviour
         Vector3 aimDirection = _directionSource.forward;
         Vector3 origin = _positionAnchor.position + aimDirection * _anchorOffset + _positionAnchor.up * _verticalOffset;
 
-        bool hitSomething = Physics.Raycast(origin, aimDirection, out RaycastHit hit, _maxDistance, collisionMask, QueryTriggerInteraction.Ignore);
+        bool hitSomething = Physics.SphereCast(origin, Mathf.Max(0f, hitscanRadius), aimDirection, out RaycastHit hit, _maxDistance, collisionMask, QueryTriggerInteraction.Ignore);
 
         // Filter: skip shooter and its children
         if (hitSomething && _shooter != null && hit.collider.transform.IsChildOf(_shooter.transform))
