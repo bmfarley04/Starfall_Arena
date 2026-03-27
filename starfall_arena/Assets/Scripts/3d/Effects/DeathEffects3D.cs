@@ -20,7 +20,6 @@ public class DeathEffects3D : MonoBehaviour
         scale = 1f
     };
     [SerializeField] [Range(0f, 1f)] private float deathSoundSpatialBlend = 1f;
-
     [Header("Part Scatter")]
     [Tooltip("Root that contains the ship parts with ShipPartScatter3D components. Defaults to this transform.")]
     [SerializeField] private Transform scatterRoot;

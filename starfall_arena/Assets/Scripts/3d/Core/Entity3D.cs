@@ -1,5 +1,12 @@
 using UnityEngine;
 
+public enum DamageSource3D
+{
+    Projectile,
+    Beam,
+    Direct
+}
+
 [RequireComponent(typeof(ShipFlight3D))]
 public abstract class Entity3D : MonoBehaviour
 {
@@ -107,7 +114,7 @@ public abstract class Entity3D : MonoBehaviour
         lastDamageDirection = Vector3.zero;
     }
 
-    public virtual void TakeDamage(float damage, Vector3 hitPoint, Entity3D attacker = null)
+    public virtual void TakeDamage(float damage, Vector3 hitPoint, Entity3D attacker = null, DamageSource3D source = DamageSource3D.Projectile)
     {
         if (damage <= 0f || currentHealth <= 0f || _isDead)
         {

@@ -83,7 +83,7 @@ public class Projectile3D : MonoBehaviour, IPooledObject3D
 
     protected virtual void ApplyDamageToEntity(Entity3D damageable, Vector3 hitPoint, Collider collider)
     {
-        damageable.TakeDamage(_damage, hitPoint, _shooter);
+        damageable.TakeDamage(_damage, hitPoint, _shooter, DamageSource3D.Projectile);
         ApplyImpactForce(collider);
     }
 

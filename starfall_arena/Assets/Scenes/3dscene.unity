@@ -119,6 +119,11 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
+--- !u!1 &353152873 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 2568558604607578100, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+  m_PrefabInstance: {fileID: 1993409379330085426}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &773417010
 GameObject:
   m_ObjectHideFlags: 0
@@ -593,7 +598,7 @@ MonoBehaviour:
   m_RequiresOpaqueTextureOption: 2
   m_CameraType: 0
   m_Cameras: []
-  m_RendererIndex: -1
+  m_RendererIndex: 1
   m_VolumeLayerMask:
     serializedVersion: 2
     m_Bits: 1
@@ -833,14 +838,90 @@ PrefabInstance:
       propertyPath: m_Camera
       value: 
       objectReference: {fileID: 1867909032}
+    - target: {fileID: 472506789794357844, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      propertyPath: chargeAudioSource
+      value: 
+      objectReference: {fileID: 2745255904368457584}
+    - target: {fileID: 472506789794357844, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      propertyPath: gigaBlast.chargeSound
+      value: 
+      objectReference: {fileID: 11400000, guid: c0ca32b488e896048b9506d3930a6f0c, type: 2}
+    - target: {fileID: 472506789794357844, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      propertyPath: gigaBlast.tier1FireSound
+      value: 
+      objectReference: {fileID: 11400000, guid: 589e6a0df75d28849a496fbf6c74d2ad, type: 2}
+    - target: {fileID: 472506789794357844, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      propertyPath: gigaBlast.tier2FireSound
+      value: 
+      objectReference: {fileID: 11400000, guid: e7e42ed280f0c0c4b8350f72738de054, type: 2}
+    - target: {fileID: 472506789794357844, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      propertyPath: gigaBlast.tier3FireSound
+      value: 
+      objectReference: {fileID: 11400000, guid: f7365c957976a8b4e82cabcacd75dc73, type: 2}
+    - target: {fileID: 472506789794357844, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      propertyPath: gigaBlast.tier4FireSound
+      value: 
+      objectReference: {fileID: 11400000, guid: c16249345c8cb574d9b6150b6a225ff9, type: 2}
+    - target: {fileID: 1753171253810675368, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      propertyPath: deathEffects
+      value: 
+      objectReference: {fileID: 2745255904368457571}
+    - target: {fileID: 1753171253810675368, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      propertyPath: audioConfig.hullDamageSound
+      value: 
+      objectReference: {fileID: 11400000, guid: f9265c3e881424f4da91b40830f8b194, type: 2}
+    - target: {fileID: 1753171253810675368, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      propertyPath: audioConfig.beamHitLoopSound
+      value: 
+      objectReference: {fileID: 11400000, guid: cdf6af1d1d05cdd4d8cf3ea5f244f9f2, type: 2}
+    - target: {fileID: 1753171253810675368, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      propertyPath: audioConfig.shieldDamageSound
+      value: 
+      objectReference: {fileID: 11400000, guid: fd2754dd24955964c99c8be0471fb1d2, type: 2}
+    - target: {fileID: 2269080399608317416, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      propertyPath: entity
+      value: 
+      objectReference: {fileID: 2745255904368457566}
     - target: {fileID: 2568558604607578100, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
       propertyPath: m_Name
       value: Class1_Player
       objectReference: {fileID: 0}
+    - target: {fileID: 3261048947178620207, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      propertyPath: entity
+      value: 
+      objectReference: {fileID: 2745255904368457566}
     - target: {fileID: 3760524061682020281, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
       propertyPath: virtualCamera
       value: 
       objectReference: {fileID: 773417013}
+    - target: {fileID: 5373532230695115810, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      propertyPath: reflect.reflectedProjectileSound
+      value: 
+      objectReference: {fileID: 11400000, guid: 9eb877fd117843243bf3853dc3a30234, type: 2}
+    - target: {fileID: 6369695681249732700, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      propertyPath: audioSource
+      value: 
+      objectReference: {fileID: 2745255904368457584}
+    - target: {fileID: 6369695681249732700, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      propertyPath: teleport.exitSound
+      value: 
+      objectReference: {fileID: 11400000, guid: bc1b416aa39b9084fb712befa92ac7f8, type: 2}
+    - target: {fileID: 6369695681249732700, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      propertyPath: teleport.arrivalSound
+      value: 
+      objectReference: {fileID: 11400000, guid: b5df1b844f0088a48bf54cac1c479aa8, type: 2}
+    - target: {fileID: 6766116784638287846, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      propertyPath: beam.fireLoopSound
+      value: 
+      objectReference: {fileID: 11400000, guid: 2e4ef6af0cbd6bf4091e3bcdb76e99fd, type: 2}
+    - target: {fileID: 6766116784638287846, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      propertyPath: beamLoopAudioSource
+      value: 
+      objectReference: {fileID: 2745255904368457584}
+    - target: {fileID: 6928815812079169362, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      propertyPath: fireSound
+      value: 
+      objectReference: {fileID: 11400000, guid: 80311ec3731e81d4c81d5e64fe8d23ea, type: 2}
     - target: {fileID: 7427501341343801484, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
@@ -881,16 +962,105 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 9194935005271649546, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      propertyPath: explosion.sound
+      value: 
+      objectReference: {fileID: 11400000, guid: 52e8c58e387b89849affa74c78d6d899, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 2568558604607578100, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2745255904368457587}
   m_SourcePrefab: {fileID: 100100000, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
 --- !u!4 &2745255904368457554 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 7427501341343801484, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
   m_PrefabInstance: {fileID: 1993409379330085426}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &2745255904368457566 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 1753171253810675368, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+  m_PrefabInstance: {fileID: 1993409379330085426}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 353152873}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 472a711a0b2023940b16aa210d0274a3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: '::'
+--- !u!114 &2745255904368457571 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 9194935005271649546, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+  m_PrefabInstance: {fileID: 1993409379330085426}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 353152873}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7db2445f66bd4ee28f0d35ef2674cf0a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DeathEffects3D
+--- !u!82 &2745255904368457584 stripped
+AudioSource:
+  m_CorrespondingSourceObject: {fileID: 7028201276721733789, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+  m_PrefabInstance: {fileID: 1993409379330085426}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &2745255904368457587
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 353152873}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c5d379f28ce4c83a1aa6beeb1184e19, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GigablastChargeEdgeGlow3D
+  player: {fileID: 2745255904368457566}
+  gigaBlast: {fileID: 0}
+  edgeColor: {r: 0.2, g: 0.6, b: 1, a: 1}
+  coreThicknessMin: 0.01
+  coreThicknessMax: 0.03
+  coreSoftness: 0.012
+  coreIntensity: 2.6
+  haloThicknessMin: 0.045
+  haloThicknessMax: 0.12
+  haloSoftness: 0.08
+  haloIntensity: 1.1
+  cornerBoost: 0.22
+  edgeBiasHorizontal: 1
+  edgeBiasVertical: 0.85
+  fadeInSpeed: 3
+  fadeOutSpeed: 4
+  chargeRemap:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  pulseWhileCharging: 1
+  pulseAmplitude: 0.1
+  pulseSpeed: 6
 --- !u!1001 &6632817810544565794
 PrefabInstance:
   m_ObjectHideFlags: 0

@@ -163,7 +163,7 @@ public class LaserBeam3D : MonoBehaviour
             if (damageable != null && IsMatchingTarget(damageable))
             {
                 float damageThisFrame = _damagePerSecond * Time.deltaTime;
-                damageable.TakeDamage(damageThisFrame, hit.point, _shooter);
+                damageable.TakeDamage(damageThisFrame, hit.point, _shooter, DamageSource3D.Beam);
 
                 Rigidbody targetRb = hit.collider.attachedRigidbody;
                 if (targetRb != null && _impactForce > 0f)

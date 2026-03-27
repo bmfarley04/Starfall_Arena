@@ -194,6 +194,11 @@ public class GigaBlast3D : Ability3D
     private int _currentChargeTier;
     private Coroutine _chargeFadeCoroutine;
 
+    public bool IsCharging => _isCharging;
+    public float CurrentChargeTime => GetCurrentChargeTime();
+    public float NormalizedChargeProgress => GetNormalizedChargeProgress();
+    public int CurrentChargeTier => _isCharging ? _currentChargeTier : 0;
+
     protected override void Awake()
     {
         base.Awake();
@@ -422,6 +427,32 @@ public class GigaBlast3D : Ability3D
         }
 
         return Mathf.Min(rawChargeTime, gigaBlast.timing.maxChargeTime);
+    }
+
+    private float GetNormalizedChargeProgress()
+    {
+        if (!_isCharging)
+        {
+            return 0f;
+        }
+
+        float normalizationDuration = GetChargeNormalizationDuration();
+        if (normalizationDuration <= 0f)
+        {
+            return 0f;
+        }
+
+        return Mathf.Clamp01(GetCurrentChargeTime() / normalizationDuration);
+    }
+
+    private float GetChargeNormalizationDuration()
+    {
+        float maxThreshold = Mathf.Max(
+            gigaBlast.timing.maxChargeTime,
+            gigaBlast.tierThresholds.tier4Time,
+            gigaBlast.timing.minChargeTime);
+
+        return maxThreshold > 0f ? maxThreshold : 0f;
     }
 
     private int GetChargeTier(float chargeTime)

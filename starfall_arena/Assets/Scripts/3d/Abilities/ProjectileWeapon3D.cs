@@ -34,6 +34,9 @@ public class ProjectileWeapon3D : MonoBehaviour
     [SerializeField] private int projectilePrewarmCount = 12;
     [SerializeField] private int muzzleEffectPrewarmCount = 4;
 
+    [Header("Audio")]
+    [SerializeField] private SoundEffect fireSound;
+
     private float _lastFireTime = -999f;
 
     private struct AimSolution
@@ -109,6 +112,8 @@ public class ProjectileWeapon3D : MonoBehaviour
         {
             shipFlight.ApplyRecoil(request.recoilForce);
         }
+
+        fireSound?.PlayAtPoint(transform.position);
 
         if (consumeCooldown)
         {

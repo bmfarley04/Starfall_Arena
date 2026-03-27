@@ -1,0 +1,242 @@
+using UnityEngine;
+
+[DisallowMultipleComponent]
+[RequireComponent(typeof(PlayerCameraRig3D))]
+public class GigablastChargeEdgeGlow3D : MonoBehaviour
+{
+    private static readonly int EdgeColorId = Shader.PropertyToID("_GigablastEdgeGlow_EdgeColor");
+    private static readonly int Params1Id = Shader.PropertyToID("_GigablastEdgeGlow_Params1");
+    private static readonly int Params2Id = Shader.PropertyToID("_GigablastEdgeGlow_Params2");
+    private static readonly int Params3Id = Shader.PropertyToID("_GigablastEdgeGlow_Params3");
+
+    private static bool s_HasOwner;
+    private static int s_OwnerId;
+
+    [Header("References")]
+    [SerializeField] private Player3D player;
+    [SerializeField] private GigaBlast3D gigaBlast;
+
+    [Header("Glow")]
+    [ColorUsage(true, true)]
+    [SerializeField] private Color edgeColor = new Color(0.2f, 0.6f, 1f, 1f);
+
+    [Header("Core Border")]
+    [SerializeField, Range(0f, 0.25f)] private float coreThicknessMin = 0.01f;
+    [SerializeField, Range(0f, 0.25f)] private float coreThicknessMax = 0.03f;
+    [SerializeField, Range(0.001f, 0.15f)] private float coreSoftness = 0.012f;
+    [SerializeField, Min(0f)] private float coreIntensity = 2.6f;
+
+    [Header("Halo")]
+    [SerializeField, Range(0f, 0.3f)] private float haloThicknessMin = 0.045f;
+    [SerializeField, Range(0f, 0.3f)] private float haloThicknessMax = 0.12f;
+    [SerializeField, Range(0.001f, 0.25f)] private float haloSoftness = 0.08f;
+    [SerializeField, Min(0f)] private float haloIntensity = 1.1f;
+
+    [Header("Shape")]
+    [SerializeField, Range(0f, 1f)] private float cornerBoost = 0.22f;
+    [SerializeField, Min(0.01f)] private float edgeBiasHorizontal = 1f;
+    [SerializeField, Min(0.01f)] private float edgeBiasVertical = 0.85f;
+
+    [Header("Charge Response")]
+    [SerializeField, Min(0.01f)] private float fadeInSpeed = 3f;
+    [SerializeField, Min(0.01f)] private float fadeOutSpeed = 4f;
+    [SerializeField] private AnimationCurve chargeRemap = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
+
+    [Header("Optional Pulse")]
+    [SerializeField] private bool pulseWhileCharging = false;
+    [SerializeField, Range(0f, 1f)] private float pulseAmplitude = 0.1f;
+    [SerializeField, Min(0.01f)] private float pulseSpeed = 6f;
+
+    private float _currentCharge;
+    private bool _warnedMissingGigablast;
+
+    public static bool IsEffectVisible { get; private set; }
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    private static void ResetStaticState()
+    {
+        s_HasOwner = false;
+        s_OwnerId = 0;
+        IsEffectVisible = false;
+        ResetShaderGlobals();
+    }
+
+    private void Reset()
+    {
+        chargeRemap = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
+    }
+
+    private void Awake()
+    {
+        ResolveReferences();
+    }
+
+    private void OnEnable()
+    {
+        if (!TryClaimOwnership())
+        {
+            enabled = false;
+            return;
+        }
+
+        ResolveReferences();
+        _currentCharge = 0f;
+        ApplyShaderGlobals(0f);
+    }
+
+    private void Update()
+    {
+        if (!OwnsEffect())
+        {
+            return;
+        }
+
+        if (gigaBlast == null)
+        {
+            ResolveReferences();
+            if (gigaBlast == null)
+            {
+                WarnMissingGigablast();
+                ApplyShaderGlobals(0f);
+                return;
+            }
+        }
+
+        float targetCharge = gigaBlast.IsCharging ? EvaluateCharge(gigaBlast.NormalizedChargeProgress) : 0f;
+        float speed = gigaBlast.IsCharging ? fadeInSpeed : fadeOutSpeed;
+        _currentCharge = Mathf.MoveTowards(_currentCharge, targetCharge, speed * Time.deltaTime);
+        ApplyShaderGlobals(_currentCharge);
+    }
+
+    private void OnDisable()
+    {
+        if (OwnsEffect())
+        {
+            ReleaseOwnership();
+        }
+    }
+
+    private void OnDestroy()
+    {
+        if (OwnsEffect())
+        {
+            ReleaseOwnership();
+        }
+    }
+
+    private void ResolveReferences()
+    {
+        player ??= GetComponent<Player3D>();
+
+        if (gigaBlast != null)
+        {
+            return;
+        }
+
+        if (player != null)
+        {
+            Ability3D[] abilities = player.Abilities;
+            for (int i = 0; i < abilities.Length; i++)
+            {
+                if (abilities[i] is GigaBlast3D gigaBlastAbility)
+                {
+                    gigaBlast = gigaBlastAbility;
+                    return;
+                }
+            }
+        }
+
+        gigaBlast = GetComponent<GigaBlast3D>();
+    }
+
+    private float EvaluateCharge(float normalizedCharge)
+    {
+        normalizedCharge = Mathf.Clamp01(normalizedCharge);
+        if (chargeRemap == null || chargeRemap.length == 0)
+        {
+            return normalizedCharge;
+        }
+
+        return Mathf.Clamp01(chargeRemap.Evaluate(normalizedCharge));
+    }
+
+    private void ApplyShaderGlobals(float charge)
+    {
+        charge = Mathf.Clamp01(charge);
+        float pulse = 1f;
+        if (pulseWhileCharging && charge > 0f)
+        {
+            float pulseWeight = Mathf.Clamp01(charge);
+            pulse += Mathf.Sin(Time.time * pulseSpeed) * pulseAmplitude * pulseWeight;
+        }
+
+        Shader.SetGlobalColor(EdgeColorId, edgeColor);
+        Shader.SetGlobalVector(Params1Id, new Vector4(
+            charge,
+            coreThicknessMin,
+            coreThicknessMax,
+            Mathf.Max(0.001f, coreSoftness)));
+        Shader.SetGlobalVector(Params2Id, new Vector4(
+            haloThicknessMin,
+            haloThicknessMax,
+            Mathf.Max(0.001f, haloSoftness),
+            Mathf.Max(0f, coreIntensity) * pulse));
+        Shader.SetGlobalVector(Params3Id, new Vector4(
+            Mathf.Max(0f, haloIntensity) * pulse,
+            Mathf.Max(0f, cornerBoost),
+            Mathf.Max(0.01f, edgeBiasHorizontal),
+            Mathf.Max(0.01f, edgeBiasVertical)));
+        IsEffectVisible = charge > 0.0001f && (coreIntensity > 0.0001f || haloIntensity > 0.0001f);
+    }
+
+    private bool TryClaimOwnership()
+    {
+        int ownerId = GetInstanceID();
+        if (s_HasOwner && s_OwnerId != ownerId)
+        {
+            Debug.LogWarning(
+                "GigablastChargeEdgeGlow3D disabled itself because another instance already owns the fullscreen edge glow. " +
+                "This effect must stay on the local 3D camera path only.",
+                this);
+            return false;
+        }
+
+        s_HasOwner = true;
+        s_OwnerId = ownerId;
+        return true;
+    }
+
+    private bool OwnsEffect()
+    {
+        return s_HasOwner && s_OwnerId == GetInstanceID();
+    }
+
+    private void ReleaseOwnership()
+    {
+        ResetShaderGlobals();
+        s_HasOwner = false;
+        s_OwnerId = 0;
+        IsEffectVisible = false;
+    }
+
+    private static void ResetShaderGlobals()
+    {
+        Shader.SetGlobalColor(EdgeColorId, Color.black);
+        Shader.SetGlobalVector(Params1Id, Vector4.zero);
+        Shader.SetGlobalVector(Params2Id, Vector4.zero);
+        Shader.SetGlobalVector(Params3Id, Vector4.zero);
+    }
+
+    private void WarnMissingGigablast()
+    {
+        if (_warnedMissingGigablast)
+        {
+            return;
+        }
+
+        _warnedMissingGigablast = true;
+        Debug.LogWarning(
+            "GigablastChargeEdgeGlow3D could not find a GigaBlast3D source. Assign the ability directly or keep the component on the same player object as Player3D.",
+            this);
+    }
+}

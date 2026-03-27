@@ -28,10 +28,15 @@ public class Beam3D : Ability3D
         public float drainRate;
         [Tooltip("How fast beam capacity regenerates when not firing (units per second)")]
         public float regenRate;
+
+        [Header("Sound Effects")]
+        [Tooltip("Looping sound played while the beam is firing.")]
+        public SoundEffect fireLoopSound;
     }
 
     [Header("Ability 1 - Beam Weapon")]
     public BeamAbilityConfig3D beam;
+    [SerializeField] private AudioSource beamLoopAudioSource;
 
     private LaserBeam3D _activeBeam;
     private float _currentBeamCapacity;
@@ -42,6 +47,14 @@ public class Beam3D : Ability3D
     {
         base.Awake();
         _currentBeamCapacity = 0f;
+        if (beamLoopAudioSource == null)
+        {
+            beamLoopAudioSource = gameObject.AddComponent<AudioSource>();
+        }
+
+        beamLoopAudioSource.playOnAwake = false;
+        beamLoopAudioSource.loop = true;
+        beamLoopAudioSource.spatialBlend = 0f;
     }
 
     void Update()
@@ -122,6 +135,7 @@ public class Beam3D : Ability3D
             beam.verticalOffset);
 
         _activeBeam.StartFiring();
+        StartBeamLoopSound();
     }
 
     private void StopBeam()
@@ -132,6 +146,8 @@ public class Beam3D : Ability3D
             Destroy(_activeBeam.gameObject);
             _activeBeam = null;
         }
+
+        StopBeamLoopSound();
     }
 
     public override float GetRotationMultiplier()
@@ -162,5 +178,36 @@ public class Beam3D : Ability3D
     public override void Die()
     {
         StopBeam();
+    }
+
+    private void OnDisable()
+    {
+        StopBeamLoopSound();
+    }
+
+    private void StartBeamLoopSound()
+    {
+        if (beam.fireLoopSound == null || beamLoopAudioSource == null)
+        {
+            return;
+        }
+
+        if (beamLoopAudioSource.isPlaying && beamLoopAudioSource.clip == beam.fireLoopSound.clip)
+        {
+            return;
+        }
+
+        beamLoopAudioSource.loop = true;
+        beam.fireLoopSound.Play(beamLoopAudioSource);
+    }
+
+    private void StopBeamLoopSound()
+    {
+        if (beamLoopAudioSource == null || !beamLoopAudioSource.isPlaying)
+        {
+            return;
+        }
+
+        beamLoopAudioSource.Stop();
     }
 }

@@ -23,6 +23,8 @@ public class Reflector3D : Ability3D
         [Tooltip("Damage multiplier applied when a projectile is reflected.")]
         [Range(0f, 5f)]
         public float reflectedProjectileDamageMultiplier;
+        [Tooltip("Sound played when the shield successfully reflects a projectile.")]
+        public SoundEffect reflectedProjectileSound;
     }
 
     [Header("Ability 2 - Reflect Shield")]
@@ -69,7 +71,13 @@ public class Reflector3D : Ability3D
         }
 
         reflect.shield.OnReflectHit(hitPoint);
-        return reflect.shield.ReflectProjectile(projectile, reflect.reflectedProjectileColor, reflect.reflectedProjectileDamageMultiplier);
+        bool reflected = reflect.shield.ReflectProjectile(projectile, reflect.reflectedProjectileColor, reflect.reflectedProjectileDamageMultiplier);
+        if (reflected)
+        {
+            reflect.reflectedProjectileSound?.PlayAtPoint(hitPoint);
+        }
+
+        return reflected;
     }
 
     public override bool IsAbilityActive()
