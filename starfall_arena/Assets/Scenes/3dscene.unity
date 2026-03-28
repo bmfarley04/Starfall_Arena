@@ -2113,6 +2113,26 @@ PrefabInstance:
       propertyPath: haloIntensity
       value: 0.01
       objectReference: {fileID: 0}
+    - target: {fileID: 6369695681249732700, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      propertyPath: teleport.exitSound
+      value: 
+      objectReference: {fileID: 11400000, guid: bc1b416aa39b9084fb712befa92ac7f8, type: 2}
+    - target: {fileID: 6369695681249732700, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      propertyPath: teleport.arrivalSound
+      value: 
+      objectReference: {fileID: 11400000, guid: b5df1b844f0088a48bf54cac1c479aa8, type: 2}
+    - target: {fileID: 6369695681249732700, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      propertyPath: teleport.visual.arrivalPulsewave.burstCount
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6369695681249732700, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      propertyPath: teleport.visual.departurePulsewave.burstCount
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6928815812079169362, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      propertyPath: weaponConfig.impactForce
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 7427501341343801484, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
       propertyPath: m_LocalPosition.x
       value: -0.067

@@ -586,7 +586,7 @@
                 {
                     "name": "",
                     "id": "386802ec-725a-4918-9d77-60da36f73371",
-                    "path": "<Gamepad>/rightStickPress",
+                    "path": "<Gamepad>/buttonNorth",
                     "interactions": "",
                     "processors": "",
                     "groups": ";controller",
