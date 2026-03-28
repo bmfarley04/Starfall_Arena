@@ -136,12 +136,6 @@ public struct ShipSpeedTrailLayer3DConfig
     public AnimationCurve widthCurve;
     [Tooltip("Optional custom trail color gradient. Defaults to a cyan-white fade when left empty.")]
     public Gradient colorGradient;
-    [Tooltip("How far the runtime emitter can bias toward the current camera so the ribbon reads back toward the viewer.")]
-    public float cameraBias;
-    [Tooltip("Small positional wobble so the trail does not read as a perfectly rigid laser strip.")]
-    public float jitterAmplitude;
-    [Tooltip("Noise frequency used by the positional wobble.")]
-    public float jitterFrequency;
     [Tooltip("Minimum vertex spacing used by the trail renderer.")]
     public float minVertexDistance;
     [Tooltip("Additional rounded geometry at trail corners.")]

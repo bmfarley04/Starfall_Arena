@@ -10,7 +10,6 @@ public class ShipSpeedFx3D : MonoBehaviour
         public Transform driver;
         public TrailRenderer trailRenderer;
         public ShipSpeedTrailLayer3DConfig config;
-        public float noiseSeed;
     }
 
     [SerializeField] private ShipFlight3D shipFlight;
@@ -90,8 +89,6 @@ public class ShipSpeedFx3D : MonoBehaviour
         float rampStep = speedEffects.trailRampTime > 0f ? Time.deltaTime / speedEffects.trailRampTime : 1f;
         _currentTrailIntensity = Mathf.MoveTowards(_currentTrailIntensity, targetIntensity, rampStep);
 
-        Camera effectCamera = GetEffectCamera();
-
         for (int i = 0; i < _runtimeTrailLayers.Count; i++)
         {
             RuntimeTrailLayerState layer = _runtimeTrailLayers[i];
@@ -101,27 +98,7 @@ public class ShipSpeedFx3D : MonoBehaviour
             }
 
             float layerIntensity = Mathf.SmoothStep(0f, 1f, _currentTrailIntensity);
-            Vector3 sourcePosition = layer.source.position;
-
-            if (effectCamera != null && layerIntensity > 0f && layer.config.cameraBias > 0f)
-            {
-                Vector3 toCamera = effectCamera.transform.position - sourcePosition;
-                if (toCamera.sqrMagnitude > 0.0001f)
-                {
-                    sourcePosition += toCamera.normalized * (layer.config.cameraBias * layerIntensity);
-                }
-            }
-
-            if (layerIntensity > 0f && layer.config.jitterAmplitude > 0f && layer.config.jitterFrequency > 0f)
-            {
-                float noiseTime = Time.time * layer.config.jitterFrequency + layer.noiseSeed;
-                Vector3 jitterDirection =
-                    (layer.source.right * Mathf.Sin(noiseTime)) +
-                    (layer.source.up * Mathf.Cos(noiseTime * 1.37f));
-                sourcePosition += jitterDirection * (layer.config.jitterAmplitude * layerIntensity);
-            }
-
-            layer.driver.SetPositionAndRotation(sourcePosition, layer.source.rotation);
+            layer.driver.SetPositionAndRotation(layer.source.position, layer.source.rotation);
             layer.trailRenderer.time = Mathf.Lerp(layer.config.minLifetime, layer.config.maxLifetime, layerIntensity);
             layer.trailRenderer.widthMultiplier = Mathf.Lerp(layer.config.minWidth, layer.config.maxWidth, layerIntensity);
             layer.trailRenderer.emitting = layerIntensity > 0.01f;
@@ -169,8 +146,7 @@ public class ShipSpeedFx3D : MonoBehaviour
             source = source,
             driver = trailObject.transform,
             trailRenderer = trailRenderer,
-            config = config,
-            noiseSeed = seedOffset * 0.6180339f
+            config = config
         });
     }
 
@@ -231,16 +207,6 @@ public class ShipSpeedFx3D : MonoBehaviour
                 new GradientAlphaKey(0f, 1f)
             });
         return gradient;
-    }
-
-    private Camera GetEffectCamera()
-    {
-        if (Camera.main != null)
-        {
-            return Camera.main;
-        }
-
-        return null;
     }
 
     private void SetTrailEmissionEnabled(bool enabled)
