@@ -76,7 +76,17 @@ public abstract class Entity3D : MonoBehaviour
 
     public float GetCombinedRotationMultiplier()
     {
-        float multiplier = GetExternalRotationMultiplier();
+        return GetBaseRotationMultiplier() * GetAbilityRotationMultiplier();
+    }
+
+    public float GetBaseRotationMultiplier()
+    {
+        return GetFlatBaseRotationMultiplier();
+    }
+
+    public float GetAbilityRotationMultiplier()
+    {
+        float multiplier = 1f;
         for (int i = 0; i < abilities.Length; i++)
         {
             Ability3D ability = abilities[i];
@@ -326,7 +336,7 @@ public abstract class Entity3D : MonoBehaviour
     {
     }
 
-    protected virtual float GetExternalRotationMultiplier()
+    protected virtual float GetFlatBaseRotationMultiplier()
     {
         return 1f;
     }

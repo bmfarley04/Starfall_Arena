@@ -564,17 +564,25 @@ MonoBehaviour:
   flight:
     thrustAcceleration: 50
     maxSpeed: 100
+    lookInputResponse: 8
     pitchSpeed: 2
     yawSpeed: 2
+    pitchAcceleration: 12
+    pitchDeceleration: 16
+    yawAcceleration: 12
+    yawDeceleration: 16
     invertY: 1
     minRotationMultiplierAtMaxSpeed: 0.3
   flightAssist:
     frictionDeceleration: 20
     activeAngularDamping: 2
+    lateralDriftDamping: 18
+    verticalDriftDamping: 16
+    velocityAlignmentStrength: 3
   inputSourceBehaviour: {fileID: 3261048947178620207}
   entity: {fileID: 1753171253810675368}
   frictionEnabled: 0
-  lockToWorldYPlane: 1
+  lockToWorldYPlane: 0
   captureInitialWorldY: 1
   lockedWorldY: 0
 --- !u!114 &5585566392220985068
@@ -593,14 +601,20 @@ MonoBehaviour:
   shipFlight: {fileID: 2269080399608317416}
   visualEffects:
     visualModel: {fileID: 9023730634269657982}
-    maxBankAngle: 90
-    bankSensitivity: 15
+    maxBankAngle: 75
+    bankSensitivity: 28
+    steeringInputBankSensitivity: 24
     bankSmoothing: 8
-    maxPitchLeanAngle: 90
-    pitchLeanSensitivity: 12
+    bankReturnSmoothing: 5
+    maxPitchLeanAngle: 40
+    pitchLeanSensitivity: 18
+    steeringInputPitchSensitivity: 14
     pitchLeanSmoothing: 8
-    forwardAccelPitchSensitivity: 0.1
+    pitchLeanReturnSmoothing: 5
+    forwardAccelPitchSensitivity: 0.08
     lateralAccelBankSensitivity: 0.1
+    lateralDriftBankSensitivity: 0.5
+    verticalDriftPitchSensitivity: 0.35
 --- !u!114 &3538944680820626273
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -673,6 +687,18 @@ MonoBehaviour:
     minFOV: 30
     maxFOV: 45
     cameraLerpSpeed: 5
+    horizontalTurnOffset: 2.5
+    verticalTurnOffset: 1.2
+    yawRateOffsetContribution: 0.6
+    pitchRateOffsetContribution: 0.5
+    turnOffsetLerpSpeed: 6
+    recenterLerpSpeed: 2.5
+    followPositionDampingAtRest: 0.12
+    followPositionDampingDuringTurn: 0.45
+    followRotationDampingAtRest: 0.1
+    followRotationDampingDuringTurn: 0.35
+    aimDampingAtRest: 0.1
+    aimDampingDuringTurn: 0.25
 --- !u!114 &9194935005271649546
 MonoBehaviour:
   m_ObjectHideFlags: 0

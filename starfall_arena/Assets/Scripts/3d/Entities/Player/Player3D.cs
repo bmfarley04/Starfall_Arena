@@ -213,7 +213,7 @@ public class Player3D : Entity3D
         }
     }
 
-    protected override float GetExternalRotationMultiplier()
+    protected override float GetFlatBaseRotationMultiplier()
     {
         if (!IsAnchorActive)
         {

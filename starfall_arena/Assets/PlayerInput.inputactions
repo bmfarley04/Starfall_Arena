@@ -629,17 +629,6 @@
                 },
                 {
                     "name": "",
-                    "id": "d4498ae8-9e13-413c-a0db-09cd423e9a03",
-                    "path": "<Gamepad>/rightShoulder",
-                    "interactions": "Press(behavior=2)",
-                    "processors": "",
-                    "groups": ";controller",
-                    "action": "Anchor",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
                     "id": "e502cc95-7874-4024-bae1-3b31f21107c1",
                     "path": "<Gamepad>/leftShoulder",
                     "interactions": "Press(behavior=2)",

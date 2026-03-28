@@ -28,9 +28,21 @@ public struct ShipFlightConfig3D
     public float thrustAcceleration;
     public float maxSpeed;
 
+    [Header("Input Response")]
+    [Tooltip("How quickly raw look input converges toward the assisted steering intent.")]
+    public float lookInputResponse;
+
     [Header("Handling Parameters")]
     public float pitchSpeed;
     public float yawSpeed;
+    [Tooltip("How quickly pitch rate ramps up toward the target turn rate.")]
+    public float pitchAcceleration;
+    [Tooltip("How quickly pitch rate settles back down when the target turn rate changes or is released.")]
+    public float pitchDeceleration;
+    [Tooltip("How quickly yaw rate ramps up toward the target turn rate.")]
+    public float yawAcceleration;
+    [Tooltip("How quickly yaw rate settles back down when the target turn rate changes or is released.")]
+    public float yawDeceleration;
     public bool invertY;
     [Range(0f, 1f)]
     public float minRotationMultiplierAtMaxSpeed;
@@ -44,6 +56,14 @@ public struct ShipFlightAssistConfig3D
     public float frictionDeceleration;
     [Tooltip("Angular damping applied to rotation when friction is active.")]
     public float activeAngularDamping;
+
+    [Header("Drift Assist")]
+    [Tooltip("How aggressively sideways local drift is damped while the ship turns through space.")]
+    public float lateralDriftDamping;
+    [Tooltip("How aggressively local up/down drift is damped so climb/dive remains intentional instead of sloppy.")]
+    public float verticalDriftDamping;
+    [Tooltip("How strongly the ship's velocity aligns back toward its forward direction while thrusting.")]
+    public float velocityAlignmentStrength;
 }
 
 [System.Serializable]
@@ -56,24 +76,36 @@ public struct VisualEffects3DConfig
     [Header("Banking (Roll)")]
     [Tooltip("Maximum roll angle applied to the visual model when yawing.")]
     public float maxBankAngle;
-    [Tooltip("How strongly yaw angular velocity drives the bank. Negative values invert the direction.")]
+    [Tooltip("How strongly actual yaw turn rate drives the bank. Negative values invert the direction.")]
     public float bankSensitivity;
+    [Tooltip("How strongly steering intent drives bank before the rigidbody has fully turned.")]
+    public float steeringInputBankSensitivity;
     [Tooltip("Smoothing speed for bank interpolation.")]
     public float bankSmoothing;
+    [Tooltip("How quickly bank settles back toward neutral once the target bank relaxes.")]
+    public float bankReturnSmoothing;
 
     [Header("Pitch Lean")]
     [Tooltip("Maximum additional pitch lean applied to the visual model when pitching.")]
     public float maxPitchLeanAngle;
-    [Tooltip("How strongly pitch angular velocity drives the lean. Negative values invert the direction.")]
+    [Tooltip("How strongly actual pitch turn rate drives the lean. Negative values invert the direction.")]
     public float pitchLeanSensitivity;
+    [Tooltip("How strongly steering intent drives pitch lean before the rigidbody fully responds.")]
+    public float steeringInputPitchSensitivity;
     [Tooltip("Smoothing speed for pitch lean interpolation.")]
     public float pitchLeanSmoothing;
+    [Tooltip("How quickly pitch lean settles back toward neutral once the target lean relaxes.")]
+    public float pitchLeanReturnSmoothing;
 
     [Header("Acceleration Response")]
     [Tooltip("How strongly forward/backward linear acceleration drives pitch lean (thrust start/stop, braking).")]
     public float forwardAccelPitchSensitivity;
     [Tooltip("How strongly lateral linear acceleration drives banking (centripetal force from turning at speed).")]
     public float lateralAccelBankSensitivity;
+    [Tooltip("How strongly persistent sideways drift contributes to visual bank.")]
+    public float lateralDriftBankSensitivity;
+    [Tooltip("How strongly persistent vertical drift contributes to pitch lean.")]
+    public float verticalDriftPitchSensitivity;
 }
 
 [System.Serializable]
@@ -106,6 +138,34 @@ public struct PlayerCameraRigConfig3D
     public float minFOV;
     public float maxFOV;
     public float cameraLerpSpeed;
+
+    [Header("Turn Composition")]
+    [Tooltip("How far the camera can bias horizontally during hard yaw turns.")]
+    public float horizontalTurnOffset;
+    [Tooltip("How far the camera can bias vertically during hard pitch maneuvers.")]
+    public float verticalTurnOffset;
+    [Tooltip("How much current yaw turn rate reinforces the horizontal camera offset.")]
+    public float yawRateOffsetContribution;
+    [Tooltip("How much current pitch turn rate reinforces the vertical camera offset.")]
+    public float pitchRateOffsetContribution;
+    [Tooltip("How quickly the camera pushes into its turn-biased offset.")]
+    public float turnOffsetLerpSpeed;
+    [Tooltip("How quickly the camera recenters after steering relaxes.")]
+    public float recenterLerpSpeed;
+
+    [Header("Follow Damping")]
+    [Tooltip("Position damping while flying mostly straight.")]
+    public float followPositionDampingAtRest;
+    [Tooltip("Position damping during aggressive steering.")]
+    public float followPositionDampingDuringTurn;
+    [Tooltip("Rotation damping while flying mostly straight.")]
+    public float followRotationDampingAtRest;
+    [Tooltip("Rotation damping during aggressive steering.")]
+    public float followRotationDampingDuringTurn;
+    [Tooltip("Aim damping while flying mostly straight.")]
+    public float aimDampingAtRest;
+    [Tooltip("Aim damping during aggressive steering.")]
+    public float aimDampingDuringTurn;
 }
 
 [System.Serializable]

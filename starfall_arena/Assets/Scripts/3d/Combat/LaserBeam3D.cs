@@ -157,7 +157,7 @@ public class LaserBeam3D : MonoBehaviour
 
         if (hitSomething)
         {
-            beamLength = hit.distance;
+            beamLength = ResolveBeamLength(origin, aimDirection, hit);
 
             Entity3D damageable = ResolveHitEntity(hit.collider);
             if (damageable != null && IsMatchingTarget(damageable))
@@ -225,6 +225,14 @@ public class LaserBeam3D : MonoBehaviour
             _muzzleInstance.transform.position = origin;
             _muzzleInstance.transform.rotation = Quaternion.LookRotation(aimDirection, Vector3.up);
         }
+    }
+
+    private float ResolveBeamLength(Vector3 origin, Vector3 aimDirection, RaycastHit hit)
+    {
+        // SphereCast distance stops when the cast volume first touches the collider surface.
+        // That is shorter than the visible contact point when the beam uses a non-zero forgiving radius.
+        float projectedHitDistance = Vector3.Dot(hit.point - origin, aimDirection);
+        return Mathf.Clamp(Mathf.Max(hit.distance, projectedHitDistance), 0f, _maxDistance);
     }
 
     private void UpdateShieldHitEffects(Entity3D target, Vector3 hitPoint)
