@@ -425,7 +425,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 0.19607843}
+  m_Color: {r: 1, g: 1, b: 1, a: 0.078431375}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -870,7 +870,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 0.19607843}
+  m_Color: {r: 1, g: 1, b: 1, a: 0.078431375}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -1556,11 +1556,6 @@ PrefabInstance:
       insertIndex: -1
       addedObject: {fileID: 1887455136}
   m_SourcePrefab: {fileID: 100100000, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
---- !u!4 &1850278992 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 4482448338995968071, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
-  m_PrefabInstance: {fileID: 1993409379330085426}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1867909027
 GameObject:
   m_ObjectHideFlags: 0
@@ -1827,7 +1822,7 @@ RectTransform:
   m_GameObject: {fileID: 1988608715}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 0.08, y: 0.08, z: 1}
+  m_LocalScale: {x: 0.07, y: 0.07, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1963544593}
@@ -1849,7 +1844,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
-  m_Material: {fileID: 0}
+  m_Material: {fileID: 2100000, guid: 21c6ab221c5e8584e8fd43e0df6401cd, type: 2}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
@@ -2014,6 +2009,54 @@ PrefabInstance:
       propertyPath: m_Camera
       value: 
       objectReference: {fileID: 1867909032}
+    - target: {fileID: 472506789794357844, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      propertyPath: gigaBlast.visual.tier1ReticleColor.b
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 472506789794357844, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      propertyPath: gigaBlast.visual.tier1ReticleColor.g
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 472506789794357844, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      propertyPath: gigaBlast.visual.tier1ReticleColor.r
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 472506789794357844, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      propertyPath: gigaBlast.visual.tier2ReticleColor.b
+      value: 0.8805031
+      objectReference: {fileID: 0}
+    - target: {fileID: 472506789794357844, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      propertyPath: gigaBlast.visual.tier2ReticleColor.g
+      value: 0.2587801
+      objectReference: {fileID: 0}
+    - target: {fileID: 472506789794357844, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      propertyPath: gigaBlast.visual.tier2ReticleColor.r
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 472506789794357844, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      propertyPath: gigaBlast.visual.tier3ReticleColor.b
+      value: 0.064631335
+      objectReference: {fileID: 0}
+    - target: {fileID: 472506789794357844, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      propertyPath: gigaBlast.visual.tier3ReticleColor.g
+      value: 0.8238993
+      objectReference: {fileID: 0}
+    - target: {fileID: 472506789794357844, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      propertyPath: gigaBlast.visual.tier3ReticleColor.r
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 472506789794357844, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      propertyPath: gigaBlast.visual.tier4ReticleColor.b
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 472506789794357844, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      propertyPath: gigaBlast.visual.tier4ReticleColor.g
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 472506789794357844, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      propertyPath: gigaBlast.visual.tier4ReticleColor.r
+      value: 0.34173203
+      objectReference: {fileID: 0}
     - target: {fileID: 547480364830838567, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
       propertyPath: innerCircleImage
       value: 
@@ -2038,9 +2081,9 @@ PrefabInstance:
       propertyPath: bracketConfig.rightBracket
       value: 
       objectReference: {fileID: 1024122630}
-    - target: {fileID: 1753171253810675368, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
-      propertyPath: anchorConfig.thrustMultiplier
-      value: 0.5
+    - target: {fileID: 1753181740976137236, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      propertyPath: EmissionModule.rateOverTime.scalar
+      value: 30
       objectReference: {fileID: 0}
     - target: {fileID: 2568558604607578100, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
       propertyPath: m_Name
@@ -2051,17 +2094,13 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 773417013}
     - target: {fileID: 3934790730732665131, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
-      propertyPath: speedEffects.coreTrail.material
-      value: 
-      objectReference: {fileID: 2100000, guid: eea1955ce23096e4f8fd3c00eccaa415, type: 2}
+      propertyPath: speedEffects.maxDustEmissionRate
+      value: 100
+      objectReference: {fileID: 0}
     - target: {fileID: 3934790730732665131, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
-      propertyPath: speedEffects.softTrail.material
-      value: 
-      objectReference: {fileID: 2100000, guid: eea1955ce23096e4f8fd3c00eccaa415, type: 2}
-    - target: {fileID: 3934790730732665131, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
-      propertyPath: 'speedEffects.wingTrailSources.Array.data[1]'
-      value: 
-      objectReference: {fileID: 1850278992}
+      propertyPath: speedEffects.trailSpeedThreshold
+      value: 0.5
+      objectReference: {fileID: 0}
     - target: {fileID: 7427501341343801484, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
       propertyPath: m_LocalPosition.x
       value: -0.067

@@ -726,7 +726,7 @@ MonoBehaviour:
   anchorConfig:
     enabled: 1
     rotationMultiplier: 3
-    thrustMultiplier: 1
+    thrustMultiplier: 0.5
   audioConfig:
     shieldDamageSound: {fileID: 11400000, guid: fd2754dd24955964c99c8be0471fb1d2, type: 2}
     hullDamageSound: {fileID: 11400000, guid: f9265c3e881424f4da91b40830f8b194, type: 2}
@@ -838,11 +838,11 @@ MonoBehaviour:
     dustSpeedThreshold: 0.5
     wingTrailSources:
     - {fileID: 8123536762781040207}
-    - {fileID: 0}
+    - {fileID: 4482448338995968071}
     trailSpeedThreshold: 0.3
     trailRampTime: 0.08
     coreTrail:
-      material: {fileID: 2100000, guid: 182bafdbbe7c23d42b020a7a4a0843cc, type: 2}
+      material: {fileID: 2100000, guid: eea1955ce23096e4f8fd3c00eccaa415, type: 2}
       minLifetime: 0.08
       maxLifetime: 0.28
       minWidth: 0.02
@@ -889,7 +889,7 @@ MonoBehaviour:
       textureMode: 0
       alignment: 0
     softTrail:
-      material: {fileID: 2100000, guid: 182bafdbbe7c23d42b020a7a4a0843cc, type: 2}
+      material: {fileID: 2100000, guid: eea1955ce23096e4f8fd3c00eccaa415, type: 2}
       minLifetime: 0.16
       maxLifetime: 0.45
       minWidth: 0.045

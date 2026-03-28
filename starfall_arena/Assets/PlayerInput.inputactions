@@ -586,7 +586,7 @@
                 {
                     "name": "",
                     "id": "386802ec-725a-4918-9d77-60da36f73371",
-                    "path": "<Gamepad>/buttonNorth",
+                    "path": "<Gamepad>/rightStickPress",
                     "interactions": "",
                     "processors": "",
                     "groups": ";controller",
@@ -608,7 +608,7 @@
                 {
                     "name": "",
                     "id": "b646d2f5-abe8-4b4f-bef2-351b296345f3",
-                    "path": "<Gamepad>/buttonWest",
+                    "path": "<Gamepad>/rightShoulder",
                     "interactions": "",
                     "processors": "",
                     "groups": ";controller",
