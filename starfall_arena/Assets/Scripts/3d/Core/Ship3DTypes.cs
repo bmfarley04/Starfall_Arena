@@ -120,6 +120,41 @@ public struct ThrusterEffects3DConfig
 }
 
 [System.Serializable]
+public struct ShipSpeedTrailLayer3DConfig
+{
+    [Tooltip("Material applied to the generated trail renderer.")]
+    public Material material;
+    [Tooltip("Minimum trail lifetime when the ship is barely fast enough to emit.")]
+    public float minLifetime;
+    [Tooltip("Maximum trail lifetime at top speed.")]
+    public float maxLifetime;
+    [Tooltip("Minimum trail width multiplier when the ship first crosses the speed threshold.")]
+    public float minWidth;
+    [Tooltip("Maximum trail width multiplier at top speed.")]
+    public float maxWidth;
+    [Tooltip("Optional custom width curve. Defaults to a short expand-then-taper profile when left empty.")]
+    public AnimationCurve widthCurve;
+    [Tooltip("Optional custom trail color gradient. Defaults to a cyan-white fade when left empty.")]
+    public Gradient colorGradient;
+    [Tooltip("How far the runtime emitter can bias toward the current camera so the ribbon reads back toward the viewer.")]
+    public float cameraBias;
+    [Tooltip("Small positional wobble so the trail does not read as a perfectly rigid laser strip.")]
+    public float jitterAmplitude;
+    [Tooltip("Noise frequency used by the positional wobble.")]
+    public float jitterFrequency;
+    [Tooltip("Minimum vertex spacing used by the trail renderer.")]
+    public float minVertexDistance;
+    [Tooltip("Additional rounded geometry at trail corners.")]
+    public int cornerVertices;
+    [Tooltip("Additional rounded geometry at trail ends.")]
+    public int endCapVertices;
+    [Tooltip("How the trail texture is applied along the ribbon.")]
+    public LineTextureMode textureMode;
+    [Tooltip("How the trail faces the camera.")]
+    public LineAlignment alignment;
+}
+
+[System.Serializable]
 public struct ShipSpeedEffects3DConfig
 {
     [Header("Speed VFX")]
@@ -127,6 +162,16 @@ public struct ShipSpeedEffects3DConfig
     public float maxDustEmissionRate;
     [Range(0f, 1f)]
     public float dustSpeedThreshold;
+
+    [Header("Wing Trails")]
+    [Tooltip("Transforms authored near the wing tips where the speed trails should originate.")]
+    public List<Transform> wingTrailSources;
+    [Range(0f, 1f)]
+    public float trailSpeedThreshold;
+    [Tooltip("How quickly the trail intensity catches up to the current speed ratio.")]
+    public float trailRampTime;
+    public ShipSpeedTrailLayer3DConfig coreTrail;
+    public ShipSpeedTrailLayer3DConfig softTrail;
 }
 
 [System.Serializable]

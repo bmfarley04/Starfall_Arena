@@ -55,6 +55,7 @@ public class Player3D : Entity3D
 
     private AudioSource[] _audioSourcePool;
     private AudioSource _beamHitLoopSource;
+    private PlayerChromaticAberration3D _chromaticAberrationFx;
     private float _lastBeamDamageTime = float.NegativeInfinity;
     private bool _anchorHeld;
 
@@ -65,6 +66,7 @@ public class Player3D : Entity3D
         base.Awake();
         playerInput3D ??= GetComponent<PlayerInput3D>();
         playerCameraRig3D ??= GetComponent<PlayerCameraRig3D>();
+        _chromaticAberrationFx = GetComponent<PlayerChromaticAberration3D>();
         InitializeAudio();
 
         if (playerInput3D != null && shipFlight != null)
@@ -107,10 +109,16 @@ public class Player3D : Entity3D
 
         base.TakeDamage(damage, hitPoint, attacker, source);
 
-        if (currentHealth >= previousHealth && currentShield >= previousShield)
+        float shieldDamageTaken = Mathf.Max(0f, previousShield - currentShield);
+        float hullDamageTaken = Mathf.Max(0f, previousHealth - currentHealth);
+        float totalDamageTaken = shieldDamageTaken + hullDamageTaken;
+
+        if (totalDamageTaken <= 0f)
         {
             return;
         }
+
+        _chromaticAberrationFx?.TriggerDamageFeedback(totalDamageTaken, source);
 
         if (currentHealth <= 0f)
         {
@@ -142,6 +150,7 @@ public class Player3D : Entity3D
         _anchorHeld = false;
         ApplySplitStatePresentation();
         StopBeamHitLoop();
+        _chromaticAberrationFx?.ClearEffect();
         base.Die();
     }
 
@@ -150,6 +159,7 @@ public class Player3D : Entity3D
         _anchorHeld = false;
         ApplySplitStatePresentation();
         StopBeamHitLoop();
+        _chromaticAberrationFx?.ClearEffect();
     }
 
     private void InitializeAudio()
