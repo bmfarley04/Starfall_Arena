@@ -752,7 +752,8 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 4294967295
   maxAimDistance: 1000
-  screenCenterConvergenceDistance: 150
+  screenCenterConvergenceDistance: 220
+  screenCenterDirectionBlend: 0.35
   muzzleEffectPrefab: {fileID: 100004, guid: eea7e016f2495934da5394e8c6d8c9e6, type: 3}
   muzzleEffectLifetime: 0.05
   parentMuzzleEffectToMuzzle: 1

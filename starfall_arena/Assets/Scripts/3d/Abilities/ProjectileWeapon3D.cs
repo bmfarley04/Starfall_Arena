@@ -23,6 +23,8 @@ public class ProjectileWeapon3D : MonoBehaviour
     [SerializeField] private LayerMask aimCollisionMask = ~0;
     [SerializeField] private float maxAimDistance = 1000f;
     [SerializeField] private float screenCenterConvergenceDistance = 150f;
+    [Range(0f, 1f)]
+    [SerializeField] private float screenCenterDirectionBlend = 0.35f;
 
     [Header("Muzzle FX")]
     [SerializeField] private GameObject muzzleEffectPrefab;
@@ -251,7 +253,13 @@ public class ProjectileWeapon3D : MonoBehaviour
             return aim.direction.sqrMagnitude > 0.0001f ? aim.direction.normalized : transform.forward;
         }
 
-        return direction.normalized;
+        Vector3 resolvedDirection = direction.normalized;
+        if (aimMode == ProjectileAimMode3D.ScreenCenter && aim.direction.sqrMagnitude > 0.0001f && screenCenterDirectionBlend > 0f)
+        {
+            resolvedDirection = Vector3.Slerp(resolvedDirection, aim.direction.normalized, Mathf.Clamp01(screenCenterDirectionBlend)).normalized;
+        }
+
+        return resolvedDirection;
     }
 
     private void SpawnMuzzleEffect(Transform muzzle)
