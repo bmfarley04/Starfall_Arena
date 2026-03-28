@@ -1372,6 +1372,10 @@ PrefabInstance:
       propertyPath: m_Layer
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 5104438160426859549, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 5355219633298694447, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
       propertyPath: m_Layer
       value: 0
@@ -1490,6 +1494,10 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7882351861556640269, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
       propertyPath: m_Layer
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7902338216098012005, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      propertyPath: m_Enabled
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7936871143211758333, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
@@ -2100,6 +2108,10 @@ PrefabInstance:
     - target: {fileID: 3934790730732665131, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
       propertyPath: speedEffects.trailSpeedThreshold
       value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 5104438160426859549, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      propertyPath: haloIntensity
+      value: 0.01
       objectReference: {fileID: 0}
     - target: {fileID: 7427501341343801484, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
       propertyPath: m_LocalPosition.x
