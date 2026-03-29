@@ -9,6 +9,14 @@ public interface IProjectileImpactHandler3D
 public class Projectile3D : MonoBehaviour, IPooledObject3D
 {
     private static readonly RaycastHit[] HitBuffer = new RaycastHit[16];
+    private static readonly Collider[] OverlapBuffer = new Collider[16];
+
+    protected struct OverlapHitInfo
+    {
+        public Collider collider;
+        public Vector3 point;
+        public Vector3 normal;
+    }
 
     [Header("Runtime")]
     public string targetTag;
@@ -52,6 +60,13 @@ public class Projectile3D : MonoBehaviour, IPooledObject3D
 
         Vector3 origin = transform.position;
         Vector3 step = _velocity * Time.deltaTime;
+
+        if (TryGetOverlapHit(origin, out OverlapHitInfo overlapHit))
+        {
+            transform.position = overlapHit.point;
+            ProcessOverlapHit(overlapHit);
+            return;
+        }
 
         if (TryGetHit(origin, stepDistance, out RaycastHit hit))
         {
@@ -153,19 +168,87 @@ public class Projectile3D : MonoBehaviour, IPooledObject3D
         return foundHit;
     }
 
+    private bool TryGetOverlapHit(Vector3 origin, out OverlapHitInfo nearestHit)
+    {
+        nearestHit = default;
+
+        float overlapRadius = Mathf.Max(0.001f, hitscanRadius);
+        int overlapCount = Physics.OverlapSphereNonAlloc(
+            origin,
+            overlapRadius,
+            OverlapBuffer,
+            collisionMask,
+            QueryTriggerInteraction.Collide
+        );
+
+        float nearestSqrDistance = float.MaxValue;
+        bool foundHit = false;
+
+        for (int i = 0; i < overlapCount; i++)
+        {
+            Collider overlap = OverlapBuffer[i];
+            if (overlap == null)
+            {
+                continue;
+            }
+
+            if (!IsValidOverlapHit(overlap))
+            {
+                continue;
+            }
+
+            OverlapHitInfo hit = BuildOverlapHit(origin, overlap);
+            float sqrDistance = (hit.point - origin).sqrMagnitude;
+            if (sqrDistance < nearestSqrDistance)
+            {
+                nearestSqrDistance = sqrDistance;
+                nearestHit = hit;
+                foundHit = true;
+            }
+        }
+
+        return foundHit;
+    }
+
+    private OverlapHitInfo BuildOverlapHit(Vector3 origin, Collider overlap)
+    {
+        Vector3 closestPoint = overlap.ClosestPoint(origin);
+        Vector3 normal = origin - closestPoint;
+        if (normal.sqrMagnitude <= 0.0001f)
+        {
+            normal = -_direction;
+        }
+        else
+        {
+            normal.Normalize();
+        }
+
+        return new OverlapHitInfo
+        {
+            collider = overlap,
+            point = closestPoint,
+            normal = normal
+        };
+    }
+
     protected virtual bool IsValidHit(RaycastHit hit)
     {
-        if (hit.collider == null)
+        return IsValidOverlapHit(hit.collider);
+    }
+
+    protected virtual bool IsValidOverlapHit(Collider collider)
+    {
+        if (collider == null)
         {
             return false;
         }
 
-        if (_shooter != null && hit.collider.transform.IsChildOf(_shooter.transform))
+        if (_shooter != null && collider.transform.IsChildOf(_shooter.transform))
         {
             return false;
         }
 
-        if (hit.collider.transform == transform || hit.collider.transform.IsChildOf(transform))
+        if (collider.transform == transform || collider.transform.IsChildOf(transform))
         {
             return false;
         }
@@ -199,6 +282,18 @@ public class Projectile3D : MonoBehaviour, IPooledObject3D
         }
 
         SpawnHitEffect(hit);
+        DespawnSelf();
+    }
+
+    protected virtual void ProcessOverlapHit(OverlapHitInfo hit)
+    {
+        Collider other = hit.collider;
+        Entity3D damageable = ResolveHitEntity(other);
+        if (damageable != null && IsMatchingTarget(damageable))
+        {
+            ApplyDamageToEntity(damageable, hit.point, other);
+        }
+
         DespawnSelf();
     }
 

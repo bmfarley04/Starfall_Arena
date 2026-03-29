@@ -34,6 +34,22 @@ public class GigaBlastProjectile3D : Projectile3D
         return damageable == null || !_hitEntityIds.Contains(damageable.GetInstanceID());
     }
 
+    protected override bool IsValidOverlapHit(Collider collider)
+    {
+        if (!base.IsValidOverlapHit(collider))
+        {
+            return false;
+        }
+
+        if (!_canPierce)
+        {
+            return true;
+        }
+
+        Entity3D damageable = ResolveHitEntity(collider);
+        return damageable == null || !_hitEntityIds.Contains(damageable.GetInstanceID());
+    }
+
     protected override void ProcessHit(RaycastHit hit)
     {
         Collider other = hit.collider;
@@ -65,6 +81,29 @@ public class GigaBlastProjectile3D : Projectile3D
         }
 
         SpawnHitEffect(hit);
+        DespawnSelf();
+    }
+
+    protected override void ProcessOverlapHit(OverlapHitInfo hit)
+    {
+        Collider other = hit.collider;
+        Entity3D damageable = ResolveHitEntity(other);
+        if (damageable != null && IsMatchingTarget(damageable))
+        {
+            if (_canPierce && !TryRegisterEntityHit(damageable))
+            {
+                return;
+            }
+
+            ApplyDamageToEntity(damageable, hit.point, other);
+
+            if (_canPierce && _pierceDamageMultiplier > 0f)
+            {
+                _damage *= _pierceDamageMultiplier;
+                return;
+            }
+        }
+
         DespawnSelf();
     }
 }

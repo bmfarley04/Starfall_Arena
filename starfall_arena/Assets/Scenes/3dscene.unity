@@ -2065,6 +2065,18 @@ PrefabInstance:
       propertyPath: gigaBlast.visual.tier4ReticleColor.r
       value: 0.34173203
       objectReference: {fileID: 0}
+    - target: {fileID: 472506789794357844, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      propertyPath: gigaBlast.projectileScaling.tier2SpawnOffset
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 472506789794357844, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      propertyPath: gigaBlast.projectileScaling.tier3SpawnOffset
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 472506789794357844, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      propertyPath: gigaBlast.projectileScaling.tier4SpawnOffset
+      value: 20
+      objectReference: {fileID: 0}
     - target: {fileID: 547480364830838567, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
       propertyPath: innerCircleImage
       value: 
