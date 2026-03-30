@@ -100,20 +100,33 @@ public class Invisibility : Ability
             }
 
             _isInvisible = true;
-            if (gameObject.CompareTag("Player1"))
+
+            // Keep the local owner on their original layer in networked play so their own camera still renders them.
+            int targetLayer;
+            bool hideForLocalView = ShouldHideRenderersForLocalView();
+            bool keepOwnerLayer = NetTickUtil.IsActive && _netMovement != null && _netMovement.IsOwner;
+
+            if (keepOwnerLayer && !hideForLocalView)
             {
-                gameObject.layer = LayerMask.NameToLayer("Background1");
+                targetLayer = originalLayer;
+            }
+            else if (gameObject.CompareTag("Player1"))
+            {
+                targetLayer = LayerMask.NameToLayer("Background1");
             }
             else if (gameObject.CompareTag("Player2"))
             {
-                gameObject.layer = LayerMask.NameToLayer("Background2");
+                targetLayer = LayerMask.NameToLayer("Background2");
             }
             else
             {
-                gameObject.layer = LayerMask.NameToLayer("Invisible");
+                targetLayer = LayerMask.NameToLayer("Invisible");
             }
-            SetAllChildrenLayer(gameObject.layer);
-            if (ShouldHideRenderersForLocalView())
+
+            gameObject.layer = targetLayer;
+            SetAllChildrenLayer(targetLayer);
+
+            if (hideForLocalView)
             {
                 HideRenderers();
             }
