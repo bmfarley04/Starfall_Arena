@@ -62,6 +62,30 @@ public class PlayerAimReticle3D : MonoBehaviour
         public Image rightFill;
     }
 
+    [System.Serializable]
+    private struct FiringVisualConfig
+    {
+        public DashMarkVisualConfig dashMarks;
+        public InnerCircleVisualConfig innerCircle;
+    }
+
+    [System.Serializable]
+    private struct DashMarkVisualConfig
+    {
+        public Image[] images;
+        public Color baseColor;
+        public Color firingColor;
+        [Range(0f, 1f)] public float baseAlpha;
+        [Range(0f, 1f)] public float firingAlpha;
+    }
+
+    [System.Serializable]
+    private struct InnerCircleVisualConfig
+    {
+        public Color baseColor;
+        public Color firingColor;
+    }
+
     [Header("References")]
     [SerializeField] private Entity3D entity;
     [SerializeField] private Player3D player;
@@ -98,6 +122,23 @@ public class PlayerAimReticle3D : MonoBehaviour
     [Header("Heat Fill")]
     [SerializeField] private HeatFillConfig heatFill;
 
+    [Header("Firing Visuals")]
+    [SerializeField] private FiringVisualConfig firingVisuals = new FiringVisualConfig
+    {
+        dashMarks = new DashMarkVisualConfig
+        {
+            baseColor = Color.white,
+            firingColor = Color.white,
+            baseAlpha = 0.4f,
+            firingAlpha = 1f
+        },
+        innerCircle = new InnerCircleVisualConfig
+        {
+            baseColor = Color.white,
+            firingColor = Color.white
+        }
+    };
+
     private Vector2 _leftOpenPosition;
     private Vector2 _rightOpenPosition;
     private float _bracketCloseLerp;
@@ -125,6 +166,7 @@ public class PlayerAimReticle3D : MonoBehaviour
         UpdateBracketPositions();
         UpdateHeatFill();
         UpdateInnerSpin();
+        UpdateFiringVisuals();
     }
 
     private void CacheOpenBracketPositions()
@@ -187,6 +229,33 @@ public class PlayerAimReticle3D : MonoBehaviour
         }
 
         target.Rotate(0f, 0f, -_currentSpinSpeed * Time.deltaTime, Space.Self);
+    }
+
+    private void UpdateFiringVisuals()
+    {
+        bool isFiring = ShouldSpinReticle();
+        float dashAlpha = Mathf.Clamp01(isFiring ? firingVisuals.dashMarks.firingAlpha : firingVisuals.dashMarks.baseAlpha);
+        Color dashColor = WithAlpha(isFiring ? firingVisuals.dashMarks.firingColor : firingVisuals.dashMarks.baseColor, dashAlpha);
+        Color circleColor = isFiring ? firingVisuals.innerCircle.firingColor : firingVisuals.innerCircle.baseColor;
+
+        if (firingVisuals.dashMarks.images != null)
+        {
+            for (int i = 0; i < firingVisuals.dashMarks.images.Length; i++)
+            {
+                if (firingVisuals.dashMarks.images[i] == null)
+                {
+                    continue;
+                }
+
+                firingVisuals.dashMarks.images[i].color = dashColor;
+            }
+        }
+
+        if (innerCircleImage != null)
+        {
+            circleColor.a = 1f;
+            innerCircleImage.color = circleColor;
+        }
     }
 
     private void UpdateHeatFill()
@@ -402,5 +471,11 @@ public class PlayerAimReticle3D : MonoBehaviour
         }
 
         return entity != null ? entity.SelectedWeapon : null;
+    }
+
+    private static Color WithAlpha(Color color, float alpha)
+    {
+        color.a = alpha;
+        return color;
     }
 }

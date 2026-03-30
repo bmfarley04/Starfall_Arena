@@ -33,6 +33,7 @@ public class Player3D : Entity3D
     [Header("Player-Only 3D Systems")]
     [SerializeField] protected PlayerInput3D playerInput3D;
     [SerializeField] protected PlayerCameraRig3D playerCameraRig3D;
+    [SerializeField] private PlayerHUDManager3D hudManager3D;
     [Header("Split State")]
     [SerializeField] private List<SplitStateLightningRig3D> splitStateLightningRigs = new();
     [SerializeField] private List<ShipSplitOffsetRig3D> splitStateOffsetRigs = new();
@@ -81,6 +82,7 @@ public class Player3D : Entity3D
 
         CacheSplitStateRigsIfNeeded();
         ApplySplitStatePresentation();
+        hudManager3D?.Bind(this);
     }
 
     private void Update()
@@ -221,6 +223,32 @@ public class Player3D : Entity3D
         {
             _beamHitLoopSource.Stop();
         }
+    }
+
+    public void BindHUD(PlayerHUDManager3D hud)
+    {
+        if (hud == null)
+        {
+            return;
+        }
+
+        hudManager3D = hud;
+        hudManager3D.Bind(this);
+    }
+
+    protected override void OnHealthChanged()
+    {
+        hudManager3D?.RefreshHealth(currentHealth, maxHealth);
+    }
+
+    protected override void OnShieldChanged()
+    {
+        hudManager3D?.RefreshShield(currentShield, maxShield);
+    }
+
+    protected override void OnSelectedWeaponChanged()
+    {
+        hudManager3D?.RefreshWeaponHUD();
     }
 
     protected override float GetFlatBaseRotationMultiplier()

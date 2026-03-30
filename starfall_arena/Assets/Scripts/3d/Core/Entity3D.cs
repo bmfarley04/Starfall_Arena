@@ -50,6 +50,8 @@ public abstract class Entity3D : MonoBehaviour
     public Weapon3D SelectedWeapon => GetWeapon(selectedWeaponIndex);
     public int SelectedWeaponIndex => selectedWeaponIndex;
     public Ability3D[] Abilities => abilities;
+    public float MaxHealth => maxHealth;
+    public float MaxShield => maxShield;
     public float CurrentHealth => currentHealth;
     public float CurrentShield => currentShield;
     public float ImpulseRecoilPitchSensitivity => impulseRecoilPitchSensitivity;
@@ -83,7 +85,13 @@ public abstract class Entity3D : MonoBehaviour
             return false;
         }
 
+        if (selectedWeaponIndex == index)
+        {
+            return true;
+        }
+
         selectedWeaponIndex = index;
+        OnSelectedWeaponChanged();
         return true;
     }
 
@@ -398,6 +406,10 @@ public abstract class Entity3D : MonoBehaviour
     }
 
     protected virtual void OnShieldChanged()
+    {
+    }
+
+    protected virtual void OnSelectedWeaponChanged()
     {
     }
 
