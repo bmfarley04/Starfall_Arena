@@ -1,0 +1,17 @@
+fileFormatVersion: 2
+guid: cd99d8c5b35f6974f91d8127f1811230
+ShaderImporter:
+  externalObjects: {}
+  defaultTextures: []
+  nonModifiableTextures: []
+  preprocessorOverride: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 4160
+  packageName: Space Graphics Toolkit
+  packageVersion: 4.2.14
+  assetPath: Assets/Plugins/CW/SpaceGraphicsToolkit/Features/Planet/Required/Shaders/SphereWrap.shader
+  uploadId: 774634

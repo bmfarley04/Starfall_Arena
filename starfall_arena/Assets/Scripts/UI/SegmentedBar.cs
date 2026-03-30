@@ -49,6 +49,7 @@ namespace StarfallArena.UI
         {
             if (_originalMaterials == null) CacheOriginals();
 
+            ResetVisualState();
             _previousValue = currentValue;
             _previousMaxValue = maxValue;
             ApplySegmentAlphas(currentValue, maxValue, flash: false);
@@ -115,6 +116,33 @@ namespace StarfallArena.UI
             Color c = segments[index].color;
             c.a = alpha;
             segments[index].color = c;
+        }
+
+        private void ResetVisualState()
+        {
+            if (segments == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < segments.Length; i++)
+            {
+                if (_flashCoroutines != null && i < _flashCoroutines.Length && _flashCoroutines[i] != null)
+                {
+                    StopCoroutine(_flashCoroutines[i]);
+                    _flashCoroutines[i] = null;
+                }
+
+                if (segments[i] == null)
+                {
+                    continue;
+                }
+
+                if (_originalMaterials != null && i < _originalMaterials.Length)
+                {
+                    segments[i].material = _originalMaterials[i];
+                }
+            }
         }
 
         private float GetSegmentAlpha(int index, float value, float maxValue)

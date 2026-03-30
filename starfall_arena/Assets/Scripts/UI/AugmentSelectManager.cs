@@ -221,6 +221,8 @@ namespace StarfallArena.UI
         private Gamepad _player2Gamepad;
         private Gamepad _activeGamepad; // the gamepad allowed to navigate/select right now
         private InputSystemUIInputModule _uiInputModule;
+        private InputActionReference _cachedMoveAction;
+        private InputActionReference _cachedSubmitAction;
 
         // Stick navigation cooldown (prevents rapid-fire from held stick)
         private bool _stickNavigated = false;
@@ -847,14 +849,22 @@ namespace StarfallArena.UI
         /// </summary>
         private void DisableUIModuleNavigation()
         {
-            // Leave the UI module enabled so mouse hover/click continues to work.
-            // Controller navigation is still constrained by the manual active-gamepad polling.
+            // Disable the UI module's move/submit so both gamepads don't drive EventSystem
+            // navigation simultaneously. Manual polling in PollGamepadNavigation handles
+            // input for only the active picker's gamepad. The module stays enabled so
+            // mouse pointer events (hover, click) continue to work.
+            if (_uiInputModule == null) return;
+            _cachedMoveAction = _uiInputModule.move;
+            _cachedSubmitAction = _uiInputModule.submit;
+            _uiInputModule.move = null;
+            _uiInputModule.submit = null;
         }
 
         private void EnableUIModuleNavigation()
         {
-            // Intentionally left as a no-op. We do not disable the UI module during augment
-            // selection anymore because pointer-based hover/click is part of the active flow.
+            if (_uiInputModule == null) return;
+            _uiInputModule.move = _cachedMoveAction;
+            _uiInputModule.submit = _cachedSubmitAction;
         }
 
         // ===== SELECTION EFFECT =====

@@ -134,7 +134,14 @@ public partial class NetMovement
         if (!IsOwner && _player != null)
         {
             SoundEffect fireSound = ResolveFireSound(request.VisualType);
-            fireSound?.Play(_player.GetAvailableAudioSource());
+            if (_player is Class5 && fireSound != null)
+            {
+                GetComponent<Class5NetworkBridge>()?.PlayFireBurst(fireSound);
+            }
+            else
+            {
+                fireSound?.Play(_player.GetAvailableAudioSource());
+            }
         }
 
         BroadcastProjectileSpawnClientRpc(new NetProjectileSpawnData
@@ -244,7 +251,14 @@ public partial class NetMovement
         if (_player != null)
         {
             SoundEffect fireSound = ResolveFireSound(spawnData.VisualType);
-            fireSound?.Play(_player.GetAvailableAudioSource());
+            if (_player is Class5 && fireSound != null)
+            {
+                GetComponent<Class5NetworkBridge>()?.PlayFireBurst(fireSound);
+            }
+            else
+            {
+                fireSound?.Play(_player.GetAvailableAudioSource());
+            }
         }
     }
 

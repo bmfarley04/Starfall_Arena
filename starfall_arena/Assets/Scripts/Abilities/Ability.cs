@@ -22,6 +22,8 @@ public class Ability : MonoBehaviour
     {
         player = GetComponent<Player>();
         originalLayer = gameObject.layer;
+
+        lastUsedAbility = -stats.cooldown;
     }
 
     public virtual bool TryUseAbility(InputValue value)
@@ -139,10 +141,6 @@ public class Ability : MonoBehaviour
     }
 
     public virtual void ProcessCollisionModification(Collider2D collider)
-    {
-    }
-
-    public virtual void Magic(object obj)
     {
     }
 
