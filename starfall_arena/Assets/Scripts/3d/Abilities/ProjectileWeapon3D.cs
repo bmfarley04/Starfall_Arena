@@ -19,6 +19,8 @@ public class ProjectileWeapon3D : Weapon3D
     [Header("Audio")]
     [SerializeField] private SoundEffect fireSound;
 
+    private float _nextFireTime = float.NegativeInfinity;
+
     public ProjectileWeaponConfig3D WeaponConfig => weaponConfig;
 
     public void SetWeaponConfig(ProjectileWeaponConfig3D config)
@@ -28,7 +30,7 @@ public class ProjectileWeapon3D : Weapon3D
 
     public bool TryFire()
     {
-        if (IsOnCooldown())
+        if (Time.time < _nextFireTime)
         {
             return false;
         }
@@ -44,6 +46,7 @@ public class ProjectileWeapon3D : Weapon3D
             return false;
         }
 
+        _nextFireTime = Time.time + Mathf.Max(0f, weaponConfig.cooldown);
         StartCooldown();
         return true;
     }
@@ -58,6 +61,7 @@ public class ProjectileWeapon3D : Weapon3D
 
         if (consumeCooldown)
         {
+            _nextFireTime = Time.time + Mathf.Max(0f, weaponConfig.cooldown);
             StartCooldown();
         }
 
