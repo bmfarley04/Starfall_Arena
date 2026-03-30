@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: d27dee060bb0af24fafc42351a420ad0
+timeCreated: 1477183420
+licenseType: Store
+DefaultImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 4160
+  packageName: Space Graphics Toolkit
+  packageVersion: 4.2.14
+  assetPath: Assets/Plugins/CW/SpaceGraphicsToolkit/Features/Cloudsphere/Examples/05   
+    Erode.unity
+  uploadId: 774634

@@ -1,4 +1,10 @@
 ﻿<Solution>
+  <Project Path="SpaceGraphicsToolkit.csproj" />
   <Project Path="Assembly-CSharp.csproj" />
   <Project Path="Assembly-CSharp-Editor.csproj" />
+  <Project Path="SpaceGraphicsToolkit.Terrain.csproj" />
+  <Project Path="CW.Common.csproj" />
+  <Project Path="SpaceGraphicsToolkit.Galaxy.csproj" />
+  <Project Path="CW.ShaderBundle.csproj" />
+  <Project Path="SpaceGraphicsToolkit.Nebula.csproj" />
 </Solution>
