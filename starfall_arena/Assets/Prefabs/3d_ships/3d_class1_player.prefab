@@ -705,19 +705,19 @@ MonoBehaviour:
   maxHealth: 100
   maxShield: 100
   shieldController: {fileID: 5034837498720385779}
-  primaryWeaponEnergy:
-    recoveryPerSecond: 30
   impulseRecoilPitchSensitivity: 10
-  abilities:
+  weapons:
+  - {fileID: 6928815812079169362}
   - {fileID: 6766116784638287846}
+  - {fileID: 472506789794357844}
+  selectedWeaponIndex: 0
+  abilities:
   - {fileID: 5373532230695115810}
   - {fileID: 6369695681249732700}
-  - {fileID: 472506789794357844}
   shipFlight: {fileID: 2269080399608317416}
   shipVisualTilt: {fileID: 5585566392220985068}
   shipThrusterVfx: {fileID: 3538944680820626273}
   shipSpeedFx: {fileID: 3934790730732665131}
-  primaryWeapon: {fileID: 6928815812079169362}
   deathEffects: {fileID: 9194935005271649546}
   playerInput3D: {fileID: 3261048947178620207}
   playerCameraRig3D: {fileID: 3760524061682020281}
@@ -834,12 +834,12 @@ MonoBehaviour:
   shipFlight: {fileID: 2269080399608317416}
   speedEffects:
     speedDustParticles: {fileID: 1753181740976137236}
-    maxDustEmissionRate: 200
+    maxDustEmissionRate: 100
     dustSpeedThreshold: 0.5
     wingTrailSources:
     - {fileID: 8123536762781040207}
     - {fileID: 4482448338995968071}
-    trailSpeedThreshold: 0.3
+    trailSpeedThreshold: 0.5
     trailRampTime: 0.08
     coreTrail:
       material: {fileID: 2100000, guid: eea1955ce23096e4f8fd3c00eccaa415, type: 2}
@@ -948,7 +948,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: '::'
   shipFlight: {fileID: 2269080399608317416}
-  primaryWeapon: {fileID: 6928815812079169362}
   entity: {fileID: 1753171253810675368}
   playerInput: {fileID: 0}
   mouseLookSensitivity: 0.5
@@ -1014,24 +1013,14 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: dbe81728304208343afc0871a0119a1e, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ProjectileWeapon3D
-  weaponConfig:
-    projectilePrefab: {fileID: 100004, guid: 8ec6c25d4bc8ae143b513d8332f121e8, type: 3}
-    muzzles:
-    - {fileID: 7852917423574271251}
-    - {fileID: 1731811727607058467}
-    - {fileID: 785862098326601373}
-    - {fileID: 8559890948586039968}
-    targetTag: Enemy
-    cooldown: 0.25
-    speed: 250
-    damage: 5
-    lifetime: 5
-    impactForce: 0.5
-    recoilForce: 0
-    energyCost: 18
+  m_EditorClassIdentifier: Assembly-CSharp::Class1BaseWeapon3D
+  availabilityMode: 0
+  reticleFillColor: {r: 0.19607843, g: 0.9137255, b: 1, a: 1}
   owner: {fileID: 1753171253810675368}
   shipFlight: {fileID: 2269080399608317416}
+  resource:
+    capacity: 100
+    recoveryPerSecond: 30
   aimMode: 1
   aimCamera: {fileID: 0}
   aimCollisionMask:
@@ -1047,6 +1036,21 @@ MonoBehaviour:
   muzzleEffectLocalOffset: {x: 0, y: 0, z: 1.5}
   projectilePrewarmCount: 12
   muzzleEffectPrewarmCount: 4
+  weaponConfig:
+    projectilePrefab: {fileID: 100004, guid: 8ec6c25d4bc8ae143b513d8332f121e8, type: 3}
+    muzzles:
+    - {fileID: 7852917423574271251}
+    - {fileID: 1731811727607058467}
+    - {fileID: 785862098326601373}
+    - {fileID: 8559890948586039968}
+    targetTag: Enemy
+    cooldown: 0.25
+    speed: 250
+    damage: 5
+    lifetime: 5
+    impactForce: 0
+    recoilForce: 0
+    energyCost: 18
   fireSound: {fileID: 11400000, guid: 80311ec3731e81d4c81d5e64fe8d23ea, type: 2}
 --- !u!114 &6766116784638287846
 MonoBehaviour:
@@ -1059,8 +1063,29 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0bcc1084633ada24b99d28f0b4f4506d, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Beam3D
-  isLocked: 0
+  m_EditorClassIdentifier: Assembly-CSharp::BeamWeapon3D
+  availabilityMode: 0
+  reticleFillColor: {r: 1, g: 0.76862746, b: 0.1882353, a: 1}
+  owner: {fileID: 1753171253810675368}
+  shipFlight: {fileID: 2269080399608317416}
+  resource:
+    capacity: 100
+    recoveryPerSecond: 20
+  aimMode: 1
+  aimCamera: {fileID: 0}
+  aimCollisionMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  maxAimDistance: 1000
+  screenCenterConvergenceDistance: 220
+  screenCenterDirectionBlend: 1
+  muzzleEffectPrefab: {fileID: 0}
+  muzzleEffectLifetime: 2
+  parentMuzzleEffectToMuzzle: 1
+  projectileSpawnLocalOffset: {x: 0, y: 0, z: 2}
+  muzzleEffectLocalOffset: {x: 0, y: 0, z: 1.5}
+  projectilePrewarmCount: 12
+  muzzleEffectPrewarmCount: 4
   beam:
     beamPrefab: {fileID: 100000, guid: 7767d0d49caff014ba0e057220a05183, type: 3}
     targetTag: Enemy
@@ -1072,8 +1097,8 @@ MonoBehaviour:
     verticalOffset: 0.25
     muzzle: {fileID: 7090334439712929002}
     rotationMultiplier: 0.3
-    capacity: 100000
-    drainRate: 0
+    capacity: 100
+    drainRate: 20
     regenRate: 20
     fireLoopSound: {fileID: 11400000, guid: 2e4ef6af0cbd6bf4091e3bcdb76e99fd, type: 2}
   beamLoopAudioSource: {fileID: 7028201276721733789}
@@ -1127,12 +1152,12 @@ MonoBehaviour:
       departurePulsewave:
         prefab: {fileID: 100000, guid: 251b1f767b5c1a04095c3fb0330a6f5c, type: 3}
         playbackMode: 1
-        burstCount: 3
+        burstCount: 1
         burstInterval: 0.1
       arrivalPulsewave:
         prefab: {fileID: 100000, guid: a122a04deff12b84283aa74dcc80cf98, type: 3}
         playbackMode: 0
-        burstCount: 3
+        burstCount: 1
         burstInterval: 0.1
     exitSound: {fileID: 11400000, guid: bc1b416aa39b9084fb712befa92ac7f8, type: 2}
     arrivalSound: {fileID: 11400000, guid: b5df1b844f0088a48bf54cac1c479aa8, type: 2}
@@ -1148,11 +1173,32 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b8f8a13fe2204f6d9d5a0f3f4a8c17c1, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::GigaBlast3D
-  isLocked: 0
+  m_EditorClassIdentifier: Assembly-CSharp::GigaBlastWeapon3D
+  availabilityMode: 1
+  reticleFillColor: {r: 1, g: 0.44705883, b: 0.13333334, a: 1}
+  owner: {fileID: 1753171253810675368}
+  shipFlight: {fileID: 2269080399608317416}
+  resource:
+    capacity: 100
+    recoveryPerSecond: 30
+  aimMode: 1
+  aimCamera: {fileID: 0}
+  aimCollisionMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  maxAimDistance: 1000
+  screenCenterConvergenceDistance: 220
+  screenCenterDirectionBlend: 1
+  muzzleEffectPrefab: {fileID: 0}
+  muzzleEffectLifetime: 2
+  parentMuzzleEffectToMuzzle: 1
+  projectileSpawnLocalOffset: {x: 0, y: 0, z: 2}
+  muzzleEffectLocalOffset: {x: 0, y: 0, z: 1.5}
+  projectilePrewarmCount: 12
+  muzzleEffectPrewarmCount: 4
   gigaBlast:
     timing:
-      cooldown: 2.5
+      cooldown: 0.1
       minChargeTime: 0.5
       maxChargeTime: 3
       projectileLifetime: 5
@@ -1180,17 +1226,17 @@ MonoBehaviour:
       tier2DamageMultiplier: 6
       tier2RecoilMultiplier: 6
       tier2ImpactMultiplier: 6
-      tier2SpawnOffset: 4
+      tier2SpawnOffset: 3
       tier3SpeedMultiplier: 2
       tier3DamageMultiplier: 10
       tier3RecoilMultiplier: 10
       tier3ImpactMultiplier: 10
-      tier3SpawnOffset: 15
+      tier3SpawnOffset: 10
       tier4SpeedMultiplier: 3
       tier4DamageMultiplier: 16
       tier4RecoilMultiplier: 20
       tier4ImpactMultiplier: 16
-      tier4SpawnOffset: 30
+      tier4SpawnOffset: 20
     pierce:
       tier3DamageMultiplierPerPierce: 0.5
       tier4DamageMultiplierPerPierce: 1
@@ -1242,7 +1288,7 @@ MonoBehaviour:
   haloThicknessMin: 0.045
   haloThicknessMax: 0.12
   haloSoftness: 1
-  haloIntensity: 0.03
+  haloIntensity: 0.01
   cornerBoost: 0.22
   edgeBiasHorizontal: 1
   edgeBiasVertical: 0.85
@@ -1321,16 +1367,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b1d647a1409e933469dc5de01c294937, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerAimReticle3D
-  entity: {fileID: 0}
+  entity: {fileID: 1753171253810675368}
   player: {fileID: 1753171253810675368}
   playerInput: {fileID: 3261048947178620207}
-  primaryWeapon: {fileID: 6928815812079169362}
   innerCircleImage: {fileID: 0}
-  additionalSpinSources:
-  - source: {fileID: 6766116784638287846}
-    mode: 1
-  - source: {fileID: 472506789794357844}
-    mode: 2
+  additionalSpinSources: []
   bracketConfig:
     leftBracket: {fileID: 0}
     rightBracket: {fileID: 0}
@@ -2706,7 +2747,7 @@ ParticleSystem:
     rateOverTime:
       serializedVersion: 2
       minMaxState: 0
-      scalar: 50
+      scalar: 30
       minScalar: 10
       maxCurve:
         serializedVersion: 2

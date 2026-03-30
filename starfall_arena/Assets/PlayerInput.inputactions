@@ -25,18 +25,9 @@
                     "initialStateCheck": true
                 },
                 {
-                    "name": "Ability3",
+                    "name": "Ability1",
                     "type": "Value",
-                    "id": "c4443985-4b29-45fa-bc71-6e2ed35951af",
-                    "expectedControlType": "",
-                    "processors": "",
-                    "interactions": "",
-                    "initialStateCheck": true
-                },
-                {
-                    "name": "Ability4",
-                    "type": "Value",
-                    "id": "f64484b7-ceb5-40d8-9bb5-acd3def2ff6f",
+                    "id": "2737e69e-0f9b-48b9-8ed9-15ddb5a3db05",
                     "expectedControlType": "",
                     "processors": "",
                     "interactions": "",
@@ -52,9 +43,18 @@
                     "initialStateCheck": true
                 },
                 {
-                    "name": "Ability1",
+                    "name": "Ability3",
                     "type": "Value",
-                    "id": "2737e69e-0f9b-48b9-8ed9-15ddb5a3db05",
+                    "id": "c4443985-4b29-45fa-bc71-6e2ed35951af",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": true
+                },
+                {
+                    "name": "Ability4",
+                    "type": "Value",
+                    "id": "f64484b7-ceb5-40d8-9bb5-acd3def2ff6f",
                     "expectedControlType": "",
                     "processors": "",
                     "interactions": "",
@@ -420,18 +420,9 @@
                     "initialStateCheck": true
                 },
                 {
-                    "name": "Ability3",
+                    "name": "Ability1",
                     "type": "Value",
-                    "id": "95449a6b-04a8-468d-a575-0f5f61bfb469",
-                    "expectedControlType": "",
-                    "processors": "",
-                    "interactions": "",
-                    "initialStateCheck": true
-                },
-                {
-                    "name": "Ability4",
-                    "type": "Value",
-                    "id": "bc019fc6-35cc-4f63-840d-7376f35c4399",
+                    "id": "91ef03e1-27d3-4261-bd0c-a5328377a81c",
                     "expectedControlType": "",
                     "processors": "",
                     "interactions": "",
@@ -441,15 +432,6 @@
                     "name": "Ability2",
                     "type": "Value",
                     "id": "099e3b69-b385-4067-ae9d-29914689db52",
-                    "expectedControlType": "",
-                    "processors": "",
-                    "interactions": "",
-                    "initialStateCheck": true
-                },
-                {
-                    "name": "Ability1",
-                    "type": "Value",
-                    "id": "91ef03e1-27d3-4261-bd0c-a5328377a81c",
                     "expectedControlType": "",
                     "processors": "",
                     "interactions": "",
@@ -477,6 +459,33 @@
                     "name": "ToggleFriction",
                     "type": "Button",
                     "id": "8aecfa44-8220-4e26-ad30-9fca54e6b0e8",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "Weapon1",
+                    "type": "Button",
+                    "id": "d5459b96-965f-47c0-8b6f-75d312dea5c8",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "Weapon2",
+                    "type": "Button",
+                    "id": "a5c1032a-277a-4b26-b3bb-2c00d7b10882",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "Weapon3",
+                    "type": "Button",
+                    "id": "3294f04b-ee0d-430a-82de-e180bc118be3",
                     "expectedControlType": "",
                     "processors": "",
                     "interactions": "",
@@ -530,50 +539,6 @@
                 },
                 {
                     "name": "",
-                    "id": "ca7fff7b-f668-4391-8a1b-7a7ae3201d56",
-                    "path": "<Keyboard>/e",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": ";key+mouse",
-                    "action": "Ability3",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
-                    "id": "84ffb8a4-7fdc-4cc3-8f07-05eb8a5a8f53",
-                    "path": "<Gamepad>/buttonEast",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": ";controller",
-                    "action": "Ability3",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
-                    "id": "eee64d63-5084-4fda-9ef1-97b7fdf439a8",
-                    "path": "<Keyboard>/r",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": ";key+mouse",
-                    "action": "Ability4",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
-                    "id": "5e05dc76-046b-4867-a3bd-a4772a3212a4",
-                    "path": "<Gamepad>/buttonSouth",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": ";controller",
-                    "action": "Ability4",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
                     "id": "35e4799b-4a7e-400b-bb93-286af135f889",
                     "path": "<Keyboard>/w",
                     "interactions": "",
@@ -586,7 +551,7 @@
                 {
                     "name": "",
                     "id": "386802ec-725a-4918-9d77-60da36f73371",
-                    "path": "<Gamepad>/buttonNorth",
+                    "path": "<Gamepad>/leftStickPress",
                     "interactions": "",
                     "processors": "",
                     "groups": ";controller",
@@ -646,6 +611,72 @@
                     "processors": "",
                     "groups": ";controller",
                     "action": "ToggleFriction",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "dbcd358e-c04f-4c5f-9b2a-6fcd6bfc43b8",
+                    "path": "<Gamepad>/dpad/up",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": ";controller",
+                    "action": "Weapon1",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "8c9e8c47-7c4c-484e-ac87-ef9f8e96d241",
+                    "path": "<Keyboard>/1",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": ";key+mouse",
+                    "action": "Weapon1",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "77360e64-efae-4c1b-b3dd-55729450b242",
+                    "path": "<Gamepad>/dpad/left",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": ";controller",
+                    "action": "Weapon2",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "edd497f2-e5bb-4804-8954-3d4c126c08c0",
+                    "path": "<Keyboard>/2",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": ";key+mouse",
+                    "action": "Weapon2",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "8e76ee40-06d6-4c8a-b67e-32abb60aa01a",
+                    "path": "<Gamepad>/dpad/right",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": ";controller",
+                    "action": "Weapon3",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "87b1f9f3-a183-453b-974f-0c317d518b0b",
+                    "path": "<Keyboard>/3",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": ";key+mouse",
+                    "action": "Weapon3",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }

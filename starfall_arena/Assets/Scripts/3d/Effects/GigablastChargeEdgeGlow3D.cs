@@ -23,7 +23,7 @@ public class GigablastChargeEdgeGlow3D : MonoBehaviour
 
     [Header("References")]
     [SerializeField] private Player3D player;
-    [SerializeField] private GigaBlast3D gigaBlast;
+    [SerializeField] private GigaBlastWeapon3D gigaBlast;
 
     [Header("Glow")]
     [ColorUsage(true, true)]
@@ -156,18 +156,18 @@ public class GigablastChargeEdgeGlow3D : MonoBehaviour
 
         if (player != null)
         {
-            Ability3D[] abilities = player.Abilities;
-            for (int i = 0; i < abilities.Length; i++)
+            Weapon3D[] weapons = player.Weapons;
+            for (int i = 0; i < weapons.Length; i++)
             {
-                if (abilities[i] is GigaBlast3D gigaBlastAbility)
+                if (weapons[i] is GigaBlastWeapon3D gigaBlastWeapon)
                 {
-                    gigaBlast = gigaBlastAbility;
+                    gigaBlast = gigaBlastWeapon;
                     return;
                 }
             }
         }
 
-        gigaBlast = GetComponent<GigaBlast3D>();
+        gigaBlast = GetComponent<GigaBlastWeapon3D>();
     }
 
     private float EvaluateCharge(float normalizedCharge)
@@ -257,7 +257,7 @@ public class GigablastChargeEdgeGlow3D : MonoBehaviour
 
         _warnedMissingGigablast = true;
         Debug.LogWarning(
-            "GigablastChargeEdgeGlow3D could not find a GigaBlast3D source. Assign the ability directly or keep the component on the same player object as Player3D.",
+            "GigablastChargeEdgeGlow3D could not find a GigaBlastWeapon3D source. Assign the weapon directly or keep the component on the same player object as Player3D.",
             this);
     }
 

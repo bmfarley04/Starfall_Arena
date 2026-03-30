@@ -1,10 +1,11 @@
+using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.InputSystem;
 
-public class GigaBlast3D : Ability3D, IReticleSpinSource3D
+public class GigaBlastWeapon3D : Weapon3D
 {
     [System.Serializable]
-    public struct GigaBlastAbilityConfig3D
+    public struct GigaBlastWeaponConfig3D
     {
         [Header("Timing")]
         public TimingConfig timing;
@@ -79,7 +80,6 @@ public class GigaBlast3D : Ability3D, IReticleSpinSource3D
             public float tier1DamageMultiplier;
             public float tier1RecoilMultiplier;
             public float tier1ImpactMultiplier;
-            [Tooltip("Additional forward spawn offset for tier 1 to compensate for projectile pivot length.")]
             public float tier1SpawnOffset;
 
             [Header("Tier 2")]
@@ -87,7 +87,6 @@ public class GigaBlast3D : Ability3D, IReticleSpinSource3D
             public float tier2DamageMultiplier;
             public float tier2RecoilMultiplier;
             public float tier2ImpactMultiplier;
-            [Tooltip("Additional forward spawn offset for tier 2 to compensate for projectile pivot length.")]
             public float tier2SpawnOffset;
 
             [Header("Tier 3")]
@@ -95,7 +94,6 @@ public class GigaBlast3D : Ability3D, IReticleSpinSource3D
             public float tier3DamageMultiplier;
             public float tier3RecoilMultiplier;
             public float tier3ImpactMultiplier;
-            [Tooltip("Additional forward spawn offset for tier 3 to compensate for projectile pivot length.")]
             public float tier3SpawnOffset;
 
             [Header("Tier 4")]
@@ -103,7 +101,6 @@ public class GigaBlast3D : Ability3D, IReticleSpinSource3D
             public float tier4DamageMultiplier;
             public float tier4RecoilMultiplier;
             public float tier4ImpactMultiplier;
-            [Tooltip("Additional forward spawn offset for tier 4 to compensate for projectile pivot length.")]
             public float tier4SpawnOffset;
         }
 
@@ -128,24 +125,24 @@ public class GigaBlast3D : Ability3D, IReticleSpinSource3D
         }
     }
 
-    [Header("Ability 4 - GigaBlast 3D")]
-    [SerializeField] private GigaBlastAbilityConfig3D gigaBlast = new GigaBlastAbilityConfig3D
+    [Header("Weapon 3 - GigaBlast")]
+    [SerializeField] private GigaBlastWeaponConfig3D gigaBlast = new GigaBlastWeaponConfig3D
     {
-        timing = new GigaBlastAbilityConfig3D.TimingConfig
+        timing = new GigaBlastWeaponConfig3D.TimingConfig
         {
-            cooldown = 2.5f,
+            cooldown = 0.1f,
             minChargeTime = 0.5f,
             maxChargeTime = 3f,
             projectileLifetime = 5f
         },
-        tierThresholds = new GigaBlastAbilityConfig3D.TierThresholdsConfig
+        tierThresholds = new GigaBlastWeaponConfig3D.TierThresholdsConfig
         {
             tier1Time = 0.5f,
             tier2Time = 1f,
             tier3Time = 2f,
             tier4Time = 3f
         },
-        movementPenalties = new GigaBlastAbilityConfig3D.MovementPenaltiesConfig
+        movementPenalties = new GigaBlastWeaponConfig3D.MovementPenaltiesConfig
         {
             tier1ThrustMultiplier = 0.8f,
             tier1RotationMultiplier = 0.8f,
@@ -156,7 +153,7 @@ public class GigaBlast3D : Ability3D, IReticleSpinSource3D
             tier4ThrustMultiplier = 0.2f,
             tier4RotationMultiplier = 0.2f
         },
-        projectileScaling = new GigaBlastAbilityConfig3D.ProjectileScalingConfig
+        projectileScaling = new GigaBlastWeaponConfig3D.ProjectileScalingConfig
         {
             tier1SpeedMultiplier = 0.5f,
             tier1DamageMultiplier = 1f,
@@ -179,7 +176,7 @@ public class GigaBlast3D : Ability3D, IReticleSpinSource3D
             tier4ImpactMultiplier = 10f,
             tier4SpawnOffset = 0f
         },
-        pierce = new GigaBlastAbilityConfig3D.PierceConfig
+        pierce = new GigaBlastWeaponConfig3D.PierceConfig
         {
             tier3DamageMultiplierPerPierce = 0.5f,
             tier4DamageMultiplierPerPierce = 1f
@@ -193,7 +190,7 @@ public class GigaBlast3D : Ability3D, IReticleSpinSource3D
     private float _chargeStartTime;
     private int _currentChargeTier;
     private Coroutine _chargeFadeCoroutine;
-    private float _lastReticleSpinPulseTime = float.NegativeInfinity;
+    private bool _cancelReleaseShot;
 
     public bool IsCharging => _isCharging;
     public float CurrentChargeTime => GetCurrentChargeTime();
@@ -203,7 +200,7 @@ public class GigaBlast3D : Ability3D, IReticleSpinSource3D
     protected override void Awake()
     {
         base.Awake();
-        projectileWeapon ??= entity != null ? entity.PrimaryWeapon : GetComponent<ProjectileWeapon3D>();
+        projectileWeapon ??= Owner != null ? Owner.PrimaryWeapon : GetComponent<ProjectileWeapon3D>();
         ResetAllChargeParticlesToIdle();
 
         if (chargeAudioSource == null)
@@ -216,7 +213,30 @@ public class GigaBlast3D : Ability3D, IReticleSpinSource3D
         chargeAudioSource.spatialBlend = 0f;
     }
 
-    private void Update()
+    protected override IEnumerable<GameObject> GetPrewarmProjectilePrefabs()
+    {
+        if (gigaBlast.visual.tier1ProjectilePrefab != null)
+        {
+            yield return gigaBlast.visual.tier1ProjectilePrefab;
+        }
+
+        if (gigaBlast.visual.tier2ProjectilePrefab != null)
+        {
+            yield return gigaBlast.visual.tier2ProjectilePrefab;
+        }
+
+        if (gigaBlast.visual.tier3ProjectilePrefab != null)
+        {
+            yield return gigaBlast.visual.tier3ProjectilePrefab;
+        }
+
+        if (gigaBlast.visual.tier4ProjectilePrefab != null)
+        {
+            yield return gigaBlast.visual.tier4ProjectilePrefab;
+        }
+    }
+
+    protected override void OnWeaponUpdated(float deltaTime)
     {
         if (!_isCharging)
         {
@@ -234,62 +254,48 @@ public class GigaBlast3D : Ability3D, IReticleSpinSource3D
         PlayChargeParticleForTier(_currentChargeTier);
     }
 
-    protected override bool HandlesReleaseInput() => true;
-    protected override bool ShouldMarkAbilityUsedOnPress(InputValue value) => false;
-
-    public override bool TryUseAbility(InputValue value)
+    protected override void OnFirePressed()
     {
-        if (value.isPressed)
+        if (_isCharging || projectileWeapon == null || IsOnCooldown())
         {
-            if (projectileWeapon == null)
-            {
-                Debug.LogWarning("GigaBlast3D requires ProjectileWeapon3D on the same entity.", this);
-                return false;
-            }
-
-            if (IsAnyOtherAbilityActive())
-            {
-                return false;
-            }
-        }
-
-        return base.TryUseAbility(value);
-    }
-
-    public override void UseAbility(InputValue value)
-    {
-        if (value.isPressed)
-        {
-            if (_isCharging)
-            {
-                return;
-            }
-
-            StartCharging();
             return;
         }
 
+        StartCharging();
+    }
+
+    protected override void OnFireReleased()
+    {
         if (!_isCharging)
         {
+            return;
+        }
+
+        if (_cancelReleaseShot)
+        {
+            StopChargingState();
             return;
         }
 
         ReleaseCharge();
     }
 
-    public override bool IsAbilityActive()
+    public override void OnDeselected()
     {
-        return _isCharging;
+        if (!_isCharging)
+        {
+            base.OnDeselected();
+            return;
+        }
+
+        _cancelReleaseShot = true;
+        base.OnDeselected();
+        _cancelReleaseShot = false;
     }
 
-    public bool IsReticleSpinActive()
+    public override bool IsReticleSpinActive()
     {
         return false;
-    }
-
-    public float GetReticleSpinPulseTime()
-    {
-        return _lastReticleSpinPulseTime;
     }
 
     public override float GetRotationMultiplier()
@@ -312,12 +318,7 @@ public class GigaBlast3D : Ability3D, IReticleSpinSource3D
         return GetThrustMultiplierForTier(GetChargeTier(GetCurrentChargeTime()));
     }
 
-    public override bool DisablePrimaryFire()
-    {
-        return _isCharging;
-    }
-
-    protected override float GetCooldownDuration()
+    protected override float GetConfiguredCooldownDuration()
     {
         return gigaBlast.timing.cooldown;
     }
@@ -337,7 +338,6 @@ public class GigaBlast3D : Ability3D, IReticleSpinSource3D
         _isCharging = true;
         _chargeStartTime = Time.time;
         _currentChargeTier = GetChargeTier(0f);
-        DisableOtherAbilities(true);
         PlayChargeParticleForTier(_currentChargeTier);
         StartChargeSound();
     }
@@ -355,10 +355,7 @@ public class GigaBlast3D : Ability3D, IReticleSpinSource3D
             return;
         }
 
-        if (FireChargedShot(firedTier))
-        {
-            MarkAbilityUsed();
-        }
+        FireChargedShot(firedTier);
     }
 
     private void StopChargingState()
@@ -366,7 +363,6 @@ public class GigaBlast3D : Ability3D, IReticleSpinSource3D
         _isCharging = false;
         _chargeStartTime = 0f;
         _currentChargeTier = 0;
-        DisableOtherAbilities(false);
         StopAllChargeParticles();
         StopChargeSound();
     }
@@ -382,10 +378,11 @@ public class GigaBlast3D : Ability3D, IReticleSpinSource3D
         GameObject projectilePrefab = GetProjectilePrefabForTier(tier);
         if (projectilePrefab == null)
         {
-            Debug.LogWarning($"GigaBlast3D tier {tier} is missing its projectile prefab.", this);
+            Debug.LogWarning($"GigaBlastWeapon3D tier {tier} is missing its projectile prefab.", this);
             return false;
         }
 
+        Transform spawnAnchor = gigaBlast.muzzle != null ? gigaBlast.muzzle : Owner != null ? Owner.transform : transform;
         float projectileLifetime = gigaBlast.timing.projectileLifetime > 0f
             ? gigaBlast.timing.projectileLifetime
             : baseWeapon.lifetime;
@@ -394,7 +391,7 @@ public class GigaBlast3D : Ability3D, IReticleSpinSource3D
         {
             projectilePrefab = projectilePrefab,
             muzzles = null,
-            spawnAnchor = gigaBlast.muzzle != null ? gigaBlast.muzzle : entity.transform,
+            spawnAnchor = spawnAnchor,
             targetTag = baseWeapon.targetTag,
             speed = baseWeapon.speed * GetSpeedMultiplierForTier(tier),
             damage = baseWeapon.damage * GetDamageMultiplierForTier(tier),
@@ -420,7 +417,8 @@ public class GigaBlast3D : Ability3D, IReticleSpinSource3D
             return false;
         }
 
-        _lastReticleSpinPulseTime = Time.time;
+        StartCooldown();
+        RecordReticleSpinPulse();
         GetFireSoundForTier(tier)?.PlayAtPoint(transform.position);
         return true;
     }
@@ -681,7 +679,7 @@ public class GigaBlast3D : Ability3D, IReticleSpinSource3D
         _chargeFadeCoroutine = StartCoroutine(FadeChargeVolume(targetVolume, stopAfterFade));
     }
 
-    private System.Collections.IEnumerator FadeChargeVolume(float targetVolume, bool stopAfterFade)
+    private IEnumerator FadeChargeVolume(float targetVolume, bool stopAfterFade)
     {
         if (chargeAudioSource == null)
         {

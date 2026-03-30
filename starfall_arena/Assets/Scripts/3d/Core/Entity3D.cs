@@ -10,43 +10,31 @@ public enum DamageSource3D
 [RequireComponent(typeof(ShipFlight3D))]
 public abstract class Entity3D : MonoBehaviour
 {
-    private const float MaxPrimaryWeaponEnergyCapacity = 100f;
-
-    [System.Serializable]
-    private struct PrimaryWeaponEnergyConfig3D
-    {
-        [Tooltip("How quickly the primary-weapon overheat meter cools back toward zero when not actively building heat.")]
-        public float recoveryPerSecond;
-    }
-
     [Header("3D Combat")]
     [SerializeField] protected float maxHealth = 100f;
     [SerializeField] protected float maxShield = 50f;
     [SerializeField] protected ShieldController shieldController;
-    [Header("Primary Weapon Energy")]
-    [SerializeField] private PrimaryWeaponEnergyConfig3D primaryWeaponEnergy = new PrimaryWeaponEnergyConfig3D
-    {
-        recoveryPerSecond = 60f
-    };
 
     [Header("3D Visual Feedback")]
     [Tooltip("Multiplier for how much recoil/impulse affects visual pitch independent of thrust pitch.")]
     [SerializeField] protected float impulseRecoilPitchSensitivity = 1f;
 
+    [Header("Weapons")]
+    [SerializeField] protected Weapon3D[] weapons = new Weapon3D[3];
+    [SerializeField] protected int selectedWeaponIndex;
+
     [Header("Abilities")]
-    [SerializeField] protected Ability3D[] abilities = new Ability3D[4];
+    [SerializeField] protected Ability3D[] abilities = new Ability3D[2];
 
     [Header("3D Systems")]
     [SerializeField] protected ShipFlight3D shipFlight;
     [SerializeField] protected ShipVisualTilt3D shipVisualTilt;
     [SerializeField] protected ShipThrusterVfx3D shipThrusterVfx;
     [SerializeField] protected ShipSpeedFx3D shipSpeedFx;
-    [SerializeField] protected ProjectileWeapon3D primaryWeapon;
     [SerializeField] protected DeathEffects3D deathEffects;
 
     protected float currentHealth;
     protected float currentShield;
-    protected float currentPrimaryWeaponEnergy;
     protected Vector3 lastDamageDirection;
     protected float currentSlowMultiplier = 1f;
     protected float slowEndTime;
@@ -57,26 +45,51 @@ public abstract class Entity3D : MonoBehaviour
     public ShipVisualTilt3D VisualTilt => shipVisualTilt;
     public ShipThrusterVfx3D ThrusterVfx => shipThrusterVfx;
     public ShipSpeedFx3D SpeedFx => shipSpeedFx;
-    public ProjectileWeapon3D PrimaryWeapon => primaryWeapon;
+    public Weapon3D[] Weapons => weapons;
+    public ProjectileWeapon3D PrimaryWeapon => GetWeapon(0) as ProjectileWeapon3D;
+    public Weapon3D SelectedWeapon => GetWeapon(selectedWeaponIndex);
+    public int SelectedWeaponIndex => selectedWeaponIndex;
     public Ability3D[] Abilities => abilities;
     public float CurrentHealth => currentHealth;
     public float CurrentShield => currentShield;
-    public float CurrentPrimaryWeaponEnergy => currentPrimaryWeaponEnergy;
-    public float MaxPrimaryWeaponEnergy => MaxPrimaryWeaponEnergyCapacity;
-    public float CurrentPrimaryWeaponEnergyNormalized => currentPrimaryWeaponEnergy / MaxPrimaryWeaponEnergyCapacity;
     public float ImpulseRecoilPitchSensitivity => impulseRecoilPitchSensitivity;
     public float CurrentSlowMultiplier => GetSlowMultiplier();
     public bool IsSlowed => Time.time < slowEndTime && currentSlowMultiplier < 1f;
 
     public Ability3D GetAbility(int index)
     {
-        if (index < 0 || index >= abilities.Length) return null;
+        if (index < 0 || index >= abilities.Length)
+        {
+            return null;
+        }
+
         return abilities[index];
+    }
+
+    public Weapon3D GetWeapon(int index)
+    {
+        if (index < 0 || index >= weapons.Length)
+        {
+            return null;
+        }
+
+        return weapons[index];
+    }
+
+    public bool SelectWeapon(int index)
+    {
+        if (index < 0 || index >= weapons.Length || weapons[index] == null)
+        {
+            return false;
+        }
+
+        selectedWeaponIndex = index;
+        return true;
     }
 
     public float GetCombinedRotationMultiplier()
     {
-        return GetBaseRotationMultiplier() * GetAbilityRotationMultiplier();
+        return GetBaseRotationMultiplier() * GetAbilityRotationMultiplier() * GetWeaponRotationMultiplier();
     }
 
     public float GetBaseRotationMultiplier()
@@ -101,9 +114,26 @@ public abstract class Entity3D : MonoBehaviour
         return multiplier;
     }
 
+    public float GetWeaponRotationMultiplier()
+    {
+        float multiplier = 1f;
+        for (int i = 0; i < weapons.Length; i++)
+        {
+            Weapon3D weapon = weapons[i];
+            if (weapon == null)
+            {
+                continue;
+            }
+
+            multiplier *= weapon.GetRotationMultiplier();
+        }
+
+        return multiplier;
+    }
+
     public float GetCombinedThrustMultiplier()
     {
-        float multiplier = GetExternalThrustMultiplier();
+        float multiplier = GetExternalThrustMultiplier() * GetWeaponThrustMultiplier();
         for (int i = 0; i < abilities.Length; i++)
         {
             Ability3D ability = abilities[i];
@@ -113,6 +143,23 @@ public abstract class Entity3D : MonoBehaviour
             }
 
             multiplier *= ability.GetThrustMultiplier();
+        }
+
+        return multiplier;
+    }
+
+    public float GetWeaponThrustMultiplier()
+    {
+        float multiplier = 1f;
+        for (int i = 0; i < weapons.Length; i++)
+        {
+            Weapon3D weapon = weapons[i];
+            if (weapon == null)
+            {
+                continue;
+            }
+
+            multiplier *= weapon.GetThrustMultiplier();
         }
 
         return multiplier;
@@ -138,20 +185,27 @@ public abstract class Entity3D : MonoBehaviour
         shipVisualTilt ??= GetComponent<ShipVisualTilt3D>();
         shipThrusterVfx ??= GetComponent<ShipThrusterVfx3D>();
         shipSpeedFx ??= GetComponent<ShipSpeedFx3D>();
-        primaryWeapon ??= GetComponent<ProjectileWeapon3D>();
         deathEffects ??= GetComponent<DeathEffects3D>();
         shieldController ??= GetComponentInChildren<ShieldController>(true);
+        CacheCombatSlotsIfNeeded();
+        selectedWeaponIndex = Mathf.Clamp(selectedWeaponIndex, 0, Mathf.Max(0, weapons.Length - 1));
+        if (weapons.Length > 0 && weapons[selectedWeaponIndex] == null)
+        {
+            for (int i = 0; i < weapons.Length; i++)
+            {
+                if (weapons[i] != null)
+                {
+                    selectedWeaponIndex = i;
+                    break;
+                }
+            }
+        }
+
         currentHealth = maxHealth;
         currentShield = maxShield;
-        currentPrimaryWeaponEnergy = 0f;
         lastDamageDirection = Vector3.zero;
         currentSlowMultiplier = 1f;
         slowEndTime = 0f;
-    }
-
-    private void LateUpdate()
-    {
-        RecoverPrimaryWeaponEnergy(Time.deltaTime);
     }
 
     public virtual void TakeDamage(float damage, Vector3 hitPoint, Entity3D attacker = null, DamageSource3D source = DamageSource3D.Projectile)
@@ -241,56 +295,6 @@ public abstract class Entity3D : MonoBehaviour
         return currentSlowMultiplier;
     }
 
-    public bool CanSpendPrimaryWeaponEnergy(float cost)
-    {
-        float clampedCost = Mathf.Max(0f, cost);
-        if (clampedCost <= 0f)
-        {
-            return true;
-        }
-
-        return currentPrimaryWeaponEnergy + clampedCost <= MaxPrimaryWeaponEnergyCapacity + 0.001f;
-    }
-
-    public bool TrySpendPrimaryWeaponEnergy(float cost)
-    {
-        float clampedCost = Mathf.Max(0f, cost);
-        if (!CanSpendPrimaryWeaponEnergy(clampedCost))
-        {
-            return false;
-        }
-
-        if (clampedCost <= 0f)
-        {
-            return true;
-        }
-
-        currentPrimaryWeaponEnergy = Mathf.Min(MaxPrimaryWeaponEnergyCapacity, currentPrimaryWeaponEnergy + clampedCost);
-        OnPrimaryWeaponEnergyChanged();
-        return true;
-    }
-
-    public void RecoverPrimaryWeaponEnergy(float deltaTime)
-    {
-        if (deltaTime <= 0f || currentPrimaryWeaponEnergy <= 0f)
-        {
-            return;
-        }
-
-        float recoveryRate = Mathf.Max(0f, primaryWeaponEnergy.recoveryPerSecond);
-        if (recoveryRate <= 0f)
-        {
-            return;
-        }
-
-        float previousEnergy = currentPrimaryWeaponEnergy;
-        currentPrimaryWeaponEnergy = Mathf.Max(0f, currentPrimaryWeaponEnergy - (recoveryRate * deltaTime));
-        if (!Mathf.Approximately(previousEnergy, currentPrimaryWeaponEnergy))
-        {
-            OnPrimaryWeaponEnergyChanged();
-        }
-    }
-
     protected virtual void Die()
     {
         if (_isDead)
@@ -299,6 +303,14 @@ public abstract class Entity3D : MonoBehaviour
         }
 
         _isDead = true;
+
+        for (int i = 0; i < weapons.Length; i++)
+        {
+            if (weapons[i] != null)
+            {
+                weapons[i].Die();
+            }
+        }
 
         for (int i = 0; i < abilities.Length; i++)
         {
@@ -324,15 +336,68 @@ public abstract class Entity3D : MonoBehaviour
         return damageDirection.sqrMagnitude > 0.0001f ? damageDirection.normalized : Vector3.zero;
     }
 
+    private void CacheCombatSlotsIfNeeded()
+    {
+        if (weapons.Length == 0)
+        {
+            weapons = new Weapon3D[3];
+        }
+
+        if (abilities.Length == 0)
+        {
+            abilities = new Ability3D[2];
+        }
+
+        if (NeedsWeaponDiscovery())
+        {
+            Weapon3D[] discoveredWeapons = GetComponents<Weapon3D>();
+            for (int i = 0; i < weapons.Length && i < discoveredWeapons.Length; i++)
+            {
+                weapons[i] = discoveredWeapons[i];
+            }
+        }
+
+        if (NeedsAbilityDiscovery())
+        {
+            Ability3D[] discoveredAbilities = GetComponents<Ability3D>();
+            for (int i = 0; i < abilities.Length && i < discoveredAbilities.Length; i++)
+            {
+                abilities[i] = discoveredAbilities[i];
+            }
+        }
+    }
+
+    private bool NeedsWeaponDiscovery()
+    {
+        for (int i = 0; i < weapons.Length; i++)
+        {
+            if (weapons[i] != null)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private bool NeedsAbilityDiscovery()
+    {
+        for (int i = 0; i < abilities.Length; i++)
+        {
+            if (abilities[i] != null)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     protected virtual void OnHealthChanged()
     {
     }
 
     protected virtual void OnShieldChanged()
-    {
-    }
-
-    protected virtual void OnPrimaryWeaponEnergyChanged()
     {
     }
 

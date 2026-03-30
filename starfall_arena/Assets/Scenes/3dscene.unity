@@ -2017,66 +2017,6 @@ PrefabInstance:
       propertyPath: m_Camera
       value: 
       objectReference: {fileID: 1867909032}
-    - target: {fileID: 472506789794357844, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
-      propertyPath: gigaBlast.visual.tier1ReticleColor.b
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 472506789794357844, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
-      propertyPath: gigaBlast.visual.tier1ReticleColor.g
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 472506789794357844, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
-      propertyPath: gigaBlast.visual.tier1ReticleColor.r
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 472506789794357844, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
-      propertyPath: gigaBlast.visual.tier2ReticleColor.b
-      value: 0.8805031
-      objectReference: {fileID: 0}
-    - target: {fileID: 472506789794357844, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
-      propertyPath: gigaBlast.visual.tier2ReticleColor.g
-      value: 0.2587801
-      objectReference: {fileID: 0}
-    - target: {fileID: 472506789794357844, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
-      propertyPath: gigaBlast.visual.tier2ReticleColor.r
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 472506789794357844, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
-      propertyPath: gigaBlast.visual.tier3ReticleColor.b
-      value: 0.064631335
-      objectReference: {fileID: 0}
-    - target: {fileID: 472506789794357844, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
-      propertyPath: gigaBlast.visual.tier3ReticleColor.g
-      value: 0.8238993
-      objectReference: {fileID: 0}
-    - target: {fileID: 472506789794357844, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
-      propertyPath: gigaBlast.visual.tier3ReticleColor.r
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 472506789794357844, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
-      propertyPath: gigaBlast.visual.tier4ReticleColor.b
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 472506789794357844, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
-      propertyPath: gigaBlast.visual.tier4ReticleColor.g
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 472506789794357844, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
-      propertyPath: gigaBlast.visual.tier4ReticleColor.r
-      value: 0.34173203
-      objectReference: {fileID: 0}
-    - target: {fileID: 472506789794357844, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
-      propertyPath: gigaBlast.projectileScaling.tier2SpawnOffset
-      value: 3
-      objectReference: {fileID: 0}
-    - target: {fileID: 472506789794357844, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
-      propertyPath: gigaBlast.projectileScaling.tier3SpawnOffset
-      value: 10
-      objectReference: {fileID: 0}
-    - target: {fileID: 472506789794357844, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
-      propertyPath: gigaBlast.projectileScaling.tier4SpawnOffset
-      value: 20
-      objectReference: {fileID: 0}
     - target: {fileID: 547480364830838567, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
       propertyPath: innerCircleImage
       value: 
@@ -2101,10 +2041,6 @@ PrefabInstance:
       propertyPath: bracketConfig.rightBracket
       value: 
       objectReference: {fileID: 1024122630}
-    - target: {fileID: 1753181740976137236, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
-      propertyPath: EmissionModule.rateOverTime.scalar
-      value: 30
-      objectReference: {fileID: 0}
     - target: {fileID: 2568558604607578100, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
       propertyPath: m_Name
       value: Class1_Player
@@ -2113,38 +2049,6 @@ PrefabInstance:
       propertyPath: virtualCamera
       value: 
       objectReference: {fileID: 773417013}
-    - target: {fileID: 3934790730732665131, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
-      propertyPath: speedEffects.maxDustEmissionRate
-      value: 100
-      objectReference: {fileID: 0}
-    - target: {fileID: 3934790730732665131, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
-      propertyPath: speedEffects.trailSpeedThreshold
-      value: 0.5
-      objectReference: {fileID: 0}
-    - target: {fileID: 5104438160426859549, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
-      propertyPath: haloIntensity
-      value: 0.01
-      objectReference: {fileID: 0}
-    - target: {fileID: 6369695681249732700, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
-      propertyPath: teleport.exitSound
-      value: 
-      objectReference: {fileID: 11400000, guid: bc1b416aa39b9084fb712befa92ac7f8, type: 2}
-    - target: {fileID: 6369695681249732700, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
-      propertyPath: teleport.arrivalSound
-      value: 
-      objectReference: {fileID: 11400000, guid: b5df1b844f0088a48bf54cac1c479aa8, type: 2}
-    - target: {fileID: 6369695681249732700, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
-      propertyPath: teleport.visual.arrivalPulsewave.burstCount
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 6369695681249732700, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
-      propertyPath: teleport.visual.departurePulsewave.burstCount
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 6928815812079169362, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
-      propertyPath: weaponConfig.impactForce
-      value: 0
-      objectReference: {fileID: 0}
     - target: {fileID: 7427501341343801484, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
       propertyPath: m_LocalPosition.x
       value: -0.067

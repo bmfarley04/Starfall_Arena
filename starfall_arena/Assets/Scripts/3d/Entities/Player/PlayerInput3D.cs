@@ -4,7 +4,6 @@ using UnityEngine.InputSystem;
 public class PlayerInput3D : MonoBehaviour, IShipFlightInputSource
 {
     [SerializeField] private ShipFlight3D shipFlight;
-    [SerializeField] private ProjectileWeapon3D primaryWeapon;
     [SerializeField] private Entity3D entity;
     [SerializeField] private PlayerInput playerInput;
     [SerializeField] private float mouseLookSensitivity = 0.02f;
@@ -15,6 +14,8 @@ public class PlayerInput3D : MonoBehaviour, IShipFlightInputSource
     private bool _toggleFrictionPressed;
     private bool _fireHeld;
     private bool _isCursorLocked;
+    private bool _appliedFireHeld;
+    private Weapon3D _activeWeaponForFire;
 
     private const string KeyboardMouseScheme = "key+mouse";
 
@@ -25,7 +26,6 @@ public class PlayerInput3D : MonoBehaviour, IShipFlightInputSource
     private void Awake()
     {
         shipFlight ??= GetComponent<ShipFlight3D>();
-        primaryWeapon ??= GetComponent<ProjectileWeapon3D>();
         entity ??= GetComponent<Entity3D>();
         playerInput ??= GetComponent<PlayerInput>();
 
@@ -39,15 +39,14 @@ public class PlayerInput3D : MonoBehaviour, IShipFlightInputSource
     {
         UpdateLookInput();
         UpdateCursorLockState();
-
-        if (_fireHeld && primaryWeapon != null && (entity == null || !entity.IsPrimaryFireDisabledByAbility()))
-        {
-            primaryWeapon.TryFire();
-        }
+        RefreshWeaponFireState();
     }
 
     private void OnDisable()
     {
+        _activeWeaponForFire?.OnDeselected();
+        _activeWeaponForFire = null;
+        _appliedFireHeld = false;
         SetCursorLocked(false);
         _isCursorLocked = false;
     }
@@ -71,11 +70,6 @@ public class PlayerInput3D : MonoBehaviour, IShipFlightInputSource
         return wasPressed;
     }
 
-    public void SetPrimaryWeapon(ProjectileWeapon3D weapon)
-    {
-        primaryWeapon = weapon;
-    }
-
     public void OnFreeLook(InputValue value)
     {
         _gamepadLookInput = value.Get<Vector2>();
@@ -97,20 +91,39 @@ public class PlayerInput3D : MonoBehaviour, IShipFlightInputSource
     public void OnFire(InputValue value)
     {
         _fireHeld = value.Get<float>() > 0f;
+        RefreshWeaponFireState();
     }
-
-    // ===== ABILITY INPUT =====
 
     public void OnAbility1(InputValue value) { TryUseAbility(0, value); }
     public void OnAbility2(InputValue value) { TryUseAbility(1, value); }
-    public void OnAbility3(InputValue value) { TryUseAbility(2, value); }
-    public void OnAbility4(InputValue value) { TryUseAbility(3, value); }
+    public void OnAbility3(InputValue value) { }
+    public void OnAbility4(InputValue value) { }
+    public void OnWeapon1(InputValue value) { TrySelectWeapon(0, value); }
+    public void OnWeapon2(InputValue value) { TrySelectWeapon(1, value); }
+    public void OnWeapon3(InputValue value) { TrySelectWeapon(2, value); }
 
     private void TryUseAbility(int index, InputValue value)
     {
-        if (entity == null) return;
+        if (entity == null)
+        {
+            return;
+        }
+
         Ability3D ability = entity.GetAbility(index);
         ability?.TryUseAbility(value);
+    }
+
+    private void TrySelectWeapon(int index, InputValue value)
+    {
+        if (entity == null || !value.isPressed)
+        {
+            return;
+        }
+
+        if (entity.SelectWeapon(index))
+        {
+            RefreshWeaponFireState();
+        }
     }
 
     private void UpdateLookInput()
@@ -150,5 +163,33 @@ public class PlayerInput3D : MonoBehaviour, IShipFlightInputSource
     {
         Cursor.lockState = locked ? CursorLockMode.Locked : CursorLockMode.None;
         Cursor.visible = !locked;
+    }
+
+    private void RefreshWeaponFireState()
+    {
+        Weapon3D selectedWeapon = entity != null ? entity.SelectedWeapon : null;
+        bool shouldHoldFire = _fireHeld && (entity == null || !entity.IsPrimaryFireDisabledByAbility());
+
+        if (_activeWeaponForFire != selectedWeapon)
+        {
+            _activeWeaponForFire?.OnDeselected();
+            _activeWeaponForFire = selectedWeapon;
+            _activeWeaponForFire?.OnSelected();
+            _appliedFireHeld = false;
+        }
+
+        if (_activeWeaponForFire == null)
+        {
+            _appliedFireHeld = false;
+            return;
+        }
+
+        if (_appliedFireHeld == shouldHoldFire)
+        {
+            return;
+        }
+
+        _activeWeaponForFire.SetFireHeld(shouldHoldFire);
+        _appliedFireHeld = shouldHoldFire;
     }
 }

@@ -1,10 +1,9 @@
 using UnityEngine;
-using UnityEngine.InputSystem;
 
-public class Beam3D : Ability3D, IReticleSpinSource3D
+public class BeamWeapon3D : Weapon3D
 {
     [System.Serializable]
-    public struct BeamAbilityConfig3D
+    public struct BeamWeaponConfig3D
     {
         [Header("Beam Settings")]
         public GameObject beamPrefab;
@@ -16,7 +15,7 @@ public class Beam3D : Ability3D, IReticleSpinSource3D
         public float offsetDistance;
         [Tooltip("Vertical offset from the muzzle anchor along its local up axis (positive = up).")]
         public float verticalOffset;
-        [Tooltip("Optional muzzle transform for beam origin. Falls back to entity transform if unset.")]
+        [Tooltip("Optional muzzle transform for beam origin. Falls back to the entity transform if unset.")]
         public Transform muzzle;
         [Tooltip("Rotation speed multiplier when beam is active (0.3 = 70% slower)")]
         public float rotationMultiplier;
@@ -34,19 +33,17 @@ public class Beam3D : Ability3D, IReticleSpinSource3D
         public SoundEffect fireLoopSound;
     }
 
-    [Header("Ability 1 - Beam Weapon")]
-    public BeamAbilityConfig3D beam;
+    [Header("Weapon 2 - Beam")]
+    [SerializeField] private BeamWeaponConfig3D beam;
     [SerializeField] private AudioSource beamLoopAudioSource;
 
     private LaserBeam3D _activeBeam;
-    private float _currentBeamCapacity;
 
     private bool UsesBeamCapacity => beam.capacity > 0f && beam.drainRate > 0f;
 
     protected override void Awake()
     {
         base.Awake();
-        _currentBeamCapacity = 0f;
         if (beamLoopAudioSource == null)
         {
             beamLoopAudioSource = gameObject.AddComponent<AudioSource>();
@@ -57,60 +54,85 @@ public class Beam3D : Ability3D, IReticleSpinSource3D
         beamLoopAudioSource.spatialBlend = 0f;
     }
 
-    void Update()
+    protected override float GetConfiguredResourceCapacity()
     {
-        if (_activeBeam == null && _currentBeamCapacity > 0f && beam.regenRate > 0f)
+        return beam.capacity;
+    }
+
+    protected override float GetConfiguredResourceRecoveryPerSecond()
+    {
+        return beam.regenRate;
+    }
+
+    protected override bool ShouldRecoverResource()
+    {
+        return _activeBeam == null;
+    }
+
+    protected override void OnWeaponFixedUpdated(float deltaTime)
+    {
+        if (_activeBeam == null)
         {
-            _currentBeamCapacity = Mathf.Max(_currentBeamCapacity - beam.regenRate * Time.deltaTime, 0f);
+            return;
+        }
+
+        float recoilForceThisFrame = _activeBeam.GetRecoilForcePerSecond() * deltaTime;
+        if (Owner != null && Owner.Flight != null)
+        {
+            Owner.Flight.ApplyRecoil(recoilForceThisFrame);
+        }
+
+        if (!UsesBeamCapacity)
+        {
+            return;
+        }
+
+        AddResourceUsage(beam.drainRate * deltaTime);
+        if (CurrentResourceUsage >= Mathf.Max(0f, beam.capacity) - 0.001f)
+        {
+            StopBeam();
         }
     }
 
-    void FixedUpdate()
+    protected override void OnFirePressed()
     {
-        if (_activeBeam != null)
+        if (_activeBeam != null || beam.beamPrefab == null)
         {
-            float recoilForceThisFrame = _activeBeam.GetRecoilForcePerSecond() * Time.fixedDeltaTime;
-            if (entity.Flight != null)
-            {
-                entity.Flight.ApplyRecoil(recoilForceThisFrame);
-            }
-
-            if (UsesBeamCapacity)
-            {
-                _currentBeamCapacity = Mathf.Min(_currentBeamCapacity + beam.drainRate * Time.fixedDeltaTime, beam.capacity);
-
-                if (_currentBeamCapacity >= beam.capacity)
-                {
-                    StopBeam();
-                }
-            }
+            return;
         }
+
+        if (UsesBeamCapacity && !CanSpendResource(beam.drainRate * Time.fixedDeltaTime))
+        {
+            return;
+        }
+
+        StartBeam();
     }
 
-    protected override bool HandlesReleaseInput() => true;
-    protected override bool ShouldMarkAbilityUsedOnPress(InputValue value) => false;
-
-    public override void UseAbility(InputValue value)
+    protected override void OnFireReleased()
     {
-        if (value.isPressed)
-        {
-            if (UsesBeamCapacity && _currentBeamCapacity >= beam.capacity)
-            {
-                return;
-            }
+        StopBeam();
+    }
 
-            if (_activeBeam == null && beam.beamPrefab != null)
-            {
-                StartBeam();
-            }
-        }
-        else
-        {
-            if (_activeBeam != null)
-            {
-                StopBeam();
-            }
-        }
+    public override void OnDeselected()
+    {
+        base.OnDeselected();
+        StopBeam();
+    }
+
+    public override float GetRotationMultiplier()
+    {
+        return _activeBeam != null ? beam.rotationMultiplier : 1f;
+    }
+
+    public override bool IsReticleSpinActive()
+    {
+        return _activeBeam != null;
+    }
+
+    public override void Die()
+    {
+        StopBeam();
     }
 
     private void StartBeam()
@@ -123,14 +145,15 @@ public class Beam3D : Ability3D, IReticleSpinSource3D
             return;
         }
 
+        Transform muzzle = beam.muzzle != null ? beam.muzzle : Owner != null ? Owner.transform : transform;
         _activeBeam.Initialize(
             beam.targetTag,
             beam.damagePerSecond,
             beam.maxDistance,
             beam.recoilForcePerSecond,
             beam.impactForce,
-            entity,
-            beam.muzzle != null ? beam.muzzle : entity.transform,
+            Owner,
+            muzzle,
             beam.offsetDistance,
             beam.verticalOffset);
 
@@ -150,49 +173,9 @@ public class Beam3D : Ability3D, IReticleSpinSource3D
         StopBeamLoopSound();
     }
 
-    public override float GetRotationMultiplier()
-    {
-        if (_activeBeam == null) return 1f;
-        return beam.rotationMultiplier;
-    }
-
-    public override bool IsAbilityActive()
-    {
-        return _activeBeam != null;
-    }
-
-    public bool IsReticleSpinActive()
-    {
-        return _activeBeam != null;
-    }
-
-    public float GetReticleSpinPulseTime()
-    {
-        return float.NegativeInfinity;
-    }
-
-    public override bool DisablePrimaryFire()
-    {
-        return _activeBeam != null;
-    }
-
-    // ===== HUD STATE =====
-    public override bool IsResourceBased() => true;
-    public override float GetHUDFillRatio()
-    {
-        if (!UsesBeamCapacity) return 0f;
-        return _currentBeamCapacity / beam.capacity;
-    }
-    public override bool IsOnCooldown() => false;
-
-    public override void Die()
-    {
-        StopBeam();
-    }
-
     private void OnDisable()
     {
-        StopBeamLoopSound();
+        StopBeam();
     }
 
     private void StartBeamLoopSound()
