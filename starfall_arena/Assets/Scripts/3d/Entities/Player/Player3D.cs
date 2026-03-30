@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -51,6 +52,13 @@ public class Player3D : Entity3D
         audioSourcePoolSize = 4
     };
 
+    public static event Action<Player3D> PlayerSpawned;
+    public static event Action<Player3D> PlayerDespawned;
+
+    public event Action<float, float> HealthChanged;
+    public event Action<float, float> ShieldChanged;
+    public event Action<int> SelectedWeaponChanged;
+
     public PlayerInput3D PlayerInput3D => playerInput3D;
     public PlayerCameraRig3D PlayerCameraRig3D => playerCameraRig3D;
 
@@ -83,6 +91,11 @@ public class Player3D : Entity3D
         CacheSplitStateRigsIfNeeded();
         ApplySplitStatePresentation();
         hudManager3D?.Bind(this);
+    }
+
+    private void OnEnable()
+    {
+        PlayerSpawned?.Invoke(this);
     }
 
     private void Update()
@@ -162,6 +175,7 @@ public class Player3D : Entity3D
         ApplySplitStatePresentation();
         StopBeamHitLoop();
         _chromaticAberrationFx?.ClearEffect();
+        PlayerDespawned?.Invoke(this);
     }
 
     private void InitializeAudio()
@@ -238,17 +252,17 @@ public class Player3D : Entity3D
 
     protected override void OnHealthChanged()
     {
-        hudManager3D?.RefreshHealth(currentHealth, maxHealth);
+        HealthChanged?.Invoke(currentHealth, maxHealth);
     }
 
     protected override void OnShieldChanged()
     {
-        hudManager3D?.RefreshShield(currentShield, maxShield);
+        ShieldChanged?.Invoke(currentShield, maxShield);
     }
 
     protected override void OnSelectedWeaponChanged()
     {
-        hudManager3D?.RefreshWeaponHUD();
+        SelectedWeaponChanged?.Invoke(selectedWeaponIndex);
     }
 
     protected override float GetFlatBaseRotationMultiplier()
