@@ -1749,7 +1749,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: dbe81728304208343afc0871a0119a1e, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ProjectileWeapon3D
+  m_EditorClassIdentifier: Assembly-CSharp::Class1BaseWeapon3D
 --- !u!114 &1887455136
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2017,6 +2017,18 @@ PrefabInstance:
       propertyPath: m_Camera
       value: 
       objectReference: {fileID: 1867909032}
+    - target: {fileID: 472506789794357844, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      propertyPath: reticleFillColor.b
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 472506789794357844, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      propertyPath: reticleFillColor.g
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 472506789794357844, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      propertyPath: reticleFillColor.r
+      value: 0.81883
+      objectReference: {fileID: 0}
     - target: {fileID: 547480364830838567, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
       propertyPath: innerCircleImage
       value: 
@@ -2049,6 +2061,30 @@ PrefabInstance:
       propertyPath: virtualCamera
       value: 
       objectReference: {fileID: 773417013}
+    - target: {fileID: 6766116784638287846, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      propertyPath: reticleFillColor.b
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6766116784638287846, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      propertyPath: reticleFillColor.g
+      value: 0.433613
+      objectReference: {fileID: 0}
+    - target: {fileID: 6766116784638287846, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      propertyPath: reticleFillColor.r
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6928815812079169362, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      propertyPath: reticleFillColor.b
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6928815812079169362, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      propertyPath: reticleFillColor.g
+      value: 0.6291828
+      objectReference: {fileID: 0}
+    - target: {fileID: 6928815812079169362, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      propertyPath: reticleFillColor.r
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 7427501341343801484, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
       propertyPath: m_LocalPosition.x
       value: -0.067
