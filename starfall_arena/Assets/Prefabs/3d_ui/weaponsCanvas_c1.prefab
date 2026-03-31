@@ -360,8 +360,8 @@ MonoBehaviour:
     selectedColor: {r: 0, g: 0.6672478, b: 1, a: 1}
     selectedAlpha: 0.6
   selectBarFillVisuals:
-    readyFillColor: {r: 0, g: 1, b: 0.34719753, a: 0.39215687}
-    cooldownFillColor: {r: 1, g: 0.20849736, b: 0, a: 0.39215687}
+    readyFillColor: {r: 0.43710685, g: 0.82766706, b: 1, a: 0.5882353}
+    cooldownFillColor: {r: 1, g: 0.20784314, b: 0, a: 0.5882353}
     readyFlashDuration: 0.2
 --- !u!1 &3003315590861396935
 GameObject:

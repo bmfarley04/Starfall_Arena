@@ -207,7 +207,7 @@ MonoBehaviour:
     readyFlashAlpha: 1
   selectBarFillVisuals:
     cooldownFillColor: {r: 1, g: 0.20784314, b: 0, a: 0.5882353}
-    readyFillColor: {r: 0, g: 1, b: 0.34901962, a: 0.5882353}
+    readyFillColor: {r: 0.43529412, g: 0.827451, b: 1, a: 0.5882353}
 --- !u!1 &3947389086374274874
 GameObject:
   m_ObjectHideFlags: 0

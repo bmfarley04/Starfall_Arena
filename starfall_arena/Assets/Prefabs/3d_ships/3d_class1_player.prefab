@@ -1159,7 +1159,6 @@ MonoBehaviour:
         burstInterval: 0.1
     exitSound: {fileID: 11400000, guid: bc1b416aa39b9084fb712befa92ac7f8, type: 2}
     arrivalSound: {fileID: 11400000, guid: b5df1b844f0088a48bf54cac1c479aa8, type: 2}
-  audioSource: {fileID: 7028201276721733789}
 --- !u!114 &472506789794357844
 MonoBehaviour:
   m_ObjectHideFlags: 0
