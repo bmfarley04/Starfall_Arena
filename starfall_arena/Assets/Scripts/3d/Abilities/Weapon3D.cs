@@ -225,6 +225,27 @@ public abstract class Weapon3D : MonoBehaviour, IReticleSpinSource3D
         aimCamera = camera;
     }
 
+    protected void SetAvailabilityMode(AvailabilityMode3D mode)
+    {
+        if (availabilityMode == mode)
+        {
+            return;
+        }
+
+        availabilityMode = mode;
+        if (availabilityMode != AvailabilityMode3D.ResourceConsumption)
+        {
+            _currentResourceUsage = 0f;
+        }
+
+        if (availabilityMode != AvailabilityMode3D.Cooldown)
+        {
+            _cooldownReadyTime = float.NegativeInfinity;
+        }
+
+        RaiseAvailabilityChangedIfNeeded(force: true);
+    }
+
     protected virtual IEnumerable<GameObject> GetPrewarmProjectilePrefabs()
     {
         yield break;

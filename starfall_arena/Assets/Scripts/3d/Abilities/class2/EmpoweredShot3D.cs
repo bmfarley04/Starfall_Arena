@@ -1,7 +1,7 @@
 using UnityEngine;
-using UnityEngine.InputSystem;
+using System.Collections.Generic;
 
-public class EmpoweredShot3D : Ability3D
+public class EmpoweredShot3D : Weapon3D
 {
     [System.Serializable]
     public struct EmpoweredShotAbilityConfig3D
@@ -36,7 +36,7 @@ public class EmpoweredShot3D : Ability3D
         public SoundEffect fireSound;
     }
 
-    [Header("Ability 1 - Empowered Shot 3D")]
+    [Header("Weapon 2 - Empowered Shot 3D")]
     [SerializeField] private EmpoweredShotAbilityConfig3D empoweredShot = new EmpoweredShotAbilityConfig3D
     {
         cooldown = 1.5f,
@@ -52,16 +52,30 @@ public class EmpoweredShot3D : Ability3D
     protected override void Awake()
     {
         base.Awake();
-        projectileWeapon ??= entity != null ? entity.PrimaryWeapon : GetComponent<ProjectileWeapon3D>();
+        SetAvailabilityMode(AvailabilityMode3D.Cooldown);
+        projectileWeapon ??= Owner != null ? Owner.PrimaryWeapon : GetComponent<ProjectileWeapon3D>();
     }
 
-    public override bool TryUseAbility(InputValue value)
+    protected override IEnumerable<GameObject> GetPrewarmProjectilePrefabs()
     {
-        if (!value.isPressed)
+        if (empoweredShot.projectilePrefab != null)
         {
-            return false;
+            yield return empoweredShot.projectilePrefab;
         }
+    }
 
+    protected override float GetConfiguredCooldownDuration()
+    {
+        return empoweredShot.cooldown;
+    }
+
+    protected override void OnFireHeld()
+    {
+        TryFireEmpoweredShot();
+    }
+
+    private bool TryFireEmpoweredShot()
+    {
         if (projectileWeapon == null)
         {
             Debug.LogWarning("EmpoweredShot3D requires ProjectileWeapon3D on the same entity.", this);
@@ -80,11 +94,11 @@ public class EmpoweredShot3D : Ability3D
             return false;
         }
 
-        return base.TryUseAbility(value);
-    }
+        if (IsOnCooldown())
+        {
+            return false;
+        }
 
-    public override void UseAbility(InputValue value)
-    {
         ProjectileWeaponConfig3D baseWeapon = projectileWeapon.WeaponConfig;
         float lifetime = empoweredShot.lifetime > 0f ? empoweredShot.lifetime : baseWeapon.lifetime;
 
@@ -107,17 +121,13 @@ public class EmpoweredShot3D : Ability3D
             }
         };
 
-        bool fired = projectileWeapon.Fire(request);
+        bool fired = FireProjectilePattern(request, baseWeapon, empoweredShot.fireSound);
         if (!fired)
         {
-            return;
+            return false;
         }
 
-        empoweredShot.fireSound?.PlayAtPoint(transform.position);
-    }
-
-    protected override float GetCooldownDuration()
-    {
-        return empoweredShot.cooldown;
+        StartCooldown();
+        return true;
     }
 }

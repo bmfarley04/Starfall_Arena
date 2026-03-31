@@ -29,7 +29,13 @@ Load the smallest relevant set of docs for the task. If it is noted that we are 
 - `AGENTS.md`
   - Start here for repo rules and documentation routing.
 - `3D.md`
-  - Read first for full 3D implementation work that translates the current duel game out of the existing 2.5D orthographic presentation while preserving shared systems where possible.
+  - Read first for 3D implementation ground rules and routing into the focused 3D doc set.
+- `3D_SYSTEMS.md`
+  - Read for 3D architecture, system responsibilities, script placement, and cross-system implementation rules.
+- `3D_COMBAT.md`
+  - Read for 3D weapons, abilities, aiming, projectiles, beams, and combat HUD expectations.
+- `3D_BUGS.md`
+  - Read for recurring 3D translation bugs, regressions, and implementation pitfalls.
 - `GAME_SYSTEMS.md`
   - Read for entity hierarchy, combat, weapons, abilities, augments, and current gameplay assumptions.
 - `UI_MANAGERS.md`
@@ -41,6 +47,7 @@ Load the smallest relevant set of docs for the task. If it is noted that we are 
 
 - Working on the fuller 3D implementation path, perspective-camera gameplay, 3D ship movement, 3D combat readability, or translating an existing 2D/2.5D system into 3D:
   - Read `3D.md` first
+  - Then load `3D_SYSTEMS.md`, `3D_COMBAT.md`, and/or `3D_BUGS.md` based on the area being changed
   - Then load `GAME_SYSTEMS.md`, `UI_MANAGERS.md`, and/or `NETWORK.md` only as needed for the shared system being translated
   - Keep code edits inside `Assets/Scripts/3d` by default
   - If the fix appears to require changing non-3D code, ask the user for permission before editing outside `Assets/Scripts/3d`
@@ -79,7 +86,7 @@ Examples:
 - movement/networking bug -> `NETWORK.md`
 - ability or augment bug -> `GAME_SYSTEMS.md`
 - HUD, menu, or round-flow bug -> `UI_MANAGERS.md`
-- 3D-translation bug, camera/readability pitfall, or 3D movement gotcha -> `3D.md`
+- 3D-translation bug, camera/readability pitfall, or 3D movement gotcha -> `3D_BUGS.md`
 
 Keep bug notes short and actionable. Prefer “what went wrong, why it matters, how to avoid it”.
 
