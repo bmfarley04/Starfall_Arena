@@ -724,7 +724,7 @@ MonoBehaviour:
   anchorConfig:
     enabled: 1
     rotationMultiplier: 3
-    thrustMultiplier: 0.5
+    thrustMultiplier: 0.3
   audioConfig:
     shieldDamageSound: {fileID: 11400000, guid: fd2754dd24955964c99c8be0471fb1d2, type: 2}
     hullDamageSound: {fileID: 11400000, guid: f9265c3e881424f4da91b40830f8b194, type: 2}
