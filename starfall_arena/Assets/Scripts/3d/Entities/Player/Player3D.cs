@@ -58,6 +58,7 @@ public class Player3D : Entity3D
     public event Action<float, float> HealthChanged;
     public event Action<float, float> ShieldChanged;
     public event Action<int> SelectedWeaponChanged;
+    public event Action<int, Weapon3D> WeaponAvailabilityChanged;
 
     public PlayerInput3D PlayerInput3D => playerInput3D;
     public PlayerCameraRig3D PlayerCameraRig3D => playerCameraRig3D;
@@ -90,11 +91,11 @@ public class Player3D : Entity3D
 
         CacheSplitStateRigsIfNeeded();
         ApplySplitStatePresentation();
-        hudManager3D?.Bind(this);
     }
 
     private void OnEnable()
     {
+        SubscribeToWeaponAvailability();
         PlayerSpawned?.Invoke(this);
     }
 
@@ -171,6 +172,7 @@ public class Player3D : Entity3D
 
     private void OnDisable()
     {
+        UnsubscribeFromWeaponAvailability();
         _anchorHeld = false;
         ApplySplitStatePresentation();
         StopBeamHitLoop();
@@ -263,6 +265,54 @@ public class Player3D : Entity3D
     protected override void OnSelectedWeaponChanged()
     {
         SelectedWeaponChanged?.Invoke(selectedWeaponIndex);
+    }
+
+    private void SubscribeToWeaponAvailability()
+    {
+        for (int i = 0; i < weapons.Length; i++)
+        {
+            Weapon3D weapon = weapons[i];
+            if (weapon == null)
+            {
+                continue;
+            }
+
+            weapon.AvailabilityChanged -= HandleWeaponAvailabilityChanged;
+            weapon.AvailabilityChanged += HandleWeaponAvailabilityChanged;
+        }
+    }
+
+    private void UnsubscribeFromWeaponAvailability()
+    {
+        for (int i = 0; i < weapons.Length; i++)
+        {
+            Weapon3D weapon = weapons[i];
+            if (weapon == null)
+            {
+                continue;
+            }
+
+            weapon.AvailabilityChanged -= HandleWeaponAvailabilityChanged;
+        }
+    }
+
+    private void HandleWeaponAvailabilityChanged(Weapon3D weapon)
+    {
+        if (weapon == null)
+        {
+            return;
+        }
+
+        for (int i = 0; i < weapons.Length; i++)
+        {
+            if (!ReferenceEquals(weapons[i], weapon))
+            {
+                continue;
+            }
+
+            WeaponAvailabilityChanged?.Invoke(i, weapon);
+            return;
+        }
     }
 
     protected override float GetFlatBaseRotationMultiplier()

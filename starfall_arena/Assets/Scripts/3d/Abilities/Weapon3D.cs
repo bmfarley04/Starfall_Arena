@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System;
 using UnityEngine;
 
 public abstract class Weapon3D : MonoBehaviour, IReticleSpinSource3D
@@ -59,6 +60,11 @@ public abstract class Weapon3D : MonoBehaviour, IReticleSpinSource3D
     private float _currentResourceUsage;
     private float _cooldownReadyTime = float.NegativeInfinity;
     private float _lastReticleSpinPulseTime = float.NegativeInfinity;
+    private float _lastAvailabilityChangedReadyRatio = float.NaN;
+    private bool _lastAvailabilityChangedOnCooldown;
+    private bool _hasAvailabilitySnapshot;
+
+    public event Action<Weapon3D> AvailabilityChanged;
 
     public AvailabilityMode3D AvailabilityMode => availabilityMode;
     public Entity3D Owner => owner;
@@ -68,7 +74,10 @@ public abstract class Weapon3D : MonoBehaviour, IReticleSpinSource3D
     public bool IsFireHeld => _isFireHeld;
     public float CurrentResourceUsage => _currentResourceUsage;
     public float ResourceCapacity => Mathf.Max(0f, GetConfiguredResourceCapacity());
+    public float AvailableResourceRatio => GetAvailableResourceRatio();
     public float CooldownRemaining => UsesCooldownAvailability ? Mathf.Max(0f, _cooldownReadyTime - Time.time) : 0f;
+    public float CooldownDuration => Mathf.Max(0f, GetConfiguredCooldownDuration());
+    public float CooldownReadyRatio => GetCooldownReadyRatio();
     public bool UsesResourceAvailability => availabilityMode == AvailabilityMode3D.ResourceConsumption;
     public bool UsesCooldownAvailability => availabilityMode == AvailabilityMode3D.Cooldown;
 
@@ -90,6 +99,8 @@ public abstract class Weapon3D : MonoBehaviour, IReticleSpinSource3D
         {
             GameObjectPool3D.Prewarm(muzzleEffectPrefab, muzzleEffectPrewarmCount);
         }
+
+        CacheAvailabilitySnapshot();
     }
 
     private void Update()
@@ -102,6 +113,7 @@ public abstract class Weapon3D : MonoBehaviour, IReticleSpinSource3D
         }
 
         OnWeaponUpdated(Time.deltaTime);
+        RaiseAvailabilityChangedIfNeeded();
     }
 
     private void FixedUpdate()
@@ -148,7 +160,7 @@ public abstract class Weapon3D : MonoBehaviour, IReticleSpinSource3D
             return capacity > 0f ? Mathf.Clamp01(_currentResourceUsage / capacity) : 0f;
         }
 
-        float cooldown = Mathf.Max(0f, GetConfiguredCooldownDuration());
+        float cooldown = CooldownDuration;
         if (cooldown <= 0f || !UsesCooldownAvailability)
         {
             return 0f;
@@ -208,6 +220,11 @@ public abstract class Weapon3D : MonoBehaviour, IReticleSpinSource3D
         shipFlight = flight;
     }
 
+    public void SetAimCamera(Camera camera)
+    {
+        aimCamera = camera;
+    }
+
     protected virtual IEnumerable<GameObject> GetPrewarmProjectilePrefabs()
     {
         yield break;
@@ -262,6 +279,7 @@ public abstract class Weapon3D : MonoBehaviour, IReticleSpinSource3D
     {
         float resolvedDuration = duration >= 0f ? duration : GetConfiguredCooldownDuration();
         _cooldownReadyTime = Time.time + Mathf.Max(0f, resolvedDuration);
+        RaiseAvailabilityChangedIfNeeded(force: true);
     }
 
     protected bool CanSpendResource(float amount)
@@ -319,10 +337,12 @@ public abstract class Weapon3D : MonoBehaviour, IReticleSpinSource3D
         if (capacity <= 0f)
         {
             _currentResourceUsage = 0f;
+            RaiseAvailabilityChangedIfNeeded(force: true);
             return;
         }
 
         _currentResourceUsage = Mathf.Clamp(amount, 0f, capacity);
+        RaiseAvailabilityChangedIfNeeded(force: true);
     }
 
     protected void RecordReticleSpinPulse()
@@ -505,5 +525,60 @@ public abstract class Weapon3D : MonoBehaviour, IReticleSpinSource3D
         {
             pooled.ScheduleDespawn(muzzleEffectLifetime);
         }
+    }
+
+    private float GetAvailableResourceRatio()
+    {
+        float capacity = ResourceCapacity;
+        if (capacity <= 0f)
+        {
+            return 0f;
+        }
+
+        return Mathf.Clamp01(1f - (_currentResourceUsage / capacity));
+    }
+
+    private float GetCooldownReadyRatio()
+    {
+        if (!UsesCooldownAvailability)
+        {
+            return 1f;
+        }
+
+        float cooldown = CooldownDuration;
+        if (cooldown <= 0f)
+        {
+            return 1f;
+        }
+
+        return Mathf.Clamp01(1f - (CooldownRemaining / cooldown));
+    }
+
+    private void CacheAvailabilitySnapshot()
+    {
+        _lastAvailabilityChangedReadyRatio = UsesCooldownAvailability ? CooldownReadyRatio : GetAvailableResourceRatio();
+        _lastAvailabilityChangedOnCooldown = UsesCooldownAvailability && IsOnCooldown();
+        _hasAvailabilitySnapshot = true;
+    }
+
+    private void RaiseAvailabilityChangedIfNeeded(bool force = false)
+    {
+        float currentReadyRatio = UsesCooldownAvailability ? CooldownReadyRatio : GetAvailableResourceRatio();
+        bool isOnCooldown = UsesCooldownAvailability && IsOnCooldown();
+
+        if (!force && _hasAvailabilitySnapshot)
+        {
+            bool ratioUnchanged = Mathf.Abs(currentReadyRatio - _lastAvailabilityChangedReadyRatio) <= 0.0001f;
+            bool cooldownStateUnchanged = isOnCooldown == _lastAvailabilityChangedOnCooldown;
+            if (ratioUnchanged && cooldownStateUnchanged)
+            {
+                return;
+            }
+        }
+
+        _lastAvailabilityChangedReadyRatio = currentReadyRatio;
+        _lastAvailabilityChangedOnCooldown = isOnCooldown;
+        _hasAvailabilitySnapshot = true;
+        AvailabilityChanged?.Invoke(this);
     }
 }

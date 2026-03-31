@@ -77,12 +77,12 @@ public class Teleport3D : Ability3D
 
     [Header("Ability 3 - Teleport 3D")]
     [SerializeField] private TeleportAbilityConfig3D teleport;
-    [SerializeField] private AudioSource audioSource;
 
     private Coroutine _teleportCoroutine;
     private bool _isTeleporting;
     private Rigidbody _rigidbody;
     private CinemachineImpulseSource _impulseSource;
+    private AudioSource _audioSource;
     private readonly List<Renderer> _renderers = new List<Renderer>();
     private readonly List<bool> _rendererStates = new List<bool>();
     private readonly List<Collider> _colliders = new List<Collider>();
@@ -94,7 +94,10 @@ public class Teleport3D : Ability3D
         base.Awake();
         _rigidbody = GetComponent<Rigidbody>();
         _impulseSource = GetComponent<CinemachineImpulseSource>();
-        audioSource ??= GetComponent<AudioSource>();
+        _audioSource = gameObject.AddComponent<AudioSource>();
+        _audioSource.playOnAwake = false;
+        _audioSource.loop = false;
+        _audioSource.spatialBlend = 0f;
     }
 
     public override void UseAbility(InputValue value)
@@ -277,9 +280,10 @@ public class Teleport3D : Ability3D
             return;
         }
 
-        if (audioSource != null)
+        if (_audioSource != null)
         {
-            soundEffect.Play(audioSource);
+            _audioSource.loop = false;
+            soundEffect.Play(_audioSource);
             return;
         }
 

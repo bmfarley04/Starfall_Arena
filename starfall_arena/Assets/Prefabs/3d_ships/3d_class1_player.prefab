@@ -454,7 +454,6 @@ GameObject:
   - component: {fileID: 472506789794357844}
   - component: {fileID: 5104438160426859549}
   - component: {fileID: 8188930441586883119}
-  - component: {fileID: 547480364830838567}
   - component: {fileID: 7902338216098012005}
   m_Layer: 0
   m_Name: 3d_class1_player
@@ -710,8 +709,8 @@ MonoBehaviour:
   - {fileID: 472506789794357844}
   selectedWeaponIndex: 0
   abilities:
-  - {fileID: 5373532230695115810}
   - {fileID: 6369695681249732700}
+  - {fileID: 5373532230695115810}
   shipFlight: {fileID: 2269080399608317416}
   shipVisualTilt: {fileID: 5585566392220985068}
   shipThrusterVfx: {fileID: 3538944680820626273}
@@ -1014,7 +1013,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Class1BaseWeapon3D
   availabilityMode: 0
-  reticleFillColor: {r: 0.19607843, g: 0.9137255, b: 1, a: 1}
+  reticleFillColor: {r: 0, g: 0.6291828, b: 1, a: 1}
   owner: {fileID: 1753171253810675368}
   shipFlight: {fileID: 2269080399608317416}
   resource:
@@ -1064,7 +1063,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BeamWeapon3D
   availabilityMode: 0
-  reticleFillColor: {r: 1, g: 0.76862746, b: 0.1882353, a: 1}
+  reticleFillColor: {r: 1, g: 0.433613, b: 0, a: 1}
   owner: {fileID: 1753171253810675368}
   shipFlight: {fileID: 2269080399608317416}
   resource:
@@ -1174,7 +1173,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GigaBlastWeapon3D
   availabilityMode: 1
-  reticleFillColor: {r: 1, g: 0.44705883, b: 0.13333334, a: 1}
+  reticleFillColor: {r: 0.81883, g: 0, b: 1, a: 1}
   owner: {fileID: 1753171253810675368}
   shipFlight: {fileID: 2269080399608317416}
   resource:
@@ -1354,56 +1353,6 @@ MonoBehaviour:
     pieces:
     - {fileID: 1493440020577353942}
   activateOnStart: 0
---- !u!114 &547480364830838567
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2568558604607578100}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b1d647a1409e933469dc5de01c294937, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::PlayerAimReticle3D
-  entity: {fileID: 1753171253810675368}
-  player: {fileID: 1753171253810675368}
-  playerInput: {fileID: 3261048947178620207}
-  innerCircleImage: {fileID: 0}
-  additionalSpinSources: []
-  bracketConfig:
-    leftBracket: {fileID: 0}
-    rightBracket: {fileID: 0}
-    leftClosedOffset: {x: 13.5, y: 0}
-    rightClosedOffset: {x: -13.5, y: 0}
-    smoothing: 10
-  spinConfig:
-    innerCircle: {fileID: 0}
-    maxSpinSpeed: 1080
-    acceleration: 3000
-    deceleration: 1500
-    pulseHoldDuration: 1
-  hoverConfig:
-    aimCameraOverride: {fileID: 0}
-    hoverMask:
-      serializedVersion: 2
-      m_Bits: 1
-    maxDistance: 1000
-    hitscanRadius: 0.7
-    enemyTag: Enemy
-  heatFill:
-    leftFill: {fileID: 0}
-    rightFill: {fileID: 0}
-  firingVisuals:
-    dashMarks:
-      images: []
-      baseColor: {r: 1, g: 1, b: 1, a: 1}
-      firingColor: {r: 1, g: 1, b: 1, a: 1}
-      baseAlpha: 0.4
-      firingAlpha: 1
-    innerCircle:
-      baseColor: {r: 1, g: 1, b: 1, a: 1}
-      firingColor: {r: 1, g: 1, b: 1, a: 1}
 --- !u!114 &7902338216098012005
 MonoBehaviour:
   m_ObjectHideFlags: 0
