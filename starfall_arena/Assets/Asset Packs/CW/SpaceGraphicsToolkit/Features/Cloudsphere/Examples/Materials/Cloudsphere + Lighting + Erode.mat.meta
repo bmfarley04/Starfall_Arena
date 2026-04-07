@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: 6b825e6539d3ca74d956d90ea058165e
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 4160
+  packageName: Space Graphics Toolkit
+  packageVersion: 4.2.14
+  assetPath: Assets/Plugins/CW/SpaceGraphicsToolkit/Features/Cloudsphere/Examples/Materials/Cloudsphere
+    + Lighting + Erode.mat
+  uploadId: 774634

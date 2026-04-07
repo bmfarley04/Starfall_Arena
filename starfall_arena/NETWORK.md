@@ -197,6 +197,16 @@ Current network payloads include:
   - friction timer
   - thrust state (for remote thruster visuals)
   - shield value (for remote shield regen visuals)
+- `NetDarkMatterHazardSpawnData`
+  - spawn position, direction, DPS, lifetime, impact force, slow rate, launch speed
+  - dampening flag plus server spawn time so clients subtract transit latency from the hazard lifetime
+- `NetFlameWaveCastState`
+  - charge request payload for Flame Wave when the owner is not the server
+- `NetFlameWaveHazardSpawnData`
+  - spawn position, direction, DPS, lifetime, impact force, slow rate, launch speed
+  - dampening flag plus server spawn time so clients subtract transit latency from the hazard lifetime
+- `NetBatteryRamState`
+  - tick, active flag, broken flag, charge-grant flag, and an owner-skip flag so the owner can predict locally while server echoes state to the rest
 
 These structs are intentionally minimal and focused on what movement replay and visual sync needs.
 
@@ -255,6 +265,8 @@ Current behavior:
 - the server receives fire/start/stop requests for projectile, beam, fire-trail, and reflect actions
 - the server spawns and owns the real gameplay projectile / beam / fire hazard behavior
 - non-owning clients receive cosmetic spawn/state RPCs so they can render the same weapon events without applying gameplay damage
+- Dark Matter follows this path: the owner predicts hazards locally, the server spends charges and spawns authoritative hazards, and hazard lifetimes are latency-adjusted on clients using the server spawn time
+- Flame Wave now follows the same pattern as Dark Matter: owner prediction is cosmetic, the server is authoritative for spending charges and spawning hazards, and client lifetimes are corrected by subtracting transit time from the spawn payload
 - networked augment loadouts are also pushed from the server to each player replica after spawn and on live augment acquisition so owner/proxy copies do not silently miss augment runtimes
 
 This is intentionally a bridge step that keeps combat authority aligned with the already-implemented movement authority model without requiring every weapon prefab to become a separate NGO network object first.
@@ -332,6 +344,7 @@ The existing movement implementation is a real first step toward that architectu
 - Host mode now also needs special care for combat visuals versus gameplay authority: owner-side local weapon visuals must not be allowed to double-apply gameplay recoil or damage when the host is also the authoritative server.
 - Current UX note: the gameplay ping label is sourced from NGO transport RTT and intentionally displayed as `RTT / 2` because this project wants a smoothed one-way estimate on-screen. That means the shown value is not the same number many tools call "ping" (full RTT), so keep that distinction explicit if the label behavior changes later.
 - Bug note: host gameplay copies that are not locally owned must disable `PlayerInput`, not just `Player`. The client proxy branch already did this, but the host's server-authoritative copy of the remote player previously left `PlayerInput` enabled. That created multiple active `PlayerInput` components on the host machine, which broke controller ownership for host gameplay even though the standalone client still worked. Keep non-owner gameplay replicas input-disabled on every peer.
+- Bug note: do not call `SetActive(false)` on spawned network player objects as a round-transition visibility shortcut. Scene activation is not replicated by NGO, so the host can locally disable a player while clients keep rendering a frozen copy. That stale object can also poison tag-based combat lookup if networking helpers only filter by tag instead of also requiring a live spawned `NetworkObject`.
 - `ProjectileScript`, `LaserBeam`, and `FireHazard` now have a split between cosmetic-only instances and server-authoritative gameplay instances during network sessions. Future combat work should preserve that separation instead of letting client visuals deal damage directly.
 - Bug note: server-side projectile rewind sweeps do not have `OnTriggerEnter2D`'s built-in "entry once" behavior. Any projectile that survives impact, especially piercing shots like Tier 3/4 `GigaBlast`, must keep its own "already hit this target during this flight" registry or the same target can be damaged again on later server ticks while the sweep still intersects the defender's rewind radius.
 - `NetStateSnapshot` now carries both shield and health so augment-driven healing / max-health changes stay visible on non-authoritative copies instead of living only on the server.
@@ -340,6 +353,8 @@ The existing movement implementation is a real first step toward that architectu
 - Any networking migration work should assume full-network play is the target and treat old split-screen assumptions as secondary unless specifically required.
 - Ability ClientRpc guards must use `if (IsServer || IsOwner) return;`, NOT `if (IsOwner && !IsServer) return;`. The latter fails to catch the host (IsServer && IsOwner), causing double-execution: the server handler already applied the ability, then the RPC applies it again. For abilities with coroutines (Teleport, Reflector), this stops the first coroutine mid-execution, corrupting state (e.g. Teleport's collider stays permanently disabled because the second coroutine captures the already-disabled collider and never re-enables it).
 - Bug note (teleport visibility): The teleport coroutine previously used `authoritative` to decide whether to hide renderers during the instant position warp. On the host, when `HandleTeleportServer` ran a remote player's teleport with `authoritative: true`, it would hide that player's renderers on the host machine. Although hide/restore happened within the same coroutine frame, the split-screen camera activation in network mode (`ActivateSplitScreen` called unconditionally in `SceneManager`) combined with the renderer hiding to cause the other player to appear invisible. Fix: only the local owner hides renderers (`_netMovement == null || _netMovement.IsOwner`), and `ActivateSplitScreen` is now guarded with `!useNetworkSession`.
+- Chrono Step uses `NetChronoStepState` (plant + teleport) through `NetMovement`. Owners predict locally, the server applies authoritative state, and non-owners replay the plant/teleport without hiding renderers on the host.
 - Bug note (teleport Z-coordinate loss): The teleport network path sends the target position as `Vector2` (via `RequestTeleport` / `NetTeleportState`), which drops the Z coordinate. When `ApplyNetworkTeleport` received this as `Vector2` and passed it to `ExecuteTeleport(Vector3)`, the implicit conversion set Z to 0. This could shift the ship's depth layer and cause the `OnTargetObjectWarped` camera warp delta to include an erroneous Z component. Fix: `ApplyNetworkTeleport` now reconstructs the Z from `transform.position.z` before executing the teleport.
 - Bug note (cosmetic projectile/beam pass-through): Unity `gameObject.tag` is not replicated by NGO. `SpawnNetworkPlayer()` sets the tag and calls `RefreshCombatTags()` only on the server. On clients, remote proxies had `Player` disabled before `Start()` ran, so `enemyTag` was never set. Cosmetic projectiles (`BroadcastProjectileSpawnClientRpc`) and beams (`Beam.ApplyNetworkBeamState`) read `_player.enemyTag` which was empty/wrong on clients, causing `collider.CompareTag(targetTag)` to fail and projectiles/beams to pass through ships visually. Fix: `NetMovement` now carries a `NetworkVariable<byte> _networkPlayerIndex` that replicates the player index (1=Player1, 2=Player2) to all clients. On value change, clients set `gameObject.tag` and call `RefreshCombatTags()`, ensuring `enemyTag` is correct everywhere.
+- Class5 charges are server-authoritative. Passive regen ticks on the server copy (even when the local Player component is disabled), and a dedicated `Class5NetworkBridge` now handles charge count/audio replication plus the four-shot primary fire burst for remote listeners so Class5-specific logic no longer lives in `NetMovement`.
 - Future bugs or drift issues should be documented here with the exact subsystem affected: prediction, reconciliation, interpolation, spawn flow, or combat replication.

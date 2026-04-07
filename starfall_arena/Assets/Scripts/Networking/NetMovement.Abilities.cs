@@ -90,6 +90,22 @@ public partial class NetMovement
         SubmitTeleportServerRpc(state);
     }
 
+    public void RequestChronoStepState(NetChronoStepState state)
+    {
+        if (!NetTickUtil.IsActive || !IsOwner)
+        {
+            return;
+        }
+
+        if (IsServer)
+        {
+            HandleChronoStepServer(state);
+            return;
+        }
+
+        SubmitChronoStepServerRpc(state);
+    }
+
     public void RequestClass2ShieldActivation()
     {
         if (!NetTickUtil.IsActive || !IsOwner)
@@ -236,6 +252,76 @@ public partial class NetMovement
         SubmitGigaBlastChargeServerRpc(state);
     }
 
+    public void RequestDarkMatterCast(int chargesSpent)
+    {
+        if (!NetTickUtil.IsActive || !IsOwner)
+        {
+            return;
+        }
+
+        NetDarkMatterCastState state = new NetDarkMatterCastState
+        {
+            ChargesSpent = Mathf.Max(chargesSpent, 1)
+        };
+
+        if (IsServer)
+        {
+            HandleDarkMatterCastServer(state);
+            return;
+        }
+
+        SubmitDarkMatterCastServerRpc(state);
+    }
+
+    public void RequestFlameWaveCast(int chargesSpent)
+    {
+        if (!NetTickUtil.IsActive || !IsOwner)
+        {
+            return;
+        }
+
+        NetFlameWaveCastState state = new NetFlameWaveCastState
+        {
+            ChargesSpent = Mathf.Max(chargesSpent, 1)
+        };
+
+        if (IsServer)
+        {
+            HandleFlameWaveCastServer(state);
+            return;
+        }
+
+        SubmitFlameWaveCastServerRpc(state);
+    }
+
+    public void RequestBatteryRamState(NetBatteryRamState state)
+    {
+        if (!NetTickUtil.IsActive || !IsOwner)
+        {
+            return;
+        }
+
+        state.Tick = NetTickUtil.CurrentTick;
+
+        if (IsServer)
+        {
+            HandleBatteryRamStateServer(state);
+            return;
+        }
+
+        SubmitBatteryRamStateServerRpc(state);
+    }
+
+    public void BroadcastBatteryRamState(NetBatteryRamState state)
+    {
+        if (!IsServer)
+        {
+            return;
+        }
+
+        BroadcastBatteryRamStateClientRpc(state);
+    }
+
     // ===== ABILITY SERVER RPCs =====
 
     [ServerRpc]
@@ -266,6 +352,12 @@ public partial class NetMovement
     private void SubmitTeleportServerRpc(NetTeleportState state, ServerRpcParams rpcParams = default)
     {
         HandleTeleportServer(state);
+    }
+
+    [ServerRpc]
+    private void SubmitChronoStepServerRpc(NetChronoStepState state, ServerRpcParams rpcParams = default)
+    {
+        HandleChronoStepServer(state);
     }
 
     [ServerRpc]
@@ -302,6 +394,24 @@ public partial class NetMovement
     private void SubmitInvisibilityServerRpc(NetAbilityToggleState state, ServerRpcParams rpcParams = default)
     {
         HandleInvisibilityServer(state);
+    }
+
+    [ServerRpc]
+    private void SubmitDarkMatterCastServerRpc(NetDarkMatterCastState state, ServerRpcParams rpcParams = default)
+    {
+        HandleDarkMatterCastServer(state);
+    }
+
+    [ServerRpc]
+    private void SubmitBatteryRamStateServerRpc(NetBatteryRamState state, ServerRpcParams rpcParams = default)
+    {
+        HandleBatteryRamStateServer(state);
+    }
+
+    [ServerRpc]
+    private void SubmitFlameWaveCastServerRpc(NetFlameWaveCastState state, ServerRpcParams rpcParams = default)
+    {
+        HandleFlameWaveCastServer(state);
     }
 
     // ===== ABILITY SERVER HANDLERS =====
@@ -376,6 +486,18 @@ public partial class NetMovement
         BroadcastTeleportClientRpc(state);
     }
 
+    private void HandleChronoStepServer(NetChronoStepState state)
+    {
+        ChronoStep chronoStep = GetComponent<ChronoStep>();
+        if (chronoStep == null)
+        {
+            return;
+        }
+
+        chronoStep.ApplyNetworkChronoStepState(state, authoritative: true);
+        BroadcastChronoStepClientRpc(state);
+    }
+
     private void HandleClass2ShieldServer(NetClass2ShieldState state)
     {
         Class2Shield shieldAbility = GetComponent<Class2Shield>();
@@ -448,6 +570,41 @@ public partial class NetMovement
         BroadcastInvisibilityClientRpc(state);
     }
 
+    private void HandleDarkMatterCastServer(NetDarkMatterCastState state)
+    {
+        DarkMatter darkMatter = GetComponent<DarkMatter>();
+        if (darkMatter == null)
+        {
+            return;
+        }
+
+        // Server spends charges and spawns authoritative hazards, then broadcasts spawns.
+        darkMatter.ApplyNetworkDarkMatterCast(state.ChargesSpent, authoritative: true, chargesAlreadySpent: false);
+    }
+
+    private void HandleFlameWaveCastServer(NetFlameWaveCastState state)
+    {
+        FlameWave flameWave = GetComponent<FlameWave>();
+        if (flameWave == null)
+        {
+            return;
+        }
+
+        flameWave.ApplyNetworkFlameWaveCast(state.ChargesSpent, authoritative: true, chargesAlreadySpent: false);
+    }
+
+    private void HandleBatteryRamStateServer(NetBatteryRamState state)
+    {
+        BatteryRam batteryRam = GetComponent<BatteryRam>();
+        if (batteryRam == null)
+        {
+            return;
+        }
+
+        batteryRam.ApplyNetworkRamState(state, authoritative: true);
+        BroadcastBatteryRamStateClientRpc(state);
+    }
+
     // ===== ABILITY CLIENT RPC BROADCASTS =====
 
     [ClientRpc]
@@ -508,6 +665,18 @@ public partial class NetMovement
 
         Teleport teleportAbility = GetComponent<Teleport>();
         teleportAbility?.ApplyNetworkTeleport(state.TargetPosition, authoritative: false);
+    }
+
+    [ClientRpc]
+    private void BroadcastChronoStepClientRpc(NetChronoStepState state)
+    {
+        if (IsServer || IsOwner)
+        {
+            return;
+        }
+
+        ChronoStep chronoStep = GetComponent<ChronoStep>();
+        chronoStep?.ApplyNetworkChronoStepState(state, authoritative: false);
     }
 
     [ClientRpc]
@@ -580,6 +749,85 @@ public partial class NetMovement
 
         Invisibility invisibility = GetComponent<Invisibility>();
         invisibility?.ApplyNetworkInvisibilityState(state.IsActive, authoritative: false);
+    }
+
+    // ===== DARK MATTER HAZARD =====
+
+    public void BroadcastDarkMatterHazardSpawn(NetDarkMatterHazardSpawnData spawnData)
+    {
+        if (!IsServer)
+        {
+            return;
+        }
+
+        spawnData.ServerSpawnTime = NetworkManager.Singleton.ServerTime.Time;
+        BroadcastDarkMatterHazardSpawnClientRpc(spawnData);
+    }
+
+    [ClientRpc]
+    private void BroadcastDarkMatterHazardSpawnClientRpc(NetDarkMatterHazardSpawnData spawnData)
+    {
+        if (IsServer || IsOwner)
+        {
+            return;
+        }
+
+        float elapsed = (float)(NetworkManager.Singleton.ServerTime.Time - spawnData.ServerSpawnTime);
+        if (elapsed > 0f)
+        {
+            spawnData.Lifetime = Mathf.Max(spawnData.Lifetime - elapsed, 0f);
+        }
+
+        DarkMatter darkMatter = GetComponent<DarkMatter>();
+        darkMatter?.SpawnRemoteHazard(spawnData);
+    }
+
+    // ===== FLAME WAVE HAZARD =====
+
+    public void BroadcastFlameWaveHazardSpawn(NetFlameWaveHazardSpawnData spawnData)
+    {
+        if (!IsServer)
+        {
+            return;
+        }
+
+        spawnData.ServerSpawnTime = NetworkManager.Singleton.ServerTime.Time;
+        BroadcastFlameWaveHazardSpawnClientRpc(spawnData);
+    }
+
+    [ClientRpc]
+    private void BroadcastFlameWaveHazardSpawnClientRpc(NetFlameWaveHazardSpawnData spawnData)
+    {
+        if (IsServer || IsOwner)
+        {
+            return;
+        }
+
+        float elapsed = (float)(NetworkManager.Singleton.ServerTime.Time - spawnData.ServerSpawnTime);
+        if (elapsed > 0f)
+        {
+            spawnData.Lifetime = Mathf.Max(spawnData.Lifetime - elapsed, 0f);
+        }
+
+        FlameWave flameWave = GetComponent<FlameWave>();
+        flameWave?.SpawnRemoteHazard(spawnData);
+    }
+
+    [ClientRpc]
+    private void BroadcastBatteryRamStateClientRpc(NetBatteryRamState state)
+    {
+        if (IsServer)
+        {
+            return;
+        }
+
+        if (IsOwner && state.SkipOwner)
+        {
+            return;
+        }
+
+        BatteryRam batteryRam = GetComponent<BatteryRam>();
+        batteryRam?.ApplyNetworkRamState(state, authoritative: false);
     }
 
     // ===== FIRE HAZARD (Firewall-specific) =====

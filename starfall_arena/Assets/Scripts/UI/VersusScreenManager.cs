@@ -217,8 +217,9 @@ public class VersusScreenManager : MonoBehaviour
 
         GameObject ship = Instantiate(prefab);
         Vector3 shipOffset = isPlayer1 ? data.player1VSPositionOffset : data.player2VSPositionOffset;
+        Vector3 shipRotationOffset = isPlayer1 ? data.player1VSRotationOffset : data.player2VSRotationOffset;
         ship.transform.position = config.position + shipOffset;
-        ship.transform.rotation = Quaternion.Euler(config.rotation);
+        ship.transform.rotation = Quaternion.Euler(config.rotation + shipRotationOffset);
 
         // Multiply prefab's original scale by config scale multiplier
         Vector3 prefabScale = prefab.transform.localScale;

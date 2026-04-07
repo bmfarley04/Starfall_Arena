@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: e77d4dc82a920ec4380b3082230524c6
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 4160
+  packageName: Space Graphics Toolkit
+  packageVersion: 4.2.14
+  assetPath: Assets/Plugins/CW/SpaceGraphicsToolkit/Features/Planet/Required/Shaders/Unlit_SphereWrap.mat
+  uploadId: 774634

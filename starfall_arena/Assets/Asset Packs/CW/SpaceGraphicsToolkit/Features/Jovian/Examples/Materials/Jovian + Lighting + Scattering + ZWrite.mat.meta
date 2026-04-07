@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: f4d4154f4dd3c8143b273d495e415d16
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 4160
+  packageName: Space Graphics Toolkit
+  packageVersion: 4.2.14
+  assetPath: Assets/Plugins/CW/SpaceGraphicsToolkit/Features/Jovian/Examples/Materials/Jovian
+    + Lighting + Scattering + ZWrite.mat
+  uploadId: 774634
