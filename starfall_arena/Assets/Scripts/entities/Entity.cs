@@ -142,6 +142,7 @@ public abstract class Entity : MonoBehaviour
     public float currentShield;  // Public so projectiles can check shield status
     protected Vector2 _lastDamageDirection;
     private bool _isDead = false;
+    private bool _ignoreIncomingDamage = false;
 
     // ===== RUNTIME STATE - PHYSICS & MOVEMENT =====
     protected Rigidbody2D _rb;
@@ -297,10 +298,11 @@ public abstract class Entity : MonoBehaviour
     // ===== DAMAGE SYSTEM =====
     public virtual void TakeDamage(float damage, float impactForce = 0f, Vector3 hitPoint = default, DamageSource source = DamageSource.Projectile, Entity attacker = null, int accuracyAttackId = Player.InvalidAttackId)
     {
-        if (_isDead) return;
+        if (_isDead || _ignoreIncomingDamage) return;
 
         // Keep legacy call ordering: post hook is invoked before pre-apply hook.
         _augmentController?.OnTakeDamage(damage, impactForce, hitPoint, source);
+        bool artificialFairyTriggered = _augmentController != null && _augmentController.ConsumeArtificialFairyTriggeredFlag();
 
         // --- NEW: Allow augments to modify or cancel incoming damage before it's applied ---
         bool shieldIgnored = false;
@@ -351,7 +353,7 @@ public abstract class Entity : MonoBehaviour
             if (shieldDamage >= damage)
             {
                 RecordDamageStats(attacker, accuracyAttackId, appliedShieldDamage);
-                BroadcastAuthoritativeCombatState(hitPoint, source, shieldTookHit, shieldBroke, impactForce, shieldIgnored || healthIgnored);
+                BroadcastAuthoritativeCombatState(hitPoint, source, shieldTookHit, shieldBroke, impactForce, shieldIgnored || healthIgnored, artificialFairyTriggered);
                 return;
             }
 
@@ -371,7 +373,7 @@ public abstract class Entity : MonoBehaviour
         }
 
         RecordDamageStats(attacker, accuracyAttackId, appliedShieldDamage + appliedHealthDamage);
-        BroadcastAuthoritativeCombatState(hitPoint, source, shieldTookHit, shieldBroke, impactForce, shieldIgnored || healthIgnored);
+        BroadcastAuthoritativeCombatState(hitPoint, source, shieldTookHit, shieldBroke, impactForce, shieldIgnored || healthIgnored, artificialFairyTriggered);
     }
 
     /// <summary>
@@ -416,7 +418,7 @@ public abstract class Entity : MonoBehaviour
     /// </summary>
     public virtual void TakeDirectDamage(float damage, float impactForce = 0f, Vector3 hitPoint = default, DamageSource source = DamageSource.Projectile, Entity attacker = null, int accuracyAttackId = Player.InvalidAttackId)
     {
-        if (_isDead) return;
+        if (_isDead || _ignoreIncomingDamage) return;
 
         // Keep legacy call ordering: post hook is invoked before pre-apply hook.
         _augmentController?.OnTakeDirectDamage(damage, impactForce, hitPoint, source);
@@ -448,7 +450,7 @@ public abstract class Entity : MonoBehaviour
         }
 
         RecordDamageStats(attacker, accuracyAttackId, appliedHealthDamage);
-        BroadcastAuthoritativeCombatState(hitPoint, source, false, false, impactForce, healthIgnored);
+        BroadcastAuthoritativeCombatState(hitPoint, source, false, false, impactForce, healthIgnored, false);
     }
 
     protected void RecordDamageStats(Entity attacker, int accuracyAttackId, float appliedDamage)
@@ -775,6 +777,16 @@ public abstract class Entity : MonoBehaviour
         _augmentController?.NotifyEvasionTriggered();
     }
 
+    public void NotifyNetworkArtificialFairyTriggered()
+    {
+        _augmentController?.NotifyArtificialFairyTriggered();
+    }
+
+    public void SetIncomingDamageIgnored(bool ignored)
+    {
+        _ignoreIncomingDamage = ignored;
+    }
+
     public void SetShieldValue(float value, bool notify = true, bool clampToMax = true)
     {
         currentShield = clampToMax ? Mathf.Clamp(value, 0f, maxShield) : Mathf.Max(0f, value);
@@ -784,7 +796,7 @@ public abstract class Entity : MonoBehaviour
         }
     }
 
-    private void BroadcastAuthoritativeCombatState(Vector3 hitPoint, DamageSource source, bool shieldHit, bool shieldBreak, float impactForce, bool evasionTriggered)
+    private void BroadcastAuthoritativeCombatState(Vector3 hitPoint, DamageSource source, bool shieldHit, bool shieldBreak, float impactForce, bool evasionTriggered, bool artificialFairyTriggered)
     {
         if (!NetTickUtil.IsActive)
         {
@@ -797,7 +809,7 @@ public abstract class Entity : MonoBehaviour
             return;
         }
 
-        netMovement.BroadcastCombatState(currentHealth, currentShield, hitPoint, source, shieldHit, shieldBreak, impactForce, evasionTriggered);
+        netMovement.BroadcastCombatState(currentHealth, currentShield, hitPoint, source, shieldHit, shieldBreak, impactForce, evasionTriggered, artificialFairyTriggered);
     }
 
     public void SetMaxHealthAndClampCurrent(float newMaxHealth, bool notify = true)

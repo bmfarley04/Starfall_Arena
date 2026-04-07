@@ -378,6 +378,7 @@ Current augment runtimes include behaviors such as:
 - fairy and augment-enhancement style effects
 - runtime-driven presentation effects (attached prefabs and one-shot particles/sounds) for augments like Blaze of Glory, Cloak, Dagger, Evasion, Regenerator, Rotator, and Thorns
 - reinforced hull presentation scaling where the ship visual scale tracks the same multiplier used for extra max health while the augment is active
+- artificial fairy revival sequencing where lethal damage triggers a flash, temporary intangibility, ship-part scatter, and delayed part regroup to visually reassemble the ship
 
 This means augments are already more than simple stat perks. They are event-driven gameplay modules with persistence across rounds.
 
@@ -411,6 +412,7 @@ Network execution note:
 - augments that use `ExecuteEffects()` must keep working when `Player` is disabled on non-owner network copies, because `NetMovement` now manually ticks augment runtimes on those copies
 - augments that react to taking damage should assume the real damage event happens on the server; client copies are refreshed from the authoritative combat/state sync path rather than from local `TakeDamage(...)`
 - successful evade presentation is now replicated through the authoritative combat broadcast path so non-server clients trigger Evasion flash/sound only when the server actually ignored damage
+- artificial fairy revival presentation is also replicated through authoritative combat broadcast flags so remote clients run the same revive scatter/regroup sequence when the server confirms the augment proc
 
 ## Known Architectural Notes
 

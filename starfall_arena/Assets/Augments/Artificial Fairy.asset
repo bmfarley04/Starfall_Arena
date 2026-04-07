@@ -16,7 +16,9 @@ MonoBehaviour:
   augmentName: Protostar
   description: The next time you would die, instantly heal to 75% health. This augment
     breaks.
-  augmentID: Artificial Fairy
+  _augmentID: Artificial Fairy
   rounds: -1
-  playerReference: {fileID: 0}
+  reviveFlashPrefab: {fileID: 0}
+  intangibleDuration: 1.1
+  reassemblyDuration: 1
   healFraction: 0.75

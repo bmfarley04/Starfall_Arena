@@ -264,7 +264,7 @@ public partial class NetMovement
 
     // ===== COMBAT STATE =====
 
-    public void BroadcastCombatState(float health, float shield, Vector3 hitPoint, DamageSource source, bool shieldHit, bool shieldBreak, float impactForce, bool evasionTriggered)
+    public void BroadcastCombatState(float health, float shield, Vector3 hitPoint, DamageSource source, bool shieldHit, bool shieldBreak, float impactForce, bool evasionTriggered, bool artificialFairyTriggered)
     {
         if (!IsServer)
         {
@@ -276,11 +276,11 @@ public partial class NetMovement
         float slowMultiplier = isSlowed ? _player.GetSlowMultiplier() : 1f;
         float slowRemainingTime = isSlowed ? _player.GetSlowRemainingTime() : 0f;
 
-        BroadcastCombatStateClientRpc(health, shield, hitPoint, (int)source, shieldHit, shieldBreak, impactForce, slowMultiplier, slowRemainingTime, evasionTriggered);
+        BroadcastCombatStateClientRpc(health, shield, hitPoint, (int)source, shieldHit, shieldBreak, impactForce, slowMultiplier, slowRemainingTime, evasionTriggered, artificialFairyTriggered);
     }
 
     [ClientRpc]
-    private void BroadcastCombatStateClientRpc(float health, float shield, Vector2 hitPoint, int source, bool shieldHit, bool shieldBreak, float impactForce, float slowMultiplier, float slowRemainingTime, bool evasionTriggered)
+    private void BroadcastCombatStateClientRpc(float health, float shield, Vector2 hitPoint, int source, bool shieldHit, bool shieldBreak, float impactForce, float slowMultiplier, float slowRemainingTime, bool evasionTriggered, bool artificialFairyTriggered)
     {
         if (_player == null)
         {
@@ -296,6 +296,11 @@ public partial class NetMovement
             if (evasionTriggered)
             {
                 _player.NotifyNetworkEvasionTriggered();
+            }
+
+            if (artificialFairyTriggered)
+            {
+                _player.NotifyNetworkArtificialFairyTriggered();
             }
         }
 

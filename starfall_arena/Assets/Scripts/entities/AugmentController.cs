@@ -10,6 +10,7 @@ public class AugmentController : MonoBehaviour
     private Player _player;
     private readonly List<IAugmentRuntime> _runtimes = new List<IAugmentRuntime>();
     private int _currentRound;
+    private bool _artificialFairyTriggeredSinceLastConsume;
 
     public void Initialize(Player player)
     {
@@ -145,7 +146,19 @@ public class AugmentController : MonoBehaviour
         foreach (IAugmentRuntime runtime in _runtimes)
         {
             runtime?.OnTakeDamage(damage, impactForce, hitPoint, source);
+
+            if (runtime is ArtificialFairyRuntime fairyRuntime && fairyRuntime.ConsumeTriggeredThisDamageEvent())
+            {
+                _artificialFairyTriggeredSinceLastConsume = true;
+            }
         }
+    }
+
+    public bool ConsumeArtificialFairyTriggeredFlag()
+    {
+        bool triggered = _artificialFairyTriggeredSinceLastConsume;
+        _artificialFairyTriggeredSinceLastConsume = false;
+        return triggered;
     }
 
     public void OnBeforeTakeDamage(ref float damage, ref bool shieldIgnored, ref bool healthIgnored, DamageSource source)
@@ -183,6 +196,17 @@ public class AugmentController : MonoBehaviour
         }
     }
 
+    public void NotifyArtificialFairyTriggered()
+    {
+        foreach (IAugmentRuntime runtime in _runtimes)
+        {
+            if (runtime is ArtificialFairyRuntime fairyRuntime)
+            {
+                fairyRuntime.NotifyTriggeredFromNetwork();
+            }
+        }
+    }
+
     public void OnContact(Collision2D collision)
     {
         foreach (IAugmentRuntime runtime in _runtimes)
@@ -194,6 +218,7 @@ public class AugmentController : MonoBehaviour
     private void ClearRuntimesAndModifiers()
     {
         _runtimes.Clear();
+        _artificialFairyTriggeredSinceLastConsume = false;
 
         if (_player == null) return;
 

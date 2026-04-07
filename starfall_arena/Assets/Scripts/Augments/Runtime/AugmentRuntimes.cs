@@ -506,12 +506,27 @@ public sealed class ArtificialFairyRuntime : AugmentRuntimeBase
     private readonly ArtificialFairy _definition;
 
     private bool _triggered;
+    private bool _triggeredThisDamageEvent;
     private float _originalShield;
     private bool _restoreShieldNextFixedUpdate;
+    private bool _reviveSequenceActive;
+    private bool _regroupStarted;
+    private float _regroupStartTime;
+    private float _reviveEndTime;
+    private string _tagBeforeRevive;
+    private readonly List<ShipPartScatter> _scatteredParts = new List<ShipPartScatter>();
 
     public ArtificialFairyRuntime(ArtificialFairy definition) : base(definition)
     {
         _definition = definition;
+    }
+
+    public override void Initialize(Player player, int roundAcquired, object persistentState = null)
+    {
+        base.Initialize(player, roundAcquired, persistentState);
+        _reviveSequenceActive = false;
+        _regroupStarted = false;
+        _scatteredParts.Clear();
     }
 
     public override void ExecuteEffects()
@@ -520,6 +535,21 @@ public sealed class ArtificialFairyRuntime : AugmentRuntimeBase
         {
             player.SetShieldValue(_originalShield);
             _restoreShieldNextFixedUpdate = false;
+        }
+
+        if (!_reviveSequenceActive || player == null)
+        {
+            return;
+        }
+
+        if (!_regroupStarted && Time.time >= _regroupStartTime)
+        {
+            StartRegroup();
+        }
+
+        if (_regroupStarted && Time.time >= _reviveEndTime)
+        {
+            EndReviveSequence();
         }
     }
 
@@ -535,6 +565,7 @@ public sealed class ArtificialFairyRuntime : AugmentRuntimeBase
         if (damageToHealth >= player.CurrentHealth)
         {
             _triggered = true;
+            _triggeredThisDamageEvent = true;
 
             _originalShield = player.currentShield;
             player.SetShieldValue(player.currentShield + damage + 1f, notify: false, clampToMax: false);
@@ -547,9 +578,28 @@ public sealed class ArtificialFairyRuntime : AugmentRuntimeBase
             }
 
             _restoreShieldNextFixedUpdate = true;
+            BeginReviveSequence();
 
             Debug.Log($"{Definition.augmentName} triggered: prevented death and healed to {Mathf.CeilToInt(target)} HP");
         }
+    }
+
+    public bool ConsumeTriggeredThisDamageEvent()
+    {
+        bool triggered = _triggeredThisDamageEvent;
+        _triggeredThisDamageEvent = false;
+        return triggered;
+    }
+
+    public void NotifyTriggeredFromNetwork()
+    {
+        if (player == null || _reviveSequenceActive)
+        {
+            return;
+        }
+
+        _triggered = true;
+        BeginReviveSequence();
     }
 
     public override object CapturePersistentState()
@@ -572,11 +622,127 @@ public sealed class ArtificialFairyRuntime : AugmentRuntimeBase
         }
 
         _restoreShieldNextFixedUpdate = false;
+        _triggeredThisDamageEvent = false;
+        _reviveSequenceActive = false;
+        _regroupStarted = false;
+        _tagBeforeRevive = null;
+        _scatteredParts.Clear();
     }
 
     private bool IsActive()
     {
         return IsActiveByRounds() && !_triggered;
+    }
+
+    private void BeginReviveSequence()
+    {
+        if (player == null)
+        {
+            return;
+        }
+
+        SpawnTransientEffect(_definition.reviveFlashPrefab);
+
+        Vector2 scatterDirection = UnityEngine.Random.insideUnitCircle;
+        if (scatterDirection.sqrMagnitude <= 0.0001f)
+        {
+            scatterDirection = Vector2.up;
+        }
+
+        ScatterShipParts(scatterDirection.normalized);
+
+        _tagBeforeRevive = player.gameObject.tag;
+        TrySetPlayerTag("ShipPart");
+
+        player.SetIncomingDamageIgnored(true);
+
+        _reviveSequenceActive = true;
+        _regroupStarted = false;
+        _regroupStartTime = Time.time + Mathf.Max(0f, _definition.intangibleDuration);
+        _reviveEndTime = _regroupStartTime + Mathf.Max(0.01f, _definition.reassemblyDuration);
+    }
+
+    private void ScatterShipParts(Vector2 scatterDirection)
+    {
+        _scatteredParts.Clear();
+
+        Transform visualModel = player.visualEffects.visualModel;
+        if (visualModel == null)
+        {
+            return;
+        }
+
+        ShipPartScatter[] parts = visualModel.GetComponentsInChildren<ShipPartScatter>(true);
+        for (int i = 0; i < parts.Length; i++)
+        {
+            ShipPartScatter part = parts[i];
+            if (part == null)
+            {
+                continue;
+            }
+
+            part.ScatterForRevive(scatterDirection);
+            _scatteredParts.Add(part);
+        }
+    }
+
+    private void StartRegroup()
+    {
+        float regroupDuration = Mathf.Max(0.01f, _definition.reassemblyDuration);
+        for (int i = 0; i < _scatteredParts.Count; i++)
+        {
+            if (_scatteredParts[i] != null)
+            {
+                _scatteredParts[i].RegroupToOriginal(regroupDuration);
+            }
+        }
+
+        _regroupStarted = true;
+        _reviveEndTime = Time.time + regroupDuration;
+    }
+
+    private void EndReviveSequence()
+    {
+        if (player == null)
+        {
+            return;
+        }
+
+        player.SetIncomingDamageIgnored(false);
+        RestorePlayerTag();
+
+        _reviveSequenceActive = false;
+        _regroupStarted = false;
+        _scatteredParts.Clear();
+    }
+
+    private void TrySetPlayerTag(string tag)
+    {
+        if (player == null || string.IsNullOrWhiteSpace(tag))
+        {
+            return;
+        }
+
+        try
+        {
+            player.gameObject.tag = tag;
+        }
+        catch (UnityException)
+        {
+            Debug.LogWarning($"{Definition.augmentName}: Tag '{tag}' is not defined in project tags.");
+        }
+    }
+
+    private void RestorePlayerTag()
+    {
+        if (player == null || string.IsNullOrWhiteSpace(_tagBeforeRevive))
+        {
+            return;
+        }
+
+        TrySetPlayerTag(_tagBeforeRevive);
+        player.RefreshCombatTags();
+        _tagBeforeRevive = null;
     }
 }
 
