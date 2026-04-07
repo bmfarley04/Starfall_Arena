@@ -351,7 +351,7 @@ public abstract class Entity : MonoBehaviour
             if (shieldDamage >= damage)
             {
                 RecordDamageStats(attacker, accuracyAttackId, appliedShieldDamage);
-                BroadcastAuthoritativeCombatState(hitPoint, source, shieldTookHit, shieldBroke, impactForce);
+                BroadcastAuthoritativeCombatState(hitPoint, source, shieldTookHit, shieldBroke, impactForce, shieldIgnored || healthIgnored);
                 return;
             }
 
@@ -371,7 +371,7 @@ public abstract class Entity : MonoBehaviour
         }
 
         RecordDamageStats(attacker, accuracyAttackId, appliedShieldDamage + appliedHealthDamage);
-        BroadcastAuthoritativeCombatState(hitPoint, source, shieldTookHit, shieldBroke, impactForce);
+        BroadcastAuthoritativeCombatState(hitPoint, source, shieldTookHit, shieldBroke, impactForce, shieldIgnored || healthIgnored);
     }
 
     /// <summary>
@@ -448,7 +448,7 @@ public abstract class Entity : MonoBehaviour
         }
 
         RecordDamageStats(attacker, accuracyAttackId, appliedHealthDamage);
-        BroadcastAuthoritativeCombatState(hitPoint, source, false, false, impactForce);
+        BroadcastAuthoritativeCombatState(hitPoint, source, false, false, impactForce, healthIgnored);
     }
 
     protected void RecordDamageStats(Entity attacker, int accuracyAttackId, float appliedDamage)
@@ -770,6 +770,11 @@ public abstract class Entity : MonoBehaviour
         _augmentController?.OnTakeDamage(0f, 0f, transform.position, source);
     }
 
+    public void NotifyNetworkEvasionTriggered()
+    {
+        _augmentController?.NotifyEvasionTriggered();
+    }
+
     public void SetShieldValue(float value, bool notify = true, bool clampToMax = true)
     {
         currentShield = clampToMax ? Mathf.Clamp(value, 0f, maxShield) : Mathf.Max(0f, value);
@@ -779,7 +784,7 @@ public abstract class Entity : MonoBehaviour
         }
     }
 
-    private void BroadcastAuthoritativeCombatState(Vector3 hitPoint, DamageSource source, bool shieldHit, bool shieldBreak, float impactForce)
+    private void BroadcastAuthoritativeCombatState(Vector3 hitPoint, DamageSource source, bool shieldHit, bool shieldBreak, float impactForce, bool evasionTriggered)
     {
         if (!NetTickUtil.IsActive)
         {
@@ -792,7 +797,7 @@ public abstract class Entity : MonoBehaviour
             return;
         }
 
-        netMovement.BroadcastCombatState(currentHealth, currentShield, hitPoint, source, shieldHit, shieldBreak, impactForce);
+        netMovement.BroadcastCombatState(currentHealth, currentShield, hitPoint, source, shieldHit, shieldBreak, impactForce, evasionTriggered);
     }
 
     public void SetMaxHealthAndClampCurrent(float newMaxHealth, bool notify = true)

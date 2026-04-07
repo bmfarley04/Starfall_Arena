@@ -264,7 +264,7 @@ public partial class NetMovement
 
     // ===== COMBAT STATE =====
 
-    public void BroadcastCombatState(float health, float shield, Vector3 hitPoint, DamageSource source, bool shieldHit, bool shieldBreak, float impactForce)
+    public void BroadcastCombatState(float health, float shield, Vector3 hitPoint, DamageSource source, bool shieldHit, bool shieldBreak, float impactForce, bool evasionTriggered)
     {
         if (!IsServer)
         {
@@ -276,11 +276,11 @@ public partial class NetMovement
         float slowMultiplier = isSlowed ? _player.GetSlowMultiplier() : 1f;
         float slowRemainingTime = isSlowed ? _player.GetSlowRemainingTime() : 0f;
 
-        BroadcastCombatStateClientRpc(health, shield, hitPoint, (int)source, shieldHit, shieldBreak, impactForce, slowMultiplier, slowRemainingTime);
+        BroadcastCombatStateClientRpc(health, shield, hitPoint, (int)source, shieldHit, shieldBreak, impactForce, slowMultiplier, slowRemainingTime, evasionTriggered);
     }
 
     [ClientRpc]
-    private void BroadcastCombatStateClientRpc(float health, float shield, Vector2 hitPoint, int source, bool shieldHit, bool shieldBreak, float impactForce, float slowMultiplier, float slowRemainingTime)
+    private void BroadcastCombatStateClientRpc(float health, float shield, Vector2 hitPoint, int source, bool shieldHit, bool shieldBreak, float impactForce, float slowMultiplier, float slowRemainingTime, bool evasionTriggered)
     {
         if (_player == null)
         {
@@ -292,6 +292,11 @@ public partial class NetMovement
         if (!IsServer)
         {
             _player.NotifyAuthoritativeDamageReceived(damageSource);
+
+            if (evasionTriggered)
+            {
+                _player.NotifyNetworkEvasionTriggered();
+            }
         }
 
         // Reset the shield regen delay timer so the owner's local regen stays

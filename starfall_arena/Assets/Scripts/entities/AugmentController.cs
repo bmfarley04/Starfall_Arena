@@ -172,6 +172,17 @@ public class AugmentController : MonoBehaviour
         }
     }
 
+    public void NotifyEvasionTriggered()
+    {
+        foreach (IAugmentRuntime runtime in _runtimes)
+        {
+            if (runtime is EvasionRuntime evasionRuntime)
+            {
+                evasionRuntime.NotifySuccessfulEvasion();
+            }
+        }
+    }
+
     public void OnContact(Collision2D collision)
     {
         foreach (IAugmentRuntime runtime in _runtimes)

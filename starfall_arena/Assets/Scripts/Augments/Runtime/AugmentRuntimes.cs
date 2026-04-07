@@ -5,6 +5,7 @@ using UnityEngine;
 public sealed class BlazeOfGloryRuntime : AugmentRuntimeBase
 {
     private readonly BlazeOfGlory _definition;
+    private GameObject _damageBoostEffectInstance;
 
     public BlazeOfGloryRuntime(BlazeOfGlory definition) : base(definition)
     {
@@ -16,12 +17,7 @@ public sealed class BlazeOfGloryRuntime : AugmentRuntimeBase
         if (player == null) return;
 
         bool isActive = IsActive();
-
-        if (_definition.bogEffect != null)
-        {
-            _definition.bogEffect.SetActive(isActive);
-            _definition.bogEffect.transform.position = player.transform.position;
-        }
+        SetAttachedEffectActive(ref _damageBoostEffectInstance, _definition.damageBoostPrefab, isActive, "BlazeOfGloryDamageBoost");
 
         if (isActive && !player.damageMultipliers.ContainsKey(Definition.augmentID))
         {
@@ -92,6 +88,7 @@ public sealed class CloakRuntime : AugmentRuntimeBase
 {
     private readonly Cloak _definition;
     private float _speedBoostEndTime;
+    private GameObject _speedBoostEffectInstance;
 
     public CloakRuntime(Cloak definition) : base(definition)
     {
@@ -103,18 +100,30 @@ public sealed class CloakRuntime : AugmentRuntimeBase
         if (player == null) return;
         if (!IsActiveByRounds()) return;
 
+        bool wasBoostActive = player.speedMultipliers.ContainsKey(Definition.augmentID) && Time.time < _speedBoostEndTime;
         _speedBoostEndTime = Time.time + _definition.boostDuration;
         AddOrRefreshMultiplier(_definition.speedMultiplier, player.speedMultipliers);
+
+        if (!wasBoostActive)
+        {
+            PlaySoundEffect(_definition.activationSound);
+        }
     }
 
     public override void ExecuteEffects()
     {
         if (player == null) return;
 
-        if (player.speedMultipliers.ContainsKey(Definition.augmentID) && Time.time >= _speedBoostEndTime)
+        bool roundsActive = IsActiveByRounds();
+        bool hasBoost = player.speedMultipliers.ContainsKey(Definition.augmentID);
+        bool isBoostActive = roundsActive && hasBoost && Time.time < _speedBoostEndTime;
+
+        if (!isBoostActive && hasBoost)
         {
             RemoveMultiplier(player.speedMultipliers);
         }
+
+        SetAttachedEffectActive(ref _speedBoostEffectInstance, _definition.speedBoostPrefab, isBoostActive, "CloakSpeedBoost");
     }
 }
 
@@ -122,6 +131,7 @@ public sealed class DaggerRuntime : AugmentRuntimeBase
 {
     private readonly Dagger _definition;
     private float _damageBoostEndTime;
+    private GameObject _damageBoostEffectInstance;
 
     public DaggerRuntime(Dagger definition) : base(definition)
     {
@@ -133,18 +143,30 @@ public sealed class DaggerRuntime : AugmentRuntimeBase
         if (player == null) return;
         if (!IsActiveByRounds()) return;
 
+        bool wasBoostActive = player.damageMultipliers.ContainsKey(Definition.augmentID) && Time.time < _damageBoostEndTime;
         _damageBoostEndTime = Time.time + _definition.boostDuration;
         AddOrRefreshMultiplier(_definition.damageMultiplier, player.damageMultipliers);
+
+        if (!wasBoostActive)
+        {
+            PlaySoundEffect(_definition.activationSound);
+        }
     }
 
     public override void ExecuteEffects()
     {
         if (player == null) return;
 
-        if (player.damageMultipliers.ContainsKey(Definition.augmentID) && Time.time >= _damageBoostEndTime)
+        bool roundsActive = IsActiveByRounds();
+        bool hasBoost = player.damageMultipliers.ContainsKey(Definition.augmentID);
+        bool isBoostActive = roundsActive && hasBoost && Time.time < _damageBoostEndTime;
+
+        if (!isBoostActive && hasBoost)
         {
             RemoveMultiplier(player.damageMultipliers);
         }
+
+        SetAttachedEffectActive(ref _damageBoostEffectInstance, _definition.damageBoostPrefab, isBoostActive, "DaggerDamageBoost");
     }
 }
 
@@ -161,14 +183,23 @@ public sealed class EvasionRuntime : AugmentRuntimeBase
     {
         if (player == null || !IsActiveByRounds()) return;
 
+        bool successfulEvade = false;
+
         if (!shieldIgnored && UnityEngine.Random.value < _definition.shieldIgnoreChance)
         {
             shieldIgnored = true;
+            successfulEvade = true;
         }
 
         if (!healthIgnored && UnityEngine.Random.value < _definition.healthIgnoreChance)
         {
             healthIgnored = true;
+            successfulEvade = true;
+        }
+
+        if (successfulEvade)
+        {
+            TriggerSuccessfulEvadePresentation();
         }
     }
 
@@ -179,7 +210,24 @@ public sealed class EvasionRuntime : AugmentRuntimeBase
         if (!healthIgnored && UnityEngine.Random.value < _definition.healthIgnoreChance)
         {
             healthIgnored = true;
+            TriggerSuccessfulEvadePresentation();
         }
+    }
+
+    public void NotifySuccessfulEvasion()
+    {
+        if (player == null || !IsActiveByRounds())
+        {
+            return;
+        }
+
+        TriggerSuccessfulEvadePresentation();
+    }
+
+    private void TriggerSuccessfulEvadePresentation()
+    {
+        PlaySoundEffect(_definition.successfulEvadeSound);
+        SpawnTransientEffect(_definition.successfulEvadePrefab);
     }
 }
 
@@ -188,6 +236,7 @@ public sealed class RegeneratorRuntime : AugmentRuntimeBase
     private readonly Regenerator _definition;
     private float _lastDamageTime;
     private float _anchorStartTime;
+    private GameObject _regenerationEffectInstance;
 
     public RegeneratorRuntime(Regenerator definition) : base(definition)
     {
@@ -203,8 +252,17 @@ public sealed class RegeneratorRuntime : AugmentRuntimeBase
 
     public override void ExecuteEffects()
     {
-        if (!IsActiveByRounds()) return;
         if (player == null) return;
+
+        bool canRun = IsActiveByRounds();
+        bool isRegenerating = false;
+
+        if (!canRun)
+        {
+            _anchorStartTime = -999f;
+            SetAttachedEffectActive(ref _regenerationEffectInstance, _definition.regenerationPrefab, false, "RegeneratorHealing");
+            return;
+        }
 
         if (player.IsAnchored)
         {
@@ -213,14 +271,20 @@ public sealed class RegeneratorRuntime : AugmentRuntimeBase
             if (Time.time >= _anchorStartTime + _definition.healDelay &&
                 Time.time >= _lastDamageTime + _definition.damageInterruptCooldown)
             {
-                float amount = _definition.healRate * Time.deltaTime;
-                player.Heal(amount);
+                if (player.CurrentHealth < player.maxHealth)
+                {
+                    float amount = _definition.healRate * Time.deltaTime;
+                    player.Heal(amount);
+                    isRegenerating = true;
+                }
             }
         }
         else
         {
             _anchorStartTime = -999f;
         }
+
+        SetAttachedEffectActive(ref _regenerationEffectInstance, _definition.regenerationPrefab, isRegenerating, "RegeneratorHealing");
     }
 
     public override void OnTakeDamage(float damage, float impactForce, Vector3 hitPoint, DamageSource source)
@@ -234,10 +298,24 @@ public sealed class ReinforcedHullRuntime : AugmentRuntimeBase
     private readonly ReinforcedHull _definition;
     private float _appliedAmount;
     private bool _isApplied;
+    private Transform _scaleTarget;
+    private Vector3 _originalScale;
+    private float _appliedScaleMultiplier = 1f;
+    private bool _scaleApplied;
 
     public ReinforcedHullRuntime(ReinforcedHull definition) : base(definition)
     {
         _definition = definition;
+    }
+
+    public override void Initialize(Player player, int roundAcquired, object persistentState = null)
+    {
+        base.Initialize(player, roundAcquired, persistentState);
+
+        _scaleTarget = ResolveScaleTarget();
+        _originalScale = _scaleTarget != null ? _scaleTarget.localScale : Vector3.one;
+        _scaleApplied = false;
+        _appliedScaleMultiplier = 1f;
     }
 
     public override void ExecuteEffects()
@@ -265,6 +343,8 @@ public sealed class ReinforcedHullRuntime : AugmentRuntimeBase
         player.SetMaxHealthAndClampCurrent(originalMax + _appliedAmount);
         player.Heal(_appliedAmount);
 
+        ApplyScaleBonus();
+
         _isApplied = true;
     }
 
@@ -272,32 +352,97 @@ public sealed class ReinforcedHullRuntime : AugmentRuntimeBase
     {
         player.SetMaxHealthAndClampCurrent(player.maxHealth - _appliedAmount);
 
+        RemoveScaleBonus();
+
         _appliedAmount = 0f;
         _isApplied = false;
+    }
+
+    private Transform ResolveScaleTarget()
+    {
+        return player != null ? player.transform : null;
+    }
+
+    private void ApplyScaleBonus()
+    {
+        if (_scaleTarget == null)
+        {
+            return;
+        }
+
+        _appliedScaleMultiplier = Mathf.Max(0.1f, _definition.healthMultiplier);
+        _scaleTarget.localScale = _originalScale * _appliedScaleMultiplier;
+        _scaleApplied = true;
+    }
+
+    private void RemoveScaleBonus()
+    {
+        if (!_scaleApplied || _scaleTarget == null)
+        {
+            return;
+        }
+
+        _scaleTarget.localScale = _originalScale;
+        _scaleApplied = false;
+        _appliedScaleMultiplier = 1f;
     }
 }
 
 public sealed class RotatorRuntime : AugmentRuntimeBase
 {
     private readonly Rotator _definition;
+    private GameObject _turningEffectInstance;
+    private bool _hasRotationSample;
+    private float _lastRotation;
 
     public RotatorRuntime(Rotator definition) : base(definition)
     {
         _definition = definition;
     }
 
+    public override void Initialize(Player player, int roundAcquired, object persistentState = null)
+    {
+        base.Initialize(player, roundAcquired, persistentState);
+        _lastRotation = player != null ? player.transform.eulerAngles.z : 0f;
+        _hasRotationSample = false;
+    }
+
     public override void ExecuteEffects()
     {
         if (player == null) return;
 
-        if (IsActiveByRounds() && !player.rotationMultipliers.ContainsKey(Definition.augmentID))
+        bool isActive = IsActiveByRounds();
+
+        if (isActive && !player.rotationMultipliers.ContainsKey(Definition.augmentID))
         {
             AddMultiplier(_definition.rotationMultiplier, player.rotationMultipliers);
         }
-        else if (!IsActiveByRounds() && player.rotationMultipliers.ContainsKey(Definition.augmentID))
+        else if (!isActive && player.rotationMultipliers.ContainsKey(Definition.augmentID))
         {
             RemoveMultiplier(player.rotationMultipliers);
         }
+
+        bool isTurning = false;
+        if (isActive)
+        {
+            float currentRotation = player.transform.eulerAngles.z;
+            if (_hasRotationSample)
+            {
+                float dt = Mathf.Max(Time.deltaTime, 0.0001f);
+                float deltaAngle = Mathf.Abs(Mathf.DeltaAngle(_lastRotation, currentRotation));
+                float turnRate = deltaAngle / dt;
+                isTurning = turnRate >= _definition.turnRateThreshold;
+            }
+
+            _lastRotation = currentRotation;
+            _hasRotationSample = true;
+        }
+        else
+        {
+            _hasRotationSample = false;
+        }
+
+        SetAttachedEffectActive(ref _turningEffectInstance, _definition.turningPrefab, isTurning, "RotatorTurning");
     }
 }
 
@@ -305,10 +450,22 @@ public sealed class ThornsRuntime : AugmentRuntimeBase
 {
     private readonly Thorns _definition;
     private readonly Dictionary<GameObject, float> _hitTimers = new Dictionary<GameObject, float>();
+    private GameObject _auraEffectInstance;
 
     public ThornsRuntime(Thorns definition) : base(definition)
     {
         _definition = definition;
+    }
+
+    public override void ExecuteEffects()
+    {
+        if (player == null)
+        {
+            return;
+        }
+
+        bool isActive = IsActiveByRounds();
+        SetAttachedEffectActive(ref _auraEffectInstance, _definition.auraPrefab, isActive, "ThornsAura");
     }
 
     public override void OnContact(Collision2D collision)

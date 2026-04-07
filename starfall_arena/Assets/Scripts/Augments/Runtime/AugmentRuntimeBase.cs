@@ -4,6 +4,8 @@ using StarfallArena.UI;
 
 public abstract class AugmentRuntimeBase : IAugmentRuntime
 {
+    private const float DefaultTransientEffectLifetime = 2f;
+
     public Augment Definition { get; }
     public int RoundAcquired { get; private set; }
 
@@ -97,5 +99,63 @@ public abstract class AugmentRuntimeBase : IAugmentRuntime
             typeMultiplier.Remove(Definition.augmentID);
             player.SetAugmentVariables();
         }
+    }
+
+    protected void SetAttachedEffectActive(ref GameObject runtimeInstance, GameObject prefab, bool isActive, string effectName)
+    {
+        if (player == null || prefab == null)
+        {
+            return;
+        }
+
+        if (runtimeInstance == null)
+        {
+            runtimeInstance = Object.Instantiate(prefab, player.transform);
+            runtimeInstance.name = $"{effectName}_{Definition.augmentID}";
+            runtimeInstance.transform.localPosition = Vector3.zero;
+            runtimeInstance.transform.localRotation = Quaternion.identity;
+            runtimeInstance.SetActive(false);
+        }
+
+        if (runtimeInstance.activeSelf != isActive)
+        {
+            runtimeInstance.SetActive(isActive);
+        }
+    }
+
+    protected void SpawnTransientEffect(GameObject prefab, float fallbackLifetime = DefaultTransientEffectLifetime)
+    {
+        if (player == null || prefab == null)
+        {
+            return;
+        }
+
+        GameObject effect = Object.Instantiate(prefab, player.transform.position, player.transform.rotation);
+        ParticleSystem particle = effect.GetComponent<ParticleSystem>();
+
+        float lifetime = fallbackLifetime;
+        if (particle != null)
+        {
+            lifetime = Mathf.Max(0.1f, particle.main.duration + particle.main.startLifetime.constantMax);
+        }
+
+        Object.Destroy(effect, lifetime);
+    }
+
+    protected void PlaySoundEffect(SoundEffect soundEffect)
+    {
+        if (player == null || soundEffect == null)
+        {
+            return;
+        }
+
+        AudioSource source = player.GetAvailableAudioSource();
+        if (source != null)
+        {
+            soundEffect.Play(source);
+            return;
+        }
+
+        soundEffect.PlayAtPoint(player.transform.position);
     }
 }
