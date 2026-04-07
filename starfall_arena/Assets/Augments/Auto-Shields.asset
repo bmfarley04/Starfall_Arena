@@ -16,7 +16,7 @@ MonoBehaviour:
   augmentName: Phoenix Capacitor
   description: Once per combat, when your shields reach zero, regain all shields
     instantly.
-  augmentID: Auto-Shields
+  _augmentID: Auto-Shields
   rounds: -1
-  playerReference: {fileID: 0}
   enabled: 1
+  particlePrefab: {fileID: 8595475238803380239, guid: 8058ff60a888eb743953fb06b2e9445a, type: 3}

@@ -74,6 +74,16 @@ public sealed class AutoShieldsRuntime : AugmentRuntimeBase
             }
 
             _lastUsedRound = player.currentRound;
+
+            if (_definition.particlePrefab != null)
+            {
+                GameObject effect = GameObject.Instantiate(_definition.particlePrefab, player.transform.position, Quaternion.identity);
+                ParticleSystem ps = effect.GetComponent<ParticleSystem>();
+                if (ps != null)
+                    GameObject.Destroy(effect, ps.main.duration);
+                else
+                    GameObject.Destroy(effect, 2f); // fallback duration
+            }
         }
     }
 }
