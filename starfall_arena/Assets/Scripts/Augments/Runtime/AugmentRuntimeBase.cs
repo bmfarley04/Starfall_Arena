@@ -117,6 +117,8 @@ public abstract class AugmentRuntimeBase : IAugmentRuntime
             runtimeInstance.SetActive(false);
         }
 
+        ApplyShipSizeScale(runtimeInstance.transform, prefab.transform.localScale, isWorldSpace: false);
+
         if (runtimeInstance.activeSelf != isActive)
         {
             runtimeInstance.SetActive(isActive);
@@ -131,6 +133,7 @@ public abstract class AugmentRuntimeBase : IAugmentRuntime
         }
 
         GameObject effect = Object.Instantiate(prefab, player.transform.position, player.transform.rotation);
+        ApplyShipSizeScale(effect.transform, prefab.transform.localScale, isWorldSpace: true);
         ParticleSystem particle = effect.GetComponent<ParticleSystem>();
 
         float lifetime = fallbackLifetime;
@@ -157,5 +160,24 @@ public abstract class AugmentRuntimeBase : IAugmentRuntime
         }
 
         soundEffect.PlayAtPoint(player.transform.position);
+    }
+
+    private void ApplyShipSizeScale(Transform effectTransform, Vector3 baseScale, bool isWorldSpace)
+    {
+        if (player == null || effectTransform == null)
+        {
+            return;
+        }
+
+        float size = Mathf.Max(0.01f, player.ShipSize);
+        Vector3 scaled = baseScale * size;
+
+        if (isWorldSpace)
+        {
+            effectTransform.localScale = scaled;
+            return;
+        }
+
+        effectTransform.localScale = scaled;
     }
 }

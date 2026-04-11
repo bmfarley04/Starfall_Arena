@@ -377,6 +377,7 @@ Current augment runtimes include behaviors such as:
 - rotation and thorn-style contact behavior
 - fairy and augment-enhancement style effects
 - runtime-driven presentation effects (attached prefabs and one-shot particles/sounds) for augments like Blaze of Glory, Cloak, Dagger, Evasion, Regenerator, Rotator, and Thorns
+- augment presentation prefabs now scale by `Player` ship size so ships with larger/smaller presentation scale keep augment VFX proportional
 - reinforced hull presentation scaling where the ship visual scale tracks the same multiplier used for extra max health while the augment is active
 - artificial fairy revival sequencing where lethal damage triggers a flash, temporary intangibility, ship-part scatter, and delayed part regroup to visually reassemble the ship
 
@@ -425,6 +426,7 @@ Network execution note:
 - Bug note: teleport-style abilities that hide renderers during their effect need an interruption-safe restore path, or a ship can remain hittable while visually invisible if the coroutine is stopped mid-ability.
 - Bug note: Chrono Step waypoints must be cleared on round transitions. The component now clears state in `OnDisable()` to avoid leaving waypoint markers between rounds; if markers persist, ensure the ability component is disabled during round freeze.
 - Bug note: if duel stats ever start diverging again, check for damage sources bypassing `Entity.TakeDamage(...)` / `TakeDirectDamage(...)` without passing the attacking player through. That was the root cause of mismatched dealt-vs-taken totals and missing ability/reflection credit.
+- Bug note: Artificial Fairy regroup visuals can appear oversized if ship parts only restore local scale after reparenting. Preserve each part's original world scale and compute parent-relative local scale on return so reassembled parts match the ship's original size.
 - Bug note: when adding thruster particles to the future-facing `Assets/Scripts/3d/Movement3D.cs` path, cache each particle system's original emission/speed/lifetime and drive them from live thrust input. If the 3D ship thrusters look permanently on or refuse to restart cleanly, the usual cause is treating them as static VFX instead of maintaining a thrust-driven intensity/play-stop state.
 - `Assets/Scripts/3d` is future-facing groundwork for a more fully 3D version of the game, not a current core maintenance area.
 - Bugs in combat, ability timing, or augment behavior should be added here in the relevant section once discovered.

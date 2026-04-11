@@ -139,6 +139,11 @@ public abstract class Player : Entity
     [Tooltip("Number of AudioSources in the pool for overlapping sounds")]
     public int audioSourcePoolSize = 10;
 
+    [Header("Presentation")]
+    [Tooltip("Uniform ship-size multiplier used by augment and ability presentation prefabs")]
+    [Min(0.01f)]
+    [SerializeField] private float shipSize = 1f;
+
     // ===== PROTECTED STATE (for derived classes) =====
     protected float fireCooldown = 0.5f;  // Can be overridden in derived classes
 
@@ -163,6 +168,7 @@ public abstract class Player : Entity
     public string thisPlayerTag { get; protected set; }
     public string enemyTag { get; protected set; }
     public float PrimaryFireCooldown => fireCooldown;
+    public float ShipSize => Mathf.Max(0.01f, shipSize);
 
     // ===== PRIVATE STATE =====
     private List<Ability> abilities;

@@ -843,6 +843,7 @@ MonoBehaviour:
   beamHitLoopSound: {fileID: 11400000, guid: c2635de459d5fd44594ecb3e303fa4b5, type: 2}
   explosionSound: {fileID: 11400000, guid: 52e8c58e387b89849affa74c78d6d899, type: 2}
   audioSourcePoolSize: 10
+  shipSize: 0.6
   isMovementLocked: 0
   externalMovementControl: 0
   shotsFired: 0

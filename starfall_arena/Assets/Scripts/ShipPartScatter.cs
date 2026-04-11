@@ -32,6 +32,7 @@ public class ShipPartScatter : MonoBehaviour
     private Vector3 _originalLocalPosition;
     private Quaternion _originalLocalRotation;
     private Vector3 _originalLocalScale;
+    private Vector3 _originalWorldScale;
     private Transform _anchorTransform;
     private Vector3 _anchorLocalPosition;
     private Quaternion _anchorLocalRotation;
@@ -67,6 +68,7 @@ public class ShipPartScatter : MonoBehaviour
         _originalLocalPosition = transform.localPosition;
         _originalLocalRotation = transform.localRotation;
         _originalLocalScale = transform.localScale;
+        _originalWorldScale = transform.lossyScale;
 
         Transform playerRoot = GetComponentInParent<Player>()?.transform;
         Transform entityRoot = GetComponentInParent<Entity>()?.transform;
@@ -253,7 +255,7 @@ public class ShipPartScatter : MonoBehaviour
 
         Vector3 startPos = transform.position;
         Quaternion startRot = transform.rotation;
-        Vector3 startScale = transform.localScale;
+        Vector3 startWorldScale = transform.lossyScale;
 
         float elapsed = 0f;
         while (elapsed < duration)
@@ -282,7 +284,8 @@ public class ShipPartScatter : MonoBehaviour
 
             transform.position = Vector3.Lerp(startPos, targetPos, t);
             transform.rotation = Quaternion.Slerp(startRot, targetRot, t);
-            transform.localScale = Vector3.Lerp(startScale, _originalLocalScale, t);
+            // While detached, localScale is effectively world scale.
+            transform.localScale = Vector3.Lerp(startWorldScale, _originalWorldScale, t);
 
             yield return null;
         }
@@ -290,7 +293,8 @@ public class ShipPartScatter : MonoBehaviour
         Transform regroupParent = ResolveRegroupParent();
         if (regroupParent != null)
         {
-            transform.SetParent(regroupParent, false);
+            // Keep world pose while reparenting, then snap local pose.
+            transform.SetParent(regroupParent, true);
 
             if (_originalParent != null && regroupParent == _originalParent)
             {
@@ -302,14 +306,15 @@ public class ShipPartScatter : MonoBehaviour
                 transform.position = _anchorTransform.TransformPoint(_anchorLocalPosition);
                 transform.rotation = _anchorTransform.rotation * _anchorLocalRotation;
             }
+
+            transform.localScale = ComputeLocalScaleForWorld(regroupParent, _originalWorldScale);
         }
         else
         {
             transform.position = _originalLocalPosition;
             transform.rotation = _originalLocalRotation;
+            transform.localScale = _originalWorldScale;
         }
-
-        transform.localScale = _originalLocalScale;
 
         if (_rb != null)
         {
@@ -361,5 +366,24 @@ public class ShipPartScatter : MonoBehaviour
         }
 
         return false;
+    }
+
+    private static Vector3 ComputeLocalScaleForWorld(Transform parent, Vector3 desiredWorldScale)
+    {
+        if (parent == null)
+        {
+            return desiredWorldScale;
+        }
+
+        Vector3 parentScale = parent.lossyScale;
+        return new Vector3(
+            SafeDivide(desiredWorldScale.x, parentScale.x),
+            SafeDivide(desiredWorldScale.y, parentScale.y),
+            SafeDivide(desiredWorldScale.z, parentScale.z));
+    }
+
+    private static float SafeDivide(float numerator, float denominator)
+    {
+        return Mathf.Abs(denominator) > 0.00001f ? numerator / denominator : numerator;
     }
 }
