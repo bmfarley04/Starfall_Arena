@@ -90,6 +90,12 @@ public class GameSceneManager : MonoBehaviour
     [Tooltip("WinTracker component on Player 2's win indicator rectangles")]
     [SerializeField] private StarfallArena.UI.WinTracker player2WinTracker;
 
+    [Header("Augment Trackers")]
+    [Tooltip("AugmentIconTracker component that shows Player 1's acquired augment icons")]
+    [SerializeField] private StarfallArena.UI.AugmentIconTracker player1AugmentTracker;
+    [Tooltip("AugmentIconTracker component that shows Player 2's acquired augment icons")]
+    [SerializeField] private StarfallArena.UI.AugmentIconTracker player2AugmentTracker;
+
     [Header("Debug — Start At Round")]
     [Tooltip("Skip VS screen and start directly at this round. 0 = normal flow (VS screen first).")]
     [Range(0, 5)]
@@ -155,6 +161,7 @@ public class GameSceneManager : MonoBehaviour
     private float _pingSampleSum;
     private float _performanceDisplayTimer;
     private bool _hidePerformanceStats;
+    private string _lastProcessedNetworkAugmentPair = string.Empty;
 
     // ===== INITIALIZATION =====
     void Start()
@@ -201,6 +208,8 @@ public class GameSceneManager : MonoBehaviour
         {
             splitScreenManager.ActivateWholeScreen();
         }
+
+        UpdateAugmentTrackers();
 
         // Subscribe to VS screen completion
         if (versusScreenManager != null)
@@ -702,6 +711,64 @@ public class GameSceneManager : MonoBehaviour
         if (player2WinTracker != null) player2WinTracker.SetWins(player2Wins);
     }
 
+    private void UpdateAugmentTrackers()
+    {
+        if (useNetworkSession && TryGetSingleAssignedAugmentTracker(out StarfallArena.UI.AugmentIconTracker singleTracker))
+        {
+            singleTracker.SetAugments(GetLocalSideAugmentLoadout());
+            return;
+        }
+
+        if (player1AugmentTracker != null)
+        {
+            player1AugmentTracker.SetAugments(player1Augments);
+        }
+
+        if (player2AugmentTracker != null && player2AugmentTracker != player1AugmentTracker)
+        {
+            player2AugmentTracker.SetAugments(player2Augments);
+        }
+    }
+
+    private bool TryGetSingleAssignedAugmentTracker(out StarfallArena.UI.AugmentIconTracker tracker)
+    {
+        tracker = null;
+
+        bool hasPlayer1Tracker = player1AugmentTracker != null;
+        bool hasPlayer2Tracker = player2AugmentTracker != null;
+
+        if (hasPlayer1Tracker && !hasPlayer2Tracker)
+        {
+            tracker = player1AugmentTracker;
+            return true;
+        }
+
+        if (!hasPlayer1Tracker && hasPlayer2Tracker)
+        {
+            tracker = player2AugmentTracker;
+            return true;
+        }
+
+        if (hasPlayer1Tracker && hasPlayer2Tracker && player1AugmentTracker == player2AugmentTracker)
+        {
+            tracker = player1AugmentTracker;
+            return true;
+        }
+
+        return false;
+    }
+
+    private IReadOnlyList<AugmentLoadoutEntry> GetLocalSideAugmentLoadout()
+    {
+        if (!useNetworkSession || NetworkSessionData.Instance == null)
+        {
+            return player1Augments;
+        }
+
+        int localSlotIndex = NetworkSessionData.Instance.GetLocalSlotIndex();
+        return localSlotIndex == 1 ? player2Augments : player1Augments;
+    }
+
     private void ConfigureNetworkHudCanvases()
     {
         if (!useNetworkSession)
@@ -1066,6 +1133,8 @@ public class GameSceneManager : MonoBehaviour
             player1Augments = player1.ExportAugmentLoadout();
         if (player2 != null)
             player2Augments = player2.ExportAugmentLoadout();
+
+        UpdateAugmentTrackers();
     }
 
     private void DestroyPlayers()
@@ -1181,6 +1250,7 @@ public class GameSceneManager : MonoBehaviour
             if (deadPlayer != null)
             {
                 player1Augments = deadPlayer.ExportAugmentLoadout();
+                UpdateAugmentTrackers();
             }
             roundWinner = 2;
             player1 = null; // Already destroyed by Die()
@@ -1190,6 +1260,7 @@ public class GameSceneManager : MonoBehaviour
             if (deadPlayer != null)
             {
                 player2Augments = deadPlayer.ExportAugmentLoadout();
+                UpdateAugmentTrackers();
             }
             roundWinner = 1;
             player2 = null; // Already destroyed by Die()
@@ -1427,6 +1498,8 @@ public class GameSceneManager : MonoBehaviour
             });
             if (player2 != null) player2.AcquireAugment(augment, currentRound);
         }
+
+        UpdateAugmentTrackers();
     }
 
     // ===== GAME END =====
@@ -1641,6 +1714,11 @@ public class GameSceneManager : MonoBehaviour
             return;
         }
 
+        if (!isAuthoritativeNetworkController)
+        {
+            ApplyResolvedNetworkAugments(payload);
+        }
+
         if (!payload.IsVisible)
         {
             augmentSelectManager.HideAugmentSelect();
@@ -1686,6 +1764,52 @@ public class GameSceneManager : MonoBehaviour
 
         augmentSelectManager.ShowNetworkAugmentSelect(localSlot + 1, payload.Tier, augments);
         augmentSelectManager.SetCountdownValue(session.SelectionTimeRemaining);
+    }
+
+    private void ApplyResolvedNetworkAugments(NetworkAugmentSelectionStatePayload payload)
+    {
+        if (payload.IsVisible)
+        {
+            return;
+        }
+
+        string player1AugmentId = payload.Player1ChosenAugmentId.ToString();
+        string player2AugmentId = payload.Player2ChosenAugmentId.ToString();
+
+        if (string.IsNullOrWhiteSpace(player1AugmentId) || string.IsNullOrWhiteSpace(player2AugmentId))
+        {
+            return;
+        }
+
+        string pairKey = player1AugmentId + "|" + player2AugmentId;
+        if (pairKey == _lastProcessedNetworkAugmentPair)
+        {
+            return;
+        }
+
+        _lastProcessedNetworkAugmentPair = pairKey;
+
+        if (GameDataManager.Instance != null)
+        {
+            AddNetworkResolvedAugmentEntry(player1Augments, GameDataManager.Instance.GetAugmentById(player1AugmentId));
+            AddNetworkResolvedAugmentEntry(player2Augments, GameDataManager.Instance.GetAugmentById(player2AugmentId));
+            UpdateAugmentTrackers();
+        }
+    }
+
+    private void AddNetworkResolvedAugmentEntry(List<AugmentLoadoutEntry> targetLoadout, Augment augment)
+    {
+        if (targetLoadout == null || augment == null)
+        {
+            return;
+        }
+
+        targetLoadout.Add(new AugmentLoadoutEntry
+        {
+            definition = augment,
+            roundAcquired = currentRound,
+            persistentState = null
+        });
     }
 
     private void HandleSessionTimerChanged(float timeRemaining)

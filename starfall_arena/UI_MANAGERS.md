@@ -53,6 +53,7 @@ It currently owns:
 - round text and countdown flow
 - player spawn lifecycle
 - win tracking
+- persistent augment icon tracking alongside win trackers
 - augment selection timing
 - ability 4 unlock timing
 - round-end and game-end UI coordination
@@ -199,6 +200,12 @@ Supporting UI scripts include pieces like:
 - `AbilityTooltipTrigger`
 - `TitleScreenButton`
 - `WinTracker`
+- `AugmentIconTracker`
+
+Augment tracker behavior note:
+
+- in network play, if only one `AugmentIconTracker` is assigned on `GameSceneManager`, it now auto-binds to the local player's side (slot 0 vs slot 1)
+- `AugmentIconTracker` now auto-creates missing child `Image` slots at runtime, so UI can adapt if maximum augment count changes between modes without manual hierarchy edits
 
 These are smaller helpers, but they still shape player-facing clarity and should be documented when behavior changes meaningfully.
 
