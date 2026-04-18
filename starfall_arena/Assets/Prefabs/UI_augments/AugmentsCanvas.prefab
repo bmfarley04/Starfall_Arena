@@ -9,7 +9,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 7575330074356274373}
-  - component: {fileID: 4275936236550238151}
+  - component: {fileID: 3376639659771139010}
+  - component: {fileID: 8871103661721858068}
   m_Layer: 5
   m_Name: augments
   m_TagString: Untagged
@@ -36,7 +37,7 @@ RectTransform:
   m_AnchoredPosition: {x: -128, y: 64}
   m_SizeDelta: {x: 256, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &4275936236550238151
+--- !u!114 &3376639659771139010
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -45,16 +46,36 @@ MonoBehaviour:
   m_GameObject: {fileID: 2607762371251171455}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 59f8146938fff824cb5fd77236b75775, type: 3}
+  m_Script: {fileID: 11500000, guid: 1892c6c41688ee240b42ed3f30df2d77, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.VerticalLayoutGroup
+  m_EditorClassIdentifier: Assembly-CSharp::StarfallArena.UI.AugmentIconTracker
+  minimumSlotCount: 3
+  slotImagePrefab: {fileID: 0}
+  autoSlotSize: {x: 48, y: 48}
+  hideUnusedSlots: 1
+  fallbackIcon: {fileID: 21300000, guid: 46e82be8237bb124c92b29d0d283c2e0, type: 3}
+  trackedPlayer: {fileID: 0}
+  trackPlayerAugments: 1
+  trackedRefreshInterval: 0
+--- !u!114 &8871103661721858068
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2607762371251171455}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 30649d3a9faa99c48a7b1166b86bf2a0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.HorizontalLayoutGroup
   m_Padding:
     m_Left: 0
     m_Right: 0
     m_Top: 0
     m_Bottom: 0
-  m_ChildAlignment: 4
-  m_Spacing: -40
+  m_ChildAlignment: 1
+  m_Spacing: 0
   m_ChildForceExpandWidth: 1
   m_ChildForceExpandHeight: 1
   m_ChildControlWidth: 0

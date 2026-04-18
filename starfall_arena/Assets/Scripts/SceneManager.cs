@@ -713,6 +713,8 @@ public class GameSceneManager : MonoBehaviour
 
     private void UpdateAugmentTrackers()
     {
+        UpdateAugmentTrackerBindings();
+
         if (useNetworkSession && TryGetSingleAssignedAugmentTracker(out StarfallArena.UI.AugmentIconTracker singleTracker))
         {
             singleTracker.SetAugments(GetLocalSideAugmentLoadout());
@@ -728,6 +730,42 @@ public class GameSceneManager : MonoBehaviour
         {
             player2AugmentTracker.SetAugments(player2Augments);
         }
+    }
+
+    private void UpdateAugmentTrackerBindings()
+    {
+        if (useNetworkSession && TryGetSingleAssignedAugmentTracker(out StarfallArena.UI.AugmentIconTracker singleTracker))
+        {
+            singleTracker.SetTrackedPlayer(GetTrackedAugmentPlayerForSingleNetworkHud());
+            return;
+        }
+
+        if (player1AugmentTracker != null)
+        {
+            player1AugmentTracker.SetTrackedPlayer(player1);
+        }
+
+        if (player2AugmentTracker != null && player2AugmentTracker != player1AugmentTracker)
+        {
+            player2AugmentTracker.SetTrackedPlayer(player2);
+        }
+    }
+
+    private Player GetTrackedAugmentPlayerForSingleNetworkHud()
+    {
+        if (!useNetworkSession)
+        {
+            return player1;
+        }
+
+        if (TryFindLocalOwnedNetworkPlayer(out Player localPlayer))
+        {
+            return localPlayer;
+        }
+
+        NetworkSessionData session = NetworkSessionData.Instance;
+        int localSlotIndex = session != null ? session.GetLocalSlotIndex() : 0;
+        return localSlotIndex == 1 ? player2 : player1;
     }
 
     private bool TryGetSingleAssignedAugmentTracker(out StarfallArena.UI.AugmentIconTracker tracker)
@@ -855,6 +893,7 @@ public class GameSceneManager : MonoBehaviour
 
         player1 = SpawnPlayer(player1Data, player1SpawnPoint, "Player1", player1Augments);
         player2 = SpawnPlayer(player2Data, player2SpawnPoint, "Player2", player2Augments);
+        UpdateAugmentTrackerBindings();
 
         // Wire up split screen
         if (splitScreenManager != null)
@@ -878,6 +917,7 @@ public class GameSceneManager : MonoBehaviour
 
         player1 = SpawnNetworkPlayer(player1Data, player1SpawnPoint, "Player1", player1Owner, player1Augments);
         player2 = SpawnNetworkPlayer(player2Data, player2SpawnPoint, "Player2", player2Owner, player2Augments);
+        UpdateAugmentTrackerBindings();
 
         yield return null;
         yield return WaitForLocalNetworkHudTarget();
@@ -1148,6 +1188,7 @@ public class GameSceneManager : MonoBehaviour
             DespawnPlayerNetworkObject(player2);
             player1 = null;
             player2 = null;
+            UpdateAugmentTrackerBindings();
             return;
         }
 
@@ -1163,6 +1204,8 @@ public class GameSceneManager : MonoBehaviour
             Destroy(player2.gameObject);
             player2 = null;
         }
+
+        UpdateAugmentTrackerBindings();
     }
 
     private void DestroyPlayerAbilityHUD(string tag)
@@ -1908,6 +1951,7 @@ public class GameSceneManager : MonoBehaviour
             // stay attached to the dead player object's last replicated stats and the
             // old ability panel can remain hidden for the entire next round.
             ClearLocalNetworkHudBinding(destroyAbilityHudInstance: true);
+            UpdateAugmentTrackerBindings();
             SetPlayerHUDsActive(false);
             return;
         }
@@ -1924,6 +1968,7 @@ public class GameSceneManager : MonoBehaviour
         player1 = localPlayer;
         NetMovement localNetMovement = localPlayer.GetComponent<NetMovement>();
         localNetMovement?.EnsureOwnerLocalControlReady();
+        UpdateAugmentTrackerBindings();
         BindPlayerToHud(localPlayer, player1HUDCanvas, "Player1", true);
         _boundNetworkHudObjectId = localPlayerObjectId;
         SetPlayerHUDsActive(true);
@@ -1963,6 +2008,7 @@ public class GameSceneManager : MonoBehaviour
 
         player1 = null;
         _boundNetworkHudObjectId = ulong.MaxValue;
+        UpdateAugmentTrackerBindings();
 
         if (destroyAbilityHudInstance)
         {
