@@ -180,6 +180,14 @@ public class AugmentController : MonoBehaviour
         }
     }
 
+    public void OnPrimaryProjectileHit(Entity target, Vector2 hitPoint, float damage)
+    {
+        foreach (IAugmentRuntime runtime in _runtimes)
+        {
+            runtime?.OnPrimaryProjectileHit(target, hitPoint, damage);
+        }
+    }
+
     private void ClearRuntimesAndModifiers()
     {
         _runtimes.Clear();

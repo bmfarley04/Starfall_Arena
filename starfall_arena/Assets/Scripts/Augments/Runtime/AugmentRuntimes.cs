@@ -417,3 +417,380 @@ public sealed class AugmentorRuntime : AugmentRuntimeBase
 {
     public AugmentorRuntime(Augmentor definition) : base(definition) { }
 }
+
+public sealed class BubbleShieldRuntime : AugmentRuntimeBase
+{
+    private readonly BubbleShield _definition;
+    private float _anchoredDamageTaken;
+    private float _stunEndTime;
+
+    public BubbleShieldRuntime(BubbleShield definition) : base(definition)
+    {
+        _definition = definition;
+    }
+
+    public override void Initialize(Player player, int roundAcquired, object persistentState = null)
+    {
+        base.Initialize(player, roundAcquired, persistentState);
+        _anchoredDamageTaken = 0f;
+        _stunEndTime = -999f;
+    }
+
+    public override void OnBeforeTakeDamage(ref float damage, ref bool shieldIgnored, ref bool healthIgnored, DamageSource source)
+    {
+        if (player == null || !IsActiveByRounds()) return;
+        if (!player.IsAnchored) return;
+        if (IsStunned()) return;
+
+        _anchoredDamageTaken += Mathf.Max(0f, damage);
+        damage *= Mathf.Max(0f, _definition.anchoredDamageMultiplier);
+
+        if (_anchoredDamageTaken >= _definition.damageThresholdBeforeStun)
+        {
+            TriggerStun();
+        }
+    }
+
+    public override void ExecuteEffects()
+    {
+        if (player == null) return;
+
+        if (!IsActiveByRounds())
+        {
+            RemoveMultiplier(player.speedMultipliers);
+            RemoveMultiplier(player.rotationMultipliers);
+            _anchoredDamageTaken = 0f;
+            return;
+        }
+
+        if (IsStunned())
+        {
+            player.ForceAnchorState(false);
+
+            Rigidbody2D body = player.GetComponent<Rigidbody2D>();
+            if (body != null)
+            {
+                body.linearVelocity = Vector2.zero;
+            }
+
+            AddOrRefreshMultiplier(_definition.stunnedSpeedMultiplier, player.speedMultipliers);
+            AddOrRefreshMultiplier(_definition.stunnedRotationMultiplier, player.rotationMultipliers);
+            return;
+        }
+
+        RemoveMultiplier(player.speedMultipliers);
+        RemoveMultiplier(player.rotationMultipliers);
+
+        if (!player.IsAnchored)
+        {
+            _anchoredDamageTaken = 0f;
+        }
+    }
+
+    private bool IsStunned()
+    {
+        return Time.time < _stunEndTime;
+    }
+
+    private void TriggerStun()
+    {
+        _anchoredDamageTaken = 0f;
+        _stunEndTime = Time.time + Mathf.Max(0.1f, _definition.stunDuration);
+        player.ForceAnchorState(false);
+    }
+}
+
+public sealed class WeakmakerRuntime : AugmentRuntimeBase
+{
+    private readonly Weakmaker _definition;
+    private LineRenderer _lineRenderer;
+    private Material _lineMaterial;
+    private NetMovement _netMovement;
+
+    public WeakmakerRuntime(Weakmaker definition) : base(definition)
+    {
+        _definition = definition;
+    }
+
+    public override void Initialize(Player player, int roundAcquired, object persistentState = null)
+    {
+        base.Initialize(player, roundAcquired, persistentState);
+
+        _netMovement = player != null ? player.GetComponent<NetMovement>() : null;
+        if (player == null) return;
+
+        Transform pointerTransform = player.transform.Find("WeakmakerPointer");
+        GameObject pointerObject = pointerTransform != null ? pointerTransform.gameObject : new GameObject("WeakmakerPointer");
+
+        if (pointerTransform == null)
+        {
+            pointerObject.transform.SetParent(player.transform, false);
+        }
+
+        _lineRenderer = pointerObject.GetComponent<LineRenderer>();
+        if (_lineRenderer == null)
+        {
+            _lineRenderer = pointerObject.AddComponent<LineRenderer>();
+        }
+
+        _lineRenderer.positionCount = 2;
+        _lineRenderer.useWorldSpace = true;
+        _lineRenderer.startWidth = _definition.pointerWidth;
+        _lineRenderer.endWidth = _definition.pointerWidth;
+        _lineRenderer.startColor = _definition.pointerColor;
+        _lineRenderer.endColor = _definition.pointerColor;
+
+        Shader shader = Shader.Find("Sprites/Default");
+        if (shader != null)
+        {
+            _lineMaterial = new Material(shader);
+            _lineRenderer.material = _lineMaterial;
+        }
+
+        _lineRenderer.enabled = false;
+    }
+
+    public override void ExecuteEffects()
+    {
+        if (player == null || _lineRenderer == null) return;
+
+        bool active = IsActiveByRounds();
+        _lineRenderer.enabled = active;
+        if (!active) return;
+
+        Vector2 start = player.transform.position;
+        Vector2 direction = player.transform.up;
+        float range = Mathf.Max(0.1f, _definition.pointerRange);
+        Vector2 end = start + direction * range;
+
+        RaycastHit2D hit = Physics2D.Raycast(start, direction, range);
+        if (hit.collider != null)
+        {
+            end = hit.point;
+
+            Entity target = hit.collider.GetComponent<Entity>();
+            if (target != null && hit.collider.CompareTag(player.enemyTag) && HasAuthority())
+            {
+                WeakmakerExposureTracker tracker = target.GetComponent<WeakmakerExposureTracker>();
+                if (tracker == null)
+                {
+                    tracker = target.gameObject.AddComponent<WeakmakerExposureTracker>();
+                }
+
+                tracker.ApplyExposure(Definition.augmentID, _definition.pointedDamageMultiplier, _definition.exposureRefreshDuration);
+            }
+        }
+
+        _lineRenderer.SetPosition(0, start);
+        _lineRenderer.SetPosition(1, end);
+    }
+
+    private bool HasAuthority()
+    {
+        if (!NetTickUtil.IsActive)
+        {
+            return true;
+        }
+
+        return _netMovement != null && _netMovement.IsServer;
+    }
+}
+
+public sealed class BurstRuntime : AugmentRuntimeBase
+{
+    private readonly Burst _definition;
+    private float _burstEndTime;
+    private float _lastBurstTime;
+
+    public BurstRuntime(Burst definition) : base(definition)
+    {
+        _definition = definition;
+    }
+
+    public override void Initialize(Player player, int roundAcquired, object persistentState = null)
+    {
+        base.Initialize(player, roundAcquired, persistentState);
+        _burstEndTime = -999f;
+        _lastBurstTime = -999f;
+    }
+
+    public override void OnContact(Collision2D collision)
+    {
+        if (!IsActiveByRounds()) return;
+        if (player == null || collision == null || collision.collider == null) return;
+        if (Time.time < _lastBurstTime + _definition.contactCooldown) return;
+
+        Entity target = collision.collider.GetComponent<Entity>();
+        if (target == null || target == player) return;
+
+        _lastBurstTime = Time.time;
+        _burstEndTime = Time.time + Mathf.Max(0.05f, _definition.burstDuration);
+        AddOrRefreshMultiplier(_definition.speedMultiplier, player.speedMultipliers);
+    }
+
+    public override void ExecuteEffects()
+    {
+        if (player == null) return;
+
+        if (!IsActiveByRounds() || Time.time >= _burstEndTime)
+        {
+            RemoveMultiplier(player.speedMultipliers);
+        }
+    }
+}
+
+public sealed class BurnerRuntime : AugmentRuntimeBase
+{
+    private readonly Burner _definition;
+    private readonly Dictionary<int, float> _reapplyTimers = new Dictionary<int, float>();
+    private NetMovement _netMovement;
+
+    public BurnerRuntime(Burner definition) : base(definition)
+    {
+        _definition = definition;
+    }
+
+    public override void Initialize(Player player, int roundAcquired, object persistentState = null)
+    {
+        base.Initialize(player, roundAcquired, persistentState);
+        _netMovement = player != null ? player.GetComponent<NetMovement>() : null;
+    }
+
+    public override void OnPrimaryProjectileHit(Entity target, Vector2 hitPoint, float damage)
+    {
+        if (player == null || target == null) return;
+        if (!IsActiveByRounds()) return;
+        if (!HasAuthority()) return;
+
+        int targetId = target.GetInstanceID();
+        if (_reapplyTimers.TryGetValue(targetId, out float nextAllowedTime) && Time.time < nextAllowedTime)
+        {
+            return;
+        }
+
+        BurnerDebuffController burnController = target.GetComponent<BurnerDebuffController>();
+        if (burnController == null)
+        {
+            burnController = target.gameObject.AddComponent<BurnerDebuffController>();
+        }
+
+        burnController.ApplyBurn(Definition.augmentID, player, _definition.burnDamagePerSecond, _definition.burnDuration);
+        _reapplyTimers[targetId] = Time.time + Mathf.Max(0.01f, _definition.reapplyThrottle);
+    }
+
+    private bool HasAuthority()
+    {
+        if (!NetTickUtil.IsActive)
+        {
+            return true;
+        }
+
+        return _netMovement != null && _netMovement.IsServer;
+    }
+}
+
+public sealed class AutoCounterRuntime : AugmentRuntimeBase
+{
+    private readonly AutoCounter _definition;
+    private AutoCounterReflectorController _reflector;
+    private float _nextCastTime;
+    private float _deactivateTime;
+    private bool _isActive;
+
+    public AutoCounterRuntime(AutoCounter definition) : base(definition)
+    {
+        _definition = definition;
+    }
+
+    public override void Initialize(Player player, int roundAcquired, object persistentState = null)
+    {
+        base.Initialize(player, roundAcquired, persistentState);
+        if (player == null) return;
+
+        _reflector = player.GetComponent<AutoCounterReflectorController>();
+        if (_reflector == null)
+        {
+            _reflector = player.gameObject.AddComponent<AutoCounterReflectorController>();
+        }
+
+        _reflector.Initialize(player, _definition.reflectShieldPrefab, _definition.reflectedProjectileColor);
+        _reflector.OnProjectileReflected += HandleProjectileReflected;
+
+        _nextCastTime = Time.time;
+        _deactivateTime = -999f;
+        _isActive = false;
+        _reflector.SetActive(false);
+    }
+
+    public override void ExecuteEffects()
+    {
+        if (player == null || _reflector == null) return;
+
+        if (!IsActiveByRounds())
+        {
+            if (_isActive)
+            {
+                _reflector.SetActive(false);
+                _isActive = false;
+            }
+            return;
+        }
+
+        if (!_isActive)
+        {
+            if (Time.time >= _nextCastTime)
+            {
+                _isActive = true;
+                _deactivateTime = Time.time + Mathf.Max(0.05f, _definition.activeDuration);
+                _reflector.SetActive(true);
+            }
+            return;
+        }
+
+        if (Time.time >= _deactivateTime)
+        {
+            _isActive = false;
+            _reflector.SetActive(false);
+            _nextCastTime = Time.time + Mathf.Max(0.05f, _definition.autocastInterval);
+        }
+    }
+
+    private void HandleProjectileReflected(Vector2 hitPoint)
+    {
+        if (!_isActive) return;
+
+        _deactivateTime = Time.time + Mathf.Max(0.05f, _definition.delayedTurnOffAfterHit);
+    }
+}
+
+public sealed class FlyersRuntime : AugmentRuntimeBase
+{
+    private readonly Flyers _definition;
+    private FlyersSwarmController _swarmController;
+
+    public FlyersRuntime(Flyers definition) : base(definition)
+    {
+        _definition = definition;
+    }
+
+    public override void Initialize(Player player, int roundAcquired, object persistentState = null)
+    {
+        base.Initialize(player, roundAcquired, persistentState);
+        if (player == null) return;
+
+        _swarmController = player.GetComponent<FlyersSwarmController>();
+        if (_swarmController == null)
+        {
+            _swarmController = player.gameObject.AddComponent<FlyersSwarmController>();
+        }
+
+        _swarmController.Initialize(player, _definition);
+        _swarmController.enabled = IsActiveByRounds();
+    }
+
+    public override void ExecuteEffects()
+    {
+        if (_swarmController == null) return;
+        _swarmController.enabled = IsActiveByRounds();
+    }
+}

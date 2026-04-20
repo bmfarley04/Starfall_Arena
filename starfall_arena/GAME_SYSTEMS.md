@@ -373,11 +373,26 @@ Current augment runtimes include behaviors such as:
 - temporary speed or damage boosts after taking damage
 - evasion chances that ignore shield or health damage
 - anchored healing over time
+- anchored damage reduction with threshold-triggered self-stun
 - max health increases
 - rotation and thorn-style contact behavior
+- contact-triggered movement burst effects
+- weak exposure debuffs driven by a live pointer line
+- primary-hit burn damage-over-time debuffs
+- auto-cast defensive reflector shields
+- auto-cast orbiting flyers that launch when enemies are nearby
 - fairy and augment-enhancement style effects
 
 This means augments are already more than simple stat perks. They are event-driven gameplay modules with persistence across rounds.
+
+Runtime hook note:
+
+- `IAugmentRuntime` now includes `OnPrimaryProjectileHit(...)` so augments can react when the owner's primary projectile path successfully damages a target
+- this hook is relayed from `ProjectileScript` through the shooter `Entity` into `AugmentController`
+
+Auto-cast keyword note:
+
+- in current augment terminology, **AutoCast** means the effect reactivates automatically after its configured timer interval instead of requiring manual player input
 
 ### Round Persistence
 

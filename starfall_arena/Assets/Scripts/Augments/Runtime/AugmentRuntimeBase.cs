@@ -39,6 +39,8 @@ public abstract class AugmentRuntimeBase : IAugmentRuntime
 
     public virtual void OnContact(Collision2D collision) { }
 
+    public virtual void OnPrimaryProjectileHit(Entity target, Vector2 hitPoint, float damage) { }
+
     public virtual object CapturePersistentState()
     {
         return null;
