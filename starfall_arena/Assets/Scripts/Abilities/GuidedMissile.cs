@@ -123,17 +123,18 @@ public class GuidedMissile : Ability
         }
 
         Transform target = ResolveTarget();
+        int attackId = player.BeginTrackedAttack();
 
         if (missileObject.TryGetComponent<Missile>(out var missile))
         {
             missile.targetTag = player.enemyTag;
-            missile.Initialize(fireDirection, inheritedVelocity, speed, damage, lifetime, impact, player);
+            missile.Initialize(fireDirection, inheritedVelocity, speed, damage, lifetime, impact, player, attackId);
             missile.SetTarget(target);
         }
         else if (missileObject.TryGetComponent<ProjectileScript>(out var projectile))
         {
             projectile.targetTag = player.enemyTag;
-            projectile.Initialize(fireDirection, inheritedVelocity, speed, damage, lifetime, impact, player);
+            projectile.Initialize(fireDirection, inheritedVelocity, speed, damage, lifetime, impact, player, attackId);
         }
         else
         {
@@ -142,7 +143,6 @@ public class GuidedMissile : Ability
             return;
         }
 
-        player.shotsFired++;
         player.ApplyRecoil(recoil);
 
         if (guidedMissile.fireSound != null)

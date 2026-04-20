@@ -57,10 +57,9 @@ public class Class4 : Player
 
         for (int i = 0; i < burstCount; i++)
         {
-            shotsFired += turrets.Length;
-
             foreach (var turret in turrets)
             {
+                int attackId = BeginTrackedAttack();
                 GameObject projectile = Instantiate(projectileWeapon.prefab, turret.position, transform.rotation);
 
                 if (projectile.TryGetComponent<ProjectileScript>(out var projectileScript))
@@ -73,7 +72,8 @@ public class Class4 : Player
                         projectileWeapon.damage,
                         projectileWeapon.lifetime,
                         projectileWeapon.impactForce,
-                        this
+                        this,
+                        attackId
                     );
                 }
             }

@@ -127,9 +127,9 @@ public class Missile : ProjectileScript
         _rb.linearVelocity = (_currentDirection * speed) + _inheritedVelocity;
     }
 
-    public new void Initialize(Vector3 direction, Vector2 shipVelocity, float speed, float damage, float lifetime, float impactForce, Entity shooter = null)
+    public new void Initialize(Vector3 direction, Vector2 shipVelocity, float speed, float damage, float lifetime, float impactForce, Entity shooter = null, int accuracyAttackId = Player.InvalidAttackId)
     {
-        base.Initialize(direction, shipVelocity, speed, damage, lifetime, impactForce, shooter);
+        base.Initialize(direction, shipVelocity, speed, damage, lifetime, impactForce, shooter, accuracyAttackId);
 
         _currentDirection = ((Vector2)direction).normalized;
         if (_currentDirection.sqrMagnitude <= 0.0001f)
@@ -256,14 +256,8 @@ public class Missile : ProjectileScript
                 return;
             }
 
-            damageable.TakeDamage(_damage, _impactForce, transform.position);
+            damageable.TakeDamage(_damage, _impactForce, transform.position, DamageSource.Projectile, _shooter, _accuracyAttackId);
             ApplyImpactForce(collider);
-
-            if (_shooter is Player shooterPlayer)
-            {
-                shooterPlayer.shotsHit++;
-                shooterPlayer.damageDealt += _damage;
-            }
 
             if (_appliesSlow)
             {
@@ -285,7 +279,7 @@ public class Missile : ProjectileScript
             AsteroidScript asteroid = collider.GetComponent<AsteroidScript>();
             if (asteroid != null)
             {
-                asteroid.TakeDamage(_damage, _impactForce, transform.position);
+                asteroid.RequestDamage(_damage, _impactForce, transform.position);
             }
 
             if (_canPierce && _pierceMultiplier > 0f)
@@ -379,13 +373,13 @@ public class Missile : ProjectileScript
         }
     }
 
-    private void ApplyImpactForce(Collider2D collider)
+    private new void ApplyImpactForce(Collider2D collider)
     {
         Rigidbody2D targetRb = collider.GetComponent<Rigidbody2D>();
         if (targetRb != null)
         {
             Vector2 forceDirection = _currentDirection.normalized;
-            targetRb.AddForce(forceDirection * _impactForce, ForceMode2D.Impulse);
+            targetRb.linearVelocity += forceDirection * (_impactForce / targetRb.mass);
         }
     }
 }
