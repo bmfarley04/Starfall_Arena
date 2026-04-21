@@ -311,6 +311,12 @@ public abstract class Entity : MonoBehaviour
         // Give each augment a chance to modify the damage or mark portions ignored
         _augmentController?.OnBeforeTakeDamage(ref damage, ref shieldIgnored, ref healthIgnored, source);
 
+        WeakmakerExposureTracker weakmakerExposure = GetComponent<WeakmakerExposureTracker>();
+        if (weakmakerExposure != null)
+        {
+            damage *= weakmakerExposure.GetCombinedMultiplier();
+        }
+
         if (hitPoint != Vector3.zero)
         {
             _lastDamageDirection = ((Vector2)transform.position - (Vector2)hitPoint).normalized;
@@ -426,6 +432,12 @@ public abstract class Entity : MonoBehaviour
         // Allow augments to cancel or modify direct damage before it's applied
         bool healthIgnored = false;
         _augmentController?.OnBeforeTakeDirectDamage(ref damage, ref healthIgnored, source);
+
+        WeakmakerExposureTracker weakmakerExposure = GetComponent<WeakmakerExposureTracker>();
+        if (weakmakerExposure != null)
+        {
+            damage *= weakmakerExposure.GetCombinedMultiplier();
+        }
 
         if (hitPoint != Vector3.zero)
         {
@@ -785,6 +797,11 @@ public abstract class Entity : MonoBehaviour
     public void SetIncomingDamageIgnored(bool ignored)
     {
         _ignoreIncomingDamage = ignored;
+    }
+
+    public void NotifyPrimaryProjectileHit(Entity target, Vector2 hitPoint, float damage)
+    {
+        _augmentController?.OnPrimaryProjectileHit(target, hitPoint, damage);
     }
 
     public void SetShieldValue(float value, bool notify = true, bool clampToMax = true)

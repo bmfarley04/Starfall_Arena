@@ -14,5 +14,7 @@ public interface IAugmentRuntime
     void OnTakeDirectDamage(float damage, float impactForce, Vector3 hitPoint, DamageSource source);
     void OnBeforeTakeDirectDamage(ref float damage, ref bool healthIgnored, DamageSource source);
     void OnContact(Collision2D collision);
+    void OnPrimaryProjectileHit(Entity target, Vector2 hitPoint, float damage);
+    void OnRemoved();
     object CapturePersistentState();
 }

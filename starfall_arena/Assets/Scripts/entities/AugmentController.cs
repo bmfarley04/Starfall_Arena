@@ -31,6 +31,9 @@ public class AugmentController : MonoBehaviour
     {
         if (_player == null || definition == null) return;
 
+        // Ensure target/enemy tag strings are current before augment initialization.
+        _player.RefreshCombatTags();
+
         IAugmentRuntime runtime = definition.CreateRuntime();
         if (runtime == null)
         {
@@ -41,6 +44,9 @@ public class AugmentController : MonoBehaviour
         runtime.Initialize(_player, roundAcquired, persistentState);
         runtime.OnRoundSet(_currentRound);
         _runtimes.Add(runtime);
+
+        // Bootstrap immediately so mid-match acquisitions apply visuals/effects right away.
+        runtime.ExecuteEffects();
     }
 
     public void ImportLoadout(List<AugmentLoadoutEntry> entries, int currentRound)
@@ -215,8 +221,21 @@ public class AugmentController : MonoBehaviour
         }
     }
 
+    public void OnPrimaryProjectileHit(Entity target, Vector2 hitPoint, float damage)
+    {
+        foreach (IAugmentRuntime runtime in _runtimes)
+        {
+            runtime?.OnPrimaryProjectileHit(target, hitPoint, damage);
+        }
+    }
+
     private void ClearRuntimesAndModifiers()
     {
+        foreach (IAugmentRuntime runtime in _runtimes)
+        {
+            runtime?.OnRemoved();
+        }
+
         _runtimes.Clear();
         _artificialFairyTriggeredSinceLastConsume = false;
 

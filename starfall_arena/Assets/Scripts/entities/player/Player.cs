@@ -674,19 +674,23 @@ public abstract class Player : Entity
     // Anchor
     void OnAnchor(InputValue value)
     {
-        if (value.isPressed)
+        ForceAnchorState(value.isPressed);
+    }
+
+    public void ForceAnchorState(bool anchored)
+    {
+        if (anchored)
         {
             thrusters.invertColors = true;
-            movement.rotationSpeed *= 3;
+            movement.rotationSpeed = _originalRotationSpeed * 3f;
             _isAnchored = true;
+            return;
         }
-        else
-        {
-            thrusters.invertColors = false;
-            _isAnchored = false;
-            _anchorDragAccumulator = 0f;
-            movement.rotationSpeed = _originalRotationSpeed;
-        }
+
+        thrusters.invertColors = false;
+        _isAnchored = false;
+        _anchorDragAccumulator = 0f;
+        movement.rotationSpeed = _originalRotationSpeed;
     }
 
     // ===== COMBAT =====

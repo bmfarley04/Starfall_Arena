@@ -223,6 +223,14 @@ public class ProjectileScript : MonoBehaviour
                 return;
             }
 
+            if (player != null && player.TryGetComponent<IProjectileReflectorAugment>(out var augmentReflector))
+            {
+                if (augmentReflector.TryReflectProjectile(this, transform.position))
+                {
+                    return;
+                }
+            }
+
             var damageable = collider.GetComponent<Entity>();
             if (damageable != null)
             {
@@ -302,6 +310,7 @@ public class ProjectileScript : MonoBehaviour
     protected virtual void ApplyDamageToEntity(Entity damageable, Vector2 hitPoint, Collider2D collider)
     {
         damageable.TakeDamage(_damage, _impactForce, hitPoint, DamageSource.Projectile, _shooter, _accuracyAttackId);
+        _shooter?.NotifyPrimaryProjectileHit(damageable, hitPoint, _damage);
         ApplyImpactForce(collider);
     }
 
@@ -371,6 +380,14 @@ public class ProjectileScript : MonoBehaviour
 
                 Destroy(gameObject);
                 return;
+            }
+
+            if (player.TryGetComponent<IProjectileReflectorAugment>(out var augmentReflector))
+            {
+                if (augmentReflector.TryReflectProjectile(this, hitPoint))
+                {
+                    return;
+                }
             }
         }
 
