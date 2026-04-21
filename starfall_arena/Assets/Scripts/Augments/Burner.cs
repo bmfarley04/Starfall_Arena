@@ -7,6 +7,9 @@ public class Burner : Augment
     [Tooltip("Tiny burn damage dealt per second")]
     public float burnDamagePerSecond = 1.2f;
 
+    [Tooltip("How often burn damage is applied in discrete ticks")]
+    public float burnTickInterval = 0.25f;
+
     [Tooltip("How long burn lasts after a primary projectile hit")]
     public float burnDuration = 2.5f;
 

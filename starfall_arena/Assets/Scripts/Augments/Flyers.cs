@@ -27,6 +27,9 @@ public class Flyers : Augment
     [Tooltip("Homing speed when a flyer launches")]
     public float homingSpeed = 13f;
 
+    [Tooltip("Maximum seconds a launched flyer can home before timing out")]
+    public float homingDuration = 1.2f;
+
     [Tooltip("Contact damage dealt by a launched flyer")]
     public float hitDamage = 6f;
 

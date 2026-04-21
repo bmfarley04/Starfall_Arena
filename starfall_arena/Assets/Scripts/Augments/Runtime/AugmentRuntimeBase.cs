@@ -41,6 +41,8 @@ public abstract class AugmentRuntimeBase : IAugmentRuntime
 
     public virtual void OnPrimaryProjectileHit(Entity target, Vector2 hitPoint, float damage) { }
 
+    public virtual void OnRemoved() { }
+
     public virtual object CapturePersistentState()
     {
         return null;

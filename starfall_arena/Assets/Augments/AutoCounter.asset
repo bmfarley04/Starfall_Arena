@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 87feb274c03e64756815e9794db0f0eb, type: 3}
+  m_Name: AutoCounter
+  m_EditorClassIdentifier: Assembly-CSharp::AutoCounter
+  icon: {fileID: 0}
+  augmentName: AutoCounter
+  description: Summons a shield that reflects projectiles. Delayed turn off when
+    hit. AutoCast.
+  _augmentID: 4bc1298d40074e0da1682f906c98adb7
+  rounds: -1
+  autocastInterval: 7
+  activeDuration: 2.5
+  delayedTurnOffAfterHit: 0.35
+  reflectShieldPrefab: {fileID: 0}
+  reflectedProjectileColor: {r: 0, g: 1, b: 1, a: 1}

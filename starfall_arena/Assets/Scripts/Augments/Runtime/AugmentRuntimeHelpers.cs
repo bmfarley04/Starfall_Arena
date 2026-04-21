@@ -74,6 +74,8 @@ public sealed class BurnerDebuffController : MonoBehaviour
     {
         public Player owner;
         public float damagePerSecond;
+        public float tickInterval;
+        public float nextTickAt;
         public float expiresAt;
     }
 
@@ -87,15 +89,33 @@ public sealed class BurnerDebuffController : MonoBehaviour
         _targetNetMovement = GetComponent<NetMovement>();
     }
 
-    public void ApplyBurn(string sourceId, Player owner, float dps, float duration)
+    public void ApplyBurn(string sourceId, Player owner, float dps, float duration, float tickInterval)
     {
         if (_target == null || string.IsNullOrWhiteSpace(sourceId)) return;
+
+        float safeTickInterval = Mathf.Max(0.05f, tickInterval);
+        float safeDps = Mathf.Max(0f, dps);
+        float refreshedExpireTime = Time.time + Mathf.Max(0.05f, duration);
+
+        if (_activeBurns.TryGetValue(sourceId, out BurnState existingState))
+        {
+            existingState.owner = owner ?? existingState.owner;
+            existingState.damagePerSecond = safeDps;
+            existingState.tickInterval = safeTickInterval;
+
+            // Refresh duration without pushing the next scheduled tick farther out.
+            existingState.expiresAt = Mathf.Max(existingState.expiresAt, refreshedExpireTime);
+            existingState.nextTickAt = Mathf.Min(existingState.nextTickAt, Time.time + safeTickInterval);
+            return;
+        }
 
         _activeBurns[sourceId] = new BurnState
         {
             owner = owner,
-            damagePerSecond = Mathf.Max(0f, dps),
-            expiresAt = Time.time + Mathf.Max(0.05f, duration)
+            damagePerSecond = safeDps,
+            tickInterval = safeTickInterval,
+            nextTickAt = Time.time + safeTickInterval,
+            expiresAt = refreshedExpireTime
         };
     }
 
@@ -104,7 +124,7 @@ public sealed class BurnerDebuffController : MonoBehaviour
         if (_target == null || _activeBurns.Count == 0) return;
         if (!HasDamageAuthority()) return;
 
-        float totalDamagePerSecond = 0f;
+        float totalTickDamage = 0f;
         List<string> expired = null;
         Player firstOwner = null;
 
@@ -118,8 +138,18 @@ public sealed class BurnerDebuffController : MonoBehaviour
                 continue;
             }
 
-            totalDamagePerSecond += state.damagePerSecond;
-            if (firstOwner == null)
+            float interval = Mathf.Max(0.05f, state.tickInterval);
+            if (Time.time < state.nextTickAt)
+            {
+                continue;
+            }
+
+            int dueTicks = Mathf.Max(1, Mathf.FloorToInt((Time.time - state.nextTickAt) / interval) + 1);
+            state.nextTickAt += dueTicks * interval;
+            entry.Value.nextTickAt = state.nextTickAt;
+
+            totalTickDamage += state.damagePerSecond * interval * dueTicks;
+            if (firstOwner == null && state.owner != null)
             {
                 firstOwner = state.owner;
             }
@@ -133,10 +163,33 @@ public sealed class BurnerDebuffController : MonoBehaviour
             }
         }
 
-        if (totalDamagePerSecond <= 0f) return;
+        if (totalTickDamage <= 0f) return;
 
-        float tickDamage = totalDamagePerSecond * Time.deltaTime;
-        _target.TakeDirectDamage(tickDamage, 0f, _target.transform.position, DamageSource.Other, firstOwner);
+        _target.TakeDamage(totalTickDamage, 0f, _target.transform.position, DamageSource.Other, firstOwner);
+        try
+        {
+            string ownerName = firstOwner != null ? firstOwner.name : "(unknown)";
+            float currentHealth = 0f;
+            float currentShield = 0f;
+            try
+            {
+                if (_target != null)
+                {
+                    currentHealth = _target.CurrentHealth;
+                    currentShield = _target.currentShield;
+                }
+            }
+            catch
+            {
+                currentHealth = 0f;
+                currentShield = 0f;
+            }
+
+            Debug.Log($"[Burner] Applied burn tick {totalTickDamage:F2} to {_target.gameObject.name} (health={currentHealth:F2}, shield={currentShield:F2}) from {ownerName}");
+        }
+        catch (Exception)
+        {
+        }
     }
 
     private bool HasDamageAuthority()
@@ -163,6 +216,12 @@ public sealed class AutoCounterReflectorController : MonoBehaviour, IProjectileR
     {
         _owner = owner;
         _reflectColor = reflectColor;
+
+        if (_shield != null)
+        {
+            Destroy(_shield.gameObject);
+            _shield = null;
+        }
 
         if (shieldPrefab != null)
         {
@@ -222,8 +281,9 @@ public sealed class FlyersSwarmController : MonoBehaviour
     private sealed class FlyerState
     {
         public Transform visual;
-        public float orbitAngle;
+        public int orbitSlotIndex;
         public bool launched;
+        public float launchStartTime;
         public float respawnTime;
     }
 
@@ -234,20 +294,27 @@ public sealed class FlyersSwarmController : MonoBehaviour
     private Flyers _config;
     private Entity _targetEntity;
     private float _nextRetargetTime;
+    private float _orbitPhase;
 
     public void Initialize(Player owner, Flyers config)
     {
         _owner = owner;
         _ownerNetMovement = owner != null ? owner.GetComponent<NetMovement>() : null;
         _config = config;
+        _targetEntity = null;
+        _nextRetargetTime = 0f;
+        _orbitPhase = 0f;
+
+        ClearFlyers();
 
         int count = Mathf.Max(1, config != null ? config.flyerCount : 1);
         for (int i = 0; i < count; i++)
         {
             _flyers.Add(new FlyerState
             {
-                orbitAngle = (360f / count) * i,
+                orbitSlotIndex = i,
                 launched = false,
+                launchStartTime = -999f,
                 respawnTime = 0f,
                 visual = CreateVisual(i)
             });
@@ -280,6 +347,13 @@ public sealed class FlyersSwarmController : MonoBehaviour
         float orbitSpeed = _config.orbitSpeed;
         float hitRadius = Mathf.Max(0.05f, _config.hitRadius);
         float homingSpeed = Mathf.Max(0.1f, _config.homingSpeed);
+        float orbitSlotSpacing = _flyers.Count > 0 ? 360f / _flyers.Count : 360f;
+
+        _orbitPhase += orbitSpeed * Time.deltaTime;
+        if (_orbitPhase > 360f || _orbitPhase < -360f)
+        {
+            _orbitPhase %= 360f;
+        }
 
         foreach (FlyerState flyer in _flyers)
         {
@@ -295,8 +369,8 @@ public sealed class FlyersSwarmController : MonoBehaviour
 
             if (!flyer.launched)
             {
-                flyer.orbitAngle += orbitSpeed * Time.deltaTime;
-                Vector2 orbitOffset = Quaternion.Euler(0f, 0f, flyer.orbitAngle) * Vector2.up * orbitRadius;
+                float slotAngle = _orbitPhase + (flyer.orbitSlotIndex * orbitSlotSpacing);
+                Vector2 orbitOffset = Quaternion.Euler(0f, 0f, slotAngle) * Vector2.up * orbitRadius;
                 flyer.visual.position = _owner.transform.position + (Vector3)orbitOffset;
 
                 if (_targetEntity != null)
@@ -305,6 +379,7 @@ public sealed class FlyersSwarmController : MonoBehaviour
                     if (distanceToTarget <= _config.engageRange)
                     {
                         flyer.launched = true;
+                        flyer.launchStartTime = Time.time;
                     }
                 }
 
@@ -314,6 +389,16 @@ public sealed class FlyersSwarmController : MonoBehaviour
             if (_targetEntity == null)
             {
                 flyer.launched = false;
+                flyer.launchStartTime = -999f;
+                continue;
+            }
+
+            float homingDuration = Mathf.Max(0.05f, _config.homingDuration);
+            if (Time.time >= flyer.launchStartTime + homingDuration)
+            {
+                flyer.launched = false;
+                flyer.launchStartTime = -999f;
+                flyer.respawnTime = Time.time + Mathf.Max(0.1f, _config.autocastInterval);
                 continue;
             }
 
@@ -326,6 +411,7 @@ public sealed class FlyersSwarmController : MonoBehaviour
             {
                 ApplyHit(_targetEntity, next);
                 flyer.launched = false;
+                flyer.launchStartTime = -999f;
                 flyer.respawnTime = Time.time + Mathf.Max(0.1f, _config.autocastInterval);
             }
         }
@@ -340,7 +426,9 @@ public sealed class FlyersSwarmController : MonoBehaviour
 
     private void UpdateTarget()
     {
-        if (_targetEntity != null && !_targetEntity.IsDead)
+        if (_targetEntity != null &&
+            _targetEntity.CurrentHealth > 0f &&
+            _targetEntity.gameObject.activeInHierarchy)
         {
             return;
         }
@@ -377,7 +465,23 @@ public sealed class FlyersSwarmController : MonoBehaviour
         return _ownerNetMovement != null && _ownerNetMovement.IsServer;
     }
 
+    private void OnDisable()
+    {
+        foreach (FlyerState flyer in _flyers)
+        {
+            if (flyer?.visual != null)
+            {
+                flyer.visual.gameObject.SetActive(false);
+            }
+        }
+    }
+
     private void OnDestroy()
+    {
+        ClearFlyers();
+    }
+
+    private void ClearFlyers()
     {
         foreach (FlyerState flyer in _flyers)
         {

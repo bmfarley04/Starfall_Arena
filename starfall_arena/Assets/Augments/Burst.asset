@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e94caf78920ad4f2b96a65dc5eaecae1, type: 3}
+  m_Name: Burst
+  m_EditorClassIdentifier: Assembly-CSharp::Burst
+  icon: {fileID: 0}
+  augmentName: Burst
+  description: On contact with the enemy, gain a short burst of speed.
+  _augmentID: dd4eed0da4a74d7eb851984d2968993f
+  rounds: -1
+  speedMultiplier: 1.7
+  burstDuration: 0.65
+  contactCooldown: 0.75

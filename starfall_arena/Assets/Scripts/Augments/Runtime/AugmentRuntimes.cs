@@ -438,17 +438,13 @@ public sealed class BubbleShieldRuntime : AugmentRuntimeBase
 
     public override void OnBeforeTakeDamage(ref float damage, ref bool shieldIgnored, ref bool healthIgnored, DamageSource source)
     {
-        if (player == null || !IsActiveByRounds()) return;
-        if (!player.IsAnchored) return;
-        if (IsStunned()) return;
+        ApplyAnchoredMitigation(ref damage);
+    }
 
-        _anchoredDamageTaken += Mathf.Max(0f, damage);
-        damage *= Mathf.Max(0f, _definition.anchoredDamageMultiplier);
-
-        if (_anchoredDamageTaken >= _definition.damageThresholdBeforeStun)
-        {
-            TriggerStun();
-        }
+    public override void OnBeforeTakeDirectDamage(ref float damage, ref bool healthIgnored, DamageSource source)
+    {
+        if (healthIgnored) return;
+        ApplyAnchoredMitigation(ref damage);
     }
 
     public override void ExecuteEffects()
@@ -492,6 +488,22 @@ public sealed class BubbleShieldRuntime : AugmentRuntimeBase
         return Time.time < _stunEndTime;
     }
 
+    private void ApplyAnchoredMitigation(ref float damage)
+    {
+        if (player == null || !IsActiveByRounds()) return;
+        if (!player.IsAnchored) return;
+        if (IsStunned()) return;
+
+        float incomingDamage = Mathf.Max(0f, damage);
+        _anchoredDamageTaken += incomingDamage;
+        damage = incomingDamage * Mathf.Max(0f, _definition.anchoredDamageMultiplier);
+
+        if (_anchoredDamageTaken >= _definition.damageThresholdBeforeStun)
+        {
+            TriggerStun();
+        }
+    }
+
     private void TriggerStun()
     {
         _anchoredDamageTaken = 0f;
@@ -503,6 +515,8 @@ public sealed class BubbleShieldRuntime : AugmentRuntimeBase
 public sealed class WeakmakerRuntime : AugmentRuntimeBase
 {
     private readonly Weakmaker _definition;
+    private readonly RaycastHit2D[] _raycastHits = new RaycastHit2D[8];
+    private ContactFilter2D _raycastFilter;
     private LineRenderer _lineRenderer;
     private Material _lineMaterial;
     private NetMovement _netMovement;
@@ -517,6 +531,8 @@ public sealed class WeakmakerRuntime : AugmentRuntimeBase
         base.Initialize(player, roundAcquired, persistentState);
 
         _netMovement = player != null ? player.GetComponent<NetMovement>() : null;
+        _raycastFilter = ContactFilter2D.noFilter;
+        _raycastFilter.useTriggers = Physics2D.queriesHitTriggers;
         if (player == null) return;
 
         Transform pointerTransform = player.transform.Find("WeakmakerPointer");
@@ -526,6 +542,9 @@ public sealed class WeakmakerRuntime : AugmentRuntimeBase
         {
             pointerObject.transform.SetParent(player.transform, false);
         }
+
+        pointerObject.SetActive(true);
+        pointerObject.layer = player.gameObject.layer;
 
         _lineRenderer = pointerObject.GetComponent<LineRenderer>();
         if (_lineRenderer == null)
@@ -539,6 +558,24 @@ public sealed class WeakmakerRuntime : AugmentRuntimeBase
         _lineRenderer.endWidth = _definition.pointerWidth;
         _lineRenderer.startColor = _definition.pointerColor;
         _lineRenderer.endColor = _definition.pointerColor;
+        _lineRenderer.numCapVertices = 4;
+
+        SpriteRenderer playerSprite = player.GetComponentInChildren<SpriteRenderer>();
+        if (playerSprite != null)
+        {
+            _lineRenderer.sortingLayerID = playerSprite.sortingLayerID;
+            _lineRenderer.sortingOrder = playerSprite.sortingOrder + 1;
+        }
+        else
+        {
+            _lineRenderer.sortingOrder = 10;
+        }
+
+        if (_lineMaterial != null)
+        {
+            UnityEngine.Object.Destroy(_lineMaterial);
+            _lineMaterial = null;
+        }
 
         Shader shader = Shader.Find("Sprites/Default");
         if (shader != null)
@@ -547,7 +584,7 @@ public sealed class WeakmakerRuntime : AugmentRuntimeBase
             _lineRenderer.material = _lineMaterial;
         }
 
-        _lineRenderer.enabled = false;
+        _lineRenderer.enabled = true;
     }
 
     public override void ExecuteEffects()
@@ -563,13 +600,26 @@ public sealed class WeakmakerRuntime : AugmentRuntimeBase
         float range = Mathf.Max(0.1f, _definition.pointerRange);
         Vector2 end = start + direction * range;
 
-        RaycastHit2D hit = Physics2D.Raycast(start, direction, range);
-        if (hit.collider != null)
+        RaycastHit2D selectedHit = default;
+        bool hasValidHit = false;
+        int hitCount = Physics2D.Raycast(start, direction, _raycastFilter, _raycastHits, range);
+        for (int i = 0; i < hitCount; i++)
         {
-            end = hit.point;
+            Collider2D hitCollider = _raycastHits[i].collider;
+            if (hitCollider == null) continue;
+            if (hitCollider.transform == player.transform || hitCollider.transform.IsChildOf(player.transform)) continue;
 
-            Entity target = hit.collider.GetComponent<Entity>();
-            if (target != null && hit.collider.CompareTag(player.enemyTag) && HasAuthority())
+            selectedHit = _raycastHits[i];
+            hasValidHit = true;
+            break;
+        }
+
+        if (hasValidHit)
+        {
+            end = selectedHit.point;
+
+            Entity target = selectedHit.collider.GetComponent<Entity>();
+            if (target != null && selectedHit.collider.CompareTag(player.enemyTag) && HasAuthority())
             {
                 WeakmakerExposureTracker tracker = target.GetComponent<WeakmakerExposureTracker>();
                 if (tracker == null)
@@ -583,6 +633,20 @@ public sealed class WeakmakerRuntime : AugmentRuntimeBase
 
         _lineRenderer.SetPosition(0, start);
         _lineRenderer.SetPosition(1, end);
+    }
+
+    public override void OnRemoved()
+    {
+        if (_lineRenderer != null)
+        {
+            _lineRenderer.enabled = false;
+        }
+
+        if (_lineMaterial != null)
+        {
+            UnityEngine.Object.Destroy(_lineMaterial);
+            _lineMaterial = null;
+        }
     }
 
     private bool HasAuthority()
@@ -674,7 +738,12 @@ public sealed class BurnerRuntime : AugmentRuntimeBase
             burnController = target.gameObject.AddComponent<BurnerDebuffController>();
         }
 
-        burnController.ApplyBurn(Definition.augmentID, player, _definition.burnDamagePerSecond, _definition.burnDuration);
+        burnController.ApplyBurn(
+            Definition.augmentID,
+            player,
+            _definition.burnDamagePerSecond,
+            _definition.burnDuration,
+            _definition.burnTickInterval);
         _reapplyTimers[targetId] = Time.time + Mathf.Max(0.01f, _definition.reapplyThrottle);
     }
 
@@ -761,6 +830,17 @@ public sealed class AutoCounterRuntime : AugmentRuntimeBase
 
         _deactivateTime = Time.time + Mathf.Max(0.05f, _definition.delayedTurnOffAfterHit);
     }
+
+    public override void OnRemoved()
+    {
+        if (_reflector != null)
+        {
+            _reflector.OnProjectileReflected -= HandleProjectileReflected;
+            _reflector.SetActive(false);
+        }
+
+        _isActive = false;
+    }
 }
 
 public sealed class FlyersRuntime : AugmentRuntimeBase
@@ -792,5 +872,13 @@ public sealed class FlyersRuntime : AugmentRuntimeBase
     {
         if (_swarmController == null) return;
         _swarmController.enabled = IsActiveByRounds();
+    }
+
+    public override void OnRemoved()
+    {
+        if (_swarmController != null)
+        {
+            _swarmController.enabled = false;
+        }
     }
 }

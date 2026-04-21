@@ -356,6 +356,7 @@ It is responsible for:
 - importing and exporting per-round loadouts
 - relaying events such as damage, direct damage, and contact
 - executing ongoing effects each tick
+- bootstrapping newly acquired augments immediately so mid-match grants apply without waiting for a later tick
 - resetting modifier dictionaries when loadouts are rebuilt
 
 `AugmentRuntimeBase` supplies shared runtime behavior such as:
@@ -378,9 +379,10 @@ Current augment runtimes include behaviors such as:
 - rotation and thorn-style contact behavior
 - contact-triggered movement burst effects
 - weak exposure debuffs driven by a live pointer line
-- primary-hit burn damage-over-time debuffs
+- primary-hit burn damage-over-time debuffs applied in discrete tick intervals
 - auto-cast defensive reflector shields
-- auto-cast orbiting flyers that launch when enemies are nearby
+- auto-cast orbiting flyers that launch when enemies are nearby and time out after a configurable homing duration
+- flyers in orbit keep deterministic fixed-slot spacing based on configured flyer count so they do not clump after repeated launch/respawn cycles
 - fairy and augment-enhancement style effects
 
 This means augments are already more than simple stat perks. They are event-driven gameplay modules with persistence across rounds.
@@ -435,6 +437,12 @@ Network execution note:
 - Bug note: teleport-style abilities that hide renderers during their effect need an interruption-safe restore path, or a ship can remain hittable while visually invisible if the coroutine is stopped mid-ability.
 - Bug note: Chrono Step waypoints must be cleared on round transitions. The component now clears state in `OnDisable()` to avoid leaving waypoint markers between rounds; if markers persist, ensure the ability component is disabled during round freeze.
 - Bug note: if duel stats ever start diverging again, check for damage sources bypassing `Entity.TakeDamage(...)` / `TakeDirectDamage(...)` without passing the attacking player through. That was the root cause of mismatched dealt-vs-taken totals and missing ability/reflection credit.
+- Bug note: augment runtimes that spawn helper components (pointer lines, reflector shields, orbiting flyers) must implement runtime teardown when loadouts are rebuilt. `AugmentController` now calls `OnRemoved()` before clearing runtimes; skipping teardown leaves stale visuals or duplicate helpers after round imports.
+- Bug note: Weakmaker pointer rays should ignore the owner's own colliders. A direct ray from the ship center can immediately hit self-colliders, preventing enemy exposure updates unless self-hits are filtered.
+- Bug note: if Weakmaker appears missing only when added during a live round, check the runtime-created pointer object's render setup (layer/sorting/material). Runtime-spawned line objects should inherit a visible layer/sorting context so they render consistently when added mid-match.
+- Bug note: if Flyers become unevenly spaced over time, verify orbit positioning is driven by a shared phase plus fixed per-flyer slot index. Per-flyer independent orbit-angle accumulation drifts after asynchronous launch/respawn events.
+- Bug note: if an augment appears to do nothing only when picked mid-round, verify `AugmentController.AcquireAugment(...)` is still running an immediate runtime bootstrap (`ExecuteEffects()`) after initialization. Delaying first execution until later simulation ticks can make event-driven/visual augments appear missing right after selection.
+- Bug note: Burner DoT refresh logic should extend expiry without resetting the next scheduled tick. If each hit always pushes `nextTickAt` forward, rapid fire can starve tick damage and make Burner look broken.
 - Bug note: when adding thruster particles to the future-facing `Assets/Scripts/3d/Movement3D.cs` path, cache each particle system's original emission/speed/lifetime and drive them from live thrust input. If the 3D ship thrusters look permanently on or refuse to restart cleanly, the usual cause is treating them as static VFX instead of maintaining a thrust-driven intensity/play-stop state.
 - `Assets/Scripts/3d` is future-facing groundwork for a more fully 3D version of the game, not a current core maintenance area.
 - Bugs in combat, ability timing, or augment behavior should be added here in the relevant section once discovered.
