@@ -751,6 +751,8 @@ public sealed class BubbleShieldRuntime : AugmentRuntimeBase
     private readonly BubbleShield _definition;
     private float _anchoredDamageTaken;
     private float _stunEndTime;
+    private float _lastAnchoredHitTime;
+    private GameObject _bubbleShieldEffectInstance;
 
     public BubbleShieldRuntime(BubbleShield definition) : base(definition)
     {
@@ -762,6 +764,7 @@ public sealed class BubbleShieldRuntime : AugmentRuntimeBase
         base.Initialize(player, roundAcquired, persistentState);
         _anchoredDamageTaken = 0f;
         _stunEndTime = -999f;
+        _lastAnchoredHitTime = Time.time - Mathf.Max(0f, _definition.damageRegenDelay);
     }
 
     public override void OnBeforeTakeDamage(ref float damage, ref bool shieldIgnored, ref bool healthIgnored, DamageSource source)
@@ -779,11 +782,15 @@ public sealed class BubbleShieldRuntime : AugmentRuntimeBase
     {
         if (player == null) return;
 
+        bool shieldVisualActive = false;
+
         if (!IsActiveByRounds())
         {
             RemoveMultiplier(player.speedMultipliers);
             RemoveMultiplier(player.rotationMultipliers);
             _anchoredDamageTaken = 0f;
+            _lastAnchoredHitTime = Time.time;
+            SetAttachedEffectActive(ref _bubbleShieldEffectInstance, _definition.bubbleShieldPrefab, false, "BubbleShield");
             return;
         }
 
@@ -799,16 +806,23 @@ public sealed class BubbleShieldRuntime : AugmentRuntimeBase
 
             AddOrRefreshMultiplier(_definition.stunnedSpeedMultiplier, player.speedMultipliers);
             AddOrRefreshMultiplier(_definition.stunnedRotationMultiplier, player.rotationMultipliers);
+
+            SetAttachedEffectActive(ref _bubbleShieldEffectInstance, _definition.bubbleShieldPrefab, false, "BubbleShield");
             return;
         }
 
         RemoveMultiplier(player.speedMultipliers);
         RemoveMultiplier(player.rotationMultipliers);
 
-        if (!player.IsAnchored)
+        if (player.IsAnchored)
         {
-            _anchoredDamageTaken = 0f;
+            shieldVisualActive = true;
         }
+
+        RegenerateAnchoredDamageDebt(Time.deltaTime);
+
+        SetAttachedEffectActive(ref _bubbleShieldEffectInstance, _definition.bubbleShieldPrefab, shieldVisualActive, "BubbleShield");
+        UpdateBubbleShieldScale();
     }
 
     private bool IsStunned()
@@ -823,8 +837,15 @@ public sealed class BubbleShieldRuntime : AugmentRuntimeBase
         if (IsStunned()) return;
 
         float incomingDamage = Mathf.Max(0f, damage);
+        if (incomingDamage <= 0f)
+        {
+            return;
+        }
+
         _anchoredDamageTaken += incomingDamage;
+        _lastAnchoredHitTime = Time.time;
         damage = incomingDamage * Mathf.Max(0f, _definition.anchoredDamageMultiplier);
+        PlaySoundEffect(_definition.blockSound);
 
         if (_anchoredDamageTaken >= _definition.damageThresholdBeforeStun)
         {
@@ -837,6 +858,57 @@ public sealed class BubbleShieldRuntime : AugmentRuntimeBase
         _anchoredDamageTaken = 0f;
         _stunEndTime = Time.time + Mathf.Max(0.1f, _definition.stunDuration);
         player.ForceAnchorState(false);
+    }
+
+    private void RegenerateAnchoredDamageDebt(float deltaTime)
+    {
+        if (_anchoredDamageTaken <= 0f)
+        {
+            return;
+        }
+
+        float regenDelay = Mathf.Max(0f, _definition.damageRegenDelay);
+        if (Time.time < _lastAnchoredHitTime + regenDelay)
+        {
+            return;
+        }
+
+        float regenPerSecond = Mathf.Max(0f, _definition.damageRegenPerSecond);
+        if (regenPerSecond <= 0f)
+        {
+            return;
+        }
+
+        _anchoredDamageTaken = Mathf.Max(0f, _anchoredDamageTaken - regenPerSecond * Mathf.Max(0f, deltaTime));
+    }
+
+    private void UpdateBubbleShieldScale()
+    {
+        if (_bubbleShieldEffectInstance == null || _definition.bubbleShieldPrefab == null)
+        {
+            return;
+        }
+
+        float threshold = Mathf.Max(0.001f, _definition.damageThresholdBeforeStun);
+        float progress = Mathf.Clamp01(_anchoredDamageTaken / threshold);
+        float visualMultiplier = Mathf.Lerp(
+            Mathf.Max(0.01f, _definition.maxVisualScaleMultiplier),
+            Mathf.Max(0.01f, _definition.minVisualScaleMultiplier),
+            progress);
+
+        Vector3 baseScale = _definition.bubbleShieldPrefab.transform.localScale * Mathf.Max(0.01f, player.ShipSize);
+        _bubbleShieldEffectInstance.transform.localScale = baseScale * visualMultiplier;
+    }
+
+    public override void OnRemoved()
+    {
+        if (player != null)
+        {
+            RemoveMultiplier(player.speedMultipliers);
+            RemoveMultiplier(player.rotationMultipliers);
+        }
+
+        SetAttachedEffectActive(ref _bubbleShieldEffectInstance, _definition.bubbleShieldPrefab, false, "BubbleShield");
     }
 }
 
@@ -993,6 +1065,7 @@ public sealed class BurstRuntime : AugmentRuntimeBase
     private readonly Burst _definition;
     private float _burstEndTime;
     private float _lastBurstTime;
+    private GameObject _speedUpEffectInstance;
 
     public BurstRuntime(Burst definition) : base(definition)
     {
@@ -1024,10 +1097,24 @@ public sealed class BurstRuntime : AugmentRuntimeBase
     {
         if (player == null) return;
 
-        if (!IsActiveByRounds() || Time.time >= _burstEndTime)
+        bool boostActive = IsActiveByRounds() && Time.time < _burstEndTime;
+
+        if (!boostActive)
         {
             RemoveMultiplier(player.speedMultipliers);
         }
+
+        SetAttachedEffectActive(ref _speedUpEffectInstance, _definition.speedUpEffectPrefab, boostActive, "BurstSpeedUp");
+    }
+
+    public override void OnRemoved()
+    {
+        if (player != null)
+        {
+            RemoveMultiplier(player.speedMultipliers);
+        }
+
+        SetAttachedEffectActive(ref _speedUpEffectInstance, _definition.speedUpEffectPrefab, false, "BurstSpeedUp");
     }
 }
 
@@ -1071,7 +1158,9 @@ public sealed class BurnerRuntime : AugmentRuntimeBase
             player,
             _definition.burnDamagePerSecond,
             _definition.burnDuration,
-            _definition.burnTickInterval);
+            _definition.burnTickInterval,
+            _definition.burnTickEffectPrefab,
+            _definition.burnTickRandomRadius);
         _reapplyTimers[targetId] = Time.time + Mathf.Max(0.01f, _definition.reapplyThrottle);
     }
 
@@ -1093,6 +1182,7 @@ public sealed class AutoCounterRuntime : AugmentRuntimeBase
     private float _nextCastTime;
     private float _deactivateTime;
     private bool _isActive;
+    private GameObject _readyGlowEffectInstance;
 
     public AutoCounterRuntime(AutoCounter definition) : base(definition)
     {
@@ -1130,25 +1220,34 @@ public sealed class AutoCounterRuntime : AugmentRuntimeBase
                 _reflector.SetActive(false);
                 _isActive = false;
             }
+
+            SetAttachedEffectActive(ref _readyGlowEffectInstance, _definition.readyGlowPrefab, false, "AutoCounterReadyGlow");
             return;
         }
 
         if (!_isActive)
         {
+            bool readyToCast = Time.time >= _nextCastTime;
+            SetAttachedEffectActive(ref _readyGlowEffectInstance, _definition.readyGlowPrefab, readyToCast, "AutoCounterReadyGlow");
+
             if (Time.time >= _nextCastTime)
             {
                 _isActive = true;
                 _deactivateTime = Time.time + Mathf.Max(0.05f, _definition.activeDuration);
                 _reflector.SetActive(true);
+                SetAttachedEffectActive(ref _readyGlowEffectInstance, _definition.readyGlowPrefab, true, "AutoCounterReadyGlow");
             }
             return;
         }
+
+        SetAttachedEffectActive(ref _readyGlowEffectInstance, _definition.readyGlowPrefab, true, "AutoCounterReadyGlow");
 
         if (Time.time >= _deactivateTime)
         {
             _isActive = false;
             _reflector.SetActive(false);
             _nextCastTime = Time.time + Mathf.Max(0.05f, _definition.autocastInterval);
+            SetAttachedEffectActive(ref _readyGlowEffectInstance, _definition.readyGlowPrefab, false, "AutoCounterReadyGlow");
         }
     }
 
@@ -1166,6 +1265,8 @@ public sealed class AutoCounterRuntime : AugmentRuntimeBase
             _reflector.OnProjectileReflected -= HandleProjectileReflected;
             _reflector.SetActive(false);
         }
+
+        SetAttachedEffectActive(ref _readyGlowEffectInstance, _definition.readyGlowPrefab, false, "AutoCounterReadyGlow");
 
         _isActive = false;
     }

@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8fb942400e2b44cf990b4da25ab98604, type: 3}
+  m_Name: Bubble Shield
+  m_EditorClassIdentifier: Assembly-CSharp::BubbleShield
+  icon: {fileID: 0}
+  augmentName: Bubble Shield
+  description: Anchoring reduces damage taken but stuns you if you take too much.
+  _augmentID: 7de3e64132194719a2aeaf5bf0f7cdf8
+  rounds: -1
+  bubbleShieldPrefab: {fileID: 7392867587370717111, guid: 786308dd9acbfa349b30f361358b8bc8, type: 3}
+  blockSound: {fileID: 0}
+  maxVisualScaleMultiplier: 4.25
+  minVisualScaleMultiplier: 1
+  anchoredDamageMultiplier: 0.6
+  damageThresholdBeforeStun: 45
+  stunDuration: 1.5
+  stunnedSpeedMultiplier: 0.02
+  stunnedRotationMultiplier: 0.1

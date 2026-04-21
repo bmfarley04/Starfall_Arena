@@ -77,6 +77,8 @@ public sealed class BurnerDebuffController : MonoBehaviour
         public float tickInterval;
         public float nextTickAt;
         public float expiresAt;
+        public GameObject tickEffectPrefab;
+        public float tickEffectRandomRadius;
     }
 
     private readonly Dictionary<string, BurnState> _activeBurns = new Dictionary<string, BurnState>();
@@ -89,7 +91,7 @@ public sealed class BurnerDebuffController : MonoBehaviour
         _targetNetMovement = GetComponent<NetMovement>();
     }
 
-    public void ApplyBurn(string sourceId, Player owner, float dps, float duration, float tickInterval)
+    public void ApplyBurn(string sourceId, Player owner, float dps, float duration, float tickInterval, GameObject tickEffectPrefab, float tickEffectRandomRadius)
     {
         if (_target == null || string.IsNullOrWhiteSpace(sourceId)) return;
 
@@ -102,6 +104,8 @@ public sealed class BurnerDebuffController : MonoBehaviour
             existingState.owner = owner ?? existingState.owner;
             existingState.damagePerSecond = safeDps;
             existingState.tickInterval = safeTickInterval;
+            existingState.tickEffectPrefab = tickEffectPrefab;
+            existingState.tickEffectRandomRadius = tickEffectRandomRadius;
 
             // Refresh duration without pushing the next scheduled tick farther out.
             existingState.expiresAt = Mathf.Max(existingState.expiresAt, refreshedExpireTime);
@@ -115,7 +119,9 @@ public sealed class BurnerDebuffController : MonoBehaviour
             damagePerSecond = safeDps,
             tickInterval = safeTickInterval,
             nextTickAt = Time.time + safeTickInterval,
-            expiresAt = refreshedExpireTime
+            expiresAt = refreshedExpireTime,
+            tickEffectPrefab = tickEffectPrefab,
+            tickEffectRandomRadius = tickEffectRandomRadius
         };
     }
 
@@ -152,6 +158,11 @@ public sealed class BurnerDebuffController : MonoBehaviour
             if (firstOwner == null && state.owner != null)
             {
                 firstOwner = state.owner;
+            }
+
+            for (int tick = 0; tick < dueTicks; tick++)
+            {
+                SpawnBurnTickEffect(state.tickEffectPrefab, state.tickEffectRandomRadius);
             }
         }
 
@@ -200,6 +211,61 @@ public sealed class BurnerDebuffController : MonoBehaviour
         }
 
         return _targetNetMovement != null && _targetNetMovement.IsServer;
+    }
+
+    private void SpawnBurnTickEffect(GameObject tickEffectPrefab, float randomRadius)
+    {
+        if (_target == null || tickEffectPrefab == null)
+        {
+            return;
+        }
+
+        Vector3 spawnPos = ResolveRandomTargetPoint(randomRadius);
+        GameObject effect = Instantiate(tickEffectPrefab, spawnPos, Quaternion.identity);
+
+        float size = 1f;
+        if (_target is Player targetPlayer)
+        {
+            size = Mathf.Max(0.01f, targetPlayer.ShipSize);
+        }
+        effect.transform.localScale = tickEffectPrefab.transform.localScale * size;
+
+        ParticleSystem particle = effect.GetComponent<ParticleSystem>();
+        float lifetime = 1.5f;
+        if (particle != null)
+        {
+            lifetime = Mathf.Max(0.1f, particle.main.duration + particle.main.startLifetime.constantMax);
+        }
+
+        Destroy(effect, lifetime);
+    }
+
+    private Vector3 ResolveRandomTargetPoint(float fallbackRadius)
+    {
+        if (_target == null)
+        {
+            return Vector3.zero;
+        }
+
+        Transform visualModel = _target.visualEffects.visualModel != null ? _target.visualEffects.visualModel : _target.transform;
+        Renderer[] renderers = visualModel.GetComponentsInChildren<Renderer>();
+
+        if (renderers != null && renderers.Length > 0)
+        {
+            Bounds bounds = renderers[0].bounds;
+            for (int i = 1; i < renderers.Length; i++)
+            {
+                bounds.Encapsulate(renderers[i].bounds);
+            }
+
+            return new Vector3(
+                UnityEngine.Random.Range(bounds.min.x, bounds.max.x),
+                UnityEngine.Random.Range(bounds.min.y, bounds.max.y),
+                _target.transform.position.z);
+        }
+
+        Vector2 offset = UnityEngine.Random.insideUnitCircle * Mathf.Max(0f, fallbackRadius);
+        return _target.transform.position + new Vector3(offset.x, offset.y, 0f);
     }
 }
 

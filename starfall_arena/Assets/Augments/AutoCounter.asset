@@ -18,6 +18,7 @@ MonoBehaviour:
     hit. AutoCast.
   _augmentID: 4bc1298d40074e0da1682f906c98adb7
   rounds: -1
+  readyGlowPrefab: {fileID: 8595475238803380239, guid: 4c4e0e6d65ee030428c1eb1e78eed1f3, type: 3}
   autocastInterval: 7
   activeDuration: 2.5
   delayedTurnOffAfterHit: 0.35

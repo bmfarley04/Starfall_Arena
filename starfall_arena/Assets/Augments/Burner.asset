@@ -17,6 +17,8 @@ MonoBehaviour:
   description: Your primary burns the opponent.
   _augmentID: de4ec03d6a8541a1955d7a1d5b522ff9
   rounds: -1
+  burnTickEffectPrefab: {fileID: 1781949194303238870, guid: d9825ae2375fc404898e4a3ea5bea0e1, type: 3}
+  burnTickRandomRadius: 0.3
   burnDamagePerSecond: 1.2
   burnTickInterval: 0.25
   burnDuration: 4

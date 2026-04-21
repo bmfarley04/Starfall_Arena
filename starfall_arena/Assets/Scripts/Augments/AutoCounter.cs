@@ -4,6 +4,10 @@ using UnityEngine;
 [CreateAssetMenu(fileName = "AutoCounter", menuName = "Starfall Arena/Augments/AutoCounter", order = 2)]
 public class AutoCounter : Augment
 {
+    [Header("Presentation")]
+    [Tooltip("Prefab shown while AutoCounter is ready to auto-cast and while the shield is active")]
+    public GameObject readyGlowPrefab;
+
     [Header("AutoCast")]
     [Tooltip("Seconds between automatic shield activations")]
     public float autocastInterval = 7f;

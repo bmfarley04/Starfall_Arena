@@ -4,6 +4,11 @@ using UnityEngine;
 [CreateAssetMenu(fileName = "Burst", menuName = "Starfall Arena/Augments/Burst", order = 2)]
 public class Burst : Augment
 {
+    [Header("Presentation")]
+    [Tooltip("Prefab activated while Burst speed boost is active")]
+    public GameObject speedUpEffectPrefab;
+
+    [Header("Gameplay")]
     [Tooltip("Speed multiplier applied after contacting an enemy")]
     public float speedMultiplier = 1.7f;
 

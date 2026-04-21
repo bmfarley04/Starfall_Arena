@@ -17,6 +17,7 @@ MonoBehaviour:
   description: On contact with the enemy, gain a short burst of speed.
   _augmentID: dd4eed0da4a74d7eb851984d2968993f
   rounds: -1
+  speedUpEffectPrefab: {fileID: 8595475238803380239, guid: 66bfcac64ecef5248820291a3878e5ea, type: 3}
   speedMultiplier: 1.7
   burstDuration: 0.65
   contactCooldown: 0.75
