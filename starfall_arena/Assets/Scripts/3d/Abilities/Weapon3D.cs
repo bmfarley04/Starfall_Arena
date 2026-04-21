@@ -396,11 +396,7 @@ public abstract class Weapon3D : MonoBehaviour, IReticleSpinSource3D
             return false;
         }
 
-        Transform[] muzzles = request.muzzles != null && request.muzzles.Length > 0
-            ? request.muzzles
-            : fallbackConfig.muzzles != null && fallbackConfig.muzzles.Length > 0
-                ? fallbackConfig.muzzles
-                : new[] { transform };
+        Transform[] muzzles = ResolveFiringMuzzles(request, fallbackConfig);
 
         string resolvedTargetTag = !string.IsNullOrEmpty(request.targetTag)
             ? request.targetTag
@@ -422,6 +418,26 @@ public abstract class Weapon3D : MonoBehaviour, IReticleSpinSource3D
         fireSound?.PlayAtPoint(transform.position);
         RecordReticleSpinPulse();
         return true;
+    }
+
+    private Transform[] ResolveFiringMuzzles(ProjectileFireRequest3D request, ProjectileWeaponConfig3D fallbackConfig)
+    {
+        if (request.muzzles != null && request.muzzles.Length > 0)
+        {
+            return request.muzzles;
+        }
+
+        if (request.spawnAnchor != null)
+        {
+            return new[] { request.spawnAnchor };
+        }
+
+        if (fallbackConfig.muzzles != null && fallbackConfig.muzzles.Length > 0)
+        {
+            return fallbackConfig.muzzles;
+        }
+
+        return new[] { transform };
     }
 
     private void RecoverResource(float deltaTime)
