@@ -41,6 +41,7 @@ public class Projectile3D : MonoBehaviour, IPooledObject3D
     protected bool _appliesSlow;
     protected float _slowMultiplier = 1f;
     protected float _slowDuration;
+    protected float _slowEngineEmissionScale = 1f;
     protected readonly HashSet<int> _hitEntityIds = new HashSet<int>();
 
     protected virtual void Update()
@@ -90,16 +91,18 @@ public class Projectile3D : MonoBehaviour, IPooledObject3D
         _appliesSlow = false;
         _slowMultiplier = 1f;
         _slowDuration = 0f;
+        _slowEngineEmissionScale = 1f;
         _hitEntityIds.Clear();
 
         transform.rotation = Quaternion.LookRotation(_direction, Vector3.up);
     }
 
-    public void EnableSlow(float slowMultiplier, float slowDuration)
+    public void EnableSlow(float slowMultiplier, float slowDuration, float slowEngineEmissionScale = 1f)
     {
         _appliesSlow = true;
         _slowMultiplier = slowMultiplier;
         _slowDuration = slowDuration;
+        _slowEngineEmissionScale = Mathf.Clamp01(slowEngineEmissionScale);
     }
 
     public void OnSpawnedFromPool()
@@ -114,6 +117,7 @@ public class Projectile3D : MonoBehaviour, IPooledObject3D
         _appliesSlow = false;
         _slowMultiplier = 1f;
         _slowDuration = 0f;
+        _slowEngineEmissionScale = 1f;
         _hitEntityIds.Clear();
     }
 
@@ -278,6 +282,10 @@ public class Projectile3D : MonoBehaviour, IPooledObject3D
             if (_appliesSlow)
             {
                 damageable.ApplySlow(_slowMultiplier, _slowDuration);
+                if (_slowEngineEmissionScale < 1f)
+                {
+                    damageable.ThrusterVfx?.ApplyTemporaryEmissionRateScale(_slowEngineEmissionScale, _slowDuration);
+                }
             }
         }
 

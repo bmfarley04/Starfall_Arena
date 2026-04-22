@@ -30,6 +30,10 @@ public class EmpoweredShot3D : Weapon3D
         public float slowMultiplier;
         [Tooltip("How long the slow lasts in seconds.")]
         public float slowDuration;
+        [Tooltip("Expected default engine emission rate used to compute slowdown scaling.")]
+        public float normalEngineEmissionRate;
+        [Tooltip("Temporary engine emission rate while the target is slowed.")]
+        public float slowedEngineEmissionRate;
 
         [Header("Sound Effects")]
         [Tooltip("Sound played when firing the empowered shot.")]
@@ -45,7 +49,9 @@ public class EmpoweredShot3D : Weapon3D
         impactMultiplier = 1f,
         recoilMultiplier = 1f,
         slowMultiplier = 0.5f,
-        slowDuration = 1f
+        slowDuration = 1f,
+        normalEngineEmissionRate = 30f,
+        slowedEngineEmissionRate = 2f
     };
     [SerializeField] private ProjectileWeapon3D projectileWeapon;
 
@@ -117,7 +123,7 @@ public class EmpoweredShot3D : Weapon3D
             verticalOffset = 0f,
             onProjectileSpawned = projectile =>
             {
-                projectile.EnableSlow(empoweredShot.slowMultiplier, empoweredShot.slowDuration);
+                projectile.EnableSlow(empoweredShot.slowMultiplier, empoweredShot.slowDuration, GetSlowEngineEmissionScale());
             }
         };
 
@@ -129,5 +135,12 @@ public class EmpoweredShot3D : Weapon3D
 
         StartCooldown();
         return true;
+    }
+
+    private float GetSlowEngineEmissionScale()
+    {
+        float normalRate = Mathf.Max(0.0001f, empoweredShot.normalEngineEmissionRate);
+        float slowedRate = Mathf.Max(0f, empoweredShot.slowedEngineEmissionRate);
+        return Mathf.Clamp01(slowedRate / normalRate);
     }
 }

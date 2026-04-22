@@ -90,6 +90,7 @@ Base input rule:
 - `EmpoweredShot3D`
   - empowered projectile weapon on the `Weapon3D` path
   - reuses `ProjectileWeapon3D` aim and muzzle handling while carrying its slow debuff through the 3D projectile/entity runtime
+  - when the slow lands, it temporarily scales the victim's thruster emission rate (default authored target: `30 -> 2`) for the slow duration, then automatically restores normal emission
 - `PhysicalProjectileAbility3D`
   - shield-bypassing projectile weapon on the `Weapon3D` path
   - reuses the shared 3D spawn, aim, and recoil rules while dealing direct hull damage
