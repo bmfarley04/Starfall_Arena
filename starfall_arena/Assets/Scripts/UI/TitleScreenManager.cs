@@ -320,6 +320,7 @@ public class TitleScreenManager : MonoBehaviour
         }
 
         HandleStatusMessageChanged(string.Empty);
+        ApplyShipRosterForGameplayScene(_resolved2DGameplaySceneName);
 
         shipSelectManager?.BeginGameplayScenePreload();
 
@@ -688,6 +689,7 @@ public class TitleScreenManager : MonoBehaviour
                     return;
                 }
 
+                ApplyShipRosterForGameplayScene(_sessionData.GameplaySceneName);
                 TransitionToShipSelectFromCurrent();
                 break;
             case NetworkMatchState.Disconnected:
@@ -972,6 +974,7 @@ public class TitleScreenManager : MonoBehaviour
 
         _sessionData = NetworkSessionData.Instance;
         _sessionData?.SetGameplaySceneName(resolvedScene);
+        ApplyShipRosterForGameplayScene(resolvedScene);
 
         _netMgr = NetMgr.Instance;
         if (_netMgr == null || !_netMgr.StartHostForMenu())
@@ -1016,6 +1019,16 @@ public class TitleScreenManager : MonoBehaviour
         }
 
         return false;
+    }
+
+    private static void ApplyShipRosterForGameplayScene(string sceneName)
+    {
+        if (GameDataManager.Instance == null)
+        {
+            return;
+        }
+
+        GameDataManager.Instance.SetShipRosterForGameplayScene(sceneName);
     }
 
     private void SetHostModePreviewModelsActive(bool active)

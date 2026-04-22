@@ -531,6 +531,7 @@ public class ShipSelectManager : MonoBehaviour
 
         // Ensure gamepads are assigned before input processing starts
         ResolveGamepadAssignments();
+        ApplyShipRosterFromGameData();
 
         _networkSession = NetworkSessionData.Instance;
         _useNetworkSession = NetMgr.IsNetworked && _networkSession != null;
@@ -1343,6 +1344,74 @@ public class ShipSelectManager : MonoBehaviour
         }
 
         _shipModelInstances = new GameObject[availableShips.Length];
+    }
+
+    private void ApplyShipRosterFromGameData()
+    {
+        if (GameDataManager.Instance == null)
+        {
+            return;
+        }
+
+        ShipData[] roster = GameDataManager.Instance.GetActiveShipRoster();
+        if (roster == null || roster.Length == 0)
+        {
+            return;
+        }
+
+        if (AreShipRostersEquivalent(availableShips, roster))
+        {
+            return;
+        }
+
+        availableShips = roster;
+        ResetShipPreviewInstances();
+        _currentShipIndex = Mathf.Clamp(_currentShipIndex, 0, Mathf.Max(0, availableShips.Length - 1));
+    }
+
+    private void ResetShipPreviewInstances()
+    {
+        if (_currentPreviewController != null)
+        {
+            _currentPreviewController.StopPreview();
+            _currentPreviewController = null;
+        }
+
+        if (_shipModelInstances != null)
+        {
+            foreach (GameObject model in _shipModelInstances)
+            {
+                if (model != null)
+                {
+                    Destroy(model);
+                }
+            }
+        }
+
+        _shipModelInstances = null;
+    }
+
+    private static bool AreShipRostersEquivalent(ShipData[] left, ShipData[] right)
+    {
+        if (ReferenceEquals(left, right))
+        {
+            return true;
+        }
+
+        if (left == null || right == null || left.Length != right.Length)
+        {
+            return false;
+        }
+
+        for (int i = 0; i < left.Length; i++)
+        {
+            if (left[i] != right[i])
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /// <summary>

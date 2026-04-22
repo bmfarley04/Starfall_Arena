@@ -1,13 +1,27 @@
 using System.Collections.Generic;
 using UnityEngine;
 using StarfallArena.UI;
+using System;
 
 public class GameDataManager : MonoBehaviour
 {
+    public enum ShipRosterMode
+    {
+        Duel2D = 0,
+        Duel3D = 1
+    }
+
     public static GameDataManager Instance { get; private set; }
 
-    [Header("Ship Registry")]
-    [SerializeField] private ShipData[] knownShips;
+    [Header("Ship Registry - 2D")]
+    [SerializeField] private ShipData[] known2DShips;
+
+    [Header("Ship Registry - 3D")]
+    [SerializeField] private ShipData[] known3DShips;
+
+    [Header("Ship Registry Mode")]
+    [SerializeField] private ShipRosterMode defaultShipRosterMode = ShipRosterMode.Duel2D;
+    [SerializeField] private string threeDGameplaySceneName = "3d";
 
     [Header("Augment Registry")]
     [SerializeField] private Augment[] knownAugments;
@@ -17,7 +31,12 @@ public class GameDataManager : MonoBehaviour
     private readonly Dictionary<string, ShipData> _shipsById = new Dictionary<string, ShipData>();
     private readonly Dictionary<string, Augment> _augmentsById = new Dictionary<string, Augment>();
 
-    public IReadOnlyList<ShipData> KnownShips => knownShips;
+    private ShipRosterMode _activeShipRosterMode = ShipRosterMode.Duel2D;
+
+    public ShipRosterMode ActiveShipRosterMode => _activeShipRosterMode;
+    public IReadOnlyList<ShipData> Known2DShips => known2DShips;
+    public IReadOnlyList<ShipData> Known3DShips => known3DShips;
+    public IReadOnlyList<ShipData> KnownShips => GetActiveShipRoster();
 
     private void Awake()
     {
@@ -29,6 +48,7 @@ public class GameDataManager : MonoBehaviour
 
         Instance = this;
         DontDestroyOnLoad(gameObject);
+        _activeShipRosterMode = defaultShipRosterMode;
         RebuildLookups();
     }
 
@@ -86,12 +106,39 @@ public class GameDataManager : MonoBehaviour
 
     public ShipData GetRandomShip()
     {
-        if (knownShips == null || knownShips.Length == 0)
+        ShipData[] activeRoster = GetActiveShipRoster();
+        if (activeRoster == null || activeRoster.Length == 0)
         {
             return null;
         }
 
-        return knownShips[Random.Range(0, knownShips.Length)];
+        return activeRoster[UnityEngine.Random.Range(0, activeRoster.Length)];
+    }
+
+    public ShipData[] GetActiveShipRoster()
+    {
+        return _activeShipRosterMode == ShipRosterMode.Duel3D ? known3DShips : known2DShips;
+    }
+
+    public void SetShipRosterMode(ShipRosterMode mode)
+    {
+        _activeShipRosterMode = mode;
+    }
+
+    public void SetShipRosterForGameplayScene(string gameplaySceneName)
+    {
+        if (string.IsNullOrWhiteSpace(gameplaySceneName))
+        {
+            SetShipRosterMode(defaultShipRosterMode);
+            return;
+        }
+
+        bool is3DScene = string.Equals(
+            gameplaySceneName.Trim(),
+            threeDGameplaySceneName,
+            StringComparison.OrdinalIgnoreCase);
+
+        SetShipRosterMode(is3DScene ? ShipRosterMode.Duel3D : ShipRosterMode.Duel2D);
     }
 
     private void RebuildLookups()
@@ -99,18 +146,8 @@ public class GameDataManager : MonoBehaviour
         _shipsById.Clear();
         _augmentsById.Clear();
 
-        if (knownShips != null)
-        {
-            foreach (ShipData ship in knownShips)
-            {
-                if (ship == null || string.IsNullOrWhiteSpace(ship.ShipId))
-                {
-                    continue;
-                }
-
-                _shipsById[ship.ShipId] = ship;
-            }
-        }
+        AddShipsToLookup(known2DShips);
+        AddShipsToLookup(known3DShips);
 
         if (knownAugments != null)
         {
@@ -123,6 +160,24 @@ public class GameDataManager : MonoBehaviour
 
                 _augmentsById[augment.augmentID] = augment;
             }
+        }
+    }
+
+    private void AddShipsToLookup(ShipData[] ships)
+    {
+        if (ships == null)
+        {
+            return;
+        }
+
+        foreach (ShipData ship in ships)
+        {
+            if (ship == null || string.IsNullOrWhiteSpace(ship.ShipId))
+            {
+                continue;
+            }
+
+            _shipsById[ship.ShipId] = ship;
         }
     }
 }

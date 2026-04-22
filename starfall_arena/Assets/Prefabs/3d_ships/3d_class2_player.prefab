@@ -10568,7 +10568,7 @@ GameObject:
   - component: {fileID: 1546189914776665224}
   - component: {fileID: 52433826259895386}
   m_Layer: 0
-  m_Name: Class2_Player
+  m_Name: 3d_class2_player
   m_TagString: Enemy
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -11263,6 +11263,8 @@ MonoBehaviour:
     lifetime: 0
     slowMultiplier: 0.5
     slowDuration: 1
+    normalEngineEmissionRate: 30
+    slowedEngineEmissionRate: 2
     fireSound: {fileID: 0}
   projectileWeapon: {fileID: 3009000303518804356}
 --- !u!114 &4442115351324218777
