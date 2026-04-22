@@ -735,6 +735,14 @@ public class NetworkSessionData : NetworkBehaviour
             return;
         }
 
+        // Ship-select navigation should remain local-only until the player commits.
+        // Guard non-lock updates here so accidental preview submissions cannot
+        // synchronize host/client browsing state.
+        if (!lockIn)
+        {
+            return;
+        }
+
         if (GameDataManager.Instance != null && GameDataManager.Instance.GetShipById(shipId) == null)
         {
             return;
