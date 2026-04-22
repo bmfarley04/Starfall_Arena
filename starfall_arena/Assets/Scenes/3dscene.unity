@@ -14389,6 +14389,42 @@ PrefabInstance:
       propertyPath: m_Name
       value: galaxyRaptor_gun1
       objectReference: {fileID: 0}
+    - target: {fileID: 938683384551864085, guid: 2ab5e2b052ddb4229b8be680f8c4e7d1, type: 3}
+      propertyPath: lengthInSec
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 938683384551864085, guid: 2ab5e2b052ddb4229b8be680f8c4e7d1, type: 3}
+      propertyPath: simulationSpeed
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 938683384551864085, guid: 2ab5e2b052ddb4229b8be680f8c4e7d1, type: 3}
+      propertyPath: InitialModule.startSize.scalar
+      value: 0.8
+      objectReference: {fileID: 0}
+    - target: {fileID: 938683384551864085, guid: 2ab5e2b052ddb4229b8be680f8c4e7d1, type: 3}
+      propertyPath: InitialModule.startSpeed.scalar
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 938683384551864085, guid: 2ab5e2b052ddb4229b8be680f8c4e7d1, type: 3}
+      propertyPath: InitialModule.startLifetime.scalar
+      value: 1.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 938683384551864085, guid: 2ab5e2b052ddb4229b8be680f8c4e7d1, type: 3}
+      propertyPath: InitialModule.startColor.maxColor.g
+      value: 0.52618146
+      objectReference: {fileID: 0}
+    - target: {fileID: 938683384551864085, guid: 2ab5e2b052ddb4229b8be680f8c4e7d1, type: 3}
+      propertyPath: ColorModule.gradient.maxGradient.atime1
+      value: 31360
+      objectReference: {fileID: 0}
+    - target: {fileID: 938683384551864085, guid: 2ab5e2b052ddb4229b8be680f8c4e7d1, type: 3}
+      propertyPath: ColorModule.gradient.maxGradient.key1.a
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 938683384551864085, guid: 2ab5e2b052ddb4229b8be680f8c4e7d1, type: 3}
+      propertyPath: ColorModule.gradient.maxGradient.m_NumAlphaKeys
+      value: 3
+      objectReference: {fileID: 0}
     - target: {fileID: 1546189914776665224, guid: 2ab5e2b052ddb4229b8be680f8c4e7d1, type: 3}
       propertyPath: shield.cooldown
       value: 6
@@ -14585,9 +14621,45 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 5344548845695747751, guid: 2ab5e2b052ddb4229b8be680f8c4e7d1, type: 3}
+      propertyPath: simulationSpeed
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 5344548845695747751, guid: 2ab5e2b052ddb4229b8be680f8c4e7d1, type: 3}
+      propertyPath: InitialModule.startSpeed.scalar
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 5344548845695747751, guid: 2ab5e2b052ddb4229b8be680f8c4e7d1, type: 3}
+      propertyPath: InitialModule.startLifetime.scalar
+      value: 1.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 5344548845695747751, guid: 2ab5e2b052ddb4229b8be680f8c4e7d1, type: 3}
+      propertyPath: InitialModule.startColor.maxColor.g
+      value: 0.5254902
+      objectReference: {fileID: 0}
     - target: {fileID: 5710671986816628219, guid: 2ab5e2b052ddb4229b8be680f8c4e7d1, type: 3}
       propertyPath: m_Name
       value: GalaxyRaptor_Gun4
+      objectReference: {fileID: 0}
+    - target: {fileID: 6752773302440835223, guid: 2ab5e2b052ddb4229b8be680f8c4e7d1, type: 3}
+      propertyPath: simulationSpeed
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 6752773302440835223, guid: 2ab5e2b052ddb4229b8be680f8c4e7d1, type: 3}
+      propertyPath: InitialModule.startSize.scalar
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 6752773302440835223, guid: 2ab5e2b052ddb4229b8be680f8c4e7d1, type: 3}
+      propertyPath: InitialModule.startSpeed.scalar
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 6752773302440835223, guid: 2ab5e2b052ddb4229b8be680f8c4e7d1, type: 3}
+      propertyPath: InitialModule.startLifetime.scalar
+      value: 1.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 6752773302440835223, guid: 2ab5e2b052ddb4229b8be680f8c4e7d1, type: 3}
+      propertyPath: InitialModule.startColor.maxColor.g
+      value: 0.5254902
       objectReference: {fileID: 0}
     - target: {fileID: 6851543175815127519, guid: 2ab5e2b052ddb4229b8be680f8c4e7d1, type: 3}
       propertyPath: m_LocalPosition.x
@@ -14664,6 +14736,26 @@ PrefabInstance:
     - target: {fileID: 8693089420175345819, guid: 2ab5e2b052ddb4229b8be680f8c4e7d1, type: 3}
       propertyPath: m_Name
       value: GalaxyRaptor_Gun2
+      objectReference: {fileID: 0}
+    - target: {fileID: 8898234233531431389, guid: 2ab5e2b052ddb4229b8be680f8c4e7d1, type: 3}
+      propertyPath: simulationSpeed
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 8898234233531431389, guid: 2ab5e2b052ddb4229b8be680f8c4e7d1, type: 3}
+      propertyPath: InitialModule.startSize.scalar
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 8898234233531431389, guid: 2ab5e2b052ddb4229b8be680f8c4e7d1, type: 3}
+      propertyPath: InitialModule.startSpeed.scalar
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 8898234233531431389, guid: 2ab5e2b052ddb4229b8be680f8c4e7d1, type: 3}
+      propertyPath: InitialModule.startLifetime.scalar
+      value: 1.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 8898234233531431389, guid: 2ab5e2b052ddb4229b8be680f8c4e7d1, type: 3}
+      propertyPath: InitialModule.startColor.maxColor.g
+      value: 0.5254902
       objectReference: {fileID: 0}
     - target: {fileID: 8934542878946749813, guid: 2ab5e2b052ddb4229b8be680f8c4e7d1, type: 3}
       propertyPath: maxAlpha
