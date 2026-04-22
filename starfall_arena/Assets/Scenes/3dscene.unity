@@ -3537,6 +3537,18 @@ PrefabInstance:
       propertyPath: m_Layer
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 6016429355266790633, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      propertyPath: GlobalObjectIdHash
+      value: 2413108219
+      objectReference: {fileID: 0}
+    - target: {fileID: 6016429355266790633, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      propertyPath: SceneMigrationSynchronization
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6016429355266790633, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      propertyPath: InScenePlacedSourceGlobalObjectIdHash
+      value: 2698202182
+      objectReference: {fileID: 0}
     - target: {fileID: 6053615014939578407, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
       propertyPath: m_Layer
       value: 0
@@ -4205,6 +4217,18 @@ PrefabInstance:
       propertyPath: InitialModule.startLifetime.scalar
       value: 1.7
       objectReference: {fileID: 0}
+    - target: {fileID: 6016429355266790633, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      propertyPath: GlobalObjectIdHash
+      value: 1782425788
+      objectReference: {fileID: 0}
+    - target: {fileID: 6016429355266790633, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      propertyPath: SceneMigrationSynchronization
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6016429355266790633, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      propertyPath: InScenePlacedSourceGlobalObjectIdHash
+      value: 2698202182
+      objectReference: {fileID: 0}
     - target: {fileID: 6926766771821229357, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
       propertyPath: simulationSpeed
       value: 5
@@ -4500,6 +4524,18 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: -7814873099316739718, guid: 2ab5e2b052ddb4229b8be680f8c4e7d1, type: 3}
+      propertyPath: GlobalObjectIdHash
+      value: 1925962198
+      objectReference: {fileID: 0}
+    - target: {fileID: -7814873099316739718, guid: 2ab5e2b052ddb4229b8be680f8c4e7d1, type: 3}
+      propertyPath: SceneMigrationSynchronization
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -7814873099316739718, guid: 2ab5e2b052ddb4229b8be680f8c4e7d1, type: 3}
+      propertyPath: InScenePlacedSourceGlobalObjectIdHash
+      value: 4207340926
+      objectReference: {fileID: 0}
     - target: {fileID: 938683384551864085, guid: 2ab5e2b052ddb4229b8be680f8c4e7d1, type: 3}
       propertyPath: InitialModule.startLifetime.scalar
       value: 1.7
@@ -4508,6 +4544,10 @@ PrefabInstance:
       propertyPath: m_Camera
       value: 
       objectReference: {fileID: 1867909032}
+    - target: {fileID: 1971979917992463640, guid: 2ab5e2b052ddb4229b8be680f8c4e7d1, type: 3}
+      propertyPath: m_NeverAutoSwitchControlSchemes
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 4844600726074656449, guid: 2ab5e2b052ddb4229b8be680f8c4e7d1, type: 3}
       propertyPath: chromaticConfig.volume
       value: 

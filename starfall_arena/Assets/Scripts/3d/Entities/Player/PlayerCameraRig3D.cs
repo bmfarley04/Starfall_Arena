@@ -99,6 +99,16 @@ public class PlayerCameraRig3D : MonoBehaviour
         CacheCameraComponents();
     }
 
+    public void SetCameraRigActive(bool isActive)
+    {
+        if (virtualCamera != null)
+        {
+            virtualCamera.gameObject.SetActive(isActive);
+        }
+
+        enabled = isActive;
+    }
+
     public void SetCameraConfig(PlayerCameraRigConfig3D config)
     {
         cameraConfig = config;

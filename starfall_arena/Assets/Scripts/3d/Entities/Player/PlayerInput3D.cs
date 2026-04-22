@@ -16,6 +16,7 @@ public class PlayerInput3D : MonoBehaviour, IShipFlightInputSource
     private bool _isCursorLocked;
     private bool _appliedFireHeld;
     private Weapon3D _activeWeaponForFire;
+    private bool _combatInputSuppressed;
 
     private const string KeyboardMouseScheme = "key+mouse";
 
@@ -70,6 +71,17 @@ public class PlayerInput3D : MonoBehaviour, IShipFlightInputSource
         return wasPressed;
     }
 
+    public void SetCombatInputSuppressed(bool suppressed)
+    {
+        _combatInputSuppressed = suppressed;
+        if (suppressed)
+        {
+            _fireHeld = false;
+        }
+
+        RefreshWeaponFireState();
+    }
+
     public void OnFreeLook(InputValue value)
     {
         _gamepadLookInput = value.Get<Vector2>();
@@ -90,6 +102,13 @@ public class PlayerInput3D : MonoBehaviour, IShipFlightInputSource
 
     public void OnFire(InputValue value)
     {
+        if (_combatInputSuppressed)
+        {
+            _fireHeld = false;
+            RefreshWeaponFireState();
+            return;
+        }
+
         _fireHeld = value.Get<float>() > 0f;
         RefreshWeaponFireState();
     }
@@ -104,7 +123,7 @@ public class PlayerInput3D : MonoBehaviour, IShipFlightInputSource
 
     private void TryUseAbility(int index, InputValue value)
     {
-        if (entity == null)
+        if (_combatInputSuppressed || entity == null)
         {
             return;
         }
@@ -168,7 +187,9 @@ public class PlayerInput3D : MonoBehaviour, IShipFlightInputSource
     private void RefreshWeaponFireState()
     {
         Weapon3D selectedWeapon = entity != null ? entity.SelectedWeapon : null;
-        bool shouldHoldFire = _fireHeld && (entity == null || !entity.IsPrimaryFireDisabledByAbility());
+        bool shouldHoldFire = !_combatInputSuppressed &&
+            _fireHeld &&
+            (entity == null || !entity.IsPrimaryFireDisabledByAbility());
 
         if (_activeWeaponForFire != selectedWeapon)
         {

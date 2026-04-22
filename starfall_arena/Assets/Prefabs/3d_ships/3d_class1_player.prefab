@@ -455,6 +455,7 @@ GameObject:
   - component: {fileID: 5104438160426859549}
   - component: {fileID: 8188930441586883119}
   - component: {fileID: 7902338216098012005}
+  - component: {fileID: 6016429355266790633}
   m_Layer: 0
   m_Name: 3d_class1_player
   m_TagString: Enemy
@@ -1374,6 +1375,31 @@ MonoBehaviour:
     projectileMultiplier: 0.5
     beamAccumulationWindow: 0.2
     fadeSpeed: 2
+--- !u!114 &6016429355266790633
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2568558604607578100}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
+  GlobalObjectIdHash: 2698202182
+  InScenePlacedSourceGlobalObjectIdHash: 0
+  DeferredDespawnTick: 0
+  Ownership: 1
+  AlwaysReplicateAsRoot: 0
+  SynchronizeTransform: 1
+  ActiveSceneSynchronization: 0
+  SceneMigrationSynchronization: 1
+  SpawnWithObservers: 1
+  DontDestroyWithOwner: 0
+  AutoObjectParentSync: 1
+  SyncOwnerTransformWhenParented: 1
+  AllowOwnerToParent: 0
 --- !u!1 &3042639647086152311
 GameObject:
   m_ObjectHideFlags: 0
