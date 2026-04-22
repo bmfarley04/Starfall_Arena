@@ -6370,16 +6370,27 @@ MonoBehaviour:
     targetMask:
       serializedVersion: 2
       m_Bits: 4294967295
+    aimCamera: {fileID: 0}
+    aimCollisionMask:
+      serializedVersion: 2
+      m_Bits: 4294967295
+    maxAimDistance: 1000
+    screenCenterConvergenceDistance: 150
+    screenCenterDirectionBlend: 0.35
     pullSpeed: 20
     freezeTargetMovement: 0
     stopDistance: 1
-    beamColor: {r: 0, g: 1, b: 1, a: 0.45}
-    coneMaterial: {fileID: 0}
-    coneSegments: 16
-    coneOffset: {x: 0, y: 0, z: 0}
-    suctionParticles: {fileID: 0}
+    spawnPoint: {fileID: 0}
+    visualRoot: {fileID: 0}
+    alignVisualToConeDirection: 1
+    visualRotationOffsetEuler: {x: 0, y: 0, z: 0}
+    scaleVisualToCone: 0
+    visualConeScaleMultiplier: {x: 1, y: 1, z: 1}
+    drawGameplayConeGizmo: 1
+    gameplayConeGizmoColor: {r: 0, g: 1, b: 1, a: 0.85}
     beamLoopSound: {fileID: 0}
   tractorBeamLoopAudioSource: {fileID: 0}
+  logInitialTargetHits: 1
 --- !u!1 &8065253775909087135
 GameObject:
   m_ObjectHideFlags: 0

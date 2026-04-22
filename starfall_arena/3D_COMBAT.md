@@ -95,7 +95,12 @@ Base input rule:
   - reuses the shared 3D spawn, aim, and recoil rules while dealing direct hull damage
 - `TractorBeam3D`
   - cone pull ability for the 3D path
-  - builds a lightweight runtime cone mesh, plays optional suction VFX/audio, and pulls overlapping `Rigidbody` targets toward the ship inside a planar forward cone
+  - pulls overlapping `Rigidbody` targets toward the ship with full 3D cone-angle checks (including vertical climb/dive space)
+  - resolves cone aim from the same center-screen camera ray path used by 3D projectile weapons (with convergence + direction blend), while still using authored `spawnPoint` for beam origin/visual placement
+  - can auto-align `visualRoot` to the same cone direction used by pull logic (`alignVisualToConeDirection`) and can optionally scale visuals to the gameplay cone dimensions (`scaleVisualToCone` + `visualConeScaleMultiplier`)
+  - exposes a selected-object Scene gizmo (`drawGameplayConeGizmo`) so cone half-angle/range can be verified against runtime gameplay volume
+  - no longer generates cone meshes, materials, or suction particles in code; it now reads an authored `spawnPoint` for cone origin/facing and only toggles an authored `visualRoot`, so the full tractor beam look is built manually in prefab/editor content
+  - authored visuals can be particle-based or mesh-based; the current lightweight mesh option is `Assets/Shaders/3d/TractorBeamFresnel.shader`, which expects a cone/cylinder mesh with beam length mapped along UV `V`
 
 ## Current Control And Aim Rules
 

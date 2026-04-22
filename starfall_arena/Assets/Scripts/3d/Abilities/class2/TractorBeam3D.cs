@@ -1,4 +1,4 @@
-using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -25,6 +25,19 @@ public class TractorBeam3D : Ability3D
         [Tooltip("Layer mask used when gathering pull targets.")]
         public LayerMask targetMask;
 
+        [Header("Aiming")]
+        [Tooltip("Optional camera used for center-screen aiming. If unset, the ability reuses the owner weapon aim camera when available.")]
+        public Camera aimCamera;
+        [Tooltip("Layer mask used when resolving center-screen aim hit points.")]
+        public LayerMask aimCollisionMask;
+        [Tooltip("Max ray distance used for center-screen aiming.")]
+        public float maxAimDistance;
+        [Tooltip("Minimum distance from the camera center ray used as a convergence point.")]
+        public float screenCenterConvergenceDistance;
+        [Range(0f, 1f)]
+        [Tooltip("How strongly to blend cone direction toward the raw center-screen ray direction.")]
+        public float screenCenterDirectionBlend;
+
         [Header("Pull Effect")]
         [Tooltip("Speed applied while pulling targets toward the ship.")]
         public float pullSpeed;
@@ -34,17 +47,24 @@ public class TractorBeam3D : Ability3D
         public float stopDistance;
 
         [Header("Visuals")]
-        [Tooltip("Tint applied to the cone mesh.")]
-        public Color beamColor;
-        [Tooltip("Material used for the cone mesh.")]
-        public Material coneMaterial;
-        [Range(8, 64)]
-        [Tooltip("Number of fan segments used to build the cone mesh.")]
-        public int coneSegments;
-        [Tooltip("Cone origin offset in local space.")]
-        public Vector3 coneOffset;
-        [Tooltip("Optional particle system for suction feedback.")]
-        public ParticleSystem suctionParticles;
+        [Tooltip("Optional spawn point used for the tractor pull query origin and beam facing. Keep your authored beam visuals aligned to this transform.")]
+        public Transform spawnPoint;
+        [Tooltip("Optional authored tractor beam root. The script only toggles this object on/off; it no longer generates visuals in code.")]
+        public GameObject visualRoot;
+        [Tooltip("If true, rotates the visual root to the same cone direction used by pull logic.")]
+        public bool alignVisualToConeDirection;
+        [Tooltip("Extra rotation offset applied after cone alignment (use this to compensate for mesh forward axis differences).")]
+        public Vector3 visualRotationOffsetEuler;
+        [Tooltip("If true, scales the visual root to match gameplay cone length/radius.")]
+        public bool scaleVisualToCone;
+        [Tooltip("Multiplier applied to the computed cone visual scale (X/Y=diameter, Z=range).")]
+        public Vector3 visualConeScaleMultiplier;
+
+        [Header("Debug")]
+        [Tooltip("Draw the actual gameplay cone in Scene view when this object is selected.")]
+        public bool drawGameplayConeGizmo;
+        [Tooltip("Color used for the gameplay cone gizmo.")]
+        public Color gameplayConeGizmoColor;
 
         [Header("Sound Effects")]
         [Tooltip("Looping sound played while the tractor beam is active.")]
@@ -58,19 +78,30 @@ public class TractorBeam3D : Ability3D
         duration = 2f,
         coneHalfAngle = 30f,
         coneRange = 15f,
+        aimCollisionMask = ~0,
+        maxAimDistance = 1000f,
+        screenCenterConvergenceDistance = 150f,
+        screenCenterDirectionBlend = 0.35f,
         pullSpeed = 20f,
         stopDistance = 1f,
-        beamColor = new Color(0f, 1f, 1f, 0.45f),
-        coneSegments = 16,
-        targetMask = ~0
+        targetMask = ~0,
+        alignVisualToConeDirection = true,
+        visualRotationOffsetEuler = Vector3.zero,
+        scaleVisualToCone = false,
+        visualConeScaleMultiplier = Vector3.one,
+        drawGameplayConeGizmo = true,
+        gameplayConeGizmoColor = new Color(0f, 1f, 1f, 0.85f)
     };
     [SerializeField] private AudioSource tractorBeamLoopAudioSource;
+    [SerializeField] private bool logInitialTargetHits = true;
 
     private bool _isActive;
-    private Coroutine _tractorBeamCoroutine;
-    private GameObject _tractorBeamConeObject;
-    private MeshFilter _tractorBeamConeMeshFilter;
-    private MeshRenderer _tractorBeamConeMeshRenderer;
+    private bool _awaitingRelease;
+    private float _activeUntilTime = -1f;
+    private const float DefaultMaxAimDistance = 1000f;
+    private const float DefaultScreenCenterConvergenceDistance = 150f;
+    private readonly HashSet<int> _currentlyHitTargetIds = new HashSet<int>();
+    private readonly HashSet<int> _hitTargetIdsThisFrame = new HashSet<int>();
 
     protected override void Awake()
     {
@@ -85,43 +116,65 @@ public class TractorBeam3D : Ability3D
         tractorBeamLoopAudioSource.loop = true;
         tractorBeamLoopAudioSource.spatialBlend = 0f;
 
-        InitializeTractorBeamCone();
+        SetVisualRootActive(false);
     }
 
     private void Update()
     {
-        if (_isActive && _tractorBeamConeObject != null)
+        if (!_isActive)
         {
-            AlignTractorBeamCone();
+            return;
         }
+
+        if (Time.time >= _activeUntilTime)
+        {
+            DeactivateTractorBeam();
+            return;
+        }
+
+        ResolveBeamAim(out Vector3 origin, out Vector3 forward);
+        ApplyVisualAlignment(origin, forward);
     }
 
     private void FixedUpdate()
     {
         if (_isActive)
         {
-            ApplyTractorBeamPull();
+            ResolveBeamAim(out Vector3 origin, out Vector3 forward);
+            ApplyTractorBeamPull(origin, forward);
         }
     }
 
     public override bool TryUseAbility(InputValue value)
     {
-        if (!value.isPressed || _isActive)
+        if (!value.isPressed)
+        {
+            _awaitingRelease = false;
+            return false;
+        }
+
+        if (_isActive || _awaitingRelease)
         {
             return false;
         }
 
-        return base.TryUseAbility(value);
+        bool used = base.TryUseAbility(value);
+        if (used)
+        {
+            _awaitingRelease = true;
+        }
+
+        return used;
     }
 
     public override void UseAbility(InputValue value)
     {
-        if (_tractorBeamCoroutine != null)
+        if (!value.isPressed)
         {
-            StopCoroutine(_tractorBeamCoroutine);
+            return;
         }
 
-        _tractorBeamCoroutine = StartCoroutine(ActivateTractorBeam());
+        ActivateTractorBeam();
     }
 
     public override bool IsAbilityActive()
@@ -136,152 +189,39 @@ public class TractorBeam3D : Ability3D
 
     public override void Die()
     {
-        if (_tractorBeamCoroutine != null)
-        {
-            StopCoroutine(_tractorBeamCoroutine);
-            _tractorBeamCoroutine = null;
-        }
-
+        _awaitingRelease = false;
         DeactivateTractorBeam();
-
-        if (_tractorBeamConeObject != null)
-        {
-            Destroy(_tractorBeamConeObject);
-            _tractorBeamConeObject = null;
-        }
     }
 
-    private void OnDestroy()
-    {
-        if (_tractorBeamConeObject != null)
-        {
-            Destroy(_tractorBeamConeObject);
-        }
-    }
-
-    private void InitializeTractorBeamCone()
-    {
-        _tractorBeamConeObject = new GameObject("TractorBeamCone3D");
-        _tractorBeamConeObject.transform.SetParent(transform, false);
-
-        _tractorBeamConeMeshFilter = _tractorBeamConeObject.AddComponent<MeshFilter>();
-        _tractorBeamConeMeshRenderer = _tractorBeamConeObject.AddComponent<MeshRenderer>();
-
-        if (tractorBeam.coneMaterial != null)
-        {
-            _tractorBeamConeMeshRenderer.sharedMaterial = tractorBeam.coneMaterial;
-        }
-        else
-        {
-            Material fallbackMaterial = new Material(Shader.Find("Sprites/Default"));
-            fallbackMaterial.color = tractorBeam.beamColor;
-            _tractorBeamConeMeshRenderer.material = fallbackMaterial;
-        }
-
-        _tractorBeamConeMeshRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-        _tractorBeamConeMeshRenderer.receiveShadows = false;
-        _tractorBeamConeObject.SetActive(false);
-        GenerateTractorBeamConeMesh();
-    }
-
-    private void GenerateTractorBeamConeMesh()
-    {
-        if (_tractorBeamConeMeshFilter != null && _tractorBeamConeMeshFilter.sharedMesh != null)
-        {
-            Destroy(_tractorBeamConeMeshFilter.sharedMesh);
-        }
-
-        int segments = Mathf.Max(8, tractorBeam.coneSegments);
-        float halfAngleRadians = Mathf.Max(1f, tractorBeam.coneHalfAngle) * Mathf.Deg2Rad;
-        float range = Mathf.Max(0.1f, tractorBeam.coneRange);
-
-        Mesh mesh = new Mesh
-        {
-            name = "TractorBeamConeMesh3D"
-        };
-
-        Vector3[] vertices = new Vector3[segments + 2];
-        Vector2[] uvs = new Vector2[vertices.Length];
-        Color[] colors = new Color[vertices.Length];
-        int[] triangles = new int[segments * 3];
-
-        vertices[0] = Vector3.zero;
-        uvs[0] = new Vector2(0.5f, 0f);
-        colors[0] = tractorBeam.beamColor;
-
-        for (int i = 0; i <= segments; i++)
-        {
-            float t = i / (float)segments;
-            float angle = Mathf.Lerp(-halfAngleRadians, halfAngleRadians, t);
-            float x = Mathf.Sin(angle) * range;
-            float z = Mathf.Cos(angle) * range;
-            vertices[i + 1] = new Vector3(x, 0f, z);
-            uvs[i + 1] = new Vector2(t, 1f);
-            colors[i + 1] = new Color(tractorBeam.beamColor.r, tractorBeam.beamColor.g, tractorBeam.beamColor.b, tractorBeam.beamColor.a * 0.25f);
-        }
-
-        for (int i = 0; i < segments; i++)
-        {
-            int triangleStart = i * 3;
-            triangles[triangleStart] = 0;
-            triangles[triangleStart + 1] = i + 1;
-            triangles[triangleStart + 2] = i + 2;
-        }
-
-        mesh.vertices = vertices;
-        mesh.uv = uvs;
-        mesh.colors = colors;
-        mesh.triangles = triangles;
-        mesh.RecalculateNormals();
-
-        _tractorBeamConeMeshFilter.sharedMesh = mesh;
-    }
-
-    private IEnumerator ActivateTractorBeam()
+    private void ActivateTractorBeam()
     {
         _isActive = true;
-        GenerateTractorBeamConeMesh();
-        AlignTractorBeamCone();
-        _tractorBeamConeObject?.SetActive(true);
-        tractorBeam.suctionParticles?.Play();
+        _activeUntilTime = Time.time + Mathf.Max(0.05f, tractorBeam.duration);
+        SetVisualRootActive(true);
+        ResolveBeamAim(out Vector3 origin, out Vector3 forward);
+        ApplyVisualAlignment(origin, forward);
         StartBeamLoopSound();
-        yield return new WaitForSeconds(tractorBeam.duration);
-        DeactivateTractorBeam();
-        _tractorBeamCoroutine = null;
     }
 
     private void DeactivateTractorBeam()
     {
-        _isActive = false;
-
-        if (_tractorBeamConeObject != null)
-        {
-            _tractorBeamConeObject.SetActive(false);
-            _tractorBeamConeObject.transform.SetParent(transform, false);
-            _tractorBeamConeObject.transform.localPosition = Vector3.zero;
-            _tractorBeamConeObject.transform.localRotation = Quaternion.identity;
-        }
-
-        tractorBeam.suctionParticles?.Stop(true, ParticleSystemStopBehavior.StopEmitting);
-        StopBeamLoopSound();
-    }
-
-    private void AlignTractorBeamCone()
-    {
-        if (_tractorBeamConeObject == null)
+        if (!_isActive)
         {
             return;
         }
 
-        _tractorBeamConeObject.transform.SetParent(null);
-        _tractorBeamConeObject.transform.position = transform.TransformPoint(tractorBeam.coneOffset);
-        _tractorBeamConeObject.transform.rotation = transform.rotation;
+        _isActive = false;
+        _activeUntilTime = -1f;
+        _currentlyHitTargetIds.Clear();
+        _hitTargetIdsThisFrame.Clear();
+        SetVisualRootActive(false);
+        StopBeamLoopSound();
     }
 
-    private void ApplyTractorBeamPull()
+    private void ApplyTractorBeamPull(Vector3 origin, Vector3 forward)
     {
-        Vector3 origin = transform.TransformPoint(tractorBeam.coneOffset);
-        Vector3 forward = GetPlanarForward();
+        _hitTargetIdsThisFrame.Clear();
+
         int hitCount = Physics.OverlapSphereNonAlloc(
             origin,
             Mathf.Max(0f, tractorBeam.coneRange),
@@ -313,31 +253,41 @@ public class TractorBeam3D : Ability3D
             }
 
             Vector3 toTarget = targetBody.worldCenterOfMass - origin;
-            Vector3 planarToTarget = Vector3.ProjectOnPlane(toTarget, Vector3.up);
-            float planarDistance = planarToTarget.magnitude;
-            if (planarDistance <= Mathf.Max(0f, tractorBeam.stopDistance))
+            float distance = toTarget.magnitude;
+            if (distance <= Mathf.Max(0f, tractorBeam.stopDistance))
             {
                 continue;
             }
 
-            if (planarToTarget.sqrMagnitude <= 0.0001f)
+            if (distance <= 0.0001f)
             {
                 continue;
             }
 
-            float angle = Vector3.Angle(forward, planarToTarget.normalized);
+            Vector3 directionToTarget = toTarget / distance;
+            float angle = Vector3.Angle(forward, directionToTarget);
             if (angle > tractorBeam.coneHalfAngle)
             {
                 continue;
             }
 
-            Vector3 currentVelocity = targetBody.linearVelocity;
-            currentVelocity.y = 0f;
+            int targetId = targetEntity.GetInstanceID();
+            _hitTargetIdsThisFrame.Add(targetId);
+            if (logInitialTargetHits && !_currentlyHitTargetIds.Contains(targetId))
+            {
+                Debug.Log($"[TractorBeam3D] Initial hit: {entity.name} -> {targetEntity.name}", this);
+            }
 
-            Vector3 pullVelocity = -planarToTarget.normalized * tractorBeam.pullSpeed;
+            Vector3 pullVelocity = -directionToTarget * tractorBeam.pullSpeed;
             targetBody.linearVelocity = tractorBeam.freezeTargetMovement
                 ? pullVelocity
-                : currentVelocity + (pullVelocity * Time.fixedDeltaTime);
+                : targetBody.linearVelocity + (pullVelocity * Time.fixedDeltaTime);
+        }
+
+        _currentlyHitTargetIds.RemoveWhere(targetId => !_hitTargetIdsThisFrame.Contains(targetId));
+        foreach (int targetId in _hitTargetIdsThisFrame)
+        {
+            _currentlyHitTargetIds.Add(targetId);
         }
 
         for (int i = 0; i < hitCount; i++)
@@ -366,15 +316,143 @@ public class TractorBeam3D : Ability3D
         return hitCollider.GetComponentInParent<Entity3D>();
     }
 
-    private Vector3 GetPlanarForward()
+    private Vector3 GetForwardDirection()
     {
-        Vector3 planarForward = Vector3.ProjectOnPlane(transform.forward, Vector3.up);
-        if (planarForward.sqrMagnitude <= 0.0001f)
+        return GetForwardDirection(GetBeamOrigin());
+    }
+
+    private Vector3 GetForwardDirection(Vector3 origin)
+    {
+        Transform directionSource = tractorBeam.spawnPoint != null ? tractorBeam.spawnPoint : transform;
+        Vector3 fallbackForward = directionSource.forward.sqrMagnitude > 0.0001f
+            ? directionSource.forward.normalized
+            : Vector3.forward;
+
+        if (TryResolveScreenCenterAim(origin, fallbackForward, out Vector3 aimDirection))
         {
-            return Vector3.forward;
+            return aimDirection;
         }
 
-        return planarForward.normalized;
+        return fallbackForward;
+    }
+
+    private Vector3 GetBeamOrigin()
+    {
+        return tractorBeam.spawnPoint != null ? tractorBeam.spawnPoint.position : transform.position;
+    }
+
+    private void ResolveBeamAim(out Vector3 origin, out Vector3 forward)
+    {
+        origin = GetBeamOrigin();
+        forward = GetForwardDirection(origin);
+    }
+
+    private bool TryResolveScreenCenterAim(Vector3 origin, Vector3 fallbackForward, out Vector3 resolvedDirection)
+    {
+        resolvedDirection = fallbackForward;
+
+        Camera resolvedCamera = ResolveAimCamera();
+        if (resolvedCamera == null)
+        {
+            return false;
+        }
+
+        float maxAimDistance = tractorBeam.maxAimDistance > 0f
+            ? tractorBeam.maxAimDistance
+            : DefaultMaxAimDistance;
+        float convergenceDistanceFloor = tractorBeam.screenCenterConvergenceDistance > 0f
+            ? tractorBeam.screenCenterConvergenceDistance
+            : DefaultScreenCenterConvergenceDistance;
+
+        Ray centerRay = resolvedCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
+        Vector3 centerPoint = centerRay.origin + (centerRay.direction * Mathf.Max(convergenceDistanceFloor, maxAimDistance));
+
+        if (Physics.Raycast(centerRay, out RaycastHit hit, maxAimDistance, tractorBeam.aimCollisionMask, QueryTriggerInteraction.Ignore))
+        {
+            float convergenceDistance = Mathf.Max(convergenceDistanceFloor, hit.distance);
+            centerPoint = centerRay.origin + (centerRay.direction * convergenceDistance);
+        }
+
+        Vector3 toAimPoint = centerPoint - origin;
+        if (toAimPoint.sqrMagnitude > 0.0001f)
+        {
+            resolvedDirection = toAimPoint.normalized;
+        }
+        else if (centerRay.direction.sqrMagnitude > 0.0001f)
+        {
+            resolvedDirection = centerRay.direction.normalized;
+        }
+
+        if (centerRay.direction.sqrMagnitude > 0.0001f && tractorBeam.screenCenterDirectionBlend > 0f)
+        {
+            resolvedDirection = Vector3.Slerp(
+                resolvedDirection,
+                centerRay.direction.normalized,
+                Mathf.Clamp01(tractorBeam.screenCenterDirectionBlend)).normalized;
+        }
+
+        return true;
+    }
+
+    private Camera ResolveAimCamera()
+    {
+        if (tractorBeam.aimCamera != null)
+        {
+            return tractorBeam.aimCamera;
+        }
+
+        if (entity != null)
+        {
+            Weapon3D selectedWeapon = entity.SelectedWeapon;
+            if (selectedWeapon != null && selectedWeapon.AimCamera != null)
+            {
+                return selectedWeapon.AimCamera;
+            }
+
+            if (entity.PrimaryWeapon != null && entity.PrimaryWeapon.AimCamera != null)
+            {
+                return entity.PrimaryWeapon.AimCamera;
+            }
+        }
+
+        return entity is Player3D ? Camera.main : null;
+    }
+
+    private void SetVisualRootActive(bool isActive)
+    {
+        if (tractorBeam.visualRoot != null)
+        {
+            tractorBeam.visualRoot.SetActive(isActive);
+        }
+    }
+
+    private void ApplyVisualAlignment(Vector3 origin, Vector3 forward)
+    {
+        if (!tractorBeam.alignVisualToConeDirection || tractorBeam.visualRoot == null)
+        {
+            return;
+        }
+
+        Transform visualTransform = tractorBeam.visualRoot.transform;
+        Vector3 upReference = tractorBeam.spawnPoint != null ? tractorBeam.spawnPoint.up : transform.up;
+        if (upReference.sqrMagnitude <= 0.0001f || Mathf.Abs(Vector3.Dot(upReference.normalized, forward)) > 0.995f)
+        {
+            upReference = Vector3.up;
+        }
+
+        Quaternion alignedRotation = Quaternion.LookRotation(forward, upReference)
+                                     * Quaternion.Euler(tractorBeam.visualRotationOffsetEuler);
+        visualTransform.SetPositionAndRotation(origin, alignedRotation);
+
+        if (!tractorBeam.scaleVisualToCone)
+        {
+            return;
+        }
+
+        float range = Mathf.Max(0.01f, tractorBeam.coneRange);
+        float radius = Mathf.Tan(Mathf.Deg2Rad * Mathf.Clamp(tractorBeam.coneHalfAngle, 0.1f, 89f)) * range;
+        Vector3 coneScale = new Vector3(radius * 2f, radius * 2f, range);
+        visualTransform.localScale = Vector3.Scale(coneScale, tractorBeam.visualConeScaleMultiplier);
     }
 
     private void StartBeamLoopSound()
@@ -398,5 +476,79 @@ public class TractorBeam3D : Ability3D
         {
             tractorBeamLoopAudioSource.Stop();
         }
+    }
+
+    private void OnDisable()
+    {
+        _awaitingRelease = false;
+        DeactivateTractorBeam();
+    }
+
+    private void OnDrawGizmosSelected()
+    {
+        if (!tractorBeam.drawGameplayConeGizmo)
+        {
+            return;
+        }
+
+        Vector3 origin = GetBeamOrigin();
+        Vector3 forward;
+        if (Application.isPlaying)
+        {
+            forward = GetForwardDirection(origin);
+        }
+        else
+        {
+            Transform directionSource = tractorBeam.spawnPoint != null ? tractorBeam.spawnPoint : transform;
+            forward = directionSource.forward.sqrMagnitude > 0.0001f ? directionSource.forward.normalized : transform.forward;
+        }
+
+        DrawConeGizmo(origin, forward);
+    }
+
+    private void DrawConeGizmo(Vector3 origin, Vector3 forward)
+    {
+        float range = Mathf.Max(0f, tractorBeam.coneRange);
+        if (range <= 0f || forward.sqrMagnitude <= 0.0001f)
+        {
+            return;
+        }
+
+        float halfAngleRadians = Mathf.Deg2Rad * Mathf.Clamp(tractorBeam.coneHalfAngle, 0.1f, 89f);
+        float radius = Mathf.Tan(halfAngleRadians) * range;
+        Vector3 forwardNorm = forward.normalized;
+
+        Vector3 right = Vector3.Cross(forwardNorm, Vector3.up);
+        if (right.sqrMagnitude <= 0.0001f)
+        {
+            right = Vector3.Cross(forwardNorm, Vector3.right);
+        }
+
+        right.Normalize();
+        Vector3 up = Vector3.Cross(right, forwardNorm).normalized;
+        Vector3 center = origin + (forwardNorm * range);
+
+        Color previous = Gizmos.color;
+        Gizmos.color = tractorBeam.gameplayConeGizmoColor;
+
+        const int segments = 20;
+        Vector3 firstPoint = center + (right * radius);
+        Vector3 previousPoint = firstPoint;
+        for (int i = 1; i <= segments; i++)
+        {
+            float t = i / (float)segments;
+            float angle = t * Mathf.PI * 2f;
+            Vector3 circlePoint = center + ((Mathf.Cos(angle) * right + Mathf.Sin(angle) * up) * radius);
+            Gizmos.DrawLine(previousPoint, circlePoint);
+            previousPoint = circlePoint;
+        }
+
+        Gizmos.DrawLine(origin, center + (right * radius));
+        Gizmos.DrawLine(origin, center - (right * radius));
+        Gizmos.DrawLine(origin, center + (up * radius));
+        Gizmos.DrawLine(origin, center - (up * radius));
+        Gizmos.DrawLine(origin, center);
+
+        Gizmos.color = previous;
     }
 }
