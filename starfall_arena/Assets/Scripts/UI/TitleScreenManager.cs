@@ -100,9 +100,28 @@ public class TitleScreenManager : MonoBehaviour
     [Tooltip("First selected button on the host waiting canvas")]
     [SerializeField] private GameObject hostWaitingFirstSelected;
 
+    [Tooltip("Canvas shown after Host Game where the player chooses 2D or 3D")]
+    [SerializeField] private CanvasGroup hostModeSelectCanvas;
+
+    [Tooltip("First selected button on the host mode select canvas")]
+    [SerializeField] private GameObject hostModeSelectFirstSelected;
+
     [Header("Networking UI")]
     [SerializeField] private TMP_InputField ipAddressInputField;
     [SerializeField] private TextMeshProUGUI networkStatusText;
+    [SerializeField] private TextMeshProUGUI hostModeStatusText;
+
+    [Header("Host Scene Routing")]
+    [Tooltip("2D gameplay scene loaded after both players lock in when hosting from title")]
+    [SerializeField] private string network2DGameplaySceneName = "SampleScene";
+    [Tooltip("3D gameplay scene loaded after both players lock in when hosting from title")]
+    [SerializeField] private string network3DGameplaySceneName = "3d";
+    [SerializeField] private string host2DStatusLabel = "2D - DUEL";
+    [SerializeField] private string host3DStatusLabel = "3D - DUEL";
+
+    [Header("Host Mode Preview Models")]
+    [Tooltip("3D preview model roots shown on the host-mode select canvas. They stay hidden until the canvas transition is fully visible.")]
+    [SerializeField] private GameObject[] hostModePreviewModels;
 
     [Header("Hold Actions")]
     [SerializeField] private float submitHoldDuration = 1f;
@@ -110,10 +129,12 @@ public class TitleScreenManager : MonoBehaviour
     [SerializeField] private HoldActionButton joinConfirmButton;
     [SerializeField] private HoldActionButton joinBackButton;
     [SerializeField] private HoldActionButton waitingBackButton;
+    [SerializeField] private HoldActionButton hostModeBackButton;
 
     [Header("Manual Navigation")]
     [SerializeField] private NavigationGroup joinGameNavigation;
     [SerializeField] private NavigationGroup hostWaitingNavigation;
+    [SerializeField] private NavigationGroup hostModeSelectNavigation;
 
     [Header("Intro: Scene Fade In")]
     [SerializeField] private SceneFadeConfig sceneFade;
@@ -134,11 +155,16 @@ public class TitleScreenManager : MonoBehaviour
     private bool _navigationLatch;
     private bool _submitTriggeredWhileHeld;
     private HoldActionButton _resolvedControlsBackButton;
+    private string _resolved2DGameplaySceneName = "SampleScene";
+    private string _pendingHostModeLabel = string.Empty;
 
     private IEnumerator Start()
     {
         _netMgr = NetMgr.Instance;
         _sessionData = NetworkSessionData.Instance;
+        _resolved2DGameplaySceneName = string.IsNullOrWhiteSpace(network2DGameplaySceneName)
+            ? (_sessionData != null ? _sessionData.GameplaySceneName : "SampleScene")
+            : network2DGameplaySceneName;
 
         if (_netMgr != null)
         {
@@ -172,6 +198,7 @@ public class TitleScreenManager : MonoBehaviour
         shipSelectCanvas.gameObject.SetActive(false);
         if (joinGameCanvas != null) joinGameCanvas.gameObject.SetActive(false);
         if (hostWaitingCanvas != null) hostWaitingCanvas.gameObject.SetActive(false);
+        if (hostModeSelectCanvas != null) hostModeSelectCanvas.gameObject.SetActive(false);
 
         // Hide all canvases at start (when we activate them later)
         SetCanvasHidden(mainMenuCanvas);
@@ -179,6 +206,8 @@ public class TitleScreenManager : MonoBehaviour
         SetCanvasHidden(shipSelectCanvas);
         SetCanvasHidden(joinGameCanvas);
         SetCanvasHidden(hostWaitingCanvas);
+        SetCanvasHidden(hostModeSelectCanvas);
+        SetHostModePreviewModelsActive(false);
 
         // Phase 1: Scene fades from black
         yield return new WaitForSecondsRealtime(sceneFade.delay);
@@ -314,18 +343,43 @@ public class TitleScreenManager : MonoBehaviour
 
     public void StartHostingFlow()
     {
-        if (hostWaitingCanvas == null || _activeTransition != null) return;
+        if (hostModeSelectCanvas == null)
+        {
+            StartHosting2DFlow();
+            return;
+        }
 
-        _netMgr = NetMgr.Instance;
-        _sessionData = NetworkSessionData.Instance;
-        if (_netMgr == null || !_netMgr.StartHostForMenu())
+        if (_activeTransition != null)
         {
             return;
         }
 
         CanvasGroup source = _activeCanvas ?? mainMenuCanvas;
         _activeTransition = StartCoroutine(
-            RunTransition(source, hostWaitingCanvas, hostWaitingFirstSelected));
+            RunTransition(source, hostModeSelectCanvas, hostModeSelectFirstSelected));
+    }
+
+    public void StartHosting2DFlow()
+    {
+        _pendingHostModeLabel = host2DStatusLabel;
+        StartHostingForScene(_resolved2DGameplaySceneName);
+    }
+
+    public void StartHosting3DFlow()
+    {
+        _pendingHostModeLabel = host3DStatusLabel;
+        StartHostingForScene(network3DGameplaySceneName);
+    }
+
+    public void TransitionToOnlineMenuFromHostMode()
+    {
+        if (_activeTransition != null || hostModeSelectCanvas == null)
+        {
+            return;
+        }
+
+        _activeTransition = StartCoroutine(
+            RunTransition(hostModeSelectCanvas, mainMenuCanvas, mainMenuFirstSelected));
     }
 
     public void StartJoinFlow()
@@ -354,6 +408,10 @@ public class TitleScreenManager : MonoBehaviour
         {
             TransitionCanvas(joinGameCanvas, mainMenuCanvas, mainMenuFirstSelected);
         }
+        else if (_activeCanvas == hostModeSelectCanvas)
+        {
+            TransitionCanvas(hostModeSelectCanvas, mainMenuCanvas, mainMenuFirstSelected);
+        }
     }
 
     public void TransitionToMainMenuFromShipSelect()
@@ -372,11 +430,21 @@ public class TitleScreenManager : MonoBehaviour
         from.blocksRaycasts = false;
         SetButtonsEnabled(from, false);
 
+        if (from == hostModeSelectCanvas)
+        {
+            SetHostModePreviewModelsActive(false);
+        }
+
         // Activate target canvas NOW (before transition) but keep it non-interactable
         to.gameObject.SetActive(true);
         to.interactable = false;
         to.blocksRaycasts = false;
         SetButtonsEnabled(to, false); // Keep buttons disabled during transition
+
+        if (to == hostModeSelectCanvas)
+        {
+            SetHostModePreviewModelsActive(false);
+        }
 
         // Disable ShipSelectManager when leaving ship select screen
         if (from == shipSelectCanvas && shipSelectManager != null)
@@ -452,6 +520,11 @@ public class TitleScreenManager : MonoBehaviour
         if (to == shipSelectCanvas && shipSelectManager != null)
         {
             shipSelectManager.ActivateShipWhenVisible();
+        }
+
+        if (to == hostModeSelectCanvas)
+        {
+            SetHostModePreviewModelsActive(true);
         }
 
         // Enable buttons NOW (right before selection) to prevent premature auto-selection
@@ -554,6 +627,10 @@ public class TitleScreenManager : MonoBehaviour
         {
             TransitionToMainMenu();
         }
+        else if (_activeCanvas == hostModeSelectCanvas)
+        {
+            TransitionToOnlineMenuFromHostMode();
+        }
         else
         {
             CancelNetworkFlow();
@@ -631,6 +708,14 @@ public class TitleScreenManager : MonoBehaviour
         }
     }
 
+    private void SetHostModeStatus(string modeLabel)
+    {
+        if (hostModeStatusText != null)
+        {
+            hostModeStatusText.text = modeLabel ?? string.Empty;
+        }
+    }
+
     private void TransitionToShipSelectFromCurrent()
     {
         if (_activeTransition != null || shipSelectCanvas == null) return;
@@ -681,6 +766,11 @@ public class TitleScreenManager : MonoBehaviour
         if (_activeCanvas == joinGameCanvas)
         {
             return joinBackButton;
+        }
+
+        if (_activeCanvas == hostModeSelectCanvas)
+        {
+            return hostModeBackButton;
         }
 
         if (_activeCanvas == hostWaitingCanvas)
@@ -823,6 +913,11 @@ public class TitleScreenManager : MonoBehaviour
             return hostWaitingNavigation;
         }
 
+        if (_activeCanvas == hostModeSelectCanvas)
+        {
+            return hostModeSelectNavigation;
+        }
+
         return default;
     }
 
@@ -850,7 +945,43 @@ public class TitleScreenManager : MonoBehaviour
     private void ResetBackFillVisuals(Image activeImage)
     {
         ResetFillIfInactive(joinBackButton.fillImage, activeImage);
+        ResetFillIfInactive(hostModeBackButton.fillImage, activeImage);
         ResetFillIfInactive(waitingBackButton.fillImage, activeImage);
+    }
+
+    private void StartHostingForScene(string sceneName)
+    {
+        if (hostWaitingCanvas == null || _activeTransition != null)
+        {
+            return;
+        }
+
+        string resolvedScene = string.IsNullOrWhiteSpace(sceneName) ? string.Empty : sceneName.Trim();
+        if (string.IsNullOrEmpty(resolvedScene))
+        {
+            HandleStatusMessageChanged("Host scene is not configured.");
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(_pendingHostModeLabel))
+        {
+            _pendingHostModeLabel = host2DStatusLabel;
+        }
+
+        SetHostModeStatus(_pendingHostModeLabel);
+
+        _sessionData = NetworkSessionData.Instance;
+        _sessionData?.SetGameplaySceneName(resolvedScene);
+
+        _netMgr = NetMgr.Instance;
+        if (_netMgr == null || !_netMgr.StartHostForMenu())
+        {
+            return;
+        }
+
+        CanvasGroup source = _activeCanvas ?? mainMenuCanvas;
+        _activeTransition = StartCoroutine(
+            RunTransition(source, hostWaitingCanvas, hostWaitingFirstSelected));
     }
 
     private static void UpdateFill(Image image, float amount)
@@ -885,6 +1016,22 @@ public class TitleScreenManager : MonoBehaviour
         }
 
         return false;
+    }
+
+    private void SetHostModePreviewModelsActive(bool active)
+    {
+        if (hostModePreviewModels == null)
+        {
+            return;
+        }
+
+        foreach (GameObject previewModel in hostModePreviewModels)
+        {
+            if (previewModel != null)
+            {
+                previewModel.SetActive(active);
+            }
+        }
     }
 
     private void OnDestroy()

@@ -363,6 +363,16 @@ public class NetworkSessionData : NetworkBehaviour
         OnSelectedMapIndexChanged?.Invoke(_selectedMapIndex);
     }
 
+    public void SetGameplaySceneName(string sceneName)
+    {
+        if (string.IsNullOrWhiteSpace(sceneName))
+        {
+            return;
+        }
+
+        gameplaySceneName = sceneName.Trim();
+    }
+
     public bool TryGetLocalSelectionState(out NetworkShipSelectionState selection)
     {
         ulong localClientId = LocalClientId;
