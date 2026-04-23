@@ -99,6 +99,16 @@ public class PlayerCameraRig3D : MonoBehaviour
         CacheCameraComponents();
     }
 
+    public void BindTrackingTarget(Transform target)
+    {
+        if (virtualCamera == null || target == null)
+        {
+            return;
+        }
+
+        virtualCamera.Target.TrackingTarget = target;
+    }
+
     public void SetCameraRigActive(bool isActive)
     {
         if (virtualCamera != null)

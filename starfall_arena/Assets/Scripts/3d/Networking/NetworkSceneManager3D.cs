@@ -22,7 +22,14 @@ public class NetworkSceneManager3D : MonoBehaviour
 
     private void Start()
     {
-        if (!spawnPlayersOnStart || !NetMgr.IsNetworked || NetworkManager.Singleton == null || !NetworkManager.Singleton.IsServer)
+        if (!NetMgr.IsNetworked || NetworkManager.Singleton == null)
+        {
+            return;
+        }
+
+        StartCoroutine(BindLocalOwnerCameraWhenReady());
+
+        if (!spawnPlayersOnStart || !NetworkManager.Singleton.IsServer)
         {
             return;
         }
@@ -175,5 +182,27 @@ public class NetworkSceneManager3D : MonoBehaviour
         }
 
         netMovement.SetNetworkPlayerIndex(playerSlot);
+    }
+
+    private IEnumerator BindLocalOwnerCameraWhenReady()
+    {
+        while (NetMgr.IsNetworked && NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
+        {
+            NetMovement3D[] movements = FindObjectsByType<NetMovement3D>(FindObjectsSortMode.None);
+            for (int i = 0; i < movements.Length; i++)
+            {
+                NetMovement3D movement = movements[i];
+                if (movement == null || !movement.IsSpawned || !movement.IsOwner)
+                {
+                    continue;
+                }
+
+                movement.EnsureOwnerLocalControlReady();
+                movement.BindOwnerCameraAndTracking();
+                yield break;
+            }
+
+            yield return new WaitForSeconds(spawnRetryIntervalSeconds);
+        }
     }
 }

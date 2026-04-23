@@ -103,6 +103,15 @@ It does not own:
 
 Those stay out of phase 1 on purpose.
 
+### Local camera binding
+
+The local peer's Cinemachine gameplay camera now needs to be rebound after network spawn, not just left on a prefab-authored target.
+
+Current binding path:
+
+- `NetMovement3D` binds the owner camera/input/cinemachine tracking target when ownership becomes active
+- `NetworkSceneManager3D` also runs a local-owner retry loop after scene load so the camera still follows the newly spawned ship if spawn order or ownership timing is late
+
 ## 3D-Specific Integration Decisions
 
 ### Decision: Keep shared session code, duplicate movement code
@@ -137,6 +146,21 @@ How to avoid it:
 
 - `ShipFlight3D` now supports an external-simulation mode
 - networking owns the motion, but still pushes telemetry back into the shared 3D presentation systems
+
+### Decision: Rebind Cinemachine after network spawn
+
+What went wrong in the first 3D network pass:
+
+- the local owner path re-enabled input and camera scripts, but it did not explicitly retarget Cinemachine to the newly spawned network ship
+
+Why it matters:
+
+- the gameplay camera can stay pointed at an old scene target or an unspawned/default object, which makes the movement path look broken even when replication is working
+
+How to avoid it:
+
+- always bind the local Cinemachine tracking target from the owner network path after spawn/ownership resolution
+- keep a scene-level retry as a fallback because NGO spawn order and camera activation order are not guaranteed to line up perfectly
 
 ### Decision: Replicate player-slot identity explicitly
 

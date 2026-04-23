@@ -1609,37 +1609,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 338864598}
   m_CullTransparentMesh: 1
---- !u!1 &347764502
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 347764503}
-  m_Layer: 0
-  m_Name: spawn2
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &347764503
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 347764502}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 3.83886, y: 0.27376, z: 5.75127}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!224 &388605360 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 6358495748539844257, guid: ae1ace58d82728142a0794a3061d9d47, type: 3}
@@ -1940,7 +1909,6 @@ GameObject:
   m_Component:
   - component: {fileID: 783863772}
   - component: {fileID: 783863771}
-  - component: {fileID: 783863773}
   m_Layer: 0
   m_Name: scenemanager
   m_TagString: Untagged
@@ -2060,24 +2028,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &783863773
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 783863770}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a21f4c2480674744a889699502e5d50f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::NetworkSceneManager3D
-  player1SpawnPoint: {fileID: 1120978239}
-  player2SpawnPoint: {fileID: 347764503}
-  defaultPlayer1Ship: {fileID: 11400000, guid: 7c9e3b1b784102e44b69ce6ee15c2187, type: 2}
-  defaultPlayer2Ship: {fileID: 11400000, guid: 3932fca80d410704aa99a81cf831a070, type: 2}
-  spawnPlayersOnStart: 1
-  spawnRetryIntervalSeconds: 0.1
 --- !u!1001 &792701132
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -2489,37 +2439,6 @@ Transform:
   m_Children:
   - {fileID: 388605360}
   m_Father: {fileID: 1779300724}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &1120978238
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1120978239}
-  m_Layer: 0
-  m_Name: spawn1
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &1120978239
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1120978238}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 25.19, y: 0.27376, z: 5.75127}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1232138902
 GameObject:
@@ -4278,10 +4197,6 @@ PrefabInstance:
       propertyPath: m_Name
       value: Class1_Player
       objectReference: {fileID: 0}
-    - target: {fileID: 2568558604607578100, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
-      propertyPath: m_IsActive
-      value: 0
-      objectReference: {fileID: 0}
     - target: {fileID: 3760524061682020281, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
       propertyPath: virtualCamera
       value: 
@@ -4689,10 +4604,6 @@ PrefabInstance:
       propertyPath: m_Name
       value: Class2_Player
       objectReference: {fileID: 0}
-    - target: {fileID: 7114399765549422770, guid: 2ab5e2b052ddb4229b8be680f8c4e7d1, type: 3}
-      propertyPath: m_IsActive
-      value: 0
-      objectReference: {fileID: 0}
     - target: {fileID: 8106419607673637394, guid: 2ab5e2b052ddb4229b8be680f8c4e7d1, type: 3}
       propertyPath: virtualCamera
       value: 
@@ -4728,5 +4639,3 @@ SceneRoots:
   - {fileID: 93165100}
   - {fileID: 1779300724}
   - {fileID: 783863772}
-  - {fileID: 1120978239}
-  - {fileID: 347764503}

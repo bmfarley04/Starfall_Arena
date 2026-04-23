@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Unity.Cinemachine;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -580,6 +581,8 @@ public class NetMovement3D : NetworkBehaviour
 
     private void ConfigureOwnerPresentation()
     {
+        Camera gameplayCamera = SelectGameplayCamera();
+
         if (_playerInput3D != null)
         {
             _playerInput3D.enabled = true;
@@ -590,7 +593,7 @@ public class NetMovement3D : NetworkBehaviour
         {
             _playerInput.enabled = true;
             _playerInput.ActivateInput();
-            _playerInput.camera = SelectGameplayCamera();
+            _playerInput.camera = gameplayCamera;
         }
 
         if (_cameraRig != null)
@@ -598,7 +601,8 @@ public class NetMovement3D : NetworkBehaviour
             _cameraRig.SetCameraRigActive(true);
         }
 
-        SetWeaponAimCamera(SelectGameplayCamera());
+        BindOwnerCameraAndTracking(gameplayCamera);
+        SetWeaponAimCamera(gameplayCamera);
         _loggedOwnerInputMissing = false;
     }
 
@@ -715,10 +719,51 @@ public class NetMovement3D : NetworkBehaviour
         ConfigureOwnerPresentation();
     }
 
+    public void BindOwnerCameraAndTracking()
+    {
+        if (!IsOwner)
+        {
+            return;
+        }
+
+        BindOwnerCameraAndTracking(SelectGameplayCamera());
+    }
+
     private float GetTickDeltaTime()
     {
         float tickInterval = NetTickUtil.TickInterval;
         return tickInterval > 0f ? tickInterval : Time.fixedDeltaTime;
+    }
+
+    private void BindOwnerCameraAndTracking(Camera gameplayCamera)
+    {
+        if (!IsOwner)
+        {
+            return;
+        }
+
+        if (_cameraRig != null)
+        {
+            _cameraRig.BindTrackingTarget(transform);
+        }
+
+        CinemachineCamera[] cinemachineCameras = FindObjectsByType<CinemachineCamera>(FindObjectsSortMode.None);
+        for (int i = 0; i < cinemachineCameras.Length; i++)
+        {
+            CinemachineCamera candidate = cinemachineCameras[i];
+            if (candidate == null || !candidate.isActiveAndEnabled)
+            {
+                continue;
+            }
+
+            candidate.Target.TrackingTarget = transform;
+            break;
+        }
+
+        if (_playerInput != null && gameplayCamera != null)
+        {
+            _playerInput.camera = gameplayCamera;
+        }
     }
 
     private void HandleMovementLockedChanged(bool previousValue, bool newValue)

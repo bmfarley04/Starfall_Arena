@@ -456,6 +456,7 @@ GameObject:
   - component: {fileID: 8188930441586883119}
   - component: {fileID: 7902338216098012005}
   - component: {fileID: 6016429355266790633}
+  - component: {fileID: 1524455165470484394}
   m_Layer: 0
   m_Name: 3d_class1_player
   m_TagString: Enemy
@@ -506,7 +507,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   m_ActionEvents: []
-  m_NeverAutoSwitchControlSchemes: 1
+  m_NeverAutoSwitchControlSchemes: 0
   m_DefaultControlScheme: controller
   m_DefaultActionMap: 3d
   m_SplitScreenIndex: -1
@@ -1400,6 +1401,21 @@ MonoBehaviour:
   AutoObjectParentSync: 1
   SyncOwnerTransformWhenParented: 1
   AllowOwnerToParent: 0
+--- !u!114 &1524455165470484394
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2568558604607578100}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4edd8b09e91643798f396073297eb6b7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NetMovement3D
+  ShowTopMostFoldoutHeaderGroup: 1
+  reconciliationThreshold: 0.1
+  interpolationBufferTicks: 2
 --- !u!1 &3042639647086152311
 GameObject:
   m_ObjectHideFlags: 0

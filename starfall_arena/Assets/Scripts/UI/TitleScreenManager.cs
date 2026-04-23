@@ -123,6 +123,16 @@ public class TitleScreenManager : MonoBehaviour
     [Tooltip("3D preview model roots shown on the host-mode select canvas. They stay hidden until the canvas transition is fully visible.")]
     [SerializeField] private GameObject[] hostModePreviewModels;
 
+    [Header("3D Test Flow")]
+    [Tooltip("3D gameplay scene used by the test-only title shortcuts.")]
+    [SerializeField] private string test3DGameplaySceneName = "3dscene";
+    [Tooltip("Direct-connect address used by the client-side 3D test shortcut.")]
+    [SerializeField] private string test3DClientAddress = "10.33.102.140";
+    [Tooltip("Optional override for the host's auto-selected 3D test ship. Falls back to 3d_class1 by ship ID.")]
+    [SerializeField] private ShipData test3DHostShip;
+    [Tooltip("Optional override for the client's auto-selected 3D test ship. Falls back to 3d_class2 by ship ID.")]
+    [SerializeField] private ShipData test3DClientShip;
+
     [Header("Hold Actions")]
     [SerializeField] private float submitHoldDuration = 1f;
     [SerializeField] private float backHoldDuration = 1f;
@@ -157,6 +167,13 @@ public class TitleScreenManager : MonoBehaviour
     private HoldActionButton _resolvedControlsBackButton;
     private string _resolved2DGameplaySceneName = "SampleScene";
     private string _pendingHostModeLabel = string.Empty;
+    private bool _isRunning3DTestFlow;
+    private bool _is3DTestHostFlow;
+    private bool _hasSubmitted3DTestShipSelection;
+    private Coroutine _autoLock3DTestShipCoroutine;
+
+    private const string Default3DTestHostShipId = "9219fbe4c7a848e095b199627d5ab9f4";
+    private const string Default3DTestClientShipId = "bb7f2f8d9d60405a998a935672e855dd";
 
     private IEnumerator Start()
     {
@@ -372,6 +389,59 @@ public class TitleScreenManager : MonoBehaviour
         StartHostingForScene(network3DGameplaySceneName);
     }
 
+    public void start3dhostflow()
+    {
+        Reset3DTestFlowState();
+        _isRunning3DTestFlow = true;
+        _is3DTestHostFlow = true;
+        _pendingHostModeLabel = host3DStatusLabel;
+
+        if (!Prepare3DTestShipSelections())
+        {
+            return;
+        }
+
+        StartHostingForScene(test3DGameplaySceneName);
+    }
+
+    public void start3dclientflow()
+    {
+        Reset3DTestFlowState();
+        _isRunning3DTestFlow = true;
+        _is3DTestHostFlow = false;
+
+        if (!Prepare3DTestShipSelections())
+        {
+            return;
+        }
+
+        if (ipAddressInputField != null)
+        {
+            ipAddressInputField.text = test3DClientAddress;
+        }
+
+        _netMgr = NetMgr.Instance;
+        _sessionData = NetworkSessionData.Instance;
+        bool started = _netMgr != null && _netMgr.StartClientForMenu(test3DClientAddress);
+        if (!started)
+        {
+            Reset3DTestFlowState();
+            return;
+        }
+
+        HandleStatusMessageChanged("Connecting to 3D test host...");
+
+        if (joinGameCanvas != null && _activeTransition == null)
+        {
+            CanvasGroup source = _activeCanvas ?? mainMenuCanvas;
+            if (source != joinGameCanvas)
+            {
+                _activeTransition = StartCoroutine(
+                    RunTransition(source, joinGameCanvas, joinGameFirstSelected));
+            }
+        }
+    }
+
     public void TransitionToOnlineMenuFromHostMode()
     {
         if (_activeTransition != null || hostModeSelectCanvas == null)
@@ -397,6 +467,7 @@ public class TitleScreenManager : MonoBehaviour
 
     public void CancelNetworkFlow()
     {
+        Reset3DTestFlowState();
         _netMgr = NetMgr.Instance;
         _netMgr?.CancelCurrentAttempt();
         HandleStatusMessageChanged(string.Empty);
@@ -690,10 +761,23 @@ public class TitleScreenManager : MonoBehaviour
                 }
 
                 ApplyShipRosterForGameplayScene(_sessionData.GameplaySceneName);
+                if (_isRunning3DTestFlow)
+                {
+                    Begin3DTestAutoLock();
+                    return;
+                }
+
                 TransitionToShipSelectFromCurrent();
+                break;
+            case NetworkMatchState.LoadingGameplay:
+                if (_isRunning3DTestFlow)
+                {
+                    HandleStatusMessageChanged("Loading 3D test duel...");
+                }
                 break;
             case NetworkMatchState.Disconnected:
             case NetworkMatchState.Error:
+                Reset3DTestFlowState();
                 if (_activeCanvas == hostWaitingCanvas || _activeCanvas == joinGameCanvas)
                 {
                     TransitionCanvas(_activeCanvas, mainMenuCanvas, mainMenuFirstSelected);
@@ -955,6 +1039,10 @@ public class TitleScreenManager : MonoBehaviour
     {
         if (hostWaitingCanvas == null || _activeTransition != null)
         {
+            if (_isRunning3DTestFlow)
+            {
+                Reset3DTestFlowState();
+            }
             return;
         }
 
@@ -962,6 +1050,10 @@ public class TitleScreenManager : MonoBehaviour
         if (string.IsNullOrEmpty(resolvedScene))
         {
             HandleStatusMessageChanged("Host scene is not configured.");
+            if (_isRunning3DTestFlow)
+            {
+                Reset3DTestFlowState();
+            }
             return;
         }
 
@@ -979,6 +1071,10 @@ public class TitleScreenManager : MonoBehaviour
         _netMgr = NetMgr.Instance;
         if (_netMgr == null || !_netMgr.StartHostForMenu())
         {
+            if (_isRunning3DTestFlow)
+            {
+                Reset3DTestFlowState();
+            }
             return;
         }
 
@@ -1047,8 +1143,95 @@ public class TitleScreenManager : MonoBehaviour
         }
     }
 
+    private bool Prepare3DTestShipSelections()
+    {
+        ShipData hostShip = Resolve3DTestShip(true);
+        ShipData clientShip = Resolve3DTestShip(false);
+
+        if (hostShip == null || clientShip == null)
+        {
+            HandleStatusMessageChanged("3D test flow is missing its ship data.");
+            Reset3DTestFlowState();
+            return false;
+        }
+
+        ApplyShipRosterForGameplayScene(test3DGameplaySceneName);
+        GameDataManager.Instance?.SetSelectedShips(hostShip, clientShip);
+        return true;
+    }
+
+    private ShipData Resolve3DTestShip(bool hostShip)
+    {
+        ShipData configuredShip = hostShip ? test3DHostShip : test3DClientShip;
+        if (configuredShip != null)
+        {
+            return configuredShip;
+        }
+
+        if (GameDataManager.Instance == null)
+        {
+            return null;
+        }
+
+        string fallbackShipId = hostShip ? Default3DTestHostShipId : Default3DTestClientShipId;
+        return GameDataManager.Instance.GetShipById(fallbackShipId);
+    }
+
+    private void Begin3DTestAutoLock()
+    {
+        if (_autoLock3DTestShipCoroutine != null)
+        {
+            StopCoroutine(_autoLock3DTestShipCoroutine);
+        }
+
+        _autoLock3DTestShipCoroutine = StartCoroutine(AutoLock3DTestShipWhenReady());
+    }
+
+    private IEnumerator AutoLock3DTestShipWhenReady()
+    {
+        while (_isRunning3DTestFlow && !_hasSubmitted3DTestShipSelection)
+        {
+            _sessionData = NetworkSessionData.Instance;
+            if (!NetMgr.IsNetworked || _sessionData == null || _sessionData.CurrentState != NetworkMatchState.ShipSelect)
+            {
+                _autoLock3DTestShipCoroutine = null;
+                yield break;
+            }
+
+            ShipData selectedShip = Resolve3DTestShip(_is3DTestHostFlow);
+            if (selectedShip != null && _sessionData.GetLocalSlotIndex() >= 0)
+            {
+                Prepare3DTestShipSelections();
+                _sessionData.RequestShipSelection(selectedShip.ShipId, true);
+                _hasSubmitted3DTestShipSelection = true;
+                HandleStatusMessageChanged("3D test ship locked. Waiting for duel load...");
+                _autoLock3DTestShipCoroutine = null;
+                yield break;
+            }
+
+            yield return null;
+        }
+
+        _autoLock3DTestShipCoroutine = null;
+    }
+
+    private void Reset3DTestFlowState()
+    {
+        _isRunning3DTestFlow = false;
+        _is3DTestHostFlow = false;
+        _hasSubmitted3DTestShipSelection = false;
+
+        if (_autoLock3DTestShipCoroutine != null)
+        {
+            StopCoroutine(_autoLock3DTestShipCoroutine);
+            _autoLock3DTestShipCoroutine = null;
+        }
+    }
+
     private void OnDestroy()
     {
+        Reset3DTestFlowState();
+
         if (_netMgr != null)
         {
             _netMgr.OnConnectionFailed -= HandleConnectionFailed;
