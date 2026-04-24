@@ -151,7 +151,7 @@ Aim rules:
 
 - `PlayerAimReticle3D` should read the same aim source and primary-weapon overheat state that the weapon runtime actually uses
 - `TargetAwarenessHUD3D` is a local-player combat readability layer for non-local `Entity3D` targets. It should bind through `PlayerHUDManager3D`, read replicated proxy state, and remain presentation-only with no target-awareness RPCs.
-- offscreen/far target indicators should use screen-space ellipse clamping instead of rectangular corner snapping; mid-range brackets and enemy bars should hide when the target is occluded or close enough that ship readability no longer needs extra UI.
+- offscreen/far target indicators should use screen-space ellipse clamping instead of rectangular corner snapping; trackers should not disappear because of distance alone. Close visible targets hide target UI, mid-range visible targets show brackets/bars, far visible targets may show an upright floating indicator, and offscreen/occluded targets use directional indicators.
 - `PlayerWeaponSelectionHUD3D` should treat each slot explicitly as either remaining-resource display or cooldown-ready progress display
 - `PlayerAbilitySelectionHUD3D` should use cooldown-ready progress and ready-state box feedback instead of blindly reusing older cooldown-remaining semantics
 - combat HUD elements that live on a scene canvas should bind through `PlayerHUDManager3D`, not by having player prefabs race to claim shared HUD objects

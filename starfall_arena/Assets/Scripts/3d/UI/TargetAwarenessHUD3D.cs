@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 public class TargetAwarenessHUD3D : PlayerHUDBindingTarget3D
 {
@@ -31,8 +32,6 @@ public class TargetAwarenessHUD3D : PlayerHUDBindingTarget3D
         public float closeHideDistance;
         [Tooltip("Visible, unoccluded targets use brackets from closeHideDistance up to this distance.")]
         public float bracketMaxDistance;
-        [Tooltip("Targets farther than this distance stop being tracked.")]
-        public float maxTrackingDistance;
         [Tooltip("Distance buffer used to avoid rapid state flicker around thresholds.")]
         public float thresholdHysteresis;
     }
@@ -42,12 +41,18 @@ public class TargetAwarenessHUD3D : PlayerHUDBindingTarget3D
     {
         [Tooltip("Padding from the left/right canvas edge for ellipse-clamped indicators.")]
         public float edgeHorizontalPadding;
-        [Tooltip("Padding from the top/bottom canvas edge for ellipse-clamped indicators.")]
-        public float edgeVerticalPadding;
+        [FormerlySerializedAs("edgeVerticalPadding")]
+        [Tooltip("Padding from the top canvas edge for ellipse-clamped indicators.")]
+        public float edgeTopPadding;
+        [Tooltip("Padding from the bottom canvas edge for ellipse-clamped indicators.")]
+        public float edgeBottomPadding;
         [Tooltip("Padding from the left/right canvas edge for in-FOV floating indicators.")]
         public float floatingHorizontalPadding;
-        [Tooltip("Padding from the top/bottom canvas edge for in-FOV floating indicators.")]
-        public float floatingVerticalPadding;
+        [FormerlySerializedAs("floatingVerticalPadding")]
+        [Tooltip("Padding from the top canvas edge for in-FOV floating indicators.")]
+        public float floatingTopPadding;
+        [Tooltip("Padding from the bottom canvas edge for in-FOV floating indicators.")]
+        public float floatingBottomPadding;
     }
 
     [System.Serializable]
@@ -55,7 +60,11 @@ public class TargetAwarenessHUD3D : PlayerHUDBindingTarget3D
     {
         [Tooltip("World layers that can block brackets/bars. Do not include ship-only layers unless ships should block each other.")]
         public LayerMask occlusionMask;
-        [Tooltip("Local-space offset from target origin used as the UI/occlusion aim point.")]
+        [Tooltip("Local-space offset from target origin used for UI projection. Keep this near the visual center of the ship.")]
+        public Vector3 targetUiOffset;
+        [Tooltip("Local-space offset from target origin used for floating/offscreen indicator projection. Keep this at the point the indicator should sit over.")]
+        public Vector3 targetIndicatorOffset;
+        [Tooltip("Local-space offset from target origin used as the occlusion probe point.")]
         public Vector3 targetAimOffset;
         [Tooltip("Radius for a forgiving occlusion probe. Set to 0 for a thin raycast.")]
         public float occlusionProbeRadius;
@@ -92,7 +101,6 @@ public class TargetAwarenessHUD3D : PlayerHUDBindingTarget3D
     {
         closeHideDistance = 45f,
         bracketMaxDistance = 240f,
-        maxTrackingDistance = 900f,
         thresholdHysteresis = 8f
     };
 
@@ -100,15 +108,19 @@ public class TargetAwarenessHUD3D : PlayerHUDBindingTarget3D
     [SerializeField] private ScreenClampConfig3D screenClamp = new ScreenClampConfig3D
     {
         edgeHorizontalPadding = 72f,
-        edgeVerticalPadding = 56f,
+        edgeTopPadding = 150f,
+        edgeBottomPadding = 56f,
         floatingHorizontalPadding = 96f,
-        floatingVerticalPadding = 72f
+        floatingTopPadding = 72f,
+        floatingBottomPadding = 72f
     };
 
     [Header("Occlusion")]
     [SerializeField] private OcclusionConfig3D occlusion = new OcclusionConfig3D
     {
         occlusionMask = ~0,
+        targetUiOffset = Vector3.zero,
+        targetIndicatorOffset = Vector3.zero,
         targetAimOffset = new Vector3(0f, 1.5f, 0f),
         occlusionProbeRadius = 0.25f,
         stateHoldSeconds = 0.08f
@@ -129,6 +141,8 @@ public class TargetAwarenessHUD3D : PlayerHUDBindingTarget3D
     private float _nextDiscoveryTime;
     private bool _loggedMissingTemplate;
     private bool _loggedMissingCanvas;
+    private bool _loggedTemplateContainerFallback;
+    private bool _loggedInactiveCanvasFallback;
 
     protected override void Awake()
     {
@@ -136,6 +150,7 @@ public class TargetAwarenessHUD3D : PlayerHUDBindingTarget3D
         targetCanvas ??= GetComponentInParent<Canvas>(true);
         canvasRoot ??= targetCanvas != null ? targetCanvas.transform as RectTransform : GetComponentInParent<RectTransform>(true);
         widgetContainer ??= canvasRoot;
+        ResolveTemplateAuthoringConflicts();
 
         if (widgetTemplate != null)
         {
@@ -263,11 +278,11 @@ public class TargetAwarenessHUD3D : PlayerHUDBindingTarget3D
     private TargetAwarenessPresentation3D BuildPresentation(ref TargetRuntime3D runtime, Camera gameplayCamera)
     {
         Entity3D target = runtime.Target;
-        Vector3 targetPoint = target.transform.TransformPoint(occlusion.targetAimOffset);
+        Vector3 targetPoint = target.transform.TransformPoint(occlusion.targetUiOffset);
+        Vector3 indicatorPoint = target.transform.TransformPoint(occlusion.targetIndicatorOffset);
+        Vector3 occlusionPoint = target.transform.TransformPoint(occlusion.targetAimOffset);
         Vector3 cameraPosition = gameplayCamera.transform.position;
         float targetDistance = Vector3.Distance(BoundPlayer.transform.position, target.transform.position);
-        bool outOfRange = IsOutOfRange(targetDistance, runtime.CurrentState);
-        bool tooClose = IsTooClose(targetDistance, runtime.CurrentState);
 
         TargetAwarenessPresentation3D presentation = new TargetAwarenessPresentation3D
         {
@@ -281,31 +296,41 @@ public class TargetAwarenessHUD3D : PlayerHUDBindingTarget3D
             SnapPosition = !runtime.HasPresented
         };
 
-        if (outOfRange || tooClose || target.CurrentHealth <= 0f)
+        if (target.CurrentHealth <= 0f)
         {
             return presentation;
         }
 
         Vector3 viewport = gameplayCamera.WorldToViewportPoint(targetPoint);
         Vector3 cameraLocalTarget = gameplayCamera.transform.InverseTransformPoint(targetPoint);
+        Vector3 indicatorViewport = gameplayCamera.WorldToViewportPoint(indicatorPoint);
+        Vector3 cameraLocalIndicator = gameplayCamera.transform.InverseTransformPoint(indicatorPoint);
         bool behindCamera = cameraLocalTarget.z <= 0f || viewport.z <= 0f;
         bool insideViewport = !behindCamera
             && viewport.x >= 0f && viewport.x <= 1f
             && viewport.y >= 0f && viewport.y <= 1f;
-        bool occluded = insideViewport && IsTargetOccluded(cameraPosition, targetPoint, target);
+        bool occluded = insideViewport && IsTargetOccluded(cameraPosition, occlusionPoint, target);
 
         TargetAwarenessVisibility3D desiredState;
         if (!insideViewport)
         {
             desiredState = TargetAwarenessVisibility3D.EdgeIndicator;
         }
-        else if (occluded || !IsInBracketDistance(targetDistance, runtime.CurrentState))
+        else if (occluded)
         {
             desiredState = TargetAwarenessVisibility3D.FloatingIndicator;
         }
-        else
+        else if (IsTooCloseForBrackets(targetDistance, runtime.CurrentState))
+        {
+            desiredState = TargetAwarenessVisibility3D.Hidden;
+        }
+        else if (IsInBracketDistance(targetDistance, runtime.CurrentState))
         {
             desiredState = TargetAwarenessVisibility3D.Bracket;
+        }
+        else
+        {
+            desiredState = TargetAwarenessVisibility3D.FloatingIndicator;
         }
 
         presentation.State = ResolveHeldState(ref runtime, desiredState);
@@ -313,17 +338,23 @@ public class TargetAwarenessHUD3D : PlayerHUDBindingTarget3D
         Vector2 localPosition;
         if (presentation.State == TargetAwarenessVisibility3D.EdgeIndicator)
         {
-            Vector2 direction = ResolveScreenDirection(gameplayCamera, targetPoint, viewport, cameraLocalTarget, runtime.LastIndicatorDirection);
+            Vector2 direction = ResolveScreenDirection(gameplayCamera, indicatorPoint, indicatorViewport, cameraLocalIndicator, runtime.LastIndicatorDirection);
             presentation.IndicatorDirection = direction;
+            presentation.RotateIndicator = true;
             presentation.CanvasPosition = ClampToEdgeEllipse(direction);
             return presentation;
         }
 
-        if (!TryWorldToCanvasPoint(gameplayCamera, targetPoint, out localPosition))
+        Vector3 projectionPoint = presentation.State == TargetAwarenessVisibility3D.FloatingIndicator
+            ? indicatorPoint
+            : targetPoint;
+
+        if (!TryWorldToCanvasPoint(gameplayCamera, projectionPoint, out localPosition))
         {
-            Vector2 direction = ResolveScreenDirection(gameplayCamera, targetPoint, viewport, cameraLocalTarget, runtime.LastIndicatorDirection);
+            Vector2 direction = ResolveScreenDirection(gameplayCamera, indicatorPoint, indicatorViewport, cameraLocalIndicator, runtime.LastIndicatorDirection);
             presentation.State = TargetAwarenessVisibility3D.EdgeIndicator;
             presentation.IndicatorDirection = direction;
+            presentation.RotateIndicator = true;
             presentation.CanvasPosition = ClampToEdgeEllipse(direction);
             return presentation;
         }
@@ -335,6 +366,7 @@ public class TargetAwarenessHUD3D : PlayerHUDBindingTarget3D
                 : Vector2.up;
 
         presentation.IndicatorDirection = centerDirection;
+        presentation.RotateIndicator = occluded;
         presentation.CanvasPosition = presentation.State == TargetAwarenessVisibility3D.FloatingIndicator
             ? ClampToFloatingSafeRect(localPosition)
             : localPosition;
@@ -445,8 +477,11 @@ public class TargetAwarenessHUD3D : PlayerHUDBindingTarget3D
     {
         Rect rect = canvasRoot.rect;
         float xRadius = Mathf.Max(1f, rect.width * 0.5f - Mathf.Max(0f, screenClamp.edgeHorizontalPadding));
-        float yRadius = Mathf.Max(1f, rect.height * 0.5f - Mathf.Max(0f, screenClamp.edgeVerticalPadding));
         Vector2 normalizedDirection = direction.sqrMagnitude > 0.0001f ? direction.normalized : Vector2.up;
+        float verticalPadding = normalizedDirection.y >= 0f
+            ? Mathf.Max(0f, screenClamp.edgeTopPadding)
+            : Mathf.Max(0f, screenClamp.edgeBottomPadding);
+        float yRadius = Mathf.Max(1f, rect.height * 0.5f - verticalPadding);
         float denominator = Mathf.Sqrt(
             (normalizedDirection.x * normalizedDirection.x) / (xRadius * xRadius)
             + (normalizedDirection.y * normalizedDirection.y) / (yRadius * yRadius));
@@ -459,8 +494,9 @@ public class TargetAwarenessHUD3D : PlayerHUDBindingTarget3D
     {
         Rect rect = canvasRoot.rect;
         float xLimit = Mathf.Max(1f, rect.width * 0.5f - Mathf.Max(0f, screenClamp.floatingHorizontalPadding));
-        float yLimit = Mathf.Max(1f, rect.height * 0.5f - Mathf.Max(0f, screenClamp.floatingVerticalPadding));
-        return new Vector2(Mathf.Clamp(point.x, -xLimit, xLimit), Mathf.Clamp(point.y, -yLimit, yLimit));
+        float topLimit = Mathf.Max(1f, rect.height * 0.5f - Mathf.Max(0f, screenClamp.floatingTopPadding));
+        float bottomLimit = Mathf.Max(1f, rect.height * 0.5f - Mathf.Max(0f, screenClamp.floatingBottomPadding));
+        return new Vector2(Mathf.Clamp(point.x, -xLimit, xLimit), Mathf.Clamp(point.y, -bottomLimit, topLimit));
     }
 
     private float EvaluateScale(Vector2 range, float targetDistance)
@@ -471,26 +507,15 @@ public class TargetAwarenessHUD3D : PlayerHUDBindingTarget3D
         return Mathf.Lerp(range.x, range.y, t);
     }
 
-    private bool IsOutOfRange(float targetDistance, TargetAwarenessVisibility3D currentState)
-    {
-        float maxDistance = Mathf.Max(0.01f, distance.maxTrackingDistance);
-        if (currentState == TargetAwarenessVisibility3D.Hidden)
-        {
-            return targetDistance > maxDistance;
-        }
-
-        return targetDistance > maxDistance + Mathf.Max(0f, distance.thresholdHysteresis);
-    }
-
-    private bool IsTooClose(float targetDistance, TargetAwarenessVisibility3D currentState)
+    private bool IsTooCloseForBrackets(float targetDistance, TargetAwarenessVisibility3D currentState)
     {
         float closeDistance = Mathf.Max(0f, distance.closeHideDistance);
-        if (currentState == TargetAwarenessVisibility3D.Hidden)
+        if (currentState != TargetAwarenessVisibility3D.Bracket)
         {
-            return targetDistance < closeDistance + Mathf.Max(0f, distance.thresholdHysteresis);
+            return targetDistance < closeDistance;
         }
 
-        return targetDistance < closeDistance;
+        return targetDistance < closeDistance - Mathf.Max(0f, distance.thresholdHysteresis);
     }
 
     private bool IsInBracketDistance(float targetDistance, TargetAwarenessVisibility3D currentState)
@@ -584,7 +609,7 @@ public class TargetAwarenessHUD3D : PlayerHUDBindingTarget3D
             return null;
         }
 
-        Transform parent = widgetContainer != null ? widgetContainer : widgetTemplate.transform.parent;
+        Transform parent = ResolveWidgetParent();
         TargetAwarenessWidget3D widget = Instantiate(widgetTemplate, parent);
         widget.name = $"{widgetTemplate.name}_runtime";
         widget.gameObject.SetActive(true);
@@ -676,6 +701,137 @@ public class TargetAwarenessHUD3D : PlayerHUDBindingTarget3D
         {
             targetCanvas.worldCamera = camera;
         }
+    }
+
+    private void ResolveTemplateAuthoringConflicts()
+    {
+        if (widgetTemplate == null)
+        {
+            return;
+        }
+
+        Transform templateTransform = widgetTemplate.transform;
+        if (widgetContainer == templateTransform)
+        {
+            widgetContainer = templateTransform.parent as RectTransform;
+            LogTemplateContainerFallback(
+                "[TargetAwarenessHUD3D] Widget Container was assigned to the inactive widget template. " +
+                "Runtime widgets will be spawned under the template's parent instead.");
+        }
+
+        if (widgetContainer != null && !widgetContainer.gameObject.activeInHierarchy)
+        {
+            RectTransform fallbackParent = templateTransform.parent as RectTransform;
+            if (fallbackParent != null)
+            {
+                widgetContainer = fallbackParent;
+                LogTemplateContainerFallback(
+                    "[TargetAwarenessHUD3D] Widget Container is inactive in the hierarchy. " +
+                    "Runtime widgets will be spawned under the template's parent instead.");
+            }
+        }
+
+        if (canvasRoot == templateTransform || (canvasRoot != null && !canvasRoot.gameObject.activeInHierarchy))
+        {
+            RectTransform fallbackRoot = FindActiveParentRectTransform(templateTransform);
+            if (fallbackRoot != null)
+            {
+                canvasRoot = fallbackRoot;
+                LogInactiveCanvasFallback(
+                    "[TargetAwarenessHUD3D] Canvas Root was assigned to the inactive widget template. " +
+                    "Using the nearest active parent RectTransform for screen projection.");
+            }
+        }
+
+        if (targetCanvas == widgetTemplate.GetComponent<Canvas>() || (targetCanvas != null && !targetCanvas.gameObject.activeInHierarchy))
+        {
+            Canvas fallbackCanvas = FindActiveParentCanvas(templateTransform);
+            if (fallbackCanvas != null)
+            {
+                targetCanvas = fallbackCanvas;
+                LogInactiveCanvasFallback(
+                    "[TargetAwarenessHUD3D] Target Canvas was assigned to the inactive widget template. " +
+                    "Using the nearest active parent Canvas for camera binding.");
+            }
+        }
+    }
+
+    private Transform ResolveWidgetParent()
+    {
+        if (widgetTemplate == null)
+        {
+            return widgetContainer;
+        }
+
+        if (widgetContainer != null && widgetContainer.gameObject.activeInHierarchy && widgetContainer != widgetTemplate.transform)
+        {
+            return widgetContainer;
+        }
+
+        Transform fallbackParent = widgetTemplate.transform.parent;
+        if (fallbackParent != null)
+        {
+            LogTemplateContainerFallback(
+                "[TargetAwarenessHUD3D] Runtime widget parent was inactive or pointed at the template. " +
+                "Using the template's parent so cloned widgets can become visible.");
+            return fallbackParent;
+        }
+
+        return transform;
+    }
+
+    private static RectTransform FindActiveParentRectTransform(Transform start)
+    {
+        Transform current = start.parent;
+        while (current != null)
+        {
+            if (current.gameObject.activeInHierarchy && current is RectTransform rectTransform)
+            {
+                return rectTransform;
+            }
+
+            current = current.parent;
+        }
+
+        return null;
+    }
+
+    private static Canvas FindActiveParentCanvas(Transform start)
+    {
+        Transform current = start.parent;
+        while (current != null)
+        {
+            if (current.gameObject.activeInHierarchy && current.TryGetComponent(out Canvas canvas))
+            {
+                return canvas;
+            }
+
+            current = current.parent;
+        }
+
+        return null;
+    }
+
+    private void LogTemplateContainerFallback(string message)
+    {
+        if (_loggedTemplateContainerFallback)
+        {
+            return;
+        }
+
+        Debug.LogWarning(message, this);
+        _loggedTemplateContainerFallback = true;
+    }
+
+    private void LogInactiveCanvasFallback(string message)
+    {
+        if (_loggedInactiveCanvasFallback)
+        {
+            return;
+        }
+
+        Debug.LogWarning(message, this);
+        _loggedInactiveCanvasFallback = true;
     }
 
     private void LogMissingCanvasOnce(Camera gameplayCamera)

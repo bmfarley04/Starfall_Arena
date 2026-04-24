@@ -15,6 +15,7 @@ public struct TargetAwarenessPresentation3D
     public TargetAwarenessVisibility3D State;
     public Vector2 CanvasPosition;
     public Vector2 IndicatorDirection;
+    public bool RotateIndicator;
     public float IndicatorScale;
     public float BracketScale;
     public float BarScale;
@@ -50,9 +51,14 @@ public class TargetAwarenessWidget3D : MonoBehaviour
     [SerializeField] private float positionSmoothing = 18f;
     [SerializeField] private float scaleSmoothing = 14f;
     [SerializeField] private float fadeSmoothing = 12f;
+    [SerializeField] private bool snapPositionToTarget = true;
+    [Tooltip("Canvas-space offset applied to the health and shield groups while brackets are shown. Positive X places bars to the right of the bracket group.")]
+    [SerializeField] private Vector2 bracketBarsOffset = new Vector2(72f, 0f);
     [Tooltip("Degrees added to the indicator direction. Use this when the authored arrow sprite points up/right/etc.")]
     [SerializeField] private float indicatorRotationOffset;
 
+    private Vector2 _healthBarBasePosition;
+    private Vector2 _shieldBarBasePosition;
     private CanvasGroup _indicatorCanvasGroup;
     private CanvasGroup _bracketCanvasGroup;
     private CanvasGroup _healthCanvasGroup;
@@ -76,6 +82,7 @@ public class TargetAwarenessWidget3D : MonoBehaviour
         _bracketCanvasGroup = EnsureCanvasGroup(bracketGroup);
         _healthCanvasGroup = EnsureCanvasGroup(healthBarGroup);
         _shieldCanvasGroup = EnsureCanvasGroup(shieldBarGroup);
+        CacheBarBasePositions();
 
         InitializeBar(healthBar);
         InitializeBar(shieldBar);
@@ -96,7 +103,7 @@ public class TargetAwarenessWidget3D : MonoBehaviour
 
         if (visible)
         {
-            if (presentation.SnapPosition || !_hasPosition)
+            if (snapPositionToTarget || presentation.SnapPosition || !_hasPosition)
             {
                 _currentPosition = presentation.CanvasPosition;
                 _hasPosition = true;
@@ -126,7 +133,8 @@ public class TargetAwarenessWidget3D : MonoBehaviour
         ApplyScale(bracketGroup, _bracketScale);
         ApplyScale(healthBarGroup, _barScale);
         ApplyScale(shieldBarGroup, _barScale);
-        RotateIndicator(presentation.IndicatorDirection);
+        ApplyBracketBarOffsets(showBracket);
+        RotateIndicator(presentation.IndicatorDirection, presentation.RotateIndicator);
         RefreshBars(presentation.Health01, presentation.Shield01);
     }
 
@@ -151,9 +159,20 @@ public class TargetAwarenessWidget3D : MonoBehaviour
         _hasPosition = false;
     }
 
-    private void RotateIndicator(Vector2 direction)
+    private void RotateIndicator(Vector2 direction, bool shouldRotate)
     {
-        if (indicatorGroup == null || direction.sqrMagnitude <= 0.0001f)
+        if (indicatorGroup == null)
+        {
+            return;
+        }
+
+        if (!shouldRotate)
+        {
+            indicatorGroup.localRotation = Quaternion.Euler(0f, 0f, indicatorRotationOffset);
+            return;
+        }
+
+        if (direction.sqrMagnitude <= 0.0001f)
         {
             return;
         }
@@ -166,6 +185,33 @@ public class TargetAwarenessWidget3D : MonoBehaviour
     {
         ApplyBar(healthBar, health01);
         ApplyBar(shieldBar, shield01);
+    }
+
+    private void CacheBarBasePositions()
+    {
+        if (healthBarGroup != null)
+        {
+            _healthBarBasePosition = healthBarGroup.anchoredPosition;
+        }
+
+        if (shieldBarGroup != null)
+        {
+            _shieldBarBasePosition = shieldBarGroup.anchoredPosition;
+        }
+    }
+
+    private void ApplyBracketBarOffsets(bool showBracket)
+    {
+        Vector2 offset = showBracket ? bracketBarsOffset : Vector2.zero;
+        if (healthBarGroup != null)
+        {
+            healthBarGroup.anchoredPosition = _healthBarBasePosition + offset;
+        }
+
+        if (shieldBarGroup != null)
+        {
+            shieldBarGroup.anchoredPosition = _shieldBarBasePosition + offset;
+        }
     }
 
     private static void ApplyBar(BarBinding3D binding, float value01)

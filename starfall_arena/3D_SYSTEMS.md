@@ -114,8 +114,8 @@ These classes should stay narrow and mostly coordinate dedicated 3D systems.
 - `TargetAwarenessHUD3D`
   - local-player target readability HUD for non-local `Entity3D` objects
   - binds through `PlayerHUDManager3D`, pools one canvas widget per active target, and reads replicated proxy transform/health/shield state without sending network messages
-  - transitions between edge indicator, floating far/occluded indicator, mid-range brackets, and close-range hidden states
-  - uses screen-space ellipse clamping for offscreen indicators and occlusion checks to avoid showing brackets/bars through world geometry
+  - transitions between edge indicator, floating far/occluded indicator, close visible hidden state, and mid-range visible bracket states
+  - uses screen-space ellipse clamping with independently tunable top/bottom padding for offscreen indicators and occlusion checks to avoid showing brackets/bars through world geometry
 - `GigablastChargeEdgeGlow3D`
   - local-player fullscreen Gigablast edge-glow controller
   - reads the charged-shot progress and drives shader globals for the 3D charge-screen effect
