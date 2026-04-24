@@ -38,6 +38,7 @@ public class SoundEffect : ScriptableObject
         source.volume = volume;
         source.pitch = Random.Range(minPitch, maxPitch);
         source.spatialBlend = 1f;
+        source.rolloffMode = AudioRolloffMode.Linear;
         source.Play();
 
         // Destroy after clip finishes

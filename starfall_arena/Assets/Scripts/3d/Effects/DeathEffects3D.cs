@@ -141,6 +141,7 @@ public class DeathEffects3D : MonoBehaviour
         tempSource.volume = explosion.sound.volume;
         tempSource.pitch = Random.Range(explosion.sound.minPitch, explosion.sound.maxPitch);
         tempSource.spatialBlend = 1f;
+        tempSource.rolloffMode = AudioRolloffMode.Linear;
         tempSource.Play();
 
         Destroy(tempAudio, explosion.sound.clip.length / Mathf.Max(0.01f, tempSource.pitch));

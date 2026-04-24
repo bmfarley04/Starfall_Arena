@@ -57,6 +57,7 @@ public class BeamWeapon3D : Weapon3D
         beamLoopAudioSource.playOnAwake = false;
         beamLoopAudioSource.loop = true;
         beamLoopAudioSource.spatialBlend = 1f;
+        beamLoopAudioSource.rolloffMode = AudioRolloffMode.Linear;
     }
 
     protected override float GetConfiguredResourceCapacity()

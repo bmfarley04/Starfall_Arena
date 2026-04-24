@@ -224,6 +224,7 @@ public class GigaBlastWeapon3D : Weapon3D
         chargeAudioSource.playOnAwake = false;
         chargeAudioSource.loop = true;
         chargeAudioSource.spatialBlend = 1f;
+        chargeAudioSource.rolloffMode = AudioRolloffMode.Linear;
     }
 
     protected override IEnumerable<GameObject> GetPrewarmProjectilePrefabs()

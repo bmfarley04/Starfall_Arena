@@ -212,6 +212,7 @@ public class Player3D : Entity3D
             source.playOnAwake = false;
             source.loop = false;
             source.spatialBlend = 1f;
+            source.rolloffMode = AudioRolloffMode.Linear;
             _audioSourcePool[i] = source;
         }
 
@@ -219,6 +220,7 @@ public class Player3D : Entity3D
         _beamHitLoopSource.playOnAwake = false;
         _beamHitLoopSource.loop = true;
         _beamHitLoopSource.spatialBlend = 1f;
+        _beamHitLoopSource.rolloffMode = AudioRolloffMode.Linear;
     }
 
     private AudioSource GetAvailableAudioSource()

@@ -120,6 +120,7 @@ public class TractorBeam3D : Ability3D
         tractorBeamLoopAudioSource.playOnAwake = false;
         tractorBeamLoopAudioSource.loop = true;
         tractorBeamLoopAudioSource.spatialBlend = 1f;
+        tractorBeamLoopAudioSource.rolloffMode = AudioRolloffMode.Linear;
 
         SetVisualRootActive(false);
     }
