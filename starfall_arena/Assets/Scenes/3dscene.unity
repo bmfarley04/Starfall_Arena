@@ -3460,7 +3460,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &411163172
 RectTransform:
   m_ObjectHideFlags: 0
@@ -3676,7 +3676,7 @@ RectTransform:
   m_Children:
   - {fileID: 273489584}
   - {fileID: 368249682}
-  m_Father: {fileID: 0}
+  m_Father: {fileID: 1779300724}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
@@ -9528,6 +9528,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
+  - {fileID: 438035857}
   - {fileID: 1342480383}
   - {fileID: 411163172}
   - {fileID: 1232138906}
@@ -10401,7 +10402,7 @@ Camera:
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2
-    m_Bits: 7340183
+    m_Bits: 7340215
   m_RenderingPath: -1
   m_TargetTexture: {fileID: 0}
   m_TargetDisplay: 0
@@ -11945,4 +11946,3 @@ SceneRoots:
   - {fileID: 1406496133}
   - {fileID: 822641094}
   - {fileID: 914338097}
-  - {fileID: 438035857}
