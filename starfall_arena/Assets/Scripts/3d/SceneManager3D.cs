@@ -70,6 +70,8 @@ public class SceneManager3D : MonoBehaviour
     private bool _versusScreenDone;
     private bool _useNetworkSession;
     private bool _isAuthoritativeController = true;
+    private NetworkSessionData _networkSession;
+    private Coroutine _networkSessionSubscriptionCoroutine;
     private int _lastRoundIntroSequenceId = -1;
     private Coroutine _activeRoundIntroCoroutine;
 
@@ -77,12 +79,13 @@ public class SceneManager3D : MonoBehaviour
     private CombatStatsSnapshot _player1TotalStats;
     private CombatStatsSnapshot _player2TotalStats;
 
-    private void Start()
+    private IEnumerator Start()
     {
-        _useNetworkSession = NetMgr.IsNetworked && NetworkManager.Singleton != null;
-        _isAuthoritativeController = !_useNetworkSession || NetworkManager.Singleton.IsServer;
+        yield return null;
+        RefreshNetworkMode();
 
         SubscribeNetworkSessionEvents();
+        _networkSessionSubscriptionCoroutine = StartCoroutine(EnsureNetworkSessionSubscription());
         ResolveShipData();
         ConfigureNetworkUiCanvases();
         SetInitialUiState();
@@ -112,7 +115,40 @@ public class SceneManager3D : MonoBehaviour
 
         UnsubscribePlayerDeath(_player1);
         UnsubscribePlayerDeath(_player2);
+        if (_networkSessionSubscriptionCoroutine != null)
+        {
+            StopCoroutine(_networkSessionSubscriptionCoroutine);
+            _networkSessionSubscriptionCoroutine = null;
+        }
+
         UnsubscribeNetworkSessionEvents();
+    }
+
+    private void RefreshNetworkMode()
+    {
+        NetworkManager networkManager = NetworkManager.Singleton;
+        _useNetworkSession = NetMgr.IsNetworked && networkManager != null;
+        _isAuthoritativeController = !_useNetworkSession || networkManager.IsServer;
+    }
+
+    private IEnumerator EnsureNetworkSessionSubscription()
+    {
+        while (isActiveAndEnabled)
+        {
+            RefreshNetworkMode();
+
+            if (_useNetworkSession)
+            {
+                NetworkSessionData session = NetworkSessionData.Instance;
+                if (session != null && session != _networkSession)
+                {
+                    SubscribeNetworkSessionEvents();
+                    ConfigureNetworkUiCanvases();
+                }
+            }
+
+            yield return new WaitForSecondsRealtime(spawnRetryIntervalSeconds);
+        }
     }
 
     private IEnumerator GameLoop()
@@ -836,11 +872,13 @@ public class SceneManager3D : MonoBehaviour
     private void SubscribeNetworkSessionEvents()
     {
         NetworkSessionData session = NetworkSessionData.Instance;
-        if (session == null)
+        if (session == null || session == _networkSession)
         {
             return;
         }
 
+        UnsubscribeNetworkSessionEvents();
+        _networkSession = session;
         session.OnRoundStartPresentationChanged += HandleRoundStartPresentationChanged;
         session.OnRoundEndPresentationChanged += HandleRoundEndPresentationChanged;
         session.OnWinStateChanged += HandleWinStateChanged;
@@ -849,7 +887,7 @@ public class SceneManager3D : MonoBehaviour
 
     private void UnsubscribeNetworkSessionEvents()
     {
-        NetworkSessionData session = NetworkSessionData.Instance;
+        NetworkSessionData session = _networkSession;
         if (session == null)
         {
             return;
@@ -859,10 +897,12 @@ public class SceneManager3D : MonoBehaviour
         session.OnRoundEndPresentationChanged -= HandleRoundEndPresentationChanged;
         session.OnWinStateChanged -= HandleWinStateChanged;
         session.OnGameEndPresentationChanged -= HandleGameEndPresentationChanged;
+        _networkSession = null;
     }
 
     private void HandleRoundStartPresentationChanged(NetworkRoundStartStatePayload payload)
     {
+        RefreshNetworkMode();
         if (!_useNetworkSession || payload.SequenceId <= _lastRoundIntroSequenceId)
         {
             return;
@@ -898,8 +938,15 @@ public class SceneManager3D : MonoBehaviour
 
     private void HandleRoundEndPresentationChanged(NetworkRoundEndStatePayload payload)
     {
-        if (!_useNetworkSession || roundEndScreenManager == null)
+        RefreshNetworkMode();
+        if (!_useNetworkSession)
         {
+            return;
+        }
+
+        if (roundEndScreenManager == null)
+        {
+            Debug.LogWarning("[SceneManager3D] Round-end presentation received, but RoundEndScreenManager is not wired.", this);
             return;
         }
 
@@ -921,6 +968,7 @@ public class SceneManager3D : MonoBehaviour
 
     private void HandleWinStateChanged(NetworkWinStatePayload payload)
     {
+        RefreshNetworkMode();
         if (!_useNetworkSession)
         {
             return;
@@ -933,8 +981,15 @@ public class SceneManager3D : MonoBehaviour
 
     private void HandleGameEndPresentationChanged(NetworkGameEndStatePayload payload)
     {
-        if (!_useNetworkSession || gameEndScreenManager == null)
+        RefreshNetworkMode();
+        if (!_useNetworkSession)
         {
+            return;
+        }
+
+        if (gameEndScreenManager == null)
+        {
+            Debug.LogWarning("[SceneManager3D] Game-end presentation received, but GameEndScreenManager is not wired.", this);
             return;
         }
 
