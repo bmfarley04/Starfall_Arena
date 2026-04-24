@@ -68,6 +68,8 @@ public class Missile : ProjectileScript
     [SerializeField] private GameObject explosionPrefab;
     [Tooltip("Uniform scale multiplier applied to the spawned explosion.")]
     [SerializeField] private float explosionScale = 1f;
+    [Tooltip("Sound played on impact.")]
+    [SerializeField] private SoundEffect impactSound;
 
     private Transform _target;
     private Vector2 _inheritedVelocity;
@@ -79,6 +81,7 @@ public class Missile : ProjectileScript
     private Renderer[] _renderers;
     private ParticleSystem[] _particles;
     private Coroutine _lifetimeCoroutine;
+    private AudioSource _audioSource;
 
     private void OnEnable()
     {
@@ -90,6 +93,13 @@ public class Missile : ProjectileScript
 
         _renderers = GetComponentsInChildren<Renderer>(true);
         _particles = GetComponentsInChildren<ParticleSystem>(true);
+
+        if (_audioSource == null)
+        {
+            _audioSource = GetComponent<AudioSource>();
+            if (_audioSource == null)
+                _audioSource = gameObject.AddComponent<AudioSource>();
+        }
     }
 
     private void Start()
@@ -306,6 +316,9 @@ public class Missile : ProjectileScript
             GameObject explosion = Instantiate(explosionPrefab, transform.position, Quaternion.identity);
             explosion.transform.localScale *= explosionScale;
         }
+
+        if (impactSound != null)
+            impactSound.Play(_audioSource);
 
         if (!_impactVisualSpawned && _visualController != null)
         {

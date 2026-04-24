@@ -4810,7 +4810,7 @@ MonoBehaviour:
   targetTag: 
   guidance:
     enabled: 1
-    turnRateDegPerSecond: 120
+    turnRateDegPerSecond: 60
     guidanceStartDelay: 0.05
   warmup:
     enabled: 1
@@ -4819,12 +4819,13 @@ MonoBehaviour:
     accelerationDuration: 0.25
   despawn:
     delayDespawn: 1
-    despawnDelay: 0.35
+    despawnDelay: 1
     delayedParticles:
     - {fileID: 19852452}
     - {fileID: 19852454}
   explosionPrefab: {fileID: 100002, guid: 2f47b5cc2c5d54c40b29b62ba825671a, type: 3}
   explosionScale: 0.5
+  impactSound: {fileID: 11400000, guid: 52e8c58e387b89849affa74c78d6d899, type: 2}
 --- !u!61 &4443006475417162590
 BoxCollider2D:
   m_ObjectHideFlags: 0
