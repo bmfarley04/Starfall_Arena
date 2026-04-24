@@ -41,7 +41,20 @@ public class Projectile3D : MonoBehaviour, IPooledObject3D
     protected bool _appliesSlow;
     protected float _slowMultiplier = 1f;
     protected float _slowDuration;
+    protected float _slowEngineEmissionScale = 1f;
     protected readonly HashSet<int> _hitEntityIds = new HashSet<int>();
+    protected NetCombat3D _networkAuthority;
+    protected int _requestedFireTick = -1;
+    protected int _spawnServerTick = -1;
+    protected bool _isCosmeticOnly;
+    protected NetProjectileVisualType3D _visualType = NetProjectileVisualType3D.Primary;
+
+    public Vector3 Direction => _direction;
+    public float Speed => _velocity.magnitude;
+    public float Damage => _damage;
+    public float ImpactForce => _impactForce;
+    public float RemainingLifetime => Mathf.Max(0f, _lifetime - _age);
+    public NetProjectileVisualType3D VisualType => _visualType;
 
     protected virtual void Update()
     {
@@ -75,6 +88,11 @@ public class Projectile3D : MonoBehaviour, IPooledObject3D
             return;
         }
 
+        if (TryProcessLagCompensatedHit(origin, origin + step))
+        {
+            return;
+        }
+
         transform.position = origin + step;
     }
 
@@ -90,22 +108,46 @@ public class Projectile3D : MonoBehaviour, IPooledObject3D
         _appliesSlow = false;
         _slowMultiplier = 1f;
         _slowDuration = 0f;
+        _slowEngineEmissionScale = 1f;
         _hitEntityIds.Clear();
 
         transform.rotation = Quaternion.LookRotation(_direction, Vector3.up);
     }
 
-    public void EnableSlow(float slowMultiplier, float slowDuration)
+    public void SetCosmeticOnly(bool isCosmeticOnly)
+    {
+        _isCosmeticOnly = isCosmeticOnly;
+    }
+
+    public void SetNetworkAuthority(NetCombat3D networkAuthority, int requestedFireTick)
+    {
+        _networkAuthority = networkAuthority;
+        _requestedFireTick = requestedFireTick;
+        _spawnServerTick = NetTickUtil.IsActive ? NetTickUtil.ServerTick : requestedFireTick;
+    }
+
+    public void SetNetworkVisualType(NetProjectileVisualType3D visualType)
+    {
+        _visualType = visualType;
+    }
+
+    public void EnableSlow(float slowMultiplier, float slowDuration, float slowEngineEmissionScale = 1f)
     {
         _appliesSlow = true;
         _slowMultiplier = slowMultiplier;
         _slowDuration = slowDuration;
+        _slowEngineEmissionScale = Mathf.Clamp01(slowEngineEmissionScale);
     }
 
     public void OnSpawnedFromPool()
     {
         _age = 0f;
         _hitEntityIds.Clear();
+        _networkAuthority = null;
+        _requestedFireTick = -1;
+        _spawnServerTick = -1;
+        _isCosmeticOnly = false;
+        _visualType = NetProjectileVisualType3D.Primary;
     }
 
     public void OnDespawnedToPool()
@@ -114,21 +156,39 @@ public class Projectile3D : MonoBehaviour, IPooledObject3D
         _appliesSlow = false;
         _slowMultiplier = 1f;
         _slowDuration = 0f;
+        _slowEngineEmissionScale = 1f;
         _hitEntityIds.Clear();
+        _networkAuthority = null;
+        _requestedFireTick = -1;
+        _spawnServerTick = -1;
+        _isCosmeticOnly = false;
+        _visualType = NetProjectileVisualType3D.Primary;
     }
 
     protected virtual void ApplyDamageToEntity(Entity3D damageable, Vector3 hitPoint, Collider collider)
     {
+        if (!CanApplyGameplay())
+        {
+            return;
+        }
+
         damageable.TakeDamage(_damage, hitPoint, _shooter, DamageSource3D.Projectile);
         ApplyImpactForce(collider);
     }
 
     protected virtual void ApplyImpactForce(Collider collider)
     {
+        if (!CanApplyGameplay())
+        {
+            return;
+        }
+
         Rigidbody targetRb = collider.attachedRigidbody;
         if (targetRb != null && _impactForce > 0f)
         {
-            targetRb.linearVelocity += _direction.normalized * _impactForce;
+            Vector3 velocityDelta = _direction.normalized * _impactForce;
+            targetRb.linearVelocity += velocityDelta;
+            targetRb.GetComponent<NetMovement3D>()?.ApplyCombatVelocityDelta(velocityDelta);
         }
     }
 
@@ -275,9 +335,13 @@ public class Projectile3D : MonoBehaviour, IPooledObject3D
         if (damageable != null && IsMatchingTarget(damageable))
         {
             ApplyDamageToEntity(damageable, hit.point, other);
-            if (_appliesSlow)
+            if (CanApplyGameplay() && _appliesSlow)
             {
                 damageable.ApplySlow(_slowMultiplier, _slowDuration);
+                if (_slowEngineEmissionScale < 1f)
+                {
+                    damageable.ThrusterVfx?.ApplyTemporaryEmissionRateScale(_slowEngineEmissionScale, _slowDuration);
+                }
             }
         }
 
@@ -379,6 +443,21 @@ public class Projectile3D : MonoBehaviour, IPooledObject3D
             && entity.CompareTag(targetTag);
     }
 
+    protected bool CanApplyGameplay()
+    {
+        if (_isCosmeticOnly)
+        {
+            return false;
+        }
+
+        if (!NetTickUtil.IsActive)
+        {
+            return true;
+        }
+
+        return _networkAuthority != null && _networkAuthority.IsServer;
+    }
+
     protected void SpawnHitEffect(RaycastHit hit)
     {
         if (hitEffectPrefab == null)
@@ -407,5 +486,72 @@ public class Projectile3D : MonoBehaviour, IPooledObject3D
     protected void DespawnSelf()
     {
         GameObjectPool3D.Despawn(gameObject);
+    }
+
+    private bool TryProcessLagCompensatedHit(Vector3 from, Vector3 to)
+    {
+        if (!CanApplyGameplay() || string.IsNullOrEmpty(targetTag))
+        {
+            return false;
+        }
+
+        if (!NetMovement3D.TryGetPlayerByTag(targetTag, out NetMovement3D targetMovement))
+        {
+            return false;
+        }
+
+        int currentServerTick = NetTickUtil.ServerTick;
+        int elapsedTicks = Mathf.Max(0, currentServerTick - _spawnServerTick);
+        int desiredTargetTick = _requestedFireTick >= 0 ? _requestedFireTick + elapsedTicks : currentServerTick;
+        if (!targetMovement.TryGetHistoricalState(desiredTargetTick, out NetStateSnapshot3D targetSnapshot))
+        {
+            return false;
+        }
+
+        float radius = targetMovement.GetCollisionRadius();
+        Vector3 closest = ClosestPointOnSegment(from, to, targetSnapshot.Position);
+        if ((closest - targetSnapshot.Position).sqrMagnitude > radius * radius)
+        {
+            return false;
+        }
+
+        Entity3D damageable = targetMovement.GetComponent<Entity3D>();
+        Collider targetCollider = targetMovement.GetComponent<Collider>();
+        if (damageable == null || targetCollider == null || !IsMatchingTarget(damageable))
+        {
+            return false;
+        }
+
+        if (!TryRegisterEntityHit(damageable))
+        {
+            return false;
+        }
+
+        transform.position = closest;
+        ApplyDamageToEntity(damageable, closest, targetCollider);
+        if (_appliesSlow)
+        {
+            damageable.ApplySlow(_slowMultiplier, _slowDuration);
+            if (_slowEngineEmissionScale < 1f)
+            {
+                damageable.ThrusterVfx?.ApplyTemporaryEmissionRateScale(_slowEngineEmissionScale, _slowDuration);
+            }
+        }
+
+        DespawnSelf();
+        return true;
+    }
+
+    private static Vector3 ClosestPointOnSegment(Vector3 from, Vector3 to, Vector3 point)
+    {
+        Vector3 segment = to - from;
+        float segmentSqrMagnitude = segment.sqrMagnitude;
+        if (segmentSqrMagnitude <= Mathf.Epsilon)
+        {
+            return from;
+        }
+
+        float t = Vector3.Dot(point - from, segment) / segmentSqrMagnitude;
+        return from + segment * Mathf.Clamp01(t);
     }
 }

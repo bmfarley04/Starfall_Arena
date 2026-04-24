@@ -38,12 +38,15 @@ public class BeamWeapon3D : Weapon3D
     [SerializeField] private AudioSource beamLoopAudioSource;
 
     private LaserBeam3D _activeBeam;
+    private NetCombat3D _netCombat;
+    private bool _activeBeamAuthoritative = true;
 
     private bool UsesBeamCapacity => beam.capacity > 0f && beam.drainRate > 0f;
 
     protected override void Awake()
     {
         base.Awake();
+        _netCombat ??= GetComponent<NetCombat3D>();
         if (beamLoopAudioSource == null)
         {
             beamLoopAudioSource = gameObject.AddComponent<AudioSource>();
@@ -77,9 +80,10 @@ public class BeamWeapon3D : Weapon3D
         }
 
         float recoilForceThisFrame = _activeBeam.GetRecoilForcePerSecond() * deltaTime;
-        if (Owner != null && Owner.Flight != null)
+        if (_activeBeamAuthoritative && Owner != null && Owner.Flight != null)
         {
             Owner.Flight.ApplyRecoil(recoilForceThisFrame);
+            _netCombat?.ApplyCombatVelocityDelta(-transform.forward * recoilForceThisFrame);
         }
 
         if (!UsesBeamCapacity)
@@ -106,11 +110,26 @@ public class BeamWeapon3D : Weapon3D
             return;
         }
 
-        StartBeam();
+        if (NetTickUtil.IsActive && _netCombat != null && _netCombat.IsOwner)
+        {
+            _netCombat.RequestBeamState(true);
+            if (!_netCombat.IsServer)
+            {
+                StartBeam(authoritative: false);
+            }
+            return;
+        }
+
+        StartBeam(authoritative: true);
     }
 
     protected override void OnFireReleased()
     {
+        if (NetTickUtil.IsActive && _netCombat != null && _netCombat.IsOwner)
+        {
+            _netCombat.RequestBeamState(false);
+        }
+
         StopBeam();
     }
 
@@ -135,8 +154,26 @@ public class BeamWeapon3D : Weapon3D
         StopBeam();
     }
 
-    private void StartBeam()
+    public void ApplyNetworkBeamState(bool isFiring, bool authoritative)
     {
+        if (isFiring)
+        {
+            StartBeam(authoritative);
+        }
+        else
+        {
+            StopBeam();
+        }
+    }
+
+    private void StartBeam(bool authoritative)
+    {
+        if (_activeBeam != null)
+        {
+            _activeBeamAuthoritative = authoritative;
+            return;
+        }
+
         GameObject beamObj = Instantiate(beam.beamPrefab, Vector3.zero, Quaternion.identity);
         _activeBeam = beamObj.GetComponent<LaserBeam3D>();
         if (_activeBeam == null)
@@ -155,8 +192,12 @@ public class BeamWeapon3D : Weapon3D
             Owner,
             muzzle,
             beam.offsetDistance,
-            beam.verticalOffset);
+            beam.verticalOffset,
+            AimCamera);
 
+        _activeBeamAuthoritative = authoritative;
+        _activeBeam.SetCosmeticOnly(!authoritative);
+        _activeBeam.SetNetworkAuthority(authoritative ? _netCombat : null);
         _activeBeam.StartFiring();
         StartBeamLoopSound();
     }
@@ -170,6 +211,7 @@ public class BeamWeapon3D : Weapon3D
             _activeBeam = null;
         }
 
+        _activeBeamAuthoritative = true;
         StopBeamLoopSound();
     }
 

@@ -453,16 +453,19 @@ GameObject:
   - component: {fileID: 6369695681249732700}
   - component: {fileID: 472506789794357844}
   - component: {fileID: 5104438160426859549}
+  - component: {fileID: 8844472236609154321}
   - component: {fileID: 8188930441586883119}
-  - component: {fileID: 547480364830838567}
   - component: {fileID: 7902338216098012005}
+  - component: {fileID: 6016429355266790633}
+  - component: {fileID: 1524455165470484394}
+  - component: {fileID: 6190683714811522588}
   m_Layer: 0
   m_Name: 3d_class1_player
   m_TagString: Enemy
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &7427501341343801484
 Transform:
   m_ObjectHideFlags: 0
@@ -506,7 +509,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   m_ActionEvents: []
-  m_NeverAutoSwitchControlSchemes: 1
+  m_NeverAutoSwitchControlSchemes: 0
   m_DefaultControlScheme: controller
   m_DefaultActionMap: 3d
   m_SplitScreenIndex: -1
@@ -671,7 +674,7 @@ Rigidbody:
   serializedVersion: 5
   m_Mass: 1
   m_LinearDamping: 0
-  m_AngularDamping: 0
+  m_AngularDamping: 2
   m_CenterOfMass: {x: 0, y: 0, z: 0}
   m_InertiaTensor: {x: 1, y: 1, z: 1}
   m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
@@ -710,8 +713,8 @@ MonoBehaviour:
   - {fileID: 472506789794357844}
   selectedWeaponIndex: 0
   abilities:
-  - {fileID: 5373532230695115810}
   - {fileID: 6369695681249732700}
+  - {fileID: 5373532230695115810}
   shipFlight: {fileID: 2269080399608317416}
   shipVisualTilt: {fileID: 5585566392220985068}
   shipThrusterVfx: {fileID: 3538944680820626273}
@@ -725,7 +728,7 @@ MonoBehaviour:
   anchorConfig:
     enabled: 1
     rotationMultiplier: 3
-    thrustMultiplier: 0.5
+    thrustMultiplier: 0.3
   audioConfig:
     shieldDamageSound: {fileID: 11400000, guid: fd2754dd24955964c99c8be0471fb1d2, type: 2}
     hullDamageSound: {fileID: 11400000, guid: f9265c3e881424f4da91b40830f8b194, type: 2}
@@ -1014,7 +1017,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Class1BaseWeapon3D
   availabilityMode: 0
-  reticleFillColor: {r: 0.19607843, g: 0.9137255, b: 1, a: 1}
+  reticleFillColor: {r: 0, g: 0.6291828, b: 1, a: 1}
   owner: {fileID: 1753171253810675368}
   shipFlight: {fileID: 2269080399608317416}
   resource:
@@ -1064,7 +1067,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BeamWeapon3D
   availabilityMode: 0
-  reticleFillColor: {r: 1, g: 0.76862746, b: 0.1882353, a: 1}
+  reticleFillColor: {r: 1, g: 0.433613, b: 0, a: 1}
   owner: {fileID: 1753171253810675368}
   shipFlight: {fileID: 2269080399608317416}
   resource:
@@ -1160,7 +1163,6 @@ MonoBehaviour:
         burstInterval: 0.1
     exitSound: {fileID: 11400000, guid: bc1b416aa39b9084fb712befa92ac7f8, type: 2}
     arrivalSound: {fileID: 11400000, guid: b5df1b844f0088a48bf54cac1c479aa8, type: 2}
-  audioSource: {fileID: 7028201276721733789}
 --- !u!114 &472506789794357844
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1174,7 +1176,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GigaBlastWeapon3D
   availabilityMode: 1
-  reticleFillColor: {r: 1, g: 0.44705883, b: 0.13333334, a: 1}
+  reticleFillColor: {r: 0.81883, g: 0, b: 1, a: 1}
   owner: {fileID: 1753171253810675368}
   shipFlight: {fileID: 2269080399608317416}
   resource:
@@ -1320,6 +1322,64 @@ MonoBehaviour:
   pulseWhileCharging: 1
   pulseAmplitude: 0.1
   pulseSpeed: 6
+--- !u!114 &8844472236609154321
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2568558604607578100}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a7f3623a0133472a8bb98f24e8bf2259, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerLowHealthEdgeGlow3D
+  player: {fileID: 1753171253810675368}
+  playerCameraRig3D: {fileID: 3760524061682020281}
+  netMovement: {fileID: 1524455165470484394}
+  edgeColor: {r: 1, g: 0.08, b: 0.08, a: 1}
+  coreThicknessMin: 0.01
+  coreThicknessMax: 0.03
+  coreSoftness: 1
+  coreIntensity: 0.25
+  haloThicknessMin: 0.045
+  haloThicknessMax: 0.12
+  haloSoftness: 1
+  haloIntensity: 0.9
+  cornerBoost: 0.22
+  edgeBiasHorizontal: 1
+  edgeBiasVertical: 0.85
+  lowHealthThreshold: 0.5
+  shieldActiveThreshold: 0.001
+  fadeInSpeed: 3
+  fadeOutSpeed: 4
+  healthRemap:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  pulseWhileLowHealth: 1
+  pulseAmplitude: 0.1
+  pulseSpeed: 6
 --- !u!114 &8188930441586883119
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1354,56 +1414,6 @@ MonoBehaviour:
     pieces:
     - {fileID: 1493440020577353942}
   activateOnStart: 0
---- !u!114 &547480364830838567
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2568558604607578100}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b1d647a1409e933469dc5de01c294937, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::PlayerAimReticle3D
-  entity: {fileID: 1753171253810675368}
-  player: {fileID: 1753171253810675368}
-  playerInput: {fileID: 3261048947178620207}
-  innerCircleImage: {fileID: 0}
-  additionalSpinSources: []
-  bracketConfig:
-    leftBracket: {fileID: 0}
-    rightBracket: {fileID: 0}
-    leftClosedOffset: {x: 13.5, y: 0}
-    rightClosedOffset: {x: -13.5, y: 0}
-    smoothing: 10
-  spinConfig:
-    innerCircle: {fileID: 0}
-    maxSpinSpeed: 1080
-    acceleration: 3000
-    deceleration: 1500
-    pulseHoldDuration: 1
-  hoverConfig:
-    aimCameraOverride: {fileID: 0}
-    hoverMask:
-      serializedVersion: 2
-      m_Bits: 1
-    maxDistance: 1000
-    hitscanRadius: 0.7
-    enemyTag: Enemy
-  heatFill:
-    leftFill: {fileID: 0}
-    rightFill: {fileID: 0}
-  firingVisuals:
-    dashMarks:
-      images: []
-      baseColor: {r: 1, g: 1, b: 1, a: 1}
-      firingColor: {r: 1, g: 1, b: 1, a: 1}
-      baseAlpha: 0.4
-      firingAlpha: 1
-    innerCircle:
-      baseColor: {r: 1, g: 1, b: 1, a: 1}
-      firingColor: {r: 1, g: 1, b: 1, a: 1}
 --- !u!114 &7902338216098012005
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1426,6 +1436,60 @@ MonoBehaviour:
     projectileMultiplier: 0.5
     beamAccumulationWindow: 0.2
     fadeSpeed: 2
+--- !u!114 &6016429355266790633
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2568558604607578100}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
+  GlobalObjectIdHash: 2698202182
+  InScenePlacedSourceGlobalObjectIdHash: 2698202182
+  DeferredDespawnTick: 0
+  Ownership: 1
+  AlwaysReplicateAsRoot: 0
+  SynchronizeTransform: 1
+  ActiveSceneSynchronization: 0
+  SceneMigrationSynchronization: 0
+  SpawnWithObservers: 1
+  DontDestroyWithOwner: 0
+  AutoObjectParentSync: 1
+  SyncOwnerTransformWhenParented: 1
+  AllowOwnerToParent: 0
+--- !u!114 &1524455165470484394
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2568558604607578100}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4edd8b09e91643798f396073297eb6b7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NetMovement3D
+  ShowTopMostFoldoutHeaderGroup: 1
+  reconciliationThreshold: 0.1
+  interpolationBufferTicks: 2
+  maxCombatRewindTicks: 6
+--- !u!114 &6190683714811522588
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2568558604607578100}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4b151acf5296f7345930910b2ceab3ea, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NetCombat3D
+  ShowTopMostFoldoutHeaderGroup: 1
 --- !u!1 &3042639647086152311
 GameObject:
   m_ObjectHideFlags: 0
@@ -7937,20 +8001,36 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4618339506310719171, guid: 433d19638a778ce4eabe1f05ad84a3c1, type: 3}
+      propertyPath: simulationSpeed
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 4618339506310719171, guid: 433d19638a778ce4eabe1f05ad84a3c1, type: 3}
       propertyPath: InitialModule.startSize.scalar
       value: 1.3
       objectReference: {fileID: 0}
     - target: {fileID: 4618339506310719171, guid: 433d19638a778ce4eabe1f05ad84a3c1, type: 3}
       propertyPath: InitialModule.startSpeed.scalar
-      value: 10
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 4618339506310719171, guid: 433d19638a778ce4eabe1f05ad84a3c1, type: 3}
       propertyPath: EmissionModule.rateOverTime.scalar
-      value: 70
+      value: 30
       objectReference: {fileID: 0}
     - target: {fileID: 4618339506310719171, guid: 433d19638a778ce4eabe1f05ad84a3c1, type: 3}
       propertyPath: InitialModule.startLifetime.scalar
-      value: 0.5
+      value: 1.7
+      objectReference: {fileID: 0}
+    - target: {fileID: 4618339506310719171, guid: 433d19638a778ce4eabe1f05ad84a3c1, type: 3}
+      propertyPath: InitialModule.startColor.maxColor.b
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4618339506310719171, guid: 433d19638a778ce4eabe1f05ad84a3c1, type: 3}
+      propertyPath: InitialModule.startColor.maxColor.g
+      value: 0.6313726
+      objectReference: {fileID: 0}
+    - target: {fileID: 4618339506310719171, guid: 433d19638a778ce4eabe1f05ad84a3c1, type: 3}
+      propertyPath: InitialModule.startColor.maxColor.r
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7597733967398337195, guid: 433d19638a778ce4eabe1f05ad84a3c1, type: 3}
       propertyPath: m_LocalPosition.x
@@ -8088,20 +8168,24 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4442638553038754728, guid: 2a3d2b6a2163a1f40a3532c2630d9339, type: 3}
+      propertyPath: simulationSpeed
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 4442638553038754728, guid: 2a3d2b6a2163a1f40a3532c2630d9339, type: 3}
       propertyPath: InitialModule.startSize.scalar
       value: 0.7
       objectReference: {fileID: 0}
     - target: {fileID: 4442638553038754728, guid: 2a3d2b6a2163a1f40a3532c2630d9339, type: 3}
       propertyPath: InitialModule.startSpeed.scalar
-      value: 10
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 4442638553038754728, guid: 2a3d2b6a2163a1f40a3532c2630d9339, type: 3}
       propertyPath: EmissionModule.rateOverTime.scalar
-      value: 70
+      value: 30
       objectReference: {fileID: 0}
     - target: {fileID: 4442638553038754728, guid: 2a3d2b6a2163a1f40a3532c2630d9339, type: 3}
       propertyPath: InitialModule.startLifetime.scalar
-      value: 0.3
+      value: 1.7
       objectReference: {fileID: 0}
     - target: {fileID: 4442638553038754728, guid: 2a3d2b6a2163a1f40a3532c2630d9339, type: 3}
       propertyPath: InitialModule.startColor.maxColor.g
@@ -8290,20 +8374,24 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4442638553038754728, guid: 2a3d2b6a2163a1f40a3532c2630d9339, type: 3}
+      propertyPath: simulationSpeed
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 4442638553038754728, guid: 2a3d2b6a2163a1f40a3532c2630d9339, type: 3}
       propertyPath: InitialModule.startSize.scalar
       value: 0.7
       objectReference: {fileID: 0}
     - target: {fileID: 4442638553038754728, guid: 2a3d2b6a2163a1f40a3532c2630d9339, type: 3}
       propertyPath: InitialModule.startSpeed.scalar
-      value: 10
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 4442638553038754728, guid: 2a3d2b6a2163a1f40a3532c2630d9339, type: 3}
       propertyPath: EmissionModule.rateOverTime.scalar
-      value: 70
+      value: 30
       objectReference: {fileID: 0}
     - target: {fileID: 4442638553038754728, guid: 2a3d2b6a2163a1f40a3532c2630d9339, type: 3}
       propertyPath: InitialModule.startLifetime.scalar
-      value: 0.3
+      value: 1.7
       objectReference: {fileID: 0}
     - target: {fileID: 4442638553038754728, guid: 2a3d2b6a2163a1f40a3532c2630d9339, type: 3}
       propertyPath: InitialModule.startColor.maxColor.g

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -51,6 +52,14 @@ public class Player3D : Entity3D
         audioSourcePoolSize = 4
     };
 
+    public static event Action<Player3D> PlayerSpawned;
+    public static event Action<Player3D> PlayerDespawned;
+
+    public event Action<float, float> HealthChanged;
+    public event Action<float, float> ShieldChanged;
+    public event Action<int> SelectedWeaponChanged;
+    public event Action<int, Weapon3D> WeaponAvailabilityChanged;
+
     public PlayerInput3D PlayerInput3D => playerInput3D;
     public PlayerCameraRig3D PlayerCameraRig3D => playerCameraRig3D;
 
@@ -82,7 +91,12 @@ public class Player3D : Entity3D
 
         CacheSplitStateRigsIfNeeded();
         ApplySplitStatePresentation();
-        hudManager3D?.Bind(this);
+    }
+
+    private void OnEnable()
+    {
+        SubscribeToWeaponAvailability();
+        PlayerSpawned?.Invoke(this);
     }
 
     private void Update()
@@ -158,10 +172,12 @@ public class Player3D : Entity3D
 
     private void OnDisable()
     {
+        UnsubscribeFromWeaponAvailability();
         _anchorHeld = false;
         ApplySplitStatePresentation();
         StopBeamHitLoop();
         _chromaticAberrationFx?.ClearEffect();
+        PlayerDespawned?.Invoke(this);
     }
 
     private void InitializeAudio()
@@ -238,17 +254,97 @@ public class Player3D : Entity3D
 
     protected override void OnHealthChanged()
     {
-        hudManager3D?.RefreshHealth(currentHealth, maxHealth);
+        HealthChanged?.Invoke(currentHealth, maxHealth);
     }
 
     protected override void OnShieldChanged()
     {
-        hudManager3D?.RefreshShield(currentShield, maxShield);
+        ShieldChanged?.Invoke(currentShield, maxShield);
     }
 
     protected override void OnSelectedWeaponChanged()
     {
-        hudManager3D?.RefreshWeaponHUD();
+        SelectedWeaponChanged?.Invoke(selectedWeaponIndex);
+    }
+
+    protected override void OnNetworkDamageFeedback(float previousHealth, float previousShield, NetCombatState3D state)
+    {
+        float shieldDamageTaken = Mathf.Max(0f, previousShield - currentShield);
+        float hullDamageTaken = Mathf.Max(0f, previousHealth - currentHealth);
+        float totalDamageTaken = shieldDamageTaken + hullDamageTaken;
+        if (totalDamageTaken <= 0f)
+        {
+            return;
+        }
+
+        DamageSource3D source = (DamageSource3D)state.DamageSource;
+        _chromaticAberrationFx?.TriggerDamageFeedback(totalDamageTaken, source);
+
+        if (source == DamageSource3D.Beam)
+        {
+            _lastBeamDamageTime = Time.time;
+            StartBeamHitLoop();
+            return;
+        }
+
+        if (currentHealth < previousHealth)
+        {
+            audioConfig.hullDamageSound?.Play(GetAvailableAudioSource());
+            return;
+        }
+
+        if (currentShield < previousShield)
+        {
+            audioConfig.shieldDamageSound?.Play(GetAvailableAudioSource());
+        }
+    }
+
+    private void SubscribeToWeaponAvailability()
+    {
+        for (int i = 0; i < weapons.Length; i++)
+        {
+            Weapon3D weapon = weapons[i];
+            if (weapon == null)
+            {
+                continue;
+            }
+
+            weapon.AvailabilityChanged -= HandleWeaponAvailabilityChanged;
+            weapon.AvailabilityChanged += HandleWeaponAvailabilityChanged;
+        }
+    }
+
+    private void UnsubscribeFromWeaponAvailability()
+    {
+        for (int i = 0; i < weapons.Length; i++)
+        {
+            Weapon3D weapon = weapons[i];
+            if (weapon == null)
+            {
+                continue;
+            }
+
+            weapon.AvailabilityChanged -= HandleWeaponAvailabilityChanged;
+        }
+    }
+
+    private void HandleWeaponAvailabilityChanged(Weapon3D weapon)
+    {
+        if (weapon == null)
+        {
+            return;
+        }
+
+        for (int i = 0; i < weapons.Length; i++)
+        {
+            if (!ReferenceEquals(weapons[i], weapon))
+            {
+                continue;
+            }
+
+            WeaponAvailabilityChanged?.Invoke(i, weapon);
+            return;
+        }
     }
 
     protected override float GetFlatBaseRotationMultiplier()

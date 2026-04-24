@@ -77,12 +77,13 @@ public class Teleport3D : Ability3D
 
     [Header("Ability 3 - Teleport 3D")]
     [SerializeField] private TeleportAbilityConfig3D teleport;
-    [SerializeField] private AudioSource audioSource;
 
     private Coroutine _teleportCoroutine;
     private bool _isTeleporting;
     private Rigidbody _rigidbody;
     private CinemachineImpulseSource _impulseSource;
+    private AudioSource _audioSource;
+    private NetCombat3D _netCombat;
     private readonly List<Renderer> _renderers = new List<Renderer>();
     private readonly List<bool> _rendererStates = new List<bool>();
     private readonly List<Collider> _colliders = new List<Collider>();
@@ -94,7 +95,11 @@ public class Teleport3D : Ability3D
         base.Awake();
         _rigidbody = GetComponent<Rigidbody>();
         _impulseSource = GetComponent<CinemachineImpulseSource>();
-        audioSource ??= GetComponent<AudioSource>();
+        _netCombat = GetComponent<NetCombat3D>();
+        _audioSource = gameObject.AddComponent<AudioSource>();
+        _audioSource.playOnAwake = false;
+        _audioSource.loop = false;
+        _audioSource.spatialBlend = 0f;
     }
 
     public override void UseAbility(InputValue value)
@@ -106,6 +111,26 @@ public class Teleport3D : Ability3D
 
         Vector3 targetPosition = transform.position + ResolveTeleportDirection() * teleport.teleportDistance;
 
+        if (NetTickUtil.IsActive && _netCombat != null && _netCombat.IsOwner)
+        {
+            _netCombat.RequestTeleport(targetPosition);
+            if (!_netCombat.IsServer)
+            {
+                StartTeleport(targetPosition);
+            }
+            return;
+        }
+
+        StartTeleport(targetPosition);
+    }
+
+    public void ApplyNetworkTeleport(Vector3 targetPosition, bool authoritative)
+    {
+        StartTeleport(targetPosition);
+    }
+
+    private void StartTeleport(Vector3 targetPosition)
+    {
         if (_teleportCoroutine != null)
         {
             RestoreTeleportPresentationState();
@@ -169,6 +194,7 @@ public class Teleport3D : Ability3D
             _rigidbody.position = targetPosition;
         }
         transform.position = targetPosition;
+        _netCombat?.ApplyCombatWarp(targetPosition);
 
         NotifyWarp(previousPosition, targetPosition);
 
@@ -277,9 +303,10 @@ public class Teleport3D : Ability3D
             return;
         }
 
-        if (audioSource != null)
+        if (_audioSource != null)
         {
-            soundEffect.Play(audioSource);
+            _audioSource.loop = false;
+            soundEffect.Play(_audioSource);
             return;
         }
 

@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: 947eb7bf2dd7b874ca93be0126137800
+timeCreated: 1543523214
+licenseType: Store
+NativeFormatImporter:
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 135333
+  packageName: SpaceSkies 2
+  packageVersion: 1.0
+  assetPath: Assets/SpaceSkies 2/Skies/Empty_Space/Stars_Only.mat
+  uploadId: 283394

@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using System;
 
 public class Ability3D : MonoBehaviour
 {
@@ -8,10 +9,28 @@ public class Ability3D : MonoBehaviour
     protected bool isDisabledByOtherAbility = false;
     [HideInInspector] public bool isLocked = false;
 
+    private float _lastAvailabilityChangedReadyRatio = float.NaN;
+    private bool _lastAvailabilityChangedOnCooldown;
+    private bool _lastAvailabilityChangedLocked;
+    private bool _hasAvailabilitySnapshot;
+
+    public event Action<Ability3D> AvailabilityChanged;
+
+    public float CooldownRemaining => Mathf.Max(0f, GetCooldownReadyTime() - Time.time);
+    public float CooldownDuration => Mathf.Max(0f, GetCooldownDuration());
+    public float CooldownReadyRatio => GetCooldownReadyRatio();
+    public bool UsesCooldownAvailability => !IsResourceBased();
+
     protected virtual void Awake()
     {
         entity = GetComponent<Entity3D>();
         SetInitialCooldownState(GetCooldownDuration());
+        CacheAvailabilitySnapshot();
+    }
+
+    protected virtual void Update()
+    {
+        RaiseAvailabilityChangedIfNeeded();
     }
 
     public virtual bool TryUseAbility(InputValue value)
@@ -161,10 +180,64 @@ public class Ability3D : MonoBehaviour
     protected void MarkAbilityUsed()
     {
         lastUsedAbility = Time.time;
+        RaiseAvailabilityChangedIfNeeded(force: true);
     }
 
     protected void SetInitialCooldownState(float cooldown)
     {
         lastUsedAbility = cooldown > 0f ? -cooldown : -999f;
+        RaiseAvailabilityChangedIfNeeded(force: true);
+    }
+
+    protected float GetCooldownReadyTime()
+    {
+        return lastUsedAbility + GetCooldownDuration();
+    }
+
+    private float GetCooldownReadyRatio()
+    {
+        if (isLocked)
+        {
+            return 0f;
+        }
+
+        float cooldown = CooldownDuration;
+        if (cooldown <= 0f)
+        {
+            return 1f;
+        }
+
+        return Mathf.Clamp01(1f - (CooldownRemaining / cooldown));
+    }
+
+    private void CacheAvailabilitySnapshot()
+    {
+        _lastAvailabilityChangedReadyRatio = CooldownReadyRatio;
+        _lastAvailabilityChangedOnCooldown = IsOnCooldown();
+        _lastAvailabilityChangedLocked = isLocked;
+        _hasAvailabilitySnapshot = true;
+    }
+
+    private void RaiseAvailabilityChangedIfNeeded(bool force = false)
+    {
+        float currentReadyRatio = CooldownReadyRatio;
+        bool isOnCooldown = IsOnCooldown();
+
+        if (!force && _hasAvailabilitySnapshot)
+        {
+            bool ratioUnchanged = Mathf.Abs(currentReadyRatio - _lastAvailabilityChangedReadyRatio) <= 0.0001f;
+            bool cooldownStateUnchanged = isOnCooldown == _lastAvailabilityChangedOnCooldown;
+            bool lockedStateUnchanged = isLocked == _lastAvailabilityChangedLocked;
+            if (ratioUnchanged && cooldownStateUnchanged && lockedStateUnchanged)
+            {
+                return;
+            }
+        }
+
+        _lastAvailabilityChangedReadyRatio = currentReadyRatio;
+        _lastAvailabilityChangedOnCooldown = isOnCooldown;
+        _lastAvailabilityChangedLocked = isLocked;
+        _hasAvailabilitySnapshot = true;
+        AvailabilityChanged?.Invoke(this);
     }
 }

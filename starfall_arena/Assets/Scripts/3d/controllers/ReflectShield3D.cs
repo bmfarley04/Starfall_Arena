@@ -181,6 +181,7 @@ public class ReflectShield3D : MonoBehaviour
         projectile.transform.rotation = Quaternion.LookRotation(reflectedDirection, ResolveUpVector(reflectedDirection));
 
         shieldColor = reflectedColor;
+        _owner.GetComponent<NetCombat3D>()?.BroadcastReflectedProjectile(projectile, reflectedColor);
 
         return true;
     }

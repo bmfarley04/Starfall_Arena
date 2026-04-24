@@ -1,7 +1,7 @@
 using UnityEngine;
-using UnityEngine.InputSystem;
+using System.Collections.Generic;
 
-public class PhysicalProjectileAbility3D : Ability3D
+public class PhysicalProjectileAbility3D : Weapon3D
 {
     [System.Serializable]
     public struct PhysicalProjectileAbilityConfig3D
@@ -33,7 +33,7 @@ public class PhysicalProjectileAbility3D : Ability3D
         public SoundEffect fireSound;
     }
 
-    [Header("Ability 4 - Physical Projectile 3D")]
+    [Header("Weapon 3 - Physical Projectile 3D")]
     [SerializeField] private PhysicalProjectileAbilityConfig3D physicalProjectile = new PhysicalProjectileAbilityConfig3D
     {
         cooldown = 2f,
@@ -43,25 +43,36 @@ public class PhysicalProjectileAbility3D : Ability3D
     };
     [SerializeField] private ProjectileWeapon3D projectileWeapon;
 
+    public GameObject NetworkProjectilePrefab => physicalProjectile.projectilePrefab;
+    public SoundEffect NetworkFireSound => physicalProjectile.fireSound;
+
     protected override void Awake()
     {
         base.Awake();
-        projectileWeapon ??= entity != null ? entity.PrimaryWeapon : GetComponent<ProjectileWeapon3D>();
+        SetAvailabilityMode(AvailabilityMode3D.Cooldown);
+        projectileWeapon ??= Owner != null ? Owner.PrimaryWeapon : GetComponent<ProjectileWeapon3D>();
     }
 
-    public override bool TryUseAbility(InputValue value)
+    protected override IEnumerable<GameObject> GetPrewarmProjectilePrefabs()
     {
-        if (!value.isPressed)
+        if (physicalProjectile.projectilePrefab != null)
         {
-            return false;
+            yield return physicalProjectile.projectilePrefab;
         }
+    }
 
-        if (isLocked)
-        {
-            Debug.LogWarning("PhysicalProjectileAbility3D is locked and must be unlocked by round flow before it can be used.", this);
-            return false;
-        }
+    protected override float GetConfiguredCooldownDuration()
+    {
+        return physicalProjectile.cooldown;
+    }
 
+    protected override void OnFireHeld()
+    {
+        TryFirePhysicalProjectile();
+    }
+
+    private bool TryFirePhysicalProjectile()
+    {
         if (projectileWeapon == null)
         {
             Debug.LogWarning("PhysicalProjectileAbility3D requires ProjectileWeapon3D on the same entity.", this);
@@ -86,11 +97,11 @@ public class PhysicalProjectileAbility3D : Ability3D
             return false;
         }
 
-        return base.TryUseAbility(value);
-    }
+        if (IsOnCooldown())
+        {
+            return false;
+        }
 
-    public override void UseAbility(InputValue value)
-    {
         ProjectileWeaponConfig3D baseWeapon = projectileWeapon.WeaponConfig;
         ProjectileFireRequest3D request = new ProjectileFireRequest3D
         {
@@ -107,17 +118,13 @@ public class PhysicalProjectileAbility3D : Ability3D
             verticalOffset = 0f
         };
 
-        bool fired = projectileWeapon.Fire(request);
+        bool fired = FireProjectilePattern(request, baseWeapon, physicalProjectile.fireSound);
         if (!fired)
         {
-            return;
+            return false;
         }
 
-        physicalProjectile.fireSound?.PlayAtPoint(transform.position);
-    }
-
-    protected override float GetCooldownDuration()
-    {
-        return physicalProjectile.cooldown;
+        StartCooldown();
+        return true;
     }
 }
