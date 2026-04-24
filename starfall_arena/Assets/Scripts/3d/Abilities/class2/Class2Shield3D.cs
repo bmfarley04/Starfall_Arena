@@ -36,10 +36,12 @@ public class Class2Shield3D : Ability3D, IProjectileImpactHandler3D
     [SerializeField] private AudioSource shieldLoopAudioSource;
 
     private Coroutine _shieldCoroutine;
+    private NetCombat3D _netCombat;
 
     protected override void Awake()
     {
         base.Awake();
+        _netCombat = GetComponent<NetCombat3D>();
 
         if (shieldLoopAudioSource == null)
         {
@@ -68,6 +70,21 @@ public class Class2Shield3D : Ability3D, IProjectileImpactHandler3D
     }
 
     public override void UseAbility(InputValue value)
+    {
+        if (NetTickUtil.IsActive && _netCombat != null && _netCombat.IsOwner)
+        {
+            _netCombat.RequestClass2ShieldActivation();
+            if (!_netCombat.IsServer)
+            {
+                ApplyNetworkShieldActivation(authoritative: false);
+            }
+            return;
+        }
+
+        ApplyNetworkShieldActivation(authoritative: true);
+    }
+
+    public void ApplyNetworkShieldActivation(bool authoritative)
     {
         if (_shieldCoroutine != null)
         {

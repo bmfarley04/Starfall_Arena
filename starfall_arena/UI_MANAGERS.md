@@ -25,10 +25,11 @@ This flow is orchestrated mostly through scene-level manager scripts rather than
 Current menu/network note:
 
 1. title screen main menu
-2. online host/join flow
-3. host waiting / client connect
-4. synchronized ship select
-5. gameplay scene load
+2. host-mode select canvas (2D or 3D) after `Host Game`
+3. online host/join flow
+4. host waiting / client connect
+5. synchronized ship select
+6. gameplay scene load (2D mode -> normal gameplay scene, 3D mode -> `3d`)
 
 ## Main Manager Responsibilities
 
@@ -264,12 +265,20 @@ This makes `ShipData` a bridge between:
 - UI and gameplay flow are tightly coupled around rounds, augments, and unlock timing, so documentation should be updated when any of those rules move.
 - Existing split-screen flow should be treated as transitional or legacy-oriented unless a task specifically targets it.
 - `TitleScreenManager` now needs serialized references for the join canvas, the host-waiting canvas, the IP input field, and optional status text in addition to the legacy main menu canvas.
+- `TitleScreenManager` now also needs a serialized host-mode-select canvas (2D/3D choice), its first-selected button, its hold-to-back target/fill references, and a host-waiting mode label text reference that displays the selected mode (for example `2D - DUEL` / `3D - DUEL`).
 - `TitleScreenManager` now owns only the special hold-style join/waiting controls. The main title `Host Game` and `Join Game` controls should stay on the normal clickable title-button pattern.
+- `TitleScreenManager` now routes hosted matches through a selected gameplay scene before `StartHostForMenu` (`2D` uses the configured normal scene, `3D` uses the `3d` scene by default).
+- `TitleScreenManager` now also exposes two test-only title shortcuts: `start3dhostflow()` hosts a 3D duel immediately, and `start3dclientflow()` starts a client against the configured direct-IP test address. Both shortcuts skip the visible ship-select canvas, prefill `GameDataManager` with the fixed 3D test pair (`3d_class1` for host / player 1, `3d_class2` for client / player 2), then rely on the normal network session to auto-lock those selections and advance into `3dscene`.
+- `GameDataManager` now owns mode-specific ship registries (`2D` and `3D`) and `ShipSelectManager` resolves the active roster from that mode at screen entry instead of assuming one static list.
 - Bug note: hold-to-go-back UI on nonstandard title/menu surfaces such as the controls canvas must listen for the same back input as the rest of the controller-first UI (`B` on keyboard, controller east / Circle). The game-end return hold should also keep keyboard `X` support alongside controller Circle for parity with the project's existing hold-button keyboard prompts. Do not swap these flows to Enter or South/A-only input.
 - Local multiplayer entry should use a title-menu transition into the existing `ShipSelectManager` flow rather than loading the split-screen gameplay scene directly, because the local path still expects sequential Player 1 then Player 2 ship confirmation before scene load.
 - Bug note: local gameplay ship prefabs currently ship with `PlayerInput` disabled for the network path, so local gameplay spawning must explicitly re-enable and pair devices or `SampleSceneSplitScreen` will load with both ships unresponsive.
 - `ShipSelectManager` now expects only a countdown timer text reference for the networked ship-select path; once a player locks in, that client should no longer be able to change ships before the timer expires.
 - Bug note: the main `Host Game` button must not keep any legacy `ShipSelect` transition wiring in `TitleScreenButton`, or the UI will bypass the waiting screen and appear to host successfully when networking never actually started.
+- Bug note: the main `Host Game` button must transition into the host-mode-select canvas first; do not start hosting directly from that button or the player will lose the 2D/3D branch and the server can load the wrong gameplay scene after ship select.
+- Bug note: the new 3D test title shortcuts depend on the actual gameplay scene token `3dscene`, not the older `3d` label still used by some title-flow defaults. If a shortcut hosts correctly but never transitions into gameplay, check the configured scene name first because NGO scene loading will reject a stale token even when the rest of the menu flow looks valid.
+- Bug note: host-mode 3D preview models under the 2D/3D choice buttons should stay inactive until the host-mode canvas enter transition is complete. If they are active at canvas activation time, they appear to "pop in" before the UI fade/zoom finishes because mesh renderers are not affected by `CanvasGroup` alpha.
+- Bug note: when 2D and 3D ship rosters differ, ship select must switch to the active mode roster before loading previews/icons. Reusing a stale roster from the previous mode leads to wrong ship options and mismatched preview state when returning to title and hosting again in a different mode.
 - Bug note: the main `Local Multiplayer` button must not use direct scene loading to `SampleSceneSplitScreen`, or it will skip local ship select and never capture the two ship choices into `GameDataManager`.
 - Bug note: title-screen performance can regress badly on lower-spec hardware if `TitleScreenManager` eagerly spawns every ship-select preview model at scene start while return-to-title still uses a blocking `SceneManager.LoadScene`. In that setup, gameplay-to-title waits are usually dominated by title scene activation, asset upload, and preview-object initialization rather than by the ship-select-to-gameplay preload path. Avoid treating gameplay async preload as proof the menu return path is cheap; profile title-scene startup separately and keep menu preview content lazy or pooled.
 - Active network gameplay now expects a single local-view HUD presentation:

@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: 5e32aeb0e41ea224097c2419b114a662
+timeCreated: 1543046613
+licenseType: Store
+NativeFormatImporter:
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 135333
+  packageName: SpaceSkies 2
+  packageVersion: 1.0
+  assetPath: Assets/SpaceSkies 2/Skies/Sun_Only/Sun_Purple.mat
+  uploadId: 283394

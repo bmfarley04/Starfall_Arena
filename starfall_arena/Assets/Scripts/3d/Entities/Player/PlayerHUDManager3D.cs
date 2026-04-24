@@ -1,61 +1,46 @@
-using TMPro;
+using System;
 using UnityEngine;
-using UnityEngine.UI;
-using StarfallArena.UI;
+using UnityEngine.InputSystem;
 
 public class PlayerHUDManager3D : MonoBehaviour
 {
-    [System.Serializable]
-    private struct WeaponHudSlot3D
-    {
-        [Tooltip("Outline or weapon image that changes color/alpha when selected.")]
-        public Image weaponImage;
-        [Tooltip("Selection bar image paired with this weapon.")]
-        public Image selectBar;
-    }
-
-    [System.Serializable]
-    private struct WeaponHudVisualState3D
-    {
-        [Tooltip("Base alpha used while the weapon is not selected. Base color stays white.")]
-        [Range(0f, 1f)]
-        public float baseAlpha;
-        [Tooltip("Tint applied while the weapon is selected.")]
-        public Color selectedColor;
-        [Tooltip("Alpha applied while the weapon is selected.")]
-        [Range(0f, 1f)]
-        public float selectedAlpha;
-    }
-
     [Header("Player Binding")]
     [SerializeField] private Player3D player;
+    [SerializeField] private bool autoBindToMatchingPlayer = true;
+    [SerializeField] private bool preferLocalPlayer = true;
+    [SerializeField] private bool fallbackToFirstMatchingPlayer = true;
+    [Tooltip("How long to keep retrying local-player binding after players spawn. This covers NGO spawn order where Player3D enables before NetMovement3D enables owner input.")]
+    [SerializeField] private float localPlayerBindingRetrySeconds = 3f;
+    [Tooltip("Seconds between local-player binding retries.")]
+    [SerializeField] private float localPlayerBindingRetryInterval = 0.1f;
+    [Tooltip("Optional tag filter such as Player1 or Player2.")]
+    [SerializeField] private string playerTagFilter;
+    [Tooltip("Optional case-insensitive name match. Example: class1 matches 3d_class1_player(Clone).")]
+    [SerializeField] private string playerNameContains;
 
-    [Header("Health")]
-    [SerializeField] private SegmentedBar healthBar;
-    [SerializeField] private TextMeshProUGUI healthText;
+    private Player3D _boundPlayer;
+    private float _retryUntilTime;
+    private float _nextRetryTime;
 
-    [Header("Shield")]
-    [SerializeField] private SegmentedBar shieldBar;
-    [SerializeField] private TextMeshProUGUI shieldText;
+    public event Action<Player3D> BoundPlayerChanged;
 
-    [Header("Weapons HUD")]
-    [SerializeField] private WeaponHudSlot3D[] weaponSlots = new WeaponHudSlot3D[3];
-    [SerializeField] private WeaponHudVisualState3D weaponImageVisuals = new WeaponHudVisualState3D
+    public Player3D BoundPlayer => _boundPlayer;
+
+    public static void RebindAllAutoManagers()
     {
-        baseAlpha = 0.35f,
-        selectedColor = Color.white,
-        selectedAlpha = 1f
-    };
-    [SerializeField] private WeaponHudVisualState3D selectBarVisuals = new WeaponHudVisualState3D
-    {
-        baseAlpha = 0.15f,
-        selectedColor = Color.white,
-        selectedAlpha = 1f
-    };
+        PlayerHUDManager3D[] managers = FindObjectsByType<PlayerHUDManager3D>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+        for (int i = 0; i < managers.Length; i++)
+        {
+            PlayerHUDManager3D manager = managers[i];
+            if (manager == null || !manager.autoBindToMatchingPlayer)
+            {
+                continue;
+            }
 
-    private int _lastSelectedWeaponIndex = -1;
-
-    public Player3D BoundPlayer => player;
+            manager.BeginLocalPlayerBindingRetry();
+            manager.TryBindToPlayer();
+        }
+    }
 
     private void Awake()
     {
@@ -67,125 +52,210 @@ public class PlayerHUDManager3D : MonoBehaviour
 
     private void OnEnable()
     {
-        if (player == null)
-        {
-            player = FindFirstObjectByType<Player3D>();
-        }
-
-        if (player != null)
-        {
-            player.BindHUD(this);
-        }
-        else
-        {
-            RefreshWeaponHUD(-1);
-        }
+        Player3D.PlayerSpawned += HandlePlayerSpawned;
+        Player3D.PlayerDespawned += HandlePlayerDespawned;
+        BeginLocalPlayerBindingRetry();
+        TryBindToPlayer();
     }
 
-    private void LateUpdate()
+    private void OnDisable()
     {
-        if (player == null)
+        Player3D.PlayerSpawned -= HandlePlayerSpawned;
+        Player3D.PlayerDespawned -= HandlePlayerDespawned;
+        _retryUntilTime = 0f;
+    }
+
+    private void Update()
+    {
+        if (!ShouldRetryLocalPlayerBinding())
         {
             return;
         }
 
-        int selectedIndex = player.SelectedWeaponIndex;
-        if (selectedIndex != _lastSelectedWeaponIndex)
+        if (Time.unscaledTime < _nextRetryTime)
         {
-            RefreshWeaponHUD(selectedIndex);
+            return;
+        }
+
+        _nextRetryTime = Time.unscaledTime + Mathf.Max(0.01f, localPlayerBindingRetryInterval);
+        TryBindToPlayer();
+
+        if (_boundPlayer != null && IsPreferredLocalPlayerCandidate(_boundPlayer))
+        {
+            _retryUntilTime = 0f;
         }
     }
 
     public void Bind(Player3D targetPlayer)
     {
-        player = targetPlayer;
-        InitializeHUD();
-    }
-
-    public void RefreshHealth(float currentHealth, float maxHealth)
-    {
-        if (healthBar != null)
-        {
-            healthBar.UpdateBar(currentHealth, maxHealth);
-        }
-
-        if (healthText != null)
-        {
-            healthText.text = Mathf.CeilToInt(Mathf.Max(0f, currentHealth)).ToString();
-        }
-    }
-
-    public void RefreshShield(float currentShield, float maxShield)
-    {
-        if (shieldBar != null)
-        {
-            shieldBar.UpdateBar(currentShield, maxShield);
-        }
-
-        if (shieldText != null)
-        {
-            shieldText.text = Mathf.CeilToInt(Mathf.Max(0f, currentShield)).ToString();
-        }
-    }
-
-    public void RefreshWeaponHUD()
-    {
-        int selectedIndex = player != null ? player.SelectedWeaponIndex : -1;
-        RefreshWeaponHUD(selectedIndex);
-    }
-
-    private void InitializeHUD()
-    {
-        if (player == null)
-        {
-            RefreshWeaponHUD(-1);
-            return;
-        }
-
-        if (healthBar != null)
-        {
-            healthBar.InitializeBar(player.CurrentHealth, player.MaxHealth);
-        }
-
-        if (shieldBar != null)
-        {
-            shieldBar.InitializeBar(player.CurrentShield, player.MaxShield);
-        }
-
-        if (healthText != null)
-        {
-            healthText.text = Mathf.CeilToInt(Mathf.Max(0f, player.CurrentHealth)).ToString();
-        }
-
-        if (shieldText != null)
-        {
-            shieldText.text = Mathf.CeilToInt(Mathf.Max(0f, player.CurrentShield)).ToString();
-        }
-
-        RefreshWeaponHUD(player.SelectedWeaponIndex);
-    }
-
-    private void RefreshWeaponHUD(int selectedIndex)
-    {
-        _lastSelectedWeaponIndex = selectedIndex;
-
-        for (int i = 0; i < weaponSlots.Length; i++)
-        {
-            bool isSelected = i == selectedIndex;
-            ApplyVisualState(weaponSlots[i].weaponImage, weaponImageVisuals, isSelected);
-            ApplyVisualState(weaponSlots[i].selectBar, selectBarVisuals, isSelected);
-        }
-    }
-
-    private static void ApplyVisualState(Image image, WeaponHudVisualState3D visuals, bool isSelected)
-    {
-        if (image == null)
+        if (ReferenceEquals(_boundPlayer, targetPlayer))
         {
             return;
         }
 
-        Color targetColor = isSelected ? visuals.selectedColor : Color.white;
-        targetColor.a = isSelected ? visuals.selectedAlpha : visuals.baseAlpha;
-        image.color = targetColor;
+        _boundPlayer = targetPlayer;
+        BoundPlayerChanged?.Invoke(_boundPlayer);
+    }
+
+    public bool TryBindToPlayer()
+    {
+        if (player != null && player.isActiveAndEnabled)
+        {
+            Bind(player);
+            return true;
+        }
+
+        if (!autoBindToMatchingPlayer)
+        {
+            Bind(null);
+            return false;
+        }
+
+        Player3D candidate = FindBestPlayerCandidate();
+        Bind(candidate);
+        return candidate != null;
+    }
+
+    private void HandlePlayerSpawned(Player3D spawnedPlayer)
+    {
+        if (spawnedPlayer == null)
+        {
+            return;
+        }
+
+        if (player != null)
+        {
+            if (ReferenceEquals(player, spawnedPlayer))
+            {
+                Bind(spawnedPlayer);
+            }
+
+            return;
+        }
+
+        if (!autoBindToMatchingPlayer || !MatchesBindingCriteria(spawnedPlayer))
+        {
+            return;
+        }
+
+        BeginLocalPlayerBindingRetry();
+        if (_boundPlayer == null || (preferLocalPlayer && IsPreferredLocalPlayerCandidate(spawnedPlayer)))
+        {
+            TryBindToPlayer();
+        }
+    }
+
+    private void HandlePlayerDespawned(Player3D despawnedPlayer)
+    {
+        if (!ReferenceEquals(_boundPlayer, despawnedPlayer))
+        {
+            return;
+        }
+
+        TryBindToPlayer();
+    }
+
+    private void BeginLocalPlayerBindingRetry()
+    {
+        if (!autoBindToMatchingPlayer || !preferLocalPlayer)
+        {
+            return;
+        }
+
+        float duration = Mathf.Max(0f, localPlayerBindingRetrySeconds);
+        if (duration <= 0f)
+        {
+            return;
+        }
+
+        _retryUntilTime = Time.unscaledTime + duration;
+        _nextRetryTime = Time.unscaledTime;
+    }
+
+    private bool ShouldRetryLocalPlayerBinding()
+    {
+        if (!autoBindToMatchingPlayer || !preferLocalPlayer || Time.unscaledTime > _retryUntilTime)
+        {
+            return false;
+        }
+
+        return _boundPlayer == null || !IsPreferredLocalPlayerCandidate(_boundPlayer);
+    }
+
+    private Player3D FindBestPlayerCandidate()
+    {
+        Player3D[] players = FindObjectsByType<Player3D>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+        Player3D fallbackCandidate = null;
+        Player3D localCandidate = null;
+
+        for (int i = 0; i < players.Length; i++)
+        {
+            Player3D candidate = players[i];
+            if (!MatchesBindingCriteria(candidate))
+            {
+                continue;
+            }
+
+            fallbackCandidate ??= candidate;
+
+            if (!preferLocalPlayer || !IsPreferredLocalPlayerCandidate(candidate))
+            {
+                continue;
+            }
+
+            if (localCandidate != null && !ReferenceEquals(localCandidate, candidate))
+            {
+                Debug.LogWarning(
+                    $"PlayerHUDManager3D found multiple local-player HUD candidates ({localCandidate.name}, {candidate.name}). " +
+                    "Use the tag/name filter or an explicit player reference to remove the ambiguity.",
+                    this);
+            }
+
+            localCandidate = candidate;
+        }
+
+        if (preferLocalPlayer && localCandidate != null)
+        {
+            return localCandidate;
+        }
+
+        return fallbackToFirstMatchingPlayer ? fallbackCandidate : null;
+    }
+
+    private bool MatchesBindingCriteria(Player3D candidate)
+    {
+        if (candidate == null)
+        {
+            return false;
+        }
+
+        if (!string.IsNullOrWhiteSpace(playerTagFilter) && !candidate.CompareTag(playerTagFilter))
+        {
+            return false;
+        }
+
+        if (!string.IsNullOrWhiteSpace(playerNameContains)
+            && candidate.name.IndexOf(playerNameContains, StringComparison.OrdinalIgnoreCase) < 0)
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    private static bool IsPreferredLocalPlayerCandidate(Player3D candidate)
+    {
+        if (candidate == null)
+        {
+            return false;
+        }
+
+        PlayerInput playerInput = candidate.GetComponent<PlayerInput>();
+        if (playerInput != null)
+        {
+            return playerInput.enabled && playerInput.isActiveAndEnabled;
+        }
+
+        return candidate.PlayerInput3D != null && candidate.PlayerInput3D.isActiveAndEnabled;
     }
 }

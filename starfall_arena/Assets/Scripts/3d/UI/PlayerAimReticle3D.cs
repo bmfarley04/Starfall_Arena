@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 
-public class PlayerAimReticle3D : MonoBehaviour
+public class PlayerAimReticle3D : PlayerHUDBindingTarget3D
 {
     private enum AbilitySpinMode
     {
@@ -144,25 +144,37 @@ public class PlayerAimReticle3D : MonoBehaviour
     private float _bracketCloseLerp;
     private float _currentSpinSpeed;
     private CachedSpinBinding[] _cachedSpinSources = System.Array.Empty<CachedSpinBinding>();
+    private Entity3D _fallbackEntity;
+    private Player3D _fallbackPlayer;
+    private PlayerInput3D _fallbackPlayerInput;
+    private Camera _resolvedAimCamera;
 
-    private void Awake()
+    protected override void Awake()
     {
+        base.Awake();
+
         entity ??= GetComponent<Entity3D>();
         player ??= GetComponent<Player3D>();
         playerInput ??= GetComponent<PlayerInput3D>();
+
+        _fallbackEntity = entity;
+        _fallbackPlayer = player;
+        _fallbackPlayerInput = playerInput;
 
         CacheOpenBracketPositions();
         CacheSpinSources();
     }
 
-    private void OnEnable()
+    protected override void OnEnable()
     {
+        base.OnEnable();
         CacheOpenBracketPositions();
         CacheSpinSources();
     }
 
     private void Update()
     {
+        RefreshAimCameraBinding();
         UpdateBracketPositions();
         UpdateHeatFill();
         UpdateInnerSpin();
@@ -312,7 +324,7 @@ public class PlayerAimReticle3D : MonoBehaviour
         }
         else
         {
-            MonoBehaviour[] localBehaviours = GetComponents<MonoBehaviour>();
+            MonoBehaviour[] localBehaviours = GetSpinSourceBehaviours();
             for (int i = 0; i < localBehaviours.Length; i++)
             {
                 if (localBehaviours[i] is IReticleSpinSource3D spinSource && localBehaviours[i] is Ability3D ability)
@@ -329,6 +341,43 @@ public class PlayerAimReticle3D : MonoBehaviour
         }
 
         _cachedSpinSources = sources.ToArray();
+    }
+
+    protected override void BindPlayer(Player3D boundPlayer)
+    {
+        player = boundPlayer;
+        entity = boundPlayer;
+        playerInput = boundPlayer != null ? boundPlayer.PlayerInput3D : null;
+        RefreshAimCameraBinding(force: true);
+        CacheSpinSources();
+    }
+
+    protected override void UnbindPlayer(Player3D boundPlayer)
+    {
+    }
+
+    protected override void ClearBinding()
+    {
+        player = _fallbackPlayer;
+        entity = _fallbackEntity;
+        playerInput = _fallbackPlayerInput;
+        _resolvedAimCamera = null;
+        CacheSpinSources();
+    }
+
+    private MonoBehaviour[] GetSpinSourceBehaviours()
+    {
+        if (player != null)
+        {
+            return player.GetComponents<MonoBehaviour>();
+        }
+
+        if (entity != null)
+        {
+            return entity.GetComponents<MonoBehaviour>();
+        }
+
+        return GetComponents<MonoBehaviour>();
     }
 
     private bool ShouldSpinReticle()
@@ -443,9 +492,10 @@ public class PlayerAimReticle3D : MonoBehaviour
 
     private Ray GetAimRay()
     {
-        if (hoverConfig.aimCameraOverride != null)
+        Camera resolvedAimCamera = GetResolvedAimCamera();
+        if (resolvedAimCamera != null && hoverConfig.aimCameraOverride != null)
         {
-            return hoverConfig.aimCameraOverride.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
+            return resolvedAimCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
         }
 
         Weapon3D selectedWeapon = GetSelectedWeapon();
@@ -454,10 +504,9 @@ public class PlayerAimReticle3D : MonoBehaviour
             return selectedWeapon.GetAimRay();
         }
 
-        Camera fallbackCamera = Camera.main;
-        if (fallbackCamera != null)
+        if (resolvedAimCamera != null)
         {
-            return fallbackCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
+            return resolvedAimCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
         }
 
         return new Ray(transform.position, transform.forward);
@@ -477,5 +526,46 @@ public class PlayerAimReticle3D : MonoBehaviour
     {
         color.a = alpha;
         return color;
+    }
+
+    private void RefreshAimCameraBinding(bool force = false)
+    {
+        Camera resolvedAimCamera = GetResolvedAimCamera();
+        if (!force && ReferenceEquals(_resolvedAimCamera, resolvedAimCamera))
+        {
+            return;
+        }
+
+        _resolvedAimCamera = resolvedAimCamera;
+        BindAimCameraToPlayerWeapons(resolvedAimCamera);
+    }
+
+    private Camera GetResolvedAimCamera()
+    {
+        if (hoverConfig.aimCameraOverride != null)
+        {
+            return hoverConfig.aimCameraOverride;
+        }
+
+        return Camera.main;
+    }
+
+    private void BindAimCameraToPlayerWeapons(Camera aimCamera)
+    {
+        if (player == null)
+        {
+            return;
+        }
+
+        Weapon3D[] weapons = player.Weapons;
+        for (int i = 0; i < weapons.Length; i++)
+        {
+            if (weapons[i] == null)
+            {
+                continue;
+            }
+
+            weapons[i].SetAimCamera(aimCamera);
+        }
     }
 }

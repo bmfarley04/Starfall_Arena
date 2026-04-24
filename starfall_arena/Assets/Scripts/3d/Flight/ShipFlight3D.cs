@@ -55,6 +55,7 @@ public class ShipFlight3D : MonoBehaviour
     private Vector3 _recoilVelocityDeltaThisStep;
     private Vector3 _lastFixedStepRecoilVelocityDelta;
     private float _effectiveThrustInput;
+    private bool _externalSimulationEnabled;
 
     public Rigidbody Rigidbody => _rb;
     public Vector2 LookInput => _lookInput;
@@ -63,6 +64,7 @@ public class ShipFlight3D : MonoBehaviour
     public Vector2 NormalizedTurnRates => _normalizedTurnRates;
     public float ThrustInput => _thrustInput;
     public bool IsFrictionEnabled => frictionEnabled;
+    public bool IsExternalSimulationEnabled => _externalSimulationEnabled;
     public Vector3 LinearVelocity => _rb != null ? _rb.linearVelocity : Vector3.zero;
     public Vector3 LocalVelocity => _localVelocity;
     public Vector3 LinearAcceleration => _linearAcceleration;
@@ -74,6 +76,10 @@ public class ShipFlight3D : MonoBehaviour
     public float LateralSpeed => _localVelocity.x;
     public float VerticalSpeed => _localVelocity.y;
     public bool IsApplyingThrust => _effectiveThrustInput > 0.05f;
+    public ShipFlightConfig3D FlightConfig => flight;
+    public ShipFlightAssistConfig3D FlightAssistConfig => flightAssist;
+    public bool LockToWorldYPlane => lockToWorldYPlane;
+    public float LockedWorldY => lockedWorldY;
 
     private void Awake()
     {
@@ -119,6 +125,14 @@ public class ShipFlight3D : MonoBehaviour
             return;
         }
 
+        if (_externalSimulationEnabled)
+        {
+            _previousVelocity = _rb.linearVelocity;
+            _lastFixedStepRecoilVelocityDelta = _recoilVelocityDeltaThisStep;
+            _recoilVelocityDeltaThisStep = Vector3.zero;
+            return;
+        }
+
         PullInputFromSource();
         FilterLookInput();
         HandleRotation();
@@ -151,6 +165,29 @@ public class ShipFlight3D : MonoBehaviour
     {
         inputSourceBehaviour = sourceBehaviour;
         _inputSource = sourceBehaviour as IShipFlightInputSource;
+    }
+
+    public void SetExternalSimulationEnabled(bool enabled)
+    {
+        _externalSimulationEnabled = enabled;
+
+        if (_rb == null)
+        {
+            _rb = GetComponent<Rigidbody>();
+        }
+
+        if (!enabled || _rb == null)
+        {
+            return;
+        }
+
+        _rb.angularVelocity = Vector3.zero;
+        _previousVelocity = _rb.linearVelocity;
+        _linearAcceleration = Vector3.zero;
+        _localLinearAcceleration = Vector3.zero;
+        _recentRecoilVelocityDelta = Vector3.zero;
+        _recoilVelocityDeltaThisStep = Vector3.zero;
+        _lastFixedStepRecoilVelocityDelta = Vector3.zero;
     }
 
     public void SetLookInput(Vector2 lookInput)
@@ -190,6 +227,39 @@ public class ShipFlight3D : MonoBehaviour
         _recoilVelocityDeltaThisStep += recoilVelocityDelta;
         EnforceFlightPlane();
         _localVelocity = transform.InverseTransformDirection(_rb.linearVelocity);
+    }
+
+    public void ApplyExternalSimulationState(
+        Vector2 rawLookInput,
+        Vector2 filteredLookInput,
+        Vector2 currentTurnRates,
+        float thrustInput,
+        bool frictionActive,
+        Vector3 linearVelocity,
+        Vector3 linearAcceleration,
+        Vector3 recoilVelocityDelta)
+    {
+        _lookInput = Vector2.ClampMagnitude(rawLookInput, 1f);
+        _filteredLookInput = Vector2.ClampMagnitude(filteredLookInput, 1f);
+        _currentTurnRates = currentTurnRates;
+        _normalizedTurnRates = new Vector2(
+            NormalizeTurnRate(_currentTurnRates.x, flight.pitchSpeed),
+            NormalizeTurnRate(_currentTurnRates.y, flight.yawSpeed));
+        _thrustInput = Mathf.Clamp(thrustInput, -1f, 1f);
+        frictionEnabled = frictionActive;
+        _effectiveThrustInput = Mathf.Max(0f, _thrustInput);
+        _linearAcceleration = linearAcceleration;
+        _localLinearAcceleration = transform.InverseTransformDirection(linearAcceleration);
+        _localVelocity = transform.InverseTransformDirection(linearVelocity);
+        _recentRecoilVelocityDelta = recoilVelocityDelta;
+        _lastFixedStepRecoilVelocityDelta = recoilVelocityDelta;
+        _previousVelocity = linearVelocity;
+
+        if (_rb != null)
+        {
+            _rb.linearVelocity = linearVelocity;
+            _rb.angularDamping = frictionEnabled ? flightAssist.activeAngularDamping : 0f;
+        }
     }
 
     private void ConfigureRigidbody()
