@@ -3277,6 +3277,8 @@ MonoBehaviour:
   autoBindToMatchingPlayer: 0
   preferLocalPlayer: 0
   fallbackToFirstMatchingPlayer: 0
+  localPlayerBindingRetrySeconds: 3
+  localPlayerBindingRetryInterval: 0.1
   playerTagFilter: 
   playerNameContains: 
 --- !u!4 &1779300724
@@ -4323,13 +4325,17 @@ PrefabInstance:
       propertyPath: m_Enabled
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 1003590045011799885, guid: 2d602ed917360fd4e9b9a736aa10b207, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 3111762115991283553, guid: 2d602ed917360fd4e9b9a736aa10b207, type: 3}
       propertyPath: m_Name
       value: new_backround3
       objectReference: {fileID: 0}
     - target: {fileID: 3111762115991283553, guid: 2d602ed917360fd4e9b9a736aa10b207, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 3803772072834065244, guid: 2d602ed917360fd4e9b9a736aa10b207, type: 3}
       propertyPath: m_LocalPosition.x
@@ -4344,6 +4350,10 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4954313200478706439, guid: 2d602ed917360fd4e9b9a736aa10b207, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6183447936910876643, guid: 2d602ed917360fd4e9b9a736aa10b207, type: 3}
       propertyPath: m_IsActive
       value: 0
       objectReference: {fileID: 0}
@@ -4388,6 +4398,10 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7656435340691642652, guid: 2d602ed917360fd4e9b9a736aa10b207, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8263628413255080637, guid: 2d602ed917360fd4e9b9a736aa10b207, type: 3}
       propertyPath: m_IsActive
       value: 0
       objectReference: {fileID: 0}
