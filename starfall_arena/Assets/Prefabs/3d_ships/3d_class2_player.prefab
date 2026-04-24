@@ -10562,6 +10562,7 @@ GameObject:
   - component: {fileID: 2273685839450933136}
   - component: {fileID: 8751481912860533192}
   - component: {fileID: 4844600726074656449}
+  - component: {fileID: 8844472236609154322}
   - component: {fileID: 3009000303518804356}
   - component: {fileID: 8372746202662312326}
   - component: {fileID: 4442115351324218777}
@@ -10569,6 +10570,7 @@ GameObject:
   - component: {fileID: 52433826259895386}
   - component: {fileID: -7814873099316739718}
   - component: {fileID: 1202045257313671994}
+  - component: {fileID: 492492662401554447}
   m_Layer: 0
   m_Name: 3d_class2_player
   m_TagString: Enemy
@@ -11171,6 +11173,64 @@ MonoBehaviour:
     projectileMultiplier: 0.5
     beamAccumulationWindow: 0.2
     fadeSpeed: 2
+--- !u!114 &8844472236609154322
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7114399765549422770}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a7f3623a0133472a8bb98f24e8bf2259, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerLowHealthEdgeGlow3D
+  player: {fileID: 4860835452147509291}
+  playerCameraRig3D: {fileID: 8106419607673637394}
+  netMovement: {fileID: 1202045257313671994}
+  edgeColor: {r: 1, g: 0.08, b: 0.08, a: 1}
+  coreThicknessMin: 0.01
+  coreThicknessMax: 0.03
+  coreSoftness: 1
+  coreIntensity: 0.25
+  haloThicknessMin: 0.045
+  haloThicknessMax: 0.12
+  haloSoftness: 1
+  haloIntensity: 0.9
+  cornerBoost: 0.22
+  edgeBiasHorizontal: 1
+  edgeBiasVertical: 0.85
+  lowHealthThreshold: 0.5
+  shieldActiveThreshold: 0.001
+  fadeInSpeed: 3
+  fadeOutSpeed: 4
+  healthRemap:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  pulseWhileLowHealth: 1
+  pulseAmplitude: 0.1
+  pulseSpeed: 6
 --- !u!114 &3009000303518804356
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -11417,6 +11477,20 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   reconciliationThreshold: 0.1
   interpolationBufferTicks: 2
+  maxCombatRewindTicks: 6
+--- !u!114 &492492662401554447
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7114399765549422770}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4b151acf5296f7345930910b2ceab3ea, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NetCombat3D
+  ShowTopMostFoldoutHeaderGroup: 1
 --- !u!1 &7608548549887183838
 GameObject:
   m_ObjectHideFlags: 0

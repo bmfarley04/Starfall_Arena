@@ -34,6 +34,9 @@ public class LaserBeam3D : MonoBehaviour
     private Entity3D _shooter;
     private Transform _positionAnchor;
     private Transform _directionSource;
+    private Camera _aimCamera;
+    private bool _isCosmeticOnly;
+    private NetCombat3D _networkAuthority;
     private float _anchorOffset;
     private float _verticalOffset;
     private float _timeSinceLastShieldHit;
@@ -56,7 +59,7 @@ public class LaserBeam3D : MonoBehaviour
 
     public void Initialize(string targetTag, float damagePerSecond, float maxDistance,
         float recoilForcePerSecond, float impactForce, Entity3D shooter,
-        Transform positionAnchor = null, float anchorOffset = 0f, float verticalOffset = 0f)
+        Transform positionAnchor = null, float anchorOffset = 0f, float verticalOffset = 0f, Camera aimCamera = null)
     {
         _targetTag = targetTag;
         _damagePerSecond = damagePerSecond;
@@ -66,8 +69,19 @@ public class LaserBeam3D : MonoBehaviour
         _shooter = shooter;
         _positionAnchor = positionAnchor != null ? positionAnchor : shooter.transform;
         _directionSource = shooter.transform;
+        _aimCamera = aimCamera;
         _anchorOffset = anchorOffset;
         _verticalOffset = verticalOffset;
+    }
+
+    public void SetCosmeticOnly(bool isCosmeticOnly)
+    {
+        _isCosmeticOnly = isCosmeticOnly;
+    }
+
+    public void SetNetworkAuthority(NetCombat3D networkAuthority)
+    {
+        _networkAuthority = networkAuthority;
     }
 
     public float GetRecoilForcePerSecond()
@@ -142,7 +156,7 @@ public class LaserBeam3D : MonoBehaviour
 
     private void FireBeam()
     {
-        Vector3 aimDirection = _directionSource.forward;
+        Vector3 aimDirection = ResolveAimDirection();
         Vector3 origin = _positionAnchor.position + aimDirection * _anchorOffset + _positionAnchor.up * _verticalOffset;
 
         bool hitSomething = Physics.SphereCast(origin, Mathf.Max(0f, hitscanRadius), aimDirection, out RaycastHit hit, _maxDistance, collisionMask, QueryTriggerInteraction.Ignore);
@@ -162,14 +176,18 @@ public class LaserBeam3D : MonoBehaviour
             Entity3D damageable = ResolveHitEntity(hit.collider);
             if (damageable != null && IsMatchingTarget(damageable))
             {
-                float damageThisFrame = _damagePerSecond * Time.deltaTime;
-                damageable.TakeDamage(damageThisFrame, hit.point, _shooter, DamageSource3D.Beam);
-
-                Rigidbody targetRb = hit.collider.attachedRigidbody;
-                if (targetRb != null && _impactForce > 0f)
+                if (CanApplyGameplay())
                 {
-                    float impactForceThisFrame = _impactForce * Time.deltaTime;
-                    targetRb.linearVelocity += aimDirection * impactForceThisFrame;
+                    float damageThisFrame = _damagePerSecond * Time.deltaTime;
+                    damageable.TakeDamage(damageThisFrame, hit.point, _shooter, DamageSource3D.Beam);
+
+                    Rigidbody targetRb = hit.collider.attachedRigidbody;
+                    if (targetRb != null && _impactForce > 0f)
+                    {
+                        Vector3 velocityDelta = aimDirection * (_impactForce * Time.deltaTime);
+                        targetRb.linearVelocity += velocityDelta;
+                        targetRb.GetComponent<NetMovement3D>()?.ApplyCombatVelocityDelta(velocityDelta);
+                    }
                 }
 
                 UpdateShieldHitEffects(damageable, hit.point);
@@ -296,5 +314,36 @@ public class LaserBeam3D : MonoBehaviour
         return entity != null
             && !string.IsNullOrEmpty(_targetTag)
             && entity.CompareTag(_targetTag);
+    }
+
+    private Vector3 ResolveAimDirection()
+    {
+        if (_aimCamera != null)
+        {
+            Ray centerRay = _aimCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
+            if (centerRay.direction.sqrMagnitude > 0.0001f)
+            {
+                return centerRay.direction.normalized;
+            }
+        }
+
+        return _directionSource != null && _directionSource.forward.sqrMagnitude > 0.0001f
+            ? _directionSource.forward.normalized
+            : transform.forward;
+    }
+
+    private bool CanApplyGameplay()
+    {
+        if (_isCosmeticOnly)
+        {
+            return false;
+        }
+
+        if (!NetTickUtil.IsActive)
+        {
+            return true;
+        }
+
+        return _networkAuthority != null && _networkAuthority.IsServer;
     }
 }

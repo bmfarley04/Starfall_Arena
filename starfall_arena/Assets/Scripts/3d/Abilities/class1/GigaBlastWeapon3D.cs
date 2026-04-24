@@ -191,15 +191,28 @@ public class GigaBlastWeapon3D : Weapon3D
     private int _currentChargeTier;
     private Coroutine _chargeFadeCoroutine;
     private bool _cancelReleaseShot;
+    private NetCombat3D _netCombat;
+    private bool _suppressNetworkChargeBroadcast;
 
     public bool IsCharging => _isCharging;
     public float CurrentChargeTime => GetCurrentChargeTime();
     public float NormalizedChargeProgress => GetNormalizedChargeProgress();
     public int CurrentChargeTier => _isCharging ? _currentChargeTier : 0;
 
+    public GameObject GetNetworkProjectilePrefab(int tier)
+    {
+        return GetProjectilePrefabForTier(tier);
+    }
+
+    public SoundEffect GetNetworkFireSound(int tier)
+    {
+        return GetFireSoundForTier(tier);
+    }
+
     protected override void Awake()
     {
         base.Awake();
+        _netCombat = GetComponent<NetCombat3D>();
         projectileWeapon ??= Owner != null ? Owner.PrimaryWeapon : GetComponent<ProjectileWeapon3D>();
         ResetAllChargeParticlesToIdle();
 
@@ -252,6 +265,7 @@ public class GigaBlastWeapon3D : Weapon3D
         StopCurrentChargeParticle();
         _currentChargeTier = newTier;
         PlayChargeParticleForTier(_currentChargeTier);
+        BroadcastChargeStateIfNeeded();
     }
 
     protected override void OnFirePressed()
@@ -340,6 +354,7 @@ public class GigaBlastWeapon3D : Weapon3D
         _currentChargeTier = GetChargeTier(0f);
         PlayChargeParticleForTier(_currentChargeTier);
         StartChargeSound();
+        BroadcastChargeStateIfNeeded();
     }
 
     private void ReleaseCharge()
@@ -365,6 +380,45 @@ public class GigaBlastWeapon3D : Weapon3D
         _currentChargeTier = 0;
         StopAllChargeParticles();
         StopChargeSound();
+        BroadcastChargeStateIfNeeded();
+    }
+
+    public void ApplyNetworkChargeState(bool isCharging, int tier)
+    {
+        _suppressNetworkChargeBroadcast = true;
+        if (!isCharging)
+        {
+            StopChargingState();
+            _suppressNetworkChargeBroadcast = false;
+            return;
+        }
+
+        if (!_isCharging)
+        {
+            _isCharging = true;
+            _chargeStartTime = Time.time;
+            StartChargeSound();
+        }
+
+        int clampedTier = Mathf.Clamp(tier, 1, 4);
+        if (_currentChargeTier != clampedTier)
+        {
+            StopCurrentChargeParticle();
+            _currentChargeTier = clampedTier;
+            PlayChargeParticleForTier(_currentChargeTier);
+        }
+
+        _suppressNetworkChargeBroadcast = false;
+    }
+
+    private void BroadcastChargeStateIfNeeded()
+    {
+        if (_suppressNetworkChargeBroadcast || !NetTickUtil.IsActive || _netCombat == null || !_netCombat.IsOwner)
+        {
+            return;
+        }
+
+        _netCombat.RequestGigaBlastChargeState(_isCharging, _currentChargeTier);
     }
 
     private bool FireChargedShot(int tier)
@@ -400,6 +454,8 @@ public class GigaBlastWeapon3D : Weapon3D
             recoilForce = baseWeapon.recoilForce * GetRecoilMultiplierForTier(tier),
             forwardOffset = gigaBlast.offsetDistance + GetSpawnOffsetForTier(tier),
             verticalOffset = gigaBlast.verticalOffset,
+            canPierce = tier >= 3,
+            pierceMultiplier = GetPierceMultiplierForTier(tier),
             onProjectileSpawned = projectile =>
             {
                 if (tier < 3 || projectile is not GigaBlastProjectile3D gigaBlastProjectile)

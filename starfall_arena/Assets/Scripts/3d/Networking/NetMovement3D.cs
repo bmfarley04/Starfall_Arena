@@ -21,6 +21,9 @@ public class NetMovement3D : NetworkBehaviour
     [Header("Interpolation")]
     [SerializeField] private int interpolationBufferTicks = 2;
 
+    [Header("Combat Rewind")]
+    [SerializeField] private int maxCombatRewindTicks = 6;
+
     private readonly NetworkVariable<bool> _movementLocked = new NetworkVariable<bool>(
         false,
         NetworkVariableReadPermission.Everyone,
@@ -51,6 +54,7 @@ public class NetMovement3D : NetworkBehaviour
     private bool _serverFrictionEnabled;
     private bool _loggedOwnerInputMissing;
     private bool _loggedOwnerShipFlightMissing;
+    private bool _loggedMissingCombatBridge;
     private int _lastSentTick = -1;
     private int _lastReceivedServerTick = -1;
     private int _lastProcessedServerTick = -1;
@@ -232,6 +236,118 @@ public class NetMovement3D : NetworkBehaviour
         return false;
     }
 
+    public static bool TryGetPlayerByTag(string playerTag, out NetMovement3D movement)
+    {
+        for (int i = 0; i < ActiveInstances.Count; i++)
+        {
+            NetMovement3D candidate = ActiveInstances[i];
+            if (candidate == null || !candidate.IsSpawned || !candidate.gameObject.activeInHierarchy)
+            {
+                continue;
+            }
+
+            if (candidate.CompareTag(playerTag))
+            {
+                movement = candidate;
+                return true;
+            }
+        }
+
+        movement = null;
+        return false;
+    }
+
+    public bool TryGetHistoricalState(int requestedTick, out NetStateSnapshot3D snapshot)
+    {
+        snapshot = default;
+        if (_stateHistory == null || _stateHistory.Length == 0)
+        {
+            return false;
+        }
+
+        int newestAllowedTick = _stateHistoryHead;
+        int oldestAllowedTick = Mathf.Max(0, newestAllowedTick - Mathf.Max(0, maxCombatRewindTicks));
+        int clampedTick = Mathf.Clamp(requestedTick, oldestAllowedTick, newestAllowedTick);
+        int index = clampedTick % _stateHistory.Length;
+        NetStateSnapshot3D candidate = _stateHistory[index];
+        if (candidate.Tick != clampedTick)
+        {
+            return false;
+        }
+
+        snapshot = candidate;
+        return true;
+    }
+
+    public float GetCollisionRadius()
+    {
+        Collider collider3D = GetComponent<Collider>();
+        if (collider3D != null)
+        {
+            Bounds bounds = collider3D.bounds;
+            return Mathf.Max(bounds.extents.x, bounds.extents.y, bounds.extents.z);
+        }
+
+        Collider[] childColliders = GetComponentsInChildren<Collider>();
+        float radius = 0.5f;
+        for (int i = 0; i < childColliders.Length; i++)
+        {
+            Collider child = childColliders[i];
+            if (child == null)
+            {
+                continue;
+            }
+
+            Bounds bounds = child.bounds;
+            radius = Mathf.Max(radius, bounds.extents.x, bounds.extents.y, bounds.extents.z);
+        }
+
+        return radius;
+    }
+
+    public void ApplyCombatVelocityDelta(Vector3 velocityDelta)
+    {
+        if (velocityDelta.sqrMagnitude <= 0.000001f)
+        {
+            return;
+        }
+
+        if (_rb != null)
+        {
+            _rb.linearVelocity += velocityDelta;
+        }
+
+        if (_ownerStateInitialized)
+        {
+            _ownerState.Velocity += velocityDelta;
+        }
+
+        if (_serverStateInitialized)
+        {
+            _serverState.Velocity += velocityDelta;
+        }
+    }
+
+    public void ApplyCombatWarp(Vector3 position)
+    {
+        if (_rb != null)
+        {
+            _rb.position = position;
+        }
+
+        transform.position = position;
+
+        if (_ownerStateInitialized)
+        {
+            _ownerState.Position = position;
+        }
+
+        if (_serverStateInitialized)
+        {
+            _serverState.Position = position;
+        }
+    }
+
     private void OwnerTick()
     {
         if (_shipFlight == null)
@@ -326,6 +442,11 @@ public class NetMovement3D : NetworkBehaviour
         {
             input.LookInput = Vector2.zero;
             input.ThrustInput = 0f;
+        }
+
+        if (_player != null)
+        {
+            input.SlowMultiplier = _player.GetSlowMultiplier();
         }
 
         _serverFrictionEnabled = input.FrictionEnabled;
@@ -586,7 +707,7 @@ public class NetMovement3D : NetworkBehaviour
         if (_playerInput3D != null)
         {
             _playerInput3D.enabled = true;
-            _playerInput3D.SetCombatInputSuppressed(true);
+            _playerInput3D.SetCombatInputSuppressed(!HasNetworkCombatBridgeForOwner());
         }
 
         if (_playerInput != null)
@@ -711,6 +832,11 @@ public class NetMovement3D : NetworkBehaviour
             needsRecovery = true;
         }
 
+        if (_playerInput3D != null && _playerInput3D.IsCombatInputSuppressed == HasNetworkCombatBridgeForOwner())
+        {
+            needsRecovery = true;
+        }
+
         if (!needsRecovery)
         {
             return;
@@ -764,6 +890,19 @@ public class NetMovement3D : NetworkBehaviour
         {
             _playerInput.camera = gameplayCamera;
         }
+    }
+
+    private bool HasNetworkCombatBridgeForOwner()
+    {
+        NetCombat3D netCombat = GetComponent<NetCombat3D>();
+        bool hasBridge = netCombat != null;
+        if (!hasBridge && !_loggedMissingCombatBridge)
+        {
+            Debug.LogError("[NetMovement3D] Owner combat input remains suppressed because this network player prefab is missing NetCombat3D.", this);
+            _loggedMissingCombatBridge = true;
+        }
+
+        return hasBridge;
     }
 
     private void HandleMovementLockedChanged(bool previousValue, bool newValue)

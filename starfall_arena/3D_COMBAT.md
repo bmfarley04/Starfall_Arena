@@ -13,6 +13,13 @@ Read this when working on 3D weapons, abilities, aiming, projectiles, beams, ret
 - `Projectile3D`
   - owns projectile travel, hit detection, hit results, hit FX, and despawn/pool return
 
+Networked runtime rule:
+
+- in network sessions, `NetCombat3D` brokers projectile fire instead of letting every peer run gameplay damage locally
+- owning clients spawn immediate cosmetic projectiles for responsiveness
+- the server spawns the authoritative gameplay projectile and broadcasts cosmetic spawns to non-owners
+- cosmetic projectile instances may render impacts, but must not apply damage, slow, impact force, or shield/hull state changes
+
 For player-facing readability, projectile fire direction should be resolved from the intended aim target, not from a muzzle transform that may be attached under a visually banked or pitched ship mesh.
 
 Current implementation rule for 3D projectile visuals:
@@ -56,6 +63,7 @@ Base input rule:
 
 - `ProjectileWeapon3D`
   - shared projectile spawn/cooldown ownership for player and enemy ships
+  - routes network-session projectile fire through `NetCombat3D` while preserving local non-network behavior
 - `StupidTurret3D`
   - scene-test firing driver for stationary or non-piloted 3D ships
   - should be paired with `ProjectileWeapon3D` aim set to `MuzzleForward` when the goal is "fire where the ship is facing"
@@ -67,6 +75,7 @@ Base input rule:
 - `LaserBeam3D`
   - runtime for the beam visual and hit behavior
   - resolves aim from camera center, not the parent transform's forward
+  - separates cosmetic-only beam display from server-authoritative beam damage during network sessions
 - `Reflector3D`
   - Class 1 reflect ability for the 3D path
   - owns cooldown, active window, projectile reflection rules, and reflected-projectile audio
@@ -79,6 +88,7 @@ Base input rule:
 - `GigaBlastWeapon3D`
   - Class 1 charged projectile weapon for the 3D path
   - applies tier-based thrust/rotation penalties while charging and fires tier-specific projectile prefabs through `ProjectileWeapon3D`
+  - replicates charge/tier presentation through `NetCombat3D`; release still uses the shared projectile request path
 - `GigaBlastProjectile3D`
   - optional projectile runtime for tiers that need piercing behavior
 
@@ -102,6 +112,19 @@ Base input rule:
   - exposes a selected-object Scene gizmo (`drawGameplayConeGizmo`) so cone half-angle/range can be verified against runtime gameplay volume
   - no longer generates cone meshes, materials, or suction particles in code; it now reads an authored `spawnPoint` for cone origin/facing and only toggles an authored `visualRoot`, so the full tractor beam look is built manually in prefab/editor content
   - authored visuals can be particle-based or mesh-based; the current lightweight mesh option is `Assets/Shaders/3d/TractorBeamFresnel.shader`, which expects a cone/cylinder mesh with beam length mapped along UV `V`
+  - in network sessions, owner/remote copies can show the beam, but only the server-authoritative copy applies pull velocity
+
+## Networked Combat Authority
+
+Current networked 3D combat uses server authority with owner-side cosmetic prediction:
+
+- projectile and beam damage applies only on the server
+- health, shield, hit feedback, slow state, and death presentation replicate from `NetCombat3D`
+- recoil, impact force, tractor pull, and teleport warps must update `NetMovement3D` combat helpers so movement reconciliation keeps the combat impulse
+- owner combat input is enabled only when the networked prefab has `NetCombat3D`; without it, `NetMovement3D` suppresses combat to avoid false local-only firing
+- owner-control recovery must explicitly clear `PlayerInput3D` combat suppression when `NetCombat3D` exists, because movement input can be active while combat input is still blocked
+- remote projectile cosmetics should use the local proxy's weapon/prefab bindings and log a one-shot warning if a binding is missing, rather than silently dropping the RPC
+- fast projectile validation uses normal 3D spherecasts first, then a short defender-favored rewind against server movement history
 
 ## Current Control And Aim Rules
 

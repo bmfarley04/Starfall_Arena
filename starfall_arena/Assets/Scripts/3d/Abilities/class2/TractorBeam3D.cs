@@ -102,10 +102,13 @@ public class TractorBeam3D : Ability3D
     private const float DefaultScreenCenterConvergenceDistance = 150f;
     private readonly HashSet<int> _currentlyHitTargetIds = new HashSet<int>();
     private readonly HashSet<int> _hitTargetIdsThisFrame = new HashSet<int>();
+    private NetCombat3D _netCombat;
+    private bool _networkGameplayAuthority = true;
 
     protected override void Awake()
     {
         base.Awake();
+        _netCombat = GetComponent<NetCombat3D>();
 
         if (tractorBeamLoopAudioSource == null)
         {
@@ -174,7 +177,17 @@ public class TractorBeam3D : Ability3D
             return;
         }
 
-        ActivateTractorBeam();
+        if (NetTickUtil.IsActive && _netCombat != null && _netCombat.IsOwner)
+        {
+            _netCombat.RequestTractorBeamState(true);
+            if (!_netCombat.IsServer)
+            {
+                ApplyNetworkTractorBeamState(true, authoritative: false);
+            }
+            return;
+        }
+
+        ApplyNetworkTractorBeamState(true, authoritative: true);
     }
 
     public override bool IsAbilityActive()
@@ -203,6 +216,19 @@ public class TractorBeam3D : Ability3D
         StartBeamLoopSound();
     }
 
+    public void ApplyNetworkTractorBeamState(bool isActive, bool authoritative)
+    {
+        _networkGameplayAuthority = authoritative;
+        if (isActive)
+        {
+            ActivateTractorBeam();
+        }
+        else
+        {
+            DeactivateTractorBeam();
+        }
+    }
+
     private void DeactivateTractorBeam()
     {
         if (!_isActive)
@@ -220,6 +246,11 @@ public class TractorBeam3D : Ability3D
 
     private void ApplyTractorBeamPull(Vector3 origin, Vector3 forward)
     {
+        if (NetTickUtil.IsActive && !_networkGameplayAuthority)
+        {
+            return;
+        }
+
         _hitTargetIdsThisFrame.Clear();
 
         int hitCount = Physics.OverlapSphereNonAlloc(
@@ -279,9 +310,11 @@ public class TractorBeam3D : Ability3D
             }
 
             Vector3 pullVelocity = -directionToTarget * tractorBeam.pullSpeed;
+            Vector3 previousVelocity = targetBody.linearVelocity;
             targetBody.linearVelocity = tractorBeam.freezeTargetMovement
                 ? pullVelocity
                 : targetBody.linearVelocity + (pullVelocity * Time.fixedDeltaTime);
+            targetBody.GetComponent<NetMovement3D>()?.ApplyCombatVelocityDelta(targetBody.linearVelocity - previousVelocity);
         }
 
         _currentlyHitTargetIds.RemoveWhere(targetId => !_hitTargetIdsThisFrame.Contains(targetId));

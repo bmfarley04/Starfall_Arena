@@ -239,6 +239,12 @@ public struct ProjectileFireRequest3D
     public float recoilForce;
     public float forwardOffset;
     public float verticalOffset;
+    public bool canPierce;
+    public float pierceMultiplier;
+    public bool appliesSlow;
+    public float slowMultiplier;
+    public float slowDuration;
+    public float slowEngineEmissionScale;
     public System.Action<Projectile3D> onProjectileSpawned;
 }
 

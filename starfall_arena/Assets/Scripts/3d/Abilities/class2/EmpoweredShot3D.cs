@@ -55,6 +55,9 @@ public class EmpoweredShot3D : Weapon3D
     };
     [SerializeField] private ProjectileWeapon3D projectileWeapon;
 
+    public GameObject NetworkProjectilePrefab => empoweredShot.projectilePrefab;
+    public SoundEffect NetworkFireSound => empoweredShot.fireSound;
+
     protected override void Awake()
     {
         base.Awake();
@@ -121,6 +124,10 @@ public class EmpoweredShot3D : Weapon3D
             recoilForce = baseWeapon.recoilForce * empoweredShot.recoilMultiplier,
             forwardOffset = 0f,
             verticalOffset = 0f,
+            appliesSlow = true,
+            slowMultiplier = empoweredShot.slowMultiplier,
+            slowDuration = empoweredShot.slowDuration,
+            slowEngineEmissionScale = GetSlowEngineEmissionScale(),
             onProjectileSpawned = projectile =>
             {
                 projectile.EnableSlow(empoweredShot.slowMultiplier, empoweredShot.slowDuration, GetSlowEngineEmissionScale());

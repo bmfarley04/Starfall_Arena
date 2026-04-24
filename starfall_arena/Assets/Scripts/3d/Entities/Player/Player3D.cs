@@ -267,6 +267,38 @@ public class Player3D : Entity3D
         SelectedWeaponChanged?.Invoke(selectedWeaponIndex);
     }
 
+    protected override void OnNetworkDamageFeedback(float previousHealth, float previousShield, NetCombatState3D state)
+    {
+        float shieldDamageTaken = Mathf.Max(0f, previousShield - currentShield);
+        float hullDamageTaken = Mathf.Max(0f, previousHealth - currentHealth);
+        float totalDamageTaken = shieldDamageTaken + hullDamageTaken;
+        if (totalDamageTaken <= 0f)
+        {
+            return;
+        }
+
+        DamageSource3D source = (DamageSource3D)state.DamageSource;
+        _chromaticAberrationFx?.TriggerDamageFeedback(totalDamageTaken, source);
+
+        if (source == DamageSource3D.Beam)
+        {
+            _lastBeamDamageTime = Time.time;
+            StartBeamHitLoop();
+            return;
+        }
+
+        if (currentHealth < previousHealth)
+        {
+            audioConfig.hullDamageSound?.Play(GetAvailableAudioSource());
+            return;
+        }
+
+        if (currentShield < previousShield)
+        {
+            audioConfig.shieldDamageSound?.Play(GetAvailableAudioSource());
+        }
+    }
+
     private void SubscribeToWeaponAvailability()
     {
         for (int i = 0; i < weapons.Length; i++)

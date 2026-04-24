@@ -181,6 +181,11 @@ public class NetworkSceneManager3D : MonoBehaviour
             return;
         }
 
+        if (instance.GetComponent<NetCombat3D>() == null)
+        {
+            Debug.LogWarning($"[NetworkSceneManager3D] Spawned ship '{shipData.ShipId}' is missing NetCombat3D; 3D combat input will remain suppressed for this player.", instance);
+        }
+
         netMovement.SetNetworkPlayerIndex(playerSlot);
     }
 

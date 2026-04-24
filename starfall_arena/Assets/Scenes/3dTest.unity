@@ -3539,7 +3539,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6016429355266790633, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
       propertyPath: GlobalObjectIdHash
-      value: 2413108219
+      value: 390201221
       objectReference: {fileID: 0}
     - target: {fileID: 6016429355266790633, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
       propertyPath: SceneMigrationSynchronization
@@ -4219,7 +4219,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6016429355266790633, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
       propertyPath: GlobalObjectIdHash
-      value: 1782425788
+      value: 895269323
       objectReference: {fileID: 0}
     - target: {fileID: 6016429355266790633, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
       propertyPath: SceneMigrationSynchronization
@@ -4526,7 +4526,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: -7814873099316739718, guid: 2ab5e2b052ddb4229b8be680f8c4e7d1, type: 3}
       propertyPath: GlobalObjectIdHash
-      value: 1925962198
+      value: 1499744348
       objectReference: {fileID: 0}
     - target: {fileID: -7814873099316739718, guid: 2ab5e2b052ddb4229b8be680f8c4e7d1, type: 3}
       propertyPath: SceneMigrationSynchronization

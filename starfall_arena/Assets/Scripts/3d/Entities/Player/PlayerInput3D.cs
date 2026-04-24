@@ -23,6 +23,7 @@ public class PlayerInput3D : MonoBehaviour, IShipFlightInputSource
     public Vector2 LookInput => _lookInput;
     public float ThrustInput => _thrustInput;
     public bool IsFireHeld => _fireHeld;
+    public bool IsCombatInputSuppressed => _combatInputSuppressed;
 
     private void Awake()
     {

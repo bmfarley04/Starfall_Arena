@@ -31,6 +31,13 @@ public class Reflector3D : Ability3D
     [SerializeField] private ReflectAbilityConfig3D reflect;
 
     private Coroutine _reflectCoroutine;
+    private NetCombat3D _netCombat;
+
+    protected override void Awake()
+    {
+        base.Awake();
+        _netCombat = GetComponent<NetCombat3D>();
+    }
 
     public override bool TryUseAbility(InputValue value)
     {
@@ -50,6 +57,21 @@ public class Reflector3D : Ability3D
             return;
         }
 
+        if (NetTickUtil.IsActive && _netCombat != null && _netCombat.IsOwner)
+        {
+            _netCombat.RequestReflectActivation();
+            if (!_netCombat.IsServer)
+            {
+                ApplyNetworkReflectActivation(authoritative: false);
+            }
+            return;
+        }
+
+        ApplyNetworkReflectActivation(authoritative: true);
+    }
+
+    public void ApplyNetworkReflectActivation(bool authoritative)
+    {
         if (_reflectCoroutine != null)
         {
             StopCoroutine(_reflectCoroutine);

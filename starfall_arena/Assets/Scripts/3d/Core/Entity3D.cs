@@ -1,3 +1,4 @@
+using Unity.Netcode;
 using UnityEngine;
 
 public enum DamageSource3D
@@ -38,6 +39,7 @@ public abstract class Entity3D : MonoBehaviour
     protected Vector3 lastDamageDirection;
     protected float currentSlowMultiplier = 1f;
     protected float slowEndTime;
+    protected NetCombat3D netCombat3D;
 
     private bool _isDead;
 
@@ -194,6 +196,7 @@ public abstract class Entity3D : MonoBehaviour
         shipThrusterVfx ??= GetComponent<ShipThrusterVfx3D>();
         shipSpeedFx ??= GetComponent<ShipSpeedFx3D>();
         deathEffects ??= GetComponent<DeathEffects3D>();
+        netCombat3D ??= GetComponent<NetCombat3D>();
         shieldController ??= GetComponentInChildren<ShieldController>(true);
         CacheCombatSlotsIfNeeded();
         selectedWeaponIndex = Mathf.Clamp(selectedWeaponIndex, 0, Mathf.Max(0, weapons.Length - 1));
@@ -223,6 +226,13 @@ public abstract class Entity3D : MonoBehaviour
             return;
         }
 
+        if (NetTickUtil.IsActive && netCombat3D != null && !netCombat3D.IsServer)
+        {
+            return;
+        }
+
+        float previousShield = currentShield;
+
         lastDamageDirection = ResolveDamageDirection(hitPoint);
 
         if (currentShield > 0f)
@@ -247,6 +257,7 @@ public abstract class Entity3D : MonoBehaviour
 
             if (damage <= 0f)
             {
+                BroadcastNetworkCombatState(hitPoint, source, previousShield);
                 return;
             }
         }
@@ -257,7 +268,10 @@ public abstract class Entity3D : MonoBehaviour
         if (currentHealth <= 0f)
         {
             Die();
+            return;
         }
+
+        BroadcastNetworkCombatState(hitPoint, source, previousShield);
     }
 
     public virtual void TakeDirectDamage(float damage, Vector3 hitPoint, Entity3D attacker = null)
@@ -267,6 +281,13 @@ public abstract class Entity3D : MonoBehaviour
             return;
         }
 
+        if (NetTickUtil.IsActive && netCombat3D != null && !netCombat3D.IsServer)
+        {
+            return;
+        }
+
+        float previousShield = currentShield;
+
         lastDamageDirection = ResolveDamageDirection(hitPoint);
         currentHealth = Mathf.Max(0f, currentHealth - damage);
         OnHealthChanged();
@@ -274,7 +295,10 @@ public abstract class Entity3D : MonoBehaviour
         if (currentHealth <= 0f)
         {
             Die();
+            return;
         }
+
+        BroadcastNetworkCombatState(hitPoint, DamageSource3D.Direct, previousShield);
     }
 
     public void ApplySlow(float slowMultiplier, float duration)
@@ -330,7 +354,57 @@ public abstract class Entity3D : MonoBehaviour
 
         deathEffects?.PlayDeathEffects(lastDamageDirection);
 
+        if (NetTickUtil.IsActive && TryGetComponent(out NetworkObject networkObject) && networkObject.IsSpawned)
+        {
+            netCombat3D?.BroadcastDeath(transform.position, transform.rotation, lastDamageDirection);
+            if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsServer)
+            {
+                networkObject.Despawn(true);
+            }
+            return;
+        }
+
         Destroy(gameObject);
+    }
+
+    public void ApplyNetworkCombatState(NetCombatState3D state)
+    {
+        float previousHealth = currentHealth;
+        float previousShield = currentShield;
+        currentHealth = Mathf.Clamp(state.Health, 0f, maxHealth);
+        currentShield = Mathf.Clamp(state.Shield, 0f, maxShield);
+
+        if (!Mathf.Approximately(previousHealth, currentHealth))
+        {
+            OnHealthChanged();
+        }
+
+        if (!Mathf.Approximately(previousShield, currentShield))
+        {
+            OnShieldChanged();
+        }
+
+        if (state.ShieldBreak)
+        {
+            shieldController?.BreakShield();
+        }
+        else if (state.ShieldHit)
+        {
+            shieldController?.OnHit(state.HitPoint);
+        }
+
+        if (state.SlowRemainingTime > 0f)
+        {
+            ApplySlow(state.SlowMultiplier, state.SlowRemainingTime);
+        }
+
+        OnNetworkDamageFeedback(previousHealth, previousShield, state);
+    }
+
+    public void PlayNetworkDeath(Vector3 position, Quaternion rotation, Vector3 damageDirection)
+    {
+        transform.SetPositionAndRotation(position, rotation);
+        deathEffects?.PlayDeathEffects(damageDirection);
     }
 
     private Vector3 ResolveDamageDirection(Vector3 hitPoint)
@@ -413,6 +487,10 @@ public abstract class Entity3D : MonoBehaviour
     {
     }
 
+    protected virtual void OnNetworkDamageFeedback(float previousHealth, float previousShield, NetCombatState3D state)
+    {
+    }
+
     protected virtual float GetFlatBaseRotationMultiplier()
     {
         return 1f;
@@ -421,5 +499,26 @@ public abstract class Entity3D : MonoBehaviour
     protected virtual float GetExternalThrustMultiplier()
     {
         return 1f;
+    }
+
+    private void BroadcastNetworkCombatState(Vector3 hitPoint, DamageSource3D source, float previousShield)
+    {
+        if (!NetTickUtil.IsActive || netCombat3D == null || !netCombat3D.IsServer)
+        {
+            return;
+        }
+
+        bool isSlowed = IsSlowed;
+        netCombat3D.BroadcastCombatState(new NetCombatState3D
+        {
+            Health = currentHealth,
+            Shield = currentShield,
+            HitPoint = hitPoint,
+            DamageSource = (int)source,
+            ShieldHit = previousShield > currentShield && currentShield > 0f,
+            ShieldBreak = previousShield > 0f && currentShield <= 0f,
+            SlowMultiplier = isSlowed ? GetSlowMultiplier() : 1f,
+            SlowRemainingTime = isSlowed ? Mathf.Max(0f, slowEndTime - Time.time) : 0f
+        });
     }
 }

@@ -103,6 +103,35 @@ It does not own:
 
 Those stay out of phase 1 on purpose.
 
+### `NetCombat3D`
+
+`NetCombat3D` is the 3D combat broker that sits beside `NetMovement3D`.
+
+It keeps movement and combat authority separate:
+
+- owner
+  - keeps immediate local firing, beam, and ability presentation responsive
+  - sends projectile, beam, teleport, shield, reflect, tractor-beam, and GigaBlast charge requests to the server
+- server
+  - owns real projectile / beam damage
+  - owns combat-state replication for health, shield, slow state, and death
+  - owns authoritative projectile spawns and short rewind checks against `NetMovement3D` history
+- remote non-owner
+  - receives cosmetic projectile / beam / ability state RPCs
+  - never applies gameplay damage from those cosmetic instances
+
+The 3D path intentionally uses brokered cosmetic projectile and beam instances instead of making every projectile or beam an NGO-spawned `NetworkObject`. This keeps fast raycast/sweep weapons responsive while avoiding per-shot network-object overhead.
+
+Important current implementation constraints:
+
+- `NetCombat3D` must be present on networked 3D player prefabs, or `NetMovement3D` keeps owner combat input suppressed.
+- owner presentation recovery must compare the `PlayerInput3D` combat-suppression flag against `NetCombat3D` presence; enabled input components alone do not prove combat input is usable.
+- `NetCombat3D.OnNetworkSpawn()` re-runs owner local-control readiness so spawn-order differences do not leave a client owner stuck in movement-only input.
+- client cosmetic projectile RPCs resolve local proxy bindings from the serialized `Entity3D` weapon slots first, then fall back to root `ProjectileWeapon3D`; missing source weapon or projectile prefab bindings log one-shot warnings instead of failing silently.
+- `Projectile3D` and `LaserBeam3D` now split cosmetic-only instances from server-authoritative gameplay instances.
+- combat velocity changes such as recoil, impact force, tractor pull, and teleport warps must pass through `NetMovement3D` helpers so prediction/reconciliation state is not immediately overwritten.
+- slow state is treated as server-owned during network movement simulation; the server copy overrides the owner's submitted slow multiplier.
+
 ### Local camera binding
 
 The local peer's Cinemachine gameplay camera now needs to be rebound after network spawn, not just left on a prefab-authored target.
@@ -230,6 +259,7 @@ After pulling these changes, the scene/prefabs need the following setup:
 1. On each of the two playable 3D ship prefabs:
    - add a `NetworkObject`
    - add `NetMovement3D`
+   - add `NetCombat3D`
    - keep `Player3D`, `PlayerInput3D`, `PlayerInput`, `ShipFlight3D`, and the existing camera/FX components on the prefab
 2. On the scene `NetworkManager`:
    - keep NGO player prefab auto-spawn disabled through `NetMgr`
@@ -246,7 +276,7 @@ After pulling these changes, the scene/prefabs need the following setup:
 
 ## Current Limitations
 
-- combat is not networked in the 3D scene yet
+- 3D combat has a first brokered network path for projectiles, beams, several class abilities, health/shield state, slow state, and network-safe death
 - round flow is not ported to a 3D-specific network scene manager yet
-- health/shield/game-end replication is intentionally out of scope for this first phase
-- the current 3D networking deliverable is movement-only, not a full duel loop
+- game-end replication is still out of scope for the current 3D scene manager
+- the current 3D networking deliverable is movement plus combat replication, not a full round/match loop

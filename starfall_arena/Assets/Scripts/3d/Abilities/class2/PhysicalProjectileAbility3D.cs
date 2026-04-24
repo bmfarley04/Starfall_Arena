@@ -43,6 +43,9 @@ public class PhysicalProjectileAbility3D : Weapon3D
     };
     [SerializeField] private ProjectileWeapon3D projectileWeapon;
 
+    public GameObject NetworkProjectilePrefab => physicalProjectile.projectilePrefab;
+    public SoundEffect NetworkFireSound => physicalProjectile.fireSound;
+
     protected override void Awake()
     {
         base.Awake();

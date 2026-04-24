@@ -1,4 +1,6 @@
 using TMPro;
+using Unity.Netcode;
+using Unity.Netcode.Transports.UTP;
 using UnityEngine;
 
 public class PerformanceStatsHUD3D : MonoBehaviour
@@ -61,8 +63,43 @@ public class PerformanceStatsHUD3D : MonoBehaviour
 
         if (pingText != null)
         {
-            pingText.text = $"{pingValuePlaceholder}{pingSuffix}";
+            if (TryGetCurrentPingMilliseconds(out float pingMs))
+            {
+                pingText.text = $"{Mathf.RoundToInt(Mathf.Max(0f, pingMs))}{pingSuffix}";
+            }
+            else
+            {
+                pingText.text = $"{pingValuePlaceholder}{pingSuffix}";
+            }
         }
+    }
+
+    private bool TryGetCurrentPingMilliseconds(out float pingMilliseconds)
+    {
+        pingMilliseconds = 0f;
+
+        if (!NetMgr.IsNetworked)
+        {
+            return false;
+        }
+
+        NetworkManager networkManager = NetworkManager.Singleton;
+        if (networkManager == null)
+        {
+            return false;
+        }
+
+        UnityTransport transport = networkManager.NetworkConfig.NetworkTransport as UnityTransport;
+        if (transport == null)
+        {
+            return false;
+        }
+
+        ulong currentRttMs = transport.GetCurrentRtt(NetworkManager.ServerClientId);
+
+        // Keep parity with the existing 2D/network HUD: display one-way estimate, not full RTT.
+        pingMilliseconds = currentRttMs * 0.5f;
+        return true;
     }
 
     private void RefreshCanvasCameraBinding()
