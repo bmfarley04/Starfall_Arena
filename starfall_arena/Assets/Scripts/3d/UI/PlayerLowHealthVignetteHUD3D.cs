@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 
 public class PlayerLowHealthVignetteHUD3D : PlayerHUDBindingTarget3D
+    , IPlayerHUDMessageReceiver3D
 {
     [Header("References")]
     [SerializeField] private Image vignetteImage;
@@ -25,12 +26,14 @@ public class PlayerLowHealthVignetteHUD3D : PlayerHUDBindingTarget3D
 
     private float _currentAlpha;
     private float _targetAlpha;
+    private float _gigablastAlpha;
+    private Color _gigablastColor = Color.white;
 
     protected override void Awake()
     {
         base.Awake();
         vignetteImage ??= GetComponent<Image>();
-        ApplyAlphaImmediate(0f);
+        ApplyAlphaImmediate();
     }
 
     private void Reset()
@@ -42,7 +45,7 @@ public class PlayerLowHealthVignetteHUD3D : PlayerHUDBindingTarget3D
     {
         float speed = _targetAlpha > _currentAlpha ? fadeInSpeed : fadeOutSpeed;
         _currentAlpha = Mathf.MoveTowards(_currentAlpha, _targetAlpha, speed * Time.unscaledDeltaTime);
-        ApplyAlphaImmediate(_currentAlpha);
+        ApplyAlphaImmediate();
     }
 
     protected override void BindPlayer(Player3D player)
@@ -66,6 +69,7 @@ public class PlayerLowHealthVignetteHUD3D : PlayerHUDBindingTarget3D
     protected override void ClearBinding()
     {
         _targetAlpha = alwaysOnPreview ? Mathf.Clamp01(previewIntensity) * Mathf.Clamp01(maxAlpha) : 0f;
+        _gigablastAlpha = 0f;
     }
 
     private void HandleHealthChanged(float currentHealth, float maxHealth)
@@ -115,22 +119,37 @@ public class PlayerLowHealthVignetteHUD3D : PlayerHUDBindingTarget3D
         _targetAlpha = remapped * Mathf.Clamp01(maxAlpha);
     }
 
-    private void ApplyAlphaImmediate(float alpha)
+    public void ReceiveVignetteMessage(PlayerHUDVignetteMessage3D message)
+    {
+        if (message.Channel != PlayerHUDVignetteChannel3D.Gigablast)
+        {
+            return;
+        }
+
+        _gigablastAlpha = Mathf.Clamp01(message.Alpha);
+        _gigablastColor = message.Color;
+    }
+
+    private void ApplyAlphaImmediate()
     {
         if (vignetteImage == null)
         {
             return;
         }
 
+        float lowHealthAlpha = _currentAlpha;
+
         // Apply pulsation when vignette is active
-        if (alpha > 0.001f)
+        if (lowHealthAlpha > 0.001f)
         {
             float pulse = Mathf.Sin(Time.unscaledTime * pulseSpeed * Mathf.PI * 2f) * 0.5f + 0.5f;
-            alpha *= Mathf.Lerp(1f - pulseIntensity, 1f, pulse);
+            lowHealthAlpha *= Mathf.Lerp(1f - pulseIntensity, 1f, pulse);
         }
 
-        Color color = vignetteColor;
-        color.a = Mathf.Clamp01(alpha);
+        bool useGigablast = _gigablastAlpha > lowHealthAlpha + 0.0001f;
+        Color color = useGigablast ? _gigablastColor : vignetteColor;
+        float finalAlpha = useGigablast ? _gigablastAlpha : lowHealthAlpha;
+        color.a = Mathf.Clamp01(finalAlpha);
         vignetteImage.color = color;
     }
 }

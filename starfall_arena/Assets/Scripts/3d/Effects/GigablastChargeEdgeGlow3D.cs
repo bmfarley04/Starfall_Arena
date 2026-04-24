@@ -1,5 +1,4 @@
 using UnityEngine;
-using UnityEngine.UI;
 
 [DisallowMultipleComponent]
 [RequireComponent(typeof(PlayerCameraRig3D))]
@@ -17,7 +16,6 @@ public class GigablastChargeEdgeGlow3D : MonoBehaviour
     [Header("References")]
     [SerializeField] private Player3D player;
     [SerializeField] private GigaBlastWeapon3D gigaBlast;
-    [SerializeField] private Image vignetteImage;
 
     [Header("Glow")]
     [ColorUsage(true, true)]
@@ -71,7 +69,7 @@ public class GigablastChargeEdgeGlow3D : MonoBehaviour
         ResolveReferences();
         _currentCharge = 0f;
         _currentEdgeColor = ResolveTierColor(0);
-        ApplyVignette(0f);
+        PublishVignette(0f);
     }
 
     private void Update()
@@ -82,7 +80,7 @@ public class GigablastChargeEdgeGlow3D : MonoBehaviour
             if (gigaBlast == null)
             {
                 WarnMissingGigablast();
-                ApplyVignette(0f);
+                PublishVignette(0f);
                 return;
             }
         }
@@ -94,12 +92,12 @@ public class GigablastChargeEdgeGlow3D : MonoBehaviour
         Color targetColor = ResolveTierColor(gigaBlast.IsCharging ? gigaBlast.CurrentChargeTier : 0);
         _currentEdgeColor = Color.Lerp(_currentEdgeColor, targetColor, 1f - Mathf.Exp(-speed * Time.deltaTime));
 
-        ApplyVignette(_currentCharge);
+        PublishVignette(_currentCharge);
     }
 
     private void OnDisable()
     {
-        ApplyVignette(0f);
+        PublishVignette(0f);
         IsEffectVisible = false;
     }
 
@@ -134,15 +132,10 @@ public class GigablastChargeEdgeGlow3D : MonoBehaviour
         return Mathf.Clamp01(chargeRemap.Evaluate(normalizedCharge));
     }
 
-    private void ApplyVignette(float charge)
+    private void PublishVignette(float charge)
     {
         charge = Mathf.Clamp01(charge);
         IsEffectVisible = charge > 0.0001f;
-
-        if (vignetteImage == null)
-        {
-            return;
-        }
 
         float alpha = charge * Mathf.Clamp01(maxAlpha);
 
@@ -152,9 +145,10 @@ public class GigablastChargeEdgeGlow3D : MonoBehaviour
             alpha = Mathf.Clamp01(alpha + pulse * Mathf.Clamp01(maxAlpha));
         }
 
-        Color c = _currentEdgeColor;
-        c.a = alpha;
-        vignetteImage.color = c;
+        player?.PublishHUDVignetteMessage(new PlayerHUDVignetteMessage3D(
+            PlayerHUDVignetteChannel3D.Gigablast,
+            alpha,
+            _currentEdgeColor));
     }
 
     private Color ResolveTierColor(int tier)

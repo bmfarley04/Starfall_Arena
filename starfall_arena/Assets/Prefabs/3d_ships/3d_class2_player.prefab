@@ -11268,7 +11268,7 @@ MonoBehaviour:
     slowDuration: 1
     normalEngineEmissionRate: 30
     slowedEngineEmissionRate: 2
-    fireSound: {fileID: 0}
+    fireSound: {fileID: 11400000, guid: 24862794776e6b34daca8bf8af7518f7, type: 2}
   projectileWeapon: {fileID: 3009000303518804356}
 --- !u!114 &4442115351324218777
 MonoBehaviour:
@@ -11334,7 +11334,7 @@ MonoBehaviour:
     shieldVisual: {fileID: 8934542878946749813}
     shieldColor: {r: 0, g: 1, b: 0.27494502, a: 1}
     shieldLoopSound: {fileID: 0}
-    shieldHitSound: {fileID: 0}
+    shieldHitSound: {fileID: 11400000, guid: 6a5f04ee6bc536848a1d144945dd48e8, type: 2}
   shieldLoopAudioSource: {fileID: 0}
 --- !u!114 &52433826259895386
 MonoBehaviour:
@@ -11375,7 +11375,7 @@ MonoBehaviour:
     visualConeScaleMultiplier: {x: 1, y: 1, z: 1}
     drawGameplayConeGizmo: 1
     gameplayConeGizmoColor: {r: 0, g: 1, b: 1, a: 0.85}
-    beamLoopSound: {fileID: 0}
+    beamLoopSound: {fileID: 11400000, guid: 6f42d3b3662519e4b8d7879cc5c73f94, type: 2}
   tractorBeamLoopAudioSource: {fileID: 0}
   logInitialTargetHits: 1
 --- !u!114 &-7814873099316739718

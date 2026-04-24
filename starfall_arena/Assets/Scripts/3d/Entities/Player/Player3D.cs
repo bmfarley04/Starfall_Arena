@@ -249,7 +249,23 @@ public class Player3D : Entity3D
         }
 
         hudManager3D = hud;
-        hudManager3D.Bind(this);
+        if (!ReferenceEquals(hudManager3D.BoundPlayer, this))
+        {
+            hudManager3D.Bind(this);
+        }
+    }
+
+    public void UnbindHUD(PlayerHUDManager3D hud)
+    {
+        if (ReferenceEquals(hudManager3D, hud))
+        {
+            hudManager3D = null;
+        }
+    }
+
+    public void PublishHUDVignetteMessage(PlayerHUDVignetteMessage3D message)
+    {
+        hudManager3D?.PublishVignetteMessage(message);
     }
 
     protected override void OnHealthChanged()

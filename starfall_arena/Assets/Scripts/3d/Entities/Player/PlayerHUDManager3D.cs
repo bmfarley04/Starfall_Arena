@@ -21,6 +21,7 @@ public class PlayerHUDManager3D : MonoBehaviour
     private Player3D _boundPlayer;
     private float _retryUntilTime;
     private float _nextRetryTime;
+    private IPlayerHUDMessageReceiver3D[] _messageReceivers;
 
     public event Action<Player3D> BoundPlayerChanged;
 
@@ -48,6 +49,8 @@ public class PlayerHUDManager3D : MonoBehaviour
         {
             player = GetComponentInParent<Player3D>();
         }
+
+        CacheMessageReceivers();
     }
 
     private void OnEnable()
@@ -90,11 +93,32 @@ public class PlayerHUDManager3D : MonoBehaviour
     {
         if (ReferenceEquals(_boundPlayer, targetPlayer))
         {
+            _boundPlayer?.BindHUD(this);
             return;
         }
 
+        _boundPlayer?.UnbindHUD(this);
         _boundPlayer = targetPlayer;
+        _boundPlayer?.BindHUD(this);
         BoundPlayerChanged?.Invoke(_boundPlayer);
+    }
+
+    public void PublishVignetteMessage(PlayerHUDVignetteMessage3D message)
+    {
+        if (_messageReceivers == null || _messageReceivers.Length == 0)
+        {
+            CacheMessageReceivers();
+        }
+
+        if (_messageReceivers == null)
+        {
+            return;
+        }
+
+        for (int i = 0; i < _messageReceivers.Length; i++)
+        {
+            _messageReceivers[i]?.ReceiveVignetteMessage(message);
+        }
     }
 
     public bool TryBindToPlayer()
@@ -257,5 +281,10 @@ public class PlayerHUDManager3D : MonoBehaviour
         }
 
         return candidate.PlayerInput3D != null && candidate.PlayerInput3D.isActiveAndEnabled;
+    }
+
+    private void CacheMessageReceivers()
+    {
+        _messageReceivers = GetComponentsInChildren<IPlayerHUDMessageReceiver3D>(true);
     }
 }

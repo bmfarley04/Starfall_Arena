@@ -89,6 +89,7 @@ These classes should stay narrow and mostly coordinate dedicated 3D systems.
 - `PlayerHUDManager3D`
   - shared local-player binding source for scene HUD objects in the 3D path
   - resolves the correct player once and broadcasts that binding to dedicated HUD element scripts
+  - routes player-originated HUD messages (for example vignette channel updates) to HUD-side receivers so prefab gameplay scripts do not need direct scene-UI references
   - should move to NGO ownership once the 3D network player path exists
 - `PlayerHealthShieldHUD3D`
   - scene HUD health/shield presenter for the local player
