@@ -24,7 +24,7 @@ MonoBehaviour:
   player2VSRotationOffset: {x: -10, y: 3.5, z: 4}
   abilityHUDPrefab: {fileID: 6476359621877627330, guid: ee2b21e466f1ab3458dcc906cf1183c2, type: 3}
   stats:
-    damage: 24
+    damage: 12
     hull: 110
     shield: 110
     speed: 20

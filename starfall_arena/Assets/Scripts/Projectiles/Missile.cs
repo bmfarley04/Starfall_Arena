@@ -314,6 +314,12 @@ public class Missile : ProjectileScript
         if (explosionPrefab != null)
         {
             GameObject explosion = Instantiate(explosionPrefab, transform.position, Quaternion.identity);
+            ParticleSystem[] explosionParticles = explosion.GetComponentsInChildren<ParticleSystem>(true);
+            for (int i = 0; i < explosionParticles.Length; i++)
+            {
+                var main = explosionParticles[i].main;
+                main.scalingMode = ParticleSystemScalingMode.Hierarchy;
+            }
             explosion.transform.localScale *= explosionScale;
         }
 

@@ -581,7 +581,7 @@ MonoBehaviour:
   - {fileID: 2422605848778522004}
   projectileWeapon:
     prefab: {fileID: 7408310672554650858, guid: 51403cdaf016c034cbbc52510d7ecaef, type: 3}
-    baseDamage: 6
+    baseDamage: 3
     damage: 0
     speed: 30
     recoilForce: 2
@@ -735,7 +735,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GuidedMissile
   stats:
-    cooldown: 0
+    cooldown: 5
     duration: 0
   isLocked: 0
   guidedMissile:
@@ -750,7 +750,7 @@ MonoBehaviour:
     fireSound: {fileID: 11400000, guid: 873f5f679d305474fba8afb9a88cf822, type: 2}
     regular:
       missilePrefab: {fileID: 152452, guid: e0395125146512d49b2bdb0cb17d0a26, type: 3}
-      damageMultiplier: 8
+      damageMultiplier: 6
       speedMultiplier: 1
       impactMultiplier: 10
       recoilMultiplier: 5
@@ -758,7 +758,7 @@ MonoBehaviour:
       sizeMultiplier: 1
     empowered:
       missilePrefab: {fileID: 152452, guid: e0395125146512d49b2bdb0cb17d0a26, type: 3}
-      damageMultiplier: 12
+      damageMultiplier: 8
       speedMultiplier: 1.5
       impactMultiplier: 15
       recoilMultiplier: 7
@@ -777,13 +777,30 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Empower
   stats:
-    cooldown: 4
+    cooldown: 14
     duration: 0
   isLocked: 0
   empower:
-    duration: 5
+    duration: 18
     activateSound: {fileID: 11400000, guid: b93fb44e7717ca34292085cf9fbc563e, type: 2}
     deactivateSound: {fileID: 11400000, guid: dc69e487e94b10c4480eec65c4e60073, type: 2}
+  emission:
+    parts:
+    - {fileID: 2582837984148938645}
+    - {fileID: 2584904032804345029}
+    - {fileID: 2583088629231986312}
+    - {fileID: 2584619372571341769}
+    - {fileID: 2583029426036756148}
+    - {fileID: 2583029424928489461}
+    - {fileID: 4233910425735212617}
+    - {fileID: 5219906083567023236}
+    - {fileID: 2583329727702083831}
+    - {fileID: 2584871243397653900}
+    - {fileID: 2583329727408665641}
+    glowColor: {r: 1, g: 1, b: 1, a: 1}
+    intensity: 3
+    fadeInDuration: 0.25
+    fadeOutDuration: 0.35
 --- !u!1 &6321119112069739111
 GameObject:
   m_ObjectHideFlags: 0
@@ -1941,6 +1958,51 @@ MonoBehaviour:
   mass: 0.5
   drag: 0.5
   angularDrag: 0.3
+--- !u!23 &2582837984148938645 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 5023156738405229684, guid: fa946284f3085fb439296b637bbbb618, type: 3}
+  m_PrefabInstance: {fileID: 7380769798597491681}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &2583029424928489461 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 5022921600617137172, guid: fa946284f3085fb439296b637bbbb618, type: 3}
+  m_PrefabInstance: {fileID: 7380769798597491681}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &2583029426036756148 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 5022921599504414037, guid: fa946284f3085fb439296b637bbbb618, type: 3}
+  m_PrefabInstance: {fileID: 7380769798597491681}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &2583088629231986312 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 5022985190485302633, guid: fa946284f3085fb439296b637bbbb618, type: 3}
+  m_PrefabInstance: {fileID: 7380769798597491681}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &2583329727408665641 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 5022665554569449416, guid: fa946284f3085fb439296b637bbbb618, type: 3}
+  m_PrefabInstance: {fileID: 7380769798597491681}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &2583329727702083831 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 5022665553185477398, guid: fa946284f3085fb439296b637bbbb618, type: 3}
+  m_PrefabInstance: {fileID: 7380769798597491681}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &2584619372571341769 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 5022545642675800104, guid: fa946284f3085fb439296b637bbbb618, type: 3}
+  m_PrefabInstance: {fileID: 7380769798597491681}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &2584871243397653900 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 5022232345189768813, guid: fa946284f3085fb439296b637bbbb618, type: 3}
+  m_PrefabInstance: {fileID: 7380769798597491681}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &2584904032804345029 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 5022269513317658404, guid: fa946284f3085fb439296b637bbbb618, type: 3}
+  m_PrefabInstance: {fileID: 7380769798597491681}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &4221196387459867659 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 6699509861633269738, guid: fa946284f3085fb439296b637bbbb618, type: 3}
@@ -1968,6 +2030,11 @@ MonoBehaviour:
   mass: 0.5
   drag: 0.5
   angularDrag: 0.3
+--- !u!23 &4233910425735212617 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 6677743268137047464, guid: fa946284f3085fb439296b637bbbb618, type: 3}
+  m_PrefabInstance: {fileID: 7380769798597491681}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &5197297370489249824 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 3336394826068319169, guid: fa946284f3085fb439296b637bbbb618, type: 3}
@@ -2022,3 +2089,8 @@ MonoBehaviour:
   mass: 0.5
   drag: 0.5
   angularDrag: 0.3
+--- !u!23 &5219906083567023236 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 3322838401941245797, guid: fa946284f3085fb439296b637bbbb618, type: 3}
+  m_PrefabInstance: {fileID: 7380769798597491681}
+  m_PrefabAsset: {fileID: 0}
