@@ -734,6 +734,9 @@ MonoBehaviour:
     beamHitLoopSound: {fileID: 11400000, guid: cdf6af1d1d05cdd4d8cf3ea5f244f9f2, type: 2}
     beamHitLoopStopDelay: 0.2
     audioSourcePoolSize: 4
+  shieldRegen:
+    regenDelay: 5
+    regenRate: 20
 --- !u!114 &2269080399608317416
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1277,10 +1280,10 @@ MonoBehaviour:
   edgeColor: {r: 0.2, g: 0.6, b: 1, a: 1}
   useTierColors: 1
   tierColors:
-    tier1Color: {r: 0.2, g: 0.6, b: 1, a: 1}
-    tier2Color: {r: 0, g: 0.22857141, b: 1, a: 1}
-    tier3Color: {r: 0, g: 0.654088, b: 0.0063995863, a: 1}
-    tier4Color: {r: 0.55283123, g: 0.009433806, b: 1, a: 1}
+    tier1Color: {r: 1, g: 1, b: 1, a: 1}
+    tier2Color: {r: 0.17924517, g: 0.36592695, b: 1, a: 1}
+    tier3Color: {r: 0.18549499, g: 0.7106918, b: 0.19178475, a: 1}
+    tier4Color: {r: 0.4358912, g: 0.13150178, b: 0.6855345, a: 1}
   maxAlpha: 0.3
   fadeInSpeed: 2
   fadeOutSpeed: 2

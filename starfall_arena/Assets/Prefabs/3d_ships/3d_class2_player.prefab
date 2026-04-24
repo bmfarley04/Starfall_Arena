@@ -10846,6 +10846,9 @@ MonoBehaviour:
     beamHitLoopSound: {fileID: 11400000, guid: cdf6af1d1d05cdd4d8cf3ea5f244f9f2, type: 2}
     beamHitLoopStopDelay: 0.2
     audioSourcePoolSize: 4
+  shieldRegen:
+    regenDelay: 5
+    regenRate: 20
 --- !u!114 &279171780386237379
 MonoBehaviour:
   m_ObjectHideFlags: 0
