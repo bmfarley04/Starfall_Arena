@@ -45,6 +45,11 @@ These classes should stay narrow and mostly coordinate dedicated 3D systems.
 
 ### Shared 3D ship systems
 
+- `SceneManager3D`
+  - 3D duel-flow coordinator for the active networked 3D scene
+  - owns best-of-five round progression, versus-screen wait, round intro/countdown, per-round spawning/despawning, round-end presentation, win tracking, and game-end presentation
+  - reuses the shared versus, round-end, game-end, win tracker, and UI camera/canvas setup
+  - intentionally omits the 2D map cycle, augment phases, and ability-4 unlock cadence; 3D duels are straight combat rounds using prefab-authored ship kits
 - `ShipFlight3D`
   - shared rigidbody flight
   - assisted pitch/yaw steering driven by filtered input and acceleration-limited turn rates
@@ -87,6 +92,10 @@ These classes should stay narrow and mostly coordinate dedicated 3D systems.
   - Anchor is a hold input that suppresses thrust while applying a configurable rotation multiplier for fast facing changes
   - while Anchor is active, `Player3D` can also drive split-state presentation rigs
   - owns player shield regeneration timing/rate config (`regenDelay`, `regenRate`) and applies regen with server authority in networked matches
+- `PlayerCombatStats3D`
+  - lightweight 3D combat-stat counter attached to spawned 3D players by `SceneManager3D`
+  - tracks shots fired, shots hit, damage dealt, and damage taken for shared round-end/game-end UI
+  - records stats only on the gameplay-authoritative side, which is the server during networked matches
 - `PlayerHUDManager3D`
   - shared local-player binding source for scene HUD objects in the 3D path
   - resolves the correct player once and broadcasts that binding to dedicated HUD element scripts

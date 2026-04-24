@@ -433,6 +433,11 @@ public abstract class Weapon3D : MonoBehaviour, IReticleSpinSource3D
             SpawnProjectile(spawnMuzzle, aim, request, resolvedTargetTag, cosmeticOnly, networkAuthority, visualType);
         }
 
+        if (!cosmeticOnly)
+        {
+            owner?.GetComponent<PlayerCombatStats3D>()?.RecordShotFired(muzzles.Length);
+        }
+
         if (!cosmeticOnly && shipFlight != null && request.recoilForce > 0f)
         {
             shipFlight.ApplyRecoil(request.recoilForce);
@@ -530,6 +535,11 @@ public abstract class Weapon3D : MonoBehaviour, IReticleSpinSource3D
             fire.Lifetime,
             fire.ImpactForce,
             owner);
+
+        if (!cosmeticOnly)
+        {
+            owner?.GetComponent<PlayerCombatStats3D>()?.RecordShotFired();
+        }
 
         if (fire.CanPierce)
         {
