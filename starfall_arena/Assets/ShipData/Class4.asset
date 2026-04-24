@@ -38,7 +38,7 @@ MonoBehaviour:
     abilityDescription: Executes a high-speed diagonal dash to evade incoming fire.
     abilityIcon: {fileID: 0}
   ability3:
-    abilityName: BLOOD-SCENT SEEKER
+    abilityName: BLOOD SEEKER
     abilityDescription: Launches a guided missile that tracks the nearest heat signature.
     abilityIcon: {fileID: 0}
   ability4:
