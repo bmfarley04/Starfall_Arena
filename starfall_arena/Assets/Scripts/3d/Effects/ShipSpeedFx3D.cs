@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -15,6 +16,7 @@ public class ShipSpeedFx3D : MonoBehaviour
     [SerializeField] private ShipFlight3D shipFlight;
     [SerializeField] private ShipSpeedEffects3DConfig speedEffects;
 
+    private NetworkObject _networkObject;
     private readonly List<RuntimeTrailLayerState> _runtimeTrailLayers = new();
     private float _currentTrailIntensity;
 
@@ -25,18 +27,24 @@ public class ShipSpeedFx3D : MonoBehaviour
             shipFlight = GetComponent<ShipFlight3D>();
         }
 
+        _networkObject = GetComponent<NetworkObject>();
+
         if (speedEffects.speedDustParticles != null)
         {
             var emission = speedEffects.speedDustParticles.emission;
             emission.rateOverTime = 0f;
+            speedEffects.speedDustParticles.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
         }
+    }
 
-        RebuildRuntimeTrails();
+    private void OnEnable()
+    {
+        SyncLocalPresentationState();
     }
 
     private void OnDisable()
     {
-        SetTrailEmissionEnabled(false);
+        ClearLocalPresentationState();
     }
 
     private void OnDestroy()
@@ -51,6 +59,13 @@ public class ShipSpeedFx3D : MonoBehaviour
             return;
         }
 
+        if (!ShouldDriveLocalPresentation())
+        {
+            ClearLocalPresentationState();
+            return;
+        }
+
+        EnsureRuntimeTrails();
         UpdateDust();
         UpdateWingTrails();
     }
@@ -63,7 +78,7 @@ public class ShipSpeedFx3D : MonoBehaviour
     public void SetSpeedEffects(ShipSpeedEffects3DConfig config)
     {
         speedEffects = config;
-        RebuildRuntimeTrails();
+        SyncLocalPresentationState();
     }
 
     private void UpdateDust()
@@ -76,6 +91,18 @@ public class ShipSpeedFx3D : MonoBehaviour
         float normalizedDustEmission = Mathf.InverseLerp(speedEffects.dustSpeedThreshold, 1f, shipFlight.ForwardSpeedNormalized);
         var emission = speedEffects.speedDustParticles.emission;
         emission.rateOverTime = normalizedDustEmission * speedEffects.maxDustEmissionRate;
+
+        if (normalizedDustEmission > 0.01f)
+        {
+            if (!speedEffects.speedDustParticles.isPlaying)
+            {
+                speedEffects.speedDustParticles.Play();
+            }
+        }
+        else if (speedEffects.speedDustParticles.isPlaying)
+        {
+            speedEffects.speedDustParticles.Stop(true, ParticleSystemStopBehavior.StopEmitting);
+        }
     }
 
     private void UpdateWingTrails()
@@ -105,6 +132,38 @@ public class ShipSpeedFx3D : MonoBehaviour
         }
     }
 
+    private void SyncLocalPresentationState()
+    {
+        if (ShouldDriveLocalPresentation())
+        {
+            EnsureRuntimeTrails();
+        }
+        else
+        {
+            ClearLocalPresentationState();
+        }
+    }
+
+    private bool ShouldDriveLocalPresentation()
+    {
+        if (!NetTickUtil.IsActive)
+        {
+            return true;
+        }
+
+        return _networkObject != null && _networkObject.IsSpawned && _networkObject.IsOwner;
+    }
+
+    private void EnsureRuntimeTrails()
+    {
+        if (_runtimeTrailLayers.Count > 0)
+        {
+            return;
+        }
+
+        RebuildRuntimeTrails();
+    }
+
     private void RebuildRuntimeTrails()
     {
         ClearRuntimeTrails();
@@ -123,12 +182,12 @@ public class ShipSpeedFx3D : MonoBehaviour
                 continue;
             }
 
-            TryCreateTrailLayer(source, speedEffects.coreTrail, "Core", i);
-            TryCreateTrailLayer(source, speedEffects.softTrail, "Soft", i + 1000);
+            TryCreateTrailLayer(source, speedEffects.coreTrail, "Core");
+            TryCreateTrailLayer(source, speedEffects.softTrail, "Soft");
         }
     }
 
-    private void TryCreateTrailLayer(Transform source, ShipSpeedTrailLayer3DConfig config, string layerName, int seedOffset)
+    private void TryCreateTrailLayer(Transform source, ShipSpeedTrailLayer3DConfig config, string layerName)
     {
         if (source == null || config.material == null)
         {
@@ -209,8 +268,20 @@ public class ShipSpeedFx3D : MonoBehaviour
         return gradient;
     }
 
-    private void SetTrailEmissionEnabled(bool enabled)
+    private void ClearLocalPresentationState()
     {
+        _currentTrailIntensity = 0f;
+
+        if (speedEffects.speedDustParticles != null)
+        {
+            var emission = speedEffects.speedDustParticles.emission;
+            emission.rateOverTime = 0f;
+            if (speedEffects.speedDustParticles.isPlaying)
+            {
+                speedEffects.speedDustParticles.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+            }
+        }
+
         for (int i = 0; i < _runtimeTrailLayers.Count; i++)
         {
             TrailRenderer trailRenderer = _runtimeTrailLayers[i].trailRenderer;
@@ -219,11 +290,8 @@ public class ShipSpeedFx3D : MonoBehaviour
                 continue;
             }
 
-            trailRenderer.emitting = enabled;
-            if (!enabled)
-            {
-                trailRenderer.Clear();
-            }
+            trailRenderer.emitting = false;
+            trailRenderer.Clear();
         }
     }
 
