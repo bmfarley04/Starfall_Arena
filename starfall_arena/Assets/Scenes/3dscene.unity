@@ -3273,10 +3273,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cb807123135f5114abbcc850def777f4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerHUDManager3D
-  player: {fileID: 7427501343161116872}
-  autoBindToMatchingPlayer: 0
-  preferLocalPlayer: 0
-  fallbackToFirstMatchingPlayer: 0
+  player: {fileID: 0}
+  autoBindToMatchingPlayer: 1
+  preferLocalPlayer: 1
+  fallbackToFirstMatchingPlayer: 1
   localPlayerBindingRetrySeconds: 3
   localPlayerBindingRetryInterval: 0.1
   playerTagFilter: 
@@ -4419,17 +4419,6 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 5260338452082746806, guid: 2ab5e2b052ddb4229b8be680f8c4e7d1, type: 3}
   m_PrefabInstance: {fileID: 8797111313213312691}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &7427501343161116872 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 4860835452147509291, guid: 2ab5e2b052ddb4229b8be680f8c4e7d1, type: 3}
-  m_PrefabInstance: {fileID: 8797111313213312691}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 472a711a0b2023940b16aa210d0274a3, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: '::'
 --- !u!1001 &8763065985922954052
 PrefabInstance:
   m_ObjectHideFlags: 0
