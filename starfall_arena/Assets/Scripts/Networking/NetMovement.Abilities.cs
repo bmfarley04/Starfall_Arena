@@ -294,6 +294,42 @@ public partial class NetMovement
         SubmitFlameWaveCastServerRpc(state);
     }
 
+    public void RequestEmpowerState(bool isActive)
+    {
+        if (!NetTickUtil.IsActive || !IsOwner)
+        {
+            return;
+        }
+
+        NetAbilityToggleState state = new NetAbilityToggleState
+        {
+            IsActive = isActive
+        };
+
+        if (IsServer)
+        {
+            HandleEmpowerStateServer(state);
+            return;
+        }
+
+        SubmitEmpowerStateServerRpc(state);
+    }
+
+    public void BroadcastEmpowerState(bool isActive)
+    {
+        if (!IsServer)
+        {
+            return;
+        }
+
+        NetAbilityToggleState state = new NetAbilityToggleState
+        {
+            IsActive = isActive
+        };
+
+        BroadcastEmpowerStateClientRpc(state);
+    }
+
     public void RequestBatteryRamState(NetBatteryRamState state)
     {
         if (!NetTickUtil.IsActive || !IsOwner)
@@ -406,6 +442,12 @@ public partial class NetMovement
     private void SubmitBatteryRamStateServerRpc(NetBatteryRamState state, ServerRpcParams rpcParams = default)
     {
         HandleBatteryRamStateServer(state);
+    }
+
+    [ServerRpc]
+    private void SubmitEmpowerStateServerRpc(NetAbilityToggleState state, ServerRpcParams rpcParams = default)
+    {
+        HandleEmpowerStateServer(state);
     }
 
     [ServerRpc]
@@ -603,6 +645,18 @@ public partial class NetMovement
 
         batteryRam.ApplyNetworkRamState(state, authoritative: true);
         BroadcastBatteryRamStateClientRpc(state);
+    }
+
+    private void HandleEmpowerStateServer(NetAbilityToggleState state)
+    {
+        Empower empower = GetComponent<Empower>();
+        if (empower == null)
+        {
+            return;
+        }
+
+        empower.ApplyNetworkEmpowerState(state.IsActive, authoritative: true);
+        BroadcastEmpowerStateClientRpc(state);
     }
 
     // ===== ABILITY CLIENT RPC BROADCASTS =====
@@ -828,6 +882,18 @@ public partial class NetMovement
 
         BatteryRam batteryRam = GetComponent<BatteryRam>();
         batteryRam?.ApplyNetworkRamState(state, authoritative: false);
+    }
+
+    [ClientRpc]
+    private void BroadcastEmpowerStateClientRpc(NetAbilityToggleState state)
+    {
+        if (IsServer || IsOwner)
+        {
+            return;
+        }
+
+        Empower empower = GetComponent<Empower>();
+        empower?.ApplyNetworkEmpowerState(state.IsActive, authoritative: false);
     }
 
     // ===== FIRE HAZARD (Firewall-specific) =====

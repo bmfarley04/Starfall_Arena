@@ -49,8 +49,47 @@ public class Empower : Ability
     private Coroutine _empowerRoutine;
     private MaterialPropertyBlock _propertyBlock;
     private readonly List<Color> _originalEmissionColors = new List<Color>();
+    private NetMovement _netMovement;
 
     public bool IsEmpoweredActive => _isEmpoweredActive;
+
+    protected override void Awake()
+    {
+        base.Awake();
+        _netMovement = GetComponent<NetMovement>();
+    }
+
+    private bool HasNetworkPath()
+    {
+        return NetTickUtil.IsActive && _netMovement != null && _netMovement.IsSpawned;
+    }
+
+    private bool HasAuthority()
+    {
+        return !NetTickUtil.IsActive || (_netMovement != null && _netMovement.IsSpawned && _netMovement.IsServer);
+    }
+
+    public override bool TryUseAbility(InputValue value)
+    {
+        if (!value.isPressed) return false;
+        if (isLocked || isDisabledByOtherAbility) return false;
+        if (IsOnCooldown()) return false;
+
+        if (HasNetworkPath())
+        {
+            if (_netMovement == null || !_netMovement.IsOwner)
+            {
+                return false;
+            }
+
+            StartEmpowerRoutineLocal();
+            _netMovement.RequestEmpowerState(true);
+            return true;
+        }
+
+        UseAbility(value);
+        return true;
+    }
 
     public override void UseAbility(InputValue value)
     {
@@ -59,6 +98,27 @@ public class Empower : Ability
             return;
         }
 
+        StartEmpowerRoutineLocal();
+    }
+
+    public void ApplyNetworkEmpowerState(bool active, bool authoritative)
+    {
+        if (active)
+        {
+            if (_isEmpoweredActive)
+            {
+                return;
+            }
+            StartEmpowerRoutineLocal();
+        }
+        else
+        {
+            StopEmpowerRoutineLocal();
+        }
+    }
+
+    private void StartEmpowerRoutineLocal()
+    {
         if (_empowerRoutine != null)
         {
             StopCoroutine(_empowerRoutine);
@@ -67,12 +127,7 @@ public class Empower : Ability
         _empowerRoutine = StartCoroutine(EmpowerRoutine());
     }
 
-    public override bool IsAbilityActive()
-    {
-        return _isEmpoweredActive;
-    }
-
-    public override void Die()
+    private void StopEmpowerRoutineLocal()
     {
         if (_empowerRoutine != null)
         {
@@ -88,6 +143,22 @@ public class Empower : Ability
             {
                 empower.deactivateSound.Play(player.GetAvailableAudioSource());
             }
+        }
+    }
+
+    public override bool IsAbilityActive()
+    {
+        return _isEmpoweredActive;
+    }
+
+    public override void Die()
+    {
+        bool wasActive = _isEmpoweredActive;
+        StopEmpowerRoutineLocal();
+
+        if (wasActive && HasNetworkPath() && HasAuthority())
+        {
+            _netMovement.BroadcastEmpowerState(false);
         }
 
         base.Die();
@@ -130,6 +201,11 @@ public class Empower : Ability
         }
 
         _empowerRoutine = null;
+
+        if (HasNetworkPath() && HasAuthority())
+        {
+            _netMovement.BroadcastEmpowerState(false);
+        }
     }
 
     private void CacheOriginalEmission()
