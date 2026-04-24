@@ -57,7 +57,7 @@ public partial class NetMovement
 
     public void RequestPrimaryFire(NetFireRequest request)
     {
-        if (!NetTickUtil.IsActive || !IsOwner)
+        if (!NetTickUtil.IsActive)
         {
             return;
         }
@@ -65,6 +65,11 @@ public partial class NetMovement
         if (IsServer)
         {
             HandlePrimaryFireServer(request);
+            return;
+        }
+
+        if (!IsOwner)
+        {
             return;
         }
 
@@ -88,12 +93,13 @@ public partial class NetMovement
         float tickInterval = NetTickUtil.TickInterval > 0f ? NetTickUtil.TickInterval : Time.fixedDeltaTime;
         int cooldownTicks = Mathf.Max(1, Mathf.CeilToInt(_player.PrimaryFireCooldown / Mathf.Max(0.0001f, tickInterval)));
         bool isNewVolleyTick = request.Tick != _lastServerPrimaryFireTick;
-        if (isNewVolleyTick && request.Tick < _lastServerPrimaryFireTick + cooldownTicks)
+        bool ignoreCooldown = request.IgnoreCooldown;
+        if (!ignoreCooldown && isNewVolleyTick && request.Tick < _lastServerPrimaryFireTick + cooldownTicks)
         {
             return;
         }
 
-        if (isNewVolleyTick)
+        if (!ignoreCooldown && isNewVolleyTick)
         {
             _lastServerPrimaryFireTime = Time.time;
             _lastServerPrimaryFireTick = request.Tick;
@@ -162,11 +168,18 @@ public partial class NetMovement
             CanPierce = request.CanPierce,
             AppliesSlow = request.AppliesSlow,
             VisualType = request.VisualType,
+            OwnerPredicted = request.OwnerPredicted,
         });
 
         if (request.ApplyRecoil)
         {
             _player.ApplyRecoil(request.RecoilForce);
+        }
+
+        if (request.VisualType == NetProjectileVisualType.Primary)
+        {
+            PrimaryFireExecutionSource source = (PrimaryFireExecutionSource)request.FireSource;
+            PrimaryFireExecutionBus.Raise(_player, source);
         }
     }
 
@@ -208,7 +221,12 @@ public partial class NetMovement
     [ClientRpc]
     private void BroadcastProjectileSpawnClientRpc(NetProjectileSpawnData spawnData)
     {
-        if (IsServer || (IsOwner && !IsServer))
+        if (IsServer)
+        {
+            return;
+        }
+
+        if (IsOwner && spawnData.OwnerPredicted)
         {
             return;
         }

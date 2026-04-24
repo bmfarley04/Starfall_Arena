@@ -380,7 +380,12 @@ Current augment runtimes include behaviors such as:
 - Bubble Shield now supports an attached bubble prefab that shrinks toward a configurable minimum scale as anchored mitigation approaches stun threshold, a configurable block sound on mitigated hits, and shield-like damage-debt regen after a hit-free delay
 - Burst now supports an attached speed-up prefab that is active during the burst window after contact-triggered activation
 - Burner now supports a configurable burn-tick prefab spawned at random points on the burning target (renderer bounds first, radius fallback)
-- AutoCounter now supports a configurable glow prefab that is shown while waiting for the next auto-cast window and while the shield is currently active
+- AutoCounter now supports a configurable ready-glow prefab that is shown while the auto-counter window is active and the next incoming projectile can be reflected
+- Twin Fire now applies a persistent primary-damage reduction and schedules a delayed second primary volley per shot
+- SoulBinding now transfers your recent health loss into nearby enemies as distance-scaled direct health damage
+- MindBinding now listens for nearby enemy primary-fire events and mirrors them by firing your own primary volley
+- BodyBinding now applies distance-scaled speed slow multipliers to nearby enemies based on your current movement speed
+- Binding augments now share an arc-link visual architecture (per-augment settings plus runtime-driven owner/target anchor offsets and curved line points) so active nearby binds can show persistent light links between ships
 - augment presentation prefabs now scale by `Player` ship size so ships with larger/smaller presentation scale keep augment VFX proportional
 - reinforced hull presentation scaling where the ship visual scale tracks the same multiplier used for extra max health while the augment is active
 - artificial fairy revival sequencing where lethal damage triggers a flash, temporary intangibility, ship-part scatter, and delayed part regroup to visually reassemble the ship

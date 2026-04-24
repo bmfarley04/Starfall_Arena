@@ -139,6 +139,9 @@ public class EmpoweredShot : Ability
                     CanPierce = false,
                     AppliesSlow = true,
                     VisualType = NetProjectileVisualType.Class2EmpoweredShot,
+                    IgnoreCooldown = false,
+                    OwnerPredicted = true,
+                    FireSource = (byte)PrimaryFireExecutionSource.PlayerInput,
                 });
 
                 continue;

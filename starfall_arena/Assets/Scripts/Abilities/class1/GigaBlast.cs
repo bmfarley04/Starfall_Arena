@@ -523,7 +523,10 @@ public class GigaBlast : Ability
                     2 => NetProjectileVisualType.GigaBlastTier2,
                     3 => NetProjectileVisualType.GigaBlastTier3,
                     _ => NetProjectileVisualType.GigaBlastTier4,
-                }
+                },
+                IgnoreCooldown = false,
+                OwnerPredicted = true,
+                FireSource = (byte)PrimaryFireExecutionSource.PlayerInput,
             });
 
             if (!_netMovement.IsServer)

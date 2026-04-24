@@ -20,7 +20,7 @@ MonoBehaviour:
   rounds: -1
   readyGlowPrefab: {fileID: 8595475238803380239, guid: 4c4e0e6d65ee030428c1eb1e78eed1f3, type: 3}
   autocastInterval: 7
-  activeDuration: 2.5
+  activeDuration: 9999
   delayedTurnOffAfterHit: 0.35
   reflectShieldPrefab: {fileID: 0}
   reflectedProjectileColor: {r: 0, g: 1, b: 1, a: 1}

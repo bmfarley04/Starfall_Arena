@@ -5,7 +5,7 @@ using UnityEngine;
 public class AutoCounter : Augment
 {
     [Header("Presentation")]
-    [Tooltip("Prefab shown while AutoCounter is ready to auto-cast and while the shield is active")]
+    [Tooltip("Prefab shown while AutoCounter is actively able to reflect the next incoming projectile hit")]
     public GameObject readyGlowPrefab;
 
     [Header("AutoCast")]

@@ -750,6 +750,9 @@ public abstract class Player : Entity
                     CanPierce = false,
                     AppliesSlow = false,
                     VisualType = NetProjectileVisualType.Primary,
+                    IgnoreCooldown = false,
+                    OwnerPredicted = true,
+                    FireSource = (byte)PrimaryFireExecutionSource.PlayerInput,
                 });
             }
 
@@ -795,6 +798,7 @@ public abstract class Player : Entity
             projectileFireSound.Play(GetAvailableAudioSource());
         }
 
+        PrimaryFireExecutionBus.Raise(this, PrimaryFireExecutionSource.PlayerInput);
         _lastFireTime = Time.time;
     }
 

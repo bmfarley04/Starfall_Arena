@@ -207,6 +207,9 @@ Current network payloads include:
   - dampening flag plus server spawn time so clients subtract transit latency from the hazard lifetime
 - `NetBatteryRamState`
   - tick, active flag, broken flag, charge-grant flag, and an owner-skip flag so the owner can predict locally while server echoes state to the rest
+- `NetFireRequest` / `NetProjectileSpawnData`
+  - now include owner-prediction metadata for projectile visuals (`OwnerPredicted`) so owner-predicted shots skip owner replay while server-triggered augment volleys can still be rendered on the owner client
+  - now include augment fire metadata (`IgnoreCooldown`, `FireSource`) so server-authoritative augment-driven primary fire chains can request controlled cooldown bypass and source tagging
 
 These structs are intentionally minimal and focused on what movement replay and visual sync needs.
 

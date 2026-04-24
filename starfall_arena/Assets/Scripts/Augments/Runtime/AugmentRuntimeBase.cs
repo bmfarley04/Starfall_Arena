@@ -184,4 +184,93 @@ public abstract class AugmentRuntimeBase : IAugmentRuntime
 
         effectTransform.localScale = scaled;
     }
+
+    protected bool TryFirePrimaryVolleyFromAugment(float damageMultiplier, bool ignoreCooldown, PrimaryFireExecutionSource source, bool playSound = true)
+    {
+        if (player == null || player.projectileWeapon.prefab == null || player.turrets == null || player.turrets.Length == 0)
+        {
+            return false;
+        }
+
+        float safeDamageMultiplier = Mathf.Max(0f, damageMultiplier);
+        NetMovement netMovement = player.GetComponent<NetMovement>();
+        bool useNetworkPath = NetTickUtil.IsActive && netMovement != null && netMovement.IsSpawned;
+
+        if (useNetworkPath)
+        {
+            if (!netMovement.IsServer)
+            {
+                return false;
+            }
+
+            int tick = NetTickUtil.CurrentTick;
+            for (int turretIndex = 0; turretIndex < player.turrets.Length; turretIndex++)
+            {
+                Transform turret = player.turrets[turretIndex];
+                if (turret == null)
+                {
+                    continue;
+                }
+
+                Vector2 direction = player.transform.up;
+                netMovement.RequestPrimaryFire(new NetFireRequest
+                {
+                    Tick = tick,
+                    SpawnPosition = turret.position,
+                    Direction = direction.normalized,
+                    InheritedVelocity = Vector2.zero,
+                    Speed = player.projectileWeapon.speed,
+                    Damage = player.projectileWeapon.damage * safeDamageMultiplier,
+                    Lifetime = player.projectileWeapon.lifetime,
+                    ImpactForce = player.projectileWeapon.impactForce,
+                    RecoilForce = player.projectileWeapon.recoilForce,
+                    ApplyRecoil = turretIndex == 0,
+                    PierceMultiplier = 1f,
+                    SlowMultiplier = 1f,
+                    SlowDuration = 0f,
+                    CanPierce = false,
+                    AppliesSlow = false,
+                    VisualType = NetProjectileVisualType.Primary,
+                    IgnoreCooldown = ignoreCooldown,
+                    OwnerPredicted = false,
+                    FireSource = (byte)source,
+                });
+            }
+
+            return true;
+        }
+
+        int attackId = player.BeginTrackedAttack();
+        for (int i = 0; i < player.turrets.Length; i++)
+        {
+            Transform turret = player.turrets[i];
+            if (turret == null)
+            {
+                continue;
+            }
+
+            GameObject projectile = Object.Instantiate(player.projectileWeapon.prefab, turret.position, player.transform.rotation);
+            if (projectile.TryGetComponent<ProjectileScript>(out ProjectileScript projectileScript))
+            {
+                projectileScript.targetTag = player.enemyTag;
+                projectileScript.Initialize(
+                    player.transform.up,
+                    Vector2.zero,
+                    player.projectileWeapon.speed,
+                    player.projectileWeapon.damage * safeDamageMultiplier,
+                    player.projectileWeapon.lifetime,
+                    player.projectileWeapon.impactForce,
+                    player,
+                    attackId);
+            }
+        }
+
+        if (playSound && player.projectileFireSound != null)
+        {
+            player.projectileFireSound.Play(player.GetAvailableAudioSource());
+        }
+
+        PrimaryFireExecutionBus.Raise(player, source);
+        return true;
+    }
 }

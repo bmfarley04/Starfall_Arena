@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using StarfallArena.UI;
 using UnityEngine;
 
 public sealed class BlazeOfGloryRuntime : AugmentRuntimeBase
@@ -1227,8 +1228,7 @@ public sealed class AutoCounterRuntime : AugmentRuntimeBase
 
         if (!_isActive)
         {
-            bool readyToCast = Time.time >= _nextCastTime;
-            SetAttachedEffectActive(ref _readyGlowEffectInstance, _definition.readyGlowPrefab, readyToCast, "AutoCounterReadyGlow");
+            SetAttachedEffectActive(ref _readyGlowEffectInstance, _definition.readyGlowPrefab, false, "AutoCounterReadyGlow");
 
             if (Time.time >= _nextCastTime)
             {
@@ -1269,6 +1269,502 @@ public sealed class AutoCounterRuntime : AugmentRuntimeBase
         SetAttachedEffectActive(ref _readyGlowEffectInstance, _definition.readyGlowPrefab, false, "AutoCounterReadyGlow");
 
         _isActive = false;
+    }
+}
+
+public abstract class NearbyBindingRuntimeBase<TDefinition> : AugmentRuntimeBase where TDefinition : Augment
+{
+    private readonly Collider2D[] _nearbyBuffer = new Collider2D[32];
+    private readonly List<Entity> _nearbyEnemies = new List<Entity>(8);
+
+    protected readonly TDefinition bindingDefinition;
+    protected NetMovement netMovement;
+    private BindingLinkVisualController _bindingLinkVisual;
+
+    protected NearbyBindingRuntimeBase(TDefinition definition) : base(definition)
+    {
+        bindingDefinition = definition;
+    }
+
+    public override void Initialize(Player player, int roundAcquired, object persistentState = null)
+    {
+        base.Initialize(player, roundAcquired, persistentState);
+        netMovement = player != null ? player.GetComponent<NetMovement>() : null;
+    }
+
+    protected bool HasAuthority()
+    {
+        if (!NetTickUtil.IsActive)
+        {
+            return true;
+        }
+
+        return netMovement != null && netMovement.IsServer;
+    }
+
+    protected List<Entity> CollectNearbyEnemies(float radius)
+    {
+        _nearbyEnemies.Clear();
+        if (player == null)
+        {
+            return _nearbyEnemies;
+        }
+
+        int hitCount = Physics2D.OverlapCircleNonAlloc(player.transform.position, Mathf.Max(0f, radius), _nearbyBuffer);
+        for (int i = 0; i < hitCount; i++)
+        {
+            Collider2D collider = _nearbyBuffer[i];
+            _nearbyBuffer[i] = null;
+            if (collider == null)
+            {
+                continue;
+            }
+
+            Entity target = collider.GetComponentInParent<Entity>();
+            if (target == null || target == player)
+            {
+                continue;
+            }
+
+            if (!target.CompareTag(player.enemyTag))
+            {
+                continue;
+            }
+
+            if (_nearbyEnemies.Contains(target))
+            {
+                continue;
+            }
+
+            _nearbyEnemies.Add(target);
+        }
+
+        return _nearbyEnemies;
+    }
+
+    protected float GetDistanceFactor(Entity target, float radius, float exponent = 1f)
+    {
+        if (target == null)
+        {
+            return 0f;
+        }
+
+        float safeRadius = Mathf.Max(0.001f, radius);
+        float distance = Vector2.Distance(player.transform.position, target.transform.position);
+        float normalized = 1f - Mathf.Clamp01(distance / safeRadius);
+        return Mathf.Pow(normalized, Mathf.Max(0.01f, exponent));
+    }
+
+    protected void UpdateBindingLinks(List<Entity> targets, float radius, BindingLinkVisualSettings visualSettings)
+    {
+        if (player == null)
+        {
+            return;
+        }
+
+        if (!IsActiveByRounds() || visualSettings == null || !visualSettings.enabled)
+        {
+            HideBindingLinks();
+            return;
+        }
+
+        if (_bindingLinkVisual == null)
+        {
+            _bindingLinkVisual = player.gameObject.AddComponent<BindingLinkVisualController>();
+        }
+
+        _bindingLinkVisual.Initialize(player, visualSettings, Definition.augmentID);
+        _bindingLinkVisual.SetTargets(targets, radius);
+    }
+
+    protected void HideBindingLinks()
+    {
+        if (_bindingLinkVisual != null)
+        {
+            _bindingLinkVisual.HideAll();
+        }
+    }
+}
+
+public sealed class TwinFireRuntime : AugmentRuntimeBase
+{
+    private readonly TwinFire _definition;
+    private float _pendingSecondShotTime = -1f;
+    private bool _pendingSecondShot;
+    private NetMovement _netMovement;
+
+    public TwinFireRuntime(TwinFire definition) : base(definition)
+    {
+        _definition = definition;
+    }
+
+    public override void Initialize(Player player, int roundAcquired, object persistentState = null)
+    {
+        base.Initialize(player, roundAcquired, persistentState);
+        _netMovement = player != null ? player.GetComponent<NetMovement>() : null;
+        PrimaryFireExecutionBus.PrimaryFireExecuted += HandlePrimaryFireExecuted;
+    }
+
+    public override void ExecuteEffects()
+    {
+        if (player == null)
+        {
+            return;
+        }
+
+        bool active = IsActiveByRounds();
+        if (active)
+        {
+            AddOrRefreshMultiplier(_definition.baseDamageMultiplier, player.damageMultipliers);
+        }
+        else
+        {
+            RemoveMultiplier(player.damageMultipliers);
+            _pendingSecondShot = false;
+            return;
+        }
+
+        if (!_pendingSecondShot || Time.time < _pendingSecondShotTime)
+        {
+            return;
+        }
+
+        if (!HasAuthority())
+        {
+            return;
+        }
+
+        if (TryFirePrimaryVolleyFromAugment(_definition.secondShotDamageMultiplier, _definition.ignoreCooldownForSecondShot, PrimaryFireExecutionSource.TwinFire, playSound: false))
+        {
+            PlaySoundEffect(_definition.secondShotSound);
+        }
+
+        _pendingSecondShot = false;
+    }
+
+    public override void OnRemoved()
+    {
+        PrimaryFireExecutionBus.PrimaryFireExecuted -= HandlePrimaryFireExecuted;
+        _pendingSecondShot = false;
+
+        if (player != null)
+        {
+            RemoveMultiplier(player.damageMultipliers);
+        }
+    }
+
+    private void HandlePrimaryFireExecuted(Player shooter, PrimaryFireExecutionSource source)
+    {
+        if (player == null || shooter != player)
+        {
+            return;
+        }
+
+        if (!IsActiveByRounds())
+        {
+            return;
+        }
+
+        if (source == PrimaryFireExecutionSource.TwinFire)
+        {
+            return;
+        }
+
+        _pendingSecondShot = true;
+        _pendingSecondShotTime = Time.time + Mathf.Max(0f, _definition.secondShotDelay);
+    }
+
+    private bool HasAuthority()
+    {
+        if (!NetTickUtil.IsActive)
+        {
+            return true;
+        }
+
+        return _netMovement != null && _netMovement.IsServer;
+    }
+}
+
+public sealed class SoulBindingRuntime : NearbyBindingRuntimeBase<SoulBinding>
+{
+    private readonly SoulBinding _definition;
+    private float _lastKnownHealth;
+
+    public SoulBindingRuntime(SoulBinding definition) : base(definition)
+    {
+        _definition = definition;
+    }
+
+    public override void Initialize(Player player, int roundAcquired, object persistentState = null)
+    {
+        base.Initialize(player, roundAcquired, persistentState);
+        _lastKnownHealth = player != null ? player.CurrentHealth : 0f;
+    }
+
+    public override void ExecuteEffects()
+    {
+        if (player == null)
+        {
+            return;
+        }
+
+        List<Entity> enemies = CollectNearbyEnemies(_definition.bindingRadius);
+        UpdateBindingLinks(enemies, _definition.bindingRadius, _definition.linkVisual);
+
+        float currentHealth = player.CurrentHealth;
+        float healthLoss = Mathf.Max(0f, _lastKnownHealth - currentHealth);
+        _lastKnownHealth = currentHealth;
+
+        if (!IsActiveByRounds() || !HasAuthority())
+        {
+            return;
+        }
+
+        if (healthLoss < Mathf.Max(0f, _definition.minHealthLossToTrigger))
+        {
+            return;
+        }
+
+        bool appliedAny = false;
+        for (int i = 0; i < enemies.Count; i++)
+        {
+            Entity enemy = enemies[i];
+            if (enemy == null)
+            {
+                continue;
+            }
+
+            float distanceFactor = GetDistanceFactor(enemy, _definition.bindingRadius);
+            float transferMultiplier = Mathf.Lerp(
+                Mathf.Max(0f, _definition.edgeTransferMultiplier),
+                Mathf.Max(0f, _definition.pointBlankTransferMultiplier),
+                distanceFactor);
+            float transferDamage = healthLoss * transferMultiplier;
+            if (transferDamage <= 0f)
+            {
+                continue;
+            }
+
+            enemy.TakeDirectDamage(transferDamage, 0f, enemy.transform.position, DamageSource.Other, player);
+            appliedAny = true;
+        }
+
+        if (appliedAny)
+        {
+            SpawnTransientEffect(_definition.triggerEffectPrefab);
+        }
+    }
+
+    public override void OnRemoved()
+    {
+        HideBindingLinks();
+    }
+}
+
+public sealed class MindBindingRuntime : NearbyBindingRuntimeBase<MindBinding>
+{
+    private readonly MindBinding _definition;
+    private float _nextAllowedTriggerTime;
+
+    public MindBindingRuntime(MindBinding definition) : base(definition)
+    {
+        _definition = definition;
+    }
+
+    public override void Initialize(Player player, int roundAcquired, object persistentState = null)
+    {
+        base.Initialize(player, roundAcquired, persistentState);
+        _nextAllowedTriggerTime = -999f;
+        PrimaryFireExecutionBus.PrimaryFireExecuted += HandlePrimaryFireExecuted;
+    }
+
+    public override void ExecuteEffects()
+    {
+        if (player == null)
+        {
+            return;
+        }
+
+        List<Entity> nearbyEnemies = CollectNearbyEnemies(_definition.bindingRadius);
+        UpdateBindingLinks(nearbyEnemies, _definition.bindingRadius, _definition.linkVisual);
+    }
+
+    public override void OnRemoved()
+    {
+        PrimaryFireExecutionBus.PrimaryFireExecuted -= HandlePrimaryFireExecuted;
+        HideBindingLinks();
+    }
+
+    private void HandlePrimaryFireExecuted(Player shooter, PrimaryFireExecutionSource source)
+    {
+        if (player == null || shooter == null || shooter == player)
+        {
+            return;
+        }
+
+        if (!IsActiveByRounds() || !HasAuthority())
+        {
+            return;
+        }
+
+        if (source == PrimaryFireExecutionSource.MindBinding)
+        {
+            return;
+        }
+
+        if (!shooter.CompareTag(player.enemyTag))
+        {
+            return;
+        }
+
+        float maxDistance = Mathf.Max(0f, _definition.bindingRadius);
+        if (Vector2.Distance(player.transform.position, shooter.transform.position) > maxDistance)
+        {
+            return;
+        }
+
+        if (Time.time < _nextAllowedTriggerTime)
+        {
+            return;
+        }
+
+        if (TryFirePrimaryVolleyFromAugment(_definition.mirroredShotDamageMultiplier, _definition.ignoreCooldownForMirroredShot, PrimaryFireExecutionSource.MindBinding, playSound: false))
+        {
+            PlaySoundEffect(_definition.mirroredShotSound);
+            _nextAllowedTriggerTime = Time.time + Mathf.Max(0.01f, _definition.mirroredShotCooldown);
+        }
+    }
+}
+
+public sealed class BodyBindingRuntime : NearbyBindingRuntimeBase<BodyBinding>
+{
+    private readonly BodyBinding _definition;
+    private readonly Dictionary<int, Entity> _activeTargets = new Dictionary<int, Entity>();
+    private readonly HashSet<int> _seenThisTick = new HashSet<int>();
+    private readonly List<int> _toRemove = new List<int>();
+    private string _sourceKey;
+
+    public BodyBindingRuntime(BodyBinding definition) : base(definition)
+    {
+        _definition = definition;
+    }
+
+    public override void Initialize(Player player, int roundAcquired, object persistentState = null)
+    {
+        base.Initialize(player, roundAcquired, persistentState);
+        _sourceKey = $"{Definition.augmentID}_{(player != null ? player.GetInstanceID() : 0)}";
+    }
+
+    public override void ExecuteEffects()
+    {
+        if (player == null)
+        {
+            return;
+        }
+
+        if (!IsActiveByRounds() || !HasAuthority())
+        {
+            ClearAllAppliedSlow();
+            return;
+        }
+
+        Rigidbody2D body = player.GetComponent<Rigidbody2D>();
+        float ownerSpeed = body != null ? body.linearVelocity.magnitude : 0f;
+        float maxSpeed = Mathf.Max(0.01f, player.movement.maxSpeed);
+        float speedRatio = Mathf.Clamp01(ownerSpeed / maxSpeed);
+        if (speedRatio < Mathf.Clamp01(_definition.minOwnerSpeedRatioToAffect))
+        {
+            ClearAllAppliedSlow();
+            return;
+        }
+
+        _seenThisTick.Clear();
+        List<Entity> nearby = CollectNearbyEnemies(_definition.bindingRadius);
+        UpdateBindingLinks(nearby, _definition.bindingRadius, _definition.linkVisual);
+        for (int i = 0; i < nearby.Count; i++)
+        {
+            Entity target = nearby[i];
+            if (target == null)
+            {
+                continue;
+            }
+
+            float distanceFactor = GetDistanceFactor(target, _definition.bindingRadius, _definition.distanceFalloffExponent);
+            float blend = Mathf.Clamp01(speedRatio * distanceFactor);
+            float slowMultiplier = Mathf.Lerp(1f, Mathf.Clamp(_definition.maxSlowMultiplier, 0.01f, 1f), blend);
+            ApplySlowMultiplier(target, slowMultiplier);
+
+            int targetId = target.GetInstanceID();
+            _seenThisTick.Add(targetId);
+            _activeTargets[targetId] = target;
+        }
+
+        _toRemove.Clear();
+        foreach (KeyValuePair<int, Entity> entry in _activeTargets)
+        {
+            if (!_seenThisTick.Contains(entry.Key) || entry.Value == null)
+            {
+                _toRemove.Add(entry.Key);
+            }
+        }
+
+        for (int i = 0; i < _toRemove.Count; i++)
+        {
+            int targetId = _toRemove[i];
+            if (_activeTargets.TryGetValue(targetId, out Entity target) && target != null)
+            {
+                RemoveSlowMultiplier(target);
+            }
+
+            _activeTargets.Remove(targetId);
+        }
+    }
+
+    public override void OnRemoved()
+    {
+        ClearAllAppliedSlow();
+        HideBindingLinks();
+    }
+
+    private void ApplySlowMultiplier(Entity target, float multiplier)
+    {
+        if (target == null)
+        {
+            return;
+        }
+
+        if (target.speedMultipliers.TryGetValue(_sourceKey, out float current) && Mathf.Approximately(current, multiplier))
+        {
+            return;
+        }
+
+        target.speedMultipliers[_sourceKey] = multiplier;
+        target.SetAugmentVariables();
+    }
+
+    private void RemoveSlowMultiplier(Entity target)
+    {
+        if (target == null)
+        {
+            return;
+        }
+
+        if (target.speedMultipliers.Remove(_sourceKey))
+        {
+            target.SetAugmentVariables();
+        }
+    }
+
+    private void ClearAllAppliedSlow()
+    {
+        foreach (KeyValuePair<int, Entity> entry in _activeTargets)
+        {
+            RemoveSlowMultiplier(entry.Value);
+        }
+
+        _activeTargets.Clear();
+        _seenThisTick.Clear();
+        _toRemove.Clear();
     }
 }
 
