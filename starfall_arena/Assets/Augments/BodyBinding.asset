@@ -14,11 +14,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::BodyBinding
   icon: {fileID: 0}
   augmentName: Body Binding
-  description: Nearby enemies move more slowly based on your current speed.
+  description: Nearby enemies move more slowly based on how close they are to you.
   _augmentID: 40a0b5ce39e449a88e7b09d69bd2f9eb
   rounds: -1
   bindingRadius: 14
-  maxSlowMultiplier: 0.9
+  maxSlowMultiplier: 0.1
   distanceFalloffExponent: 1
   linkVisual:
     enabled: 1

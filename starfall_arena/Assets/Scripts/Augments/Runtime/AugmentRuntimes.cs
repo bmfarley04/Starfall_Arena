@@ -1274,7 +1274,6 @@ public sealed class AutoCounterRuntime : AugmentRuntimeBase
 
 public abstract class NearbyBindingRuntimeBase<TDefinition> : AugmentRuntimeBase where TDefinition : Augment
 {
-    private readonly Collider2D[] _nearbyBuffer = new Collider2D[32];
     private readonly List<Entity> _nearbyEnemies = new List<Entity>(8);
 
     protected readonly TDefinition bindingDefinition;
@@ -1310,11 +1309,11 @@ public abstract class NearbyBindingRuntimeBase<TDefinition> : AugmentRuntimeBase
             return _nearbyEnemies;
         }
 
-        int hitCount = Physics2D.OverlapCircleNonAlloc(player.transform.position, Mathf.Max(0f, radius), _nearbyBuffer);
+        Collider2D[] overlaps = Physics2D.OverlapCircleAll(player.transform.position, Mathf.Max(0f, radius));
+        int hitCount = overlaps != null ? overlaps.Length : 0;
         for (int i = 0; i < hitCount; i++)
         {
-            Collider2D collider = _nearbyBuffer[i];
-            _nearbyBuffer[i] = null;
+            Collider2D collider = overlaps[i];
             if (collider == null)
             {
                 continue;
@@ -1668,16 +1667,6 @@ public sealed class BodyBindingRuntime : NearbyBindingRuntimeBase<BodyBinding>
             return;
         }
 
-        Rigidbody2D body = player.GetComponent<Rigidbody2D>();
-        float ownerSpeed = body != null ? body.linearVelocity.magnitude : 0f;
-        float maxSpeed = Mathf.Max(0.01f, player.movement.maxSpeed);
-        float speedRatio = Mathf.Clamp01(ownerSpeed / maxSpeed);
-        if (speedRatio < Mathf.Clamp01(_definition.minOwnerSpeedRatioToAffect))
-        {
-            ClearAllAppliedSlow();
-            return;
-        }
-
         _seenThisTick.Clear();
         List<Entity> nearby = CollectNearbyEnemies(_definition.bindingRadius);
         UpdateBindingLinks(nearby, _definition.bindingRadius, _definition.linkVisual);
@@ -1690,8 +1679,7 @@ public sealed class BodyBindingRuntime : NearbyBindingRuntimeBase<BodyBinding>
             }
 
             float distanceFactor = GetDistanceFactor(target, _definition.bindingRadius, _definition.distanceFalloffExponent);
-            float blend = Mathf.Clamp01(speedRatio * distanceFactor);
-            float slowMultiplier = Mathf.Lerp(1f, Mathf.Clamp(_definition.maxSlowMultiplier, 0.01f, 1f), blend);
+            float slowMultiplier = Mathf.Lerp(1f, Mathf.Clamp(_definition.maxSlowMultiplier, 0.01f, 1f), distanceFactor);
             ApplySlowMultiplier(target, slowMultiplier);
 
             int targetId = target.GetInstanceID();
@@ -1733,13 +1721,13 @@ public sealed class BodyBindingRuntime : NearbyBindingRuntimeBase<BodyBinding>
             return;
         }
 
-        if (target.speedMultipliers.TryGetValue(_sourceKey, out float current) && Mathf.Approximately(current, multiplier))
+        BodyBindingSlowController controller = target.GetComponent<BodyBindingSlowController>();
+        if (controller == null)
         {
-            return;
+            controller = target.gameObject.AddComponent<BodyBindingSlowController>();
         }
 
-        target.speedMultipliers[_sourceKey] = multiplier;
-        target.SetAugmentVariables();
+        controller.SetSourceMultiplier(_sourceKey, multiplier);
     }
 
     private void RemoveSlowMultiplier(Entity target)
@@ -1749,9 +1737,10 @@ public sealed class BodyBindingRuntime : NearbyBindingRuntimeBase<BodyBinding>
             return;
         }
 
-        if (target.speedMultipliers.Remove(_sourceKey))
+        BodyBindingSlowController controller = target.GetComponent<BodyBindingSlowController>();
+        if (controller != null)
         {
-            target.SetAugmentVariables();
+            controller.ClearSource(_sourceKey);
         }
     }
 

@@ -384,7 +384,7 @@ Current augment runtimes include behaviors such as:
 - Twin Fire now applies a persistent primary-damage reduction and schedules a delayed second primary volley per shot
 - SoulBinding now transfers your recent health loss into nearby enemies as distance-scaled direct health damage
 - MindBinding now listens for nearby enemy primary-fire events and mirrors them by firing your own primary volley
-- BodyBinding now applies distance-scaled speed slow multipliers to nearby enemies based on your current movement speed
+- BodyBinding now applies distance-scaled speed slow multipliers to nearby enemies based on proximity only, so slow player movement does not drop the effect
 - Binding augments now share an arc-link visual architecture (per-augment settings plus runtime-driven owner/target anchor offsets and curved line points) so active nearby binds can show persistent light links between ships
 - augment presentation prefabs now scale by `Player` ship size so ships with larger/smaller presentation scale keep augment VFX proportional
 - reinforced hull presentation scaling where the ship visual scale tracks the same multiplier used for extra max health while the augment is active

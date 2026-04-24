@@ -687,6 +687,59 @@ public sealed class BurnerDebuffController : MonoBehaviour
     }
 }
 
+public sealed class BodyBindingSlowController : MonoBehaviour
+{
+    private readonly Dictionary<string, float> _sourceMultipliers = new Dictionary<string, float>();
+    private Entity _target;
+    private float _baseMaxSpeed;
+
+    private void Awake()
+    {
+        _target = GetComponent<Entity>();
+        _baseMaxSpeed = _target != null ? _target.movement.maxSpeed : 0f;
+    }
+
+    public void SetSourceMultiplier(string sourceId, float multiplier)
+    {
+        if (_target == null || string.IsNullOrWhiteSpace(sourceId))
+        {
+            return;
+        }
+
+        _sourceMultipliers[sourceId] = Mathf.Clamp(multiplier, 0.01f, 1f);
+        ApplyCurrentMultiplier();
+    }
+
+    public void ClearSource(string sourceId)
+    {
+        if (_target == null || string.IsNullOrWhiteSpace(sourceId))
+        {
+            return;
+        }
+
+        if (_sourceMultipliers.Remove(sourceId))
+        {
+            ApplyCurrentMultiplier();
+        }
+    }
+
+    private void ApplyCurrentMultiplier()
+    {
+        if (_target == null)
+        {
+            return;
+        }
+
+        float total = 1f;
+        foreach (float multiplier in _sourceMultipliers.Values)
+        {
+            total *= multiplier;
+        }
+
+        _target.movement.maxSpeed = Mathf.Max(0.01f, _baseMaxSpeed) * total;
+    }
+}
+
 public sealed class AutoCounterReflectorController : MonoBehaviour, IProjectileReflectorAugment
 {
     public event Action<Vector2> OnProjectileReflected;
