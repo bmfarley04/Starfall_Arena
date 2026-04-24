@@ -10,9 +10,9 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4126ca0ce3c78694f95eed711408a84b, type: 3}
-  m_Name: Class4
+  m_Name: 2DClass4
   m_EditorClassIdentifier: Assembly-CSharp::ShipData
-  _shipId: a7b3e1f06c4d48e5b912d7f8c3a6e049
+  _shipId:
   shipName: MAKO
   shipModelPrefab: {fileID: 5720108135059277148, guid: d5a38edd8d9548342b36111d4fc0d8d1, type: 3}
   player1VSPrefab: {fileID: 5720108135059277148, guid: 8cf732ad7a955a64883566862f00178f, type: 3}

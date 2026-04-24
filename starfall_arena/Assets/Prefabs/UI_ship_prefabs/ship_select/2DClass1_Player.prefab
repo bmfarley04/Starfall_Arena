@@ -4846,7 +4846,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1213109017606901483}
   m_Layer: 23
-  m_Name: Class1_Player
+  m_Name: 2DClass1_Player
   m_TagString: Player
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

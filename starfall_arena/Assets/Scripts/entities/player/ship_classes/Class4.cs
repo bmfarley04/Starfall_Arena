@@ -55,29 +55,19 @@ public class Class4 : Player
     {
         _isBursting = true;
 
+        NetMovement netMovement = GetComponent<NetMovement>();
+        bool useNetwork = NetTickUtil.IsActive && netMovement != null && netMovement.IsSpawned && netMovement.IsOwner;
+
         for (int i = 0; i < burstCount; i++)
         {
-            foreach (var turret in turrets)
+            if (useNetwork)
             {
-                int attackId = BeginTrackedAttack();
-                GameObject projectile = Instantiate(projectileWeapon.prefab, turret.position, transform.rotation);
-
-                if (projectile.TryGetComponent<ProjectileScript>(out var projectileScript))
-                {
-                    projectileScript.targetTag = enemyTag;
-                    projectileScript.Initialize(
-                        GetFireDirection(turret),
-                        Vector2.zero,
-                        projectileWeapon.speed,
-                        projectileWeapon.damage,
-                        projectileWeapon.lifetime,
-                        projectileWeapon.impactForce,
-                        this,
-                        attackId
-                    );
-                }
+                FireBurstShotNetworked(netMovement);
             }
-            ApplyRecoil(projectileWeapon.recoilForce);
+            else
+            {
+                FireBurstShotLocal();
+            }
 
             if (projectileFireSound != null)
             {
@@ -91,5 +81,83 @@ public class Class4 : Player
         }
 
         _isBursting = false;
+    }
+
+    private void FireBurstShotLocal()
+    {
+        foreach (var turret in turrets)
+        {
+            int attackId = BeginTrackedAttack();
+            GameObject projectile = Instantiate(projectileWeapon.prefab, turret.position, transform.rotation);
+
+            if (projectile.TryGetComponent<ProjectileScript>(out var projectileScript))
+            {
+                projectileScript.targetTag = enemyTag;
+                projectileScript.Initialize(
+                    GetFireDirection(turret),
+                    Vector2.zero,
+                    projectileWeapon.speed,
+                    projectileWeapon.damage,
+                    projectileWeapon.lifetime,
+                    projectileWeapon.impactForce,
+                    this,
+                    attackId
+                );
+            }
+        }
+
+        ApplyRecoil(projectileWeapon.recoilForce);
+    }
+
+    private void FireBurstShotNetworked(NetMovement netMovement)
+    {
+        for (int turretIndex = 0; turretIndex < turrets.Length; turretIndex++)
+        {
+            Transform turret = turrets[turretIndex];
+            Vector3 direction = GetFireDirection(turret);
+
+            if (!netMovement.IsServer)
+            {
+                GameObject cosmeticProjectile = Instantiate(projectileWeapon.prefab, turret.position, Quaternion.identity);
+                if (cosmeticProjectile.TryGetComponent(out ProjectileScript cosmeticScript))
+                {
+                    cosmeticScript.targetTag = enemyTag;
+                    cosmeticScript.SetCosmeticOnly(true);
+                    cosmeticScript.Initialize(
+                        direction,
+                        Vector2.zero,
+                        projectileWeapon.speed,
+                        projectileWeapon.damage,
+                        projectileWeapon.lifetime,
+                        projectileWeapon.impactForce,
+                        this);
+                }
+            }
+
+            netMovement.RequestPrimaryFire(new NetFireRequest
+            {
+                Tick = NetTickUtil.CurrentTick,
+                SpawnPosition = turret.position,
+                Direction = direction.normalized,
+                InheritedVelocity = Vector2.zero,
+                Speed = projectileWeapon.speed,
+                Damage = projectileWeapon.damage,
+                Lifetime = projectileWeapon.lifetime,
+                ImpactForce = projectileWeapon.impactForce,
+                RecoilForce = projectileWeapon.recoilForce,
+                ApplyRecoil = turretIndex == 0,
+                PierceMultiplier = 1f,
+                SlowMultiplier = 1f,
+                SlowDuration = 0f,
+                CanPierce = false,
+                AppliesSlow = false,
+                VisualType = NetProjectileVisualType.Primary,
+            });
+        }
+
+        if (!netMovement.IsServer)
+        {
+            ApplyRecoil(projectileWeapon.recoilForce);
+        }
     }
 }
