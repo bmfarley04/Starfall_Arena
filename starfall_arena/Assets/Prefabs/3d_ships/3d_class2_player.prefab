@@ -5520,7 +5520,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6c69aa69e566ed9479d0c430c26157d5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ShieldController
-  shieldColor: {r: 0, g: 0.5294118, b: 1, a: 1}
+  shieldColor: {r: 1, g: 0.37981933, b: 0, a: 1}
   inflationAmount: 0.1
   shieldVisibleDuration: 0.6
   rippleDuration: 0.5
@@ -11201,7 +11201,7 @@ MonoBehaviour:
   maxAimDistance: 1000
   screenCenterConvergenceDistance: 220
   screenCenterDirectionBlend: 0.35
-  muzzleEffectPrefab: {fileID: 100004, guid: eea7e016f2495934da5394e8c6d8c9e6, type: 3}
+  muzzleEffectPrefab: {fileID: 100004, guid: 8377d399368837240be74b846e11344c, type: 3}
   muzzleEffectLifetime: 0.05
   parentMuzzleEffectToMuzzle: 1
   projectileSpawnLocalOffset: {x: 0, y: 0, z: 4}
@@ -11251,7 +11251,7 @@ MonoBehaviour:
   maxAimDistance: 1000
   screenCenterConvergenceDistance: 150
   screenCenterDirectionBlend: 1
-  muzzleEffectPrefab: {fileID: 100004, guid: eea7e016f2495934da5394e8c6d8c9e6, type: 3}
+  muzzleEffectPrefab: {fileID: 100004, guid: abe6a449968d3af4b88a2955e7fe2583, type: 3}
   muzzleEffectLifetime: 0.05
   parentMuzzleEffectToMuzzle: 1
   projectileSpawnLocalOffset: {x: 0, y: 0, z: 4}
@@ -11299,7 +11299,7 @@ MonoBehaviour:
   maxAimDistance: 1000
   screenCenterConvergenceDistance: 220
   screenCenterDirectionBlend: 0.5
-  muzzleEffectPrefab: {fileID: 100004, guid: eea7e016f2495934da5394e8c6d8c9e6, type: 3}
+  muzzleEffectPrefab: {fileID: 100004, guid: 8377d399368837240be74b846e11344c, type: 3}
   muzzleEffectLifetime: 0.05
   parentMuzzleEffectToMuzzle: 1
   projectileSpawnLocalOffset: {x: 0, y: 0, z: 0}

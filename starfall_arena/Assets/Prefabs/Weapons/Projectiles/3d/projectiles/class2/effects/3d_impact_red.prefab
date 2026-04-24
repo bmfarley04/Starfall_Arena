@@ -4807,8 +4807,7 @@ ParticleSystemRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 0852a8a458825994cb4f514bf0fb1198, type: 2}
-  - {fileID: 0}
+  - {fileID: 2100000, guid: e01a9d78b89ccce498b9b626ba22364c, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -9660,8 +9659,7 @@ ParticleSystemRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: d398a7f8eeff2de4f8f42abe241c36ea, type: 2}
-  - {fileID: 0}
+  - {fileID: 2100000, guid: 500682a4e5b6985449bd8a02a7a7fb11, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -14451,7 +14449,6 @@ ParticleSystemRenderer:
   m_RendererPriority: 0
   m_Materials:
   - {fileID: 2100000, guid: 6b8ba11bc7ec6a34b8f0bcf5ef91a396, type: 2}
-  - {fileID: 0}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -19312,8 +19309,7 @@ ParticleSystemRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: b1c3066915f0409438f1d61429e874ac, type: 2}
-  - {fileID: 0}
+  - {fileID: 2100000, guid: b96e950c106e92041862127aa07b57fc, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -24112,7 +24108,6 @@ ParticleSystemRenderer:
   m_RendererPriority: 0
   m_Materials:
   - {fileID: 2100000, guid: 9f2b98e04ba7dd14dbe39b659bfbea60, type: 2}
-  - {fileID: 0}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -24179,7 +24174,7 @@ GameObject:
   - component: {fileID: 19900010}
   - component: {fileID: 11400000}
   m_Layer: 0
-  m_Name: 3d_impact
+  m_Name: 3d_impact_red
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -28998,7 +28993,6 @@ ParticleSystemRenderer:
   m_RendererPriority: 0
   m_Materials:
   - {fileID: 2100000, guid: 510dbb4ce7546774c8577f877b5c7cfa, type: 2}
-  - {fileID: 0}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
