@@ -112,10 +112,10 @@ These classes should stay narrow and mostly coordinate dedicated 3D systems.
 - `GigablastChargeEdgeGlow3D`
   - local-player fullscreen Gigablast edge-glow controller
   - reads the charged-shot progress and drives shader globals for the 3D charge-screen effect
-- `PlayerLowHealthEdgeGlow3D`
-  - local-player fullscreen low-health edge-glow controller for the 3D path
-  - drives a red edge vignette only when hull is below 50% and shields are depleted
-  - fades out automatically when shields return or hull recovers above threshold
+- `PlayerLowHealthVignetteHUD3D`
+  - local-player HUD-image low-health vignette controller for the 3D path
+  - binds through `PlayerHUDManager3D` and drives a configured `Image` color/alpha
+  - fades in when hull is below 50% and shields are depleted, then fades out when recovery conditions are met
 - `PlayerChromaticAberration3D`
   - local-player chromatic-aberration hit feedback controller for the 3D path
   - should stay on the local player camera path and prefer an explicit `Volume` reference
@@ -180,7 +180,7 @@ Current folder contract:
   - examples: `Player3D`, `PlayerInput3D`, `PlayerCameraRig3D`, `PlayerHUDManager3D`
 - `UI`
   - local-player 3D HUD widgets and HUD-binding targets
-  - examples: `PlayerAimReticle3D`, `PlayerHealthShieldHUD3D`, `PlayerWeaponSelectionHUD3D`, `PlayerWeaponAbilityHUDSpawner3D`
+  - examples: `PlayerAimReticle3D`, `PlayerHealthShieldHUD3D`, `PlayerLowHealthVignetteHUD3D`, `PlayerWeaponSelectionHUD3D`, `PlayerWeaponAbilityHUDSpawner3D`
 - `Entities/Enemy`
   - enemy-only 3D entity coordination and AI flight intent
   - examples: `Enemy3D`, `EnemyAIFlightController3D`

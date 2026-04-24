@@ -131,6 +131,7 @@ Important current implementation constraints:
 - `Projectile3D` and `LaserBeam3D` now split cosmetic-only instances from server-authoritative gameplay instances.
 - combat velocity changes such as recoil, impact force, tractor pull, and teleport warps must pass through `NetMovement3D` helpers so prediction/reconciliation state is not immediately overwritten.
 - slow state is treated as server-owned during network movement simulation; the server copy overrides the owner's submitted slow multiplier.
+- beam and tractor-beam aim must be replicated, not resolved from a local camera on the server or on remote proxies. The owner sends its center-screen aim direction with the initial activation RPC and with per-tick `UpdateBeamAim` / `UpdateTractorBeamAim` updates. `LaserBeam3D` and `TractorBeam3D` consume that replicated direction on every non-owner peer so damage casts and cone pulls match what the firing player actually aimed at. The owner's local cosmetic instance keeps using its own camera so local fire stays responsive.
 
 ### Local camera binding
 

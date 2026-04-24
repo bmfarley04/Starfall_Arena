@@ -110,6 +110,6 @@ public class GigablastEdgeGlowRendererFeature : ScriptableRendererFeature
 
     private static bool IsAnyEdgeGlowVisible()
     {
-        return GigablastChargeEdgeGlow3D.IsEffectVisible || PlayerLowHealthEdgeGlow3D.IsEffectVisible;
+        return GigablastChargeEdgeGlow3D.IsEffectVisible;
     }
 }

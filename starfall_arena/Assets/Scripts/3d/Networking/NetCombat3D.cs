@@ -102,7 +102,7 @@ public class NetCombat3D : NetworkBehaviour
         return true;
     }
 
-    public void RequestBeamState(bool isFiring)
+    public void RequestBeamState(bool isFiring, Vector3 aimDirection)
     {
         if (!NetTickUtil.IsActive || !IsSpawned || !IsOwner)
         {
@@ -112,7 +112,8 @@ public class NetCombat3D : NetworkBehaviour
         NetBeamState3D state = new NetBeamState3D
         {
             Tick = NetTickUtil.CurrentTick,
-            IsFiring = isFiring
+            IsFiring = isFiring,
+            AimDirection = aimDirection
         };
 
         if (IsServer)
@@ -122,6 +123,60 @@ public class NetCombat3D : NetworkBehaviour
         }
 
         SubmitBeamStateServerRpc(state);
+    }
+
+    public void UpdateBeamAim(Vector3 aimDirection)
+    {
+        if (!NetTickUtil.IsActive || !IsSpawned || !IsOwner)
+        {
+            return;
+        }
+
+        if (aimDirection.sqrMagnitude <= 0.0001f)
+        {
+            return;
+        }
+
+        NetAimUpdate3D update = new NetAimUpdate3D
+        {
+            Tick = NetTickUtil.CurrentTick,
+            AimDirection = aimDirection
+        };
+
+        if (IsServer)
+        {
+            HandleBeamAimServer(update);
+            return;
+        }
+
+        SubmitBeamAimServerRpc(update);
+    }
+
+    public void UpdateTractorBeamAim(Vector3 aimDirection)
+    {
+        if (!NetTickUtil.IsActive || !IsSpawned || !IsOwner)
+        {
+            return;
+        }
+
+        if (aimDirection.sqrMagnitude <= 0.0001f)
+        {
+            return;
+        }
+
+        NetAimUpdate3D update = new NetAimUpdate3D
+        {
+            Tick = NetTickUtil.CurrentTick,
+            AimDirection = aimDirection
+        };
+
+        if (IsServer)
+        {
+            HandleTractorBeamAimServer(update);
+            return;
+        }
+
+        SubmitTractorBeamAimServerRpc(update);
     }
 
     public void RequestTeleport(Vector3 targetPosition)
@@ -143,17 +198,17 @@ public class NetCombat3D : NetworkBehaviour
 
     public void RequestReflectActivation()
     {
-        RequestAbilityToggle(NetAbilityKind3D.Reflect, true);
+        RequestAbilityToggle(NetAbilityKind3D.Reflect, true, Vector3.zero);
     }
 
     public void RequestClass2ShieldActivation()
     {
-        RequestAbilityToggle(NetAbilityKind3D.Class2Shield, true);
+        RequestAbilityToggle(NetAbilityKind3D.Class2Shield, true, Vector3.zero);
     }
 
-    public void RequestTractorBeamState(bool isActive)
+    public void RequestTractorBeamState(bool isActive, Vector3 aimDirection)
     {
-        RequestAbilityToggle(NetAbilityKind3D.TractorBeam, isActive);
+        RequestAbilityToggle(NetAbilityKind3D.TractorBeam, isActive, aimDirection);
     }
 
     public void RequestGigaBlastChargeState(bool isCharging, int tier)
@@ -332,6 +387,10 @@ public class NetCombat3D : NetworkBehaviour
             return;
         }
 
+        if (state.IsFiring)
+        {
+            beam.ApplyNetworkBeamAim(state.AimDirection);
+        }
         beam.ApplyNetworkBeamState(state.IsFiring, authoritative: true);
         BroadcastBeamStateClientRpc(state);
     }
@@ -344,7 +403,63 @@ public class NetCombat3D : NetworkBehaviour
             return;
         }
 
-        GetComponent<BeamWeapon3D>()?.ApplyNetworkBeamState(state.IsFiring, authoritative: false);
+        BeamWeapon3D beam = GetComponent<BeamWeapon3D>();
+        if (beam == null)
+        {
+            return;
+        }
+
+        if (state.IsFiring)
+        {
+            beam.ApplyNetworkBeamAim(state.AimDirection);
+        }
+        beam.ApplyNetworkBeamState(state.IsFiring, authoritative: false);
+    }
+
+    [ServerRpc]
+    private void SubmitBeamAimServerRpc(NetAimUpdate3D update, ServerRpcParams rpcParams = default)
+    {
+        HandleBeamAimServer(update);
+    }
+
+    private void HandleBeamAimServer(NetAimUpdate3D update)
+    {
+        GetComponent<BeamWeapon3D>()?.ApplyNetworkBeamAim(update.AimDirection);
+        BroadcastBeamAimClientRpc(update);
+    }
+
+    [ClientRpc]
+    private void BroadcastBeamAimClientRpc(NetAimUpdate3D update)
+    {
+        if (IsServer || IsOwner)
+        {
+            return;
+        }
+
+        GetComponent<BeamWeapon3D>()?.ApplyNetworkBeamAim(update.AimDirection);
+    }
+
+    [ServerRpc]
+    private void SubmitTractorBeamAimServerRpc(NetAimUpdate3D update, ServerRpcParams rpcParams = default)
+    {
+        HandleTractorBeamAimServer(update);
+    }
+
+    private void HandleTractorBeamAimServer(NetAimUpdate3D update)
+    {
+        GetComponent<TractorBeam3D>()?.ApplyNetworkTractorBeamAim(update.AimDirection);
+        BroadcastTractorBeamAimClientRpc(update);
+    }
+
+    [ClientRpc]
+    private void BroadcastTractorBeamAimClientRpc(NetAimUpdate3D update)
+    {
+        if (IsServer || IsOwner)
+        {
+            return;
+        }
+
+        GetComponent<TractorBeam3D>()?.ApplyNetworkTractorBeamAim(update.AimDirection);
     }
 
     [ServerRpc]
@@ -376,7 +491,7 @@ public class NetCombat3D : NetworkBehaviour
         GetComponent<Teleport3D>()?.ApplyNetworkTeleport(state.TargetPosition, authoritative: false);
     }
 
-    private void RequestAbilityToggle(NetAbilityKind3D abilityKind, bool isActive)
+    private void RequestAbilityToggle(NetAbilityKind3D abilityKind, bool isActive, Vector3 aimDirection)
     {
         if (!NetTickUtil.IsActive || !IsSpawned || !IsOwner)
         {
@@ -386,7 +501,8 @@ public class NetCombat3D : NetworkBehaviour
         NetAbilityToggleState3D state = new NetAbilityToggleState3D
         {
             Tick = NetTickUtil.CurrentTick,
-            IsActive = isActive
+            IsActive = isActive,
+            AimDirection = aimDirection
         };
 
         if (IsServer)
@@ -415,8 +531,18 @@ public class NetCombat3D : NetworkBehaviour
                 GetComponent<Class2Shield3D>()?.ApplyNetworkShieldActivation(authoritative: true);
                 break;
             case NetAbilityKind3D.TractorBeam:
-                GetComponent<TractorBeam3D>()?.ApplyNetworkTractorBeamState(state.IsActive, authoritative: true);
+            {
+                TractorBeam3D tractorBeam = GetComponent<TractorBeam3D>();
+                if (tractorBeam != null)
+                {
+                    if (state.IsActive)
+                    {
+                        tractorBeam.ApplyNetworkTractorBeamAim(state.AimDirection);
+                    }
+                    tractorBeam.ApplyNetworkTractorBeamState(state.IsActive, authoritative: true);
+                }
                 break;
+            }
         }
 
         BroadcastAbilityToggleClientRpc(abilityKind, state);
@@ -439,8 +565,18 @@ public class NetCombat3D : NetworkBehaviour
                 GetComponent<Class2Shield3D>()?.ApplyNetworkShieldActivation(authoritative: false);
                 break;
             case NetAbilityKind3D.TractorBeam:
-                GetComponent<TractorBeam3D>()?.ApplyNetworkTractorBeamState(state.IsActive, authoritative: false);
+            {
+                TractorBeam3D tractorBeam = GetComponent<TractorBeam3D>();
+                if (tractorBeam != null)
+                {
+                    if (state.IsActive)
+                    {
+                        tractorBeam.ApplyNetworkTractorBeamAim(state.AimDirection);
+                    }
+                    tractorBeam.ApplyNetworkTractorBeamState(state.IsActive, authoritative: false);
+                }
                 break;
+            }
         }
     }
 

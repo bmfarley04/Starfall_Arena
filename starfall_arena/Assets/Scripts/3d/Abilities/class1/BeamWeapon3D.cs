@@ -40,6 +40,8 @@ public class BeamWeapon3D : Weapon3D
     private LaserBeam3D _activeBeam;
     private NetCombat3D _netCombat;
     private bool _activeBeamAuthoritative = true;
+    private Vector3 _pendingNetworkAim;
+    private bool _hasPendingNetworkAim;
 
     private bool UsesBeamCapacity => beam.capacity > 0f && beam.drainRate > 0f;
 
@@ -79,6 +81,11 @@ public class BeamWeapon3D : Weapon3D
             return;
         }
 
+        if (NetTickUtil.IsActive && _netCombat != null && _netCombat.IsSpawned && _netCombat.IsOwner)
+        {
+            _netCombat.UpdateBeamAim(ResolveOwnerAimDirection());
+        }
+
         float recoilForceThisFrame = _activeBeam.GetRecoilForcePerSecond() * deltaTime;
         if (_activeBeamAuthoritative && Owner != null && Owner.Flight != null)
         {
@@ -98,6 +105,27 @@ public class BeamWeapon3D : Weapon3D
         }
     }
 
+    private Vector3 ResolveOwnerAimDirection()
+    {
+        Camera cam = AimCamera;
+        if (cam != null)
+        {
+            Ray centerRay = cam.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
+            if (centerRay.direction.sqrMagnitude > 0.0001f)
+            {
+                return centerRay.direction.normalized;
+            }
+        }
+
+        Transform muzzle = beam.muzzle != null ? beam.muzzle : Owner != null ? Owner.transform : transform;
+        if (muzzle != null && muzzle.forward.sqrMagnitude > 0.0001f)
+        {
+            return muzzle.forward.normalized;
+        }
+
+        return transform.forward;
+    }
+
     protected override void OnFirePressed()
     {
         if (_activeBeam != null || beam.beamPrefab == null)
@@ -112,7 +140,8 @@ public class BeamWeapon3D : Weapon3D
 
         if (NetTickUtil.IsActive && _netCombat != null && _netCombat.IsOwner)
         {
-            _netCombat.RequestBeamState(true);
+            Vector3 aimDirection = ResolveOwnerAimDirection();
+            _netCombat.RequestBeamState(true, aimDirection);
             if (!_netCombat.IsServer)
             {
                 StartBeam(authoritative: false);
@@ -127,7 +156,7 @@ public class BeamWeapon3D : Weapon3D
     {
         if (NetTickUtil.IsActive && _netCombat != null && _netCombat.IsOwner)
         {
-            _netCombat.RequestBeamState(false);
+            _netCombat.RequestBeamState(false, ResolveOwnerAimDirection());
         }
 
         StopBeam();
@@ -166,6 +195,22 @@ public class BeamWeapon3D : Weapon3D
         }
     }
 
+    public void ApplyNetworkBeamAim(Vector3 aimDirection)
+    {
+        if (aimDirection.sqrMagnitude <= 0.0001f)
+        {
+            return;
+        }
+
+        _pendingNetworkAim = aimDirection;
+        _hasPendingNetworkAim = true;
+
+        if (_activeBeam != null)
+        {
+            _activeBeam.SetNetworkAim(aimDirection);
+        }
+    }
+
     private void StartBeam(bool authoritative)
     {
         if (_activeBeam != null)
@@ -198,6 +243,10 @@ public class BeamWeapon3D : Weapon3D
         _activeBeamAuthoritative = authoritative;
         _activeBeam.SetCosmeticOnly(!authoritative);
         _activeBeam.SetNetworkAuthority(authoritative ? _netCombat : null);
+        if (_hasPendingNetworkAim)
+        {
+            _activeBeam.SetNetworkAim(_pendingNetworkAim);
+        }
         _activeBeam.StartFiring();
         StartBeamLoopSound();
     }
@@ -212,6 +261,7 @@ public class BeamWeapon3D : Weapon3D
         }
 
         _activeBeamAuthoritative = true;
+        _hasPendingNetworkAim = false;
         StopBeamLoopSound();
     }
 

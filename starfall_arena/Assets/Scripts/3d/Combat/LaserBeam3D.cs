@@ -37,6 +37,8 @@ public class LaserBeam3D : MonoBehaviour
     private Camera _aimCamera;
     private bool _isCosmeticOnly;
     private NetCombat3D _networkAuthority;
+    private bool _hasNetworkAim;
+    private Vector3 _networkAimDirection;
     private float _anchorOffset;
     private float _verticalOffset;
     private float _timeSinceLastShieldHit;
@@ -82,6 +84,22 @@ public class LaserBeam3D : MonoBehaviour
     public void SetNetworkAuthority(NetCombat3D networkAuthority)
     {
         _networkAuthority = networkAuthority;
+    }
+
+    public void SetNetworkAim(Vector3 direction)
+    {
+        if (direction.sqrMagnitude <= 0.0001f)
+        {
+            return;
+        }
+
+        _hasNetworkAim = true;
+        _networkAimDirection = direction.normalized;
+    }
+
+    public void ClearNetworkAim()
+    {
+        _hasNetworkAim = false;
     }
 
     public float GetRecoilForcePerSecond()
@@ -318,6 +336,11 @@ public class LaserBeam3D : MonoBehaviour
 
     private Vector3 ResolveAimDirection()
     {
+        if (_hasNetworkAim)
+        {
+            return _networkAimDirection;
+        }
+
         if (_aimCamera != null)
         {
             Ray centerRay = _aimCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));

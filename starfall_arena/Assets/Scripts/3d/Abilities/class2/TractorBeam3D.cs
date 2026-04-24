@@ -104,6 +104,8 @@ public class TractorBeam3D : Ability3D
     private readonly HashSet<int> _hitTargetIdsThisFrame = new HashSet<int>();
     private NetCombat3D _netCombat;
     private bool _networkGameplayAuthority = true;
+    private bool _hasNetworkAim;
+    private Vector3 _networkAimDirection;
 
     protected override void Awake()
     {
@@ -141,10 +143,17 @@ public class TractorBeam3D : Ability3D
 
     private void FixedUpdate()
     {
-        if (_isActive)
+        if (!_isActive)
         {
-            ResolveBeamAim(out Vector3 origin, out Vector3 forward);
-            ApplyTractorBeamPull(origin, forward);
+            return;
+        }
+
+        ResolveBeamAim(out Vector3 origin, out Vector3 forward);
+        ApplyTractorBeamPull(origin, forward);
+
+        if (NetTickUtil.IsActive && _netCombat != null && _netCombat.IsSpawned && _netCombat.IsOwner)
+        {
+            _netCombat.UpdateTractorBeamAim(forward);
         }
     }
 
@@ -179,7 +188,8 @@ public class TractorBeam3D : Ability3D
 
         if (NetTickUtil.IsActive && _netCombat != null && _netCombat.IsOwner)
         {
-            _netCombat.RequestTractorBeamState(true);
+            Vector3 aimDirection = ResolveOwnerAimDirection();
+            _netCombat.RequestTractorBeamState(true, aimDirection);
             if (!_netCombat.IsServer)
             {
                 ApplyNetworkTractorBeamState(true, authoritative: false);
@@ -188,6 +198,21 @@ public class TractorBeam3D : Ability3D
         }
 
         ApplyNetworkTractorBeamState(true, authoritative: true);
+    }
+
+    private Vector3 ResolveOwnerAimDirection()
+    {
+        Vector3 origin = GetBeamOrigin();
+        Vector3 forward = GetForwardDirection(origin);
+        if (forward.sqrMagnitude > 0.0001f)
+        {
+            return forward.normalized;
+        }
+
+        Transform directionSource = tractorBeam.spawnPoint != null ? tractorBeam.spawnPoint : transform;
+        return directionSource.forward.sqrMagnitude > 0.0001f
+            ? directionSource.forward.normalized
+            : Vector3.forward;
     }
 
     public override bool IsAbilityActive()
@@ -229,6 +254,22 @@ public class TractorBeam3D : Ability3D
         }
     }
 
+    public void ApplyNetworkTractorBeamAim(Vector3 aimDirection)
+    {
+        if (aimDirection.sqrMagnitude <= 0.0001f)
+        {
+            return;
+        }
+
+        if (_netCombat != null && _netCombat.IsOwner)
+        {
+            return;
+        }
+
+        _hasNetworkAim = true;
+        _networkAimDirection = aimDirection.normalized;
+    }
+
     private void DeactivateTractorBeam()
     {
         if (!_isActive)
@@ -240,6 +281,7 @@ public class TractorBeam3D : Ability3D
         _activeUntilTime = -1f;
         _currentlyHitTargetIds.Clear();
         _hitTargetIdsThisFrame.Clear();
+        _hasNetworkAim = false;
         SetVisualRootActive(false);
         StopBeamLoopSound();
     }
@@ -377,6 +419,13 @@ public class TractorBeam3D : Ability3D
     private void ResolveBeamAim(out Vector3 origin, out Vector3 forward)
     {
         origin = GetBeamOrigin();
+
+        if (_hasNetworkAim && _networkAimDirection.sqrMagnitude > 0.0001f)
+        {
+            forward = _networkAimDirection.normalized;
+            return;
+        }
+
         forward = GetForwardDirection(origin);
     }
 
