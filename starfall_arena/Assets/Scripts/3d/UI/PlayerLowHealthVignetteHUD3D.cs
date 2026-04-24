@@ -15,6 +15,10 @@ public class PlayerLowHealthVignetteHUD3D : PlayerHUDBindingTarget3D
     [SerializeField, Min(0.01f)] private float fadeOutSpeed = 4f;
     [SerializeField] private AnimationCurve healthRemap = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
 
+    [Header("Pulsation")]
+    [SerializeField, Min(0.01f)] private float pulseSpeed = 2f;
+    [SerializeField, Range(0f, 1f)] private float pulseIntensity = 0.3f;
+
     [Header("Preview")]
     [SerializeField] private bool alwaysOnPreview;
     [SerializeField, Range(0f, 1f)] private float previewIntensity = 1f;
@@ -116,6 +120,13 @@ public class PlayerLowHealthVignetteHUD3D : PlayerHUDBindingTarget3D
         if (vignetteImage == null)
         {
             return;
+        }
+
+        // Apply pulsation when vignette is active
+        if (alpha > 0.001f)
+        {
+            float pulse = Mathf.Sin(Time.unscaledTime * pulseSpeed * Mathf.PI * 2f) * 0.5f + 0.5f;
+            alpha *= Mathf.Lerp(1f - pulseIntensity, 1f, pulse);
         }
 
         Color color = vignetteColor;

@@ -228,8 +228,17 @@ public class BeamWeapon3D : Weapon3D
         }
 
         Transform muzzle = beam.muzzle != null ? beam.muzzle : Owner != null ? Owner.transform : transform;
+        string resolvedTargetTag = beam.targetTag;
+        if (authoritative && NetTickUtil.IsActive && _netCombat != null && _netCombat.IsSpawned)
+        {
+            string enemyTag = _netCombat.GetEnemyTag();
+            if (!string.IsNullOrEmpty(enemyTag))
+            {
+                resolvedTargetTag = enemyTag;
+            }
+        }
         _activeBeam.Initialize(
-            beam.targetTag,
+            resolvedTargetTag,
             beam.damagePerSecond,
             beam.maxDistance,
             beam.recoilForcePerSecond,

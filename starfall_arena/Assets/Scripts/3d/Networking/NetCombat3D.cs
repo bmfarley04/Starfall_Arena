@@ -757,6 +757,11 @@ public class NetCombat3D : NetworkBehaviour
         };
     }
 
+    public string GetEnemyTag()
+    {
+        return ResolveEnemyTag();
+    }
+
     private string ResolveEnemyTag()
     {
         byte slot = _movement != null ? _movement.PlayerSlot : (byte)0;
