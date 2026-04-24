@@ -9,16 +9,38 @@ public class PlayerHUDManager3D : MonoBehaviour
     [SerializeField] private bool autoBindToMatchingPlayer = true;
     [SerializeField] private bool preferLocalPlayer = true;
     [SerializeField] private bool fallbackToFirstMatchingPlayer = true;
+    [Tooltip("How long to keep retrying local-player binding after players spawn. This covers NGO spawn order where Player3D enables before NetMovement3D enables owner input.")]
+    [SerializeField] private float localPlayerBindingRetrySeconds = 3f;
+    [Tooltip("Seconds between local-player binding retries.")]
+    [SerializeField] private float localPlayerBindingRetryInterval = 0.1f;
     [Tooltip("Optional tag filter such as Player1 or Player2.")]
     [SerializeField] private string playerTagFilter;
     [Tooltip("Optional case-insensitive name match. Example: class1 matches 3d_class1_player(Clone).")]
     [SerializeField] private string playerNameContains;
 
     private Player3D _boundPlayer;
+    private float _retryUntilTime;
+    private float _nextRetryTime;
 
     public event Action<Player3D> BoundPlayerChanged;
 
     public Player3D BoundPlayer => _boundPlayer;
+
+    public static void RebindAllAutoManagers()
+    {
+        PlayerHUDManager3D[] managers = FindObjectsByType<PlayerHUDManager3D>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+        for (int i = 0; i < managers.Length; i++)
+        {
+            PlayerHUDManager3D manager = managers[i];
+            if (manager == null || !manager.autoBindToMatchingPlayer)
+            {
+                continue;
+            }
+
+            manager.BeginLocalPlayerBindingRetry();
+            manager.TryBindToPlayer();
+        }
+    }
 
     private void Awake()
     {
@@ -32,6 +54,7 @@ public class PlayerHUDManager3D : MonoBehaviour
     {
         Player3D.PlayerSpawned += HandlePlayerSpawned;
         Player3D.PlayerDespawned += HandlePlayerDespawned;
+        BeginLocalPlayerBindingRetry();
         TryBindToPlayer();
     }
 
@@ -39,6 +62,28 @@ public class PlayerHUDManager3D : MonoBehaviour
     {
         Player3D.PlayerSpawned -= HandlePlayerSpawned;
         Player3D.PlayerDespawned -= HandlePlayerDespawned;
+        _retryUntilTime = 0f;
+    }
+
+    private void Update()
+    {
+        if (!ShouldRetryLocalPlayerBinding())
+        {
+            return;
+        }
+
+        if (Time.unscaledTime < _nextRetryTime)
+        {
+            return;
+        }
+
+        _nextRetryTime = Time.unscaledTime + Mathf.Max(0.01f, localPlayerBindingRetryInterval);
+        TryBindToPlayer();
+
+        if (_boundPlayer != null && IsPreferredLocalPlayerCandidate(_boundPlayer))
+        {
+            _retryUntilTime = 0f;
+        }
     }
 
     public void Bind(Player3D targetPlayer)
@@ -93,6 +138,7 @@ public class PlayerHUDManager3D : MonoBehaviour
             return;
         }
 
+        BeginLocalPlayerBindingRetry();
         if (_boundPlayer == null || (preferLocalPlayer && IsPreferredLocalPlayerCandidate(spawnedPlayer)))
         {
             TryBindToPlayer();
@@ -107,6 +153,33 @@ public class PlayerHUDManager3D : MonoBehaviour
         }
 
         TryBindToPlayer();
+    }
+
+    private void BeginLocalPlayerBindingRetry()
+    {
+        if (!autoBindToMatchingPlayer || !preferLocalPlayer)
+        {
+            return;
+        }
+
+        float duration = Mathf.Max(0f, localPlayerBindingRetrySeconds);
+        if (duration <= 0f)
+        {
+            return;
+        }
+
+        _retryUntilTime = Time.unscaledTime + duration;
+        _nextRetryTime = Time.unscaledTime;
+    }
+
+    private bool ShouldRetryLocalPlayerBinding()
+    {
+        if (!autoBindToMatchingPlayer || !preferLocalPlayer || Time.unscaledTime > _retryUntilTime)
+        {
+            return false;
+        }
+
+        return _boundPlayer == null || !IsPreferredLocalPlayerCandidate(_boundPlayer);
     }
 
     private Player3D FindBestPlayerCandidate()

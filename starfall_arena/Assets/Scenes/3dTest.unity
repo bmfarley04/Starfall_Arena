@@ -3192,10 +3192,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cb807123135f5114abbcc850def777f4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerHUDManager3D
-  player: {fileID: 7427501343161116872}
-  autoBindToMatchingPlayer: 0
-  preferLocalPlayer: 0
-  fallbackToFirstMatchingPlayer: 0
+  player: {fileID: 0}
+  autoBindToMatchingPlayer: 1
+  preferLocalPlayer: 1
+  fallbackToFirstMatchingPlayer: 1
+  localPlayerBindingRetrySeconds: 3
+  localPlayerBindingRetryInterval: 0.1
   playerTagFilter: 
   playerNameContains: 
 --- !u!4 &1779300724

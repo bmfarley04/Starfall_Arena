@@ -724,6 +724,7 @@ public class NetMovement3D : NetworkBehaviour
 
         BindOwnerCameraAndTracking(gameplayCamera);
         SetWeaponAimCamera(gameplayCamera);
+        PlayerHUDManager3D.RebindAllAutoManagers();
         _loggedOwnerInputMissing = false;
     }
 

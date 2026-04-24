@@ -139,6 +139,7 @@ The local peer's Cinemachine gameplay camera now needs to be rebound after netwo
 Current binding path:
 
 - `NetMovement3D` binds the owner camera/input/cinemachine tracking target when ownership becomes active
+- `NetMovement3D` asks auto-bound `PlayerHUDManager3D` instances to rebind after owner presentation is configured, so scene HUDs follow the spawned local network player instead of stale scene references
 - `NetworkSceneManager3D` also runs a local-owner retry loop after scene load so the camera still follows the newly spawned ship if spawn order or ownership timing is late
 
 ## 3D-Specific Integration Decisions
