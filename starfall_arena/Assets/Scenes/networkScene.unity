@@ -4189,6 +4189,10 @@ PrefabInstance:
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 241511680954367433, guid: 5f62dbb7a3da5594daec65e198d53619, type: 3}
+      propertyPath: m_PresetInfoIsWorld
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 241511680954367433, guid: 5f62dbb7a3da5594daec65e198d53619, type: 3}
       propertyPath: m_ReferenceResolution.x
       value: 1920
       objectReference: {fileID: 0}

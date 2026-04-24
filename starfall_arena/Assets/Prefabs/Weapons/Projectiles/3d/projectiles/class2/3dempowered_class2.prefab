@@ -65,7 +65,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Projectile3D
   targetTag: Enemy
-  hitEffectPrefab: {fileID: 100010, guid: 6ebf8a0c9c55433418aae76da338ac53, type: 3}
+  hitEffectPrefab: {fileID: 100010, guid: 47a5db8ba75e4ee4f96bfee703fddd4c, type: 3}
   hitEffectLifetime: 2
   hitEffectOffset: 0.02
   alignHitEffectToSurface: 1

@@ -191,7 +191,7 @@ GameObject:
   - component: {fileID: 400004}
   - component: {fileID: 11400000}
   m_Layer: 0
-  m_Name: 3d_muzzle
+  m_Name: 3d_muzzle_blue
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

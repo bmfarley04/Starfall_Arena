@@ -5,9 +5,9 @@ public class GigaBlastProjectile3D : Projectile3D
     private bool _canPierce;
     private float _pierceDamageMultiplier = 1f;
 
-    public override void Initialize(Vector3 direction, Vector3 shipVelocity, float speed, float damage, float lifetime, float impactForce, Entity3D shooter = null)
+    public override void Initialize(Vector3 direction, Vector3 shipVelocity, float speed, float damage, float lifetime, float impactForce, Entity3D shooter = null, int accuracyAttackId = PlayerCombatStats3D.InvalidAttackId)
     {
-        base.Initialize(direction, shipVelocity, speed, damage, lifetime, impactForce, shooter);
+        base.Initialize(direction, shipVelocity, speed, damage, lifetime, impactForce, shooter, accuracyAttackId);
         _canPierce = false;
         _pierceDamageMultiplier = 1f;
     }

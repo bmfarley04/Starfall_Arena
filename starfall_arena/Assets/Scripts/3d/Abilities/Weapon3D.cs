@@ -420,6 +420,10 @@ public abstract class Weapon3D : MonoBehaviour, IReticleSpinSource3D
         }
 
         Transform[] muzzles = ResolveFiringMuzzles(request, fallbackConfig);
+        PlayerCombatStats3D stats = !cosmeticOnly && owner != null ? owner.GetComponent<PlayerCombatStats3D>() : null;
+        int accuracyAttackId = stats != null
+            ? stats.BeginTrackedAttack()
+            : PlayerCombatStats3D.InvalidAttackId;
 
         string resolvedTargetTag = !string.IsNullOrEmpty(request.targetTag)
             ? request.targetTag
@@ -430,7 +434,7 @@ public abstract class Weapon3D : MonoBehaviour, IReticleSpinSource3D
         {
             Transform spawnMuzzle = muzzles[i] != null ? muzzles[i] : transform;
             SpawnMuzzleEffect(spawnMuzzle);
-            SpawnProjectile(spawnMuzzle, aim, request, resolvedTargetTag, cosmeticOnly, networkAuthority, visualType);
+            SpawnProjectile(spawnMuzzle, aim, request, resolvedTargetTag, cosmeticOnly, networkAuthority, visualType, accuracyAttackId);
         }
 
         if (!cosmeticOnly && shipFlight != null && request.recoilForce > 0f)
@@ -459,6 +463,7 @@ public abstract class Weapon3D : MonoBehaviour, IReticleSpinSource3D
         Transform[] muzzles = ResolveFiringMuzzles(request, fallbackConfig);
         AimSolution aim = ResolveAimSolution();
         Vector3 inheritedVelocity = shipFlight != null ? shipFlight.LinearVelocity : Vector3.zero;
+        int accuracyAttackId = NetTickUtil.IsActive ? tick : PlayerCombatStats3D.InvalidAttackId;
 
         for (int i = 0; i < muzzles.Length; i++)
         {
@@ -488,7 +493,8 @@ public abstract class Weapon3D : MonoBehaviour, IReticleSpinSource3D
                 SlowMultiplier = request.slowMultiplier,
                 SlowDuration = request.slowDuration,
                 SlowEngineEmissionScale = request.slowEngineEmissionScale,
-                VisualType = visualType
+                VisualType = visualType,
+                AccuracyAttackId = accuracyAttackId
             });
         }
     }
@@ -529,7 +535,13 @@ public abstract class Weapon3D : MonoBehaviour, IReticleSpinSource3D
             fire.Damage,
             fire.Lifetime,
             fire.ImpactForce,
-            owner);
+            owner,
+            fire.AccuracyAttackId);
+
+        if (!cosmeticOnly)
+        {
+            owner?.GetComponent<PlayerCombatStats3D>()?.RecordTrackedAttackFired(fire.AccuracyAttackId);
+        }
 
         if (fire.CanPierce)
         {
@@ -588,7 +600,8 @@ public abstract class Weapon3D : MonoBehaviour, IReticleSpinSource3D
         string targetTag,
         bool cosmeticOnly,
         NetCombat3D networkAuthority,
-        NetProjectileVisualType3D visualType)
+        NetProjectileVisualType3D visualType,
+        int accuracyAttackId)
     {
         Vector3 spawnPosition = ResolveProjectileSpawnPosition(muzzle, request);
         Vector3 fireDirection = ResolveFireDirection(muzzle, spawnPosition, aim);
@@ -611,7 +624,8 @@ public abstract class Weapon3D : MonoBehaviour, IReticleSpinSource3D
             request.damage,
             request.lifetime,
             request.impactForce,
-            owner
+            owner,
+            accuracyAttackId
         );
 
         if (request.canPierce)

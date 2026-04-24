@@ -453,7 +453,6 @@ GameObject:
   - component: {fileID: 6369695681249732700}
   - component: {fileID: 472506789794357844}
   - component: {fileID: 5104438160426859549}
-  - component: {fileID: 8844472236609154321}
   - component: {fileID: 8188930441586883119}
   - component: {fileID: 7902338216098012005}
   - component: {fileID: 6016429355266790633}
@@ -465,7 +464,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &7427501341343801484
 Transform:
   m_ObjectHideFlags: 0
@@ -624,7 +623,7 @@ AudioSource:
     m_Curve:
     - serializedVersion: 3
       time: 0
-      value: 0
+      value: 1
       inSlope: 0
       outSlope: 0
       tangentMode: 0
@@ -735,6 +734,9 @@ MonoBehaviour:
     beamHitLoopSound: {fileID: 11400000, guid: cdf6af1d1d05cdd4d8cf3ea5f244f9f2, type: 2}
     beamHitLoopStopDelay: 0.2
     audioSourcePoolSize: 4
+  shieldRegen:
+    regenDelay: 5
+    regenRate: 20
 --- !u!114 &2269080399608317416
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1001,7 +1003,6 @@ MonoBehaviour:
     prefab: {fileID: 100014, guid: d96258cdf841f5e4d8af97dce9661d8c, type: 3}
     scale: 1.5
     sound: {fileID: 11400000, guid: 52e8c58e387b89849affa74c78d6d899, type: 2}
-  deathSoundSpatialBlend: 1
   scatterRoot: {fileID: 9023730634269657982}
   scatterChance: 1
 --- !u!114 &6928815812079169362
@@ -1278,23 +1279,13 @@ MonoBehaviour:
   edgeColor: {r: 0.2, g: 0.6, b: 1, a: 1}
   useTierColors: 1
   tierColors:
-    tier1Color: {r: 2, g: 2, b: 2, a: 1}
-    tier2Color: {r: 1.2727598, g: 1.4491552, b: 2.0136201, a: 1}
-    tier3Color: {r: 1.3548113, g: 2.0813046, b: 1.5511608, a: 1}
-    tier4Color: {r: 1.5136858, g: 1.1325613, b: 1.9467814, a: 1}
-  coreThicknessMin: 0.01
-  coreThicknessMax: 0.03
-  coreSoftness: 1
-  coreIntensity: 0
-  haloThicknessMin: 0.045
-  haloThicknessMax: 0.12
-  haloSoftness: 1
-  haloIntensity: 0.01
-  cornerBoost: 0.22
-  edgeBiasHorizontal: 1
-  edgeBiasVertical: 0.85
-  fadeInSpeed: 3
-  fadeOutSpeed: 4
+    tier1Color: {r: 1, g: 1, b: 1, a: 1}
+    tier2Color: {r: 0.17924517, g: 0.36592695, b: 1, a: 1}
+    tier3Color: {r: 0.18549499, g: 0.7106918, b: 0.19178475, a: 1}
+    tier4Color: {r: 0.4358912, g: 0.13150178, b: 0.6855345, a: 1}
+  maxAlpha: 0.3
+  fadeInSpeed: 2
+  fadeOutSpeed: 2
   chargeRemap:
     serializedVersion: 2
     m_Curve:
@@ -1321,65 +1312,7 @@ MonoBehaviour:
     m_RotationOrder: 4
   pulseWhileCharging: 1
   pulseAmplitude: 0.1
-  pulseSpeed: 6
---- !u!114 &8844472236609154321
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2568558604607578100}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a7f3623a0133472a8bb98f24e8bf2259, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::PlayerLowHealthEdgeGlow3D
-  player: {fileID: 1753171253810675368}
-  playerCameraRig3D: {fileID: 3760524061682020281}
-  netMovement: {fileID: 1524455165470484394}
-  edgeColor: {r: 1, g: 0.08, b: 0.08, a: 1}
-  coreThicknessMin: 0.01
-  coreThicknessMax: 0.03
-  coreSoftness: 1
-  coreIntensity: 0.25
-  haloThicknessMin: 0.045
-  haloThicknessMax: 0.12
-  haloSoftness: 1
-  haloIntensity: 0.9
-  cornerBoost: 0.22
-  edgeBiasHorizontal: 1
-  edgeBiasVertical: 0.85
-  lowHealthThreshold: 0.5
-  shieldActiveThreshold: 0.001
-  fadeInSpeed: 3
-  fadeOutSpeed: 4
-  healthRemap:
-    serializedVersion: 2
-    m_Curve:
-    - serializedVersion: 3
-      time: 0
-      value: 0
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    - serializedVersion: 3
-      time: 1
-      value: 1
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
-  pulseWhileLowHealth: 1
-  pulseAmplitude: 0.1
-  pulseSpeed: 6
+  pulseSpeed: 4
 --- !u!114 &8188930441586883119
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -99,7 +99,8 @@ public class Teleport3D : Ability3D
         _audioSource = gameObject.AddComponent<AudioSource>();
         _audioSource.playOnAwake = false;
         _audioSource.loop = false;
-        _audioSource.spatialBlend = 0f;
+        _audioSource.spatialBlend = 1f;
+        _audioSource.rolloffMode = AudioRolloffMode.Linear;
     }
 
     public override void UseAbility(InputValue value)
