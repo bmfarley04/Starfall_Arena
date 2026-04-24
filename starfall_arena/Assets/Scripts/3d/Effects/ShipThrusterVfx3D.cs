@@ -16,6 +16,8 @@ public class ShipThrusterVfx3D : MonoBehaviour
 
     private readonly Dictionary<ParticleSystem, ThrusterParticleState> _thrusterOriginalStates = new();
     private float _currentThrusterIntensity;
+    private float _temporaryEmissionRateScale = 1f;
+    private float _temporaryEmissionRateScaleEndTime;
 
     private void Awake()
     {
@@ -41,6 +43,22 @@ public class ShipThrusterVfx3D : MonoBehaviour
     {
         thrusterEffects = config;
         CacheThrusterDefaults();
+    }
+
+    public void ApplyTemporaryEmissionRateScale(float scale, float duration)
+    {
+        if (duration <= 0f)
+        {
+            return;
+        }
+
+        float clampedScale = Mathf.Clamp01(scale);
+        float requestedEndTime = Time.time + duration;
+        if (clampedScale < _temporaryEmissionRateScale || requestedEndTime > _temporaryEmissionRateScaleEndTime)
+        {
+            _temporaryEmissionRateScale = clampedScale;
+            _temporaryEmissionRateScaleEndTime = requestedEndTime;
+        }
     }
 
     private void CacheThrusterDefaults()
@@ -96,6 +114,7 @@ public class ShipThrusterVfx3D : MonoBehaviour
         float targetIntensity = shipFlight.IsApplyingThrust ? 1f : 0f;
         float rampStep = thrusterEffects.rampTime > 0f ? Time.deltaTime / thrusterEffects.rampTime : 1f;
         _currentThrusterIntensity = Mathf.MoveTowards(_currentThrusterIntensity, targetIntensity, rampStep);
+        float emissionScale = GetActiveEmissionRateScale();
 
         foreach (ParticleSystem thruster in thrusterEffects.thrusters)
         {
@@ -119,13 +138,24 @@ public class ShipThrusterVfx3D : MonoBehaviour
             var emission = thruster.emission;
             var main = thruster.main;
 
-            emission.rateOverTime = ScaleCurve(originalState.emissionRate, _currentThrusterIntensity);
+            emission.rateOverTime = ScaleCurve(originalState.emissionRate, _currentThrusterIntensity * emissionScale);
             main.startSpeed = ScaleCurve(originalState.startSpeed, _currentThrusterIntensity);
             main.startLifetime = ScaleCurve(originalState.startLifetime, _currentThrusterIntensity);
             main.startColor = thrusterEffects.invertColors
                 ? InvertColor(originalState.startColor)
                 : originalState.startColor;
         }
+    }
+
+    private float GetActiveEmissionRateScale()
+    {
+        if (Time.time >= _temporaryEmissionRateScaleEndTime)
+        {
+            _temporaryEmissionRateScale = 1f;
+            _temporaryEmissionRateScaleEndTime = 0f;
+        }
+
+        return _temporaryEmissionRateScale;
     }
 
     private static ParticleSystem.MinMaxCurve ScaleCurve(ParticleSystem.MinMaxCurve curve, float scale)

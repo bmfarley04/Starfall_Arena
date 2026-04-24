@@ -320,6 +320,11 @@ public class NetworkSessionData : NetworkBehaviour
         _shipSelections[slot].IsLockedIn = false;
         _shipSelections[slot].ShipId = string.Empty;
 
+        if (CanSendSessionRpcs())
+        {
+            BroadcastGameplaySceneNameClientRpc(gameplaySceneName);
+        }
+
         BroadcastSelections();
 
         if (GetConnectedPlayerCount() >= 2)
@@ -361,6 +366,21 @@ public class NetworkSessionData : NetworkBehaviour
         SyncLocalState(NetworkMatchState.TitleIdle, 0f, statusMessage);
         NotifySelectionsChanged();
         OnSelectedMapIndexChanged?.Invoke(_selectedMapIndex);
+    }
+
+    public void SetGameplaySceneName(string sceneName)
+    {
+        if (string.IsNullOrWhiteSpace(sceneName))
+        {
+            return;
+        }
+
+        ApplyGameplaySceneName(sceneName);
+
+        if (CanSendSessionRpcs())
+        {
+            BroadcastGameplaySceneNameClientRpc(gameplaySceneName);
+        }
     }
 
     public bool TryGetLocalSelectionState(out NetworkShipSelectionState selection)
@@ -711,6 +731,14 @@ public class NetworkSessionData : NetworkBehaviour
     private void ApplyShipSelection(ulong clientId, string shipId, bool lockIn)
     {
         if (_currentState != NetworkMatchState.ShipSelect)
+        {
+            return;
+        }
+
+        // Ship-select navigation should remain local-only until the player commits.
+        // Guard non-lock updates here so accidental preview submissions cannot
+        // synchronize host/client browsing state.
+        if (!lockIn)
         {
             return;
         }
@@ -1072,6 +1100,16 @@ public class NetworkSessionData : NetworkBehaviour
         OnSelectedMapIndexChanged?.Invoke(_selectedMapIndex);
     }
 
+    private void ApplyGameplaySceneName(string sceneName)
+    {
+        if (string.IsNullOrWhiteSpace(sceneName))
+        {
+            return;
+        }
+
+        gameplaySceneName = sceneName.Trim();
+    }
+
     private void BroadcastAugmentPresentation()
     {
         NetworkAugmentSelectionStatePayload payload = CreateAugmentPayload(_augmentPhaseActive);
@@ -1215,5 +1253,16 @@ public class NetworkSessionData : NetworkBehaviour
         }
 
         OnGameEndPresentationChanged?.Invoke(payload);
+    }
+
+    [ClientRpc]
+    private void BroadcastGameplaySceneNameClientRpc(string sceneName)
+    {
+        if (IsServer)
+        {
+            return;
+        }
+
+        ApplyGameplaySceneName(sceneName);
     }
 }

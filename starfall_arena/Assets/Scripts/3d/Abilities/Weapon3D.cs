@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System;
 using UnityEngine;
 
 public abstract class Weapon3D : MonoBehaviour, IReticleSpinSource3D
@@ -59,6 +60,12 @@ public abstract class Weapon3D : MonoBehaviour, IReticleSpinSource3D
     private float _currentResourceUsage;
     private float _cooldownReadyTime = float.NegativeInfinity;
     private float _lastReticleSpinPulseTime = float.NegativeInfinity;
+    private float _lastAvailabilityChangedReadyRatio = float.NaN;
+    private bool _lastAvailabilityChangedOnCooldown;
+    private bool _hasAvailabilitySnapshot;
+    private NetCombat3D _netCombat;
+
+    public event Action<Weapon3D> AvailabilityChanged;
 
     public AvailabilityMode3D AvailabilityMode => availabilityMode;
     public Entity3D Owner => owner;
@@ -68,7 +75,10 @@ public abstract class Weapon3D : MonoBehaviour, IReticleSpinSource3D
     public bool IsFireHeld => _isFireHeld;
     public float CurrentResourceUsage => _currentResourceUsage;
     public float ResourceCapacity => Mathf.Max(0f, GetConfiguredResourceCapacity());
+    public float AvailableResourceRatio => GetAvailableResourceRatio();
     public float CooldownRemaining => UsesCooldownAvailability ? Mathf.Max(0f, _cooldownReadyTime - Time.time) : 0f;
+    public float CooldownDuration => Mathf.Max(0f, GetConfiguredCooldownDuration());
+    public float CooldownReadyRatio => GetCooldownReadyRatio();
     public bool UsesResourceAvailability => availabilityMode == AvailabilityMode3D.ResourceConsumption;
     public bool UsesCooldownAvailability => availabilityMode == AvailabilityMode3D.Cooldown;
 
@@ -76,6 +86,7 @@ public abstract class Weapon3D : MonoBehaviour, IReticleSpinSource3D
     {
         owner ??= GetComponent<Entity3D>();
         shipFlight ??= GetComponent<ShipFlight3D>();
+        _netCombat ??= GetComponent<NetCombat3D>();
         aimCamera ??= Camera.main;
 
         foreach (GameObject projectilePrefab in GetPrewarmProjectilePrefabs())
@@ -90,6 +101,8 @@ public abstract class Weapon3D : MonoBehaviour, IReticleSpinSource3D
         {
             GameObjectPool3D.Prewarm(muzzleEffectPrefab, muzzleEffectPrewarmCount);
         }
+
+        CacheAvailabilitySnapshot();
     }
 
     private void Update()
@@ -102,6 +115,7 @@ public abstract class Weapon3D : MonoBehaviour, IReticleSpinSource3D
         }
 
         OnWeaponUpdated(Time.deltaTime);
+        RaiseAvailabilityChangedIfNeeded();
     }
 
     private void FixedUpdate()
@@ -148,7 +162,7 @@ public abstract class Weapon3D : MonoBehaviour, IReticleSpinSource3D
             return capacity > 0f ? Mathf.Clamp01(_currentResourceUsage / capacity) : 0f;
         }
 
-        float cooldown = Mathf.Max(0f, GetConfiguredCooldownDuration());
+        float cooldown = CooldownDuration;
         if (cooldown <= 0f || !UsesCooldownAvailability)
         {
             return 0f;
@@ -208,6 +222,32 @@ public abstract class Weapon3D : MonoBehaviour, IReticleSpinSource3D
         shipFlight = flight;
     }
 
+    public void SetAimCamera(Camera camera)
+    {
+        aimCamera = camera;
+    }
+
+    protected void SetAvailabilityMode(AvailabilityMode3D mode)
+    {
+        if (availabilityMode == mode)
+        {
+            return;
+        }
+
+        availabilityMode = mode;
+        if (availabilityMode != AvailabilityMode3D.ResourceConsumption)
+        {
+            _currentResourceUsage = 0f;
+        }
+
+        if (availabilityMode != AvailabilityMode3D.Cooldown)
+        {
+            _cooldownReadyTime = float.NegativeInfinity;
+        }
+
+        RaiseAvailabilityChangedIfNeeded(force: true);
+    }
+
     protected virtual IEnumerable<GameObject> GetPrewarmProjectilePrefabs()
     {
         yield break;
@@ -262,6 +302,7 @@ public abstract class Weapon3D : MonoBehaviour, IReticleSpinSource3D
     {
         float resolvedDuration = duration >= 0f ? duration : GetConfiguredCooldownDuration();
         _cooldownReadyTime = Time.time + Mathf.Max(0f, resolvedDuration);
+        RaiseAvailabilityChangedIfNeeded(force: true);
     }
 
     protected bool CanSpendResource(float amount)
@@ -319,10 +360,12 @@ public abstract class Weapon3D : MonoBehaviour, IReticleSpinSource3D
         if (capacity <= 0f)
         {
             _currentResourceUsage = 0f;
+            RaiseAvailabilityChangedIfNeeded(force: true);
             return;
         }
 
         _currentResourceUsage = Mathf.Clamp(amount, 0f, capacity);
+        RaiseAvailabilityChangedIfNeeded(force: true);
     }
 
     protected void RecordReticleSpinPulse()
@@ -355,11 +398,28 @@ public abstract class Weapon3D : MonoBehaviour, IReticleSpinSource3D
             return false;
         }
 
-        Transform[] muzzles = request.muzzles != null && request.muzzles.Length > 0
-            ? request.muzzles
-            : fallbackConfig.muzzles != null && fallbackConfig.muzzles.Length > 0
-                ? fallbackConfig.muzzles
-                : new[] { transform };
+        if (NetTickUtil.IsActive && _netCombat != null && _netCombat.IsSpawned)
+        {
+            return _netCombat.TryFireProjectilePattern(this, request, fallbackConfig, fireSound);
+        }
+
+        return FireProjectilePatternLocal(request, fallbackConfig, fireSound, cosmeticOnly: false, networkAuthority: null, visualType: NetProjectileVisualType3D.Primary);
+    }
+
+    internal bool FireProjectilePatternLocal(
+        ProjectileFireRequest3D request,
+        ProjectileWeaponConfig3D fallbackConfig,
+        SoundEffect fireSound,
+        bool cosmeticOnly,
+        NetCombat3D networkAuthority,
+        NetProjectileVisualType3D visualType)
+    {
+        if (request.projectilePrefab == null)
+        {
+            return false;
+        }
+
+        Transform[] muzzles = ResolveFiringMuzzles(request, fallbackConfig);
 
         string resolvedTargetTag = !string.IsNullOrEmpty(request.targetTag)
             ? request.targetTag
@@ -370,17 +430,139 @@ public abstract class Weapon3D : MonoBehaviour, IReticleSpinSource3D
         {
             Transform spawnMuzzle = muzzles[i] != null ? muzzles[i] : transform;
             SpawnMuzzleEffect(spawnMuzzle);
-            SpawnProjectile(spawnMuzzle, aim, request, resolvedTargetTag);
+            SpawnProjectile(spawnMuzzle, aim, request, resolvedTargetTag, cosmeticOnly, networkAuthority, visualType);
         }
 
-        if (shipFlight != null && request.recoilForce > 0f)
+        if (!cosmeticOnly && shipFlight != null && request.recoilForce > 0f)
         {
             shipFlight.ApplyRecoil(request.recoilForce);
+            networkAuthority?.ApplyCombatVelocityDelta(-transform.forward * request.recoilForce);
         }
 
         fireSound?.PlayAtPoint(transform.position);
         RecordReticleSpinPulse();
         return true;
+    }
+
+    internal void BuildNetworkProjectileRequests(
+        ProjectileFireRequest3D request,
+        ProjectileWeaponConfig3D fallbackConfig,
+        NetProjectileVisualType3D visualType,
+        int tick,
+        List<NetProjectileFireRequest3D> output)
+    {
+        if (output == null || request.projectilePrefab == null)
+        {
+            return;
+        }
+
+        Transform[] muzzles = ResolveFiringMuzzles(request, fallbackConfig);
+        AimSolution aim = ResolveAimSolution();
+        Vector3 inheritedVelocity = shipFlight != null ? shipFlight.LinearVelocity : Vector3.zero;
+
+        for (int i = 0; i < muzzles.Length; i++)
+        {
+            Transform spawnMuzzle = muzzles[i] != null ? muzzles[i] : transform;
+            Vector3 spawnPosition = ResolveProjectileSpawnPosition(spawnMuzzle, request);
+            Vector3 fireDirection = ResolveFireDirection(spawnMuzzle, spawnPosition, aim);
+            Quaternion spawnRotation = Quaternion.LookRotation(fireDirection, ResolveUpVector(fireDirection));
+
+            output.Add(new NetProjectileFireRequest3D
+            {
+                Tick = tick,
+                SpawnPosition = spawnPosition,
+                SpawnRotation = spawnRotation,
+                MuzzleEffectPosition = spawnMuzzle.TransformPoint(muzzleEffectLocalOffset),
+                MuzzleEffectRotation = spawnMuzzle.rotation,
+                Direction = fireDirection,
+                InheritedVelocity = inheritedVelocity,
+                Speed = request.speed,
+                Damage = request.damage,
+                Lifetime = request.lifetime,
+                ImpactForce = request.impactForce,
+                RecoilForce = request.recoilForce,
+                ApplyRecoil = request.recoilForce > 0f,
+                CanPierce = request.canPierce,
+                PierceMultiplier = request.pierceMultiplier,
+                AppliesSlow = request.appliesSlow,
+                SlowMultiplier = request.slowMultiplier,
+                SlowDuration = request.slowDuration,
+                SlowEngineEmissionScale = request.slowEngineEmissionScale,
+                VisualType = visualType
+            });
+        }
+    }
+
+    internal void SpawnNetworkProjectile(
+        GameObject projectilePrefab,
+        in NetProjectileFireRequest3D fire,
+        string targetTag,
+        bool cosmeticOnly,
+        NetCombat3D networkAuthority,
+        bool playMuzzleEffect)
+    {
+        if (projectilePrefab == null)
+        {
+            return;
+        }
+
+        if (playMuzzleEffect)
+        {
+            SpawnMuzzleEffect(fire.MuzzleEffectPosition, fire.MuzzleEffectRotation);
+        }
+
+        GameObject projectileObject = GameObjectPool3D.Spawn(projectilePrefab, fire.SpawnPosition, fire.SpawnRotation);
+        if (!projectileObject.TryGetComponent(out Projectile3D projectile))
+        {
+            Debug.LogWarning($"Projectile prefab {projectilePrefab.name} is missing Projectile3D.", projectileObject);
+            return;
+        }
+
+        projectile.targetTag = targetTag;
+        projectile.SetCosmeticOnly(cosmeticOnly);
+        projectile.SetNetworkAuthority(networkAuthority, fire.Tick);
+        projectile.SetNetworkVisualType(fire.VisualType);
+        projectile.Initialize(
+            fire.Direction,
+            fire.InheritedVelocity,
+            fire.Speed,
+            fire.Damage,
+            fire.Lifetime,
+            fire.ImpactForce,
+            owner);
+
+        if (fire.CanPierce)
+        {
+            if (projectile is GigaBlastProjectile3D gigaBlastProjectile)
+            {
+                gigaBlastProjectile.EnablePiercing(fire.PierceMultiplier);
+            }
+        }
+
+        if (fire.AppliesSlow)
+        {
+            projectile.EnableSlow(fire.SlowMultiplier, fire.SlowDuration, fire.SlowEngineEmissionScale);
+        }
+    }
+
+    private Transform[] ResolveFiringMuzzles(ProjectileFireRequest3D request, ProjectileWeaponConfig3D fallbackConfig)
+    {
+        if (request.muzzles != null && request.muzzles.Length > 0)
+        {
+            return request.muzzles;
+        }
+
+        if (request.spawnAnchor != null)
+        {
+            return new[] { request.spawnAnchor };
+        }
+
+        if (fallbackConfig.muzzles != null && fallbackConfig.muzzles.Length > 0)
+        {
+            return fallbackConfig.muzzles;
+        }
+
+        return new[] { transform };
     }
 
     private void RecoverResource(float deltaTime)
@@ -399,11 +581,18 @@ public abstract class Weapon3D : MonoBehaviour, IReticleSpinSource3D
         SetResourceUsage(_currentResourceUsage - (recoveryRate * deltaTime));
     }
 
-    private void SpawnProjectile(Transform muzzle, AimSolution aim, ProjectileFireRequest3D request, string targetTag)
+    private void SpawnProjectile(
+        Transform muzzle,
+        AimSolution aim,
+        ProjectileFireRequest3D request,
+        string targetTag,
+        bool cosmeticOnly,
+        NetCombat3D networkAuthority,
+        NetProjectileVisualType3D visualType)
     {
         Vector3 spawnPosition = ResolveProjectileSpawnPosition(muzzle, request);
         Vector3 fireDirection = ResolveFireDirection(muzzle, spawnPosition, aim);
-        GameObject projectileObject = GameObjectPool3D.Spawn(request.projectilePrefab, spawnPosition, Quaternion.LookRotation(fireDirection, transform.up));
+        GameObject projectileObject = GameObjectPool3D.Spawn(request.projectilePrefab, spawnPosition, Quaternion.LookRotation(fireDirection, ResolveUpVector(fireDirection)));
         if (!projectileObject.TryGetComponent(out Projectile3D projectile))
         {
             Debug.LogWarning($"Projectile prefab {request.projectilePrefab.name} is missing Projectile3D.", projectileObject);
@@ -412,6 +601,9 @@ public abstract class Weapon3D : MonoBehaviour, IReticleSpinSource3D
 
         Vector3 inheritedVelocity = shipFlight != null ? shipFlight.LinearVelocity : Vector3.zero;
         projectile.targetTag = targetTag;
+        projectile.SetCosmeticOnly(cosmeticOnly);
+        projectile.SetNetworkAuthority(networkAuthority, NetTickUtil.IsActive ? NetTickUtil.CurrentTick : -1);
+        projectile.SetNetworkVisualType(visualType);
         projectile.Initialize(
             fireDirection,
             inheritedVelocity,
@@ -421,6 +613,20 @@ public abstract class Weapon3D : MonoBehaviour, IReticleSpinSource3D
             request.impactForce,
             owner
         );
+
+        if (request.canPierce)
+        {
+            if (projectile is GigaBlastProjectile3D gigaBlastProjectile)
+            {
+                gigaBlastProjectile.EnablePiercing(request.pierceMultiplier);
+            }
+        }
+
+        if (request.appliesSlow)
+        {
+            projectile.EnableSlow(request.slowMultiplier, request.slowDuration, request.slowEngineEmissionScale);
+        }
+
         request.onProjectileSpawned?.Invoke(projectile);
     }
 
@@ -505,5 +711,86 @@ public abstract class Weapon3D : MonoBehaviour, IReticleSpinSource3D
         {
             pooled.ScheduleDespawn(muzzleEffectLifetime);
         }
+    }
+
+    private void SpawnMuzzleEffect(Vector3 position, Quaternion rotation)
+    {
+        if (muzzleEffectPrefab == null)
+        {
+            return;
+        }
+
+        GameObject effectObject = GameObjectPool3D.Spawn(muzzleEffectPrefab, position, rotation);
+        PooledObject3D pooled = effectObject != null ? effectObject.GetComponent<PooledObject3D>() : null;
+        if (pooled != null)
+        {
+            pooled.ScheduleDespawn(muzzleEffectLifetime);
+        }
+    }
+
+    private Vector3 ResolveUpVector(Vector3 direction)
+    {
+        Vector3 up = transform.up;
+        if (up.sqrMagnitude <= 0.0001f || Mathf.Abs(Vector3.Dot(up.normalized, direction.normalized)) > 0.995f)
+        {
+            up = Vector3.up;
+        }
+
+        return up;
+    }
+
+    private float GetAvailableResourceRatio()
+    {
+        float capacity = ResourceCapacity;
+        if (capacity <= 0f)
+        {
+            return 0f;
+        }
+
+        return Mathf.Clamp01(1f - (_currentResourceUsage / capacity));
+    }
+
+    private float GetCooldownReadyRatio()
+    {
+        if (!UsesCooldownAvailability)
+        {
+            return 1f;
+        }
+
+        float cooldown = CooldownDuration;
+        if (cooldown <= 0f)
+        {
+            return 1f;
+        }
+
+        return Mathf.Clamp01(1f - (CooldownRemaining / cooldown));
+    }
+
+    private void CacheAvailabilitySnapshot()
+    {
+        _lastAvailabilityChangedReadyRatio = UsesCooldownAvailability ? CooldownReadyRatio : GetAvailableResourceRatio();
+        _lastAvailabilityChangedOnCooldown = UsesCooldownAvailability && IsOnCooldown();
+        _hasAvailabilitySnapshot = true;
+    }
+
+    private void RaiseAvailabilityChangedIfNeeded(bool force = false)
+    {
+        float currentReadyRatio = UsesCooldownAvailability ? CooldownReadyRatio : GetAvailableResourceRatio();
+        bool isOnCooldown = UsesCooldownAvailability && IsOnCooldown();
+
+        if (!force && _hasAvailabilitySnapshot)
+        {
+            bool ratioUnchanged = Mathf.Abs(currentReadyRatio - _lastAvailabilityChangedReadyRatio) <= 0.0001f;
+            bool cooldownStateUnchanged = isOnCooldown == _lastAvailabilityChangedOnCooldown;
+            if (ratioUnchanged && cooldownStateUnchanged)
+            {
+                return;
+            }
+        }
+
+        _lastAvailabilityChangedReadyRatio = currentReadyRatio;
+        _lastAvailabilityChangedOnCooldown = isOnCooldown;
+        _hasAvailabilitySnapshot = true;
+        AvailabilityChanged?.Invoke(this);
     }
 }

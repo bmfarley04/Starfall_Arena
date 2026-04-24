@@ -22,6 +22,7 @@ public class ProjectileWeapon3D : Weapon3D
     private float _nextFireTime = float.NegativeInfinity;
 
     public ProjectileWeaponConfig3D WeaponConfig => weaponConfig;
+    public SoundEffect NetworkFireSound => fireSound;
 
     public void SetWeaponConfig(ProjectileWeaponConfig3D config)
     {
