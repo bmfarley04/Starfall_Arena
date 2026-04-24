@@ -1837,8 +1837,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerLowHealthVignetteHUD3D
   hudManager: {fileID: 1779300723}
   vignetteImage: {fileID: 520383361}
-  vignetteColor: {r: 1, g: 0.28235295, b: 0.28235295, a: 1}
-  maxAlpha: 0.5
+  vignetteColor: {r: 1, g: 0.28235295, b: 0.28235295, a: 0.5647059}
+  maxAlpha: 0.4
   lowHealthThreshold: 0.5
   shieldActiveThreshold: 0.001
   fadeInSpeed: 3
@@ -1867,6 +1867,8 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+  pulseSpeed: 0.5
+  pulseIntensity: 0.2
   alwaysOnPreview: 0
   previewIntensity: 1
 --- !u!1 &561045209
