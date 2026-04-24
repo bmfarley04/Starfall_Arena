@@ -7160,10 +7160,10 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   m_Sprite: {fileID: 21300000, guid: c71af98e64c495a48b9a381119d50a8d, type: 3}
-  m_Type: 0
+  m_Type: 3
   m_PreserveAspect: 1
   m_FillCenter: 1
-  m_FillMethod: 4
+  m_FillMethod: 0
   m_FillAmount: 1
   m_FillClockwise: 1
   m_FillOrigin: 0
@@ -9081,13 +9081,13 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   m_Sprite: {fileID: 21300000, guid: c71af98e64c495a48b9a381119d50a8d, type: 3}
-  m_Type: 0
+  m_Type: 3
   m_PreserveAspect: 1
   m_FillCenter: 1
-  m_FillMethod: 4
+  m_FillMethod: 0
   m_FillAmount: 1
   m_FillClockwise: 1
-  m_FillOrigin: 0
+  m_FillOrigin: 1
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
 --- !u!222 &1700731469
@@ -9746,9 +9746,11 @@ MonoBehaviour:
   healthBar:
     fillImage: {fileID: 1192998168}
     segmentedBar: {fileID: 0}
+    autoConfigureFillImage: 0
   shieldBar:
     fillImage: {fileID: 1700731468}
     segmentedBar: {fileID: 0}
+    autoConfigureFillImage: 0
   positionSmoothing: 18
   scaleSmoothing: 14
   fadeSmoothing: 12

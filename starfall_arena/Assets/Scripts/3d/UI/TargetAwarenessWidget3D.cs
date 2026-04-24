@@ -33,6 +33,8 @@ public class TargetAwarenessWidget3D : MonoBehaviour
         public Image fillImage;
         [Tooltip("Optional segmented bar for authored segmented HUD visuals.")]
         public SegmentedBar segmentedBar;
+        [Tooltip("If enabled, this widget configures the assigned Image as a left-to-right filled bar at runtime so fillAmount visibly updates.")]
+        public bool autoConfigureFillImage;
     }
 
     [Header("Groups")]
@@ -84,8 +86,8 @@ public class TargetAwarenessWidget3D : MonoBehaviour
         _shieldCanvasGroup = EnsureCanvasGroup(shieldBarGroup);
         CacheBarBasePositions();
 
-        InitializeBar(healthBar);
-        InitializeBar(shieldBar);
+        InitializeBar(ref healthBar);
+        InitializeBar(ref shieldBar);
         ApplyHiddenImmediate();
     }
 
@@ -219,6 +221,7 @@ public class TargetAwarenessWidget3D : MonoBehaviour
         float clamped = Mathf.Clamp01(value01);
         if (binding.fillImage != null)
         {
+            ConfigureFillImageIfNeeded(binding);
             binding.fillImage.fillAmount = clamped;
         }
 
@@ -228,12 +231,36 @@ public class TargetAwarenessWidget3D : MonoBehaviour
         }
     }
 
-    private static void InitializeBar(BarBinding3D binding)
+    private static void InitializeBar(ref BarBinding3D binding)
     {
+        if (binding.fillImage != null)
+        {
+            if (!binding.autoConfigureFillImage && binding.fillImage.type != Image.Type.Filled)
+            {
+                binding.autoConfigureFillImage = true;
+            }
+
+            ConfigureFillImageIfNeeded(binding);
+            binding.fillImage.fillAmount = 1f;
+        }
+
         if (binding.segmentedBar != null)
         {
             binding.segmentedBar.InitializeBar(1f, 1f);
         }
+    }
+
+    private static void ConfigureFillImageIfNeeded(BarBinding3D binding)
+    {
+        if (!binding.autoConfigureFillImage || binding.fillImage == null)
+        {
+            return;
+        }
+
+        binding.fillImage.type = Image.Type.Filled;
+        binding.fillImage.fillMethod = Image.FillMethod.Horizontal;
+        binding.fillImage.fillOrigin = 0;
+        binding.fillImage.fillClockwise = true;
     }
 
     private void SetGroupAlpha(CanvasGroup group, float targetAlpha, float deltaTime)
