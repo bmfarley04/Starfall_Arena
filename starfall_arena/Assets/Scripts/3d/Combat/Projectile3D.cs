@@ -46,6 +46,7 @@ public class Projectile3D : MonoBehaviour, IPooledObject3D
     protected NetCombat3D _networkAuthority;
     protected int _requestedFireTick = -1;
     protected int _spawnServerTick = -1;
+    protected int _accuracyAttackId = PlayerCombatStats3D.InvalidAttackId;
     protected bool _isCosmeticOnly;
     protected NetProjectileVisualType3D _visualType = NetProjectileVisualType3D.Primary;
 
@@ -96,13 +97,14 @@ public class Projectile3D : MonoBehaviour, IPooledObject3D
         transform.position = origin + step;
     }
 
-    public virtual void Initialize(Vector3 direction, Vector3 shipVelocity, float speed, float damage, float lifetime, float impactForce, Entity3D shooter = null)
+    public virtual void Initialize(Vector3 direction, Vector3 shipVelocity, float speed, float damage, float lifetime, float impactForce, Entity3D shooter = null, int accuracyAttackId = PlayerCombatStats3D.InvalidAttackId)
     {
         _damage = damage;
         _lifetime = lifetime;
         _impactForce = impactForce;
         _direction = direction.normalized;
         _shooter = shooter;
+        _accuracyAttackId = accuracyAttackId;
         _velocity = (_direction * speed) + shipVelocity;
         _age = 0f;
         _appliesSlow = false;
@@ -146,6 +148,7 @@ public class Projectile3D : MonoBehaviour, IPooledObject3D
         _networkAuthority = null;
         _requestedFireTick = -1;
         _spawnServerTick = -1;
+        _accuracyAttackId = PlayerCombatStats3D.InvalidAttackId;
         _isCosmeticOnly = false;
         _visualType = NetProjectileVisualType3D.Primary;
     }
@@ -161,6 +164,7 @@ public class Projectile3D : MonoBehaviour, IPooledObject3D
         _networkAuthority = null;
         _requestedFireTick = -1;
         _spawnServerTick = -1;
+        _accuracyAttackId = PlayerCombatStats3D.InvalidAttackId;
         _isCosmeticOnly = false;
         _visualType = NetProjectileVisualType3D.Primary;
     }
@@ -172,7 +176,7 @@ public class Projectile3D : MonoBehaviour, IPooledObject3D
             return;
         }
 
-        damageable.TakeDamage(_damage, hitPoint, _shooter, DamageSource3D.Projectile);
+        damageable.TakeDamage(_damage, hitPoint, _shooter, DamageSource3D.Projectile, _accuracyAttackId);
         ApplyImpactForce(collider);
     }
 

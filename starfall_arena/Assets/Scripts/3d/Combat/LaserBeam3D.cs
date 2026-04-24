@@ -39,6 +39,7 @@ public class LaserBeam3D : MonoBehaviour
     private NetCombat3D _networkAuthority;
     private bool _hasNetworkAim;
     private Vector3 _networkAimDirection;
+    private int _accuracyAttackId = PlayerCombatStats3D.InvalidAttackId;
     private float _anchorOffset;
     private float _verticalOffset;
     private float _timeSinceLastShieldHit;
@@ -84,6 +85,11 @@ public class LaserBeam3D : MonoBehaviour
     public void SetNetworkAuthority(NetCombat3D networkAuthority)
     {
         _networkAuthority = networkAuthority;
+    }
+
+    public void SetAccuracyAttackId(int attackId)
+    {
+        _accuracyAttackId = attackId;
     }
 
     public void SetNetworkAim(Vector3 direction)
@@ -197,7 +203,7 @@ public class LaserBeam3D : MonoBehaviour
                 if (CanApplyGameplay())
                 {
                     float damageThisFrame = _damagePerSecond * Time.deltaTime;
-                    damageable.TakeDamage(damageThisFrame, hit.point, _shooter, DamageSource3D.Beam);
+                    damageable.TakeDamage(damageThisFrame, hit.point, _shooter, DamageSource3D.Beam, _accuracyAttackId);
 
                     Rigidbody targetRb = hit.collider.attachedRigidbody;
                     if (targetRb != null && _impactForce > 0f)

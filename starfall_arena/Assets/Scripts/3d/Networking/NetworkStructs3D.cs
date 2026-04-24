@@ -91,6 +91,7 @@ public struct NetProjectileFireRequest3D : INetworkSerializable
     public float SlowDuration;
     public float SlowEngineEmissionScale;
     public NetProjectileVisualType3D VisualType;
+    public int AccuracyAttackId;
 
     public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
     {
@@ -114,6 +115,7 @@ public struct NetProjectileFireRequest3D : INetworkSerializable
         serializer.SerializeValue(ref SlowDuration);
         serializer.SerializeValue(ref SlowEngineEmissionScale);
         serializer.SerializeValue(ref VisualType);
+        serializer.SerializeValue(ref AccuracyAttackId);
     }
 }
 

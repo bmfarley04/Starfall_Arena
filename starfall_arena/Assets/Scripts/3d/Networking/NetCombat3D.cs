@@ -391,7 +391,7 @@ public class NetCombat3D : NetworkBehaviour
         {
             beam.ApplyNetworkBeamAim(state.AimDirection);
         }
-        beam.ApplyNetworkBeamState(state.IsFiring, authoritative: true);
+        beam.ApplyNetworkBeamState(state.IsFiring, authoritative: true, state.Tick);
         BroadcastBeamStateClientRpc(state);
     }
 
@@ -413,7 +413,7 @@ public class NetCombat3D : NetworkBehaviour
         {
             beam.ApplyNetworkBeamAim(state.AimDirection);
         }
-        beam.ApplyNetworkBeamState(state.IsFiring, authoritative: false);
+        beam.ApplyNetworkBeamState(state.IsFiring, authoritative: false, PlayerCombatStats3D.InvalidAttackId);
     }
 
     [ServerRpc]
@@ -655,7 +655,8 @@ public class NetCombat3D : NetworkBehaviour
             Damage = data.Damage,
             Lifetime = data.Lifetime,
             ImpactForce = data.ImpactForce,
-            VisualType = data.VisualType
+            VisualType = data.VisualType,
+            AccuracyAttackId = PlayerCombatStats3D.InvalidAttackId
         };
 
         sourceWeapon.SpawnNetworkProjectile(projectilePrefab, fire, ResolveEnemyTag(), cosmeticOnly: true, networkAuthority: null, playMuzzleEffect: false);

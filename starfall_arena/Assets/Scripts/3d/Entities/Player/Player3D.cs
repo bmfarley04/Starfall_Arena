@@ -138,13 +138,18 @@ public class Player3D : Entity3D
         ApplySplitStatePresentation();
     }
 
-    public override void TakeDamage(float damage, Vector3 hitPoint, Entity3D attacker = null, DamageSource3D source = DamageSource3D.Projectile)
+    public override void TakeDamage(
+        float damage,
+        Vector3 hitPoint,
+        Entity3D attacker = null,
+        DamageSource3D source = DamageSource3D.Projectile,
+        int accuracyAttackId = PlayerCombatStats3D.InvalidAttackId)
     {
         _lastShieldHitTime = Time.time;
         float previousShield = currentShield;
         float previousHealth = currentHealth;
 
-        base.TakeDamage(damage, hitPoint, attacker, source);
+        base.TakeDamage(damage, hitPoint, attacker, source, accuracyAttackId);
 
         float shieldDamageTaken = Mathf.Max(0f, previousShield - currentShield);
         float hullDamageTaken = Mathf.Max(0f, previousHealth - currentHealth);
@@ -278,10 +283,14 @@ public class Player3D : Entity3D
         }
     }
 
-    public override void TakeDirectDamage(float damage, Vector3 hitPoint, Entity3D attacker = null)
+    public override void TakeDirectDamage(
+        float damage,
+        Vector3 hitPoint,
+        Entity3D attacker = null,
+        int accuracyAttackId = PlayerCombatStats3D.InvalidAttackId)
     {
         _lastShieldHitTime = Time.time;
-        base.TakeDirectDamage(damage, hitPoint, attacker);
+        base.TakeDirectDamage(damage, hitPoint, attacker, accuracyAttackId);
     }
 
     public void UnbindHUD(PlayerHUDManager3D hud)

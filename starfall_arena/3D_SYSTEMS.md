@@ -95,6 +95,7 @@ These classes should stay narrow and mostly coordinate dedicated 3D systems.
 - `PlayerCombatStats3D`
   - lightweight 3D combat-stat counter attached to spawned 3D players by `SceneManager3D`
   - tracks shots fired, shots hit, damage dealt, and damage taken for shared round-end/game-end UI
+  - uses tracked attack ids so one trigger pull, beam activation, or multi-muzzle volley counts as one accuracy attempt and at most one hit
   - records stats only on the gameplay-authoritative side, which is the server during networked matches
 - `PlayerHUDManager3D`
   - shared local-player binding source for scene HUD objects in the 3D path

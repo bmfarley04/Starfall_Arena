@@ -1,13 +1,20 @@
+using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
 
 [DisallowMultipleComponent]
 public class PlayerCombatStats3D : MonoBehaviour
 {
+    public const int InvalidAttackId = -1;
+
     public int shotsFired;
     public int shotsHit;
     public float damageDealt;
     public float damageTaken;
+
+    private int _nextAttackId = 1;
+    private readonly HashSet<int> _registeredFiredAttackIds = new HashSet<int>();
+    private readonly HashSet<int> _registeredHitAttackIds = new HashSet<int>();
 
     public void ResetStats()
     {
@@ -15,6 +22,9 @@ public class PlayerCombatStats3D : MonoBehaviour
         shotsHit = 0;
         damageDealt = 0f;
         damageTaken = 0f;
+        _nextAttackId = 1;
+        _registeredFiredAttackIds.Clear();
+        _registeredHitAttackIds.Clear();
     }
 
     public bool HasStatsAuthority()
@@ -38,6 +48,31 @@ public class PlayerCombatStats3D : MonoBehaviour
         shotsFired += count;
     }
 
+    public int BeginTrackedAttack(bool countsTowardAccuracy = true)
+    {
+        if (!countsTowardAccuracy || !HasStatsAuthority())
+        {
+            return InvalidAttackId;
+        }
+
+        int attackId = _nextAttackId++;
+        RecordTrackedAttackFired(attackId);
+        return attackId;
+    }
+
+    public void RecordTrackedAttackFired(int attackId)
+    {
+        if (!HasStatsAuthority() || attackId == InvalidAttackId)
+        {
+            return;
+        }
+
+        if (_registeredFiredAttackIds.Add(attackId))
+        {
+            shotsFired++;
+        }
+    }
+
     public void RecordShotHit()
     {
         if (!HasStatsAuthority())
@@ -46,6 +81,19 @@ public class PlayerCombatStats3D : MonoBehaviour
         }
 
         shotsHit++;
+    }
+
+    public void RegisterAttackHit(int attackId)
+    {
+        if (!HasStatsAuthority() || attackId == InvalidAttackId)
+        {
+            return;
+        }
+
+        if (_registeredHitAttackIds.Add(attackId))
+        {
+            shotsHit++;
+        }
     }
 
     public void RecordDamageDealt(float amount)
