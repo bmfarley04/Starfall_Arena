@@ -15,8 +15,9 @@ MonoBehaviour:
   icon: {fileID: 21300000, guid: 0459b828ff870504e8be567b018306f3, type: 3}
   augmentName: Evasion
   description: Small chance to ignore shield or health damage when hit.
-  augmentID: Evasion
+  _augmentID: Evasion
   rounds: -1
-  playerReference: {fileID: 0}
+  successfulEvadeSound: {fileID: 0}
+  successfulEvadePrefab: {fileID: 8595475238803380239, guid: dacf27a6ab7d1534fb2e5cff412061f4, type: 3}
   shieldIgnoreChance: 0.05
   healthIgnoreChance: 0.1

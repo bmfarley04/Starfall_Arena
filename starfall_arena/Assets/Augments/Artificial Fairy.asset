@@ -18,7 +18,7 @@ MonoBehaviour:
     breaks.
   _augmentID: Artificial Fairy
   rounds: -1
-  reviveFlashPrefab: {fileID: 0}
+  reviveFlashPrefab: {fileID: 8595475238803380239, guid: d58293503e5dd0d49a87efb3e13a19fb, type: 3}
   intangibleDuration: 1.1
   reassemblyDuration: 1
   healFraction: 0.75
