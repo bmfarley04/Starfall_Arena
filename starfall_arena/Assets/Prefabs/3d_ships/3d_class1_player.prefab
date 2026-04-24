@@ -1274,6 +1274,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::GigablastChargeEdgeGlow3D
   player: {fileID: 1753171253810675368}
   gigaBlast: {fileID: 0}
+  vignetteImage: {fileID: 0}
   edgeColor: {r: 0.2, g: 0.6, b: 1, a: 1}
   useTierColors: 1
   tierColors:
@@ -1281,17 +1282,7 @@ MonoBehaviour:
     tier2Color: {r: 1.2727598, g: 1.4491552, b: 2.0136201, a: 1}
     tier3Color: {r: 1.3548113, g: 2.0813046, b: 1.5511608, a: 1}
     tier4Color: {r: 1.5136858, g: 1.1325613, b: 1.9467814, a: 1}
-  coreThicknessMin: 0.01
-  coreThicknessMax: 0.03
-  coreSoftness: 1
-  coreIntensity: 0
-  haloThicknessMin: 0.045
-  haloThicknessMax: 0.12
-  haloSoftness: 1
-  haloIntensity: 0.01
-  cornerBoost: 0.22
-  edgeBiasHorizontal: 1
-  edgeBiasVertical: 0.85
+  maxAlpha: 0.5
   fadeInSpeed: 3
   fadeOutSpeed: 4
   chargeRemap:

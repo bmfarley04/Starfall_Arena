@@ -11366,7 +11366,7 @@ MonoBehaviour:
     screenCenterDirectionBlend: 0.35
     pullSpeed: 20
     freezeTargetMovement: 1
-    stopDistance: 15
+    stopDistance: 10
     spawnPoint: {fileID: 44811053698406041}
     visualRoot: {fileID: 2215668062343084882}
     alignVisualToConeDirection: 1

@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.UI;
 
 [DisallowMultipleComponent]
 [RequireComponent(typeof(PlayerCameraRig3D))]
@@ -13,17 +14,10 @@ public class GigablastChargeEdgeGlow3D : MonoBehaviour
         [ColorUsage(true, true)] public Color tier4Color;
     }
 
-    private static readonly int EdgeColorId = Shader.PropertyToID("_GigablastEdgeGlow_EdgeColor");
-    private static readonly int Params1Id = Shader.PropertyToID("_GigablastEdgeGlow_Params1");
-    private static readonly int Params2Id = Shader.PropertyToID("_GigablastEdgeGlow_Params2");
-    private static readonly int Params3Id = Shader.PropertyToID("_GigablastEdgeGlow_Params3");
-
-    private static bool s_HasOwner;
-    private static int s_OwnerId;
-
     [Header("References")]
     [SerializeField] private Player3D player;
     [SerializeField] private GigaBlastWeapon3D gigaBlast;
+    [SerializeField] private Image vignetteImage;
 
     [Header("Glow")]
     [ColorUsage(true, true)]
@@ -37,22 +31,8 @@ public class GigablastChargeEdgeGlow3D : MonoBehaviour
         tier4Color = new Color(1f, 0.82f, 0.45f, 1f)
     };
 
-    [Header("Core Border")]
-    [SerializeField, Range(0f, 0.25f)] private float coreThicknessMin = 0.01f;
-    [SerializeField, Range(0f, 0.25f)] private float coreThicknessMax = 0.03f;
-    [SerializeField, Min(0.001f)] private float coreSoftness = 0.012f;
-    [SerializeField, Min(0f)] private float coreIntensity = 2.6f;
-
-    [Header("Halo")]
-    [SerializeField, Range(0f, 0.3f)] private float haloThicknessMin = 0.045f;
-    [SerializeField, Range(0f, 0.3f)] private float haloThicknessMax = 0.12f;
-    [SerializeField, Min(0.001f)] private float haloSoftness = 0.08f;
-    [SerializeField, Min(0f)] private float haloIntensity = 1.1f;
-
-    [Header("Shape")]
-    [SerializeField, Range(0f, 1f)] private float cornerBoost = 0.22f;
-    [SerializeField, Min(0.01f)] private float edgeBiasHorizontal = 1f;
-    [SerializeField, Min(0.01f)] private float edgeBiasVertical = 0.85f;
+    [Header("Vignette")]
+    [SerializeField, Range(0f, 1f)] private float maxAlpha = 0.5f;
 
     [Header("Charge Response")]
     [SerializeField, Min(0.01f)] private float fadeInSpeed = 3f;
@@ -73,10 +53,7 @@ public class GigablastChargeEdgeGlow3D : MonoBehaviour
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void ResetStaticState()
     {
-        s_HasOwner = false;
-        s_OwnerId = 0;
         IsEffectVisible = false;
-        ResetShaderGlobals();
     }
 
     private void Reset()
@@ -91,32 +68,21 @@ public class GigablastChargeEdgeGlow3D : MonoBehaviour
 
     private void OnEnable()
     {
-        if (!TryClaimOwnership())
-        {
-            enabled = false;
-            return;
-        }
-
         ResolveReferences();
         _currentCharge = 0f;
         _currentEdgeColor = ResolveTierColor(0);
-        ApplyShaderGlobals(0f);
+        ApplyVignette(0f);
     }
 
     private void Update()
     {
-        if (!OwnsEffect())
-        {
-            return;
-        }
-
         if (gigaBlast == null)
         {
             ResolveReferences();
             if (gigaBlast == null)
             {
                 WarnMissingGigablast();
-                ApplyShaderGlobals(0f);
+                ApplyVignette(0f);
                 return;
             }
         }
@@ -124,37 +90,24 @@ public class GigablastChargeEdgeGlow3D : MonoBehaviour
         float targetCharge = gigaBlast.IsCharging ? EvaluateCharge(gigaBlast.NormalizedChargeProgress) : 0f;
         float speed = gigaBlast.IsCharging ? fadeInSpeed : fadeOutSpeed;
         _currentCharge = Mathf.MoveTowards(_currentCharge, targetCharge, speed * Time.deltaTime);
+
         Color targetColor = ResolveTierColor(gigaBlast.IsCharging ? gigaBlast.CurrentChargeTier : 0);
         _currentEdgeColor = Color.Lerp(_currentEdgeColor, targetColor, 1f - Mathf.Exp(-speed * Time.deltaTime));
-        ApplyShaderGlobals(_currentCharge);
+
+        ApplyVignette(_currentCharge);
     }
 
     private void OnDisable()
     {
-        if (OwnsEffect())
-        {
-            ReleaseOwnership();
-        }
-    }
-
-    private void OnDestroy()
-    {
-        if (OwnsEffect())
-        {
-            ReleaseOwnership();
-        }
+        ApplyVignette(0f);
+        IsEffectVisible = false;
     }
 
     private void ResolveReferences()
     {
         player ??= GetComponent<Player3D>();
 
-        if (gigaBlast != null)
-        {
-            return;
-        }
-
-        if (player != null)
+        if (gigaBlast == null && player != null)
         {
             Weapon3D[] weapons = player.Weapons;
             for (int i = 0; i < weapons.Length; i++)
@@ -162,12 +115,12 @@ public class GigablastChargeEdgeGlow3D : MonoBehaviour
                 if (weapons[i] is GigaBlastWeapon3D gigaBlastWeapon)
                 {
                     gigaBlast = gigaBlastWeapon;
-                    return;
+                    break;
                 }
             }
         }
 
-        gigaBlast = GetComponent<GigaBlastWeapon3D>();
+        gigaBlast ??= GetComponent<GigaBlastWeapon3D>();
     }
 
     private float EvaluateCharge(float normalizedCharge)
@@ -181,84 +134,27 @@ public class GigablastChargeEdgeGlow3D : MonoBehaviour
         return Mathf.Clamp01(chargeRemap.Evaluate(normalizedCharge));
     }
 
-    private void ApplyShaderGlobals(float charge)
+    private void ApplyVignette(float charge)
     {
         charge = Mathf.Clamp01(charge);
-        float pulse = 1f;
-        if (pulseWhileCharging && charge > 0f)
-        {
-            float pulseWeight = Mathf.Clamp01(charge);
-            pulse += Mathf.Sin(Time.time * pulseSpeed) * pulseAmplitude * pulseWeight;
-        }
+        IsEffectVisible = charge > 0.0001f;
 
-        Shader.SetGlobalColor(EdgeColorId, _currentEdgeColor);
-        Shader.SetGlobalVector(Params1Id, new Vector4(
-            charge,
-            coreThicknessMin,
-            coreThicknessMax,
-            Mathf.Max(0.001f, coreSoftness)));
-        Shader.SetGlobalVector(Params2Id, new Vector4(
-            haloThicknessMin,
-            haloThicknessMax,
-            Mathf.Max(0.001f, haloSoftness),
-            Mathf.Max(0f, coreIntensity) * pulse));
-        Shader.SetGlobalVector(Params3Id, new Vector4(
-            Mathf.Max(0f, haloIntensity) * pulse,
-            Mathf.Max(0f, cornerBoost),
-            Mathf.Max(0.01f, edgeBiasHorizontal),
-            Mathf.Max(0.01f, edgeBiasVertical)));
-        IsEffectVisible = charge > 0.0001f && (coreIntensity > 0.0001f || haloIntensity > 0.0001f);
-    }
-
-    private bool TryClaimOwnership()
-    {
-        int ownerId = GetInstanceID();
-        if (s_HasOwner && s_OwnerId != ownerId)
-        {
-            Debug.LogWarning(
-                "GigablastChargeEdgeGlow3D disabled itself because another instance already owns the fullscreen edge glow. " +
-                "This effect must stay on the local 3D camera path only.",
-                this);
-            return false;
-        }
-
-        s_HasOwner = true;
-        s_OwnerId = ownerId;
-        return true;
-    }
-
-    private bool OwnsEffect()
-    {
-        return s_HasOwner && s_OwnerId == GetInstanceID();
-    }
-
-    private void ReleaseOwnership()
-    {
-        ResetShaderGlobals();
-        s_HasOwner = false;
-        s_OwnerId = 0;
-        IsEffectVisible = false;
-    }
-
-    private static void ResetShaderGlobals()
-    {
-        Shader.SetGlobalColor(EdgeColorId, Color.black);
-        Shader.SetGlobalVector(Params1Id, Vector4.zero);
-        Shader.SetGlobalVector(Params2Id, Vector4.zero);
-        Shader.SetGlobalVector(Params3Id, Vector4.zero);
-    }
-
-    private void WarnMissingGigablast()
-    {
-        if (_warnedMissingGigablast)
+        if (vignetteImage == null)
         {
             return;
         }
 
-        _warnedMissingGigablast = true;
-        Debug.LogWarning(
-            "GigablastChargeEdgeGlow3D could not find a GigaBlastWeapon3D source. Assign the weapon directly or keep the component on the same player object as Player3D.",
-            this);
+        float alpha = charge * Mathf.Clamp01(maxAlpha);
+
+        if (pulseWhileCharging && charge > 0f)
+        {
+            float pulse = Mathf.Sin(Time.time * pulseSpeed) * pulseAmplitude * charge;
+            alpha = Mathf.Clamp01(alpha + pulse * Mathf.Clamp01(maxAlpha));
+        }
+
+        Color c = _currentEdgeColor;
+        c.a = alpha;
+        vignetteImage.color = c;
     }
 
     private Color ResolveTierColor(int tier)
@@ -276,5 +172,18 @@ public class GigablastChargeEdgeGlow3D : MonoBehaviour
             4 => tierColors.tier4Color,
             _ => edgeColor
         };
+    }
+
+    private void WarnMissingGigablast()
+    {
+        if (_warnedMissingGigablast)
+        {
+            return;
+        }
+
+        _warnedMissingGigablast = true;
+        Debug.LogWarning(
+            "GigablastChargeEdgeGlow3D could not find a GigaBlastWeapon3D source. Assign the weapon directly or keep the component on the same player object as Player3D.",
+            this);
     }
 }

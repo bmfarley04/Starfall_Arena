@@ -1798,7 +1798,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 0.27987415, b: 0.27987415, a: 0.46666667}
+  m_Color: {r: 1, g: 0.27987415, b: 0.27987415, a: 0.23921569}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -1837,8 +1837,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerLowHealthVignetteHUD3D
   hudManager: {fileID: 1779300723}
   vignetteImage: {fileID: 520383361}
-  vignetteColor: {r: 1, g: 0.28235295, b: 0.28235295, a: 0.5647059}
-  maxAlpha: 0.4
+  vignetteColor: {r: 1, g: 0.28235295, b: 0.28235295, a: 0.6431373}
+  maxAlpha: 0.25
   lowHealthThreshold: 0.5
   shieldActiveThreshold: 0.001
   fadeInSpeed: 3
