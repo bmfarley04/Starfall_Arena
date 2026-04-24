@@ -50,7 +50,7 @@ public class Class2Shield3D : Ability3D, IProjectileImpactHandler3D
 
         shieldLoopAudioSource.playOnAwake = false;
         shieldLoopAudioSource.loop = true;
-        shieldLoopAudioSource.spatialBlend = 0f;
+        shieldLoopAudioSource.spatialBlend = 1f;
     }
 
     public override bool TryUseAbility(InputValue value)

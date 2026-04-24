@@ -211,14 +211,14 @@ public class Player3D : Entity3D
             AudioSource source = gameObject.AddComponent<AudioSource>();
             source.playOnAwake = false;
             source.loop = false;
-            source.spatialBlend = 0f;
+            source.spatialBlend = 1f;
             _audioSourcePool[i] = source;
         }
 
         _beamHitLoopSource = gameObject.AddComponent<AudioSource>();
         _beamHitLoopSource.playOnAwake = false;
         _beamHitLoopSource.loop = true;
-        _beamHitLoopSource.spatialBlend = 0f;
+        _beamHitLoopSource.spatialBlend = 1f;
     }
 
     private AudioSource GetAvailableAudioSource()

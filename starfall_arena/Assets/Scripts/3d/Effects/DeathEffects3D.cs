@@ -19,7 +19,6 @@ public class DeathEffects3D : MonoBehaviour
     {
         scale = 1f
     };
-    [SerializeField] [Range(0f, 1f)] private float deathSoundSpatialBlend = 1f;
     [Header("Part Scatter")]
     [Tooltip("Root that contains the ship parts with ShipPartScatter3D components. Defaults to this transform.")]
     [SerializeField] private Transform scatterRoot;
@@ -141,7 +140,7 @@ public class DeathEffects3D : MonoBehaviour
         tempSource.clip = explosion.sound.clip;
         tempSource.volume = explosion.sound.volume;
         tempSource.pitch = Random.Range(explosion.sound.minPitch, explosion.sound.maxPitch);
-        tempSource.spatialBlend = deathSoundSpatialBlend;
+        tempSource.spatialBlend = 1f;
         tempSource.Play();
 
         Destroy(tempAudio, explosion.sound.clip.length / Mathf.Max(0.01f, tempSource.pitch));

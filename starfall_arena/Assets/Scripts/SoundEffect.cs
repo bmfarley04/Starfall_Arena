@@ -37,7 +37,7 @@ public class SoundEffect : ScriptableObject
         source.clip = clip;
         source.volume = volume;
         source.pitch = Random.Range(minPitch, maxPitch);
-        source.spatialBlend = 0f; // 2D sound
+        source.spatialBlend = 1f;
         source.Play();
 
         // Destroy after clip finishes

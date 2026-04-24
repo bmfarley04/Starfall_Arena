@@ -10735,7 +10735,7 @@ AudioSource:
     m_Curve:
     - serializedVersion: 3
       time: 0
-      value: 0
+      value: 1
       inSlope: 0
       outSlope: 0
       tangentMode: 0
@@ -11116,7 +11116,6 @@ MonoBehaviour:
     prefab: {fileID: 100014, guid: d96258cdf841f5e4d8af97dce9661d8c, type: 3}
     scale: 2
     sound: {fileID: 11400000, guid: 52e8c58e387b89849affa74c78d6d899, type: 2}
-  deathSoundSpatialBlend: 1
   scatterRoot: {fileID: 1497443038219400980}
   scatterChance: 1
 --- !u!114 &8751481912860533192

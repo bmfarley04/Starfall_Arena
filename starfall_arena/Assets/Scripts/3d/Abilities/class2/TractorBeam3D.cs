@@ -119,7 +119,7 @@ public class TractorBeam3D : Ability3D
 
         tractorBeamLoopAudioSource.playOnAwake = false;
         tractorBeamLoopAudioSource.loop = true;
-        tractorBeamLoopAudioSource.spatialBlend = 0f;
+        tractorBeamLoopAudioSource.spatialBlend = 1f;
 
         SetVisualRootActive(false);
     }
