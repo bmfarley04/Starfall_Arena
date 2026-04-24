@@ -54,11 +54,14 @@ public class PlayerLowHealthEdgeGlow3D : MonoBehaviour
     private float _targetIntensity;
     private bool _warnedMissingPlayer;
 
+    public static bool IsEffectVisible { get; private set; }
+
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void ResetStaticState()
     {
         s_HasOwner = false;
         s_OwnerId = 0;
+        IsEffectVisible = false;
         ResetShaderGlobals();
     }
 
@@ -205,6 +208,7 @@ public class PlayerLowHealthEdgeGlow3D : MonoBehaviour
             Mathf.Max(0f, cornerBoost),
             Mathf.Max(0.01f, edgeBiasHorizontal),
             Mathf.Max(0.01f, edgeBiasVertical)));
+        IsEffectVisible = intensity > 0.0001f && (coreIntensity > 0.0001f || haloIntensity > 0.0001f);
     }
 
     private bool TryClaimOwnership()
@@ -230,6 +234,7 @@ public class PlayerLowHealthEdgeGlow3D : MonoBehaviour
         ResetShaderGlobals();
         s_HasOwner = false;
         s_OwnerId = 0;
+        IsEffectVisible = false;
     }
 
     private static void ResetShaderGlobals()
@@ -238,6 +243,7 @@ public class PlayerLowHealthEdgeGlow3D : MonoBehaviour
         Shader.SetGlobalVector(Params1Id, Vector4.zero);
         Shader.SetGlobalVector(Params2Id, Vector4.zero);
         Shader.SetGlobalVector(Params3Id, Vector4.zero);
+        IsEffectVisible = false;
     }
 
     private void WarnMissingPlayer()

@@ -154,6 +154,7 @@ Aim rules:
 - `PlayerAbilitySelectionHUD3D` should use cooldown-ready progress and ready-state box feedback instead of blindly reusing older cooldown-remaining semantics
 - combat HUD elements that live on a scene canvas should bind through `PlayerHUDManager3D`, not by having player prefabs race to claim shared HUD objects
 - networked 3D scene HUD managers should auto-bind to the local spawned player and retry briefly after spawn, because ownership/input presentation can settle after `Player3D.OnEnable`
+- fullscreen edge-glow presentation is shared by GigaBlast charge and low-health feedback; the renderer feature must enqueue when either effect reports visible shader state
 
 ## Combat Documentation Rule
 

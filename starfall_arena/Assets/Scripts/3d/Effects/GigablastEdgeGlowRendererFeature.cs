@@ -35,7 +35,7 @@ public class GigablastEdgeGlowRendererFeature : ScriptableRendererFeature
 
     public override void AddRenderPasses(ScriptableRenderer renderer, ref RenderingData renderingData)
     {
-        if (!GigablastChargeEdgeGlow3D.IsEffectVisible)
+        if (!IsAnyEdgeGlowVisible())
         {
             return;
         }
@@ -77,7 +77,7 @@ public class GigablastEdgeGlowRendererFeature : ScriptableRendererFeature
 
         public override void RecordRenderGraph(RenderGraph renderGraph, ContextContainer frameData)
         {
-            if (_material == null || !GigablastChargeEdgeGlow3D.IsEffectVisible)
+            if (_material == null || !IsAnyEdgeGlowVisible())
             {
                 return;
             }
@@ -106,5 +106,10 @@ public class GigablastEdgeGlowRendererFeature : ScriptableRendererFeature
 
             resourceData.cameraColor = destination;
         }
+    }
+
+    private static bool IsAnyEdgeGlowVisible()
+    {
+        return GigablastChargeEdgeGlow3D.IsEffectVisible || PlayerLowHealthEdgeGlow3D.IsEffectVisible;
     }
 }
