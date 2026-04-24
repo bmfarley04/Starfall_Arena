@@ -4244,6 +4244,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Class1_Player
       objectReference: {fileID: 0}
+    - target: {fileID: 2568558604607578100, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 3760524061682020281, guid: 28d860e0bee4aa647829258e5014f375, type: 3}
       propertyPath: virtualCamera
       value: 
@@ -4598,6 +4602,10 @@ PrefabInstance:
     - target: {fileID: 7114399765549422770, guid: 2ab5e2b052ddb4229b8be680f8c4e7d1, type: 3}
       propertyPath: m_Name
       value: Class2_Player
+      objectReference: {fileID: 0}
+    - target: {fileID: 7114399765549422770, guid: 2ab5e2b052ddb4229b8be680f8c4e7d1, type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8106419607673637394, guid: 2ab5e2b052ddb4229b8be680f8c4e7d1, type: 3}
       propertyPath: virtualCamera
