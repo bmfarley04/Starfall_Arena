@@ -85,11 +85,15 @@ public class GigablastChargeEdgeGlow3D : MonoBehaviour
             }
         }
 
-        float targetCharge = gigaBlast.IsCharging ? EvaluateCharge(gigaBlast.NormalizedChargeProgress) : 0f;
+        float normalizedChargeProgress = gigaBlast.NormalizedChargeProgress;
+        float targetCharge = gigaBlast.IsCharging ? EvaluateCharge(normalizedChargeProgress) : 0f;
         float speed = gigaBlast.IsCharging ? fadeInSpeed : fadeOutSpeed;
         _currentCharge = Mathf.MoveTowards(_currentCharge, targetCharge, speed * Time.deltaTime);
 
-        Color targetColor = ResolveTierColor(gigaBlast.IsCharging ? gigaBlast.CurrentChargeTier : 0);
+        Color targetColor = ResolveChargeColor(
+            gigaBlast,
+            gigaBlast.IsCharging ? normalizedChargeProgress : 0f,
+            gigaBlast.IsCharging ? gigaBlast.CurrentChargeTier : 0);
         _currentEdgeColor = Color.Lerp(_currentEdgeColor, targetColor, 1f - Mathf.Exp(-speed * Time.deltaTime));
 
         PublishVignette(_currentCharge);
@@ -166,6 +170,55 @@ public class GigablastChargeEdgeGlow3D : MonoBehaviour
             4 => tierColors.tier4Color,
             _ => edgeColor
         };
+    }
+
+    private Color ResolveChargeColor(GigaBlastWeapon3D weapon, float normalizedCharge, int tier)
+    {
+        if (!useTierColors)
+        {
+            return edgeColor;
+        }
+
+        if (weapon == null || normalizedCharge <= 0f)
+        {
+            return ResolveTierColor(tier);
+        }
+
+        float maxChargeTime = Mathf.Max(0.0001f, weapon.MaxChargeTime);
+        float t1 = Mathf.Clamp01(weapon.Tier1Time / maxChargeTime);
+        float t2 = Mathf.Clamp01(weapon.Tier2Time / maxChargeTime);
+        float t3 = Mathf.Clamp01(weapon.Tier3Time / maxChargeTime);
+        float t4 = Mathf.Clamp01(weapon.Tier4Time / maxChargeTime);
+
+        normalizedCharge = Mathf.Clamp01(normalizedCharge);
+
+        if (normalizedCharge <= t1)
+        {
+            return LerpSafe(edgeColor, tierColors.tier1Color, 0f, t1, normalizedCharge);
+        }
+
+        if (normalizedCharge <= t2)
+        {
+            return LerpSafe(tierColors.tier1Color, tierColors.tier2Color, t1, t2, normalizedCharge);
+        }
+
+        if (normalizedCharge <= t3)
+        {
+            return LerpSafe(tierColors.tier2Color, tierColors.tier3Color, t2, t3, normalizedCharge);
+        }
+
+        return LerpSafe(tierColors.tier3Color, tierColors.tier4Color, t3, t4, normalizedCharge);
+    }
+
+    private static Color LerpSafe(Color from, Color to, float start, float end, float value)
+    {
+        if (end <= start)
+        {
+            return to;
+        }
+
+        float t = Mathf.InverseLerp(start, end, value);
+        return Color.Lerp(from, to, t);
     }
 
     private void WarnMissingGigablast()

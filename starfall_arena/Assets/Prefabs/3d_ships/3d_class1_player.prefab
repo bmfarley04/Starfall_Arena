@@ -1274,17 +1274,16 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::GigablastChargeEdgeGlow3D
   player: {fileID: 1753171253810675368}
   gigaBlast: {fileID: 0}
-  vignetteImage: {fileID: 0}
   edgeColor: {r: 0.2, g: 0.6, b: 1, a: 1}
   useTierColors: 1
   tierColors:
-    tier1Color: {r: 2, g: 2, b: 2, a: 1}
-    tier2Color: {r: 1.2727598, g: 1.4491552, b: 2.0136201, a: 1}
-    tier3Color: {r: 1.3548113, g: 2.0813046, b: 1.5511608, a: 1}
-    tier4Color: {r: 1.5136858, g: 1.1325613, b: 1.9467814, a: 1}
-  maxAlpha: 0.5
-  fadeInSpeed: 3
-  fadeOutSpeed: 4
+    tier1Color: {r: 0.2, g: 0.6, b: 1, a: 1}
+    tier2Color: {r: 0, g: 0.22857141, b: 1, a: 1}
+    tier3Color: {r: 0, g: 0.654088, b: 0.0063995863, a: 1}
+    tier4Color: {r: 0.55283123, g: 0.009433806, b: 1, a: 1}
+  maxAlpha: 0.3
+  fadeInSpeed: 2
+  fadeOutSpeed: 2
   chargeRemap:
     serializedVersion: 2
     m_Curve:
@@ -1311,7 +1310,7 @@ MonoBehaviour:
     m_RotationOrder: 4
   pulseWhileCharging: 1
   pulseAmplitude: 0.1
-  pulseSpeed: 6
+  pulseSpeed: 4
 --- !u!114 &8188930441586883119
 MonoBehaviour:
   m_ObjectHideFlags: 0

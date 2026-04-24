@@ -198,6 +198,11 @@ public class GigaBlastWeapon3D : Weapon3D
     public float CurrentChargeTime => GetCurrentChargeTime();
     public float NormalizedChargeProgress => GetNormalizedChargeProgress();
     public int CurrentChargeTier => _isCharging ? _currentChargeTier : 0;
+    public float MaxChargeTime => gigaBlast.timing.maxChargeTime;
+    public float Tier1Time => gigaBlast.tierThresholds.tier1Time;
+    public float Tier2Time => gigaBlast.tierThresholds.tier2Time;
+    public float Tier3Time => gigaBlast.tierThresholds.tier3Time;
+    public float Tier4Time => gigaBlast.tierThresholds.tier4Time;
 
     public GameObject GetNetworkProjectilePrefab(int tier)
     {

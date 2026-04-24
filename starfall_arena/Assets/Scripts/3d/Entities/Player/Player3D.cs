@@ -6,6 +6,15 @@ using UnityEngine.InputSystem;
 public class Player3D : Entity3D
 {
     [System.Serializable]
+    private struct ShieldRegenConfig3D
+    {
+        [Tooltip("Time in seconds without taking damage before shields start regenerating.")]
+        public float regenDelay;
+        [Tooltip("Amount of shield restored per second.")]
+        public float regenRate;
+    }
+
+    [System.Serializable]
     private struct AnchorConfig3D
     {
         [Tooltip("If disabled, OnAnchor input is ignored for this player.")]
@@ -51,6 +60,12 @@ public class Player3D : Entity3D
         beamHitLoopStopDelay = 0.2f,
         audioSourcePoolSize = 4
     };
+    [Header("Shield Regeneration")]
+    [SerializeField] private ShieldRegenConfig3D shieldRegen = new ShieldRegenConfig3D
+    {
+        regenDelay = 5f,
+        regenRate = 20f
+    };
 
     public static event Action<Player3D> PlayerSpawned;
     public static event Action<Player3D> PlayerDespawned;
@@ -67,6 +82,8 @@ public class Player3D : Entity3D
     private AudioSource _beamHitLoopSource;
     private PlayerChromaticAberration3D _chromaticAberrationFx;
     private float _lastBeamDamageTime = float.NegativeInfinity;
+    private float _lastShieldHitTime = float.NegativeInfinity;
+    private float _nextShieldRegenSyncTime = float.NegativeInfinity;
     private bool _anchorHeld;
 
     public bool IsAnchorActive => anchorConfig.enabled && _anchorHeld;
@@ -91,6 +108,7 @@ public class Player3D : Entity3D
 
         CacheSplitStateRigsIfNeeded();
         ApplySplitStatePresentation();
+        _lastShieldHitTime = -Mathf.Max(0f, shieldRegen.regenDelay);
     }
 
     private void OnEnable()
@@ -101,6 +119,8 @@ public class Player3D : Entity3D
 
     private void Update()
     {
+        HandleShieldRegeneration(Time.deltaTime);
+
         if (_beamHitLoopSource == null || !_beamHitLoopSource.isPlaying)
         {
             return;
@@ -120,6 +140,7 @@ public class Player3D : Entity3D
 
     public override void TakeDamage(float damage, Vector3 hitPoint, Entity3D attacker = null, DamageSource3D source = DamageSource3D.Projectile)
     {
+        _lastShieldHitTime = Time.time;
         float previousShield = currentShield;
         float previousHealth = currentHealth;
 
@@ -255,6 +276,12 @@ public class Player3D : Entity3D
         }
     }
 
+    public override void TakeDirectDamage(float damage, Vector3 hitPoint, Entity3D attacker = null)
+    {
+        _lastShieldHitTime = Time.time;
+        base.TakeDirectDamage(damage, hitPoint, attacker);
+    }
+
     public void UnbindHUD(PlayerHUDManager3D hud)
     {
         if (ReferenceEquals(hudManager3D, hud))
@@ -292,6 +319,8 @@ public class Player3D : Entity3D
         {
             return;
         }
+
+        _lastShieldHitTime = Time.time;
 
         DamageSource3D source = (DamageSource3D)state.DamageSource;
         _chromaticAberrationFx?.TriggerDamageFeedback(totalDamageTaken, source);
@@ -431,6 +460,62 @@ public class Player3D : Entity3D
             if (rig != null)
             {
                 rig.SetSplitStateActive(splitStateActive);
+            }
+        }
+    }
+
+    private void HandleShieldRegeneration(float deltaTime)
+    {
+        if (currentShield >= maxShield || maxShield <= 0f || shieldRegen.regenRate <= 0f)
+        {
+            shieldController?.SetRegeneration(false);
+            return;
+        }
+
+        bool isNetworkedServerAuthority = !NetTickUtil.IsActive || (netCombat3D != null && netCombat3D.IsServer);
+        if (!isNetworkedServerAuthority)
+        {
+            shieldController?.SetRegeneration(false);
+            return;
+        }
+
+        if (Time.time < _lastShieldHitTime + Mathf.Max(0f, shieldRegen.regenDelay))
+        {
+            shieldController?.SetRegeneration(false);
+            return;
+        }
+
+        float previousShield = currentShield;
+        currentShield = Mathf.Min(maxShield, currentShield + (shieldRegen.regenRate * deltaTime));
+
+        if (currentShield <= previousShield)
+        {
+            shieldController?.SetRegeneration(false);
+            return;
+        }
+
+        OnShieldChanged();
+        shieldController?.SetRegeneration(true);
+
+        if (NetTickUtil.IsActive && netCombat3D != null && netCombat3D.IsServer)
+        {
+            const float regenSyncInterval = 0.1f;
+            if (Time.time >= _nextShieldRegenSyncTime || Mathf.Approximately(currentShield, maxShield))
+            {
+                bool isSlowed = IsSlowed;
+                netCombat3D.BroadcastCombatState(new NetCombatState3D
+                {
+                    Health = currentHealth,
+                    Shield = currentShield,
+                    HitPoint = Vector3.zero,
+                    DamageSource = (int)DamageSource3D.Direct,
+                    ShieldHit = false,
+                    ShieldBreak = false,
+                    SlowMultiplier = isSlowed ? GetSlowMultiplier() : 1f,
+                    SlowRemainingTime = isSlowed ? Mathf.Max(0f, slowEndTime - Time.time) : 0f
+                });
+
+                _nextShieldRegenSyncTime = Time.time + regenSyncInterval;
             }
         }
     }

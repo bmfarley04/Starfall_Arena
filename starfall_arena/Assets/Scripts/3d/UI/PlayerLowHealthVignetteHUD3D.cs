@@ -24,10 +24,15 @@ public class PlayerLowHealthVignetteHUD3D : PlayerHUDBindingTarget3D
     [SerializeField] private bool alwaysOnPreview;
     [SerializeField, Range(0f, 1f)] private float previewIntensity = 1f;
 
+    [Header("Gigablast Channel")]
+    [SerializeField, Min(0f)] private float gigablastMessageTimeout = 0.2f;
+    [SerializeField, Min(0.01f)] private float gigablastFallbackFadeOutSpeed = 10f;
+
     private float _currentAlpha;
     private float _targetAlpha;
     private float _gigablastAlpha;
     private Color _gigablastColor = Color.white;
+    private float _lastGigablastMessageTime = float.NegativeInfinity;
 
     protected override void Awake()
     {
@@ -45,6 +50,13 @@ public class PlayerLowHealthVignetteHUD3D : PlayerHUDBindingTarget3D
     {
         float speed = _targetAlpha > _currentAlpha ? fadeInSpeed : fadeOutSpeed;
         _currentAlpha = Mathf.MoveTowards(_currentAlpha, _targetAlpha, speed * Time.unscaledDeltaTime);
+
+        bool gigablastMessageIsStale = Time.unscaledTime - _lastGigablastMessageTime > gigablastMessageTimeout;
+        if (gigablastMessageIsStale && _gigablastAlpha > 0f)
+        {
+            _gigablastAlpha = Mathf.MoveTowards(_gigablastAlpha, 0f, gigablastFallbackFadeOutSpeed * Time.unscaledDeltaTime);
+        }
+
         ApplyAlphaImmediate();
     }
 
@@ -70,6 +82,7 @@ public class PlayerLowHealthVignetteHUD3D : PlayerHUDBindingTarget3D
     {
         _targetAlpha = alwaysOnPreview ? Mathf.Clamp01(previewIntensity) * Mathf.Clamp01(maxAlpha) : 0f;
         _gigablastAlpha = 0f;
+        _lastGigablastMessageTime = float.NegativeInfinity;
     }
 
     private void HandleHealthChanged(float currentHealth, float maxHealth)
@@ -128,6 +141,7 @@ public class PlayerLowHealthVignetteHUD3D : PlayerHUDBindingTarget3D
 
         _gigablastAlpha = Mathf.Clamp01(message.Alpha);
         _gigablastColor = message.Color;
+        _lastGigablastMessageTime = Time.unscaledTime;
     }
 
     private void ApplyAlphaImmediate()

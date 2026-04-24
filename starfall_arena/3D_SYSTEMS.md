@@ -86,6 +86,7 @@ These classes should stay narrow and mostly coordinate dedicated 3D systems.
   - owns local-player-only 3D coordination, victim-side hit audio, and the dedicated `OnAnchor` input state
   - Anchor is a hold input that suppresses thrust while applying a configurable rotation multiplier for fast facing changes
   - while Anchor is active, `Player3D` can also drive split-state presentation rigs
+  - owns player shield regeneration timing/rate config (`regenDelay`, `regenRate`) and applies regen with server authority in networked matches
 - `PlayerHUDManager3D`
   - shared local-player binding source for scene HUD objects in the 3D path
   - resolves the correct player once and broadcasts that binding to dedicated HUD element scripts
