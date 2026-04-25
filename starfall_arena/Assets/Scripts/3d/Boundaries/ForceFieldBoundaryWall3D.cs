@@ -74,6 +74,19 @@ public class ForceFieldBoundaryWall3D : MonoBehaviour
     }
 
     public void Configure(
+        WallSide configuredSide,
+        Vector2 arenaCenter,
+        float arenaWidth,
+        float arenaLength,
+        float minY,
+        float maxY,
+        float wallThickness)
+    {
+        side = configuredSide;
+        Configure(arenaCenter, arenaWidth, arenaLength, minY, maxY, wallThickness);
+    }
+
+    public void Configure(
         Vector2 arenaCenter,
         float arenaWidth,
         float arenaLength,
@@ -199,15 +212,23 @@ public class ForceFieldBoundaryWall3D : MonoBehaviour
 
         if (forceFieldRenderer != null && autoScaleVisual)
         {
-            forceFieldRenderer.transform.localPosition = Vector3.zero;
-            forceFieldRenderer.transform.localRotation = Quaternion.identity;
+            if (forceFieldRenderer.transform != transform)
+            {
+                forceFieldRenderer.transform.localPosition = Vector3.zero;
+                forceFieldRenderer.transform.localRotation = Quaternion.identity;
+            }
+
             forceFieldRenderer.transform.localScale = new Vector3(width, height, 1f);
         }
 
         if (blocker != null && autoScaleBlocker)
         {
-            blocker.transform.localPosition = Vector3.zero;
-            blocker.transform.localRotation = Quaternion.identity;
+            if (blocker.transform != transform)
+            {
+                blocker.transform.localPosition = Vector3.zero;
+                blocker.transform.localRotation = Quaternion.identity;
+            }
+
             bool blockerUsesScaledVisualTransform = forceFieldRenderer != null && blocker.transform == forceFieldRenderer.transform;
             blocker.size = blockerUsesScaledVisualTransform
                 ? new Vector3(1f, 1f, Mathf.Max(0.01f, thickness))

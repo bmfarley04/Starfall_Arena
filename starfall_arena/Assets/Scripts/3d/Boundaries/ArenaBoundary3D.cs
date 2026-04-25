@@ -391,9 +391,23 @@ public class ArenaBoundary3D : NetworkBehaviour
         {
             if (walls[i] != null)
             {
-                walls[i].Configure(center, _currentWidth, _currentLength, minY, maxY, wallThickness);
+                walls[i].Configure(ResolveWallSide(i), center, _currentWidth, _currentLength, minY, maxY, wallThickness);
             }
         }
+    }
+
+    private static ForceFieldBoundaryWall3D.WallSide ResolveWallSide(int index)
+    {
+        return index switch
+        {
+            0 => ForceFieldBoundaryWall3D.WallSide.North,
+            1 => ForceFieldBoundaryWall3D.WallSide.South,
+            2 => ForceFieldBoundaryWall3D.WallSide.East,
+            3 => ForceFieldBoundaryWall3D.WallSide.West,
+            4 => ForceFieldBoundaryWall3D.WallSide.Top,
+            5 => ForceFieldBoundaryWall3D.WallSide.Bottom,
+            _ => ForceFieldBoundaryWall3D.WallSide.North
+        };
     }
 
     private void UpdateWallVisuals()

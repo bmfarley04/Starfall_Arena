@@ -3087,7 +3087,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 71ab837c049cf6f4e8f1878c73cc0e2f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ForceFieldBoundaryWall3D
-  side: 0
+  side: 2
   forceFieldRenderer: {fileID: 325001999}
   forceField: {fileID: 325002001}
   blocker: {fileID: 325001998}
@@ -3667,7 +3667,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 71ab837c049cf6f4e8f1878c73cc0e2f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ForceFieldBoundaryWall3D
-  side: 0
+  side: 1
   forceFieldRenderer: {fileID: 359806476}
   forceField: {fileID: 359806478}
   blocker: {fileID: 359806475}
@@ -6667,12 +6667,12 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 1856566440}
   - {fileID: 1430241039}
   - {fileID: 359806474}
+  - {fileID: 325001997}
+  - {fileID: 1856566440}
   - {fileID: 2074501355}
   - {fileID: 1126064141}
-  - {fileID: 325001997}
   m_Father: {fileID: 2065503269}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &917326975
@@ -6722,15 +6722,16 @@ MonoBehaviour:
   autoStart: 0
   waves: []
   walls:
-  - {fileID: 1856566445}
   - {fileID: 1430241044}
   - {fileID: 359806479}
+  - {fileID: 325002002}
+  - {fileID: 1856566445}
   - {fileID: 2074501360}
   - {fileID: 1126064146}
-  - {fileID: 325002002}
   warningFlashRate: 4
   clampInterval: 0.1
   inwardSafetyMargin: 0.25
+  maxClampRadius: 25
   localViewerRefreshInterval: 0.25
 --- !u!1 &929264361
 GameObject:
@@ -7676,7 +7677,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 71ab837c049cf6f4e8f1878c73cc0e2f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ForceFieldBoundaryWall3D
-  side: 0
+  side: 4
   forceFieldRenderer: {fileID: 1126064143}
   forceField: {fileID: 1126064145}
   blocker: {fileID: 1126064142}
@@ -11164,7 +11165,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 71ab837c049cf6f4e8f1878c73cc0e2f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ForceFieldBoundaryWall3D
-  side: 0
+  side: 3
   forceFieldRenderer: {fileID: 1856566442}
   forceField: {fileID: 1856566444}
   blocker: {fileID: 1856566441}
@@ -12254,7 +12255,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 71ab837c049cf6f4e8f1878c73cc0e2f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ForceFieldBoundaryWall3D
-  side: 0
+  side: 5
   forceFieldRenderer: {fileID: 2074501357}
   forceField: {fileID: 2074501359}
   blocker: {fileID: 2074501356}
