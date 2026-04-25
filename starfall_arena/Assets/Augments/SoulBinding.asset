@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: SoulBinding
   m_EditorClassIdentifier: Assembly-CSharp::SoulBinding
   icon: {fileID: 0}
-  augmentName: Soul Binding
+  augmentName: Hull Entanglement
   description: Nearby enemies lose health whenever you lose health.
   _augmentID: eb05f9fab29340d483bbb2f34ae552a6
   rounds: -1

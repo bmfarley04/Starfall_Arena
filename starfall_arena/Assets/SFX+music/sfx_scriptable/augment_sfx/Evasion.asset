@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: acb65756bd07131419e0a32a68f94510, type: 3}
   m_Name: Evasion
   m_EditorClassIdentifier: Assembly-CSharp::SoundEffect
-  clip: {fileID: 0}
+  clip: {fileID: 8300000, guid: 6f3c03df340334710af8859405c56ed1, type: 3}
   volume: 1
   minPitch: 0.95
   maxPitch: 1.05

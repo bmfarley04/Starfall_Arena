@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: BodyBinding
   m_EditorClassIdentifier: Assembly-CSharp::BodyBinding
   icon: {fileID: 0}
-  augmentName: Body Binding
+  augmentName: Drag Entanglement
   description: Nearby enemies move more slowly based on how close they are to you.
   _augmentID: 40a0b5ce39e449a88e7b09d69bd2f9eb
   rounds: -1

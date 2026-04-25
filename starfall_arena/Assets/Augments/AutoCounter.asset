@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: AutoCounter
   m_EditorClassIdentifier: Assembly-CSharp::AutoCounter
   icon: {fileID: 0}
-  augmentName: AutoCounter
+  augmentName: Reflex Plating
   description: Summons a shield that reflects projectiles. Delayed turn off when
     hit. AutoCast.
   _augmentID: 4bc1298d40074e0da1682f906c98adb7

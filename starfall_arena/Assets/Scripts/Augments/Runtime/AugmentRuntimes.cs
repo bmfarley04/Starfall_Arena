@@ -169,10 +169,27 @@ public sealed class DaggerRuntime : AugmentRuntimeBase
 public sealed class EvasionRuntime : AugmentRuntimeBase
 {
     private readonly Evasion _definition;
+    private AudioSource _successfulEvadeAudioSource;
 
     public EvasionRuntime(Evasion definition) : base(definition)
     {
         _definition = definition;
+    }
+
+    public override void Initialize(Player player, int roundAcquired, object persistentState = null)
+    {
+        base.Initialize(player, roundAcquired, persistentState);
+
+        if (player == null)
+        {
+            return;
+        }
+
+        GameObject audioHost = new GameObject($"EvasionAudio_{Definition.augmentID}");
+        audioHost.transform.SetParent(player.transform, false);
+        _successfulEvadeAudioSource = audioHost.AddComponent<AudioSource>();
+        _successfulEvadeAudioSource.playOnAwake = false;
+        _successfulEvadeAudioSource.spatialBlend = 0f;
     }
 
     public override void OnBeforeTakeDamage(ref float damage, ref bool shieldIgnored, ref bool healthIgnored, DamageSource source)
@@ -222,8 +239,35 @@ public sealed class EvasionRuntime : AugmentRuntimeBase
 
     private void TriggerSuccessfulEvadePresentation()
     {
-        PlaySoundEffect(_definition.successfulEvadeSound);
+        PlaySuccessfulEvadeSound();
         SpawnTransientEffect(_definition.successfulEvadePrefab);
+    }
+
+    private void PlaySuccessfulEvadeSound()
+    {
+        SoundEffect soundEffect = _definition.successfulEvadeSound;
+        if (player == null || soundEffect == null || soundEffect.clip == null)
+        {
+            return;
+        }
+
+        if (_successfulEvadeAudioSource == null)
+        {
+            soundEffect.PlayAtPoint(player.transform.position);
+            return;
+        }
+
+        _successfulEvadeAudioSource.pitch = UnityEngine.Random.Range(soundEffect.minPitch, soundEffect.maxPitch);
+        _successfulEvadeAudioSource.PlayOneShot(soundEffect.clip, soundEffect.volume);
+    }
+
+    public override void OnRemoved()
+    {
+        if (_successfulEvadeAudioSource != null)
+        {
+            UnityEngine.Object.Destroy(_successfulEvadeAudioSource.gameObject);
+            _successfulEvadeAudioSource = null;
+        }
     }
 }
 

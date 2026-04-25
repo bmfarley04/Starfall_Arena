@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: MindBinding
   m_EditorClassIdentifier: Assembly-CSharp::MindBinding
   icon: {fileID: 0}
-  augmentName: Mind Binding
+  augmentName: Trigger Entanglement
   description: Whenever a nearby enemy fires its primary fire, you fire your primary.
   _augmentID: f94da3f248a1479392c94133b77619d9
   rounds: -1

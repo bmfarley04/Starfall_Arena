@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Flyers
   m_EditorClassIdentifier: Assembly-CSharp::Flyers
   icon: {fileID: 0}
-  augmentName: Flyers
+  augmentName: Pulse Drones
   description: Summons a small projectile that hovers around you. When nearby an
     opponent, it flies into them.
   _augmentID: 8bad64223a64477fa7abbbb1aa8ec27a
