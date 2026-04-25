@@ -8,7 +8,7 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: static_force_field_red
-  m_Shader: {fileID: 4800000, guid: 91b391f1148d1994582c28136f950f38, type: 3}
+  m_Shader: {fileID: 4800000, guid: 80a570f31421f7e4692b63b8c95b2b0d, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
@@ -24,8 +24,8 @@ Material:
     serializedVersion: 3
     m_TexEnvs:
     - _FieldTex:
-        m_Texture: {fileID: 2800000, guid: 46c7aadf965211d43b1c70679d76ce78, type: 3}
-        m_Scale: {x: 6, y: 3}
+        m_Texture: {fileID: 2800000, guid: 6a2a9c2cb2d70a045945cdb4d9030cb0, type: 3}
+        m_Scale: {x: 15, y: 15}
         m_Offset: {x: 0, y: 0}
     - _MainTex:
         m_Texture: {fileID: 0}
@@ -56,6 +56,7 @@ Material:
     - _ShieldBGPow: 2
     - _ShieldPanSpeed: 1
     - _Size: 5
+    - _Static: 1
     m_Colors:
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _FieldColor: {r: 1, g: 1, b: 1, a: 1}

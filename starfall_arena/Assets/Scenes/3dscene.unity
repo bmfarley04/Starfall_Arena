@@ -6667,11 +6667,11 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
+  - {fileID: 1856566440}
   - {fileID: 1430241039}
   - {fileID: 359806474}
   - {fileID: 2074501355}
   - {fileID: 1126064141}
-  - {fileID: 1856566440}
   - {fileID: 325001997}
   m_Father: {fileID: 2065503269}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -6714,14 +6714,20 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ArenaBoundary3D
   ShowTopMostFoldoutHeaderGroup: 1
   center: {x: 0, y: 0}
-  startWidth: 240
-  startLength: 160
-  minY: -35
-  maxY: 35
+  startWidth: 1000
+  startLength: 1000
+  minY: -500
+  maxY: 500
   wallThickness: 3
   autoStart: 0
   waves: []
-  walls: []
+  walls:
+  - {fileID: 1856566445}
+  - {fileID: 1430241044}
+  - {fileID: 359806479}
+  - {fileID: 2074501360}
+  - {fileID: 1126064146}
+  - {fileID: 325002002}
   warningFlashRate: 4
   clampInterval: 0.1
   inwardSafetyMargin: 0.25
