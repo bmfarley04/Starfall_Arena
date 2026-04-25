@@ -34,6 +34,10 @@ public class SceneManager3D : MonoBehaviour
     [SerializeField] private Camera uiCamera;
     [SerializeField] private int baseCanvasSortingOrder = 200;
 
+    [Header("Arena Boundary")]
+    [Tooltip("Optional shrinking 3D arena boundary started and stopped with each combat round.")]
+    [SerializeField] private ArenaBoundary3D arenaBoundary;
+
     [Header("Win Trackers")]
     [SerializeField] private StarfallArena.UI.WinTracker player1WinTracker;
     [SerializeField] private StarfallArena.UI.WinTracker player2WinTracker;
@@ -176,6 +180,7 @@ public class SceneManager3D : MonoBehaviour
             _currentRound++;
             yield return SpawnPlayers();
 
+            StartArenaBoundaryRound();
             SetGameplayHudActive(true);
             SetPlayersMovementLocked(true);
 
@@ -199,6 +204,7 @@ public class SceneManager3D : MonoBehaviour
             StopCombatActions(_player1);
             StopCombatActions(_player2);
             SetPlayersMovementLocked(true);
+            StopArenaBoundaryRound();
 
             yield return new WaitForSeconds(deathToRoundEndDelay);
 
@@ -607,6 +613,7 @@ public class SceneManager3D : MonoBehaviour
             yield break;
         }
 
+        StopArenaBoundaryRound();
         SetGameplayHudActive(false);
         int winner = _player1Wins >= winsRequired ? 1 : 2;
 
@@ -728,6 +735,27 @@ public class SceneManager3D : MonoBehaviour
         {
             player.PlayerInput3D.enabled = !isLocked;
         }
+    }
+
+    private void StartArenaBoundaryRound()
+    {
+        if (arenaBoundary == null)
+        {
+            return;
+        }
+
+        arenaBoundary.ResetBoundary();
+        arenaBoundary.StartBoundary();
+    }
+
+    private void StopArenaBoundaryRound()
+    {
+        if (arenaBoundary == null)
+        {
+            return;
+        }
+
+        arenaBoundary.StopBoundary();
     }
 
     private void SetInitialUiState()

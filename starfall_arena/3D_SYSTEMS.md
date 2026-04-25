@@ -50,6 +50,13 @@ These classes should stay narrow and mostly coordinate dedicated 3D systems.
   - owns best-of-five round progression, versus-screen wait, round intro/countdown, per-round spawning/despawning, round-end presentation, win tracking, and game-end presentation
   - reuses the shared versus, round-end, game-end, win tracker, and UI camera/canvas setup
   - intentionally omits the 2D map cycle, augment phases, and ability-4 unlock cadence; 3D duels are straight combat rounds using prefab-authored ship kits
+- `ArenaBoundary3D`
+  - optional six-sided rectangular arena boundary for duel scenes
+  - owns current arena center, starting width/height/length, percent-based shrink waves, generated visual geometry, network-synced active/shrinking state, and server-authoritative outside damage
+  - procedurally generates one inward-facing six-sided visual box mesh and optional six thin `BoxCollider` blocker children at runtime
+  - uses `Starfall/3D/ProceduralHexArenaBoundary` with a tileable hex mask texture for local-player proximity reveal
+  - default gameplay is a soft boundary: players can pass through, local players get a maximum red arena-boundary vignette through `PlayerLowHealthVignetteHUD3D`, and the authoritative side applies configurable percent-of-total-durability damage over time outside the arena
+  - keeps the hex force-field mesh cosmetic; generated blocker colliders are disabled by default and should only be enabled if hard containment is intentionally restored
 - `ShipFlight3D`
   - shared rigidbody flight
   - assisted pitch/yaw steering driven by filtered input and acceleration-limited turn rates
@@ -216,6 +223,9 @@ Current folder contract:
 - `Effects/ShaderControllers`
   - shader-driven 3D effect controllers
   - examples: `LightningBolt3D`, `SplitStateLightningRig3D`
+- `Boundaries`
+  - 3D arena containment and boundary presentation
+  - examples: `ArenaBoundary3D`, `ForceFieldBoundaryWall3D` for older authored-wall experiments
 - `Pooling`
   - shared 3D object-pool helpers
   - examples: `GameObjectPool3D`, `PooledObject3D`
@@ -231,6 +241,19 @@ When adding a new 3D script, place it under the subsystem it serves first. Do no
 - use `SplitStateLightningRig3D` on the ship root or effect root when multiple bolts should enable/disable together
 - keep split-state activation outside the shader; the shader stays visual-only while the rig or gameplay presenter decides when bolts are active
 
+## Black Hole Effect Shader Authoring
+
+- the 3D black hole effect uses two materials: `Starfall/3D/BlackHole/AccretionDisk` for a flat local-XZ disk/ring and `Starfall/3D/BlackHole/SingularityLensing` for an inflated sphere around the event horizon
+- the accretion disk shader is additive, but intentionally renders in the opaque render-queue range so URP includes it in `_CameraOpaqueTexture`; this is required for the singularity shader to bend the disk image in screen space
+- because the disk renders before the skybox for lensing capture, it keeps depth writes enabled and clips faint pixels with `Depth Clip Threshold`; otherwise the skybox overwrites the disk anywhere there is no opaque object already behind it
+- the singularity/lensing shader renders after the disk, samples `_CameraOpaqueTexture`, bends samples radially around the sphere center, blacks out the event horizon, and adds a tunable HDR photon ring for bloom
+- `Bend Strength` can be negative to pull scene samples inward toward the event horizon; this is the useful direction for lifting the rear disk into the upper/lower Einstein-ring arcs
+- the `Lensed Disk Arc` controls add an art-directed procedural horizon band with repeated lane lines and noise similar to the flat disk, making the rear accretion disk read above and below the black core even when the pure screen-space bend samples the disk's central hole
+- the lensed disk arc has matching spin, infall, and spiral controls; keep those close to the accretion disk material values so the wrapped arcs animate like the same disk light rather than a separate static halo
+- author the singularity sphere slightly larger than the visible black core; tune `Event Horizon Radius` on the material to decide how much of that sphere is pure black versus lensing falloff
+- the disk shader is quad-friendly: it converts centered UVs to polar coordinates, uses polar angle/radius for circular swirl motion, and masks the square corners away; keep the black hole centered at UV `(0.5, 0.5)`
+- the current PC/3D URP path has opaque texture enabled; any renderer asset used for this effect must keep opaque texture enabled or the lensing shader will not have a valid scene color source
+
 ## Change Classification Rule
 
 3D work should explicitly call out whether it is:
@@ -240,3 +263,26 @@ When adding a new 3D script, place it under the subsystem it serves first. Do no
 - a camera/readability change
 - a real gameplay-rule change
 - a networking-impacting change
+
+## Procedural Hex Arena Boundary Authoring
+
+- add one `ArenaBoundary3D` to the 3D gameplay scene and assign it to `SceneManager3D` if the boundary should run with each round
+- keep `NetworkObject` on `ArenaBoundary3D` in network scenes so active/shrinking state and current dimensions replicate to clients
+- do not author six wall prefab children for the current path; `ArenaBoundary3D` generates the inward-facing box visual and blocker colliders itself at runtime
+- leave `Block Players At Boundary` disabled for the current soft-boundary design; players outside the arena receive warning vignette plus configurable damage instead of being physically stopped
+- teleport and network teleport clamping only run when `Block Players At Boundary` is enabled, so soft-boundary matches can still move or blink through the field
+- author each shrink wave with `Duration`, `Time Until Next Wave`, and `Target Size Percent`; the arena starts at 100 percent of its configured width/height/length, interpolates all three dimensions to the wave target over `Duration`, then waits at that size for `Time Until Next Wave` before starting the next wave
+- tune `Outside Penalty Interval` for how often outside damage is applied, and tune `Outside Damage Percent Per Second` as a fraction of `MaxHealth + MaxShield`; for example `0.05` removes 5 percent of total durability per second while outside
+- tune `Outside Vignette Alpha` and `Outside Vignette Color` for the local-player HUD warning shown through `PlayerLowHealthVignetteHUD3D`
+- assign a material using `Starfall/3D/ProceduralHexArenaBoundary`, or let the component create a runtime fallback material from that shader
+- assign a tileable black/white hex texture to `Hex Mask`; `Assets/Sprites/hex_texture_1024.png` is the current repo candidate if no custom arena texture is ready yet
+- import the hex texture as a regular texture with `Wrap Mode = Repeat`; `Sprite (2D and UI)` plus `Clamp` can make the mask look like it is not tiling or not being respected
+- tune `Reveal Distance` for how far away from the barrier the local player starts seeing it; tune `Visible Patch Radius` separately for how large the visible spot on the wall becomes near the player
+- proximity reveal uses independent samples for each arena face that is within `Reveal Distance`, so adjacent walls can fade together without a closest-wall pop or forward-facing spotlight feel
+- while the local player is outside the arena, the closest barrier face gets an outside reveal override using `Outside Reveal Distance` and `Outside Visible Patch Radius` until the player returns inside
+- tune `Texture World Size` for pattern scale, `Mask Threshold` / `Mask Softness` / `Mask Power` for line cutoff and softness, and the proximity/shrink HDR colors for cyan vs red warning reads
+- tune `Pulse Speed` / `Pulse Strength` and `Crackle Scale` / `Crackle Speed` / `Crackle Strength` for lightweight shader-only energy motion; these are visual-only and should not drive gameplay state
+- keep `Idle Visibility` at or near zero when the arena should mostly disappear until approached; shrinking changes only arena dimensions and does not force full-wall visibility or flashing
+- shrink behavior belongs to `ArenaBoundary3D` dimensions and generated collider placement, not to shader displacement; the shader only decides visibility/color
+- the generated visual mesh is cosmetic and additive/transparent; containment still comes from generated `BoxCollider` blockers plus server-side clamp correction
+- keep `Start Active On Enable` enabled for standalone arena testing; turn it off only when another scene-flow owner deliberately calls `StartBoundary()` and `StopBoundary()`

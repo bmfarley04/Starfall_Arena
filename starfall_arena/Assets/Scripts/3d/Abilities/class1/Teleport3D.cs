@@ -110,7 +110,7 @@ public class Teleport3D : Ability3D
             return;
         }
 
-        Vector3 targetPosition = transform.position + ResolveTeleportDirection() * teleport.teleportDistance;
+        Vector3 targetPosition = ClampTeleportTarget(transform.position + ResolveTeleportDirection() * teleport.teleportDistance);
 
         if (NetTickUtil.IsActive && _netCombat != null && _netCombat.IsOwner)
         {
@@ -127,11 +127,12 @@ public class Teleport3D : Ability3D
 
     public void ApplyNetworkTeleport(Vector3 targetPosition, bool authoritative)
     {
-        StartTeleport(targetPosition);
+        StartTeleport(ClampTeleportTarget(targetPosition));
     }
 
     private void StartTeleport(Vector3 targetPosition)
     {
+        targetPosition = ClampTeleportTarget(targetPosition);
         if (_teleportCoroutine != null)
         {
             RestoreTeleportPresentationState();
@@ -264,6 +265,18 @@ public class Teleport3D : Ability3D
         }
 
         return Vector3.forward;
+    }
+
+    private Vector3 ClampTeleportTarget(Vector3 targetPosition)
+    {
+        if (!ArenaBoundary3D.TryGetActive(out ArenaBoundary3D boundary) || !boundary.BlocksMovement)
+        {
+            return targetPosition;
+        }
+
+        NetMovement3D movement = GetComponent<NetMovement3D>();
+        float radius = movement != null ? movement.GetCollisionRadius() : 0f;
+        return boundary.ClampPositionInside(targetPosition, radius);
     }
 
     private void StartEffectBurst(TeleportAbilityConfig3D.VisualConfig.PulsewaveEffectConfig effectConfig, Vector3 position)

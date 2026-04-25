@@ -582,6 +582,129 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!1 &88631713
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 88631716}
+  - component: {fileID: 88631715}
+  - component: {fileID: 88631714}
+  m_Layer: 0
+  m_Name: arenaBoundary
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &88631714
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 88631713}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2f628b49cb71f7f4f8d2d3ef4f8ed00d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ArenaBoundary3D
+  ShowTopMostFoldoutHeaderGroup: 1
+  center: {x: 0, y: 0}
+  startWidth: 1000
+  startLength: 1000
+  minY: -500
+  maxY: 500
+  wallThickness: 3
+  startActiveOnEnable: 0
+  autoStart: 0
+  waves:
+  - duration: 5
+    timeUntilNextWave: 30
+    targetSizePercent: 100
+  - duration: 5
+    timeUntilNextWave: 30
+    targetSizePercent: 75
+  - duration: 5
+    timeUntilNextWave: 30
+    targetSizePercent: 50
+  - duration: 1e+9
+    timeUntilNextWave: 30
+    targetSizePercent: 25
+  visuals:
+    boundaryMaterial: {fileID: 2100000, guid: 47fd5b78b8584ba428cc48870b1f7dfa, type: 2}
+    hexMask: {fileID: 2800000, guid: 8b9619189c7d21f4eb9f86f6159837f3, type: 3}
+    revealDistance: 100
+    visiblePatchRadius: 20
+    idleVisibility: 0
+    proximityVisibility: 0.9
+    shrinkMinVisibility: 0.05
+    shrinkMaxVisibility: 0.1
+    textureWorldSize: 25
+    maskThreshold: 0.15
+    maskSoftness: 0.08
+    maskPower: 1
+    pulseSpeed: 5
+    pulseStrength: 0.25
+    crackleScale: 1
+    crackleSpeed: 3
+    crackleStrength: 1
+    proximityColor: {r: 16, g: 0.5562675, b: 0, a: 1}
+    shrinkColor: {r: 8.47419, g: 0.3389676, b: 0.0847419, a: 1}
+  blockPlayersAtBoundary: 0
+  clampInterval: 0.1
+  inwardSafetyMargin: 0.25
+  maxClampRadius: 25
+  outsidePenaltyInterval: 0.1
+  outsideDamagePercentPerSecond: 0.05
+  outsideVignetteAlpha: 1
+  outsideVignetteColor: {r: 1, g: 0, b: 0, a: 1}
+  localViewerRefreshInterval: 0.25
+  outsideRevealDistance: 1000
+  outsideVisiblePatchRadius: 180
+--- !u!114 &88631715
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 88631713}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
+  GlobalObjectIdHash: 3676335618
+  InScenePlacedSourceGlobalObjectIdHash: 0
+  DeferredDespawnTick: 0
+  Ownership: 1
+  AlwaysReplicateAsRoot: 0
+  SynchronizeTransform: 1
+  ActiveSceneSynchronization: 0
+  SceneMigrationSynchronization: 0
+  SpawnWithObservers: 1
+  DontDestroyWithOwner: 0
+  AutoObjectParentSync: 1
+  SyncOwnerTransformWhenParented: 1
+  AllowOwnerToParent: 0
+--- !u!4 &88631716
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 88631713}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &93165097
 GameObject:
   m_ObjectHideFlags: 0
@@ -4081,6 +4204,8 @@ MonoBehaviour:
   previewIntensity: 1
   gigablastMessageTimeout: 0.2
   gigablastFallbackFadeOutSpeed: 10
+  arenaBoundaryMessageTimeout: 0.2
+  arenaBoundaryFallbackFadeOutSpeed: 10
 --- !u!1 &522278513
 GameObject:
   m_ObjectHideFlags: 0
@@ -5216,6 +5341,7 @@ MonoBehaviour:
   - {fileID: 411163175}
   uiCamera: {fileID: 1785582021}
   baseCanvasSortingOrder: 200
+  arenaBoundary: {fileID: 88631714}
   player1WinTracker: {fileID: 368249683}
   player2WinTracker: {fileID: 273489585}
   spawnRetryIntervalSeconds: 0.1
@@ -11858,6 +11984,10 @@ PrefabInstance:
       propertyPath: m_Camera
       value: 
       objectReference: {fileID: 1867909032}
+    - target: {fileID: 1971979917992463640, guid: 2ab5e2b052ddb4229b8be680f8c4e7d1, type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 4844600726074656449, guid: 2ab5e2b052ddb4229b8be680f8c4e7d1, type: 3}
       propertyPath: chromaticConfig.volume
       value: 
@@ -11948,3 +12078,4 @@ SceneRoots:
   - {fileID: 1406496133}
   - {fileID: 822641094}
   - {fileID: 914338097}
+  - {fileID: 88631716}
