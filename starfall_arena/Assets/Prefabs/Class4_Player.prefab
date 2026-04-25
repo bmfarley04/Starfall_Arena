@@ -692,7 +692,7 @@ MonoBehaviour:
     fireSound: {fileID: 11400000, guid: 873f5f679d305474fba8afb9a88cf822, type: 2}
     regular:
       missilePrefab: {fileID: 152452, guid: e0395125146512d49b2bdb0cb17d0a26, type: 3}
-      damageMultiplier: 6
+      damageMultiplier: 12
       speedMultiplier: 1
       impactMultiplier: 10
       recoilMultiplier: 5
@@ -700,7 +700,7 @@ MonoBehaviour:
       sizeMultiplier: 1
     empowered:
       missilePrefab: {fileID: 152452, guid: e0395125146512d49b2bdb0cb17d0a26, type: 3}
-      damageMultiplier: 8
+      damageMultiplier: 16
       speedMultiplier: 1.5
       impactMultiplier: 15
       recoilMultiplier: 7
@@ -719,7 +719,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Empower
   stats:
-    cooldown: 14
+    cooldown: 32
     duration: 0
   isLocked: 0
   empower:
