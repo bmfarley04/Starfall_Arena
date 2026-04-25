@@ -61,6 +61,7 @@ public class GuidedMissile : Ability
     public GuidedMissileConfig guidedMissile;
 
     private float _lastMissileFireTime = -999f;
+    private NetMovement _netMovement;
 
     protected override void Awake()
     {
@@ -69,6 +70,7 @@ public class GuidedMissile : Ability
         {
             guidedMissile.empowerAbility = GetComponent<Empower>();
         }
+        _netMovement = GetComponent<NetMovement>();
     }
 
     public override void UseAbility(InputValue value)
@@ -101,20 +103,11 @@ public class GuidedMissile : Ability
         Vector3 spawnPosition = firingTransform.position + (firingTransform.up * guidedMissile.spawnOffset);
         Vector3 fireDirection = firingTransform.up;
 
-        GameObject missileObject = Instantiate(variant.missilePrefab, spawnPosition, firingTransform.rotation);
-
         float baseDamage = player.projectileWeapon.damage;
         float baseSpeed = player.projectileWeapon.speed;
         float baseImpact = player.projectileWeapon.impactForce;
         float baseRecoil = player.projectileWeapon.recoilForce;
         float lifetime = variant.lifetimeOverride > 0f ? variant.lifetimeOverride : player.projectileWeapon.lifetime;
-
-        float damage = baseDamage * Mathf.Max(0f, variant.damageMultiplier);
-        float speed = baseSpeed * Mathf.Max(0f, variant.speedMultiplier);
-        float impact = baseImpact * Mathf.Max(0f, variant.impactMultiplier);
-        float recoil = baseRecoil * Mathf.Max(0f, variant.recoilMultiplier);
-        float scaleMultiplier = Mathf.Max(0.01f, variant.sizeMultiplier);
-        missileObject.transform.localScale *= scaleMultiplier;
 
         Vector2 inheritedVelocity = Vector2.zero;
         if (guidedMissile.inheritShipVelocity && player != null && player.TryGetComponent<Rigidbody2D>(out var rb))
@@ -122,19 +115,79 @@ public class GuidedMissile : Ability
             inheritedVelocity = rb.linearVelocity;
         }
 
+        NetGuidedMissileState state = new NetGuidedMissileState
+        {
+            SpawnPosition = spawnPosition,
+            Direction = ((Vector2)fireDirection).normalized,
+            InheritedVelocity = inheritedVelocity,
+            Speed = baseSpeed * Mathf.Max(0f, variant.speedMultiplier),
+            Damage = baseDamage * Mathf.Max(0f, variant.damageMultiplier),
+            Lifetime = lifetime,
+            ImpactForce = baseImpact * Mathf.Max(0f, variant.impactMultiplier),
+            RecoilForce = baseRecoil * Mathf.Max(0f, variant.recoilMultiplier),
+            SizeMultiplier = Mathf.Max(0.01f, variant.sizeMultiplier),
+            Empowered = empowered,
+            ApplyRecoil = true,
+        };
+
+        _lastMissileFireTime = Time.time;
+
+        bool useNetworkPath = NetTickUtil.IsActive && _netMovement != null && _netMovement.IsSpawned && _netMovement.IsOwner;
+
+        if (useNetworkPath)
+        {
+            // Owner predicts the missile locally for responsiveness; server runs
+            // the authoritative spawn and broadcasts to remote clients.
+            if (!_netMovement.IsServer)
+            {
+                ApplyNetworkGuidedMissile(state, authoritative: false);
+            }
+            _netMovement.RequestGuidedMissile(state);
+            return;
+        }
+
+        ApplyNetworkGuidedMissile(state, authoritative: true);
+    }
+
+    public void ApplyNetworkGuidedMissile(NetGuidedMissileState state, bool authoritative)
+    {
+        MissileVariantConfig variant = state.Empowered ? guidedMissile.empowered : guidedMissile.regular;
+        if (variant.missilePrefab == null)
+        {
+            return;
+        }
+
+        Quaternion spawnRotation = state.Direction.sqrMagnitude > 0.0001f
+            ? Quaternion.LookRotation(Vector3.forward, state.Direction)
+            : transform.rotation;
+
+        GameObject missileObject = Instantiate(variant.missilePrefab, state.SpawnPosition, spawnRotation);
+        missileObject.transform.localScale *= Mathf.Max(0.01f, state.SizeMultiplier);
+
+        bool cosmeticOnly = NetTickUtil.IsActive && !authoritative;
+        int attackId = authoritative ? player.BeginTrackedAttack() : Player.InvalidAttackId;
         Transform target = ResolveTarget();
-        int attackId = player.BeginTrackedAttack();
 
         if (missileObject.TryGetComponent<Missile>(out var missile))
         {
             missile.targetTag = player.enemyTag;
-            missile.Initialize(fireDirection, inheritedVelocity, speed, damage, lifetime, impact, player, attackId);
+            missile.SetCosmeticOnly(cosmeticOnly);
+            if (NetTickUtil.IsActive && authoritative && _netMovement != null)
+            {
+                missile.SetNetworkAuthority(_netMovement, state.Tick);
+            }
+            missile.Initialize(state.Direction, state.InheritedVelocity, state.Speed, state.Damage, state.Lifetime, state.ImpactForce, player, attackId);
             missile.SetTarget(target);
         }
         else if (missileObject.TryGetComponent<ProjectileScript>(out var projectile))
         {
             projectile.targetTag = player.enemyTag;
-            projectile.Initialize(fireDirection, inheritedVelocity, speed, damage, lifetime, impact, player, attackId);
+            projectile.SetCosmeticOnly(cosmeticOnly);
+            if (NetTickUtil.IsActive && authoritative && _netMovement != null)
+            {
+                projectile.SetNetworkAuthority(_netMovement, state.Tick);
+            }
+            projectile.Initialize(state.Direction, state.InheritedVelocity, state.Speed, state.Damage, state.Lifetime, state.ImpactForce, player, attackId);
         }
         else
         {
@@ -143,14 +196,18 @@ public class GuidedMissile : Ability
             return;
         }
 
-        player.ApplyRecoil(recoil);
+        // Recoil applies on local sim, server (authoritative), and the owner's predicted copy.
+        // Skip on remote, non-owner cosmetic copies so we don't shove the other ship's visual rb.
+        bool isRemoteCosmetic = NetTickUtil.IsActive && !authoritative && _netMovement != null && !_netMovement.IsOwner;
+        if (state.ApplyRecoil && !isRemoteCosmetic)
+        {
+            player.ApplyRecoil(state.RecoilForce);
+        }
 
         if (guidedMissile.fireSound != null)
         {
             guidedMissile.fireSound.Play(player.GetAvailableAudioSource());
         }
-
-        _lastMissileFireTime = Time.time;
     }
 
     private bool IsEmpoweredActive()

@@ -35,6 +35,7 @@ public class Dodge : Ability
     private float _primeStartTime;
     private float _lastDodgeTime = -999f;
     private Coroutine _slideCoroutine;
+    private NetMovement _netMovement;
 
     protected override void Awake()
     {
@@ -43,6 +44,7 @@ public class Dodge : Ability
         {
             dodge.empowerAbility = GetComponent<Empower>();
         }
+        _netMovement = GetComponent<NetMovement>();
     }
 
     public override void UseAbility(InputValue value)
@@ -81,6 +83,25 @@ public class Dodge : Ability
         _isPrimed = false;
         _lastDodgeTime = Time.time;
 
+        bool useNetworkPath = NetTickUtil.IsActive && _netMovement != null && _netMovement.IsSpawned && _netMovement.IsOwner;
+
+        if (useNetworkPath)
+        {
+            // Owner predicts the slide locally for responsiveness; server runs
+            // the authoritative slide and broadcasts to remote clients.
+            if (!_netMovement.IsServer)
+            {
+                ApplyNetworkDodge(direction, authoritative: false);
+            }
+            _netMovement.RequestDodge(direction);
+            return;
+        }
+
+        ApplyNetworkDodge(direction, authoritative: true);
+    }
+
+    public void ApplyNetworkDodge(Vector2 direction, bool authoritative)
+    {
         if (dodge.dodgeSound != null)
         {
             dodge.dodgeSound.Play(player.GetAvailableAudioSource());

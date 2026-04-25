@@ -31,6 +31,28 @@ public partial class NetMovement
         SubmitBeamStateServerRpc(state);
     }
 
+    public void RequestConvergeBeamState(bool isFiring)
+    {
+        if (!NetTickUtil.IsActive || !IsOwner)
+        {
+            return;
+        }
+
+        NetConvergeBeamState state = new NetConvergeBeamState
+        {
+            Tick = NetTickUtil.CurrentTick,
+            IsFiring = isFiring
+        };
+
+        if (IsServer)
+        {
+            HandleConvergeBeamStateServer(state);
+            return;
+        }
+
+        SubmitConvergeBeamStateServerRpc(state);
+    }
+
     public void RequestFireTrailState(bool isActive)
     {
         if (!NetTickUtil.IsActive || !IsOwner)
@@ -88,6 +110,45 @@ public partial class NetMovement
         }
 
         SubmitTeleportServerRpc(state);
+    }
+
+    public void RequestGuidedMissile(NetGuidedMissileState state)
+    {
+        if (!NetTickUtil.IsActive || !IsOwner)
+        {
+            return;
+        }
+
+        state.Tick = NetTickUtil.CurrentTick;
+
+        if (IsServer)
+        {
+            HandleGuidedMissileServer(state);
+            return;
+        }
+
+        SubmitGuidedMissileServerRpc(state);
+    }
+
+    public void RequestDodge(Vector2 direction)
+    {
+        if (!NetTickUtil.IsActive || !IsOwner)
+        {
+            return;
+        }
+
+        NetDodgeState state = new NetDodgeState
+        {
+            Direction = direction
+        };
+
+        if (IsServer)
+        {
+            HandleDodgeServer(state);
+            return;
+        }
+
+        SubmitDodgeServerRpc(state);
     }
 
     public void RequestChronoStepState(NetChronoStepState state)
@@ -373,6 +434,12 @@ public partial class NetMovement
     }
 
     [ServerRpc]
+    private void SubmitConvergeBeamStateServerRpc(NetConvergeBeamState state, ServerRpcParams rpcParams = default)
+    {
+        HandleConvergeBeamStateServer(state);
+    }
+
+    [ServerRpc]
     private void SubmitFireTrailStateServerRpc(NetFireTrailState state, ServerRpcParams rpcParams = default)
     {
         HandleFireTrailStateServer(state);
@@ -388,6 +455,18 @@ public partial class NetMovement
     private void SubmitTeleportServerRpc(NetTeleportState state, ServerRpcParams rpcParams = default)
     {
         HandleTeleportServer(state);
+    }
+
+    [ServerRpc]
+    private void SubmitGuidedMissileServerRpc(NetGuidedMissileState state, ServerRpcParams rpcParams = default)
+    {
+        HandleGuidedMissileServer(state);
+    }
+
+    [ServerRpc]
+    private void SubmitDodgeServerRpc(NetDodgeState state, ServerRpcParams rpcParams = default)
+    {
+        HandleDodgeServer(state);
     }
 
     [ServerRpc]
@@ -488,6 +567,18 @@ public partial class NetMovement
         BroadcastBeamStateClientRpc(state);
     }
 
+    private void HandleConvergeBeamStateServer(NetConvergeBeamState state)
+    {
+        ConvergeBeam convergeBeam = GetComponent<ConvergeBeam>();
+        if (convergeBeam == null)
+        {
+            return;
+        }
+
+        convergeBeam.ApplyNetworkConvergeBeamState(state.IsFiring, authoritative: true, requestedTick: state.Tick);
+        BroadcastConvergeBeamStateClientRpc(state);
+    }
+
     private void HandleFireTrailStateServer(NetFireTrailState state)
     {
         FireWall fireWall = GetComponent<FireWall>();
@@ -526,6 +617,30 @@ public partial class NetMovement
 
         teleportAbility.ApplyNetworkTeleport(state.TargetPosition, authoritative: true);
         BroadcastTeleportClientRpc(state);
+    }
+
+    private void HandleGuidedMissileServer(NetGuidedMissileState state)
+    {
+        GuidedMissile guidedMissile = GetComponent<GuidedMissile>();
+        if (guidedMissile == null)
+        {
+            return;
+        }
+
+        guidedMissile.ApplyNetworkGuidedMissile(state, authoritative: true);
+        BroadcastGuidedMissileClientRpc(state);
+    }
+
+    private void HandleDodgeServer(NetDodgeState state)
+    {
+        Dodge dodge = GetComponent<Dodge>();
+        if (dodge == null)
+        {
+            return;
+        }
+
+        dodge.ApplyNetworkDodge(state.Direction, authoritative: true);
+        BroadcastDodgeClientRpc(state);
     }
 
     private void HandleChronoStepServer(NetChronoStepState state)
@@ -686,6 +801,18 @@ public partial class NetMovement
     }
 
     [ClientRpc]
+    private void BroadcastConvergeBeamStateClientRpc(NetConvergeBeamState state)
+    {
+        if (IsServer || IsOwner)
+        {
+            return;
+        }
+
+        ConvergeBeam convergeBeam = GetComponent<ConvergeBeam>();
+        convergeBeam?.ApplyNetworkConvergeBeamState(state.IsFiring, authoritative: false, requestedTick: state.Tick);
+    }
+
+    [ClientRpc]
     private void BroadcastFireTrailStateClientRpc(NetFireTrailState state)
     {
         if (IsServer || IsOwner)
@@ -719,6 +846,30 @@ public partial class NetMovement
 
         Teleport teleportAbility = GetComponent<Teleport>();
         teleportAbility?.ApplyNetworkTeleport(state.TargetPosition, authoritative: false);
+    }
+
+    [ClientRpc]
+    private void BroadcastGuidedMissileClientRpc(NetGuidedMissileState state)
+    {
+        if (IsServer || IsOwner)
+        {
+            return;
+        }
+
+        GuidedMissile guidedMissile = GetComponent<GuidedMissile>();
+        guidedMissile?.ApplyNetworkGuidedMissile(state, authoritative: false);
+    }
+
+    [ClientRpc]
+    private void BroadcastDodgeClientRpc(NetDodgeState state)
+    {
+        if (IsServer || IsOwner)
+        {
+            return;
+        }
+
+        Dodge dodge = GetComponent<Dodge>();
+        dodge?.ApplyNetworkDodge(state.Direction, authoritative: false);
     }
 
     [ClientRpc]

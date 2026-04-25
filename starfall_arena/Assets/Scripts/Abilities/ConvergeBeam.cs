@@ -51,6 +51,8 @@ public class ConvergeBeam : Ability
     private Coroutine _beamFadeCoroutine;
     private bool _isFiring;
     private bool _lastEmpoweredState;
+    private bool _activeAuthoritative;
+    private NetMovement _netMovement;
 
     protected override void Awake()
     {
@@ -60,6 +62,7 @@ public class ConvergeBeam : Ability
         {
             convergeBeam.empowerAbility = GetComponent<Empower>();
         }
+        _netMovement = GetComponent<NetMovement>();
 
         _laserBeamSource = gameObject.AddComponent<AudioSource>();
         _laserBeamSource.playOnAwake = false;
@@ -75,9 +78,12 @@ public class ConvergeBeam : Ability
             bool empoweredNow = IsEmpoweredActive();
             if (empoweredNow != _lastEmpoweredState)
             {
-                // Rebuild beam set so count switches immediately when Empower toggles.
-                DestroyAllBeams();
-                SpawnAllBeams();
+                // Rebuild locally so the count switches the moment Empower toggles.
+                // Empower state is itself networked, so each peer (server, owner,
+                // remote client) observes the toggle and rebuilds independently.
+                bool wasAuthoritative = _activeAuthoritative;
+                DestroyBeamObjects();
+                SpawnAllBeams(wasAuthoritative, NetTickUtil.IsActive ? NetTickUtil.CurrentTick : -1);
             }
 
             UpdateBeamConvergence();
@@ -90,6 +96,12 @@ public class ConvergeBeam : Ability
 
     void FixedUpdate()
     {
+        // Remote, non-authoritative copies don't drain capacity or apply recoil.
+        if (NetTickUtil.IsActive && _netMovement != null && !_netMovement.IsOwner && !_netMovement.IsServer)
+        {
+            return;
+        }
+
         if (!_isFiring || _activeBeams == null)
             return;
 
@@ -107,40 +119,76 @@ public class ConvergeBeam : Ability
 
         if (_currentBeamCapacity >= convergeBeam.capacity)
         {
-            Debug.Log("Converge beam capacity full! Stopping beams.");
-            DestroyAllBeams();
-            FadeOutSound();
+            StopFiringRouted();
         }
     }
 
     public override void UseAbility(InputValue value)
     {
         base.UseAbility(value);
-        Debug.Log($"Converge Beam input received - isPressed: {value.isPressed}");
+
+        bool useNetworkPath = NetTickUtil.IsActive && _netMovement != null && _netMovement.IsSpawned && _netMovement.IsOwner;
 
         if (value.isPressed)
         {
             if (_currentBeamCapacity >= convergeBeam.capacity)
             {
-                Debug.Log("Cannot fire converge beam: capacity full (overheated)");
                 return;
             }
 
             if (!_isFiring && convergeBeam.stats.prefab != null && convergeBeam.hardpoints != null && convergeBeam.hardpoints.Length > 0)
             {
-                Debug.Log($"Creating {GetActiveHardpointCount()} converging beams (empowered: {IsEmpoweredActive()})");
-                SpawnAllBeams();
-                FadeInSound();
+                ApplyNetworkConvergeBeamState(true, authoritative: !NetTickUtil.IsActive || (useNetworkPath && _netMovement.IsServer), requestedTick: NetTickUtil.IsActive ? NetTickUtil.CurrentTick : -1);
+
+                if (useNetworkPath)
+                {
+                    _netMovement.RequestConvergeBeamState(true);
+                }
             }
         }
         else
         {
             if (_isFiring)
             {
-                Debug.Log("Stopping all converging beams");
-                DestroyAllBeams();
-                FadeOutSound();
+                StopFiringRouted();
             }
+        }
+    }
+
+    private void StopFiringRouted()
+    {
+        bool useNetworkPath = NetTickUtil.IsActive && _netMovement != null && _netMovement.IsSpawned && _netMovement.IsOwner;
+        ApplyNetworkConvergeBeamState(false, authoritative: !NetTickUtil.IsActive || (useNetworkPath && _netMovement.IsServer));
+
+        if (useNetworkPath)
+        {
+            _netMovement.RequestConvergeBeamState(false);
+        }
+    }
+
+    public void ApplyNetworkConvergeBeamState(bool isFiring, bool authoritative, int requestedTick = -1)
+    {
+        if (isFiring)
+        {
+            if (_isFiring || convergeBeam.stats.prefab == null || convergeBeam.hardpoints == null || convergeBeam.hardpoints.Length == 0)
+            {
+                return;
+            }
+
+            SpawnAllBeams(authoritative, requestedTick);
+            FadeInSound();
+        }
+        else
+        {
+            if (!_isFiring)
+            {
+                return;
+            }
+
+            DestroyBeamObjects();
+            _isFiring = false;
+            _activeAuthoritative = false;
+            FadeOutSound();
         }
     }
 
@@ -156,11 +204,13 @@ public class ConvergeBeam : Ability
         return Mathf.Min(desired, convergeBeam.hardpoints.Length);
     }
 
-    private void SpawnAllBeams()
+    private void SpawnAllBeams(bool authoritative, int requestedTick)
     {
         _lastEmpoweredState = IsEmpoweredActive();
         int count = GetActiveHardpointCount();
         _activeBeams = new LaserBeam[count];
+
+        bool cosmeticOnly = NetTickUtil.IsActive && !authoritative;
 
         for (int i = 0; i < count; i++)
         {
@@ -177,11 +227,20 @@ public class ConvergeBeam : Ability
                 convergeBeam.stats.impactForce,
                 player
             );
+
+            beam.SetCosmeticOnly(cosmeticOnly);
+            if (NetTickUtil.IsActive && authoritative && _netMovement != null)
+            {
+                int beamTick = requestedTick >= 0 ? requestedTick : NetTickUtil.ServerTick;
+                beam.SetNetworkAuthority(_netMovement, beamTick);
+            }
+
             beam.StartFiring();
             _activeBeams[i] = beam;
         }
 
         _isFiring = true;
+        _activeAuthoritative = authoritative;
         UpdateBeamConvergence();
     }
 
@@ -203,7 +262,7 @@ public class ConvergeBeam : Ability
         }
     }
 
-    private void DestroyAllBeams()
+    private void DestroyBeamObjects()
     {
         if (_activeBeams != null)
         {
@@ -217,7 +276,6 @@ public class ConvergeBeam : Ability
             }
             _activeBeams = null;
         }
-        _isFiring = false;
     }
 
     private bool IsEmpoweredActive()
@@ -254,7 +312,14 @@ public class ConvergeBeam : Ability
     // ===== CLEANUP =====
     public override void Die()
     {
-        DestroyAllBeams();
+        if (_isFiring)
+        {
+            StopFiringRouted();
+        }
+        else
+        {
+            DestroyBeamObjects();
+        }
 
         if (_laserBeamSource != null && _laserBeamSource.isPlaying)
         {
