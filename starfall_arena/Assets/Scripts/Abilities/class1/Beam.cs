@@ -102,6 +102,11 @@ public class Beam : Ability
                 return;
             }
 
+            if (IsAnyOtherShieldActive())
+            {
+                return;
+            }
+
             if (_activeBeam == null && beam.stats.prefab != null)
             {
                 ApplyNetworkBeamState(true, authoritative: useNetworkPath && _netMovement.IsServer, requestedTick: NetTickUtil.IsActive ? NetTickUtil.CurrentTick : -1);
@@ -213,6 +218,19 @@ public class Beam : Ability
     public override bool IsAbilityActive()
     {
         return _activeBeam != null;
+    }
+
+    private bool IsAnyOtherShieldActive()
+    {
+        var abilities = new[] { player.ability1, player.ability2, player.ability3, player.ability4 };
+        foreach (var ability in abilities)
+        {
+            if (ability != null && ability != this && ability.IsAbilityActive() && ability.HasDamageMitigation())
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
     // ===== HUD STATE =====
