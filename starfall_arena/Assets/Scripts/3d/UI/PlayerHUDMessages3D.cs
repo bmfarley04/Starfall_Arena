@@ -3,7 +3,8 @@ using UnityEngine;
 public enum PlayerHUDVignetteChannel3D
 {
     LowHealth = 0,
-    Gigablast = 1
+    Gigablast = 1,
+    ArenaBoundary = 2
 }
 
 public readonly struct PlayerHUDVignetteMessage3D

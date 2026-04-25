@@ -1,4 +1,4 @@
-using Forge3D;
+using System.Collections.Generic;
 using UnityEngine;
 
 [DisallowMultipleComponent]
@@ -22,15 +22,17 @@ public class ForceFieldBoundaryWall3D : MonoBehaviour
     [SerializeField] private WallSide side;
     [SerializeField] private Renderer forceFieldRenderer;
     [SerializeField] private MeshFilter forceFieldMeshFilter;
-    [SerializeField] private Forcefield forceField;
     [SerializeField] private BoxCollider blocker;
     [SerializeField] private bool autoPlaceTransform = true;
     [SerializeField] private bool autoScaleVisual = true;
     [SerializeField] private bool buildWorldScaleVisualMesh = true;
+    [SerializeField] private bool buildSegmentedVisuals = true;
     [SerializeField] private bool autoScaleBlocker = true;
 
     [Header("Texture Scale")]
     [SerializeField] private float textureWorldSize = 75f;
+    [SerializeField] private float visualSegmentWorldSize = 100f;
+    [SerializeField] private int maxVisualSegments = 256;
 
     [Header("Idle Visuals")]
     [SerializeField] private Color idleInnerTint = new Color(0.35f, 0.9f, 1f, 0.45f);
@@ -45,16 +47,12 @@ public class ForceFieldBoundaryWall3D : MonoBehaviour
 
     [Header("Proximity Reveal")]
     [SerializeField] private float revealDistance = 12f;
-    [SerializeField] [Range(0f, 1f)] private float proximityStaticVisibility = 0.35f;
-    [SerializeField] private float revealHitPower = 0.35f;
-    [SerializeField] [Range(0f, 1f)] private float revealHitAlpha = 0.85f;
-    [SerializeField] private float revealRefreshInterval = 0.08f;
+    [SerializeField] [Range(0f, 1f)] private float minProximityStaticVisibility = 0.05f;
+    [SerializeField] [Range(0f, 1f)] private float maxProximityStaticVisibility = 0.65f;
     [SerializeField] private float proximityFadeSpeed = 8f;
 
     private MaterialPropertyBlock _propertyBlock;
-    private float _nextRevealTime;
-    private float _proximityVisibility;
-    private float _targetProximityVisibility;
+    private readonly List<VisualSegment> _visualSegments = new List<VisualSegment>();
     private float _halfThickness = 0.5f;
     private Vector3 _center;
     private Vector3 _normal;
@@ -65,8 +63,22 @@ public class ForceFieldBoundaryWall3D : MonoBehaviour
     private float _minY;
     private float _maxY;
     private Mesh _runtimeVisualMesh;
+    private Transform _segmentRoot;
 
     public WallSide Side => side;
+
+    private sealed class VisualSegment
+    {
+        public GameObject GameObject;
+        public Mesh Mesh;
+        public MeshFilter MeshFilter;
+        public Renderer Renderer;
+        public MaterialPropertyBlock PropertyBlock;
+        public Vector2 Center;
+        public Vector2 HalfSize;
+        public float Visibility;
+        public float TargetVisibility;
+    }
 
     private void Awake()
     {
@@ -77,10 +89,11 @@ public class ForceFieldBoundaryWall3D : MonoBehaviour
     private void OnValidate()
     {
         revealDistance = Mathf.Max(0f, revealDistance);
-        revealHitPower = Mathf.Max(0f, revealHitPower);
-        revealRefreshInterval = Mathf.Max(0.01f, revealRefreshInterval);
+        maxProximityStaticVisibility = Mathf.Max(minProximityStaticVisibility, maxProximityStaticVisibility);
         proximityFadeSpeed = Mathf.Max(0.01f, proximityFadeSpeed);
         textureWorldSize = Mathf.Max(0.01f, textureWorldSize);
+        visualSegmentWorldSize = Mathf.Max(1f, visualSegmentWorldSize);
+        maxVisualSegments = Mathf.Max(1, maxVisualSegments);
         shrinkMaxStaticVisibility = Mathf.Max(shrinkMinStaticVisibility, shrinkMaxStaticVisibility);
         CacheReferences();
     }
@@ -99,6 +112,11 @@ public class ForceFieldBoundaryWall3D : MonoBehaviour
         else
         {
             DestroyImmediate(_runtimeVisualMesh);
+        }
+
+        for (int i = 0; i < _visualSegments.Count; i++)
+        {
+            DestroyVisualSegment(_visualSegments[i]);
         }
     }
 
@@ -184,7 +202,7 @@ public class ForceFieldBoundaryWall3D : MonoBehaviour
         float staticVisibility = active
             ? shrinking
                 ? Mathf.Lerp(shrinkMinStaticVisibility, shrinkMaxStaticVisibility, Mathf.Clamp01(warningPulse))
-                : Mathf.Max(idleStaticVisibility, _proximityVisibility)
+                : idleStaticVisibility
             : 0f;
         Color innerTint = shrinking ? shrinkInnerTint : idleInnerTint;
         Color outerTint = shrinking ? shrinkOuterTint : idleOuterTint;
@@ -194,7 +212,7 @@ public class ForceFieldBoundaryWall3D : MonoBehaviour
         _propertyBlock.SetColor(InnerTintId, innerTint);
         _propertyBlock.SetColor(OuterTintId, outerTint);
         forceFieldRenderer.SetPropertyBlock(_propertyBlock);
-        _targetProximityVisibility = 0f;
+        ApplySegmentBaseState(active, shrinking, staticVisibility, innerTint, outerTint);
 
         if (blocker != null)
         {
@@ -210,26 +228,60 @@ public class ForceFieldBoundaryWall3D : MonoBehaviour
         }
 
         Vector3 closestPoint = GetClosestPointOnWall(viewer.position);
-        if ((viewer.position - closestPoint).sqrMagnitude > revealDistance * revealDistance)
+        float distance = Vector3.Distance(viewer.position, closestPoint);
+        if (distance > revealDistance)
         {
             return;
         }
 
-        _targetProximityVisibility = Mathf.Max(_targetProximityVisibility, proximityStaticVisibility);
-        if (forceField == null || Time.time < _nextRevealTime)
+        if (_visualSegments.Count == 0)
         {
             return;
         }
 
-        forceField.OnHit(closestPoint, revealHitPower, revealHitAlpha);
-        _nextRevealTime = Time.time + revealRefreshInterval;
+        Vector3 wallOffset = closestPoint - _center;
+        Vector2 closestSurfacePoint = new Vector2(
+            Vector3.Dot(wallOffset, _tangentA),
+            Vector3.Dot(wallOffset, _tangentB));
+
+        for (int i = 0; i < _visualSegments.Count; i++)
+        {
+            VisualSegment segment = _visualSegments[i];
+            float surfaceDistance = DistanceToSegmentRect(closestSurfacePoint, segment);
+            float segmentDistance = Mathf.Sqrt(distance * distance + surfaceDistance * surfaceDistance);
+            if (segmentDistance > revealDistance)
+            {
+                continue;
+            }
+
+            float closeness = 1f - Mathf.Clamp01(segmentDistance / Mathf.Max(0.01f, revealDistance));
+            float revealStrength = Mathf.SmoothStep(0f, 1f, closeness);
+            float visibility = Mathf.Lerp(minProximityStaticVisibility, maxProximityStaticVisibility, revealStrength);
+            segment.TargetVisibility = Mathf.Max(segment.TargetVisibility, visibility);
+        }
     }
 
     private void LateUpdate()
     {
-        float target = Mathf.Clamp01(_targetProximityVisibility);
+        if (_visualSegments.Count == 0)
+        {
+            return;
+        }
+
         float lerpFactor = 1f - Mathf.Exp(-proximityFadeSpeed * Time.deltaTime);
-        _proximityVisibility = Mathf.Lerp(_proximityVisibility, target, lerpFactor);
+        for (int i = 0; i < _visualSegments.Count; i++)
+        {
+            VisualSegment segment = _visualSegments[i];
+            segment.Visibility = Mathf.Lerp(segment.Visibility, Mathf.Clamp01(segment.TargetVisibility), lerpFactor);
+            ApplySegmentPropertyBlock(segment, segment.Visibility);
+        }
+    }
+
+    private static float DistanceToSegmentRect(Vector2 point, VisualSegment segment)
+    {
+        float dx = Mathf.Max(Mathf.Abs(point.x - segment.Center.x) - segment.HalfSize.x, 0f);
+        float dy = Mathf.Max(Mathf.Abs(point.y - segment.Center.y) - segment.HalfSize.y, 0f);
+        return Mathf.Sqrt(dx * dx + dy * dy);
     }
 
     private Vector3 GetClosestPointOnWall(Vector3 position)
@@ -266,10 +318,19 @@ public class ForceFieldBoundaryWall3D : MonoBehaviour
             if (buildWorldScaleVisualMesh && forceFieldMeshFilter != null)
             {
                 forceFieldRenderer.transform.localScale = Vector3.one;
-                RebuildVisualMesh(width, height);
+                if (buildSegmentedVisuals)
+                {
+                    RebuildVisualSegments(width, height);
+                }
+                else
+                {
+                    ClearVisualSegments();
+                    RebuildVisualMesh(width, height);
+                }
             }
             else
             {
+                ClearVisualSegments();
                 forceFieldRenderer.transform.localScale = new Vector3(width, height, 1f);
             }
         }
@@ -300,11 +361,6 @@ public class ForceFieldBoundaryWall3D : MonoBehaviour
         if (forceFieldMeshFilter == null)
         {
             forceFieldMeshFilter = GetComponentInChildren<MeshFilter>();
-        }
-
-        if (forceField == null)
-        {
-            forceField = GetComponentInChildren<Forcefield>();
         }
 
         if (blocker == null)
@@ -357,5 +413,233 @@ public class ForceFieldBoundaryWall3D : MonoBehaviour
         };
         _runtimeVisualMesh.RecalculateBounds();
         forceFieldMeshFilter.sharedMesh = _runtimeVisualMesh;
+        forceFieldRenderer.enabled = true;
+    }
+
+    private void RebuildVisualSegments(float width, float height)
+    {
+        if (forceFieldRenderer == null)
+        {
+            return;
+        }
+
+        EnsureSegmentRoot();
+        int columns = Mathf.Max(1, Mathf.CeilToInt(width / visualSegmentWorldSize));
+        int rows = Mathf.Max(1, Mathf.CeilToInt(height / visualSegmentWorldSize));
+        while (columns * rows > maxVisualSegments)
+        {
+            if (columns >= rows && columns > 1)
+            {
+                columns--;
+            }
+            else if (rows > 1)
+            {
+                rows--;
+            }
+            else
+            {
+                break;
+            }
+        }
+
+        int requiredSegments = columns * rows;
+        EnsureVisualSegmentCount(requiredSegments);
+        forceFieldRenderer.enabled = false;
+
+        float segmentWidth = width / columns;
+        float segmentHeight = height / rows;
+        float startX = -width * 0.5f;
+        float startY = -height * 0.5f;
+        int index = 0;
+        for (int y = 0; y < rows; y++)
+        {
+            for (int x = 0; x < columns; x++)
+            {
+                float minX = startX + x * segmentWidth;
+                float minY = startY + y * segmentHeight;
+                float maxX = minX + segmentWidth;
+                float maxY = minY + segmentHeight;
+                ConfigureVisualSegment(_visualSegments[index], minX, minY, maxX, maxY);
+                index++;
+            }
+        }
+    }
+
+    private void EnsureSegmentRoot()
+    {
+        if (_segmentRoot != null)
+        {
+            return;
+        }
+
+        GameObject root = new GameObject($"{name}_VisualSegments");
+        _segmentRoot = root.transform;
+        _segmentRoot.SetParent(forceFieldRenderer.transform, false);
+        _segmentRoot.localPosition = Vector3.zero;
+        _segmentRoot.localRotation = Quaternion.identity;
+        _segmentRoot.localScale = Vector3.one;
+    }
+
+    private void EnsureVisualSegmentCount(int count)
+    {
+        while (_visualSegments.Count < count)
+        {
+            _visualSegments.Add(CreateVisualSegment(_visualSegments.Count));
+        }
+
+        for (int i = 0; i < _visualSegments.Count; i++)
+        {
+            _visualSegments[i].GameObject.SetActive(i < count);
+        }
+    }
+
+    private VisualSegment CreateVisualSegment(int index)
+    {
+        GameObject segmentObject = new GameObject($"Visual Segment {index:00}");
+        segmentObject.transform.SetParent(_segmentRoot, false);
+        MeshFilter meshFilter = segmentObject.AddComponent<MeshFilter>();
+        MeshRenderer meshRenderer = segmentObject.AddComponent<MeshRenderer>();
+        meshRenderer.sharedMaterials = forceFieldRenderer.sharedMaterials;
+        meshRenderer.shadowCastingMode = forceFieldRenderer.shadowCastingMode;
+        meshRenderer.receiveShadows = forceFieldRenderer.receiveShadows;
+        meshRenderer.lightProbeUsage = forceFieldRenderer.lightProbeUsage;
+        meshRenderer.reflectionProbeUsage = forceFieldRenderer.reflectionProbeUsage;
+
+        Mesh mesh = new Mesh
+        {
+            name = $"{name}_BoundaryWallSegment_{index:00}"
+        };
+        meshFilter.sharedMesh = mesh;
+
+        return new VisualSegment
+        {
+            GameObject = segmentObject,
+            Mesh = mesh,
+            MeshFilter = meshFilter,
+            Renderer = meshRenderer,
+            PropertyBlock = new MaterialPropertyBlock()
+        };
+    }
+
+    private void ConfigureVisualSegment(VisualSegment segment, float minX, float minY, float maxX, float maxY)
+    {
+        float width = maxX - minX;
+        float height = maxY - minY;
+        float halfWidth = width * 0.5f;
+        float halfHeight = height * 0.5f;
+        float centerX = (minX + maxX) * 0.5f;
+        float centerY = (minY + maxY) * 0.5f;
+
+        segment.GameObject.transform.localPosition = new Vector3(centerX, centerY, 0f);
+        segment.GameObject.transform.localRotation = Quaternion.identity;
+        segment.GameObject.transform.localScale = Vector3.one;
+        segment.Center = new Vector2(centerX, centerY);
+        segment.HalfSize = new Vector2(halfWidth, halfHeight);
+
+        segment.Mesh.Clear();
+        segment.Mesh.vertices = new[]
+        {
+            new Vector3(-halfWidth, -halfHeight, 0f),
+            new Vector3(halfWidth, -halfHeight, 0f),
+            new Vector3(-halfWidth, halfHeight, 0f),
+            new Vector3(halfWidth, halfHeight, 0f)
+        };
+        segment.Mesh.uv = new[]
+        {
+            new Vector2(minX / textureWorldSize, minY / textureWorldSize),
+            new Vector2(maxX / textureWorldSize, minY / textureWorldSize),
+            new Vector2(minX / textureWorldSize, maxY / textureWorldSize),
+            new Vector2(maxX / textureWorldSize, maxY / textureWorldSize)
+        };
+        segment.Mesh.normals = new[]
+        {
+            Vector3.back,
+            Vector3.back,
+            Vector3.back,
+            Vector3.back
+        };
+        segment.Mesh.triangles = new[]
+        {
+            0, 2, 1,
+            2, 3, 1
+        };
+        segment.Mesh.RecalculateBounds();
+    }
+
+    private void ApplySegmentBaseState(bool active, bool shrinking, float staticVisibility, Color innerTint, Color outerTint)
+    {
+        for (int i = 0; i < _visualSegments.Count; i++)
+        {
+            VisualSegment segment = _visualSegments[i];
+            if (!segment.GameObject.activeSelf)
+            {
+                continue;
+            }
+
+            segment.TargetVisibility = active
+                ? shrinking ? staticVisibility : idleStaticVisibility
+                : 0f;
+            if (shrinking || !active)
+            {
+                segment.Visibility = segment.TargetVisibility;
+            }
+
+            segment.PropertyBlock.SetColor(InnerTintId, innerTint);
+            segment.PropertyBlock.SetColor(OuterTintId, outerTint);
+            segment.PropertyBlock.SetFloat(StaticVisibilityId, shrinking || !Application.isPlaying ? segment.TargetVisibility : segment.Visibility);
+            segment.Renderer.SetPropertyBlock(segment.PropertyBlock);
+        }
+    }
+
+    private void ApplySegmentPropertyBlock(VisualSegment segment, float staticVisibility)
+    {
+        segment.Renderer.GetPropertyBlock(segment.PropertyBlock);
+        segment.PropertyBlock.SetFloat(StaticVisibilityId, staticVisibility);
+        segment.Renderer.SetPropertyBlock(segment.PropertyBlock);
+    }
+
+    private void ClearVisualSegments()
+    {
+        forceFieldRenderer.enabled = true;
+        for (int i = 0; i < _visualSegments.Count; i++)
+        {
+            DestroyVisualSegment(_visualSegments[i]);
+        }
+
+        _visualSegments.Clear();
+        if (_segmentRoot == null)
+        {
+            return;
+        }
+
+        if (Application.isPlaying)
+        {
+            Destroy(_segmentRoot.gameObject);
+        }
+        else
+        {
+            DestroyImmediate(_segmentRoot.gameObject);
+        }
+
+        _segmentRoot = null;
+    }
+
+    private static void DestroyVisualSegment(VisualSegment segment)
+    {
+        if (segment == null)
+        {
+            return;
+        }
+
+        if (Application.isPlaying)
+        {
+            Object.Destroy(segment.Mesh);
+            Object.Destroy(segment.GameObject);
+        }
+        else
+        {
+            Object.DestroyImmediate(segment.Mesh);
+            Object.DestroyImmediate(segment.GameObject);
+        }
     }
 }

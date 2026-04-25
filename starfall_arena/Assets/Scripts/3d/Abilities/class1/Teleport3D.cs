@@ -269,7 +269,7 @@ public class Teleport3D : Ability3D
 
     private Vector3 ClampTeleportTarget(Vector3 targetPosition)
     {
-        if (!ArenaBoundary3D.TryGetActive(out ArenaBoundary3D boundary))
+        if (!ArenaBoundary3D.TryGetActive(out ArenaBoundary3D boundary) || !boundary.BlocksMovement)
         {
             return targetPosition;
         }
