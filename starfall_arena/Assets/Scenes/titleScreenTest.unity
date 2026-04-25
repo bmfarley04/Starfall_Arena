@@ -44825,6 +44825,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 76197466637871567, guid: 7b6b5476ddcf00443aa5d5fae43aa961, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1890526281}
+    - targetCorrespondingSourceObject: {fileID: 76197466637871567, guid: 7b6b5476ddcf00443aa5d5fae43aa961, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1890526282}
   m_SourcePrefab: {fileID: 100100000, guid: 7b6b5476ddcf00443aa5d5fae43aa961, type: 3}
 --- !u!1 &1178168623
 GameObject:
@@ -71822,6 +71825,30 @@ MonoBehaviour:
   defaultPort: 7777
   maxPlayers: 2
   clientConnectionTimeoutSeconds: 8
+--- !u!114 &1890526282
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1890526276}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 98d9db9626104da59357651088226725, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.Multiplayer.Tools.NetworkSimulator.Runtime::Unity.Multiplayer.Tools.NetworkSimulator.Runtime.NetworkSimulator
+  m_PresetAsset: {fileID: 11400000, guid: a14c719a35d44634d80ec949906f79a0, type: 2}
+  m_PresetReference:
+    rid: -2
+  m_Scenario:
+    rid: -2
+  m_IsScenarioSettingsFolded: 0
+  AutoRunScenario: 0
+  references:
+    version: 2
+    RefIds:
+    - rid: -2
+      type: {class: , ns: , asm: }
 --- !u!1 &1896435663
 GameObject:
   m_ObjectHideFlags: 0
