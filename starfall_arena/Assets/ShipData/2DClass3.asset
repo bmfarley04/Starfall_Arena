@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4126ca0ce3c78694f95eed711408a84b, type: 3}
-  m_Name: Class3
+  m_Name: 2DClass3
   m_EditorClassIdentifier: Assembly-CSharp::ShipData
   _shipId: dd9c5330a88e4a73b454960df08cc2b7
   shipName: AXIOM WRAITH

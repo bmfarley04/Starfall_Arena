@@ -310,7 +310,7 @@ GameObject:
   m_Component:
   - component: {fileID: 8447593613203198634}
   m_Layer: 23
-  m_Name: Class3_Player
+  m_Name: 2DClass3_Player
   m_TagString: Player1
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
