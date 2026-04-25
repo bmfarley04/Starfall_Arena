@@ -12977,6 +12977,10 @@ PrefabInstance:
       propertyPath: m_Camera
       value: 
       objectReference: {fileID: 1867909032}
+    - target: {fileID: 1971979917992463640, guid: 2ab5e2b052ddb4229b8be680f8c4e7d1, type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 4844600726074656449, guid: 2ab5e2b052ddb4229b8be680f8c4e7d1, type: 3}
       propertyPath: chromaticConfig.volume
       value: 

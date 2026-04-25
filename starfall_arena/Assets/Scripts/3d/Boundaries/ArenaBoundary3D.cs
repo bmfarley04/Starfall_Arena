@@ -65,6 +65,7 @@ public class ArenaBoundary3D : NetworkBehaviour
     [Header("Enforcement")]
     [SerializeField] private float clampInterval = 0.1f;
     [SerializeField] private float inwardSafetyMargin = 0.25f;
+    [SerializeField] private float maxClampRadius = 25f;
 
     [Header("Proximity Reveal")]
     [SerializeField] private float localViewerRefreshInterval = 0.25f;
@@ -236,6 +237,7 @@ public class ArenaBoundary3D : NetworkBehaviour
 
     public Vector3 ClampPositionInside(Vector3 position, float radius = 0f)
     {
+        radius = Mathf.Min(Mathf.Max(0f, radius), maxClampRadius);
         float margin = Mathf.Max(0f, radius + inwardSafetyMargin);
         float halfWidth = Mathf.Max(0f, (_currentWidth * 0.5f) - margin);
         float halfLength = Mathf.Max(0f, (_currentLength * 0.5f) - margin);
@@ -312,7 +314,9 @@ public class ArenaBoundary3D : NetworkBehaviour
             return;
         }
 
-        float radius = movement != null ? movement.GetCollisionRadius() : ResolveCollisionRadius(player);
+        float radius = Mathf.Min(
+            movement != null ? movement.GetCollisionRadius() : ResolveCollisionRadius(player),
+            maxClampRadius);
         Vector3 position = player.transform.position;
         Vector3 correctedPosition = ClampPositionInside(position, radius);
         if ((correctedPosition - position).sqrMagnitude <= 0.0001f)
@@ -497,6 +501,7 @@ public class ArenaBoundary3D : NetworkBehaviour
         warningFlashRate = Mathf.Max(0.01f, warningFlashRate);
         clampInterval = Mathf.Max(0.02f, clampInterval);
         inwardSafetyMargin = Mathf.Max(0f, inwardSafetyMargin);
+        maxClampRadius = Mathf.Max(0f, maxClampRadius);
         localViewerRefreshInterval = Mathf.Max(0.05f, localViewerRefreshInterval);
     }
 }

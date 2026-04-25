@@ -208,7 +208,10 @@ public class ForceFieldBoundaryWall3D : MonoBehaviour
         {
             blocker.transform.localPosition = Vector3.zero;
             blocker.transform.localRotation = Quaternion.identity;
-            blocker.size = new Vector3(width, height, Mathf.Max(0.01f, thickness));
+            bool blockerUsesScaledVisualTransform = forceFieldRenderer != null && blocker.transform == forceFieldRenderer.transform;
+            blocker.size = blockerUsesScaledVisualTransform
+                ? new Vector3(1f, 1f, Mathf.Max(0.01f, thickness))
+                : new Vector3(width, height, Mathf.Max(0.01f, thickness));
             blocker.center = Vector3.zero;
         }
     }

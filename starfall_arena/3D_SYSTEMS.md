@@ -253,7 +253,8 @@ When adding a new 3D script, place it under the subsystem it serves first. Do no
 ## Force-Field Arena Boundary Authoring
 
 - add one `ArenaBoundary3D` to the 3D gameplay scene and assign it to `SceneManager3D` if the boundary should run with each round
-- author six child wall objects, each with `ForceFieldBoundaryWall3D`, a force-field visual quad using `FORGE3D/Force Field/Force Field Static`, and a separate thin `BoxCollider`
+- author six child wall objects, each with `ForceFieldBoundaryWall3D`, a force-field visual quad using `FORGE3D/Force Field/Force Field Static`, and a thin `BoxCollider`
+- the collider may live on the same quad as the renderer or on a separate child; if it shares the scaled visual transform, `ForceFieldBoundaryWall3D` keeps collider size normalized so the wall is not double-scaled
 - assign each wall side (`North`, `South`, `East`, `West`, `Top`, `Bottom`) and wire the renderer, Forge3D `Forcefield`, and blocker references
 - keep `_Static` near zero for idle materials; runtime code raises it for shrink warning flashes and uses `Forcefield.OnHit(...)` for local proximity reveal
 - put a `NetworkObject` on `ArenaBoundary3D` in network scenes so active/shrinking state and current dimensions replicate to clients
