@@ -9,7 +9,7 @@ public class PhysicalProjectile3D : Projectile3D
             return;
         }
 
-        damageable.TakeDirectDamage(_damage, hitPoint, _shooter);
+        damageable.TakeDirectDamage(_damage, hitPoint, _shooter, _accuracyAttackId);
         ApplyImpactForce(collider);
     }
 }

@@ -707,7 +707,7 @@ public class NetMovement3D : NetworkBehaviour
         if (_playerInput3D != null)
         {
             _playerInput3D.enabled = true;
-            _playerInput3D.SetCombatInputSuppressed(!HasNetworkCombatBridgeForOwner());
+            _playerInput3D.SetCombatInputSuppressed(_movementLocked.Value || !HasNetworkCombatBridgeForOwner());
         }
 
         if (_playerInput != null)
@@ -833,7 +833,8 @@ public class NetMovement3D : NetworkBehaviour
             needsRecovery = true;
         }
 
-        if (_playerInput3D != null && _playerInput3D.IsCombatInputSuppressed == HasNetworkCombatBridgeForOwner())
+        bool expectedCombatSuppressed = _movementLocked.Value || !HasNetworkCombatBridgeForOwner();
+        if (_playerInput3D != null && _playerInput3D.IsCombatInputSuppressed != expectedCombatSuppressed)
         {
             needsRecovery = true;
         }
@@ -918,6 +919,11 @@ public class NetMovement3D : NetworkBehaviour
 
     private void ApplyMovementLock(bool isLocked)
     {
+        if (IsOwner && _playerInput3D != null)
+        {
+            _playerInput3D.SetCombatInputSuppressed(isLocked || !HasNetworkCombatBridgeForOwner());
+        }
+
         if (_rb == null)
         {
             return;

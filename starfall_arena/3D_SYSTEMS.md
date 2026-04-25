@@ -45,6 +45,11 @@ These classes should stay narrow and mostly coordinate dedicated 3D systems.
 
 ### Shared 3D ship systems
 
+- `SceneManager3D`
+  - 3D duel-flow coordinator for the active networked 3D scene
+  - owns best-of-five round progression, versus-screen wait, round intro/countdown, per-round spawning/despawning, round-end presentation, win tracking, and game-end presentation
+  - reuses the shared versus, round-end, game-end, win tracker, and UI camera/canvas setup
+  - intentionally omits the 2D map cycle, augment phases, and ability-4 unlock cadence; 3D duels are straight combat rounds using prefab-authored ship kits
 - `ShipFlight3D`
   - shared rigidbody flight
   - assisted pitch/yaw steering driven by filtered input and acceleration-limited turn rates
@@ -86,9 +91,16 @@ These classes should stay narrow and mostly coordinate dedicated 3D systems.
   - owns local-player-only 3D coordination, victim-side hit audio, and the dedicated `OnAnchor` input state
   - Anchor is a hold input that suppresses thrust while applying a configurable rotation multiplier for fast facing changes
   - while Anchor is active, `Player3D` can also drive split-state presentation rigs
+  - owns player shield regeneration timing/rate config (`regenDelay`, `regenRate`) and applies regen with server authority in networked matches
+- `PlayerCombatStats3D`
+  - lightweight 3D combat-stat counter attached to spawned 3D players by `SceneManager3D`
+  - tracks shots fired, shots hit, damage dealt, and damage taken for shared round-end/game-end UI
+  - uses tracked attack ids so one trigger pull, beam activation, or multi-muzzle volley counts as one accuracy attempt and at most one hit
+  - records stats only on the gameplay-authoritative side, which is the server during networked matches
 - `PlayerHUDManager3D`
   - shared local-player binding source for scene HUD objects in the 3D path
   - resolves the correct player once and broadcasts that binding to dedicated HUD element scripts
+  - routes player-originated HUD messages (for example vignette channel updates) to HUD-side receivers so prefab gameplay scripts do not need direct scene-UI references
   - should move to NGO ownership once the 3D network player path exists
 - `PlayerHealthShieldHUD3D`
   - scene HUD health/shield presenter for the local player
@@ -109,13 +121,18 @@ These classes should stay narrow and mostly coordinate dedicated 3D systems.
   - binds through `PlayerHUDManager3D`
   - uses the same camera-centered aim source as the 3D weapon path
   - supports enemy-hover feedback, firing pulse feedback, and primary-weapon overheat bracket fill
+- `TargetAwarenessHUD3D`
+  - local-player target readability HUD for non-local `Entity3D` objects
+  - binds through `PlayerHUDManager3D`, pools one canvas widget per active target, and reads replicated proxy transform/health/shield state without sending network messages
+  - transitions between edge indicator, floating far/occluded indicator, close visible hidden state, and mid-range visible bracket states
+  - uses screen-space ellipse clamping with independently tunable top/bottom padding for offscreen indicators and occlusion checks to avoid showing brackets/bars through world geometry
 - `GigablastChargeEdgeGlow3D`
   - local-player fullscreen Gigablast edge-glow controller
   - reads the charged-shot progress and drives shader globals for the 3D charge-screen effect
-- `PlayerLowHealthEdgeGlow3D`
-  - local-player fullscreen low-health edge-glow controller for the 3D path
-  - drives a red edge vignette only when hull is below 50% and shields are depleted
-  - fades out automatically when shields return or hull recovers above threshold
+- `PlayerLowHealthVignetteHUD3D`
+  - local-player HUD-image low-health vignette controller for the 3D path
+  - binds through `PlayerHUDManager3D` and drives a configured `Image` color/alpha
+  - fades in when hull is below 50% and shields are depleted, then fades out when recovery conditions are met
 - `PlayerChromaticAberration3D`
   - local-player chromatic-aberration hit feedback controller for the 3D path
   - should stay on the local player camera path and prefer an explicit `Volume` reference
@@ -180,7 +197,7 @@ Current folder contract:
   - examples: `Player3D`, `PlayerInput3D`, `PlayerCameraRig3D`, `PlayerHUDManager3D`
 - `UI`
   - local-player 3D HUD widgets and HUD-binding targets
-  - examples: `PlayerAimReticle3D`, `PlayerHealthShieldHUD3D`, `PlayerWeaponSelectionHUD3D`, `PlayerWeaponAbilityHUDSpawner3D`
+  - examples: `PlayerAimReticle3D`, `PlayerHealthShieldHUD3D`, `PlayerLowHealthVignetteHUD3D`, `PlayerWeaponSelectionHUD3D`, `PlayerWeaponAbilityHUDSpawner3D`
 - `Entities/Enemy`
   - enemy-only 3D entity coordination and AI flight intent
   - examples: `Enemy3D`, `EnemyAIFlightController3D`

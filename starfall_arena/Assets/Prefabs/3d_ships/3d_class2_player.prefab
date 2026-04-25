@@ -5520,7 +5520,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6c69aa69e566ed9479d0c430c26157d5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ShieldController
-  shieldColor: {r: 0, g: 0.5294118, b: 1, a: 1}
+  shieldColor: {r: 1, g: 0.37981933, b: 0, a: 1}
   inflationAmount: 0.1
   shieldVisibleDuration: 0.6
   rippleDuration: 0.5
@@ -10562,7 +10562,6 @@ GameObject:
   - component: {fileID: 2273685839450933136}
   - component: {fileID: 8751481912860533192}
   - component: {fileID: 4844600726074656449}
-  - component: {fileID: 8844472236609154322}
   - component: {fileID: 3009000303518804356}
   - component: {fileID: 8372746202662312326}
   - component: {fileID: 4442115351324218777}
@@ -10577,7 +10576,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &5260338452082746806
 Transform:
   m_ObjectHideFlags: 0
@@ -10736,7 +10735,7 @@ AudioSource:
     m_Curve:
     - serializedVersion: 3
       time: 0
-      value: 0
+      value: 1
       inSlope: 0
       outSlope: 0
       tangentMode: 0
@@ -10847,6 +10846,9 @@ MonoBehaviour:
     beamHitLoopSound: {fileID: 11400000, guid: cdf6af1d1d05cdd4d8cf3ea5f244f9f2, type: 2}
     beamHitLoopStopDelay: 0.2
     audioSourcePoolSize: 4
+  shieldRegen:
+    regenDelay: 5
+    regenRate: 20
 --- !u!114 &279171780386237379
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -11114,7 +11116,6 @@ MonoBehaviour:
     prefab: {fileID: 100014, guid: d96258cdf841f5e4d8af97dce9661d8c, type: 3}
     scale: 2
     sound: {fileID: 11400000, guid: 52e8c58e387b89849affa74c78d6d899, type: 2}
-  deathSoundSpatialBlend: 1
   scatterRoot: {fileID: 1497443038219400980}
   scatterChance: 1
 --- !u!114 &8751481912860533192
@@ -11173,64 +11174,6 @@ MonoBehaviour:
     projectileMultiplier: 0.5
     beamAccumulationWindow: 0.2
     fadeSpeed: 2
---- !u!114 &8844472236609154322
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7114399765549422770}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a7f3623a0133472a8bb98f24e8bf2259, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::PlayerLowHealthEdgeGlow3D
-  player: {fileID: 4860835452147509291}
-  playerCameraRig3D: {fileID: 8106419607673637394}
-  netMovement: {fileID: 1202045257313671994}
-  edgeColor: {r: 1, g: 0.08, b: 0.08, a: 1}
-  coreThicknessMin: 0.01
-  coreThicknessMax: 0.03
-  coreSoftness: 1
-  coreIntensity: 0.25
-  haloThicknessMin: 0.045
-  haloThicknessMax: 0.12
-  haloSoftness: 1
-  haloIntensity: 0.9
-  cornerBoost: 0.22
-  edgeBiasHorizontal: 1
-  edgeBiasVertical: 0.85
-  lowHealthThreshold: 0.5
-  shieldActiveThreshold: 0.001
-  fadeInSpeed: 3
-  fadeOutSpeed: 4
-  healthRemap:
-    serializedVersion: 2
-    m_Curve:
-    - serializedVersion: 3
-      time: 0
-      value: 0
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    - serializedVersion: 3
-      time: 1
-      value: 1
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
-  pulseWhileLowHealth: 1
-  pulseAmplitude: 0.1
-  pulseSpeed: 6
 --- !u!114 &3009000303518804356
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -11258,7 +11201,7 @@ MonoBehaviour:
   maxAimDistance: 1000
   screenCenterConvergenceDistance: 220
   screenCenterDirectionBlend: 0.35
-  muzzleEffectPrefab: {fileID: 100004, guid: eea7e016f2495934da5394e8c6d8c9e6, type: 3}
+  muzzleEffectPrefab: {fileID: 100004, guid: 8377d399368837240be74b846e11344c, type: 3}
   muzzleEffectLifetime: 0.05
   parentMuzzleEffectToMuzzle: 1
   projectileSpawnLocalOffset: {x: 0, y: 0, z: 4}
@@ -11308,7 +11251,7 @@ MonoBehaviour:
   maxAimDistance: 1000
   screenCenterConvergenceDistance: 150
   screenCenterDirectionBlend: 1
-  muzzleEffectPrefab: {fileID: 100004, guid: eea7e016f2495934da5394e8c6d8c9e6, type: 3}
+  muzzleEffectPrefab: {fileID: 100004, guid: abe6a449968d3af4b88a2955e7fe2583, type: 3}
   muzzleEffectLifetime: 0.05
   parentMuzzleEffectToMuzzle: 1
   projectileSpawnLocalOffset: {x: 0, y: 0, z: 4}
@@ -11327,7 +11270,7 @@ MonoBehaviour:
     slowDuration: 1
     normalEngineEmissionRate: 30
     slowedEngineEmissionRate: 2
-    fireSound: {fileID: 0}
+    fireSound: {fileID: 11400000, guid: 24862794776e6b34daca8bf8af7518f7, type: 2}
   projectileWeapon: {fileID: 3009000303518804356}
 --- !u!114 &4442115351324218777
 MonoBehaviour:
@@ -11356,7 +11299,7 @@ MonoBehaviour:
   maxAimDistance: 1000
   screenCenterConvergenceDistance: 220
   screenCenterDirectionBlend: 0.5
-  muzzleEffectPrefab: {fileID: 100004, guid: eea7e016f2495934da5394e8c6d8c9e6, type: 3}
+  muzzleEffectPrefab: {fileID: 100004, guid: 8377d399368837240be74b846e11344c, type: 3}
   muzzleEffectLifetime: 0.05
   parentMuzzleEffectToMuzzle: 1
   projectileSpawnLocalOffset: {x: 0, y: 0, z: 0}
@@ -11393,7 +11336,7 @@ MonoBehaviour:
     shieldVisual: {fileID: 8934542878946749813}
     shieldColor: {r: 0, g: 1, b: 0.27494502, a: 1}
     shieldLoopSound: {fileID: 0}
-    shieldHitSound: {fileID: 0}
+    shieldHitSound: {fileID: 11400000, guid: 6a5f04ee6bc536848a1d144945dd48e8, type: 2}
   shieldLoopAudioSource: {fileID: 0}
 --- !u!114 &52433826259895386
 MonoBehaviour:
@@ -11425,7 +11368,7 @@ MonoBehaviour:
     screenCenterDirectionBlend: 0.35
     pullSpeed: 20
     freezeTargetMovement: 1
-    stopDistance: 15
+    stopDistance: 10
     spawnPoint: {fileID: 44811053698406041}
     visualRoot: {fileID: 2215668062343084882}
     alignVisualToConeDirection: 1
@@ -11434,7 +11377,7 @@ MonoBehaviour:
     visualConeScaleMultiplier: {x: 1, y: 1, z: 1}
     drawGameplayConeGizmo: 1
     gameplayConeGizmoColor: {r: 0, g: 1, b: 1, a: 0.85}
-    beamLoopSound: {fileID: 0}
+    beamLoopSound: {fileID: 11400000, guid: 6f42d3b3662519e4b8d7879cc5c73f94, type: 2}
   tractorBeamLoopAudioSource: {fileID: 0}
   logInitialTargetHits: 1
 --- !u!114 &-7814873099316739718
