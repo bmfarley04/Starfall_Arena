@@ -622,13 +622,17 @@ MonoBehaviour:
   startActiveOnEnable: 1
   autoStart: 0
   waves:
-  - duration: 30
+  - duration: 5
+    timeUntilNextWave: 30
     targetSizePercent: 100
-  - duration: 30
+  - duration: 5
+    timeUntilNextWave: 30
     targetSizePercent: 75
-  - duration: 30
+  - duration: 5
+    timeUntilNextWave: 30
     targetSizePercent: 50
   - duration: 1e+9
+    timeUntilNextWave: 30
     targetSizePercent: 25
   visuals:
     boundaryMaterial: {fileID: 2100000, guid: 47fd5b78b8584ba428cc48870b1f7dfa, type: 2}
@@ -637,8 +641,8 @@ MonoBehaviour:
     visiblePatchRadius: 20
     idleVisibility: 0
     proximityVisibility: 0.9
-    shrinkMinVisibility: 0.18
-    shrinkMaxVisibility: 1
+    shrinkMinVisibility: 0.05
+    shrinkMaxVisibility: 0.1
     textureWorldSize: 25
     maskThreshold: 0.15
     maskSoftness: 0.08
@@ -650,7 +654,7 @@ MonoBehaviour:
     crackleStrength: 1
     proximityColor: {r: 16, g: 0.5562675, b: 0, a: 1}
     shrinkColor: {r: 8.47419, g: 0.3389676, b: 0.0847419, a: 1}
-  warningFlashRate: 4
+  warningFlashRate: 1
   blockPlayersAtBoundary: 0
   clampInterval: 0.1
   inwardSafetyMargin: 0.25

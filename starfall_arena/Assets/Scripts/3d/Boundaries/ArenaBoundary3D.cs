@@ -11,6 +11,8 @@ public class ArenaBoundary3D : NetworkBehaviour
     {
         [Tooltip("Seconds this wave takes to reach its target size percent.")]
         public float duration;
+        [Tooltip("Seconds to wait at this wave's target size before the next wave starts.")]
+        public float timeUntilNextWave;
         [Tooltip("Target size as a percent of the starting arena dimensions. 100 means full size, 80 means 80% of the starting width/height/length.")]
         [Range(1f, 100f)] public float targetSizePercent;
     }
@@ -200,6 +202,7 @@ public class ArenaBoundary3D : NetworkBehaviour
     private float _effectiveVisiblePatchRadius;
     private int _currentWaveIndex;
     private float _waveTimer;
+    private float _waveHoldTimer;
     private float _nextClampTime;
     private float _lastOutsidePenaltyTime;
     private float _nextLocalViewerRefreshTime;
@@ -377,6 +380,7 @@ public class ArenaBoundary3D : NetworkBehaviour
         ApplyCurrentDimensionsFromPercent();
         _currentWaveIndex = 0;
         _waveTimer = 0f;
+        _waveHoldTimer = 0f;
         _isShrinking = false;
         SyncStateToNetwork();
     }
@@ -416,24 +420,33 @@ public class ArenaBoundary3D : NetworkBehaviour
 
         BoundaryWave wave = waves[_currentWaveIndex];
         float duration = Mathf.Max(0.01f, wave.duration);
-        _waveTimer += Time.deltaTime;
-
         float targetSizePercent = Mathf.Clamp(wave.targetSizePercent <= 0f ? 100f : wave.targetSizePercent, 1f, 100f);
+
+        if (_waveTimer >= duration)
+        {
+            _currentSizePercent = targetSizePercent;
+            ApplyCurrentDimensionsFromPercent();
+            _isShrinking = false;
+
+            float holdDuration = Mathf.Max(0f, wave.timeUntilNextWave);
+            _waveHoldTimer += Time.deltaTime;
+            if (_waveHoldTimer < holdDuration)
+            {
+                return;
+            }
+
+            _currentWaveIndex++;
+            _waveTimer = 0f;
+            _waveHoldTimer = 0f;
+            _waveStartSizePercent = _currentSizePercent;
+            return;
+        }
+
+        _waveTimer += Time.deltaTime;
         _isShrinking = !Mathf.Approximately(_waveStartSizePercent, targetSizePercent);
         float progress = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(_waveTimer / duration));
         _currentSizePercent = Mathf.Lerp(_waveStartSizePercent, targetSizePercent, progress);
         ApplyCurrentDimensionsFromPercent();
-
-        if (_waveTimer < duration)
-        {
-            return;
-        }
-
-        _currentSizePercent = targetSizePercent;
-        ApplyCurrentDimensionsFromPercent();
-        _currentWaveIndex++;
-        _waveTimer = 0f;
-        _waveStartSizePercent = _currentSizePercent;
     }
 
     private void ApplyCurrentDimensionsFromPercent()
@@ -975,6 +988,7 @@ public class ArenaBoundary3D : NetworkBehaviour
         {
             BoundaryWave wave = waves[i];
             wave.duration = Mathf.Max(0.01f, wave.duration);
+            wave.timeUntilNextWave = Mathf.Max(0f, wave.timeUntilNextWave);
             wave.targetSizePercent = Mathf.Clamp(wave.targetSizePercent <= 0f ? 100f : wave.targetSizePercent, 1f, 100f);
             waves[i] = wave;
         }

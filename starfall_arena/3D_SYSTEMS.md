@@ -271,7 +271,7 @@ When adding a new 3D script, place it under the subsystem it serves first. Do no
 - do not author six wall prefab children for the current path; `ArenaBoundary3D` generates the inward-facing box visual and blocker colliders itself at runtime
 - leave `Block Players At Boundary` disabled for the current soft-boundary design; players outside the arena receive warning vignette plus configurable damage instead of being physically stopped
 - teleport and network teleport clamping only run when `Block Players At Boundary` is enabled, so soft-boundary matches can still move or blink through the field
-- author each shrink wave with `Duration` and `Target Size Percent`; the arena starts at 100 percent of its configured width/height/length, then each wave interpolates all three dimensions to its target percent for that wave duration
+- author each shrink wave with `Duration`, `Time Until Next Wave`, and `Target Size Percent`; the arena starts at 100 percent of its configured width/height/length, interpolates all three dimensions to the wave target over `Duration`, then waits at that size for `Time Until Next Wave` before starting the next wave
 - tune `Outside Penalty Interval` for how often outside damage is applied, and tune `Outside Damage Percent Per Second` as a fraction of `MaxHealth + MaxShield`; for example `0.05` removes 5 percent of total durability per second while outside
 - tune `Outside Vignette Alpha` and `Outside Vignette Color` for the local-player HUD warning shown through `PlayerLowHealthVignetteHUD3D`
 - assign a material using `Starfall/3D/ProceduralHexArenaBoundary`, or let the component create a runtime fallback material from that shader
