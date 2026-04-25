@@ -375,24 +375,19 @@ public partial class NetMovement : NetworkBehaviour
 
     public void SetAbility4LockedAuthoritative(bool isLocked)
     {
-        Debug.Log($"[Ab4Debug] SetAbility4LockedAuthoritative on {name}: isLocked={isLocked}, NetTickUtil.IsActive={NetTickUtil.IsActive}, IsSpawned={IsSpawned}, IsServer={IsServer}, IsOwner={IsOwner}");
-
         if (!NetTickUtil.IsActive)
         {
-            Debug.Log($"[Ab4Debug]   -> branch: !NetTickUtil.IsActive (local apply)");
             ApplyAbility4Lock(isLocked);
             return;
         }
 
         if (IsServer)
         {
-            Debug.Log($"[Ab4Debug]   -> branch: IsServer (apply local + broadcast)");
             ApplyAbility4Lock(isLocked);
             BroadcastAbility4LockClientRpc(isLocked);
             return;
         }
 
-        Debug.Log($"[Ab4Debug]   -> branch: !IsServer (RequestAbility4LockServerRpc)");
         RequestAbility4LockServerRpc(isLocked);
     }
 
@@ -519,12 +514,8 @@ public partial class NetMovement : NetworkBehaviour
 
         if (_player == null)
         {
-            Debug.LogWarning($"[Ab4Debug] ApplyAbility4Lock on {name}: _player is NULL — silent no-op");
             return;
         }
-
-        bool ability4IsNull = _player.ability4 == null;
-        bool beforeIsLocked = !ability4IsNull && _player.ability4.isLocked;
 
         if (isLocked)
         {
@@ -534,9 +525,6 @@ public partial class NetMovement : NetworkBehaviour
         {
             _player.UnlockAbility4();
         }
-
-        bool afterIsLocked = !ability4IsNull && _player.ability4.isLocked;
-        Debug.Log($"[Ab4Debug] ApplyAbility4Lock on {name}: requested isLocked={isLocked}, ability4==null? {ability4IsNull}, ability4.isLocked before={beforeIsLocked} after={afterIsLocked}");
     }
 
     [ServerRpc(RequireOwnership = false)]

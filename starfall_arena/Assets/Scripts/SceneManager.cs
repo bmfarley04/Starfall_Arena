@@ -801,21 +801,16 @@ public class GameSceneManager : MonoBehaviour
     private IEnumerator SpawnPlayersNetworked()
     {
         NetworkSessionData session = NetworkSessionData.Instance;
-        Debug.Log($"[Ab4Debug] SpawnPlayersNetworked enter: round={currentRound}, isAuthoritativeNetworkController={isAuthoritativeNetworkController}, session={(session == null ? "NULL" : "ok")}");
         if (!isAuthoritativeNetworkController || session == null)
         {
-            Debug.Log($"[Ab4Debug] SpawnPlayersNetworked early-out: not authoritative or session null");
             yield break;
         }
 
         ulong player1Owner = session.Player1Selection.ClientId;
         ulong player2Owner = session.Player2Selection.ClientId;
-        Debug.Log($"[Ab4Debug] SpawnPlayersNetworked owners: p1Owner={player1Owner}, p2Owner={player2Owner}, player1Data={(player1Data == null ? "NULL" : player1Data.name)}, player1SpawnPoint={(player1SpawnPoint == null ? "NULL" : "ok")}, player1Augments.Count={(player1Augments == null ? -1 : player1Augments.Count)}");
 
         player1 = SpawnNetworkPlayer(player1Data, player1SpawnPoint, "Player1", player1Owner, player1Augments);
-        Debug.Log($"[Ab4Debug] After P1 spawn: player1={(player1 == null ? "NULL" : player1.name)}");
         player2 = SpawnNetworkPlayer(player2Data, player2SpawnPoint, "Player2", player2Owner, player2Augments);
-        Debug.Log($"[Ab4Debug] After P2 spawn: player2={(player2 == null ? "NULL" : player2.name)}");
 
         yield return null;
         yield return WaitForLocalNetworkHudTarget();
@@ -1017,7 +1012,6 @@ public class GameSceneManager : MonoBehaviour
 
     private Player SpawnNetworkPlayer(ShipData data, Transform spawnPoint, string tag, ulong ownerClientId, List<AugmentLoadoutEntry> existingAugments)
     {
-        Debug.Log($"[Ab4Debug] SpawnNetworkPlayer({tag}) enter: data={(data == null ? "NULL" : data.name)}, shipPrefab={(data == null || data.shipPrefab == null ? "NULL" : data.shipPrefab.name)}, spawnPoint={(spawnPoint == null ? "NULL" : "ok")}, ownerClientId={ownerClientId}");
         if (data == null || data.shipPrefab == null)
         {
             Debug.LogError($"Cannot network-spawn player: ShipData or shipPrefab is null for {tag}!");
@@ -1032,10 +1026,8 @@ public class GameSceneManager : MonoBehaviour
 
         if (ship == null)
         {
-            Debug.LogError($"[Ab4Debug] SpawnNetworkPlayer({tag}): NetMgr.SpawnPlayerNetworked returned NULL");
             return null;
         }
-        Debug.Log($"[Ab4Debug] SpawnNetworkPlayer({tag}): ship spawned successfully = {ship.name}");
 
         ship.tag = tag;
 
@@ -1170,7 +1162,6 @@ public class GameSceneManager : MonoBehaviour
     // ===== DEATH HANDLING =====
     private void OnPlayerDeath(Entity deadEntity)
     {
-        Debug.Log($"[Ab4Debug] OnPlayerDeath fired: deadEntity={(deadEntity == null ? "NULL" : deadEntity.name)}, tag={(deadEntity == null ? "?" : deadEntity.gameObject.tag)}, roundOver(before)={roundOver}, currentRound={currentRound}\n{System.Environment.StackTrace}");
         if (roundOver) return;
         roundOver = true;
 
@@ -1806,7 +1797,12 @@ public class GameSceneManager : MonoBehaviour
             ClearLocalNetworkHudBinding(destroyAbilityHudInstance: true);
         }
 
-        player1 = localPlayer;
+        // The host owns the canonical player1/player2 slot bookkeeping via SpawnNetworkPlayer.
+        // Only the non-authoritative client uses player1 as its "local owned" handle for HUD wiring.
+        if (!isAuthoritativeNetworkController)
+        {
+            player1 = localPlayer;
+        }
         NetMovement localNetMovement = localPlayer.GetComponent<NetMovement>();
         localNetMovement?.EnsureOwnerLocalControlReady();
         BindPlayerToHud(localPlayer, player1HUDCanvas, "Player1", true);
@@ -1846,8 +1842,10 @@ public class GameSceneManager : MonoBehaviour
             return;
         }
 
-        Debug.Log($"[Ab4Debug] ClearLocalNetworkHudBinding: NULLing player1 (was {(player1 == null ? "NULL" : player1.name)}), destroyHud={destroyAbilityHudInstance}, round={currentRound}, sessionState={(NetworkSessionData.Instance == null ? "no-session" : NetworkSessionData.Instance.CurrentState.ToString())}\n{System.Environment.StackTrace}");
-        player1 = null;
+        if (!isAuthoritativeNetworkController)
+        {
+            player1 = null;
+        }
         _boundNetworkHudObjectId = ulong.MaxValue;
 
         if (destroyAbilityHudInstance)
@@ -1997,21 +1995,16 @@ public class GameSceneManager : MonoBehaviour
 
     private void SetAbility4Locked(bool isLocked)
     {
-        Debug.Log($"[Ab4Debug] SetAbility4Locked called: isLocked={isLocked}, round={currentRound}, player1={(player1 == null ? "NULL" : player1.name)}, player2={(player2 == null ? "NULL" : player2.name)}");
         ApplyAbility4Lock(player1, isLocked);
         ApplyAbility4Lock(player2, isLocked);
     }
 
     private void ApplyAbility4Lock(Player player, bool isLocked)
     {
-        string slotLabel = player == player1 ? "P1" : (player == player2 ? "P2" : "?");
         if (player == null)
         {
-            Debug.Log($"[Ab4Debug] SceneManager.ApplyAbility4Lock(slot={slotLabel}, isLocked={isLocked}, round={currentRound}): player is NULL");
             return;
         }
-
-        Debug.Log($"[Ab4Debug] SceneManager.ApplyAbility4Lock(slot={slotLabel}, name={player.name}, isLocked={isLocked}, round={currentRound}, useNetworkSession={useNetworkSession}, ability4==null? {player.ability4 == null})");
 
         if (useNetworkSession)
         {
@@ -2021,7 +2014,6 @@ public class GameSceneManager : MonoBehaviour
                 netMovement.SetAbility4LockedAuthoritative(isLocked);
                 return;
             }
-            Debug.LogWarning($"[Ab4Debug]   -> NetMovement is NULL on {player.name}, falling through to local lock");
         }
 
         if (isLocked)
