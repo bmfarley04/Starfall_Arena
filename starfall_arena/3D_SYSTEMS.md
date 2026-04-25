@@ -50,6 +50,12 @@ These classes should stay narrow and mostly coordinate dedicated 3D systems.
   - owns best-of-five round progression, versus-screen wait, round intro/countdown, per-round spawning/despawning, round-end presentation, win tracking, and game-end presentation
   - reuses the shared versus, round-end, game-end, win tracker, and UI camera/canvas setup
   - intentionally omits the 2D map cycle, augment phases, and ability-4 unlock cadence; 3D duels are straight combat rounds using prefab-authored ship kits
+- `ArenaBoundary3D`
+  - optional six-sided rectangular arena boundary for duel scenes
+  - owns current arena center, width, length, vertical min/max, shrink waves, wall placement, network-synced active/shrinking state, and server-authoritative escape correction
+  - drives six `ForceFieldBoundaryWall3D` wall presenters that use the Forge3D static force-field shader for proximity reveal and shrink-warning flashes
+  - pairs visual force-field quads with separate thin `BoxCollider` blockers; the force-field mesh and impact shader are cosmetic, while colliders plus boundary clamps own gameplay containment
+  - clamps teleports and periodic escape/tunneling cases back inside the boundary through `NetMovement3D.ApplyBoundaryCorrection(...)` when networking is active so reconciliation state stays aligned
 - `ShipFlight3D`
   - shared rigidbody flight
   - assisted pitch/yaw steering driven by filtered input and acceleration-limited turn rates
@@ -216,6 +222,9 @@ Current folder contract:
 - `Effects/ShaderControllers`
   - shader-driven 3D effect controllers
   - examples: `LightningBolt3D`, `SplitStateLightningRig3D`
+- `Boundaries`
+  - 3D arena containment and boundary presentation
+  - examples: `ArenaBoundary3D`, `ForceFieldBoundaryWall3D`
 - `Pooling`
   - shared 3D object-pool helpers
   - examples: `GameObjectPool3D`, `PooledObject3D`
@@ -240,3 +249,11 @@ When adding a new 3D script, place it under the subsystem it serves first. Do no
 - a camera/readability change
 - a real gameplay-rule change
 - a networking-impacting change
+
+## Force-Field Arena Boundary Authoring
+
+- add one `ArenaBoundary3D` to the 3D gameplay scene and assign it to `SceneManager3D` if the boundary should run with each round
+- author six child wall objects, each with `ForceFieldBoundaryWall3D`, a force-field visual quad using `FORGE3D/Force Field/Force Field Static`, and a separate thin `BoxCollider`
+- assign each wall side (`North`, `South`, `East`, `West`, `Top`, `Bottom`) and wire the renderer, Forge3D `Forcefield`, and blocker references
+- keep `_Static` near zero for idle materials; runtime code raises it for shrink warning flashes and uses `Forcefield.OnHit(...)` for local proximity reveal
+- put a `NetworkObject` on `ArenaBoundary3D` in network scenes so active/shrinking state and current dimensions replicate to clients

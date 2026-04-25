@@ -1,95 +1,90 @@
 ﻿using UnityEngine;
 using UnityEditor;
 
-namespace FORGE3D
+namespace Forge3D
 {
     public class F3DHelpMenu
     {
         #region Variables
+        const int priority = 1100;
 
-        const int Priority = 1100;
+        static string AssetStoreURL = "http://store.forge3d.com/";
+        static string WebURL = "http://forge3d.com";
+        static string TwitterURL = "https://twitter.com/Forge_3D";
+        static string FacebookURL = "http://facebook.com/forge3d";
+        static string SupportURL = "http://forge3d.com/contact/";
+        static string DocumentationURL = "http://forge3d.com/documentation/";
+        static string BlogURL = "http://forge3d.com/blog/";
+        static string ForumURL = "http://forum.forge3d.com/";
+        static string BugReportURL = "http://forum.forge3d.com/c/bug-report";
+        static string KnownIssuesURL = "http://forum.forge3d.com/c/known-issues";
 
-        const string MenuPath = "Window/FORGE3D/";
-
-        const string AssetStoreUrl = "https://assetstore.unity.com/publishers/2659";
-        const string WebUrl = "https://www.forge3d.com";
-        const string TwitterUrl = "https://twitter.com/Forge_3D";
-        const string FacebookUrl = "http://facebook.com/forge3d";
-        const string SupportUrl = "https://www.forge3d.com/contact/";
-        const string DiscordUrl = "https://discord.gg/c9JQuDC";
-        const string DocumentationUrl = "https://docs.forge3d.com/";
-        const string BlogUrl = "https://www.forge3d.com/blog/";
-        // const string ForumUrl = "http://forum.forge3d.com/";
-        // const string BugReportUrl = "http://forum.forge3d.com/c/bug-report";
-        // const string KnownIssuesUrl = "http://forum.forge3d.com/c/known-issues";
 
         #endregion
 
         #region Menu Items
-
-        [MenuItem(MenuPath + "Asset Store", false, Priority + 20)]
+        [MenuItem("FORGE3D/Community/Asset Store", false, priority + 20)]
         static void AssetStore()
         {
-            Application.OpenURL(AssetStoreUrl);
+            Application.OpenURL(AssetStoreURL);
         }
-        
-        [MenuItem(MenuPath + "Website", false, Priority * 2 + 21)]
+
+        [MenuItem("FORGE3D/Community/Website", false, priority * 2 + 21)]
         static void Web()
         {
-            Application.OpenURL(WebUrl);
+            Application.OpenURL(WebURL);
         }
 
-        [MenuItem(MenuPath + "Help/Documentation", false, Priority * 4 + 26)]
-        static void Documentation()
+        [MenuItem("FORGE3D/Community/Blog", false, priority * 2 + 22)]
+        static void Blog()
         {
-            Application.OpenURL(DocumentationUrl);
-        }
-        
-        [MenuItem(MenuPath + "Help/Support Form", false, Priority * 2 + 23)]
-        static void SupportForm()
-        {
-            Application.OpenURL(SupportUrl);
+            Application.OpenURL(BlogURL);
         }
 
-        [MenuItem(MenuPath + "Community/Discord", false, Priority * 3 + 24)]
-        static void Discord()
+        [MenuItem("FORGE3D/Community/Forum", false, priority * 2 + 23)]
+        static void Forum()
         {
-            Application.OpenURL(DiscordUrl);
+            Application.OpenURL(ForumURL);
         }
-        
-        [MenuItem(MenuPath + "Community/Twitter", false, Priority * 3 + 24)]
+
+        [MenuItem("FORGE3D/Community/Twitter", false, priority * 3 + 24)]
         static void Twitter()
         {
-            Application.OpenURL(TwitterUrl);
+            Application.OpenURL(TwitterURL);
         }
 
-     
-        [MenuItem(MenuPath + "Community/Facebook", false, Priority * 3 + 25)]
+        [MenuItem("FORGE3D/Community/Facebook", false, priority * 3 + 25)]
         static void Facebook()
         {
-            Application.OpenURL(FacebookUrl);
+            Application.OpenURL(FacebookURL);
+        }
+        
+    
+        [MenuItem("FORGE3D/Help/Documentation", false, priority * 4 + 26)]
+        static void Documentation()
+        {
+            Application.OpenURL(DocumentationURL);
+        }
+
+        [MenuItem("FORGE3D/Help/Known Issues", false, priority * 5 + 27)]
+        static void KnownIssues()
+        {
+            Application.OpenURL(KnownIssuesURL);
+        }
+
+        [MenuItem("FORGE3D/Help/Report a Bug", false, priority * 5 + 28)]
+        static void BugReport()
+        {
+            Application.OpenURL(BugReportURL);
+        }
+
+        [MenuItem("FORGE3D/Help/Contact Support", false, priority * 6 + 29)]
+        static void Support()
+        {
+            Application.OpenURL(SupportURL);
         }
 
 
-       
-
-        // [MenuItem(MenuPath + "Help/Known Issues", false, Priority * 5 + 27)]
-        // static void KnownIssues()
-        // {
-        //     Application.OpenURL(KnownIssuesUrl);
-        // }
-        //
-        // [MenuItem(MenuPath +"Help/Report a Bug", false, Priority * 5 + 28)]
-        // static void BugReport()
-        // {
-        //     Application.OpenURL(BugReportUrl);
-        // }
-        //
-        // [MenuItem(MenuPath + "Help/Contact Support", false, Priority * 6 + 29)]
-        // static void Support()
-        // {
-        //     Application.OpenURL(SupportUrl);
-        // }
 
         #endregion
     }
