@@ -271,11 +271,75 @@ Current behavior:
 - non-owning clients receive cosmetic spawn/state RPCs so they can render the same weapon events without applying gameplay damage
 - Dark Matter follows this path: the owner predicts hazards locally, the server spends charges and spawns authoritative hazards, and hazard lifetimes are latency-adjusted on clients using the server spawn time
 - Flame Wave now follows the same pattern as Dark Matter: owner prediction is cosmetic, the server is authoritative for spending charges and spawning hazards, and client lifetimes are corrected by subtracting transit time from the spawn payload
+- Empower is networked as a pure state toggle through `NetMovement` using the shared `NetAbilityToggleState` payload. The owner predicts the activation locally for immediate emission glow, the server is the authority that runs the duration coroutine on its own copy and broadcasts deactivation at timeout / death, and non-owner clients mirror the emission-pulse cosmetics via `ApplyNetworkEmpowerState`. Because `Player` is disabled on remote copies, Empower still drives its own coroutine and emission-color `MaterialPropertyBlock` writes directly so other abilities that read `Empower.IsEmpoweredActive` (e.g. `GuidedMissile`, `ConvergeBeam`, `Dodge`) see the correct buff state on whichever copy is running their logic
 - networked augment loadouts are also pushed from the server to each player replica after spawn and on live augment acquisition so owner/proxy copies do not silently miss augment runtimes
 - authoritative combat-state broadcasts now also include an explicit "evasion triggered" flag so remote copies can play Evasion success flash/sound only when the server actually ignored incoming damage
 - authoritative combat-state broadcasts now also include an explicit "artificial fairy triggered" flag so remote copies run the same revive flash/scatter/regroup sequence when the server prevents lethal damage
 
 This is intentionally a bridge step that keeps combat authority aligned with the already-implemented movement authority model without requiring every weapon prefab to become a separate NGO network object first.
+
+### Ability Networking Pattern (template for porting an ability)
+
+Use this template when porting any remaining ability through `NetMovement`. It captures what the Empower, BatteryRam, DarkMatter, FlameWave, and Beam ports all have in common so future abilities stay consistent and local multiplayer keeps working unchanged.
+
+**Step 1 — classify the ability.** Pick the closest category; the template scales with the category:
+
+- *Buff / state toggle* (Empower, Reflector, FaerieShift, Invisibility): one bool of authoritative state, no spawns. Simplest. Reuse `NetAbilityToggleState`.
+- *Resource-spending cast* (DarkMatter, FlameWave): owner requests, server spends charges and spawns hazards, cosmetic spawn RPC to clients with server spawn time for latency-adjusted lifetimes. Needs a dedicated cast struct and a spawn-data struct.
+- *Ongoing combat stream* (Beam, ConvergeBeam): start/stop toggle plus server-authoritative damage instance split from cosmetic client instance. Needs a fire-state struct, and the beam/laser prefab must support a "cosmetic only, no damage" mode. See `LaserBeam` / `Beam.ApplyNetworkBeamState`.
+- *Self-state movement* (Dodge, Teleport, ChronoStep): owner predicts the displacement immediately, server replays the same displacement with authoritative final position; non-owners replay the same displacement purely for visuals. Must coexist with `NetMovement`'s own movement authority — do not let the ability fight the reconciliation path.
+- *Projectile spawn* (GuidedMissile, GigaBlast): server-authoritative spawn of the real damage-dealing projectile plus cosmetic client spawn. Targets that are `Transform`s must be passed as `NetworkObjectReference`, not by reference.
+
+**Step 2 — add the payload to `NetworkStructs.cs`.** Keep it minimal: only what prediction replay or visual sync actually needs. Follow the shape of `NetBatteryRamState` (tick + flags + `SkipOwner` if the owner predicted locally) or `NetAbilityToggleState` (just `IsActive`) for trivial cases.
+
+**Step 3 — add the broker methods to `NetMovement.Abilities.cs`.** For each ability you add exactly five members, mirroring the Empower / BatteryRam blocks:
+
+- `public void Request<Ability>State(...)` — called by the owner. Early-outs if `!NetTickUtil.IsActive || !IsOwner`. If `IsServer`, calls the server handler directly; otherwise fires the ServerRpc. This is the single entry point the ability script calls.
+- `public void Broadcast<Ability>State(...)` (only if the server needs to push a state change that was not owner-requested, e.g. end-of-duration expiry, ram break). Early-outs if `!IsServer`.
+- `[ServerRpc] private void Submit<Ability>StateServerRpc(...)` — thin forwarder to the handler.
+- `private void Handle<Ability>StateServer(...)` — the server-authoritative entry. Calls the ability's `ApplyNetworkXState(..., authoritative: true)` on the server's copy, then calls the ClientRpc to mirror to non-owners.
+- `[ClientRpc] private void Broadcast<Ability>StateClientRpc(...)` — **must** begin with `if (IsServer || IsOwner) return;` (see the ClientRpc guard bug note below). Calls the ability's `ApplyNetworkXState(..., authoritative: false)`.
+
+For cosmetic spawn RPCs (projectiles, hazards), also stamp `ServerSpawnTime` on the server before broadcasting and subtract it from the lifetime on the client side, as `NetFireHazardSpawnData` / `NetFlameWaveHazardSpawnData` already do.
+
+**Step 4 — restructure the ability script.** Three things every ported ability has in common:
+
+- cache a `NetMovement _netMovement` reference in `Awake()` and add two helpers:
+
+  ```csharp
+  private bool HasNetworkPath() =>
+      NetTickUtil.IsActive && _netMovement != null && _netMovement.IsSpawned;
+  private bool HasAuthority() =>
+      !NetTickUtil.IsActive || (_netMovement != null && _netMovement.IsSpawned && _netMovement.IsServer);
+  ```
+
+  `HasAuthority()` returning `true` when networking is not active is what keeps the local-multiplayer path intact: every authority-gated branch (spend charge, spawn damage projectile, start server timer, apply damage) is still reached in local mode.
+
+- in `TryUseAbility` (or `UseAbility`), branch on `HasNetworkPath()`:
+  - *network path, non-owner*: return false immediately — only the owning client can trigger.
+  - *network path, owner*: run owner-side prediction locally (cosmetic/input feedback), then call `_netMovement.Request<Ability>State(...)`. Do not spend charges, spawn damage, or mutate authoritative state here; that happens on the server handler.
+  - *no network path (local MP)*: run the original non-networked code path unchanged.
+
+- expose `public void ApplyNetworkXState(..., bool authoritative)` that the broker calls. It must be safe to invoke on: (a) the server copy of a client-owned player, (b) a remote proxy on a non-owning client, and (c) the local owner as a reconciliation echo. Idempotence matters — start-if-not-started, stop-if-active.
+
+**Step 5 — split cosmetic vs authoritative for damage-dealing spawns.** If your ability spawns a prefab that deals damage (projectile, beam, hazard, ram collider), the client-side cosmetic instance must *not* apply damage or recoil. Pattern:
+
+- server spawn: full behavior enabled, gameplay simulation runs.
+- client cosmetic spawn: collision/damage disabled; visuals, audio, lifetime driven from the broadcast payload.
+- on the host, guard against double-application — the server handler already did the work; the ClientRpc `if (IsServer || IsOwner) return;` guard prevents re-entry.
+
+**Step 6 — preserve local multiplayer.** Every network branch must fall through to the existing local code when `NetTickUtil.IsActive` is false. Do not move charge spending, damage application, or spawns *out* of the original flow — wrap them in `HasAuthority()` checks instead so they run in both modes. The `HasAuthority()` helper shown above already does this because it returns `true` when networking is inactive.
+
+**Step 7 — verify in editor in both modes.** Play in a local-multiplayer scene (no `NetMgr` session) and confirm the ability still works for both players. Then play in a networked session (host + client) and verify: owner sees immediate response, server sees the authoritative effect on its copy, the remote client sees the cosmetic mirror, no double-damage on the host, no stale state on early termination.
+
+**Known gotchas when porting** (these have already bitten the repo once and are documented under `Known Networking Notes`):
+
+- ClientRpc guard must be `if (IsServer || IsOwner) return;`, not the inverted form. The host is both and will double-execute otherwise.
+- `Transform` targets are not replicated. Pass `NetworkObjectReference` and resolve on each peer.
+- `gameObject.tag` is not replicated by NGO — rely on `NetMovement`'s `_networkPlayerIndex` path that calls `RefreshCombatTags()`, don't set tags yourself after spawn.
+- If your ability mutates the local `Player` or its rigidbody, remember that remote proxies have `Player` disabled — the ability must tolerate running with a disabled `Player` component on those copies, or be driven only on owner + server.
+- For displacement abilities, do not bypass `NetMovement`'s reconciliation by teleporting the rigidbody on a remote copy; route the displacement through the same path ChronoStep/Teleport already use.
+- End-of-duration broadcasts must come from the authority side only. Guard broadcast calls with `HasNetworkPath() && HasAuthority()` so local multiplayer does not attempt to RPC.
 
 ### Ring of Fire (RingOfFireManager)
 
@@ -367,4 +431,5 @@ The existing movement implementation is a real first step toward that architectu
 - Bug note (teleport Z-coordinate loss): The teleport network path sends the target position as `Vector2` (via `RequestTeleport` / `NetTeleportState`), which drops the Z coordinate. When `ApplyNetworkTeleport` received this as `Vector2` and passed it to `ExecuteTeleport(Vector3)`, the implicit conversion set Z to 0. This could shift the ship's depth layer and cause the `OnTargetObjectWarped` camera warp delta to include an erroneous Z component. Fix: `ApplyNetworkTeleport` now reconstructs the Z from `transform.position.z` before executing the teleport.
 - Bug note (cosmetic projectile/beam pass-through): Unity `gameObject.tag` is not replicated by NGO. `SpawnNetworkPlayer()` sets the tag and calls `RefreshCombatTags()` only on the server. On clients, remote proxies had `Player` disabled before `Start()` ran, so `enemyTag` was never set. Cosmetic projectiles (`BroadcastProjectileSpawnClientRpc`) and beams (`Beam.ApplyNetworkBeamState`) read `_player.enemyTag` which was empty/wrong on clients, causing `collider.CompareTag(targetTag)` to fail and projectiles/beams to pass through ships visually. Fix: `NetMovement` now carries a `NetworkVariable<byte> _networkPlayerIndex` that replicates the player index (1=Player1, 2=Player2) to all clients. On value change, clients set `gameObject.tag` and call `RefreshCombatTags()`, ensuring `enemyTag` is correct everywhere.
 - Class5 charges are server-authoritative. Passive regen ticks on the server copy (even when the local Player component is disabled), and a dedicated `Class5NetworkBridge` now handles charge count/audio replication plus the four-shot primary fire burst for remote listeners so Class5-specific logic no longer lives in `NetMovement`.
+- Empower pairing note: `GuidedMissile`, `ConvergeBeam`, and `Dodge` each cache an `Empower empowerAbility` reference and read `IsEmpoweredActive` to decide between base and empowered variants. When porting those three, make sure the *same side that runs the ability's authoritative logic* is also the side whose `Empower` copy has the correct `_isEmpoweredActive`. In practice this means the server-authoritative handler reads `Empower.IsEmpoweredActive` from the same GameObject (the server's copy of the client-owned player), which works because `Empower` already replicates the activation to the server via `NetMovement.RequestEmpowerState`. Do not try to read the owner's empower state from across peers.
 - Future bugs or drift issues should be documented here with the exact subsystem affected: prediction, reconciliation, interpolation, spawn flow, or combat replication.

@@ -91,6 +91,7 @@ public struct NetProjectileFireRequest3D : INetworkSerializable
     public float SlowDuration;
     public float SlowEngineEmissionScale;
     public NetProjectileVisualType3D VisualType;
+    public int AccuracyAttackId;
 
     public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
     {
@@ -114,6 +115,7 @@ public struct NetProjectileFireRequest3D : INetworkSerializable
         serializer.SerializeValue(ref SlowDuration);
         serializer.SerializeValue(ref SlowEngineEmissionScale);
         serializer.SerializeValue(ref VisualType);
+        serializer.SerializeValue(ref AccuracyAttackId);
     }
 }
 
@@ -133,11 +135,25 @@ public struct NetBeamState3D : INetworkSerializable
 {
     public int Tick;
     public bool IsFiring;
+    public Vector3 AimDirection;
 
     public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
     {
         serializer.SerializeValue(ref Tick);
         serializer.SerializeValue(ref IsFiring);
+        serializer.SerializeValue(ref AimDirection);
+    }
+}
+
+public struct NetAimUpdate3D : INetworkSerializable
+{
+    public int Tick;
+    public Vector3 AimDirection;
+
+    public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
+    {
+        serializer.SerializeValue(ref Tick);
+        serializer.SerializeValue(ref AimDirection);
     }
 }
 
@@ -155,11 +171,13 @@ public struct NetAbilityToggleState3D : INetworkSerializable
 {
     public int Tick;
     public bool IsActive;
+    public Vector3 AimDirection;
 
     public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
     {
         serializer.SerializeValue(ref Tick);
         serializer.SerializeValue(ref IsActive);
+        serializer.SerializeValue(ref AimDirection);
     }
 }
 

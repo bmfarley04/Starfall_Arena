@@ -348,6 +348,29 @@ public class NetMovement3D : NetworkBehaviour
         }
     }
 
+    public void ApplyBoundaryCorrection(Vector3 correctedPosition, Vector3 correctedVelocity)
+    {
+        if (_rb != null)
+        {
+            _rb.position = correctedPosition;
+            _rb.linearVelocity = correctedVelocity;
+        }
+
+        transform.position = correctedPosition;
+
+        if (_ownerStateInitialized)
+        {
+            _ownerState.Position = correctedPosition;
+            _ownerState.Velocity = correctedVelocity;
+        }
+
+        if (_serverStateInitialized)
+        {
+            _serverState.Position = correctedPosition;
+            _serverState.Velocity = correctedVelocity;
+        }
+    }
+
     private void OwnerTick()
     {
         if (_shipFlight == null)
@@ -707,7 +730,7 @@ public class NetMovement3D : NetworkBehaviour
         if (_playerInput3D != null)
         {
             _playerInput3D.enabled = true;
-            _playerInput3D.SetCombatInputSuppressed(!HasNetworkCombatBridgeForOwner());
+            _playerInput3D.SetCombatInputSuppressed(_movementLocked.Value || !HasNetworkCombatBridgeForOwner());
         }
 
         if (_playerInput != null)
@@ -833,7 +856,8 @@ public class NetMovement3D : NetworkBehaviour
             needsRecovery = true;
         }
 
-        if (_playerInput3D != null && _playerInput3D.IsCombatInputSuppressed == HasNetworkCombatBridgeForOwner())
+        bool expectedCombatSuppressed = _movementLocked.Value || !HasNetworkCombatBridgeForOwner();
+        if (_playerInput3D != null && _playerInput3D.IsCombatInputSuppressed != expectedCombatSuppressed)
         {
             needsRecovery = true;
         }
@@ -918,6 +942,11 @@ public class NetMovement3D : NetworkBehaviour
 
     private void ApplyMovementLock(bool isLocked)
     {
+        if (IsOwner && _playerInput3D != null)
+        {
+            _playerInput3D.SetCombatInputSuppressed(isLocked || !HasNetworkCombatBridgeForOwner());
+        }
+
         if (_rb == null)
         {
             return;

@@ -1,5 +1,6 @@
 using Unity.Netcode;
 using UnityEngine;
+using System;
 
 public enum DamageSource3D
 {
@@ -42,6 +43,8 @@ public abstract class Entity3D : MonoBehaviour
     protected NetCombat3D netCombat3D;
 
     private bool _isDead;
+
+    public event Action<Entity3D> Died;
 
     public ShipFlight3D Flight => shipFlight;
     public ShipVisualTilt3D VisualTilt => shipVisualTilt;
@@ -219,7 +222,7 @@ public abstract class Entity3D : MonoBehaviour
         slowEndTime = 0f;
     }
 
-    public virtual void TakeDamage(float damage, Vector3 hitPoint, Entity3D attacker = null, DamageSource3D source = DamageSource3D.Projectile)
+    public virtual void TakeDamage(float damage, Vector3 hitPoint, Entity3D attacker = null, DamageSource3D source = DamageSource3D.Projectile, int accuracyAttackId = PlayerCombatStats3D.InvalidAttackId)
     {
         if (damage <= 0f || currentHealth <= 0f || _isDead)
         {
@@ -232,6 +235,7 @@ public abstract class Entity3D : MonoBehaviour
         }
 
         float previousShield = currentShield;
+        float previousHealth = currentHealth;
 
         lastDamageDirection = ResolveDamageDirection(hitPoint);
 
@@ -257,6 +261,7 @@ public abstract class Entity3D : MonoBehaviour
 
             if (damage <= 0f)
             {
+                RecordDamageStats(attacker, previousHealth, previousShield, source, accuracyAttackId);
                 BroadcastNetworkCombatState(hitPoint, source, previousShield);
                 return;
             }
@@ -264,6 +269,7 @@ public abstract class Entity3D : MonoBehaviour
 
         currentHealth = Mathf.Max(0f, currentHealth - damage);
         OnHealthChanged();
+        RecordDamageStats(attacker, previousHealth, previousShield, source, accuracyAttackId);
 
         if (currentHealth <= 0f)
         {
@@ -274,7 +280,7 @@ public abstract class Entity3D : MonoBehaviour
         BroadcastNetworkCombatState(hitPoint, source, previousShield);
     }
 
-    public virtual void TakeDirectDamage(float damage, Vector3 hitPoint, Entity3D attacker = null)
+    public virtual void TakeDirectDamage(float damage, Vector3 hitPoint, Entity3D attacker = null, int accuracyAttackId = PlayerCombatStats3D.InvalidAttackId)
     {
         if (damage <= 0f || currentHealth <= 0f || _isDead)
         {
@@ -287,10 +293,12 @@ public abstract class Entity3D : MonoBehaviour
         }
 
         float previousShield = currentShield;
+        float previousHealth = currentHealth;
 
         lastDamageDirection = ResolveDamageDirection(hitPoint);
         currentHealth = Mathf.Max(0f, currentHealth - damage);
         OnHealthChanged();
+        RecordDamageStats(attacker, previousHealth, previousShield, DamageSource3D.Direct, accuracyAttackId);
 
         if (currentHealth <= 0f)
         {
@@ -353,6 +361,7 @@ public abstract class Entity3D : MonoBehaviour
         }
 
         deathEffects?.PlayDeathEffects(lastDamageDirection);
+        Died?.Invoke(this);
 
         if (NetTickUtil.IsActive && TryGetComponent(out NetworkObject networkObject) && networkObject.IsSpawned)
         {
@@ -416,6 +425,34 @@ public abstract class Entity3D : MonoBehaviour
 
         Vector3 damageDirection = transform.position - hitPoint;
         return damageDirection.sqrMagnitude > 0.0001f ? damageDirection.normalized : Vector3.zero;
+    }
+
+    private void RecordDamageStats(Entity3D attacker, float previousHealth, float previousShield, DamageSource3D source, int accuracyAttackId)
+    {
+        float appliedDamage = Mathf.Max(0f, (previousHealth + previousShield) - (currentHealth + currentShield));
+        if (appliedDamage <= 0f)
+        {
+            return;
+        }
+
+        PlayerCombatStats3D targetStats = GetComponent<PlayerCombatStats3D>();
+        targetStats?.RecordDamageTaken(appliedDamage);
+
+        PlayerCombatStats3D attackerStats = attacker != null ? attacker.GetComponent<PlayerCombatStats3D>() : null;
+        if (attackerStats == null || ReferenceEquals(attackerStats, targetStats))
+        {
+            return;
+        }
+
+        attackerStats.RecordDamageDealt(appliedDamage);
+        if (accuracyAttackId != PlayerCombatStats3D.InvalidAttackId)
+        {
+            attackerStats.RegisterAttackHit(accuracyAttackId);
+        }
+        else if (source == DamageSource3D.Projectile || source == DamageSource3D.Direct)
+        {
+            attackerStats.RecordShotHit();
+        }
     }
 
     private void CacheCombatSlotsIfNeeded()

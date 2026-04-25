@@ -38,8 +38,8 @@ The current 3D networking path should not be described as a full networked match
 - `MovementSimulation`
   - does not cross-apply directly because it reproduces the 2D thrust/friction/anchor math, not the `ShipFlight3D` pitch/yaw/local-drift model
 - `SceneManager`
-  - does not cross-apply directly for phase 1 because it is responsible for the broader round loop, maps, HUDs, round intros, augment flow, win states, and later-match teardown
-  - phase 1 only needs a basic 3D network scene bootstrap that resolves the selected ships and spawns them correctly
+  - does not cross-apply directly because it is responsible for 2D-specific maps, augment flow, split-screen behavior, 2D `Player` stat counters, and ability unlock timing
+  - the 3D path now has a dedicated `SceneManager3D` that copies the reusable duel cadence while omitting maps/augments/unlocks and using 3D player/stat types
 
 ## First-Phase 3D Networking Structure
 
@@ -83,7 +83,7 @@ This duplication is necessary because the original `ShipFlight3D` updates a live
 
 ### `NetworkSceneManager3D`
 
-`NetworkSceneManager3D` is the intentionally minimal scene bootstrap for phase 1.
+`NetworkSceneManager3D` is the intentionally minimal scene bootstrap retained for low-level spawn/camera fallback behavior.
 
 It:
 
@@ -101,7 +101,18 @@ It does not own:
 - networked combat
 - map selection
 
-Those stay out of phase 1 on purpose.
+The active 3D match loop now belongs to `SceneManager3D`. In scenes using `SceneManager3D`, disable `NetworkSceneManager3D.spawnPlayersOnStart` to avoid spawning ships before the versus/round flow begins.
+
+### `SceneManager3D`
+
+`SceneManager3D` owns the 3D duel flow:
+
+- resolves selected 3D ships from `NetworkSessionData`, then `GameDataManager`, then scene fallbacks
+- runs a best-of-five match with shared versus, round-start, round-end, win tracker, and game-end UI
+- spawns/despawns the two 3D network player objects each round through `NetMgr.SpawnPlayerNetworked(...)`
+- locks owner movement/combat input during round intro and round transition through `NetMovement3D`
+- omits map activation, augment selection, augment persistence, and ability-4 unlock timing
+- records per-round and cumulative stats through `PlayerCombatStats3D` instead of relying on the 2D `Player` counters
 
 ### `NetCombat3D`
 
@@ -131,6 +142,7 @@ Important current implementation constraints:
 - `Projectile3D` and `LaserBeam3D` now split cosmetic-only instances from server-authoritative gameplay instances.
 - combat velocity changes such as recoil, impact force, tractor pull, and teleport warps must pass through `NetMovement3D` helpers so prediction/reconciliation state is not immediately overwritten.
 - slow state is treated as server-owned during network movement simulation; the server copy overrides the owner's submitted slow multiplier.
+- beam and tractor-beam aim must be replicated, not resolved from a local camera on the server or on remote proxies. The owner sends its center-screen aim direction with the initial activation RPC and with per-tick `UpdateBeamAim` / `UpdateTractorBeamAim` updates. `LaserBeam3D` and `TractorBeam3D` consume that replicated direction on every non-owner peer so damage casts and cone pulls match what the firing player actually aimed at. The owner's local cosmetic instance keeps using its own camera so local fire stays responsive.
 
 ### Local camera binding
 
@@ -266,9 +278,11 @@ After pulling these changes, the scene/prefabs need the following setup:
    - keep NGO player prefab auto-spawn disabled through `NetMgr`
    - register both 3D ship prefabs in the prefab list so NGO can spawn them by hash
 3. On the 3D gameplay scene:
-   - add `NetworkSceneManager3D`
+   - add `SceneManager3D`
    - assign player 1 / player 2 spawn points
    - assign the two fallback 3D `ShipData` assets
+   - assign the shared versus, round-end, game-end, round text/countdown, win tracker, gameplay HUD root, and UI canvas references
+   - either remove `NetworkSceneManager3D` or leave it with `spawnPlayersOnStart` disabled so `SceneManager3D` owns player spawn timing
 4. In `GameDataManager`:
    - make sure the 3D roster contains only the two supported 3D ships for now
    - make sure each selected 3D `ShipData` points `shipPrefab` at the correct network-ready 3D gameplay prefab
@@ -278,6 +292,6 @@ After pulling these changes, the scene/prefabs need the following setup:
 ## Current Limitations
 
 - 3D combat has a first brokered network path for projectiles, beams, several class abilities, health/shield state, slow state, and network-safe death
-- round flow is not ported to a 3D-specific network scene manager yet
-- game-end replication is still out of scope for the current 3D scene manager
-- the current 3D networking deliverable is movement plus combat replication, not a full round/match loop
+- 3D round flow now has a dedicated `SceneManager3D` for best-of-five duels without maps, augments, or unlock phases
+- game-end and round-end presentation reuse the shared `NetworkSessionData` payloads and shared UI managers
+- reconnect/late-join handling for mid-match 3D duels is not complete

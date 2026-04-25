@@ -740,7 +740,7 @@ public class GameEndScreenManager : MonoBehaviour
 
         foreach (Gamepad pad in Gamepad.all)
         {
-            if (pad != null && pad.added && pad.buttonEast.isPressed)
+            if (pad != null && pad.added && pad.buttonWest.isPressed)
             {
                 returnPressed = true;
                 break;
@@ -749,7 +749,7 @@ public class GameEndScreenManager : MonoBehaviour
 
         if (Keyboard.current != null)
         {
-            returnPressed = returnPressed || Keyboard.current.bKey.isPressed || Keyboard.current.xKey.isPressed;
+            returnPressed = returnPressed || Keyboard.current.xKey.isPressed;
         }
 
         if (returnPressed)

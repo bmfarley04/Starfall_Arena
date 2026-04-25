@@ -43,6 +43,9 @@ TagManager:
   - 
   - 
   m_SortingLayers:
+  - name: Healthbar
+    uniqueID: 2971526003
+    locked: 0
   - name: Default
     uniqueID: 0
     locked: 0
