@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 094dc1e7357fc469582ee8f655b2da25, type: 3}
   m_Name: Burner
   m_EditorClassIdentifier: Assembly-CSharp::Burner
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 0deb734f7e55983419a2352721ad6eea, type: 3}
   augmentName: Burner
   description: Your primary burns the opponent.
   _augmentID: de4ec03d6a8541a1955d7a1d5b522ff9

@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0dff4514a2e4c7c4f96c68ca57ee39b6, type: 3}
   m_Name: TwinFire
   m_EditorClassIdentifier: Assembly-CSharp::TwinFire
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 44b2c1f91a896804780529464ef63e74, type: 3}
   augmentName: Twin Fire
   description: Your primary double fires but deals less damage.
   _augmentID: a64dea8a1507459a94171dc2650267b2

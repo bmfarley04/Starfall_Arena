@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8fb942400e2b44cf990b4da25ab98604, type: 3}
   m_Name: Bubble Shield
   m_EditorClassIdentifier: Assembly-CSharp::BubbleShield
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: b34592d2c18156a4981dbc9105aa80cf, type: 3}
   augmentName: Bubble Shield
   description: Anchoring reduces damage taken but stuns you if you take too much.
   _augmentID: 7de3e64132194719a2aeaf5bf0f7cdf8
@@ -23,6 +23,8 @@ MonoBehaviour:
   minVisualScaleMultiplier: 1
   anchoredDamageMultiplier: 0.6
   damageThresholdBeforeStun: 45
+  damageRegenDelay: 2.5
+  damageRegenPerSecond: 12
   stunDuration: 1.5
   stunnedSpeedMultiplier: 0.02
   stunnedRotationMultiplier: 0.1
