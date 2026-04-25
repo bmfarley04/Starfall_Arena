@@ -210,6 +210,18 @@ public struct NetBeamState : INetworkSerializable
     }
 }
 
+public struct NetConvergeBeamState : INetworkSerializable
+{
+    public int Tick;
+    public bool IsFiring;
+
+    public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
+    {
+        serializer.SerializeValue(ref Tick);
+        serializer.SerializeValue(ref IsFiring);
+    }
+}
+
 public struct NetFireTrailState : INetworkSerializable
 {
     public int Tick;
@@ -252,6 +264,48 @@ public struct NetTeleportState : INetworkSerializable
     public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
     {
         serializer.SerializeValue(ref TargetPosition);
+    }
+}
+
+public struct NetGuidedMissileState : INetworkSerializable
+{
+    public int Tick;
+    public Vector2 SpawnPosition;
+    public Vector2 Direction;
+    public Vector2 InheritedVelocity;
+    public float Speed;
+    public float Damage;
+    public float Lifetime;
+    public float ImpactForce;
+    public float RecoilForce;
+    public float SizeMultiplier;
+    public bool Empowered;
+    public bool ApplyRecoil;
+
+    public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
+    {
+        serializer.SerializeValue(ref Tick);
+        serializer.SerializeValue(ref SpawnPosition);
+        serializer.SerializeValue(ref Direction);
+        serializer.SerializeValue(ref InheritedVelocity);
+        serializer.SerializeValue(ref Speed);
+        serializer.SerializeValue(ref Damage);
+        serializer.SerializeValue(ref Lifetime);
+        serializer.SerializeValue(ref ImpactForce);
+        serializer.SerializeValue(ref RecoilForce);
+        serializer.SerializeValue(ref SizeMultiplier);
+        serializer.SerializeValue(ref Empowered);
+        serializer.SerializeValue(ref ApplyRecoil);
+    }
+}
+
+public struct NetDodgeState : INetworkSerializable
+{
+    public Vector2 Direction;
+
+    public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
+    {
+        serializer.SerializeValue(ref Direction);
     }
 }
 

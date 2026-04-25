@@ -551,7 +551,7 @@ public abstract class Player : Entity
     /// missing code?
     protected virtual bool IsAnyAbilityActiveForPrimaryFireLock()
     {
-        return abilities.Any(a => a != null && a.IsAbilityActive());
+        return abilities.Any(a => a != null && a.IsAbilityActive() && a.BlocksPrimaryFire);
     }
 
 
