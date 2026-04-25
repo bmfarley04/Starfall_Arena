@@ -64,6 +64,8 @@ public class Ability : MonoBehaviour
         return Time.time < lastUsedAbility + stats.duration;
     }
 
+    public virtual bool BlocksPrimaryFire => true;
+
     protected virtual bool IsAnyOtherAbilityActive()
     {
         List<Ability> abilities = new List<Ability> { player.ability1, player.ability2, player.ability3, player.ability4 };

@@ -490,8 +490,8 @@ MonoBehaviour:
     fadeWhenClose: 1
     fadeStartDistance: 30
     fadeEndDistance: 25
-    networkFadeStartDistance: 30
-    networkFadeEndDistance: 10
+    networkFadeStartDistance: 40
+    networkFadeEndDistance: 35
     player1Layer: Player1UI
     player2Layer: Player2UI
 --- !u!114 &2776879011367663162

@@ -53,6 +53,8 @@ public class Empower : Ability
 
     public bool IsEmpoweredActive => _isEmpoweredActive;
 
+    public override bool BlocksPrimaryFire => false;
+
     protected override void Awake()
     {
         base.Awake();

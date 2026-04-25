@@ -57,12 +57,13 @@ public class Class4 : Player
 
         NetMovement netMovement = GetComponent<NetMovement>();
         bool useNetwork = NetTickUtil.IsActive && netMovement != null && netMovement.IsSpawned && netMovement.IsOwner;
+        int burstTick = NetTickUtil.CurrentTick;
 
         for (int i = 0; i < burstCount; i++)
         {
             if (useNetwork)
             {
-                FireBurstShotNetworked(netMovement);
+                FireBurstShotNetworked(netMovement, burstTick);
             }
             else
             {
@@ -109,7 +110,7 @@ public class Class4 : Player
         ApplyRecoil(projectileWeapon.recoilForce);
     }
 
-    private void FireBurstShotNetworked(NetMovement netMovement)
+    private void FireBurstShotNetworked(NetMovement netMovement, int burstTick)
     {
         for (int turretIndex = 0; turretIndex < turrets.Length; turretIndex++)
         {
@@ -136,7 +137,7 @@ public class Class4 : Player
 
             netMovement.RequestPrimaryFire(new NetFireRequest
             {
-                Tick = NetTickUtil.CurrentTick,
+                Tick = burstTick,
                 SpawnPosition = turret.position,
                 Direction = direction.normalized,
                 InheritedVelocity = Vector2.zero,
