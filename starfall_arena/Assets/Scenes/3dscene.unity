@@ -3101,10 +3101,12 @@ MonoBehaviour:
   shrinkOuterTint: {r: 1, g: 0.08, b: 0.02, a: 0.85}
   shrinkMinStaticVisibility: 0.15
   shrinkMaxStaticVisibility: 1
-  revealDistance: 12
+  revealDistance: 30
+  proximityStaticVisibility: 0.35
   revealHitPower: 0.35
-  revealHitAlpha: 0.85
+  revealHitAlpha: 0.01
   revealRefreshInterval: 0.08
+  proximityFadeSpeed: 8
 --- !u!1 &325259942
 GameObject:
   m_ObjectHideFlags: 0
@@ -3681,10 +3683,12 @@ MonoBehaviour:
   shrinkOuterTint: {r: 1, g: 0.08, b: 0.02, a: 0.85}
   shrinkMinStaticVisibility: 0.15
   shrinkMaxStaticVisibility: 1
-  revealDistance: 12
+  revealDistance: 30
+  proximityStaticVisibility: 0.35
   revealHitPower: 0.35
-  revealHitAlpha: 0.85
+  revealHitAlpha: 0.01
   revealRefreshInterval: 0.08
+  proximityFadeSpeed: 8
 --- !u!1 &368249681
 GameObject:
   m_ObjectHideFlags: 0
@@ -7691,10 +7695,12 @@ MonoBehaviour:
   shrinkOuterTint: {r: 1, g: 0.08, b: 0.02, a: 0.85}
   shrinkMinStaticVisibility: 0.15
   shrinkMaxStaticVisibility: 1
-  revealDistance: 12
+  revealDistance: 30
+  proximityStaticVisibility: 0.35
   revealHitPower: 0.35
-  revealHitAlpha: 0.85
+  revealHitAlpha: 0.01
   revealRefreshInterval: 0.08
+  proximityFadeSpeed: 8
 --- !u!1 &1192998166
 GameObject:
   m_ObjectHideFlags: 0
@@ -9078,10 +9084,12 @@ MonoBehaviour:
   shrinkOuterTint: {r: 1, g: 0.08, b: 0.02, a: 0.85}
   shrinkMinStaticVisibility: 0.15
   shrinkMaxStaticVisibility: 1
-  revealDistance: 12
+  revealDistance: 100
+  proximityStaticVisibility: 0.35
   revealHitPower: 0.35
-  revealHitAlpha: 0.85
+  revealHitAlpha: 0.01
   revealRefreshInterval: 0.08
+  proximityFadeSpeed: 8
 --- !u!1 &1470275007
 GameObject:
   m_ObjectHideFlags: 0
@@ -11179,10 +11187,12 @@ MonoBehaviour:
   shrinkOuterTint: {r: 1, g: 0.08, b: 0.02, a: 0.85}
   shrinkMinStaticVisibility: 0.15
   shrinkMaxStaticVisibility: 1
-  revealDistance: 12
+  revealDistance: 30
+  proximityStaticVisibility: 0.35
   revealHitPower: 0.35
-  revealHitAlpha: 0.85
+  revealHitAlpha: 0.01
   revealRefreshInterval: 0.08
+  proximityFadeSpeed: 8
 --- !u!1 &1867909027
 GameObject:
   m_ObjectHideFlags: 0
@@ -12269,10 +12279,12 @@ MonoBehaviour:
   shrinkOuterTint: {r: 1, g: 0.08, b: 0.02, a: 0.85}
   shrinkMinStaticVisibility: 0.15
   shrinkMaxStaticVisibility: 1
-  revealDistance: 12
+  revealDistance: 30
+  proximityStaticVisibility: 0.35
   revealHitPower: 0.35
-  revealHitAlpha: 0.85
+  revealHitAlpha: 0.01
   revealRefreshInterval: 0.08
+  proximityFadeSpeed: 8
 --- !u!1 &2085344690
 GameObject:
   m_ObjectHideFlags: 0

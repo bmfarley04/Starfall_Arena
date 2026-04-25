@@ -40,12 +40,16 @@ public class ForceFieldBoundaryWall3D : MonoBehaviour
 
     [Header("Proximity Reveal")]
     [SerializeField] private float revealDistance = 12f;
+    [SerializeField] [Range(0f, 1f)] private float proximityStaticVisibility = 0.35f;
     [SerializeField] private float revealHitPower = 0.35f;
     [SerializeField] [Range(0f, 1f)] private float revealHitAlpha = 0.85f;
     [SerializeField] private float revealRefreshInterval = 0.08f;
+    [SerializeField] private float proximityFadeSpeed = 8f;
 
     private MaterialPropertyBlock _propertyBlock;
     private float _nextRevealTime;
+    private float _proximityVisibility;
+    private float _targetProximityVisibility;
     private float _halfThickness = 0.5f;
     private Vector3 _center;
     private Vector3 _normal;
@@ -69,6 +73,7 @@ public class ForceFieldBoundaryWall3D : MonoBehaviour
         revealDistance = Mathf.Max(0f, revealDistance);
         revealHitPower = Mathf.Max(0f, revealHitPower);
         revealRefreshInterval = Mathf.Max(0.01f, revealRefreshInterval);
+        proximityFadeSpeed = Mathf.Max(0.01f, proximityFadeSpeed);
         shrinkMaxStaticVisibility = Mathf.Max(shrinkMinStaticVisibility, shrinkMaxStaticVisibility);
         CacheReferences();
     }
@@ -153,7 +158,9 @@ public class ForceFieldBoundaryWall3D : MonoBehaviour
         }
 
         float staticVisibility = active
-            ? shrinking ? Mathf.Lerp(shrinkMinStaticVisibility, shrinkMaxStaticVisibility, Mathf.Clamp01(warningPulse)) : idleStaticVisibility
+            ? shrinking
+                ? Mathf.Lerp(shrinkMinStaticVisibility, shrinkMaxStaticVisibility, Mathf.Clamp01(warningPulse))
+                : Mathf.Max(idleStaticVisibility, _proximityVisibility)
             : 0f;
         Color innerTint = shrinking ? shrinkInnerTint : idleInnerTint;
         Color outerTint = shrinking ? shrinkOuterTint : idleOuterTint;
@@ -163,6 +170,7 @@ public class ForceFieldBoundaryWall3D : MonoBehaviour
         _propertyBlock.SetColor(InnerTintId, innerTint);
         _propertyBlock.SetColor(OuterTintId, outerTint);
         forceFieldRenderer.SetPropertyBlock(_propertyBlock);
+        _targetProximityVisibility = 0f;
 
         if (blocker != null)
         {
@@ -172,7 +180,7 @@ public class ForceFieldBoundaryWall3D : MonoBehaviour
 
     public void UpdateProximityReveal(Transform viewer)
     {
-        if (forceField == null || viewer == null || Time.time < _nextRevealTime)
+        if (viewer == null)
         {
             return;
         }
@@ -183,8 +191,21 @@ public class ForceFieldBoundaryWall3D : MonoBehaviour
             return;
         }
 
+        _targetProximityVisibility = Mathf.Max(_targetProximityVisibility, proximityStaticVisibility);
+        if (forceField == null || Time.time < _nextRevealTime)
+        {
+            return;
+        }
+
         forceField.OnHit(closestPoint, revealHitPower, revealHitAlpha);
         _nextRevealTime = Time.time + revealRefreshInterval;
+    }
+
+    private void LateUpdate()
+    {
+        float target = Mathf.Clamp01(_targetProximityVisibility);
+        float lerpFactor = 1f - Mathf.Exp(-proximityFadeSpeed * Time.deltaTime);
+        _proximityVisibility = Mathf.Lerp(_proximityVisibility, target, lerpFactor);
     }
 
     private Vector3 GetClosestPointOnWall(Vector3 position)
@@ -192,7 +213,7 @@ public class ForceFieldBoundaryWall3D : MonoBehaviour
         Vector3 localOffset = position - _center;
         float tangentAOffset = Mathf.Clamp(Vector3.Dot(localOffset, _tangentA), -_halfSpanA, _halfSpanA);
         float tangentBOffset = Mathf.Clamp(Vector3.Dot(localOffset, _tangentB), -_halfSpanB, _halfSpanB);
-        return _center + _tangentA * tangentAOffset + _tangentB * tangentBOffset + _normal * _halfThickness;
+        return _center + _tangentA * tangentAOffset + _tangentB * tangentBOffset;
     }
 
     private void SetSurfaceAxes(Vector3 tangentA, Vector3 tangentB, float halfSpanA, float halfSpanB)
