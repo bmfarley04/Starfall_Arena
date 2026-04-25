@@ -28,11 +28,18 @@ public class PlayerLowHealthVignetteHUD3D : PlayerHUDBindingTarget3D
     [SerializeField, Min(0f)] private float gigablastMessageTimeout = 0.2f;
     [SerializeField, Min(0.01f)] private float gigablastFallbackFadeOutSpeed = 10f;
 
+    [Header("Arena Boundary Channel")]
+    [SerializeField, Min(0f)] private float arenaBoundaryMessageTimeout = 0.2f;
+    [SerializeField, Min(0.01f)] private float arenaBoundaryFallbackFadeOutSpeed = 10f;
+
     private float _currentAlpha;
     private float _targetAlpha;
     private float _gigablastAlpha;
     private Color _gigablastColor = Color.white;
     private float _lastGigablastMessageTime = float.NegativeInfinity;
+    private float _arenaBoundaryAlpha;
+    private Color _arenaBoundaryColor = Color.red;
+    private float _lastArenaBoundaryMessageTime = float.NegativeInfinity;
 
     protected override void Awake()
     {
@@ -55,6 +62,12 @@ public class PlayerLowHealthVignetteHUD3D : PlayerHUDBindingTarget3D
         if (gigablastMessageIsStale && _gigablastAlpha > 0f)
         {
             _gigablastAlpha = Mathf.MoveTowards(_gigablastAlpha, 0f, gigablastFallbackFadeOutSpeed * Time.unscaledDeltaTime);
+        }
+
+        bool arenaBoundaryMessageIsStale = Time.unscaledTime - _lastArenaBoundaryMessageTime > arenaBoundaryMessageTimeout;
+        if (arenaBoundaryMessageIsStale && _arenaBoundaryAlpha > 0f)
+        {
+            _arenaBoundaryAlpha = Mathf.MoveTowards(_arenaBoundaryAlpha, 0f, arenaBoundaryFallbackFadeOutSpeed * Time.unscaledDeltaTime);
         }
 
         ApplyAlphaImmediate();
@@ -83,6 +96,8 @@ public class PlayerLowHealthVignetteHUD3D : PlayerHUDBindingTarget3D
         _targetAlpha = alwaysOnPreview ? Mathf.Clamp01(previewIntensity) * Mathf.Clamp01(maxAlpha) : 0f;
         _gigablastAlpha = 0f;
         _lastGigablastMessageTime = float.NegativeInfinity;
+        _arenaBoundaryAlpha = 0f;
+        _lastArenaBoundaryMessageTime = float.NegativeInfinity;
     }
 
     private void HandleHealthChanged(float currentHealth, float maxHealth)
@@ -134,14 +149,20 @@ public class PlayerLowHealthVignetteHUD3D : PlayerHUDBindingTarget3D
 
     public void ReceiveVignetteMessage(PlayerHUDVignetteMessage3D message)
     {
-        if (message.Channel != PlayerHUDVignetteChannel3D.Gigablast)
+        if (message.Channel == PlayerHUDVignetteChannel3D.Gigablast)
         {
+            _gigablastAlpha = Mathf.Clamp01(message.Alpha);
+            _gigablastColor = message.Color;
+            _lastGigablastMessageTime = Time.unscaledTime;
             return;
         }
 
-        _gigablastAlpha = Mathf.Clamp01(message.Alpha);
-        _gigablastColor = message.Color;
-        _lastGigablastMessageTime = Time.unscaledTime;
+        if (message.Channel == PlayerHUDVignetteChannel3D.ArenaBoundary)
+        {
+            _arenaBoundaryAlpha = Mathf.Clamp01(message.Alpha);
+            _arenaBoundaryColor = message.Color;
+            _lastArenaBoundaryMessageTime = Time.unscaledTime;
+        }
     }
 
     private void ApplyAlphaImmediate()
@@ -160,9 +181,28 @@ public class PlayerLowHealthVignetteHUD3D : PlayerHUDBindingTarget3D
             lowHealthAlpha *= Mathf.Lerp(1f - pulseIntensity, 1f, pulse);
         }
 
-        bool useGigablast = _gigablastAlpha > lowHealthAlpha + 0.0001f;
-        Color color = useGigablast ? _gigablastColor : vignetteColor;
-        float finalAlpha = useGigablast ? _gigablastAlpha : lowHealthAlpha;
+        Color color = vignetteColor;
+        float finalAlpha = lowHealthAlpha;
+        bool useArenaBoundary = false;
+        if (_gigablastAlpha > finalAlpha + 0.0001f)
+        {
+            color = _gigablastColor;
+            finalAlpha = _gigablastAlpha;
+        }
+
+        if (_arenaBoundaryAlpha > 0.0001f && _arenaBoundaryAlpha >= finalAlpha - 0.0001f)
+        {
+            color = _arenaBoundaryColor;
+            finalAlpha = _arenaBoundaryAlpha;
+            useArenaBoundary = true;
+        }
+
+        if (useArenaBoundary && finalAlpha > 0.001f)
+        {
+            float pulse = Mathf.Sin(Time.unscaledTime * pulseSpeed * Mathf.PI * 2f) * 0.5f + 0.5f;
+            finalAlpha *= Mathf.Lerp(1f - pulseIntensity, 1f, pulse);
+        }
+
         color.a = Mathf.Clamp01(finalAlpha);
         vignetteImage.color = color;
     }

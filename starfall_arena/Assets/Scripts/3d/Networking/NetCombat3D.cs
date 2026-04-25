@@ -476,6 +476,12 @@ public class NetCombat3D : NetworkBehaviour
             return;
         }
 
+        if (ArenaBoundary3D.TryGetActive(out ArenaBoundary3D boundary) && boundary.BlocksMovement)
+        {
+            float radius = _movement != null ? _movement.GetCollisionRadius() : 0f;
+            state.TargetPosition = boundary.ClampPositionInside(state.TargetPosition, radius);
+        }
+
         teleport.ApplyNetworkTeleport(state.TargetPosition, authoritative: true);
         BroadcastTeleportClientRpc(state);
     }

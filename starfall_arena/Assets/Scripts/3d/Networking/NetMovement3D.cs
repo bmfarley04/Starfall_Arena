@@ -348,6 +348,29 @@ public class NetMovement3D : NetworkBehaviour
         }
     }
 
+    public void ApplyBoundaryCorrection(Vector3 correctedPosition, Vector3 correctedVelocity)
+    {
+        if (_rb != null)
+        {
+            _rb.position = correctedPosition;
+            _rb.linearVelocity = correctedVelocity;
+        }
+
+        transform.position = correctedPosition;
+
+        if (_ownerStateInitialized)
+        {
+            _ownerState.Position = correctedPosition;
+            _ownerState.Velocity = correctedVelocity;
+        }
+
+        if (_serverStateInitialized)
+        {
+            _serverState.Position = correctedPosition;
+            _serverState.Velocity = correctedVelocity;
+        }
+    }
+
     private void OwnerTick()
     {
         if (_shipFlight == null)
