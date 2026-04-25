@@ -153,9 +153,6 @@ public class ArenaBoundary3D : NetworkBehaviour
         shrinkColor = new Color(5f, 0.2f, 0.05f, 1f)
     };
 
-    [Header("Warning Visuals")]
-    [SerializeField] private float warningFlashRate = 4f;
-
     [Header("Enforcement")]
     [Tooltip("If enabled, generated blocker colliders stop players at the arena faces. Leave disabled for damage-zone boundary behavior.")]
     [SerializeField] private bool blockPlayersAtBoundary;
@@ -768,11 +765,6 @@ public class ArenaBoundary3D : NetworkBehaviour
         AssignBoundaryMaterial();
         _visualRenderer.enabled = _active;
 
-        float pulse = _isShrinking
-            ? 0.5f + 0.5f * Mathf.Sin(Time.time * Mathf.Max(0.01f, warningFlashRate) * Mathf.PI * 2f)
-            : 0f;
-        float shrinkVisibility = Mathf.Lerp(visuals.shrinkMinVisibility, visuals.shrinkMaxVisibility, Mathf.Clamp01(pulse));
-
         _visualRenderer.GetPropertyBlock(_visualPropertyBlock);
         _visualPropertyBlock.SetFloat(ActiveId, _active ? 1f : 0f);
         int revealSampleCount = BuildRevealSamples();
@@ -783,9 +775,9 @@ public class ArenaBoundary3D : NetworkBehaviour
         _visualPropertyBlock.SetFloat(VisiblePatchRadiusId, _effectiveVisiblePatchRadius);
         _visualPropertyBlock.SetFloat(IdleVisibilityId, visuals.idleVisibility);
         _visualPropertyBlock.SetFloat(ProximityVisibilityId, visuals.proximityVisibility);
-        _visualPropertyBlock.SetFloat(ShrinkVisibilityId, shrinkVisibility);
-        _visualPropertyBlock.SetFloat(IsShrinkingId, _isShrinking ? 1f : 0f);
-        _visualPropertyBlock.SetFloat(ShrinkPulseId, pulse);
+        _visualPropertyBlock.SetFloat(ShrinkVisibilityId, 0f);
+        _visualPropertyBlock.SetFloat(IsShrinkingId, 0f);
+        _visualPropertyBlock.SetFloat(ShrinkPulseId, 0f);
         if (visuals.hexMask != null)
         {
             _visualPropertyBlock.SetTexture(HexMaskId, visuals.hexMask);
@@ -994,7 +986,6 @@ public class ArenaBoundary3D : NetworkBehaviour
         }
 
         wallThickness = Mathf.Max(0.01f, wallThickness);
-        warningFlashRate = Mathf.Max(0.01f, warningFlashRate);
         clampInterval = Mathf.Max(0.02f, clampInterval);
         inwardSafetyMargin = Mathf.Max(0f, inwardSafetyMargin);
         maxClampRadius = Mathf.Max(0f, maxClampRadius);

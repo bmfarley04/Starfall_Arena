@@ -54,7 +54,7 @@ These classes should stay narrow and mostly coordinate dedicated 3D systems.
   - optional six-sided rectangular arena boundary for duel scenes
   - owns current arena center, starting width/height/length, percent-based shrink waves, generated visual geometry, network-synced active/shrinking state, and server-authoritative outside damage
   - procedurally generates one inward-facing six-sided visual box mesh and optional six thin `BoxCollider` blocker children at runtime
-  - uses `Starfall/3D/ProceduralHexArenaBoundary` with a tileable hex mask texture for local-player proximity reveal and whole-arena shrink pulses
+  - uses `Starfall/3D/ProceduralHexArenaBoundary` with a tileable hex mask texture for local-player proximity reveal
   - default gameplay is a soft boundary: players can pass through, local players get a maximum red arena-boundary vignette through `PlayerLowHealthVignetteHUD3D`, and the authoritative side applies configurable percent-of-total-durability damage over time outside the arena
   - keeps the hex force-field mesh cosmetic; generated blocker colliders are disabled by default and should only be enabled if hard containment is intentionally restored
 - `ShipFlight3D`
@@ -282,7 +282,7 @@ When adding a new 3D script, place it under the subsystem it serves first. Do no
 - while the local player is outside the arena, the closest barrier face gets an outside reveal override using `Outside Reveal Distance` and `Outside Visible Patch Radius` until the player returns inside
 - tune `Texture World Size` for pattern scale, `Mask Threshold` / `Mask Softness` / `Mask Power` for line cutoff and softness, and the proximity/shrink HDR colors for cyan vs red warning reads
 - tune `Pulse Speed` / `Pulse Strength` and `Crackle Scale` / `Crackle Speed` / `Crackle Strength` for lightweight shader-only energy motion; these are visual-only and should not drive gameplay state
-- keep `Idle Visibility` at or near zero when the arena should mostly disappear until approached; tune `Shrink Min/Max Visibility` so the full arena remains readable while it is moving inward
+- keep `Idle Visibility` at or near zero when the arena should mostly disappear until approached; shrinking changes only arena dimensions and does not force full-wall visibility or flashing
 - shrink behavior belongs to `ArenaBoundary3D` dimensions and generated collider placement, not to shader displacement; the shader only decides visibility/color
 - the generated visual mesh is cosmetic and additive/transparent; containment still comes from generated `BoxCollider` blockers plus server-side clamp correction
 - keep `Start Active On Enable` enabled for standalone arena testing; turn it off only when another scene-flow owner deliberately calls `StartBoundary()` and `StopBoundary()`

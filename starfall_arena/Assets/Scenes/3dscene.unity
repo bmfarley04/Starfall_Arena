@@ -619,7 +619,7 @@ MonoBehaviour:
   minY: -500
   maxY: 500
   wallThickness: 3
-  startActiveOnEnable: 1
+  startActiveOnEnable: 0
   autoStart: 0
   waves:
   - duration: 5
@@ -654,7 +654,6 @@ MonoBehaviour:
     crackleStrength: 1
     proximityColor: {r: 16, g: 0.5562675, b: 0, a: 1}
     shrinkColor: {r: 8.47419, g: 0.3389676, b: 0.0847419, a: 1}
-  warningFlashRate: 1
   blockPlayersAtBoundary: 0
   clampInterval: 0.1
   inwardSafetyMargin: 0.25
@@ -5342,7 +5341,7 @@ MonoBehaviour:
   - {fileID: 411163175}
   uiCamera: {fileID: 1785582021}
   baseCanvasSortingOrder: 200
-  arenaBoundary: {fileID: 0}
+  arenaBoundary: {fileID: 88631714}
   player1WinTracker: {fileID: 368249683}
   player2WinTracker: {fileID: 273489585}
   spawnRetryIntervalSeconds: 0.1
