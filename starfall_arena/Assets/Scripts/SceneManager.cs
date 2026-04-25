@@ -1797,7 +1797,12 @@ public class GameSceneManager : MonoBehaviour
             ClearLocalNetworkHudBinding(destroyAbilityHudInstance: true);
         }
 
-        player1 = localPlayer;
+        // The host owns the canonical player1/player2 slot bookkeeping via SpawnNetworkPlayer.
+        // Only the non-authoritative client uses player1 as its "local owned" handle for HUD wiring.
+        if (!isAuthoritativeNetworkController)
+        {
+            player1 = localPlayer;
+        }
         NetMovement localNetMovement = localPlayer.GetComponent<NetMovement>();
         localNetMovement?.EnsureOwnerLocalControlReady();
         BindPlayerToHud(localPlayer, player1HUDCanvas, "Player1", true);
@@ -1837,7 +1842,10 @@ public class GameSceneManager : MonoBehaviour
             return;
         }
 
-        player1 = null;
+        if (!isAuthoritativeNetworkController)
+        {
+            player1 = null;
+        }
         _boundNetworkHudObjectId = ulong.MaxValue;
 
         if (destroyAbilityHudInstance)

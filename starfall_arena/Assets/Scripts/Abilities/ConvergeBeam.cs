@@ -289,10 +289,16 @@ public class ConvergeBeam : Ability
     }
 
     // ===== ROTATION =====
+    public override float GetRotationMultiplier()
+    {
+        if (!_isFiring) return 1f;
+        return convergeBeam.rotationMultiplier;
+    }
+
     public override void ApplyRotationMultiplier()
     {
         base.ApplyRotationMultiplier();
-        player.movement.rotationSpeed *= convergeBeam.rotationMultiplier;
+        player.movement.rotationSpeed *= GetRotationMultiplier();
     }
 
     public override bool IsAbilityActive()

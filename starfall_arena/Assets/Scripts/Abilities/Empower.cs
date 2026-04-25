@@ -84,11 +84,13 @@ public class Empower : Ability
                 return false;
             }
 
+            lastUsedAbility = Time.time;
             StartEmpowerRoutineLocal();
             _netMovement.RequestEmpowerState(true);
             return true;
         }
 
+        lastUsedAbility = Time.time;
         UseAbility(value);
         return true;
     }
