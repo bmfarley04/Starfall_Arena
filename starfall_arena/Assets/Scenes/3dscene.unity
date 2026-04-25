@@ -3089,11 +3089,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ForceFieldBoundaryWall3D
   side: 2
   forceFieldRenderer: {fileID: 325001999}
+  forceFieldMeshFilter: {fileID: 325002000}
   forceField: {fileID: 325002001}
   blocker: {fileID: 325001998}
   autoPlaceTransform: 1
   autoScaleVisual: 1
+  buildWorldScaleVisualMesh: 1
   autoScaleBlocker: 1
+  textureWorldSize: 75
   idleInnerTint: {r: 0.35, g: 0.9, b: 1, a: 0.45}
   idleOuterTint: {r: 0.1, g: 0.45, b: 1, a: 0.4}
   idleStaticVisibility: 0
@@ -3671,11 +3674,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ForceFieldBoundaryWall3D
   side: 1
   forceFieldRenderer: {fileID: 359806476}
+  forceFieldMeshFilter: {fileID: 359806477}
   forceField: {fileID: 359806478}
   blocker: {fileID: 359806475}
   autoPlaceTransform: 1
   autoScaleVisual: 1
+  buildWorldScaleVisualMesh: 1
   autoScaleBlocker: 1
+  textureWorldSize: 75
   idleInnerTint: {r: 0.35, g: 0.9, b: 1, a: 0.45}
   idleOuterTint: {r: 0.1, g: 0.45, b: 1, a: 0.4}
   idleStaticVisibility: 0
@@ -7683,11 +7689,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ForceFieldBoundaryWall3D
   side: 4
   forceFieldRenderer: {fileID: 1126064143}
+  forceFieldMeshFilter: {fileID: 1126064144}
   forceField: {fileID: 1126064145}
   blocker: {fileID: 1126064142}
   autoPlaceTransform: 1
   autoScaleVisual: 1
+  buildWorldScaleVisualMesh: 1
   autoScaleBlocker: 1
+  textureWorldSize: 75
   idleInnerTint: {r: 0.35, g: 0.9, b: 1, a: 0.45}
   idleOuterTint: {r: 0.1, g: 0.45, b: 1, a: 0.4}
   idleStaticVisibility: 0
@@ -9072,11 +9081,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ForceFieldBoundaryWall3D
   side: 0
   forceFieldRenderer: {fileID: 1430241041}
+  forceFieldMeshFilter: {fileID: 1430241042}
   forceField: {fileID: 1430241043}
   blocker: {fileID: 1430241040}
   autoPlaceTransform: 1
   autoScaleVisual: 1
+  buildWorldScaleVisualMesh: 1
   autoScaleBlocker: 1
+  textureWorldSize: 50
   idleInnerTint: {r: 0.35, g: 0.9, b: 1, a: 0.45}
   idleOuterTint: {r: 0.1, g: 0.45, b: 1, a: 0.4}
   idleStaticVisibility: 0
@@ -11175,11 +11187,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ForceFieldBoundaryWall3D
   side: 3
   forceFieldRenderer: {fileID: 1856566442}
+  forceFieldMeshFilter: {fileID: 1856566443}
   forceField: {fileID: 1856566444}
   blocker: {fileID: 1856566441}
   autoPlaceTransform: 1
   autoScaleVisual: 1
+  buildWorldScaleVisualMesh: 1
   autoScaleBlocker: 1
+  textureWorldSize: 75
   idleInnerTint: {r: 0.35, g: 0.9, b: 1, a: 0.45}
   idleOuterTint: {r: 0.1, g: 0.45, b: 1, a: 0.4}
   idleStaticVisibility: 0
@@ -12267,11 +12282,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ForceFieldBoundaryWall3D
   side: 5
   forceFieldRenderer: {fileID: 2074501357}
+  forceFieldMeshFilter: {fileID: 2074501358}
   forceField: {fileID: 2074501359}
   blocker: {fileID: 2074501356}
   autoPlaceTransform: 1
   autoScaleVisual: 1
+  buildWorldScaleVisualMesh: 1
   autoScaleBlocker: 1
+  textureWorldSize: 75
   idleInnerTint: {r: 0.35, g: 0.9, b: 1, a: 0.45}
   idleOuterTint: {r: 0.1, g: 0.45, b: 1, a: 0.4}
   idleStaticVisibility: 0

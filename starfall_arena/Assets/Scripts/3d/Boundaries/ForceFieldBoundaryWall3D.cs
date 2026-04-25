@@ -21,11 +21,16 @@ public class ForceFieldBoundaryWall3D : MonoBehaviour
     [Header("Wall")]
     [SerializeField] private WallSide side;
     [SerializeField] private Renderer forceFieldRenderer;
+    [SerializeField] private MeshFilter forceFieldMeshFilter;
     [SerializeField] private Forcefield forceField;
     [SerializeField] private BoxCollider blocker;
     [SerializeField] private bool autoPlaceTransform = true;
     [SerializeField] private bool autoScaleVisual = true;
+    [SerializeField] private bool buildWorldScaleVisualMesh = true;
     [SerializeField] private bool autoScaleBlocker = true;
+
+    [Header("Texture Scale")]
+    [SerializeField] private float textureWorldSize = 75f;
 
     [Header("Idle Visuals")]
     [SerializeField] private Color idleInnerTint = new Color(0.35f, 0.9f, 1f, 0.45f);
@@ -59,6 +64,7 @@ public class ForceFieldBoundaryWall3D : MonoBehaviour
     private float _halfSpanB;
     private float _minY;
     private float _maxY;
+    private Mesh _runtimeVisualMesh;
 
     public WallSide Side => side;
 
@@ -74,8 +80,26 @@ public class ForceFieldBoundaryWall3D : MonoBehaviour
         revealHitPower = Mathf.Max(0f, revealHitPower);
         revealRefreshInterval = Mathf.Max(0.01f, revealRefreshInterval);
         proximityFadeSpeed = Mathf.Max(0.01f, proximityFadeSpeed);
+        textureWorldSize = Mathf.Max(0.01f, textureWorldSize);
         shrinkMaxStaticVisibility = Mathf.Max(shrinkMinStaticVisibility, shrinkMaxStaticVisibility);
         CacheReferences();
+    }
+
+    private void OnDestroy()
+    {
+        if (_runtimeVisualMesh == null)
+        {
+            return;
+        }
+
+        if (Application.isPlaying)
+        {
+            Destroy(_runtimeVisualMesh);
+        }
+        else
+        {
+            DestroyImmediate(_runtimeVisualMesh);
+        }
     }
 
     public void Configure(
@@ -239,7 +263,15 @@ public class ForceFieldBoundaryWall3D : MonoBehaviour
                 forceFieldRenderer.transform.localRotation = Quaternion.identity;
             }
 
-            forceFieldRenderer.transform.localScale = new Vector3(width, height, 1f);
+            if (buildWorldScaleVisualMesh && forceFieldMeshFilter != null)
+            {
+                forceFieldRenderer.transform.localScale = Vector3.one;
+                RebuildVisualMesh(width, height);
+            }
+            else
+            {
+                forceFieldRenderer.transform.localScale = new Vector3(width, height, 1f);
+            }
         }
 
         if (blocker != null && autoScaleBlocker)
@@ -265,6 +297,11 @@ public class ForceFieldBoundaryWall3D : MonoBehaviour
             forceFieldRenderer = GetComponentInChildren<Renderer>();
         }
 
+        if (forceFieldMeshFilter == null)
+        {
+            forceFieldMeshFilter = GetComponentInChildren<MeshFilter>();
+        }
+
         if (forceField == null)
         {
             forceField = GetComponentInChildren<Forcefield>();
@@ -274,5 +311,51 @@ public class ForceFieldBoundaryWall3D : MonoBehaviour
         {
             blocker = GetComponentInChildren<BoxCollider>();
         }
+    }
+
+    private void RebuildVisualMesh(float width, float height)
+    {
+        if (_runtimeVisualMesh == null)
+        {
+            _runtimeVisualMesh = new Mesh
+            {
+                name = $"{name}_BoundaryWallRuntimeMesh"
+            };
+        }
+
+        float halfWidth = width * 0.5f;
+        float halfHeight = height * 0.5f;
+        float uvWidth = width / textureWorldSize;
+        float uvHeight = height / textureWorldSize;
+
+        _runtimeVisualMesh.Clear();
+        _runtimeVisualMesh.vertices = new[]
+        {
+            new Vector3(-halfWidth, -halfHeight, 0f),
+            new Vector3(halfWidth, -halfHeight, 0f),
+            new Vector3(-halfWidth, halfHeight, 0f),
+            new Vector3(halfWidth, halfHeight, 0f)
+        };
+        _runtimeVisualMesh.uv = new[]
+        {
+            Vector2.zero,
+            new Vector2(uvWidth, 0f),
+            new Vector2(0f, uvHeight),
+            new Vector2(uvWidth, uvHeight)
+        };
+        _runtimeVisualMesh.normals = new[]
+        {
+            Vector3.back,
+            Vector3.back,
+            Vector3.back,
+            Vector3.back
+        };
+        _runtimeVisualMesh.triangles = new[]
+        {
+            0, 2, 1,
+            2, 3, 1
+        };
+        _runtimeVisualMesh.RecalculateBounds();
+        forceFieldMeshFilter.sharedMesh = _runtimeVisualMesh;
     }
 }

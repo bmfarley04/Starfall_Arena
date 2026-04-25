@@ -253,8 +253,10 @@ When adding a new 3D script, place it under the subsystem it serves first. Do no
 ## Force-Field Arena Boundary Authoring
 
 - add one `ArenaBoundary3D` to the 3D gameplay scene and assign it to `SceneManager3D` if the boundary should run with each round
-- author six child wall objects, each with `ForceFieldBoundaryWall3D`, a force-field visual quad using `FORGE3D/Force Field/Force Field Static`, and a thin `BoxCollider`
-- the collider may live on the same quad as the renderer or on a separate child; if it shares the scaled visual transform, `ForceFieldBoundaryWall3D` keeps collider size normalized so the wall is not double-scaled
+- author six child wall objects, each with `ForceFieldBoundaryWall3D`, a force-field visual renderer using `FORGE3D/Force Field/Force Field Static`, a `MeshFilter`, and a thin `BoxCollider`
+- leave `Build World Scale Visual Mesh` enabled for large arenas; the wall presenter builds a runtime quad at the real wall dimensions instead of scaling a tiny Unity quad, which keeps Forge3D hit masks in practical world-space sizes
+- tune `Texture World Size` on each wall to control how many world units one texture repeat covers; smaller values make the shield pattern denser, larger values make it broader
+- the collider may live on the same object as the renderer or on a separate child; if it shares the visual transform, `ForceFieldBoundaryWall3D` keeps collider size normalized so the wall is not double-scaled
 - assign the `ArenaBoundary3D.walls` array in this order: `North`, `South`, `East`, `West`, `Top`, `Bottom`; the boundary owner applies those sides at runtime and the child enum is only a preview/default
 - wire each child wall renderer, Forge3D `Forcefield`, and blocker references
 - keep `_Static` near zero for idle materials; runtime code raises it for shrink warning flashes and uses `Forcefield.OnHit(...)` for local proximity reveal
