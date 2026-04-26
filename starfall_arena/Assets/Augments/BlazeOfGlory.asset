@@ -15,9 +15,8 @@ MonoBehaviour:
   icon: {fileID: 21300000, guid: b5d25ebc02f664044b27eaf1518a1cbe, type: 3}
   augmentName: Blaze of Glory
   description: Deal 50% more damage when below 25% health.
-  augmentID: BlazeOfGlory
+  _augmentID: BlazeOfGlory
   rounds: -1
-  playerReference: {fileID: 0}
-  bogEffect: {fileID: 0}
+  damageBoostPrefab: {fileID: 8595475238803380239, guid: 682d5d3e7c85bf04ab5a18243427daca, type: 3}
   damageMultiplier: 1.5
   healthThreshold: 0.7

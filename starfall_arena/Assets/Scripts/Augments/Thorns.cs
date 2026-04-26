@@ -4,6 +4,11 @@ using UnityEngine;
 [CreateAssetMenu(fileName = "Thorns", menuName = "Starfall Arena/Augments/Thorns", order = 2)]
 public class Thorns : Augment
 {
+    [Header("Presentation")]
+    [Tooltip("Prefab kept active on the player while Thorns is active")]
+    public GameObject auraPrefab;
+
+    [Header("Gameplay")]
     [Tooltip("Damage dealt to other entities on contact")]
     public float contactDamage = 10f;
 

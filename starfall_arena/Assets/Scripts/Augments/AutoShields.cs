@@ -7,6 +7,8 @@ public class AutoShields : Augment
     [Tooltip("Once per round/combat, when your shields reach zero, regain all shields instantly.")]
     public bool enabled = true;
 
+    public GameObject particlePrefab;
+
     public override IAugmentRuntime CreateRuntime()
     {
         return new AutoShieldsRuntime(this);

@@ -1,0 +1,46 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 834f24fd2bb962644a26e183f4577a56, type: 3}
+  m_Name: BodyBinding
+  m_EditorClassIdentifier: Assembly-CSharp::BodyBinding
+  icon: {fileID: 21300000, guid: 0ce0654a7f3fb884a9573099e48e86af, type: 3}
+  augmentName: Drag Entanglement
+  description: Nearby enemies move more slowly based on how close they are to you.
+  _augmentID: 40a0b5ce39e449a88e7b09d69bd2f9eb
+  rounds: -1
+  bindingRadius: 14
+  maxSlowMultiplier: 0.1
+  distanceFalloffExponent: 1
+  linkVisual:
+    enabled: 1
+    lineMaterial: {fileID: 2100000, guid: db99378546970474d8e54ba6db10a9c4, type: 2}
+    startColor: {r: 1, g: 0.07661383, b: 0, a: 0.9}
+    endColor: {r: 1, g: 0.7, b: 1, a: 0.9}
+    lineWidth: 1
+    arcHeight: 0.6
+    wobbleAmplitude: 0.03
+    wobbleFrequency: 2
+    ownerLocalOffset: {x: 0, y: 0.4, z: 0}
+    targetLocalOffset: {x: 0, y: 0.4, z: 0}
+    fadeByDistance: 0
+    nearAlpha: 1
+    farAlpha: 0.2
+    sortingOrder: 20
+    lightningBoltPrefab: {fileID: 178460, guid: 2736bbc2f2c78a949957b0719c2992bd, type: 3}
+    useLightningBoltPrefab: 1
+    overrideLightningBoltSettings: 1
+    lightningGenerations: 6
+    lightningDuration: 0.077
+    lightningChaosFactor: 0.15
+    lightningRows: 8
+    lightningColumns: 8
+    lightningAnimationMode: 1

@@ -139,6 +139,11 @@ public abstract class Player : Entity
     [Tooltip("Number of AudioSources in the pool for overlapping sounds")]
     public int audioSourcePoolSize = 10;
 
+    [Header("Presentation")]
+    [Tooltip("Uniform ship-size multiplier used by augment and ability presentation prefabs")]
+    [Min(0.01f)]
+    [SerializeField] private float shipSize = 1f;
+
     // ===== PROTECTED STATE (for derived classes) =====
     protected float fireCooldown = 0.5f;  // Can be overridden in derived classes
 
@@ -163,6 +168,7 @@ public abstract class Player : Entity
     public string thisPlayerTag { get; protected set; }
     public string enemyTag { get; protected set; }
     public float PrimaryFireCooldown => fireCooldown;
+    public float ShipSize => Mathf.Max(0.01f, shipSize);
 
     // ===== PRIVATE STATE =====
     private List<Ability> abilities;
@@ -668,19 +674,23 @@ public abstract class Player : Entity
     // Anchor
     void OnAnchor(InputValue value)
     {
-        if (value.isPressed)
+        ForceAnchorState(value.isPressed);
+    }
+
+    public void ForceAnchorState(bool anchored)
+    {
+        if (anchored)
         {
             thrusters.invertColors = true;
-            movement.rotationSpeed *= 3;
+            movement.rotationSpeed = _originalRotationSpeed * 3f;
             _isAnchored = true;
+            return;
         }
-        else
-        {
-            thrusters.invertColors = false;
-            _isAnchored = false;
-            _anchorDragAccumulator = 0f;
-            movement.rotationSpeed = _originalRotationSpeed;
-        }
+
+        thrusters.invertColors = false;
+        _isAnchored = false;
+        _anchorDragAccumulator = 0f;
+        movement.rotationSpeed = _originalRotationSpeed;
     }
 
     // ===== COMBAT =====
@@ -740,6 +750,9 @@ public abstract class Player : Entity
                     CanPierce = false,
                     AppliesSlow = false,
                     VisualType = NetProjectileVisualType.Primary,
+                    IgnoreCooldown = false,
+                    OwnerPredicted = true,
+                    FireSource = (byte)PrimaryFireExecutionSource.PlayerInput,
                 });
             }
 
@@ -785,6 +798,7 @@ public abstract class Player : Entity
             projectileFireSound.Play(GetAvailableAudioSource());
         }
 
+        PrimaryFireExecutionBus.Raise(this, PrimaryFireExecutionSource.PlayerInput);
         _lastFireTime = Time.time;
     }
 

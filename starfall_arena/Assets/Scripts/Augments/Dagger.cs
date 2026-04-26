@@ -4,6 +4,14 @@ using UnityEngine;
 [CreateAssetMenu(fileName = "Dagger", menuName = "Starfall Arena/Augments/Dagger", order = 2)]
 public class Dagger : Augment
 {
+    [Header("Presentation")]
+    [Tooltip("Sound played when Dagger damage boost activates")]
+    public SoundEffect activationSound;
+
+    [Tooltip("Prefab activated while Dagger damage boost is active")]
+    public GameObject damageBoostPrefab;
+
+    [Header("Gameplay")]
     [Tooltip("Multiplier applied to the player's damage output after taking damage")]
     public float damageMultiplier = 1.5f;
 

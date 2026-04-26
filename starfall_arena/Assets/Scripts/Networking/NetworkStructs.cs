@@ -136,6 +136,9 @@ public struct NetFireRequest : INetworkSerializable
     public bool CanPierce;
     public bool AppliesSlow;
     public NetProjectileVisualType VisualType;
+    public bool IgnoreCooldown;
+    public bool OwnerPredicted;
+    public byte FireSource;
 
     public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
     {
@@ -155,6 +158,9 @@ public struct NetFireRequest : INetworkSerializable
         serializer.SerializeValue(ref CanPierce);
         serializer.SerializeValue(ref AppliesSlow);
         serializer.SerializeValue(ref VisualType);
+        serializer.SerializeValue(ref IgnoreCooldown);
+        serializer.SerializeValue(ref OwnerPredicted);
+        serializer.SerializeValue(ref FireSource);
     }
 }
 
@@ -176,6 +182,7 @@ public struct NetProjectileSpawnData : INetworkSerializable
     public bool CanPierce;
     public bool AppliesSlow;
     public NetProjectileVisualType VisualType;
+    public bool OwnerPredicted;
 
     public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
     {
@@ -195,6 +202,7 @@ public struct NetProjectileSpawnData : INetworkSerializable
         serializer.SerializeValue(ref CanPierce);
         serializer.SerializeValue(ref AppliesSlow);
         serializer.SerializeValue(ref VisualType);
+        serializer.SerializeValue(ref OwnerPredicted);
     }
 }
 

@@ -4,6 +4,10 @@ using UnityEngine;
 [CreateAssetMenu(fileName = "Regenerator", menuName = "Starfall Arena/Augments/Regenerator", order = 2)]
 public class Regenerator : Augment
 {
+    [Header("Presentation")]
+    [Tooltip("Prefab activated while Regenerator is actively restoring health")]
+    public GameObject regenerationPrefab;
+
     [Header("Regeneration")]
     [Tooltip("Amount of health restored per second while anchored")]
     public float healRate = 5f;

@@ -308,6 +308,7 @@ Networked combat note:
 - Bug note: networked piercing projectiles must suppress repeat hits on the same target for the lifetime of that flight. Local play relies on `OnTriggerEnter2D`, but the network path uses repeated server-side sweeps against rewind history. Without a per-projectile hit registry, a piercing `GigaBlast` can damage the same player on successive server ticks and look like an instant kill even though the configured single-hit damage is correct.
 - Bug note: `Invisibility` should explicitly hide and restore ship renderers during activation instead of relying on layer changes alone. The layer swap is still needed for targeting/filtering, but by itself it is not reliable enough as player-facing feedback.
 - Bug note: `Invisibility` is enemy-facing concealment, not self-blindness. The owning player should keep seeing their own ship, and invisibility should immediately break when Class3 takes another offensive action such as primary fire, `FireWall`, `FaerieShift`, or `TriggerBomb`.
+- reinforced hull now uses a separate `sizeScaleMultiplier` on the augment asset, so ship visual scaling can be tuned independently from the health bonus instead of inheriting `healthMultiplier`.
 
 ### Ability 4 Unlock Rule
 
@@ -376,6 +377,20 @@ Current augment runtimes include behaviors such as:
 - max health increases
 - rotation and thorn-style contact behavior
 - fairy and augment-enhancement style effects
+- runtime-driven presentation effects (attached prefabs and one-shot particles/sounds) for augments like Blaze of Glory, Cloak, Dagger, Evasion, Regenerator, Rotator, and Thorns
+- Bubble Shield now supports an attached bubble prefab that shrinks toward a configurable minimum scale as anchored mitigation approaches stun threshold, a configurable block sound on mitigated hits, and shield-like damage-debt regen after a hit-free delay
+- Burst now supports an attached speed-up prefab that is active during the burst window after contact-triggered activation
+- Burner now supports a configurable burn-tick prefab spawned at random points on the burning target (renderer bounds first, radius fallback)
+- AutoCounter now supports a configurable ready-glow prefab that is shown while the auto-counter window is active and the next incoming projectile can be reflected
+- AutoCounter now also broadcasts reflected-projectile visuals through the shared network projectile-reflection path so remote clients see the reflected shot when the server confirms the augment proc
+- Twin Fire now applies a persistent primary-damage reduction and schedules a delayed second primary volley per shot
+- SoulBinding now transfers your recent health loss into nearby enemies as distance-scaled direct health damage
+- MindBinding now listens for nearby enemy primary-fire events and mirrors them by firing your own primary volley
+- BodyBinding now applies distance-scaled speed slow multipliers to nearby enemies based on proximity only, so slow player movement does not drop the effect
+- Binding augments now share an arc-link visual architecture (per-augment settings plus runtime-driven owner/target anchor offsets and curved line points) so active nearby binds can show persistent light links between ships; BodyBinding now updates those visuals on every active client copy while keeping the slow application server-authoritative
+- augment presentation prefabs now scale by `Player` ship size so ships with larger/smaller presentation scale keep augment VFX proportional
+- reinforced hull presentation scaling where the ship visual scale tracks the same multiplier used for extra max health while the augment is active
+- artificial fairy revival sequencing where lethal damage triggers a flash, temporary intangibility, ship-part scatter, and delayed part regroup to visually reassemble the ship
 
 This means augments are already more than simple stat perks. They are event-driven gameplay modules with persistence across rounds.
 
@@ -408,6 +423,8 @@ Network execution note:
 - owner clients and remote proxies still need local runtime instances for HUD, stat, and presentation consistency
 - augments that use `ExecuteEffects()` must keep working when `Player` is disabled on non-owner network copies, because `NetMovement` now manually ticks augment runtimes on those copies
 - augments that react to taking damage should assume the real damage event happens on the server; client copies are refreshed from the authoritative combat/state sync path rather than from local `TakeDamage(...)`
+- successful evade presentation is now replicated through the authoritative combat broadcast path so non-server clients trigger Evasion flash/sound only when the server actually ignored damage
+- artificial fairy revival presentation is also replicated through authoritative combat broadcast flags so remote clients run the same revive scatter/regroup sequence when the server confirms the augment proc
 
 ## Known Architectural Notes
 
@@ -420,6 +437,7 @@ Network execution note:
 - Bug note: teleport-style abilities that hide renderers during their effect need an interruption-safe restore path, or a ship can remain hittable while visually invisible if the coroutine is stopped mid-ability.
 - Bug note: Chrono Step waypoints must be cleared on round transitions. The component now clears state in `OnDisable()` to avoid leaving waypoint markers between rounds; if markers persist, ensure the ability component is disabled during round freeze.
 - Bug note: if duel stats ever start diverging again, check for damage sources bypassing `Entity.TakeDamage(...)` / `TakeDirectDamage(...)` without passing the attacking player through. That was the root cause of mismatched dealt-vs-taken totals and missing ability/reflection credit.
+- Bug note: Artificial Fairy regroup visuals can appear oversized if ship parts only restore local scale after reparenting. Preserve each part's original world scale and compute parent-relative local scale on return so reassembled parts match the ship's original size.
 - Bug note: when adding thruster particles to the future-facing `Assets/Scripts/3d/Movement3D.cs` path, cache each particle system's original emission/speed/lifetime and drive them from live thrust input. If the 3D ship thrusters look permanently on or refuse to restart cleanly, the usual cause is treating them as static VFX instead of maintaining a thrust-driven intensity/play-stop state.
 - `Assets/Scripts/3d` is future-facing groundwork for a more fully 3D version of the game, not a current core maintenance area.
 - Bugs in combat, ability timing, or augment behavior should be added here in the relevant section once discovered.
