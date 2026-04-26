@@ -308,6 +308,7 @@ Networked combat note:
 - Bug note: networked piercing projectiles must suppress repeat hits on the same target for the lifetime of that flight. Local play relies on `OnTriggerEnter2D`, but the network path uses repeated server-side sweeps against rewind history. Without a per-projectile hit registry, a piercing `GigaBlast` can damage the same player on successive server ticks and look like an instant kill even though the configured single-hit damage is correct.
 - Bug note: `Invisibility` should explicitly hide and restore ship renderers during activation instead of relying on layer changes alone. The layer swap is still needed for targeting/filtering, but by itself it is not reliable enough as player-facing feedback.
 - Bug note: `Invisibility` is enemy-facing concealment, not self-blindness. The owning player should keep seeing their own ship, and invisibility should immediately break when Class3 takes another offensive action such as primary fire, `FireWall`, `FaerieShift`, or `TriggerBomb`.
+- reinforced hull now uses a separate `sizeScaleMultiplier` on the augment asset, so ship visual scaling can be tuned independently from the health bonus instead of inheriting `healthMultiplier`.
 
 ### Ability 4 Unlock Rule
 
@@ -385,7 +386,7 @@ Current augment runtimes include behaviors such as:
 - SoulBinding now transfers your recent health loss into nearby enemies as distance-scaled direct health damage
 - MindBinding now listens for nearby enemy primary-fire events and mirrors them by firing your own primary volley
 - BodyBinding now applies distance-scaled speed slow multipliers to nearby enemies based on proximity only, so slow player movement does not drop the effect
-- Binding augments now share an arc-link visual architecture (per-augment settings plus runtime-driven owner/target anchor offsets and curved line points) so active nearby binds can show persistent light links between ships
+- Binding augments now share an arc-link visual architecture (per-augment settings plus runtime-driven owner/target anchor offsets and curved line points) so active nearby binds can show persistent light links between ships; BodyBinding now updates those visuals on every active client copy while keeping the slow application server-authoritative
 - augment presentation prefabs now scale by `Player` ship size so ships with larger/smaller presentation scale keep augment VFX proportional
 - reinforced hull presentation scaling where the ship visual scale tracks the same multiplier used for extra max health while the augment is active
 - artificial fairy revival sequencing where lethal damage triggers a flash, temporary intangibility, ship-part scatter, and delayed part regroup to visually reassemble the ship

@@ -410,7 +410,7 @@ public sealed class ReinforcedHullRuntime : AugmentRuntimeBase
             return;
         }
 
-        _appliedScaleMultiplier = Mathf.Max(0.1f, _definition.healthMultiplier);
+        _appliedScaleMultiplier = Mathf.Max(0.1f, _definition.sizeScaleMultiplier);
         _scaleTarget.localScale = _originalScale * _appliedScaleMultiplier;
         _scaleApplied = true;
     }
@@ -1705,15 +1705,22 @@ public sealed class BodyBindingRuntime : NearbyBindingRuntimeBase<BodyBinding>
             return;
         }
 
-        if (!IsActiveByRounds() || !HasAuthority())
+        if (!IsActiveByRounds())
         {
             ClearAllAppliedSlow();
+            HideBindingLinks();
             return;
         }
 
         _seenThisTick.Clear();
         List<Entity> nearby = CollectNearbyEnemies(_definition.bindingRadius);
         UpdateBindingLinks(nearby, _definition.bindingRadius, _definition.linkVisual);
+
+        if (!HasAuthority())
+        {
+            return;
+        }
+
         for (int i = 0; i < nearby.Count; i++)
         {
             Entity target = nearby[i];
