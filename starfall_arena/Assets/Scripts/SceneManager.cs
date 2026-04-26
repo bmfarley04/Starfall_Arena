@@ -803,6 +803,11 @@ public class GameSceneManager : MonoBehaviour
             return player1Augments;
         }
 
+        if (TryFindLocalOwnedNetworkPlayer(out Player localPlayer) && localPlayer != null)
+        {
+            return localPlayer.ExportAugmentLoadout();
+        }
+
         int localSlotIndex = NetworkSessionData.Instance.GetLocalSlotIndex();
         return localSlotIndex == 1 ? player2Augments : player1Augments;
     }
