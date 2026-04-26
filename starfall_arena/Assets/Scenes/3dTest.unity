@@ -5476,6 +5476,10 @@ PrefabInstance:
       propertyPath: dodge.dodgeDistance
       value: 20
       objectReference: {fileID: 0}
+    - target: {fileID: 111100000000000104, guid: dcd0d058af7406e4b869c55e797967e0, type: 3}
+      propertyPath: dodge.slideDuration
+      value: 0.35
+      objectReference: {fileID: 0}
     - target: {fileID: 111100000000000105, guid: dcd0d058af7406e4b869c55e797967e0, type: 3}
       propertyPath: empower.duration
       value: 14

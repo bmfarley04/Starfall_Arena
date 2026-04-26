@@ -1072,9 +1072,9 @@ public class NetMovement3D : NetworkBehaviour
             initialized = true;
         }
 
-        float carriedSpeed = state.Velocity.magnitude;
+        Vector3 carriedVelocity = state.Velocity;
         state.DodgeVelocity = dashVelocity;
-        state.DodgeExitVelocity = dodgeDirection * carriedSpeed;
+        state.DodgeExitVelocity = carriedVelocity;
         state.DodgeRemainingTime = duration;
         state.Velocity = dashVelocity;
     }

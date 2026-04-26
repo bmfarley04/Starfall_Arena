@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using System.Collections;
 
 [DisallowMultipleComponent]
 public class Dodge3D : Ability3D
@@ -41,6 +42,7 @@ public class Dodge3D : Ability3D
     private float _dodgeEndTime = float.NegativeInfinity;
     private NetCombat3D _netCombat;
     private Player3D _player;
+    private Coroutine _localDodgeCoroutine;
 
     protected override void Awake()
     {
@@ -145,6 +147,11 @@ public class Dodge3D : Ability3D
         _isPrimed = false;
         _isDodging = false;
         _dodgeEndTime = float.NegativeInfinity;
+        if (_localDodgeCoroutine != null)
+        {
+            StopCoroutine(_localDodgeCoroutine);
+            _localDodgeCoroutine = null;
+        }
     }
 
     private void ExecuteDodge(Vector3 worldDirection)
@@ -179,15 +186,22 @@ public class Dodge3D : Ability3D
         }
 
         NetMovement3D movement = GetComponent<NetMovement3D>();
-        if (entity == null || entity.Flight == null || movement == null)
+        if (entity == null || entity.Flight == null)
         {
             return;
         }
 
-        movement.ApplyCombatDodgeSlide(
-            worldDirection.normalized,
-            Mathf.Max(0.01f, dodge.dodgeDistance),
-            Mathf.Max(0.01f, dodge.slideDuration));
+        Vector3 normalizedDirection = worldDirection.normalized;
+        float dodgeDistance = Mathf.Max(0.01f, dodge.dodgeDistance);
+        float slideDuration = Mathf.Max(0.01f, dodge.slideDuration);
+
+        if (CanUseNetworkDodgeMovement(movement))
+        {
+            movement.ApplyCombatDodgeSlide(normalizedDirection, dodgeDistance, slideDuration);
+            return;
+        }
+
+        StartLocalDodgeFallback(normalizedDirection, dodgeDistance, slideDuration);
     }
 
     private Vector3 ResolveCardinalDirection(Vector2 lookInput)
@@ -218,5 +232,51 @@ public class Dodge3D : Ability3D
         }
 
         return dodge.empowerAbility != null && dodge.empowerAbility.IsEmpoweredActive;
+    }
+
+    private static bool CanUseNetworkDodgeMovement(NetMovement3D movement)
+    {
+        return movement != null && NetTickUtil.IsActive && movement.IsSpawned;
+    }
+
+    private void StartLocalDodgeFallback(Vector3 worldDirection, float dodgeDistance, float slideDuration)
+    {
+        if (_localDodgeCoroutine != null)
+        {
+            StopCoroutine(_localDodgeCoroutine);
+        }
+
+        _localDodgeCoroutine = StartCoroutine(LocalDodgeSlideCoroutine(worldDirection, dodgeDistance, slideDuration));
+    }
+
+    private IEnumerator LocalDodgeSlideCoroutine(Vector3 worldDirection, float dodgeDistance, float slideDuration)
+    {
+        Rigidbody rb = entity != null && entity.Flight != null ? entity.Flight.Rigidbody : null;
+        if (rb == null)
+        {
+            _localDodgeCoroutine = null;
+            yield break;
+        }
+
+        Vector3 startPosition = rb.position;
+        Vector3 endPosition = startPosition + (worldDirection * dodgeDistance);
+        Vector3 carriedVelocity = rb.linearVelocity;
+        float elapsed = 0f;
+
+        rb.linearVelocity = Vector3.zero;
+
+        while (elapsed < slideDuration)
+        {
+            elapsed += Time.fixedDeltaTime;
+            float t = Mathf.Clamp01(elapsed / slideDuration);
+            float eased = 1f - ((1f - t) * (1f - t));
+            Vector3 nextPosition = Vector3.Lerp(startPosition, endPosition, eased);
+            rb.MovePosition(nextPosition);
+            yield return new WaitForFixedUpdate();
+        }
+
+        rb.MovePosition(endPosition);
+        rb.linearVelocity = carriedVelocity;
+        _localDodgeCoroutine = null;
     }
 }
