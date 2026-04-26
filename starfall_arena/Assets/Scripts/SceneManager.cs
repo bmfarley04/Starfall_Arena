@@ -740,6 +740,21 @@ public class GameSceneManager : MonoBehaviour
             return;
         }
 
+        if (useNetworkSession)
+        {
+            if (player1AugmentTracker != null)
+            {
+                player1AugmentTracker.SetTrackedPlayer(GetNetworkPlayerByTag("Player1"));
+            }
+
+            if (player2AugmentTracker != null && player2AugmentTracker != player1AugmentTracker)
+            {
+                player2AugmentTracker.SetTrackedPlayer(GetNetworkPlayerByTag("Player2"));
+            }
+
+            return;
+        }
+
         if (player1AugmentTracker != null)
         {
             player1AugmentTracker.SetTrackedPlayer(player1);
@@ -766,6 +781,31 @@ public class GameSceneManager : MonoBehaviour
         NetworkSessionData session = NetworkSessionData.Instance;
         int localSlotIndex = session != null ? session.GetLocalSlotIndex() : 0;
         return localSlotIndex == 1 ? player2 : player1;
+    }
+
+    private Player GetNetworkPlayerByTag(string playerTag)
+    {
+        if (string.IsNullOrWhiteSpace(playerTag))
+        {
+            return null;
+        }
+
+        if (NetMovement.TryGetPlayerByTag(playerTag, out NetMovement movement) && movement != null)
+        {
+            return movement.GetComponent<Player>();
+        }
+
+        Player[] players = FindObjectsByType<Player>(FindObjectsSortMode.None);
+        for (int i = 0; i < players.Length; i++)
+        {
+            Player candidate = players[i];
+            if (candidate != null && candidate.CompareTag(playerTag))
+            {
+                return candidate;
+            }
+        }
+
+        return null;
     }
 
     private bool TryGetSingleAssignedAugmentTracker(out StarfallArena.UI.AugmentIconTracker tracker)
