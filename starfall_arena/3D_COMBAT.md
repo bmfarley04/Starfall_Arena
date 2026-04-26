@@ -137,9 +137,12 @@ Base input rule:
   - Class 4 missile weapon on the `Weapon3D` path
   - launches an authored guided-missile projectile prefab through the shared projectile/network broker instead of bypassing `NetCombat3D`
   - base and empowered missile variants use separate visual types so remote proxies and reflected-projectile cosmetics resolve the correct prefab
-- `GuidedMissileProjectile3D`
+- `MissileProjectile3D`
   - full 3D homing projectile runtime for Class 4 missiles
-  - reacquires duel targets from the replicated enemy tag path when possible, otherwise falls back to the nearest valid enemy/faction target and continues straight if none exist
+  - reacquires targets from the explicit projectile faction first so the same prefab works in duel and Invasion flows; specific duel player tags remain a compatibility fallback
+  - exposes an inspector dropdown so the same 3D missile prefab can be authored as either a guided missile or a straight-flying physical missile
+  - owns delayed despawn behavior for missile-body renderers, exhaust particles, trail fade-out, impact explosion prefab spawn, and missile impact audio so real 3D missile prefabs do not have to behave like laser bolts
+  - does not use the base projectile hit effect path; missile impact presentation should come from the authored explosion setup instead
 - `Dodge3D`
   - Class 4 mobility ability on the `Ability3D` path
   - pressing the ability primes a short input window; the next valid look-stick input chooses one of four ship-relative directions: forward, back, left, or right

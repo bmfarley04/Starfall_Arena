@@ -4742,7 +4742,7 @@ GameObject:
   - component: {fileID: 452452}
   - component: {fileID: 3352454}
   - component: {fileID: 2352454}
-  - component: {fileID: 11452454}
+  - component: {fileID: -5164785581860732382}
   m_Layer: 0
   m_Name: 3d_missile1
   m_TagString: Untagged
@@ -4824,7 +4824,7 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!114 &11452454
+--- !u!114 &-5164785581860732382
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -4833,25 +4833,37 @@ MonoBehaviour:
   m_GameObject: {fileID: 152452}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2eb81a48b708c7d4586ad5144351d65f, type: 3}
+  m_Script: {fileID: 11500000, guid: e7f2344dc5754b39bdea655733db5ef8, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: 
-  missileType: 1
-  target: {fileID: 0}
-  layerMask:
+  m_EditorClassIdentifier: Assembly-CSharp::GuidedMissileProjectile3D
+  targetTag: 
+  hitEffectPrefab: {fileID: 0}
+  hitEffectLifetime: 2
+  hitEffectOffset: 0.02
+  alignHitEffectToSurface: 1
+  collisionMask:
     serializedVersion: 2
     m_Bits: 4294967295
-  detonationDistance: 15
-  lifeTime: 2
-  despawnDelay: 1
-  velocity: 80
-  alignSpeed: 15
-  RaycastAdvance: 2
-  DelayDespawn: 1
-  delayedParticles:
-  - {fileID: 19852452}
-  - {fileID: 19852454}
-  launcher: {fileID: 0}
+  hitscanRadius: 0.1
+  guidance:
+    mode: 1
+    turnRateDegPerSecond: 120
+    guidanceStartDelay: 0.05
+  warmup:
+    enabled: 1
+    initialSpeed: 6
+    lowSpeedDuration: 0.08
+    accelerationDuration: 0.25
+  despawn:
+    delayDespawn: 1
+    despawnDelay: 0.35
+    delayedParticles:
+    - {fileID: 19852452}
+    - {fileID: 19852454}
+  impact:
+    explosionPrefab: {fileID: 100014, guid: d96258cdf841f5e4d8af97dce9661d8c, type: 3}
+    explosionScale: 0.5
+    impactSound: {fileID: 11400000, guid: 52e8c58e387b89849affa74c78d6d899, type: 2}
 --- !u!1 &152454
 GameObject:
   m_ObjectHideFlags: 0
