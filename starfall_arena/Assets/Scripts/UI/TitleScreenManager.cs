@@ -115,6 +115,10 @@ public class TitleScreenManager : MonoBehaviour
     [Tooltip("First selected button on the 3D mode select canvas")]
     [SerializeField] private GameObject host3DModeSelectFirstSelected;
 
+    [Header("3D Menu Options")]
+    [Tooltip("If true, the 3D host flow shows the duel/invasion submenu. If false, 3D goes straight to the duel waiting screen.")]
+    [SerializeField] private bool show3DInvasionModeInMenu = true;
+
     [Header("Networking UI")]
     [SerializeField] private TMP_InputField ipAddressInputField;
     [SerializeField] private TextMeshProUGUI networkStatusText;
@@ -418,7 +422,7 @@ public class TitleScreenManager : MonoBehaviour
 
     public void StartHosting3DFlow()
     {
-        if (host3DModeSelectCanvas == null)
+        if (!show3DInvasionModeInMenu || host3DModeSelectCanvas == null)
         {
             StartHosting3DDuelFlow();
             return;
