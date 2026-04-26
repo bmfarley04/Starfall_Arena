@@ -21,9 +21,9 @@ public class Enemy3D : Entity3D
         netEnemyMovement ??= GetComponent<NetEnemyMovement3D>();
         netEnemyCombat ??= GetComponent<NetEnemyCombat3D>();
 
-        if (aiFlightController != null && shipFlight != null)
+        if (shipFlight != null)
         {
-            shipFlight.SetInputSource(aiFlightController);
+            shipFlight.enabled = false;
         }
 
         if (factionMember == null)

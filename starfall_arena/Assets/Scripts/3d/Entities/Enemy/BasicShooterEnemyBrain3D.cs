@@ -15,6 +15,8 @@ public class BasicShooterEnemyBrain3D : MonoBehaviour
     [SerializeField] private NetEnemyCombat3D netEnemyCombat;
     [SerializeField] private float thinkInterval = 0.05f;
     [SerializeField] private float aimToleranceDegrees = 10f;
+    [SerializeField] private float stopDistance = 18f;
+    [SerializeField] private float fullSpeedDistance = 45f;
 
     private NetworkObject _networkObject;
     private float _nextThinkTime;
@@ -71,7 +73,7 @@ public class BasicShooterEnemyBrain3D : MonoBehaviour
             ? obstacleAvoidance.ResolveSteeringDirection(toTarget)
             : toTarget.normalized;
 
-        flightController?.SetFlightIntent(WorldDirectionToLookInput(steeringDirection), 1f);
+        flightController?.SetMoveDirection(steeringDirection, ResolveDistanceSpeedScale(toTarget.magnitude));
 
         if (primaryWeapon == null || !IsAimedAtTarget(toTarget))
         {
@@ -87,15 +89,27 @@ public class BasicShooterEnemyBrain3D : MonoBehaviour
         primaryWeapon.TryFireAtFaction(Faction3D.PlayerTeam);
     }
 
-    private Vector2 WorldDirectionToLookInput(Vector3 worldDirection)
-    {
-        Vector3 localDirection = transform.InverseTransformDirection(worldDirection.normalized);
-        return Vector2.ClampMagnitude(new Vector2(localDirection.x, localDirection.y), 1f);
-    }
-
     private bool IsAimedAtTarget(Vector3 toTarget)
     {
         return Vector3.Angle(transform.forward, toTarget.normalized) <= Mathf.Max(0f, aimToleranceDegrees);
+    }
+
+    private float ResolveDistanceSpeedScale(float distanceToTarget)
+    {
+        float stop = Mathf.Max(0f, stopDistance);
+        float full = Mathf.Max(stop + 0.01f, fullSpeedDistance);
+
+        if (distanceToTarget <= stop)
+        {
+            return 0f;
+        }
+
+        if (distanceToTarget >= full)
+        {
+            return 1f;
+        }
+
+        return Mathf.InverseLerp(stop, full, distanceToTarget);
     }
 
     private bool HasBrainAuthority()

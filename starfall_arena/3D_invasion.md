@@ -12,10 +12,10 @@ Implemented foundation:
 - 3D projectiles now carry a target faction in addition to the older target tag
 - faction checks are preferred for PvE projectile damage, with tags retained only as a compatibility fallback
 - `Enemy3D` remains a narrow coordinator over focused enemy systems
-- `EnemyAIFlightController3D` is only a flight-input adapter
+- `EnemyAIFlightController3D` is a simple enemy Rigidbody motor: rotate toward a world-space direction, then move forward
 - `EnemyTargetSensor3D` selects the nearest visible player-team entity
 - `EnemyObstacleAvoidance3D` uses non-alloc 3D physics probes to steer around asteroids/world obstacles
-- `BasicShooterEnemyBrain3D` directly chases the nearest visible player and fires at `PlayerTeam` when aimed and off cooldown
+- `BasicShooterEnemyBrain3D` chases the nearest visible player, slows near the target to avoid orbiting, and fires at `PlayerTeam` when aimed and off cooldown
 - `NetEnemyMovement3D` makes enemies server-simulated in network sessions
 - `NetEnemyCombat3D` makes enemy projectile damage server-authoritative and broadcasts client cosmetics
 - `InvasionWaveManager3D` is a minimal finite-wave spawner for configured enemy prefabs
@@ -31,7 +31,7 @@ Implemented foundation:
 Networked Invasion is server authoritative:
 
 - the server/host spawns enemies and waves
-- the server runs enemy AI and movement simulation
+- the server runs enemy AI and owns enemy Rigidbody movement
 - the server spawns gameplay projectiles and applies damage
 - clients interpolate enemy movement and show cosmetic projectile spawns
 - client-side enemy copies must not run AI or apply gameplay damage
@@ -74,7 +74,8 @@ For the first basic shooter enemy prefab:
 - add `NetworkObject` if it will spawn in networked Invasion
 - add `FactionMember3D` and set faction to `EnemyTeam`
 - add `Enemy3D`
-- add `ShipFlight3D`, `Rigidbody`, and the normal shared 3D ship VFX/presentation components as needed
+- add `Rigidbody`
+- `ShipFlight3D` may still exist because `Enemy3D` inherits shared `Entity3D`, but `Enemy3D` disables it at runtime so it does not fight enemy movement
 - add `EnemyAIFlightController3D`
 - add `EnemyTargetSensor3D`
 - add `EnemyObstacleAvoidance3D` and set `Obstacle Mask` to asteroids/world-geometry layers

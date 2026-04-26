@@ -4,7 +4,6 @@ using UnityEngine;
 [DisallowMultipleComponent]
 [RequireComponent(typeof(NetworkObject))]
 [RequireComponent(typeof(Rigidbody))]
-[RequireComponent(typeof(ShipFlight3D))]
 [RequireComponent(typeof(EnemyAIFlightController3D))]
 public class NetEnemyMovement3D : NetworkBehaviour
 {
@@ -13,28 +12,18 @@ public class NetEnemyMovement3D : NetworkBehaviour
     [Header("Enemy Interpolation")]
     [SerializeField] private int interpolationBufferTicks = 2;
 
-    private ShipFlight3D _shipFlight;
-    private EnemyAIFlightController3D _aiInput;
     private Rigidbody _rb;
+    private EnemyAIFlightController3D _enemyFlight;
     private NetStateSnapshot3D[] _interpolationBuffer;
-    private MovementState3D _serverState;
-    private bool _serverStateInitialized;
-    private bool _serverFrictionEnabled;
     private int _lastPublishedTick = -1;
     private int _interpWriteIndex;
     private int _interpCount;
     private float _interpTimer;
-    private Vector3 _lastAppliedVisualVelocity;
-    private bool _hasLastAppliedVisualVelocity;
 
     public override void OnNetworkSpawn()
     {
         base.OnNetworkSpawn();
         CacheReferences();
-        _shipFlight.SetExternalSimulationEnabled(true);
-        _serverFrictionEnabled = _shipFlight.IsFrictionEnabled;
-        _serverState = CaptureCurrentState();
-        _serverStateInitialized = true;
 
         if (!IsServer)
         {
@@ -49,11 +38,6 @@ public class NetEnemyMovement3D : NetworkBehaviour
 
     public override void OnNetworkDespawn()
     {
-        if (_shipFlight != null)
-        {
-            _shipFlight.SetExternalSimulationEnabled(false);
-        }
-
         if (_rb != null)
         {
             _rb.isKinematic = false;
@@ -71,7 +55,7 @@ public class NetEnemyMovement3D : NetworkBehaviour
 
         if (IsServer)
         {
-            ServerTick();
+            PublishServerState();
         }
         else
         {
@@ -81,23 +65,15 @@ public class NetEnemyMovement3D : NetworkBehaviour
 
     public void ApplyCombatVelocityDelta(Vector3 velocityDelta)
     {
-        if (velocityDelta.sqrMagnitude <= 0.000001f)
+        if (_rb == null || velocityDelta.sqrMagnitude <= 0.000001f)
         {
             return;
         }
 
-        if (_rb != null)
-        {
-            _rb.linearVelocity += velocityDelta;
-        }
-
-        if (_serverStateInitialized)
-        {
-            _serverState.Velocity += velocityDelta;
-        }
+        _rb.linearVelocity += velocityDelta;
     }
 
-    private void ServerTick()
+    private void PublishServerState()
     {
         int tick = NetTickUtil.CurrentTick;
         if (tick <= _lastPublishedTick)
@@ -106,41 +82,7 @@ public class NetEnemyMovement3D : NetworkBehaviour
         }
 
         _lastPublishedTick = tick;
-        float dt = GetTickDeltaTime();
-        Vector3 previousVelocity = _serverState.Velocity;
-
-        NetInputSnapshot3D input = new NetInputSnapshot3D
-        {
-            Tick = tick,
-            LookInput = _aiInput != null ? _aiInput.LookInput : Vector2.zero,
-            ThrustInput = _aiInput != null ? _aiInput.ThrustInput : 0f,
-            FrictionEnabled = _serverFrictionEnabled,
-            BaseRotationMultiplier = 1f,
-            AbilityRotationMultiplier = 1f,
-            ThrustMultiplier = 1f,
-            SlowMultiplier = 1f
-        };
-
-        Entity3D entity = GetComponent<Entity3D>();
-        if (entity != null)
-        {
-            input.AbilityRotationMultiplier = entity.GetAbilityRotationMultiplier();
-            input.ThrustMultiplier = entity.GetCombinedThrustMultiplier();
-            input.SlowMultiplier = entity.GetSlowMultiplier();
-        }
-
-        MovementSimulation3D.SimulateTick(
-            ref _serverState,
-            in input,
-            _shipFlight.FlightConfig,
-            _shipFlight.FlightAssistConfig,
-            _shipFlight.LockToWorldYPlane,
-            _shipFlight.LockedWorldY,
-            dt);
-
-        ApplySimulationState(_serverState);
-        ApplyFlightTelemetry(input.LookInput, input.ThrustInput, _serverFrictionEnabled, _serverState, previousVelocity, dt);
-        BroadcastStateClientRpc(ToSnapshot(tick, _serverState, input.ThrustInput, _serverFrictionEnabled));
+        BroadcastStateClientRpc(CaptureSnapshot(tick));
     }
 
     [ClientRpc]
@@ -195,25 +137,22 @@ public class NetEnemyMovement3D : NetworkBehaviour
             return;
         }
 
-        float tickInterval = GetTickDeltaTime();
-        float duration = tickDelta * tickInterval;
+        float duration = tickDelta * GetTickDeltaTime();
+        if (duration <= 0f)
+        {
+            return;
+        }
+
         _interpTimer += Time.fixedDeltaTime;
         float t = Mathf.Clamp01(_interpTimer / duration);
+        Vector3 position = Vector3.Lerp(from.Position, to.Position, t);
+        Quaternion rotation = Quaternion.Slerp(from.Rotation, to.Rotation, t);
+        Vector3 velocity = Vector3.Lerp(from.Velocity, to.Velocity, t);
 
-        MovementState3D interpolatedState = new MovementState3D
-        {
-            Position = Vector3.Lerp(from.Position, to.Position, t),
-            Rotation = Quaternion.Slerp(from.Rotation, to.Rotation, t),
-            Velocity = Vector3.Lerp(from.Velocity, to.Velocity, t),
-            FilteredLookInput = Vector2.Lerp(from.FilteredLookInput, to.FilteredLookInput, t),
-            TurnRates = Vector2.Lerp(from.TurnRates, to.TurnRates, t)
-        };
-
-        ApplySimulationState(interpolatedState);
-        Vector3 previousVelocity = _hasLastAppliedVisualVelocity ? _lastAppliedVisualVelocity : from.Velocity;
-        ApplyFlightTelemetry(interpolatedState.FilteredLookInput, Mathf.Lerp(from.ThrustInput, to.ThrustInput, t), to.FrictionEnabled, interpolatedState, previousVelocity, tickInterval);
-        _lastAppliedVisualVelocity = interpolatedState.Velocity;
-        _hasLastAppliedVisualVelocity = true;
+        _rb.position = position;
+        _rb.rotation = rotation;
+        _rb.linearVelocity = velocity;
+        transform.SetPositionAndRotation(position, rotation);
 
         if (t >= 1f)
         {
@@ -221,58 +160,19 @@ public class NetEnemyMovement3D : NetworkBehaviour
         }
     }
 
-    private void ApplySimulationState(in MovementState3D state)
+    private NetStateSnapshot3D CaptureSnapshot(int tick)
     {
-        _rb.position = state.Position;
-        _rb.rotation = state.Rotation;
-        _rb.linearVelocity = state.Velocity;
-        transform.SetPositionAndRotation(state.Position, state.Rotation);
-    }
-
-    private void ApplyFlightTelemetry(
-        Vector2 rawLookInput,
-        float thrustInput,
-        bool frictionEnabled,
-        in MovementState3D state,
-        Vector3 previousVelocity,
-        float dt)
-    {
-        Vector3 linearAcceleration = dt > 0f ? (state.Velocity - previousVelocity) / dt : Vector3.zero;
-        _shipFlight.ApplyExternalSimulationState(
-            rawLookInput,
-            state.FilteredLookInput,
-            state.TurnRates,
-            thrustInput,
-            frictionEnabled,
-            state.Velocity,
-            linearAcceleration,
-            Vector3.zero);
-    }
-
-    private MovementState3D CaptureCurrentState()
-    {
-        return new MovementState3D
-        {
-            Position = transform.position,
-            Rotation = transform.rotation,
-            Velocity = _rb != null ? _rb.linearVelocity : Vector3.zero,
-            FilteredLookInput = Vector2.zero,
-            TurnRates = Vector2.zero
-        };
-    }
-
-    private static NetStateSnapshot3D ToSnapshot(int tick, in MovementState3D state, float thrustInput, bool frictionEnabled)
-    {
+        Vector3 velocity = _rb != null ? _rb.linearVelocity : Vector3.zero;
         return new NetStateSnapshot3D
         {
             Tick = tick,
-            Position = state.Position,
-            Rotation = state.Rotation,
-            Velocity = state.Velocity,
-            FilteredLookInput = state.FilteredLookInput,
-            TurnRates = state.TurnRates,
-            ThrustInput = thrustInput,
-            FrictionEnabled = frictionEnabled
+            Position = transform.position,
+            Rotation = transform.rotation,
+            Velocity = velocity,
+            FilteredLookInput = Vector2.zero,
+            TurnRates = Vector2.zero,
+            ThrustInput = _enemyFlight != null && _enemyFlight.MoveDirection.sqrMagnitude > 0.0001f ? 1f : 0f,
+            FrictionEnabled = false
         };
     }
 
@@ -284,8 +184,7 @@ public class NetEnemyMovement3D : NetworkBehaviour
 
     private void CacheReferences()
     {
-        _shipFlight ??= GetComponent<ShipFlight3D>();
-        _aiInput ??= GetComponent<EnemyAIFlightController3D>();
         _rb ??= GetComponent<Rigidbody>();
+        _enemyFlight ??= GetComponent<EnemyAIFlightController3D>();
     }
 }

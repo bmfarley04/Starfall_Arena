@@ -138,7 +138,7 @@ The 3D path intentionally uses brokered cosmetic projectile and beam instances i
 Invasion enemies use separate enemy-specific networking:
 
 - `NetEnemyMovement3D`
-  - server simulates enemy movement from AI input
+  - server publishes enemy Rigidbody position/rotation/velocity snapshots
   - clients interpolate replicated enemy snapshots
   - clients do not run enemy gameplay AI
 - `NetEnemyCombat3D`
@@ -146,7 +146,7 @@ Invasion enemies use separate enemy-specific networking:
   - clients receive cosmetic projectile spawns
   - enemy combat uses target factions instead of the player-duel `ResolveEnemyTag()` path
 
-Do not reuse `NetMovement3D` for enemies. It is owner-predicted player movement.
+Do not reuse `NetMovement3D` or `MovementSimulation3D` for enemies. They are owner-predicted player movement paths. Enemy movement defaults to a simple server-owned Rigidbody motor plus snapshot interpolation.
 
 Do not route enemy PvE projectiles through `NetCombat3D.ResolveEnemyTag()`, because that method intentionally resolves the opposite player slot for duels.
 

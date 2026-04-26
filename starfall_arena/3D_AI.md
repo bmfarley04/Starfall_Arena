@@ -8,11 +8,12 @@ The 3D AI path should stay modular. Enemy prefabs should compose small scripts i
 
 - `Enemy3D`
   - enemy entity coordinator
-  - caches enemy-only systems and connects AI input to `ShipFlight3D`
+  - caches enemy-only systems
+  - disables the player-style `ShipFlight3D` component so enemy movement has one Rigidbody owner
   - should stay narrow
 - `EnemyAIFlightController3D`
-  - implements `IShipFlightInputSource`
-  - stores look/thrust intent supplied by a brain
+  - simple enemy Rigidbody motor
+  - receives a world-space move direction, rotates toward it, then directly sets Rigidbody velocity along its own facing direction once facing that direction
   - contains no targeting, pathing, or combat decisions
 - `EnemyTargetSensor3D`
   - periodically selects the nearest visible target in a configured faction
@@ -25,12 +26,16 @@ The 3D AI path should stay modular. Enemy prefabs should compose small scripts i
 - `BasicShooterEnemyBrain3D`
   - first Invasion enemy behavior
   - directly pursues the nearest visible player
-  - has no preferred combat range
+  - slows/stops near the target instead of overshooting into long orbit loops
   - fires its projectile weapon when aimed and off cooldown
 
 ## Architecture Rules
 
-- AI brains decide intent; flight controllers only expose intent to `ShipFlight3D`.
+- AI brains decide intent; `EnemyAIFlightController3D` owns the enemy Rigidbody movement response.
+- Enemy movement should not mirror player input, player prediction, visual tilt, or camera-driven flight feel by default.
+- The default enemy movement contract is intentionally blunt: choose a world-space direction, rotate the enemy nose toward it, and set velocity to `transform.forward * speed` once the enemy is facing that direction.
+- Do not preserve sideways drift, acceleration curves, player-style look input, or inherited velocity in the baseline enemy motor.
+- Basic shooter pursuit may scale speed down near the target, but facing gates belong in `EnemyAIFlightController3D`.
 - Target selection should use `FactionMember3D`, not generic `"Player"` tag lookups.
 - Obstacle avoidance should use batched/non-alloc physics queries where possible.
 - Do not put wave logic, scoring, or mode state inside individual enemy brains.
@@ -45,6 +50,7 @@ Current pathing is free-flight steering:
 - probe forward and along angled whiskers
 - bias away from obstacle hits
 - preserve 3D climb/dive movement
+- feed the final world-space direction to the simple enemy flight motor
 
 Do not use Unity NavMesh for the current space-flight enemy path unless the mode intentionally changes to constrained lanes, surfaces, or volumes.
 

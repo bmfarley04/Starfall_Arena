@@ -458,6 +458,7 @@ GameObject:
   - component: {fileID: 6016429355266790633}
   - component: {fileID: 1524455165470484394}
   - component: {fileID: 6190683714811522588}
+  - component: {fileID: -7606376376767454836}
   m_Layer: 0
   m_Name: 3d_class1_player
   m_TagString: Enemy
@@ -1424,6 +1425,19 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NetCombat3D
   ShowTopMostFoldoutHeaderGroup: 1
+--- !u!114 &-7606376376767454836
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2568558604607578100}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 97c06a93dd649d54b9c2050d318c0a49, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::FactionMember3D
+  faction: 1
 --- !u!1 &3042639647086152311
 GameObject:
   m_ObjectHideFlags: 0
