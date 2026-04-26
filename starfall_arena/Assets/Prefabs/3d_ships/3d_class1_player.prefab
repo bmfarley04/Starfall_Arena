@@ -509,7 +509,7 @@ MonoBehaviour:
       m_Calls: []
   m_ActionEvents: []
   m_NeverAutoSwitchControlSchemes: 1
-  m_DefaultControlScheme: controller
+  m_DefaultControlScheme: Playstation
   m_DefaultActionMap: 3d
   m_SplitScreenIndex: -1
   m_Camera: {fileID: 0}
