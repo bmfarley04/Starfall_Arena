@@ -742,7 +742,7 @@ public sealed class BodyBindingSlowController : MonoBehaviour
 
 public sealed class AutoCounterReflectorController : MonoBehaviour, IProjectileReflectorAugment
 {
-    public event Action<Vector2> OnProjectileReflected;
+    public event Action<ProjectileScript, Vector2> OnProjectileReflected;
 
     private Player _owner;
     private ReflectShield _shield;
@@ -800,7 +800,7 @@ public sealed class AutoCounterReflectorController : MonoBehaviour, IProjectileR
         }
 
         projectile.MarkAsReflected();
-        OnProjectileReflected?.Invoke(hitPoint);
+        OnProjectileReflected?.Invoke(projectile, hitPoint);
         return true;
     }
 

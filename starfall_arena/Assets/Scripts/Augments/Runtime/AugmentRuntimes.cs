@@ -1224,6 +1224,7 @@ public sealed class AutoCounterRuntime : AugmentRuntimeBase
 {
     private readonly AutoCounter _definition;
     private AutoCounterReflectorController _reflector;
+    private NetMovement _netMovement;
     private float _nextCastTime;
     private float _deactivateTime;
     private bool _isActive;
@@ -1239,6 +1240,7 @@ public sealed class AutoCounterRuntime : AugmentRuntimeBase
         base.Initialize(player, roundAcquired, persistentState);
         if (player == null) return;
 
+        _netMovement = player.GetComponent<NetMovement>();
         _reflector = player.GetComponent<AutoCounterReflectorController>();
         if (_reflector == null)
         {
@@ -1295,9 +1297,24 @@ public sealed class AutoCounterRuntime : AugmentRuntimeBase
         }
     }
 
-    private void HandleProjectileReflected(Vector2 hitPoint)
+    private void HandleProjectileReflected(ProjectileScript projectile, Vector2 hitPoint)
     {
         if (!_isActive) return;
+
+        if (projectile != null && NetTickUtil.IsActive && _netMovement != null && _netMovement.IsServer)
+        {
+            _netMovement.BroadcastReflectedProjectile(new NetReflectedProjectileData
+            {
+                SpawnPosition = projectile.transform.position,
+                Direction = projectile.GetDirection(),
+                Speed = projectile.GetSpeed(),
+                Damage = projectile.GetDamage(),
+                Lifetime = projectile.GetLifetime(),
+                ImpactForce = projectile.GetImpactForce(),
+                ReflectColor = _definition.reflectedProjectileColor,
+                VisualType = NetProjectileVisualType.Primary,
+            });
+        }
 
         _deactivateTime = Time.time + Mathf.Max(0.05f, _definition.delayedTurnOffAfterHit);
     }

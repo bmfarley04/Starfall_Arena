@@ -382,6 +382,7 @@ Current augment runtimes include behaviors such as:
 - Burst now supports an attached speed-up prefab that is active during the burst window after contact-triggered activation
 - Burner now supports a configurable burn-tick prefab spawned at random points on the burning target (renderer bounds first, radius fallback)
 - AutoCounter now supports a configurable ready-glow prefab that is shown while the auto-counter window is active and the next incoming projectile can be reflected
+- AutoCounter now also broadcasts reflected-projectile visuals through the shared network projectile-reflection path so remote clients see the reflected shot when the server confirms the augment proc
 - Twin Fire now applies a persistent primary-damage reduction and schedules a delayed second primary volley per shot
 - SoulBinding now transfers your recent health loss into nearby enemies as distance-scaled direct health damage
 - MindBinding now listens for nearby enemy primary-fire events and mirrors them by firing your own primary volley
