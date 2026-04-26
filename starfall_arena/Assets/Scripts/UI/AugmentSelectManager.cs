@@ -331,6 +331,16 @@ namespace StarfallArena.UI
             {
                 PollGamepadNavigation();
             }
+
+            // Manual keyboard polling for networked mode.
+            // We disable the UIInputModule's move/submit during selection so the
+            // gamepad doesn't drive both manual polling and the EventSystem at once
+            // (which caused the middle card to be skipped). Poll the keyboard here
+            // so KB/M users can still navigate and confirm.
+            if (isShowing)
+            {
+                PollKeyboardNavigation();
+            }
         }
 
         // ===== GAMEPAD ASSIGNMENT =====
@@ -456,6 +466,44 @@ namespace StarfallArena.UI
             int btnIndex = activeIndices[nextIndex];
             if (EventSystem.current != null)
                 EventSystem.current.SetSelectedGameObject(buttons[btnIndex].gameObject);
+        }
+
+        /// <summary>
+        /// Polls the keyboard for navigation (arrow keys / A,D) and submit (Enter / Space).
+        /// Used so KB/M players can drive augment select while the UIInputModule's
+        /// move/submit are disabled to prevent gamepad double-input.
+        /// </summary>
+        private void PollKeyboardNavigation()
+        {
+            Keyboard kb = Keyboard.current;
+            if (kb == null) return;
+
+            // Submit (Enter / Space)
+            if (kb.enterKey.wasPressedThisFrame || kb.numpadEnterKey.wasPressedThisFrame || kb.spaceKey.wasPressedThisFrame)
+            {
+                GameObject selected = EventSystem.current?.currentSelectedGameObject;
+                if (selected != null)
+                {
+                    Button btn = selected.GetComponent<Button>();
+                    if (btn != null && btn.interactable)
+                    {
+                        btn.onClick.Invoke();
+                        return;
+                    }
+                }
+            }
+
+            // Navigation (arrows / A,D)
+            if (kb.leftArrowKey.wasPressedThisFrame || kb.aKey.wasPressedThisFrame)
+            {
+                NavigateCards(-1);
+                return;
+            }
+            if (kb.rightArrowKey.wasPressedThisFrame || kb.dKey.wasPressedThisFrame)
+            {
+                NavigateCards(1);
+                return;
+            }
         }
 
         // ===== CANVAS GROUP HELPER =====
@@ -639,9 +687,12 @@ namespace StarfallArena.UI
             _useExternalTimer = true;
 
             // Networked play: each client has only one local gamepad, so always use it
-            // regardless of slot. We also leave the UIInputModule active (unlike local
-            // split-screen) so KB/M and the local gamepad both drive the EventSystem.
+            // regardless of slot. We disable the UIInputModule (same as local split-screen)
+            // so the gamepad isn't driving both the EventSystem and manual polling — that
+            // double-fires navigation and skips the middle card. KB/M is handled by
+            // PollKeyboardNavigation while selection is showing.
             _activeGamepad = Gamepad.current ?? (Gamepad.all.Count > 0 ? Gamepad.all[0] : null);
+            DisableUIModuleNavigation();
 
             selectedAugments = new List<Augment>(augments);
             PopulateUI(currentTier, selectedAugments);
