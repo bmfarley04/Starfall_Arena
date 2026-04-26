@@ -5330,8 +5330,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::NetworkSceneManager3D
   player1SpawnPoint: {fileID: 2100000002}
   player2SpawnPoint: {fileID: 2100000004}
-  defaultPlayer1Ship: {fileID: 11400000, guid: 7c9e3b1b784102e44b69ce6ee15c2187, type: 2}
-  defaultPlayer2Ship: {fileID: 11400000, guid: 3932fca80d410704aa99a81cf831a070, type: 2}
+  defaultPlayer1Ship: {fileID: 0}
+  defaultPlayer2Ship: {fileID: 0}
   spawnPlayersOnStart: 0
   spawnRetryIntervalSeconds: 0.1
 --- !u!114 &783863774
@@ -5348,8 +5348,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::SceneManager3D
   player1SpawnPoint: {fileID: 2100000002}
   player2SpawnPoint: {fileID: 2100000004}
-  defaultPlayer1Ship: {fileID: 11400000, guid: 7c9e3b1b784102e44b69ce6ee15c2187, type: 2}
-  defaultPlayer2Ship: {fileID: 11400000, guid: 3932fca80d410704aa99a81cf831a070, type: 2}
+  defaultPlayer1Ship: {fileID: 0}
+  defaultPlayer2Ship: {fileID: 0}
   versusScreenManager: {fileID: 1406496135}
   roundEndScreenManager: {fileID: 914338101}
   gameEndScreenManager: {fileID: 822641099}
