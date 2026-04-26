@@ -114,6 +114,7 @@ public class GuidedMissileWeapon3D : Weapon3D
         request.recoilForce = guidedMissile.baseProjectile.recoilForce * Mathf.Max(0f, variant.recoilMultiplier);
         request.lifetime = variant.lifetimeOverride > 0f ? variant.lifetimeOverride : guidedMissile.baseProjectile.lifetime;
         request.projectileScaleMultiplier = Mathf.Max(0.01f, variant.sizeMultiplier > 0f ? variant.sizeMultiplier : 1f);
+        NormalizePlayerProjectileTargeting(ref request);
 
         if (!FireProjectilePattern(request, guidedMissile.baseProjectile, guidedMissile.fireSound))
         {

@@ -15,7 +15,7 @@ public static class MovementSimulation3D
     {
         FilterLookInput(ref state, input.LookInput, flight.lookInputResponse, dt);
         HandleRotation(ref state, input, flight, dt);
-        HandleThrustAndAssist(ref state, input, flight, assist, dt);
+        HandleVelocity(ref state, input, flight, assist, dt);
         IntegratePosition(ref state, dt);
 
         if (lockToWorldYPlane)
@@ -57,6 +57,44 @@ public static class MovementSimulation3D
             state.TurnRates.y * Mathf.Rad2Deg * dt,
             0f);
         state.Rotation = state.Rotation * localDelta;
+    }
+
+    private static void HandleVelocity(
+        ref MovementState3D state,
+        in NetInputSnapshot3D input,
+        in ShipFlightConfig3D flight,
+        in ShipFlightAssistConfig3D assist,
+        float dt)
+    {
+        if (HandleActiveDodge(ref state, dt))
+        {
+            return;
+        }
+
+        state.DodgeVelocity = Vector3.zero;
+        state.DodgeExitVelocity = Vector3.zero;
+
+        HandleThrustAndAssist(ref state, input, flight, assist, dt);
+    }
+
+    private static bool HandleActiveDodge(ref MovementState3D state, float dt)
+    {
+        if (state.DodgeRemainingTime <= 0f)
+        {
+            return false;
+        }
+
+        state.Velocity = state.DodgeVelocity;
+        state.DodgeRemainingTime = Mathf.Max(0f, state.DodgeRemainingTime - dt);
+
+        if (state.DodgeRemainingTime <= 0f)
+        {
+            state.Velocity = state.DodgeExitVelocity;
+            state.DodgeVelocity = Vector3.zero;
+            state.DodgeExitVelocity = Vector3.zero;
+        }
+
+        return true;
     }
 
     private static void HandleThrustAndAssist(

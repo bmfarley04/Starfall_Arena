@@ -373,6 +373,55 @@ public abstract class Weapon3D : MonoBehaviour, IReticleSpinSource3D
         _lastReticleSpinPulseTime = Time.time;
     }
 
+    protected void NormalizePlayerProjectileTargeting(ref ProjectileFireRequest3D request)
+    {
+        if (owner is not Player3D)
+        {
+            return;
+        }
+
+        bool hasEnemyTeamTargets = SceneHasFactionTargets(Faction3D.EnemyTeam);
+        bool hasDuelOpponentTag = TryResolveOpponentPlayerTag(out string opponentPlayerTag);
+
+        if (request.targetFaction == Faction3D.EnemyTeam)
+        {
+            if (!hasEnemyTeamTargets && hasDuelOpponentTag)
+            {
+                request.targetFaction = Faction3D.Neutral;
+                request.targetTag = opponentPlayerTag;
+            }
+            else if (hasEnemyTeamTargets && string.IsNullOrEmpty(request.targetTag))
+            {
+                request.targetTag = "Enemy";
+            }
+
+            return;
+        }
+
+        if (request.targetFaction != Faction3D.Neutral)
+        {
+            return;
+        }
+
+        bool usesGenericEnemyTag = string.IsNullOrEmpty(request.targetTag) || request.targetTag == "Enemy";
+        if (!usesGenericEnemyTag)
+        {
+            return;
+        }
+
+        if (hasEnemyTeamTargets)
+        {
+            request.targetFaction = Faction3D.EnemyTeam;
+            request.targetTag = "Enemy";
+            return;
+        }
+
+        if (hasDuelOpponentTag)
+        {
+            request.targetTag = opponentPlayerTag;
+        }
+    }
+
     protected ProjectileFireRequest3D BuildDefaultFireRequest(ProjectileWeaponConfig3D weaponConfig)
     {
         return new ProjectileFireRequest3D
@@ -841,5 +890,63 @@ public abstract class Weapon3D : MonoBehaviour, IReticleSpinSource3D
         _lastAvailabilityChangedOnCooldown = isOnCooldown;
         _hasAvailabilitySnapshot = true;
         AvailabilityChanged?.Invoke(this);
+    }
+
+    private bool TryResolveOpponentPlayerTag(out string opponentPlayerTag)
+    {
+        opponentPlayerTag = null;
+
+        NetMovement3D movement = owner != null ? owner.GetComponent<NetMovement3D>() : null;
+        byte playerSlot = movement != null ? movement.PlayerSlot : (byte)0;
+        if (playerSlot == 1)
+        {
+            opponentPlayerTag = "Player2";
+            return true;
+        }
+
+        if (playerSlot == 2)
+        {
+            opponentPlayerTag = "Player1";
+            return true;
+        }
+
+        if (owner != null && owner.CompareTag("Player1"))
+        {
+            opponentPlayerTag = "Player2";
+            return true;
+        }
+
+        if (owner != null && owner.CompareTag("Player2"))
+        {
+            opponentPlayerTag = "Player1";
+            return true;
+        }
+
+        return false;
+    }
+
+    private static bool SceneHasFactionTargets(Faction3D targetFaction)
+    {
+        if (targetFaction == Faction3D.Neutral)
+        {
+            return false;
+        }
+
+        Entity3D[] entities = FindObjectsByType<Entity3D>(FindObjectsSortMode.None);
+        for (int i = 0; i < entities.Length; i++)
+        {
+            Entity3D entity = entities[i];
+            if (entity == null || !entity.gameObject.activeInHierarchy)
+            {
+                continue;
+            }
+
+            if (FactionMember3D.ResolveFaction(entity) == targetFaction)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

@@ -178,17 +178,16 @@ public class Dodge3D : Ability3D
             return;
         }
 
-        ShipFlight3D flight = entity != null ? entity.Flight : null;
         NetMovement3D movement = GetComponent<NetMovement3D>();
-        if (flight == null || movement == null)
+        if (entity == null || entity.Flight == null || movement == null)
         {
             return;
         }
 
-        Vector3 currentVelocity = flight.LinearVelocity;
-        Vector3 dashVelocity = worldDirection.normalized * (Mathf.Max(0.01f, dodge.dodgeDistance) / Mathf.Max(0.01f, dodge.slideDuration));
-        Vector3 velocityDelta = dashVelocity - currentVelocity;
-        movement.ApplyCombatVelocityDelta(velocityDelta);
+        movement.ApplyCombatDodgeSlide(
+            worldDirection.normalized,
+            Mathf.Max(0.01f, dodge.dodgeDistance),
+            Mathf.Max(0.01f, dodge.slideDuration));
     }
 
     private Vector3 ResolveCardinalDirection(Vector2 lookInput)

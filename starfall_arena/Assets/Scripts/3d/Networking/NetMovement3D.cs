@@ -320,11 +320,42 @@ public class NetMovement3D : NetworkBehaviour
         if (_ownerStateInitialized)
         {
             _ownerState.Velocity += velocityDelta;
+            if (_ownerState.DodgeRemainingTime > 0f)
+            {
+                _ownerState.DodgeVelocity += velocityDelta;
+                _ownerState.DodgeExitVelocity += velocityDelta;
+            }
         }
 
         if (_serverStateInitialized)
         {
             _serverState.Velocity += velocityDelta;
+            if (_serverState.DodgeRemainingTime > 0f)
+            {
+                _serverState.DodgeVelocity += velocityDelta;
+                _serverState.DodgeExitVelocity += velocityDelta;
+            }
+        }
+    }
+
+    public void ApplyCombatDodgeSlide(Vector3 worldDirection, float dodgeDistance, float slideDuration)
+    {
+        if (worldDirection.sqrMagnitude <= 0.000001f)
+        {
+            return;
+        }
+
+        float safeDuration = Mathf.Max(0.01f, slideDuration);
+        Vector3 normalizedDirection = worldDirection.normalized;
+        float dashSpeed = Mathf.Max(0f, dodgeDistance) / safeDuration;
+        Vector3 dashVelocity = normalizedDirection * dashSpeed;
+
+        ApplyDodgeState(ref _ownerState, ref _ownerStateInitialized, normalizedDirection, dashVelocity, safeDuration);
+        ApplyDodgeState(ref _serverState, ref _serverStateInitialized, normalizedDirection, dashVelocity, safeDuration);
+
+        if (_rb != null)
+        {
+            _rb.linearVelocity = dashVelocity;
         }
     }
 
@@ -362,12 +393,18 @@ public class NetMovement3D : NetworkBehaviour
         {
             _ownerState.Position = correctedPosition;
             _ownerState.Velocity = correctedVelocity;
+            _ownerState.DodgeVelocity = Vector3.zero;
+            _ownerState.DodgeExitVelocity = Vector3.zero;
+            _ownerState.DodgeRemainingTime = 0f;
         }
 
         if (_serverStateInitialized)
         {
             _serverState.Position = correctedPosition;
             _serverState.Velocity = correctedVelocity;
+            _serverState.DodgeVelocity = Vector3.zero;
+            _serverState.DodgeExitVelocity = Vector3.zero;
+            _serverState.DodgeRemainingTime = 0f;
         }
     }
 
@@ -635,7 +672,10 @@ public class NetMovement3D : NetworkBehaviour
             Rotation = Quaternion.Slerp(from.Rotation, to.Rotation, t),
             Velocity = Vector3.Lerp(from.Velocity, to.Velocity, t),
             FilteredLookInput = Vector2.Lerp(from.FilteredLookInput, to.FilteredLookInput, t),
-            TurnRates = Vector2.Lerp(from.TurnRates, to.TurnRates, t)
+            TurnRates = Vector2.Lerp(from.TurnRates, to.TurnRates, t),
+            DodgeVelocity = Vector3.Lerp(from.DodgeVelocity, to.DodgeVelocity, t),
+            DodgeExitVelocity = Vector3.Lerp(from.DodgeExitVelocity, to.DodgeExitVelocity, t),
+            DodgeRemainingTime = Mathf.Lerp(from.DodgeRemainingTime, to.DodgeRemainingTime, t)
         };
 
         ApplySimulationState(interpolatedState);
@@ -692,7 +732,10 @@ public class NetMovement3D : NetworkBehaviour
             Rotation = transform.rotation,
             Velocity = _rb != null ? _rb.linearVelocity : Vector3.zero,
             FilteredLookInput = Vector2.zero,
-            TurnRates = Vector2.zero
+            TurnRates = Vector2.zero,
+            DodgeVelocity = Vector3.zero,
+            DodgeExitVelocity = Vector3.zero,
+            DodgeRemainingTime = 0f
         };
     }
 
@@ -704,7 +747,10 @@ public class NetMovement3D : NetworkBehaviour
             Rotation = snapshot.Rotation,
             Velocity = snapshot.Velocity,
             FilteredLookInput = snapshot.FilteredLookInput,
-            TurnRates = snapshot.TurnRates
+            TurnRates = snapshot.TurnRates,
+            DodgeVelocity = snapshot.DodgeVelocity,
+            DodgeExitVelocity = snapshot.DodgeExitVelocity,
+            DodgeRemainingTime = snapshot.DodgeRemainingTime
         };
     }
 
@@ -719,7 +765,10 @@ public class NetMovement3D : NetworkBehaviour
             FilteredLookInput = state.FilteredLookInput,
             TurnRates = state.TurnRates,
             ThrustInput = thrustInput,
-            FrictionEnabled = frictionEnabled
+            FrictionEnabled = frictionEnabled,
+            DodgeVelocity = state.DodgeVelocity,
+            DodgeExitVelocity = state.DodgeExitVelocity,
+            DodgeRemainingTime = state.DodgeRemainingTime
         };
     }
 
@@ -962,11 +1011,17 @@ public class NetMovement3D : NetworkBehaviour
         if (_ownerStateInitialized)
         {
             _ownerState.Velocity = Vector3.zero;
+            _ownerState.DodgeVelocity = Vector3.zero;
+            _ownerState.DodgeExitVelocity = Vector3.zero;
+            _ownerState.DodgeRemainingTime = 0f;
         }
 
         if (_serverStateInitialized)
         {
             _serverState.Velocity = Vector3.zero;
+            _serverState.DodgeVelocity = Vector3.zero;
+            _serverState.DodgeExitVelocity = Vector3.zero;
+            _serverState.DodgeRemainingTime = 0f;
         }
 
         _shipFlight?.ApplyExternalSimulationState(
@@ -1007,5 +1062,20 @@ public class NetMovement3D : NetworkBehaviour
         }
 
         ApplyMovementLock(isLocked);
+    }
+
+    private void ApplyDodgeState(ref MovementState3D state, ref bool initialized, Vector3 dodgeDirection, Vector3 dashVelocity, float duration)
+    {
+        if (!initialized)
+        {
+            state = CaptureCurrentState();
+            initialized = true;
+        }
+
+        float carriedSpeed = state.Velocity.magnitude;
+        state.DodgeVelocity = dashVelocity;
+        state.DodgeExitVelocity = dodgeDirection * carriedSpeed;
+        state.DodgeRemainingTime = duration;
+        state.Velocity = dashVelocity;
     }
 }

@@ -83,6 +83,7 @@ public class Class4BurstWeapon3D : ProjectileWeapon3D
         {
             ProjectileFireRequest3D request = BuildDefaultFireRequest(weaponConfig);
             request.accuracyAttackIdOverride = accuracyAttackId;
+            NormalizePlayerProjectileTargeting(ref request);
 
             if (!FireProjectilePattern(request, weaponConfig, NetworkFireSound))
             {

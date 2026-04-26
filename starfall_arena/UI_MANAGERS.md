@@ -222,6 +222,7 @@ Several menu flows use custom hold-buttons instead of standard TMP button compon
 Current behavior:
 
 - the controls-screen back affordance is a hold-button
+- the controls screen now has two separate canvas pages for 2D and 3D control layouts; LB/RB should page between them, while the hold-back path returns to the title menu from either page
 - the join-game confirm/back affordances are hold-buttons
 - the host-waiting back affordance is a hold-button
 - the game-end return-to-title affordance is a hold-button
@@ -268,14 +269,17 @@ This makes `ShipData` a bridge between:
 - UI and gameplay flow are tightly coupled around rounds, augments, and unlock timing, so documentation should be updated when any of those rules move.
 - Existing split-screen flow should be treated as transitional or legacy-oriented unless a task specifically targets it.
 - `TitleScreenManager` now needs serialized references for the join canvas, the host-waiting canvas, the IP input field, and optional status text in addition to the legacy main menu canvas.
+- `TitleScreenManager` now also needs a serialized 2D controls canvas plus a separate 3D controls canvas, with LB/RB paging between them and 2D staying the default landing page.
 - `TitleScreenManager` now also needs a serialized host-mode-select canvas (2D/3D choice), its first-selected button, its hold-to-back target/fill references, and a host-waiting mode label text reference that displays the selected mode (for example `2D - DUEL` / `3D - DUEL`).
 - `TitleScreenManager` now also has a dedicated host-waiting TMP label that shows `WAITING ON OPPONENT...` for duel hosts and swaps to `WAITING ON TEAMMATE...` when the selected 3D branch is invasion.
 - `TitleScreenManager` now also needs a serialized 3D sub-select canvas that appears after choosing `3D`, plus its first-selected button, manual-navigation group, and optional back-hold references for returning to the 2D/3D host chooser.
 - `TitleScreenManager` now owns only the special hold-style join/waiting controls. The main title `Host Game` and `Join Game` controls should stay on the normal clickable title-button pattern.
+- `TitleScreenManager` now slides horizontally between the 2D and 3D controls canvases when the player presses LB/RB, while the back hold on either page still returns to the main menu.
 - `TitleScreenManager` now routes hosted matches through a selected gameplay scene before `StartHostForMenu` (`2D` uses the configured normal scene, `3D` duel uses `3d`, and `3D` invasion uses `3d_invasion` while still keeping the 3D ship roster).
 - `TitleScreenManager` now also exposes two test-only title shortcuts: `start3dhostflow()` hosts a 3D duel immediately, and `start3dclientflow()` starts a client against the configured direct-IP test address. Both shortcuts skip the visible ship-select canvas, prefill `GameDataManager` with the fixed 3D test pair (`3d_class1` for host / player 1, `3d_class2` for client / player 2), then rely on the normal network session to auto-lock those selections and advance into `3dscene`.
 - `GameDataManager` now owns mode-specific ship registries (`2D` and `3D`) and `ShipSelectManager` resolves the active roster from that mode at screen entry instead of assuming one static list.
 - Bug note: hold-to-go-back UI on nonstandard title/menu surfaces such as the controls canvas must listen for the same back input as the rest of the controller-first UI (`B` on keyboard, controller east / Circle). The game-end return hold is a separate confirmation path and should use controller south / A with keyboard `X`, not the east / Circle back button. Do not swap these flows to Enter or left/right-face-button input.
+- Bug note: the controls screen page switch is not the same thing as the back hold. LB/RB should only swap between the 2D and 3D controls canvases; if those inputs are routed through the back-hold path, the menu will exit to the main title instead of paging.
 - Local multiplayer entry should use a title-menu transition into the existing `ShipSelectManager` flow rather than loading the split-screen gameplay scene directly, because the local path still expects sequential Player 1 then Player 2 ship confirmation before scene load.
 - Bug note: local gameplay ship prefabs currently ship with `PlayerInput` disabled for the network path, so local gameplay spawning must explicitly re-enable and pair devices or `SampleSceneSplitScreen` will load with both ships unresponsive.
 - `ShipSelectManager` now expects only a countdown timer text reference for the networked ship-select path; once a player locks in, that client should no longer be able to change ships before the timer expires.

@@ -5468,6 +5468,14 @@ PrefabInstance:
       propertyPath: guidedMissile.baseProjectile.projectilePrefab
       value: 
       objectReference: {fileID: 152452, guid: a8f09a644404f9c4b907b62b3bb2d207, type: 3}
+    - target: {fileID: 111100000000000104, guid: dcd0d058af7406e4b869c55e797967e0, type: 3}
+      propertyPath: dodge.cooldown
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 111100000000000104, guid: dcd0d058af7406e4b869c55e797967e0, type: 3}
+      propertyPath: dodge.dodgeDistance
+      value: 20
+      objectReference: {fileID: 0}
     - target: {fileID: 111100000000000105, guid: dcd0d058af7406e4b869c55e797967e0, type: 3}
       propertyPath: empower.duration
       value: 14

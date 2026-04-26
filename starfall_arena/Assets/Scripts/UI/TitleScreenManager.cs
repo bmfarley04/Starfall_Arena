@@ -73,10 +73,13 @@ public class TitleScreenManager : MonoBehaviour
     [Tooltip("First selected button on the main menu (for controller navigation)")]
     [SerializeField] private GameObject mainMenuFirstSelected;
 
-    [Tooltip("Controls screen canvas")]
+    [Tooltip("2D controls screen canvas")]
     [SerializeField] private CanvasGroup controlsCanvas;
 
-    [Tooltip("First selected button on the controls screen (for controller navigation)")]
+    [Tooltip("3D controls screen canvas")]
+    [SerializeField] private CanvasGroup controls3DCanvas;
+
+    [Tooltip("First selected button on the 2D controls screen (for controller navigation)")]
     [SerializeField] private GameObject controlsFirstSelected;
 
     [Tooltip("Ship select screen canvas")]
@@ -176,8 +179,10 @@ public class TitleScreenManager : MonoBehaviour
     private float _submitHoldTime;
     private float _backHoldTime;
     private bool _navigationLatch;
+    private bool _controlsSchemeNavigationLatch;
     private bool _submitTriggeredWhileHeld;
     private HoldActionButton _resolvedControlsBackButton;
+    private HoldActionButton _resolvedControls3DBackButton;
     private string _resolved2DGameplaySceneName = "SampleScene";
     private string _pendingHostModeLabel = string.Empty;
     private bool _isRunning3DTestFlow;
@@ -225,6 +230,7 @@ public class TitleScreenManager : MonoBehaviour
         // This prevents EventSystem auto-selection and mouse hover events
         mainMenuCanvas.gameObject.SetActive(false);
         controlsCanvas.gameObject.SetActive(false);
+        if (controls3DCanvas != null) controls3DCanvas.gameObject.SetActive(false);
         shipSelectCanvas.gameObject.SetActive(false);
         if (joinGameCanvas != null) joinGameCanvas.gameObject.SetActive(false);
         if (hostWaitingCanvas != null) hostWaitingCanvas.gameObject.SetActive(false);
@@ -234,6 +240,7 @@ public class TitleScreenManager : MonoBehaviour
         // Hide all canvases at start (when we activate them later)
         SetCanvasHidden(mainMenuCanvas);
         SetCanvasHidden(controlsCanvas);
+        SetCanvasHidden(controls3DCanvas);
         SetCanvasHidden(shipSelectCanvas);
         SetCanvasHidden(joinGameCanvas);
         SetCanvasHidden(hostWaitingCanvas);
@@ -319,16 +326,27 @@ public class TitleScreenManager : MonoBehaviour
 
     public void TransitionToControls()
     {
-        if (_activeTransition != null) return;
+        if (_activeTransition != null || mainMenuCanvas == null || controlsCanvas == null) return;
         _activeTransition = StartCoroutine(
             RunTransition(mainMenuCanvas, controlsCanvas, controlsFirstSelected));
     }
 
     public void TransitionToMainMenu()
     {
-        if (_activeTransition != null) return;
+        if (_activeTransition != null || mainMenuCanvas == null) return;
+        CanvasGroup source = GetActiveControlsCanvas();
+        if (source == null)
+        {
+            source = controlsCanvas;
+        }
+
+        if (source == null)
+        {
+            return;
+        }
+
         _activeTransition = StartCoroutine(
-            RunTransition(controlsCanvas, mainMenuCanvas, mainMenuFirstSelected));
+            RunTransition(source, mainMenuCanvas, mainMenuFirstSelected));
     }
 
     public void TransitionToShipSelect()
@@ -657,6 +675,7 @@ public class TitleScreenManager : MonoBehaviour
         SetButtonsEnabled(to, true);
 
         RefreshSelection(selectAfter);
+        PrimeControlsSchemeNavigationLatch();
         _activeTransition = null;
     }
 
@@ -674,7 +693,11 @@ public class TitleScreenManager : MonoBehaviour
             return;
         }
 
-        if (_activeCanvas != mainMenuCanvas)
+        if (IsControlsCanvasActive())
+        {
+            HandleControlsSchemeNavigation();
+        }
+        else if (_activeCanvas != mainMenuCanvas)
         {
             HandleManualNavigation();
         }
@@ -750,6 +773,10 @@ public class TitleScreenManager : MonoBehaviour
         UpdateFill(activeButton.fillImage, 1f);
 
         if (_activeCanvas == controlsCanvas)
+        {
+            TransitionToMainMenu();
+        }
+        else if (_activeCanvas == controls3DCanvas)
         {
             TransitionToMainMenu();
         }
@@ -906,9 +933,9 @@ public class TitleScreenManager : MonoBehaviour
 
     private HoldActionButton GetActiveBackButton()
     {
-        if (_activeCanvas == controlsCanvas)
+        if (_activeCanvas == controlsCanvas || _activeCanvas == controls3DCanvas)
         {
-            return GetControlsBackButton();
+            return GetControlsBackButton(_activeCanvas);
         }
 
         if (_activeCanvas == joinGameCanvas)
@@ -934,19 +961,24 @@ public class TitleScreenManager : MonoBehaviour
         return default;
     }
 
-    private HoldActionButton GetControlsBackButton()
+    private HoldActionButton GetControlsBackButton(CanvasGroup canvas)
     {
-        if (_resolvedControlsBackButton.target != null)
+        if (canvas == controlsCanvas && _resolvedControlsBackButton.target != null)
         {
             return _resolvedControlsBackButton;
         }
 
-        if (controlsCanvas == null)
+        if (canvas == controls3DCanvas && _resolvedControls3DBackButton.target != null)
+        {
+            return _resolvedControls3DBackButton;
+        }
+
+        if (canvas == null)
         {
             return default;
         }
 
-        RectTransform[] controlsChildren = controlsCanvas.GetComponentsInChildren<RectTransform>(true);
+        RectTransform[] controlsChildren = canvas.GetComponentsInChildren<RectTransform>(true);
         foreach (RectTransform child in controlsChildren)
         {
             if (child == null || !child.name.Equals("Back", System.StringComparison.OrdinalIgnoreCase))
@@ -960,12 +992,19 @@ public class TitleScreenManager : MonoBehaviour
                 fillImage = child.GetComponentInChildren<Image>(true);
             }
 
-            _resolvedControlsBackButton = new HoldActionButton
+            HoldActionButton resolvedButton = new HoldActionButton
             {
                 target = child.gameObject,
                 fillImage = fillImage
             };
 
+            if (canvas == controls3DCanvas)
+            {
+                _resolvedControls3DBackButton = resolvedButton;
+                return _resolvedControls3DBackButton;
+            }
+
+            _resolvedControlsBackButton = resolvedButton;
             return _resolvedControlsBackButton;
         }
 
@@ -1054,6 +1093,44 @@ public class TitleScreenManager : MonoBehaviour
         RefreshSelection(group.targets[currentIndex]);
     }
 
+    private bool HandleControlsSchemeNavigation()
+    {
+        CanvasGroup activeControlsCanvas = GetActiveControlsCanvas();
+        if (activeControlsCanvas == null)
+        {
+            _controlsSchemeNavigationLatch = false;
+            return false;
+        }
+
+        int direction = ResolveControlsSchemeNavigationDirection();
+        if (direction == 0)
+        {
+            _controlsSchemeNavigationLatch = false;
+            return false;
+        }
+
+        if (_controlsSchemeNavigationLatch)
+        {
+            return true;
+        }
+
+        _controlsSchemeNavigationLatch = true;
+
+        if (direction > 0 && activeControlsCanvas == controlsCanvas && controls3DCanvas != null)
+        {
+            TransitionToControls3D();
+            return true;
+        }
+
+        if (direction < 0 && activeControlsCanvas == controls3DCanvas)
+        {
+            TransitionToControls2D();
+            return true;
+        }
+
+        return true;
+    }
+
     private NavigationGroup GetActiveNavigationGroup()
     {
         if (_activeCanvas == joinGameCanvas)
@@ -1077,6 +1154,171 @@ public class TitleScreenManager : MonoBehaviour
         }
 
         return default;
+    }
+
+    private CanvasGroup GetActiveControlsCanvas()
+    {
+        if (_activeCanvas == controlsCanvas)
+        {
+            return controlsCanvas;
+        }
+
+        if (_activeCanvas == controls3DCanvas)
+        {
+            return controls3DCanvas;
+        }
+
+        return null;
+    }
+
+    private void TransitionToControls3D()
+    {
+        if (_activeTransition != null || controlsCanvas == null || controls3DCanvas == null)
+        {
+            return;
+        }
+
+        _activeTransition = StartCoroutine(
+            RunControlsSchemeTransition(controlsCanvas, controls3DCanvas));
+    }
+
+    private void TransitionToControls2D()
+    {
+        if (_activeTransition != null || controlsCanvas == null || controls3DCanvas == null)
+        {
+            return;
+        }
+
+        _activeTransition = StartCoroutine(
+            RunControlsSchemeTransition(controls3DCanvas, controlsCanvas));
+    }
+
+    private IEnumerator RunControlsSchemeTransition(CanvasGroup from, CanvasGroup to)
+    {
+        if (from == null || to == null)
+        {
+            yield break;
+        }
+
+        EventSystem.current.SetSelectedGameObject(null);
+
+        from.interactable = false;
+        from.blocksRaycasts = false;
+        SetButtonsEnabled(from, false);
+
+        to.gameObject.SetActive(true);
+        to.alpha = 0f;
+        to.interactable = false;
+        to.blocksRaycasts = false;
+        SetButtonsEnabled(to, false);
+
+        RectTransform fromRect = (RectTransform)from.transform;
+        RectTransform toRect = (RectTransform)to.transform;
+        Vector2 fromStartPosition = fromRect.anchoredPosition;
+        Vector2 toRestPosition = toRect.anchoredPosition;
+        float slideDistance = ResolveControlsSlideDistance(fromRect, toRect);
+        float slideDirection = from == controlsCanvas ? 1f : -1f;
+        Vector2 fromTargetPosition = fromStartPosition + Vector2.left * slideDistance * slideDirection;
+        Vector2 toStartPosition = toRestPosition + Vector2.right * slideDistance * slideDirection;
+
+        toRect.anchoredPosition = toStartPosition;
+
+        float duration = Mathf.Max(0.01f, menuTransition.enterDuration);
+        float elapsed = 0f;
+        while (elapsed < duration)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            float t = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(elapsed / duration));
+
+            from.alpha = 1f - t;
+            to.alpha = t;
+            fromRect.anchoredPosition = Vector2.Lerp(fromStartPosition, fromTargetPosition, t);
+            toRect.anchoredPosition = Vector2.Lerp(toStartPosition, toRestPosition, t);
+
+            yield return null;
+        }
+
+        from.alpha = 0f;
+        to.alpha = 1f;
+        fromRect.anchoredPosition = fromStartPosition;
+        toRect.anchoredPosition = toRestPosition;
+        from.gameObject.SetActive(false);
+        to.interactable = true;
+        to.blocksRaycasts = true;
+
+        _activeCanvas = to;
+        SetButtonsEnabled(to, true);
+        RefreshSelection(GetControlsDefaultSelection(to));
+        PrimeControlsSchemeNavigationLatch();
+        _activeTransition = null;
+    }
+
+    private void PrimeControlsSchemeNavigationLatch()
+    {
+        _controlsSchemeNavigationLatch = ResolveControlsSchemeNavigationDirection() != 0;
+    }
+
+    private static float ResolveControlsSlideDistance(RectTransform fromRect, RectTransform toRect)
+    {
+        float fromWidth = fromRect != null ? fromRect.rect.width : 0f;
+        float toWidth = toRect != null ? toRect.rect.width : 0f;
+        float distance = Mathf.Max(Screen.width, fromWidth, toWidth);
+        return Mathf.Max(1f, distance);
+    }
+
+    private int ResolveControlsSchemeNavigationDirection()
+    {
+        bool leftPressed = false;
+        bool rightPressed = false;
+
+        if (Gamepad.current != null)
+        {
+            leftPressed = Gamepad.current.leftShoulder.isPressed;
+            rightPressed = Gamepad.current.rightShoulder.isPressed;
+        }
+
+        if (Keyboard.current != null)
+        {
+            leftPressed |= Keyboard.current.qKey.isPressed;
+            rightPressed |= Keyboard.current.eKey.isPressed;
+        }
+
+        if (leftPressed == rightPressed)
+        {
+            return 0;
+        }
+
+        return rightPressed ? 1 : -1;
+    }
+
+    private GameObject GetControlsDefaultSelection(CanvasGroup canvas)
+    {
+        if (canvas == null)
+        {
+            return null;
+        }
+
+        if (canvas == controlsCanvas && controlsFirstSelected != null)
+        {
+            return controlsFirstSelected;
+        }
+
+        TitleScreenButton[] buttons = canvas.GetComponentsInChildren<TitleScreenButton>(true);
+        foreach (TitleScreenButton button in buttons)
+        {
+            if (button != null && button.gameObject.activeInHierarchy)
+            {
+                return button.gameObject;
+            }
+        }
+
+        HoldActionButton backButton = GetControlsBackButton(canvas);
+        return backButton.target;
+    }
+
+    private bool IsControlsCanvasActive()
+    {
+        return _activeCanvas == controlsCanvas || _activeCanvas == controls3DCanvas;
     }
 
     private static int ResolveNavigationDirection(Vector2 navigationInput)
@@ -1106,6 +1348,8 @@ public class TitleScreenManager : MonoBehaviour
         ResetFillIfInactive(hostModeBackButton.fillImage, activeImage);
         ResetFillIfInactive(host3DModeBackButton.fillImage, activeImage);
         ResetFillIfInactive(waitingBackButton.fillImage, activeImage);
+        ResetFillIfInactive(_resolvedControlsBackButton.fillImage, activeImage);
+        ResetFillIfInactive(_resolvedControls3DBackButton.fillImage, activeImage);
     }
 
     private void StartHostingForScene(string sceneName)
