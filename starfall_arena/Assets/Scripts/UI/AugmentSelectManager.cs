@@ -638,8 +638,10 @@ namespace StarfallArena.UI
             currentTier = tier;
             _useExternalTimer = true;
 
-            SetActiveGamepad(pickingPlayer);
-            DisableUIModuleNavigation();
+            // Networked play: each client has only one local gamepad, so always use it
+            // regardless of slot. We also leave the UIInputModule active (unlike local
+            // split-screen) so KB/M and the local gamepad both drive the EventSystem.
+            _activeGamepad = Gamepad.current ?? (Gamepad.all.Count > 0 ? Gamepad.all[0] : null);
 
             selectedAugments = new List<Augment>(augments);
             PopulateUI(currentTier, selectedAugments);

@@ -257,6 +257,8 @@ public class Missile : ProjectileScript
             Player hitPlayer = collider.GetComponent<Player>();
             if (hitPlayer != null && hitPlayer.TryGetComponent<Reflector>(out var reflectScript) && reflectScript.IsAbilityActive())
             {
+                // Reflector detonates the missile harmlessly instead of reflecting (orientation is unreliable for guided missiles).
+                HandleHit();
                 return;
             }
 

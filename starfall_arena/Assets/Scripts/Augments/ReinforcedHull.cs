@@ -7,6 +7,9 @@ public class ReinforcedHull : Augment
     [Tooltip("Multiplier applied to max health while augment is active")]
     public float healthMultiplier = 1.5f;
 
+    [Tooltip("Multiplier applied to the ship's visual scale while augment is active")]
+    public float sizeScaleMultiplier = 1.5f;
+
     private void Reset()
     {
         rounds = 3;

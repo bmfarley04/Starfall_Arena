@@ -138,6 +138,9 @@ public class PhysicalProjectileAbility : Ability
                 CanPierce = false,
                 AppliesSlow = false,
                 VisualType = NetProjectileVisualType.Class2PhysicalProjectile,
+                IgnoreCooldown = false,
+                OwnerPredicted = true,
+                FireSource = (byte)PrimaryFireExecutionSource.PlayerInput,
             });
 
             if (!_netMovement.IsServer)

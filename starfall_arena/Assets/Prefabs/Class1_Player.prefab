@@ -5367,6 +5367,7 @@ MonoBehaviour:
   beamHitLoopSound: {fileID: 11400000, guid: cdf6af1d1d05cdd4d8cf3ea5f244f9f2, type: 2}
   explosionSound: {fileID: 11400000, guid: 52e8c58e387b89849affa74c78d6d899, type: 2}
   audioSourcePoolSize: 10
+  shipSize: 0.8
   isMovementLocked: 0
   externalMovementControl: 0
   shotsFired: 0
@@ -5574,7 +5575,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 160676601
+  GlobalObjectIdHash: 3291421995
   InScenePlacedSourceGlobalObjectIdHash: 0
   DeferredDespawnTick: 0
   Ownership: 1

@@ -24,6 +24,20 @@ public class ShipPartScatter : MonoBehaviour
     private Vector3 _initialRotationVelocity;
     private Rigidbody2D _rb;
     private bool _persistAfterScatter;
+    private Coroutine _lifecycleCoroutine;
+    private Coroutine _regroupCoroutine;
+    private bool _isScattered;
+
+    private Transform _originalParent;
+    private Vector3 _originalLocalPosition;
+    private Quaternion _originalLocalRotation;
+    private Vector3 _originalLocalScale;
+    private Vector3 _originalWorldScale;
+    private Transform _anchorTransform;
+    private Vector3 _anchorLocalPosition;
+    private Quaternion _anchorLocalRotation;
+    private Collider2D[] _colliders;
+    private bool[] _originalColliderStates;
 
     [Header("Visual Effect")]
     [Tooltip("Part lifetime before despawn (seconds)")]
@@ -43,6 +57,42 @@ public class ShipPartScatter : MonoBehaviour
     [Tooltip("Angular drag")]
     public float angularDrag = 0.3f;
 
+    private void Awake()
+    {
+        CacheOriginalTransformData();
+    }
+
+    private void CacheOriginalTransformData()
+    {
+        _originalParent = transform.parent;
+        _originalLocalPosition = transform.localPosition;
+        _originalLocalRotation = transform.localRotation;
+        _originalLocalScale = transform.localScale;
+        _originalWorldScale = transform.lossyScale;
+
+        Transform playerRoot = GetComponentInParent<Player>()?.transform;
+        Transform entityRoot = GetComponentInParent<Entity>()?.transform;
+        _anchorTransform = playerRoot != null ? playerRoot : (entityRoot != null ? entityRoot : _originalParent);
+
+        if (_anchorTransform != null)
+        {
+            _anchorLocalPosition = _anchorTransform.InverseTransformPoint(transform.position);
+            _anchorLocalRotation = Quaternion.Inverse(_anchorTransform.rotation) * transform.rotation;
+        }
+        else
+        {
+            _anchorLocalPosition = transform.position;
+            _anchorLocalRotation = transform.rotation;
+        }
+
+        _colliders = GetComponents<Collider2D>();
+        _originalColliderStates = new bool[_colliders.Length];
+        for (int i = 0; i < _colliders.Length; i++)
+        {
+            _originalColliderStates[i] = _colliders[i] != null && _colliders[i].enabled;
+        }
+    }
+
     public void SetPersistAfterScatter(bool persistAfterScatter)
     {
         _persistAfterScatter = persistAfterScatter;
@@ -50,6 +100,18 @@ public class ShipPartScatter : MonoBehaviour
 
     public void Scatter(Vector2 damageDirection)
     {
+        if (_regroupCoroutine != null)
+        {
+            StopCoroutine(_regroupCoroutine);
+            _regroupCoroutine = null;
+        }
+
+        if (_lifecycleCoroutine != null)
+        {
+            StopCoroutine(_lifecycleCoroutine);
+            _lifecycleCoroutine = null;
+        }
+
         // 1. DETACH from parent hierarchy
         transform.SetParent(null);
 
@@ -70,10 +132,12 @@ public class ShipPartScatter : MonoBehaviour
         _rb.constraints = RigidbodyConstraints2D.None; // Allow rotation for tumbling
 
         // 3. DISABLE all colliders (visual only)
-        Collider2D[] colliders = GetComponents<Collider2D>();
-        foreach (var col in colliders)
+        for (int i = 0; i < _colliders.Length; i++)
         {
-            col.enabled = false;
+            if (_colliders[i] != null)
+            {
+                _colliders[i].enabled = false;
+            }
         }
 
         // 4. CALCULATE scatter velocity
@@ -92,7 +156,29 @@ public class ShipPartScatter : MonoBehaviour
         _initialRotationVelocity = _rotationVelocity;
 
         // 6. START lifecycle coroutine
-        StartCoroutine(PartLifecycle());
+        _isScattered = true;
+        _lifecycleCoroutine = StartCoroutine(PartLifecycle());
+    }
+
+    public void ScatterForRevive(Vector2 damageDirection)
+    {
+        SetPersistAfterScatter(true);
+        Scatter(damageDirection);
+    }
+
+    public void RegroupToOriginal(float duration)
+    {
+        if (!_isScattered)
+        {
+            return;
+        }
+
+        if (_regroupCoroutine != null)
+        {
+            StopCoroutine(_regroupCoroutine);
+        }
+
+        _regroupCoroutine = StartCoroutine(RegroupRoutine(Mathf.Max(0.01f, duration)));
     }
 
     private Vector2 Rotate(Vector2 v, float degrees)
@@ -146,6 +232,158 @@ public class ShipPartScatter : MonoBehaviour
             yield return null;
         }
 
+        _lifecycleCoroutine = null;
         Destroy(gameObject);
+    }
+
+    private IEnumerator RegroupRoutine(float duration)
+    {
+        if (_lifecycleCoroutine != null)
+        {
+            StopCoroutine(_lifecycleCoroutine);
+            _lifecycleCoroutine = null;
+        }
+
+        _persistAfterScatter = true;
+
+        if (_rb != null)
+        {
+            _rb.linearVelocity = Vector2.zero;
+            _rb.angularVelocity = 0f;
+            _rb.simulated = false;
+        }
+
+        Vector3 startPos = transform.position;
+        Quaternion startRot = transform.rotation;
+        Vector3 startWorldScale = transform.lossyScale;
+
+        float elapsed = 0f;
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            float t = Mathf.Clamp01(elapsed / duration);
+
+            Vector3 targetPos;
+            Quaternion targetRot;
+
+            if (_originalParent != null)
+            {
+                targetPos = _originalParent.TransformPoint(_originalLocalPosition);
+                targetRot = _originalParent.rotation * _originalLocalRotation;
+            }
+            else if (_anchorTransform != null)
+            {
+                targetPos = _anchorTransform.TransformPoint(_anchorLocalPosition);
+                targetRot = _anchorTransform.rotation * _anchorLocalRotation;
+            }
+            else
+            {
+                targetPos = _originalLocalPosition;
+                targetRot = _originalLocalRotation;
+            }
+
+            transform.position = Vector3.Lerp(startPos, targetPos, t);
+            transform.rotation = Quaternion.Slerp(startRot, targetRot, t);
+            // While detached, localScale is effectively world scale.
+            transform.localScale = Vector3.Lerp(startWorldScale, _originalWorldScale, t);
+
+            yield return null;
+        }
+
+        Transform regroupParent = ResolveRegroupParent();
+        if (regroupParent != null)
+        {
+            // Keep world pose while reparenting, then snap local pose.
+            transform.SetParent(regroupParent, true);
+
+            if (_originalParent != null && regroupParent == _originalParent)
+            {
+                transform.localPosition = _originalLocalPosition;
+                transform.localRotation = _originalLocalRotation;
+            }
+            else if (_anchorTransform != null)
+            {
+                transform.position = _anchorTransform.TransformPoint(_anchorLocalPosition);
+                transform.rotation = _anchorTransform.rotation * _anchorLocalRotation;
+            }
+
+            transform.localScale = ComputeLocalScaleForWorld(regroupParent, _originalWorldScale);
+        }
+        else
+        {
+            transform.position = _originalLocalPosition;
+            transform.rotation = _originalLocalRotation;
+            transform.localScale = _originalWorldScale;
+        }
+
+        if (_rb != null)
+        {
+            Destroy(_rb);
+            _rb = null;
+        }
+
+        for (int i = 0; i < _colliders.Length; i++)
+        {
+            if (_colliders[i] != null)
+            {
+                _colliders[i].enabled = i < _originalColliderStates.Length && _originalColliderStates[i];
+            }
+        }
+
+        _rotationVelocity = Vector3.zero;
+        _initialRotationVelocity = Vector3.zero;
+        _persistAfterScatter = false;
+        _isScattered = false;
+        _regroupCoroutine = null;
+    }
+
+    private Transform ResolveRegroupParent()
+    {
+        if (_originalParent != null)
+        {
+            return _originalParent;
+        }
+
+        return _anchorTransform;
+    }
+
+    private static bool IsDescendantOf(Transform child, Transform ancestor)
+    {
+        if (child == null || ancestor == null)
+        {
+            return false;
+        }
+
+        Transform current = child;
+        while (current != null)
+        {
+            if (current == ancestor)
+            {
+                return true;
+            }
+
+            current = current.parent;
+        }
+
+        return false;
+    }
+
+    private static Vector3 ComputeLocalScaleForWorld(Transform parent, Vector3 desiredWorldScale)
+    {
+        if (parent == null)
+        {
+            return desiredWorldScale;
+        }
+
+        Vector3 parentScale = parent.lossyScale;
+        return new Vector3(
+            SafeDivide(desiredWorldScale.x, parentScale.x),
+            SafeDivide(desiredWorldScale.y, parentScale.y),
+            SafeDivide(desiredWorldScale.z, parentScale.z));
+    }
+
+    private static float SafeDivide(float numerator, float denominator)
+    {
+        return Mathf.Abs(denominator) > 0.00001f ? numerator / denominator : numerator;
     }
 }

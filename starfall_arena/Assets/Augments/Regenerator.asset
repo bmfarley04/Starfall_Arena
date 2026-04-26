@@ -16,9 +16,9 @@ MonoBehaviour:
   augmentName: Anchor Asylum
   description: While anchoring, slowly regenerate health after a short delay. Taking
     damage interrupts healing.
-  augmentID: Regenerator
+  _augmentID: Regenerator
   rounds: -1
-  playerReference: {fileID: 0}
+  regenerationPrefab: {fileID: 8595475238803380239, guid: a9cfdb8e64122fc45abe9e1661f54b07, type: 3}
   healRate: 5
   healDelay: 1
   damageInterruptCooldown: 1.5

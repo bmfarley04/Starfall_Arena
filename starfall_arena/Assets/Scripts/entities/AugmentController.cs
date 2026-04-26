@@ -10,6 +10,7 @@ public class AugmentController : MonoBehaviour
     private Player _player;
     private readonly List<IAugmentRuntime> _runtimes = new List<IAugmentRuntime>();
     private int _currentRound;
+    private bool _artificialFairyTriggeredSinceLastConsume;
 
     public void Initialize(Player player)
     {
@@ -30,6 +31,9 @@ public class AugmentController : MonoBehaviour
     {
         if (_player == null || definition == null) return;
 
+        // Ensure target/enemy tag strings are current before augment initialization.
+        _player.RefreshCombatTags();
+
         IAugmentRuntime runtime = definition.CreateRuntime();
         if (runtime == null)
         {
@@ -40,6 +44,9 @@ public class AugmentController : MonoBehaviour
         runtime.Initialize(_player, roundAcquired, persistentState);
         runtime.OnRoundSet(_currentRound);
         _runtimes.Add(runtime);
+
+        // Bootstrap immediately so mid-match acquisitions apply visuals/effects right away.
+        runtime.ExecuteEffects();
     }
 
     public void ImportLoadout(List<AugmentLoadoutEntry> entries, int currentRound)
@@ -145,7 +152,19 @@ public class AugmentController : MonoBehaviour
         foreach (IAugmentRuntime runtime in _runtimes)
         {
             runtime?.OnTakeDamage(damage, impactForce, hitPoint, source);
+
+            if (runtime is ArtificialFairyRuntime fairyRuntime && fairyRuntime.ConsumeTriggeredThisDamageEvent())
+            {
+                _artificialFairyTriggeredSinceLastConsume = true;
+            }
         }
+    }
+
+    public bool ConsumeArtificialFairyTriggeredFlag()
+    {
+        bool triggered = _artificialFairyTriggeredSinceLastConsume;
+        _artificialFairyTriggeredSinceLastConsume = false;
+        return triggered;
     }
 
     public void OnBeforeTakeDamage(ref float damage, ref bool shieldIgnored, ref bool healthIgnored, DamageSource source)
@@ -172,6 +191,28 @@ public class AugmentController : MonoBehaviour
         }
     }
 
+    public void NotifyEvasionTriggered()
+    {
+        foreach (IAugmentRuntime runtime in _runtimes)
+        {
+            if (runtime is EvasionRuntime evasionRuntime)
+            {
+                evasionRuntime.NotifySuccessfulEvasion();
+            }
+        }
+    }
+
+    public void NotifyArtificialFairyTriggered()
+    {
+        foreach (IAugmentRuntime runtime in _runtimes)
+        {
+            if (runtime is ArtificialFairyRuntime fairyRuntime)
+            {
+                fairyRuntime.NotifyTriggeredFromNetwork();
+            }
+        }
+    }
+
     public void OnContact(Collision2D collision)
     {
         foreach (IAugmentRuntime runtime in _runtimes)
@@ -180,9 +221,23 @@ public class AugmentController : MonoBehaviour
         }
     }
 
+    public void OnPrimaryProjectileHit(Entity target, Vector2 hitPoint, float damage)
+    {
+        foreach (IAugmentRuntime runtime in _runtimes)
+        {
+            runtime?.OnPrimaryProjectileHit(target, hitPoint, damage);
+        }
+    }
+
     private void ClearRuntimesAndModifiers()
     {
+        foreach (IAugmentRuntime runtime in _runtimes)
+        {
+            runtime?.OnRemoved();
+        }
+
         _runtimes.Clear();
+        _artificialFairyTriggeredSinceLastConsume = false;
 
         if (_player == null) return;
 

@@ -57,7 +57,7 @@ public partial class NetMovement
 
     public void RequestPrimaryFire(NetFireRequest request)
     {
-        if (!NetTickUtil.IsActive || !IsOwner)
+        if (!NetTickUtil.IsActive)
         {
             return;
         }
@@ -65,6 +65,11 @@ public partial class NetMovement
         if (IsServer)
         {
             HandlePrimaryFireServer(request);
+            return;
+        }
+
+        if (!IsOwner)
+        {
             return;
         }
 
@@ -88,12 +93,13 @@ public partial class NetMovement
         float tickInterval = NetTickUtil.TickInterval > 0f ? NetTickUtil.TickInterval : Time.fixedDeltaTime;
         int cooldownTicks = Mathf.Max(1, Mathf.CeilToInt(_player.PrimaryFireCooldown / Mathf.Max(0.0001f, tickInterval)));
         bool isNewVolleyTick = request.Tick != _lastServerPrimaryFireTick;
-        if (isNewVolleyTick && request.Tick < _lastServerPrimaryFireTick + cooldownTicks)
+        bool ignoreCooldown = request.IgnoreCooldown;
+        if (!ignoreCooldown && isNewVolleyTick && request.Tick < _lastServerPrimaryFireTick + cooldownTicks)
         {
             return;
         }
 
-        if (isNewVolleyTick)
+        if (!ignoreCooldown && isNewVolleyTick)
         {
             _lastServerPrimaryFireTime = Time.time;
             _lastServerPrimaryFireTick = request.Tick;
@@ -162,11 +168,18 @@ public partial class NetMovement
             CanPierce = request.CanPierce,
             AppliesSlow = request.AppliesSlow,
             VisualType = request.VisualType,
+            OwnerPredicted = request.OwnerPredicted,
         });
 
         if (request.ApplyRecoil)
         {
             _player.ApplyRecoil(request.RecoilForce);
+        }
+
+        if (request.VisualType == NetProjectileVisualType.Primary)
+        {
+            PrimaryFireExecutionSource source = (PrimaryFireExecutionSource)request.FireSource;
+            PrimaryFireExecutionBus.Raise(_player, source);
         }
     }
 
@@ -208,7 +221,12 @@ public partial class NetMovement
     [ClientRpc]
     private void BroadcastProjectileSpawnClientRpc(NetProjectileSpawnData spawnData)
     {
-        if (IsServer || (IsOwner && !IsServer))
+        if (IsServer)
+        {
+            return;
+        }
+
+        if (IsOwner && spawnData.OwnerPredicted)
         {
             return;
         }
@@ -264,7 +282,7 @@ public partial class NetMovement
 
     // ===== COMBAT STATE =====
 
-    public void BroadcastCombatState(float health, float shield, Vector3 hitPoint, DamageSource source, bool shieldHit, bool shieldBreak, float impactForce)
+    public void BroadcastCombatState(float health, float shield, Vector3 hitPoint, DamageSource source, bool shieldHit, bool shieldBreak, float impactForce, bool evasionTriggered, bool artificialFairyTriggered)
     {
         if (!IsServer)
         {
@@ -276,11 +294,11 @@ public partial class NetMovement
         float slowMultiplier = isSlowed ? _player.GetSlowMultiplier() : 1f;
         float slowRemainingTime = isSlowed ? _player.GetSlowRemainingTime() : 0f;
 
-        BroadcastCombatStateClientRpc(health, shield, hitPoint, (int)source, shieldHit, shieldBreak, impactForce, slowMultiplier, slowRemainingTime);
+        BroadcastCombatStateClientRpc(health, shield, hitPoint, (int)source, shieldHit, shieldBreak, impactForce, slowMultiplier, slowRemainingTime, evasionTriggered, artificialFairyTriggered);
     }
 
     [ClientRpc]
-    private void BroadcastCombatStateClientRpc(float health, float shield, Vector2 hitPoint, int source, bool shieldHit, bool shieldBreak, float impactForce, float slowMultiplier, float slowRemainingTime)
+    private void BroadcastCombatStateClientRpc(float health, float shield, Vector2 hitPoint, int source, bool shieldHit, bool shieldBreak, float impactForce, float slowMultiplier, float slowRemainingTime, bool evasionTriggered, bool artificialFairyTriggered)
     {
         if (_player == null)
         {
@@ -292,6 +310,16 @@ public partial class NetMovement
         if (!IsServer)
         {
             _player.NotifyAuthoritativeDamageReceived(damageSource);
+
+            if (evasionTriggered)
+            {
+                _player.NotifyNetworkEvasionTriggered();
+            }
+
+            if (artificialFairyTriggered)
+            {
+                _player.NotifyNetworkArtificialFairyTriggered();
+            }
         }
 
         // Reset the shield regen delay timer so the owner's local regen stays
