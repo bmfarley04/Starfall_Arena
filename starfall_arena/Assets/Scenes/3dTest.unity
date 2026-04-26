@@ -4113,6 +4113,11 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: ebd5405180dff4d4d8cd9eaac946341b, type: 3}
+--- !u!4 &1829856285 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 7766375754309945199, guid: dcd0d058af7406e4b869c55e797967e0, type: 3}
+  m_PrefabInstance: {fileID: 5685476699797554300}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &1839579953
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -5548,6 +5553,10 @@ PrefabInstance:
       propertyPath: 'emission.parts.Array.data[11]'
       value: 
       objectReference: {fileID: 835091116}
+    - target: {fileID: 1580586655830669525, guid: dcd0d058af7406e4b869c55e797967e0, type: 3}
+      propertyPath: 'speedEffects.wingTrailSources.Array.data[1]'
+      value: 
+      objectReference: {fileID: 1829856285}
     - target: {fileID: 2405419149928654638, guid: dcd0d058af7406e4b869c55e797967e0, type: 3}
       propertyPath: chromaticConfig.volume
       value: 
