@@ -541,12 +541,96 @@ public sealed class BurnerDebuffController : MonoBehaviour
             tickEffectPrefab = tickEffectPrefab,
             tickEffectRandomRadius = tickEffectRandomRadius
         };
+
+        if (_targetNetMovement != null && _targetNetMovement.IsServer && NetTickUtil.IsActive)
+        {
+            _targetNetMovement.BroadcastBurnApplication(sourceId, safeDps, Mathf.Max(0.05f, duration), safeTickInterval, tickEffectRandomRadius);
+        }
+    }
+
+    public void ApplyBurnFromNetwork(string sourceId, Player owner, float dps, float duration, float tickInterval, float tickEffectRandomRadius)
+    {
+        if (_target == null || string.IsNullOrWhiteSpace(sourceId)) return;
+
+        Burner burnDefinition = null;
+        if (GameDataManager.Instance != null)
+        {
+            burnDefinition = GameDataManager.Instance.GetAugmentById(sourceId) as Burner;
+        }
+
+        ApplyBurnInternal(sourceId, owner, dps, duration, tickInterval, burnDefinition != null ? burnDefinition.burnTickEffectPrefab : null, tickEffectRandomRadius);
+    }
+
+    private void ApplyBurnInternal(string sourceId, Player owner, float dps, float duration, float tickInterval, GameObject tickEffectPrefab, float tickEffectRandomRadius)
+    {
+        if (_target == null || string.IsNullOrWhiteSpace(sourceId)) return;
+
+        float safeTickInterval = Mathf.Max(0.05f, tickInterval);
+        float safeDps = Mathf.Max(0f, dps);
+        float refreshedExpireTime = Time.time + Mathf.Max(0.05f, duration);
+
+        if (_activeBurns.TryGetValue(sourceId, out BurnState existingState))
+        {
+            existingState.owner = owner ?? existingState.owner;
+            existingState.damagePerSecond = safeDps;
+            existingState.tickInterval = safeTickInterval;
+            existingState.tickEffectPrefab = tickEffectPrefab;
+            existingState.tickEffectRandomRadius = tickEffectRandomRadius;
+
+            // Refresh duration without pushing the next scheduled tick farther out.
+            existingState.expiresAt = Mathf.Max(existingState.expiresAt, refreshedExpireTime);
+            existingState.nextTickAt = Mathf.Min(existingState.nextTickAt, Time.time + safeTickInterval);
+            return;
+        }
+
+        _activeBurns[sourceId] = new BurnState
+        {
+            owner = owner,
+            damagePerSecond = safeDps,
+            tickInterval = safeTickInterval,
+            nextTickAt = Time.time + safeTickInterval,
+            expiresAt = refreshedExpireTime,
+            tickEffectPrefab = tickEffectPrefab,
+            tickEffectRandomRadius = tickEffectRandomRadius
+        };
+    }
+
+    public void PlayNetworkBurnTickEffect(Vector3 position, float shipSize, float lifetime, string sourceId)
+    {
+        if (_target == null || string.IsNullOrWhiteSpace(sourceId))
+        {
+            return;
+        }
+
+        Burner burnDefinition = null;
+        if (GameDataManager.Instance != null)
+        {
+            burnDefinition = GameDataManager.Instance.GetAugmentById(sourceId) as Burner;
+        }
+
+        GameObject tickEffectPrefab = burnDefinition != null ? burnDefinition.burnTickEffectPrefab : null;
+        if (tickEffectPrefab == null)
+        {
+            return;
+        }
+
+        GameObject effect = Instantiate(tickEffectPrefab, position, Quaternion.identity);
+        float size = Mathf.Max(0.01f, shipSize);
+        effect.transform.localScale = tickEffectPrefab.transform.localScale * size;
+
+        ParticleSystem particle = effect.GetComponent<ParticleSystem>();
+        float safeLifetime = Mathf.Max(0.1f, lifetime);
+        if (particle != null)
+        {
+            safeLifetime = Mathf.Max(safeLifetime, particle.main.duration + particle.main.startLifetime.constantMax);
+        }
+
+        Destroy(effect, safeLifetime);
     }
 
     private void Update()
     {
         if (_target == null || _activeBurns.Count == 0) return;
-        if (!HasDamageAuthority()) return;
 
         float totalTickDamage = 0f;
         List<string> expired = null;
@@ -592,7 +676,7 @@ public sealed class BurnerDebuffController : MonoBehaviour
             }
         }
 
-        if (totalTickDamage <= 0f) return;
+        if (!HasDamageAuthority() || totalTickDamage <= 0f) return;
 
         _target.TakeDamage(totalTickDamage, 0f, _target.transform.position, DamageSource.Other, firstOwner);
         try

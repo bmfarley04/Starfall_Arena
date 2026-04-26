@@ -1228,6 +1228,7 @@ public sealed class AutoCounterRuntime : AugmentRuntimeBase
     private float _nextCastTime;
     private float _deactivateTime;
     private bool _isActive;
+    private bool _networkActiveState;
     private GameObject _readyGlowEffectInstance;
 
     public AutoCounterRuntime(AutoCounter definition) : base(definition)
@@ -1253,6 +1254,7 @@ public sealed class AutoCounterRuntime : AugmentRuntimeBase
         _nextCastTime = Time.time;
         _deactivateTime = -999f;
         _isActive = false;
+        _networkActiveState = false;
         _reflector.SetActive(false);
     }
 
@@ -1260,12 +1262,20 @@ public sealed class AutoCounterRuntime : AugmentRuntimeBase
     {
         if (player == null || _reflector == null) return;
 
+        if (NetTickUtil.IsActive && !HasAuthority())
+        {
+            _reflector.SetActive(_networkActiveState);
+            SetAttachedEffectActive(ref _readyGlowEffectInstance, _definition.readyGlowPrefab, _networkActiveState, "AutoCounterReadyGlow");
+            return;
+        }
+
         if (!IsActiveByRounds())
         {
             if (_isActive)
             {
                 _reflector.SetActive(false);
                 _isActive = false;
+                BroadcastNetworkActiveState(false);
             }
 
             SetAttachedEffectActive(ref _readyGlowEffectInstance, _definition.readyGlowPrefab, false, "AutoCounterReadyGlow");
@@ -1282,6 +1292,7 @@ public sealed class AutoCounterRuntime : AugmentRuntimeBase
                 _deactivateTime = Time.time + Mathf.Max(0.05f, _definition.activeDuration);
                 _reflector.SetActive(true);
                 SetAttachedEffectActive(ref _readyGlowEffectInstance, _definition.readyGlowPrefab, true, "AutoCounterReadyGlow");
+                BroadcastNetworkActiveState(true);
             }
             return;
         }
@@ -1294,7 +1305,38 @@ public sealed class AutoCounterRuntime : AugmentRuntimeBase
             _reflector.SetActive(false);
             _nextCastTime = Time.time + Mathf.Max(0.05f, _definition.autocastInterval);
             SetAttachedEffectActive(ref _readyGlowEffectInstance, _definition.readyGlowPrefab, false, "AutoCounterReadyGlow");
+            BroadcastNetworkActiveState(false);
         }
+    }
+
+    public void SetNetworkActiveState(bool active)
+    {
+        _networkActiveState = active;
+
+        if (_reflector != null)
+        {
+            _reflector.SetActive(active);
+        }
+
+        SetAttachedEffectActive(ref _readyGlowEffectInstance, _definition.readyGlowPrefab, active, "AutoCounterReadyGlow");
+    }
+
+    private void BroadcastNetworkActiveState(bool active)
+    {
+        if (_netMovement != null && _netMovement.IsServer && NetTickUtil.IsActive)
+        {
+            _netMovement.BroadcastAutoCounterState(active);
+        }
+    }
+
+    private bool HasAuthority()
+    {
+        if (!NetTickUtil.IsActive)
+        {
+            return true;
+        }
+
+        return _netMovement != null && _netMovement.IsServer;
     }
 
     private void HandleProjectileReflected(ProjectileScript projectile, Vector2 hitPoint)
@@ -1625,6 +1667,7 @@ public sealed class MindBindingRuntime : NearbyBindingRuntimeBase<MindBinding>
 {
     private readonly MindBinding _definition;
     private float _nextAllowedTriggerTime;
+    private bool _suppressInitialVisualUpdate = true;
 
     public MindBindingRuntime(MindBinding definition) : base(definition)
     {
@@ -1642,6 +1685,13 @@ public sealed class MindBindingRuntime : NearbyBindingRuntimeBase<MindBinding>
     {
         if (player == null)
         {
+            return;
+        }
+
+        if (_suppressInitialVisualUpdate)
+        {
+            _suppressInitialVisualUpdate = false;
+            HideBindingLinks();
             return;
         }
 

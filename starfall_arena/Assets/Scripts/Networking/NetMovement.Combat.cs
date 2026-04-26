@@ -395,6 +395,74 @@ public partial class NetMovement
         }
     }
 
+    public void BroadcastBurnApplication(string augmentId, float damagePerSecond, float duration, float tickInterval, float tickEffectRandomRadius)
+    {
+        if (!IsServer)
+        {
+            return;
+        }
+
+        BroadcastBurnApplicationClientRpc(augmentId, damagePerSecond, duration, tickInterval, tickEffectRandomRadius);
+    }
+
+    [ClientRpc]
+    private void BroadcastBurnApplicationClientRpc(string augmentId, float damagePerSecond, float duration, float tickInterval, float tickEffectRandomRadius)
+    {
+        if (IsServer)
+        {
+            return;
+        }
+
+        if (_player == null)
+        {
+            _player = GetComponent<Player>();
+        }
+
+        if (_player == null)
+        {
+            return;
+        }
+
+        BurnerDebuffController burnController = GetComponent<BurnerDebuffController>();
+        if (burnController == null)
+        {
+            burnController = gameObject.AddComponent<BurnerDebuffController>();
+        }
+        burnController?.ApplyBurnFromNetwork(augmentId, _player, damagePerSecond, duration, tickInterval, tickEffectRandomRadius);
+    }
+
+    public void BroadcastAutoCounterState(bool isActive)
+    {
+        if (!IsServer)
+        {
+            return;
+        }
+
+        BroadcastAutoCounterStateClientRpc(isActive);
+    }
+
+    [ClientRpc]
+    private void BroadcastAutoCounterStateClientRpc(bool isActive)
+    {
+        if (IsServer)
+        {
+            return;
+        }
+
+        if (_player == null)
+        {
+            _player = GetComponent<Player>();
+        }
+
+        if (_player == null)
+        {
+            return;
+        }
+
+        AugmentController augmentController = GetComponent<AugmentController>();
+        augmentController?.SetAutoCounterNetworkActiveState(isActive);
+    }
+
     // ===== DEATH =====
 
     public void BroadcastDeath(Vector2 position, float rotation, Vector2 lastDamageDirection)

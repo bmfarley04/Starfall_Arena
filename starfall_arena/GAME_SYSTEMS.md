@@ -383,6 +383,9 @@ Current augment runtimes include behaviors such as:
 - Burner now supports a configurable burn-tick prefab spawned at random points on the burning target (renderer bounds first, radius fallback)
 - AutoCounter now supports a configurable ready-glow prefab that is shown while the auto-counter window is active and the next incoming projectile can be reflected
 - AutoCounter now also broadcasts reflected-projectile visuals through the shared network projectile-reflection path so remote clients see the reflected shot when the server confirms the augment proc
+- Regenerator and Bubble Shield now depend on replicated anchor state in network play so both the gameplay mitigation and their attached visuals stay aligned on client copies
+- Burner now replicates the burn application to client copies so burn-tick visuals can run locally on remote peers instead of only appearing on the authoritative server copy
+- AutoCounter now treats the server as the source of truth for its active window and pushes that state to client copies, preventing remote peers from running an independent timer and leaving the shield visual stuck on
 - Twin Fire now applies a persistent primary-damage reduction and schedules a delayed second primary volley per shot
 - SoulBinding now transfers your recent health loss into nearby enemies as distance-scaled direct health damage
 - MindBinding now listens for nearby enemy primary-fire events and mirrors them by firing your own primary volley
