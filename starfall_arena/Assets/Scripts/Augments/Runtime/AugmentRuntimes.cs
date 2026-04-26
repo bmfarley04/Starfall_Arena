@@ -1491,9 +1491,10 @@ public abstract class NearbyBindingRuntimeBase<TDefinition> : AugmentRuntimeBase
 public sealed class TwinFireRuntime : AugmentRuntimeBase
 {
     private readonly TwinFire _definition;
-    private float _pendingSecondShotTime = -1f;
-    private bool _pendingSecondShot;
+    private readonly Queue<float> _scheduledSecondShotTimes = new Queue<float>();
     private NetMovement _netMovement;
+    private float _lastPrimaryFireEventTime = -1f;
+    private float _lastScheduledTwinShotTime = -1f;
 
     public TwinFireRuntime(TwinFire definition) : base(definition)
     {
@@ -1504,6 +1505,9 @@ public sealed class TwinFireRuntime : AugmentRuntimeBase
     {
         base.Initialize(player, roundAcquired, persistentState);
         _netMovement = player != null ? player.GetComponent<NetMovement>() : null;
+        _scheduledSecondShotTimes.Clear();
+        _lastPrimaryFireEventTime = -1f;
+        _lastScheduledTwinShotTime = -1f;
         PrimaryFireExecutionBus.PrimaryFireExecuted += HandlePrimaryFireExecuted;
     }
 
@@ -1522,11 +1526,12 @@ public sealed class TwinFireRuntime : AugmentRuntimeBase
         else
         {
             RemoveMultiplier(player.damageMultipliers);
-            _pendingSecondShot = false;
+            _scheduledSecondShotTimes.Clear();
+            _lastScheduledTwinShotTime = -1f;
             return;
         }
 
-        if (!_pendingSecondShot || Time.time < _pendingSecondShotTime)
+        if (_scheduledSecondShotTimes.Count <= 0)
         {
             return;
         }
@@ -1536,18 +1541,26 @@ public sealed class TwinFireRuntime : AugmentRuntimeBase
             return;
         }
 
-        if (TryFirePrimaryVolleyFromAugment(_definition.secondShotDamageMultiplier, _definition.ignoreCooldownForSecondShot, PrimaryFireExecutionSource.TwinFire, playSound: false))
+        float now = Time.time;
+        while (_scheduledSecondShotTimes.Count > 0 && _scheduledSecondShotTimes.Peek() <= now)
         {
-            PlaySoundEffect(_definition.secondShotSound);
-        }
+            _scheduledSecondShotTimes.Dequeue();
 
-        _pendingSecondShot = false;
+            if (TryFirePrimaryVolleyFromAugment(_definition.secondShotDamageMultiplier, _definition.ignoreCooldownForSecondShot, PrimaryFireExecutionSource.TwinFire, playSound: false))
+            {
+                PlaySoundEffect(ResolveSecondShotSoundEffect());
+            }
+
+            now = Time.time;
+        }
     }
 
     public override void OnRemoved()
     {
         PrimaryFireExecutionBus.PrimaryFireExecuted -= HandlePrimaryFireExecuted;
-        _pendingSecondShot = false;
+        _scheduledSecondShotTimes.Clear();
+        _lastPrimaryFireEventTime = -1f;
+        _lastScheduledTwinShotTime = -1f;
 
         if (player != null)
         {
@@ -1572,8 +1585,56 @@ public sealed class TwinFireRuntime : AugmentRuntimeBase
             return;
         }
 
-        _pendingSecondShot = true;
-        _pendingSecondShotTime = Time.time + Mathf.Max(0f, _definition.secondShotDelay);
+        if (!HasAuthority())
+        {
+            return;
+        }
+
+        float now = Time.time;
+        float primaryShotInterval = -1f;
+        if (_lastPrimaryFireEventTime >= 0f)
+        {
+            primaryShotInterval = now - _lastPrimaryFireEventTime;
+        }
+
+        _lastPrimaryFireEventTime = now;
+
+        float delay = Mathf.Max(0f, _definition.secondShotDelay);
+        if (delay <= 0f)
+        {
+            if (TryFirePrimaryVolleyFromAugment(_definition.secondShotDamageMultiplier, _definition.ignoreCooldownForSecondShot, PrimaryFireExecutionSource.TwinFire, playSound: false))
+            {
+                PlaySoundEffect(ResolveSecondShotSoundEffect());
+            }
+
+            return;
+        }
+
+        float scheduledTime = now + delay;
+
+        bool hasValidPrimaryInterval = primaryShotInterval > 0.0001f;
+        if (hasValidPrimaryInterval && player != null)
+        {
+            float primaryCooldown = Mathf.Max(0.0001f, player.PrimaryFireCooldown);
+            bool isLikelyIntraBurstInterval = primaryShotInterval < primaryCooldown * 0.9f;
+            if (isLikelyIntraBurstInterval && _lastScheduledTwinShotTime >= 0f)
+            {
+                scheduledTime = Mathf.Max(scheduledTime, _lastScheduledTwinShotTime + primaryShotInterval);
+            }
+        }
+
+        _scheduledSecondShotTimes.Enqueue(scheduledTime);
+        _lastScheduledTwinShotTime = scheduledTime;
+    }
+
+    private SoundEffect ResolveSecondShotSoundEffect()
+    {
+        if (_definition.secondShotSound != null)
+        {
+            return _definition.secondShotSound;
+        }
+
+        return player != null ? player.projectileFireSound : null;
     }
 
     private bool HasAuthority()

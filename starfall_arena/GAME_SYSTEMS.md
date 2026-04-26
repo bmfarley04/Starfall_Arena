@@ -386,7 +386,8 @@ Current augment runtimes include behaviors such as:
 - Regenerator and Bubble Shield now depend on replicated anchor state in network play so both the gameplay mitigation and their attached visuals stay aligned on client copies
 - Burner now replicates the burn application to client copies so burn-tick visuals can run locally on remote peers instead of only appearing on the authoritative server copy
 - AutoCounter now treats the server as the source of truth for its active window and pushes that state to client copies, preventing remote peers from running an independent timer and leaving the shield visual stuck on
-- Twin Fire now applies a persistent primary-damage reduction and schedules a delayed second primary volley per shot
+- Twin Fire now applies a persistent primary-damage reduction and fires a mirrored second primary volley per shot event using the augment's configurable second-shot delay, while preserving detected intra-burst primary shot spacing for queued extra shots
+- Twin Fire second-shot audio now falls back to the player's normal primary-fire SoundEffect when the augment-specific second-shot sound is not assigned
 - SoulBinding now transfers your recent health loss into nearby enemies as distance-scaled direct health damage
 - MindBinding now listens for nearby enemy primary-fire events and mirrors them by firing your own primary volley
 - BodyBinding now applies distance-scaled speed slow multipliers to nearby enemies based on proximity only, so slow player movement does not drop the effect
@@ -440,6 +441,7 @@ Network execution note:
 - Bug note: teleport-style abilities that hide renderers during their effect need an interruption-safe restore path, or a ship can remain hittable while visually invisible if the coroutine is stopped mid-ability.
 - Bug note: Chrono Step waypoints must be cleared on round transitions. The component now clears state in `OnDisable()` to avoid leaving waypoint markers between rounds; if markers persist, ensure the ability component is disabled during round freeze.
 - Bug note: if duel stats ever start diverging again, check for damage sources bypassing `Entity.TakeDamage(...)` / `TakeDirectDamage(...)` without passing the attacking player through. That was the root cause of mismatched dealt-vs-taken totals and missing ability/reflection credit.
+- Bug note: custom primary-fire implementations (for example burst-fire ship classes) must raise primary fire execution events with `PrimaryFireExecutionSource.PlayerInput` once per fired shot and include `FireSource` on network requests. If this hook is skipped, event-driven augments such as Twin Fire and Mind Binding will not trigger reliably.
 - Bug note: Artificial Fairy regroup visuals can appear oversized if ship parts only restore local scale after reparenting. Preserve each part's original world scale and compute parent-relative local scale on return so reassembled parts match the ship's original size.
 - Bug note: when adding thruster particles to the future-facing `Assets/Scripts/3d/Movement3D.cs` path, cache each particle system's original emission/speed/lifetime and drive them from live thrust input. If the 3D ship thrusters look permanently on or refuse to restart cleanly, the usual cause is treating them as static VFX instead of maintaining a thrust-driven intensity/play-stop state.
 - `Assets/Scripts/3d` is future-facing groundwork for a more fully 3D version of the game, not a current core maintenance area.

@@ -19,6 +19,6 @@ MonoBehaviour:
   rounds: -1
   baseDamageMultiplier: 0.7
   secondShotDamageMultiplier: 0.65
-  secondShotDelay: 0.08
+  secondShotDelay: 0.03
   ignoreCooldownForSecondShot: 1
   secondShotSound: {fileID: 0}
