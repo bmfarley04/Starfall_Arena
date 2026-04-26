@@ -105,6 +105,12 @@ public class Reflector : Ability
             ProjectileScript projectile = collider.GetComponent<ProjectileScript>();
             if (projectile != null && projectile.targetTag == player.thisPlayerTag)
             {
+                // Guided missiles aren't reflected — Missile.OnTriggerEnter2D detonates them harmlessly on contact.
+                if (projectile is Missile)
+                {
+                    return;
+                }
+
                 Vector3 hitPoint = collider.ClosestPoint(transform.position);
                 reflect.shield.OnReflectHit(hitPoint);
                 reflect.shield.ReflectProjectile(projectile, player.enemyTag);
