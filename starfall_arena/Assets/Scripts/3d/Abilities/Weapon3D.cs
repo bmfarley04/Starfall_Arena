@@ -381,6 +381,7 @@ public abstract class Weapon3D : MonoBehaviour, IReticleSpinSource3D
             muzzles = weaponConfig.muzzles,
             spawnAnchor = null,
             targetTag = weaponConfig.targetTag,
+            targetFaction = weaponConfig.targetFaction,
             speed = weaponConfig.speed,
             damage = weaponConfig.damage,
             lifetime = weaponConfig.lifetime,
@@ -493,6 +494,7 @@ public abstract class Weapon3D : MonoBehaviour, IReticleSpinSource3D
                 SlowMultiplier = request.slowMultiplier,
                 SlowDuration = request.slowDuration,
                 SlowEngineEmissionScale = request.slowEngineEmissionScale,
+                TargetFaction = request.targetFaction,
                 VisualType = visualType,
                 AccuracyAttackId = accuracyAttackId
             });
@@ -503,9 +505,11 @@ public abstract class Weapon3D : MonoBehaviour, IReticleSpinSource3D
         GameObject projectilePrefab,
         in NetProjectileFireRequest3D fire,
         string targetTag,
+        Faction3D targetFaction,
         bool cosmeticOnly,
         NetCombat3D networkAuthority,
-        bool playMuzzleEffect)
+        bool playMuzzleEffect,
+        bool serverAuthoritativeGameplay = false)
     {
         if (projectilePrefab == null)
         {
@@ -525,8 +529,10 @@ public abstract class Weapon3D : MonoBehaviour, IReticleSpinSource3D
         }
 
         projectile.targetTag = targetTag;
+        projectile.TargetFaction = targetFaction != Faction3D.Neutral ? targetFaction : fire.TargetFaction;
         projectile.SetCosmeticOnly(cosmeticOnly);
         projectile.SetNetworkAuthority(networkAuthority, fire.Tick);
+        projectile.SetServerAuthoritativeGameplay(serverAuthoritativeGameplay);
         projectile.SetNetworkVisualType(fire.VisualType);
         projectile.Initialize(
             fire.Direction,
@@ -614,8 +620,10 @@ public abstract class Weapon3D : MonoBehaviour, IReticleSpinSource3D
 
         Vector3 inheritedVelocity = shipFlight != null ? shipFlight.LinearVelocity : Vector3.zero;
         projectile.targetTag = targetTag;
+        projectile.TargetFaction = request.targetFaction;
         projectile.SetCosmeticOnly(cosmeticOnly);
         projectile.SetNetworkAuthority(networkAuthority, NetTickUtil.IsActive ? NetTickUtil.CurrentTick : -1);
+        projectile.SetServerAuthoritativeGameplay(false);
         projectile.SetNetworkVisualType(visualType);
         projectile.Initialize(
             fireDirection,

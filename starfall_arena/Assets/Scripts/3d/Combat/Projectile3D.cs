@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Unity.Netcode;
 using UnityEngine;
 
 public interface IProjectileImpactHandler3D
@@ -20,6 +21,7 @@ public class Projectile3D : MonoBehaviour, IPooledObject3D
 
     [Header("Runtime")]
     public string targetTag;
+    public Faction3D TargetFaction { get; set; }
 
     [Header("Impact FX")]
     [SerializeField] private GameObject hitEffectPrefab;
@@ -48,6 +50,7 @@ public class Projectile3D : MonoBehaviour, IPooledObject3D
     protected int _spawnServerTick = -1;
     protected int _accuracyAttackId = PlayerCombatStats3D.InvalidAttackId;
     protected bool _isCosmeticOnly;
+    protected bool _serverAuthoritativeGameplay;
     protected NetProjectileVisualType3D _visualType = NetProjectileVisualType3D.Primary;
 
     public Vector3 Direction => _direction;
@@ -128,6 +131,11 @@ public class Projectile3D : MonoBehaviour, IPooledObject3D
         _spawnServerTick = NetTickUtil.IsActive ? NetTickUtil.ServerTick : requestedFireTick;
     }
 
+    public void SetServerAuthoritativeGameplay(bool serverAuthoritativeGameplay)
+    {
+        _serverAuthoritativeGameplay = serverAuthoritativeGameplay;
+    }
+
     public void SetNetworkVisualType(NetProjectileVisualType3D visualType)
     {
         _visualType = visualType;
@@ -150,6 +158,8 @@ public class Projectile3D : MonoBehaviour, IPooledObject3D
         _spawnServerTick = -1;
         _accuracyAttackId = PlayerCombatStats3D.InvalidAttackId;
         _isCosmeticOnly = false;
+        _serverAuthoritativeGameplay = false;
+        TargetFaction = Faction3D.Neutral;
         _visualType = NetProjectileVisualType3D.Primary;
     }
 
@@ -166,6 +176,8 @@ public class Projectile3D : MonoBehaviour, IPooledObject3D
         _spawnServerTick = -1;
         _accuracyAttackId = PlayerCombatStats3D.InvalidAttackId;
         _isCosmeticOnly = false;
+        _serverAuthoritativeGameplay = false;
+        TargetFaction = Faction3D.Neutral;
         _visualType = NetProjectileVisualType3D.Primary;
     }
 
@@ -442,9 +454,26 @@ public class Projectile3D : MonoBehaviour, IPooledObject3D
 
     protected bool IsMatchingTarget(Entity3D entity)
     {
-        return entity != null
-            && !string.IsNullOrEmpty(targetTag)
-            && entity.CompareTag(targetTag);
+        if (entity == null)
+        {
+            return false;
+        }
+
+        if (FactionMember3D.AreAllied(_shooter, entity))
+        {
+            return false;
+        }
+
+        if (TargetFaction != Faction3D.Neutral)
+        {
+            Faction3D entityFaction = FactionMember3D.ResolveFaction(entity);
+            if (entityFaction != Faction3D.Neutral)
+            {
+                return entityFaction == TargetFaction;
+            }
+        }
+
+        return !string.IsNullOrEmpty(targetTag) && entity.CompareTag(targetTag);
     }
 
     protected bool CanApplyGameplay()
@@ -459,7 +488,14 @@ public class Projectile3D : MonoBehaviour, IPooledObject3D
             return true;
         }
 
-        return _networkAuthority != null && _networkAuthority.IsServer;
+        if (_networkAuthority != null && _networkAuthority.IsServer)
+        {
+            return true;
+        }
+
+        return _serverAuthoritativeGameplay
+            && NetworkManager.Singleton != null
+            && NetworkManager.Singleton.IsServer;
     }
 
     protected void SpawnHitEffect(RaycastHit hit)

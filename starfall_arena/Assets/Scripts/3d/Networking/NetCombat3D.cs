@@ -73,7 +73,7 @@ public class NetCombat3D : NetworkBehaviour
             return false;
         }
 
-        request.targetTag = ResolveEnemyTag();
+        ApplyProjectileTargeting(ref request);
         NetProjectileVisualType3D visualType = ResolveProjectileVisualType(request.projectilePrefab);
         int tick = NetTickUtil.CurrentTick;
         _projectileRequests.Clear();
@@ -269,6 +269,7 @@ public class NetCombat3D : NetworkBehaviour
             Lifetime = projectile.RemainingLifetime,
             ImpactForce = projectile.ImpactForce,
             ReflectColor = reflectColor,
+            TargetFaction = projectile.TargetFaction,
             VisualType = visualType
         });
     }
@@ -317,7 +318,8 @@ public class NetCombat3D : NetworkBehaviour
         sourceWeapon.SpawnNetworkProjectile(
             projectilePrefab,
             fireRequest,
-            ResolveEnemyTag(),
+            ResolveProjectileTargetTag(fireRequest.TargetFaction),
+            fireRequest.TargetFaction,
             cosmeticOnly: false,
             networkAuthority: this,
             playMuzzleEffect: true);
@@ -365,7 +367,8 @@ public class NetCombat3D : NetworkBehaviour
         sourceWeapon.SpawnNetworkProjectile(
             projectilePrefab,
             fire,
-            ResolveEnemyTag(),
+            ResolveProjectileTargetTag(fire.TargetFaction),
+            fire.TargetFaction,
             cosmeticOnly: true,
             networkAuthority: null,
             playMuzzleEffect: true);
@@ -661,11 +664,12 @@ public class NetCombat3D : NetworkBehaviour
             Damage = data.Damage,
             Lifetime = data.Lifetime,
             ImpactForce = data.ImpactForce,
+            TargetFaction = data.TargetFaction,
             VisualType = data.VisualType,
             AccuracyAttackId = PlayerCombatStats3D.InvalidAttackId
         };
 
-        sourceWeapon.SpawnNetworkProjectile(projectilePrefab, fire, ResolveEnemyTag(), cosmeticOnly: true, networkAuthority: null, playMuzzleEffect: false);
+        sourceWeapon.SpawnNetworkProjectile(projectilePrefab, fire, ResolveProjectileTargetTag(data.TargetFaction), data.TargetFaction, cosmeticOnly: true, networkAuthority: null, playMuzzleEffect: false);
     }
 
     private bool AcceptProjectileTick(NetProjectileVisualType3D visualType, int tick)
@@ -778,6 +782,22 @@ public class NetCombat3D : NetworkBehaviour
             2 => "Player1",
             _ => _entity != null && _entity.CompareTag("Player1") ? "Player2" : "Player1"
         };
+    }
+
+    private void ApplyProjectileTargeting(ref ProjectileFireRequest3D request)
+    {
+        if (request.targetFaction != Faction3D.Neutral)
+        {
+            request.targetTag = ResolveProjectileTargetTag(request.targetFaction);
+            return;
+        }
+
+        request.targetTag = ResolveEnemyTag();
+    }
+
+    private string ResolveProjectileTargetTag(Faction3D targetFaction)
+    {
+        return targetFaction == Faction3D.EnemyTeam ? "Enemy" : ResolveEnemyTag();
     }
 
     private void CacheReferences()

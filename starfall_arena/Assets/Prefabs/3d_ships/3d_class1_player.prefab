@@ -1047,6 +1047,7 @@ MonoBehaviour:
     - {fileID: 785862098326601373}
     - {fileID: 8559890948586039968}
     targetTag: Enemy
+    targetFaction: 0
     cooldown: 0.25
     speed: 250
     damage: 5

@@ -20,6 +20,15 @@ Networked runtime rule:
 - the server spawns the authoritative gameplay projectile and broadcasts cosmetic spawns to non-owners
 - cosmetic projectile instances may render impacts, but must not apply damage, slow, impact force, or shield/hull state changes
 
+Invasion/PvE targeting rule:
+
+- 3D projectile requests now carry both the legacy `targetTag` and a `targetFaction`
+- new PvE code should prefer `FactionMember3D` and `Faction3D` over tags for gameplay filtering
+- tags remain a compatibility fallback for existing duel/prefab paths
+- Invasion defaults to no ally damage: `PlayerTeam` projectiles should not damage players, and `EnemyTeam` projectiles should not damage enemies
+- player duel projectile brokering still uses the opposite-player tag path when a request does not explicitly set `targetFaction`; Invasion player weapons that should damage enemies must set `targetFaction = EnemyTeam`
+- do not use a generic `"Player"` tag in the 3D path; the current tag set has `Player1`, `Player2`, and `Enemy`
+
 For player-facing readability, projectile fire direction should be resolved from the intended aim target, not from a muzzle transform that may be attached under a visually banked or pitched ship mesh.
 
 Current implementation rule for 3D projectile visuals:

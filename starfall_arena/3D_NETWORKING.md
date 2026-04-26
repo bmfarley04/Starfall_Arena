@@ -133,6 +133,23 @@ It keeps movement and combat authority separate:
 
 The 3D path intentionally uses brokered cosmetic projectile and beam instances instead of making every projectile or beam an NGO-spawned `NetworkObject`. This keeps fast raycast/sweep weapons responsive while avoiding per-shot network-object overhead.
 
+### Invasion enemy networking
+
+Invasion enemies use separate enemy-specific networking:
+
+- `NetEnemyMovement3D`
+  - server simulates enemy movement from AI input
+  - clients interpolate replicated enemy snapshots
+  - clients do not run enemy gameplay AI
+- `NetEnemyCombat3D`
+  - server spawns enemy gameplay projectiles and owns damage
+  - clients receive cosmetic projectile spawns
+  - enemy combat uses target factions instead of the player-duel `ResolveEnemyTag()` path
+
+Do not reuse `NetMovement3D` for enemies. It is owner-predicted player movement.
+
+Do not route enemy PvE projectiles through `NetCombat3D.ResolveEnemyTag()`, because that method intentionally resolves the opposite player slot for duels.
+
 Important current implementation constraints:
 
 - `NetCombat3D` must be present on networked 3D player prefabs, or `NetMovement3D` keeps owner combat input suppressed.

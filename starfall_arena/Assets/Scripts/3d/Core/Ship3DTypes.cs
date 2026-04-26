@@ -15,6 +15,13 @@ public interface IPooledObject3D
     void OnDespawnedToPool();
 }
 
+public enum Faction3D : byte
+{
+    Neutral = 0,
+    PlayerTeam = 1,
+    EnemyTeam = 2
+}
+
 public enum ProjectileAimMode3D
 {
     MuzzleForward,
@@ -214,6 +221,7 @@ public struct ProjectileWeaponConfig3D
     public GameObject projectilePrefab;
     public Transform[] muzzles;
     public string targetTag;
+    public Faction3D targetFaction;
 
     [Header("Combat")]
     public float cooldown;
@@ -232,6 +240,7 @@ public struct ProjectileFireRequest3D
     public Transform[] muzzles;
     public Transform spawnAnchor;
     public string targetTag;
+    public Faction3D targetFaction;
     public float speed;
     public float damage;
     public float lifetime;

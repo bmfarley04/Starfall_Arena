@@ -90,6 +90,7 @@ public struct NetProjectileFireRequest3D : INetworkSerializable
     public float SlowMultiplier;
     public float SlowDuration;
     public float SlowEngineEmissionScale;
+    public Faction3D TargetFaction;
     public NetProjectileVisualType3D VisualType;
     public int AccuracyAttackId;
 
@@ -114,6 +115,7 @@ public struct NetProjectileFireRequest3D : INetworkSerializable
         serializer.SerializeValue(ref SlowMultiplier);
         serializer.SerializeValue(ref SlowDuration);
         serializer.SerializeValue(ref SlowEngineEmissionScale);
+        serializer.SerializeValue(ref TargetFaction);
         serializer.SerializeValue(ref VisualType);
         serializer.SerializeValue(ref AccuracyAttackId);
     }
@@ -226,6 +228,7 @@ public struct NetReflectedProjectileData3D : INetworkSerializable
     public float Lifetime;
     public float ImpactForce;
     public Color ReflectColor;
+    public Faction3D TargetFaction;
     public NetProjectileVisualType3D VisualType;
 
     public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
@@ -237,6 +240,7 @@ public struct NetReflectedProjectileData3D : INetworkSerializable
         serializer.SerializeValue(ref Lifetime);
         serializer.SerializeValue(ref ImpactForce);
         serializer.SerializeValue(ref ReflectColor);
+        serializer.SerializeValue(ref TargetFaction);
         serializer.SerializeValue(ref VisualType);
     }
 }

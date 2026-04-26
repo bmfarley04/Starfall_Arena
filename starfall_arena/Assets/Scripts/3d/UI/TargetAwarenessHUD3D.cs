@@ -546,6 +546,14 @@ public class TargetAwarenessHUD3D : PlayerHUDBindingTarget3D
             return false;
         }
 
+        if (FactionMember3D.TryGetExplicitFaction(BoundPlayer, out Faction3D boundFaction)
+            && FactionMember3D.TryGetExplicitFaction(entity, out Faction3D targetFaction)
+            && boundFaction != Faction3D.Neutral
+            && boundFaction == targetFaction)
+        {
+            return false;
+        }
+
         return entity.CurrentHealth > 0f;
     }
 

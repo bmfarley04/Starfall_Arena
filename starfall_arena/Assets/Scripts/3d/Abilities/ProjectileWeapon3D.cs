@@ -13,7 +13,8 @@ public class ProjectileWeapon3D : Weapon3D
         impactForce = 0f,
         recoilForce = 0f,
         energyCost = 18f,
-        targetTag = "Enemy"
+        targetTag = "Enemy",
+        targetFaction = Faction3D.Neutral
     };
 
     [Header("Audio")]
@@ -43,6 +44,52 @@ public class ProjectileWeapon3D : Weapon3D
         }
 
         if (!FireProjectilePattern(request, weaponConfig, fireSound))
+        {
+            return false;
+        }
+
+        _nextFireTime = Time.time + Mathf.Max(0f, weaponConfig.cooldown);
+        StartCooldown();
+        return true;
+    }
+
+    public bool TryFireAtFaction(Faction3D targetFaction, string targetTagOverride = null)
+    {
+        if (Time.time < _nextFireTime)
+        {
+            return false;
+        }
+
+        ProjectileFireRequest3D request = BuildDefaultFireRequest(weaponConfig);
+        request.targetFaction = targetFaction;
+        if (targetTagOverride != null)
+        {
+            request.targetTag = targetTagOverride;
+        }
+
+        if (request.projectilePrefab == null || !TrySpendResource(weaponConfig.energyCost))
+        {
+            return false;
+        }
+
+        if (!FireProjectilePattern(request, weaponConfig, fireSound))
+        {
+            return false;
+        }
+
+        _nextFireTime = Time.time + Mathf.Max(0f, weaponConfig.cooldown);
+        StartCooldown();
+        return true;
+    }
+
+    public bool CanFireNow()
+    {
+        return Time.time >= _nextFireTime && CanSpendResource(weaponConfig.energyCost);
+    }
+
+    public bool TryConsumeFireGate()
+    {
+        if (!CanFireNow() || !TrySpendResource(weaponConfig.energyCost))
         {
             return false;
         }

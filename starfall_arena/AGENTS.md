@@ -34,6 +34,10 @@ Load the smallest relevant set of docs for the task. If it is noted that we are 
   - Read for 3D architecture, system responsibilities, script placement, and cross-system implementation rules.
 - `3D_COMBAT.md`
   - Read for 3D weapons, abilities, aiming, projectiles, beams, and combat HUD expectations.
+- `3D_invasion.md`
+  - Read for the 3D Invasion PvE mode, wave ownership, faction rules, editor wiring, and current implementation state.
+- `3D_AI.md`
+  - Read for 3D enemy AI architecture, sensors, steering/pathing, behavior modules, and enemy archetype guidance.
 - `3D_BUGS.md`
   - Read for recurring 3D translation bugs, regressions, and implementation pitfalls.
 - `GAME_SYSTEMS.md`
@@ -53,6 +57,10 @@ Load the smallest relevant set of docs for the task. If it is noted that we are 
   - If the fix appears to require changing non-3D code, ask the user for permission before editing outside `Assets/Scripts/3d`
 - Working on player movement, duel flow, combat feel, damage, shields, projectiles, abilities, or augments:
   - Read `GAME_SYSTEMS.md`
+- Working on 3D Invasion, PvE waves, 3D enemies, enemy AI, enemy projectiles, or player-vs-enemy faction filtering:
+  - Read `3D.md` first
+  - Then read `3D_invasion.md` and `3D_AI.md`
+  - Also read `3D_COMBAT.md`, `3D_NETWORKING.md`, and `3D_BUGS.md` if the task affects projectiles, damage, networking, or recurring pitfalls
 - Working on menus, ship select, augment select, HUD, round flow, or manager responsibilities:
   - Read `UI_MANAGERS.md`
 - Working on Netcode for GameObjects, prediction, interpolation, reconciliation, spawning, or future projectile sync:
