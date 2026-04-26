@@ -775,7 +775,6 @@ public class NetMovement3D : NetworkBehaviour
     private void ConfigureOwnerPresentation()
     {
         Camera gameplayCamera = SelectGameplayCamera();
-        CinemachineCamera cinemachineCamera = SelectGameplayCinemachineCamera();
 
         if (_playerInput3D != null)
         {
@@ -792,11 +791,10 @@ public class NetMovement3D : NetworkBehaviour
 
         if (_cameraRig != null)
         {
-            _cameraRig.SetCamera(cinemachineCamera);
             _cameraRig.SetCameraRigActive(true);
         }
 
-        BindOwnerCameraAndTracking(gameplayCamera, cinemachineCamera);
+        BindOwnerCameraAndTracking(gameplayCamera);
         SetWeaponAimCamera(gameplayCamera);
         PlayerHUDManager3D.RebindAllAutoManagers();
         _loggedOwnerInputMissing = false;
@@ -858,28 +856,6 @@ public class NetMovement3D : NetworkBehaviour
         }
 
         return null;
-    }
-
-    private CinemachineCamera SelectGameplayCinemachineCamera()
-    {
-        CinemachineCamera[] cinemachineCameras = FindObjectsByType<CinemachineCamera>(FindObjectsSortMode.None);
-        CinemachineCamera fallback = null;
-        for (int i = 0; i < cinemachineCameras.Length; i++)
-        {
-            CinemachineCamera candidate = cinemachineCameras[i];
-            if (candidate == null || !candidate.gameObject.activeInHierarchy)
-            {
-                continue;
-            }
-
-            fallback ??= candidate;
-            if (candidate.isActiveAndEnabled)
-            {
-                return candidate;
-            }
-        }
-
-        return fallback;
     }
 
     private void CacheReferences()
@@ -950,7 +926,7 @@ public class NetMovement3D : NetworkBehaviour
             return;
         }
 
-        BindOwnerCameraAndTracking(SelectGameplayCamera(), SelectGameplayCinemachineCamera());
+        BindOwnerCameraAndTracking(SelectGameplayCamera());
     }
 
     private float GetTickDeltaTime()
@@ -959,7 +935,7 @@ public class NetMovement3D : NetworkBehaviour
         return tickInterval > 0f ? tickInterval : Time.fixedDeltaTime;
     }
 
-    private void BindOwnerCameraAndTracking(Camera gameplayCamera, CinemachineCamera cinemachineCamera)
+    private void BindOwnerCameraAndTracking(Camera gameplayCamera)
     {
         if (!IsOwner)
         {
@@ -971,9 +947,17 @@ public class NetMovement3D : NetworkBehaviour
             _cameraRig.BindTrackingTarget(transform);
         }
 
-        if (cinemachineCamera != null)
+        CinemachineCamera[] cinemachineCameras = FindObjectsByType<CinemachineCamera>(FindObjectsSortMode.None);
+        for (int i = 0; i < cinemachineCameras.Length; i++)
         {
-            cinemachineCamera.Target.TrackingTarget = transform;
+            CinemachineCamera candidate = cinemachineCameras[i];
+            if (candidate == null || !candidate.isActiveAndEnabled)
+            {
+                continue;
+            }
+
+            candidate.Target.TrackingTarget = transform;
+            break;
         }
 
         if (_playerInput != null && gameplayCamera != null)
