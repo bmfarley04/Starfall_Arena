@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class BeamWeapon3D : Weapon3D
+public class BeamWeapon3D : Weapon3D, IBeamWeaponNetwork3D
 {
     [System.Serializable]
     public struct BeamWeaponConfig3D

@@ -388,7 +388,9 @@ public abstract class Weapon3D : MonoBehaviour, IReticleSpinSource3D
             impactForce = weaponConfig.impactForce,
             recoilForce = weaponConfig.recoilForce,
             forwardOffset = 0f,
-            verticalOffset = 0f
+            verticalOffset = 0f,
+            projectileScaleMultiplier = 1f,
+            accuracyAttackIdOverride = PlayerCombatStats3D.InvalidAttackId
         };
     }
 
@@ -422,9 +424,11 @@ public abstract class Weapon3D : MonoBehaviour, IReticleSpinSource3D
 
         Transform[] muzzles = ResolveFiringMuzzles(request, fallbackConfig);
         PlayerCombatStats3D stats = !cosmeticOnly && owner != null ? owner.GetComponent<PlayerCombatStats3D>() : null;
-        int accuracyAttackId = stats != null
-            ? stats.BeginTrackedAttack()
-            : PlayerCombatStats3D.InvalidAttackId;
+        int accuracyAttackId = request.accuracyAttackIdOverride != PlayerCombatStats3D.InvalidAttackId
+            ? request.accuracyAttackIdOverride
+            : stats != null
+                ? stats.BeginTrackedAttack()
+                : PlayerCombatStats3D.InvalidAttackId;
 
         string resolvedTargetTag = !string.IsNullOrEmpty(request.targetTag)
             ? request.targetTag
@@ -464,7 +468,9 @@ public abstract class Weapon3D : MonoBehaviour, IReticleSpinSource3D
         Transform[] muzzles = ResolveFiringMuzzles(request, fallbackConfig);
         AimSolution aim = ResolveAimSolution();
         Vector3 inheritedVelocity = shipFlight != null ? shipFlight.LinearVelocity : Vector3.zero;
-        int accuracyAttackId = NetTickUtil.IsActive ? tick : PlayerCombatStats3D.InvalidAttackId;
+        int accuracyAttackId = request.accuracyAttackIdOverride != PlayerCombatStats3D.InvalidAttackId
+            ? request.accuracyAttackIdOverride
+            : NetTickUtil.IsActive ? tick : PlayerCombatStats3D.InvalidAttackId;
 
         for (int i = 0; i < muzzles.Length; i++)
         {
@@ -494,6 +500,7 @@ public abstract class Weapon3D : MonoBehaviour, IReticleSpinSource3D
                 SlowMultiplier = request.slowMultiplier,
                 SlowDuration = request.slowDuration,
                 SlowEngineEmissionScale = request.slowEngineEmissionScale,
+                ProjectileScaleMultiplier = request.projectileScaleMultiplier > 0f ? request.projectileScaleMultiplier : 1f,
                 TargetFaction = request.targetFaction,
                 VisualType = visualType,
                 AccuracyAttackId = accuracyAttackId
@@ -543,6 +550,8 @@ public abstract class Weapon3D : MonoBehaviour, IReticleSpinSource3D
             fire.ImpactForce,
             owner,
             fire.AccuracyAttackId);
+        ApplyProjectileScale(projectileObject.transform, fire.ProjectileScaleMultiplier);
+        projectile.SetProjectileScaleMultiplier(fire.ProjectileScaleMultiplier);
 
         if (!cosmeticOnly)
         {
@@ -635,6 +644,8 @@ public abstract class Weapon3D : MonoBehaviour, IReticleSpinSource3D
             owner,
             accuracyAttackId
         );
+        ApplyProjectileScale(projectileObject.transform, request.projectileScaleMultiplier);
+        projectile.SetProjectileScaleMultiplier(request.projectileScaleMultiplier);
 
         if (request.canPierce)
         {
@@ -650,6 +661,22 @@ public abstract class Weapon3D : MonoBehaviour, IReticleSpinSource3D
         }
 
         request.onProjectileSpawned?.Invoke(projectile);
+    }
+
+    private static void ApplyProjectileScale(Transform projectileTransform, float scaleMultiplier)
+    {
+        if (projectileTransform == null)
+        {
+            return;
+        }
+
+        float safeScaleMultiplier = scaleMultiplier > 0f ? scaleMultiplier : 1f;
+        if (Mathf.Abs(safeScaleMultiplier - 1f) <= 0.0001f)
+        {
+            return;
+        }
+
+        projectileTransform.localScale *= safeScaleMultiplier;
     }
 
     private Vector3 ResolveProjectileSpawnPosition(Transform muzzle, ProjectileFireRequest3D request)

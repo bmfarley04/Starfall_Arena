@@ -52,6 +52,7 @@ public class Projectile3D : MonoBehaviour, IPooledObject3D
     protected bool _isCosmeticOnly;
     protected bool _serverAuthoritativeGameplay;
     protected NetProjectileVisualType3D _visualType = NetProjectileVisualType3D.Primary;
+    protected float _projectileScaleMultiplier = 1f;
 
     public Vector3 Direction => _direction;
     public float Speed => _velocity.magnitude;
@@ -59,6 +60,7 @@ public class Projectile3D : MonoBehaviour, IPooledObject3D
     public float ImpactForce => _impactForce;
     public float RemainingLifetime => Mathf.Max(0f, _lifetime - _age);
     public NetProjectileVisualType3D VisualType => _visualType;
+    public float ProjectileScaleMultiplier => _projectileScaleMultiplier;
 
     protected virtual void Update()
     {
@@ -141,6 +143,11 @@ public class Projectile3D : MonoBehaviour, IPooledObject3D
         _visualType = visualType;
     }
 
+    public void SetProjectileScaleMultiplier(float scaleMultiplier)
+    {
+        _projectileScaleMultiplier = scaleMultiplier > 0f ? scaleMultiplier : 1f;
+    }
+
     public void EnableSlow(float slowMultiplier, float slowDuration, float slowEngineEmissionScale = 1f)
     {
         _appliesSlow = true;
@@ -161,6 +168,7 @@ public class Projectile3D : MonoBehaviour, IPooledObject3D
         _serverAuthoritativeGameplay = false;
         TargetFaction = Faction3D.Neutral;
         _visualType = NetProjectileVisualType3D.Primary;
+        _projectileScaleMultiplier = 1f;
     }
 
     public void OnDespawnedToPool()
@@ -179,6 +187,7 @@ public class Projectile3D : MonoBehaviour, IPooledObject3D
         _serverAuthoritativeGameplay = false;
         TargetFaction = Faction3D.Neutral;
         _visualType = NetProjectileVisualType3D.Primary;
+        _projectileScaleMultiplier = 1f;
     }
 
     protected virtual void ApplyDamageToEntity(Entity3D damageable, Vector3 hitPoint, Collider collider)

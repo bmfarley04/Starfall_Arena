@@ -67,6 +67,8 @@ public enum NetProjectileVisualType3D : byte
     GigaBlastTier4 = 4,
     Class2EmpoweredShot = 5,
     Class2PhysicalProjectile = 6,
+    Class4GuidedMissile = 7,
+    Class4GuidedMissileEmpowered = 8,
 }
 
 public struct NetProjectileFireRequest3D : INetworkSerializable
@@ -90,6 +92,7 @@ public struct NetProjectileFireRequest3D : INetworkSerializable
     public float SlowMultiplier;
     public float SlowDuration;
     public float SlowEngineEmissionScale;
+    public float ProjectileScaleMultiplier;
     public Faction3D TargetFaction;
     public NetProjectileVisualType3D VisualType;
     public int AccuracyAttackId;
@@ -115,6 +118,7 @@ public struct NetProjectileFireRequest3D : INetworkSerializable
         serializer.SerializeValue(ref SlowMultiplier);
         serializer.SerializeValue(ref SlowDuration);
         serializer.SerializeValue(ref SlowEngineEmissionScale);
+        serializer.SerializeValue(ref ProjectileScaleMultiplier);
         serializer.SerializeValue(ref TargetFaction);
         serializer.SerializeValue(ref VisualType);
         serializer.SerializeValue(ref AccuracyAttackId);
@@ -227,6 +231,7 @@ public struct NetReflectedProjectileData3D : INetworkSerializable
     public float Damage;
     public float Lifetime;
     public float ImpactForce;
+    public float ProjectileScaleMultiplier;
     public Color ReflectColor;
     public Faction3D TargetFaction;
     public NetProjectileVisualType3D VisualType;
@@ -239,6 +244,7 @@ public struct NetReflectedProjectileData3D : INetworkSerializable
         serializer.SerializeValue(ref Damage);
         serializer.SerializeValue(ref Lifetime);
         serializer.SerializeValue(ref ImpactForce);
+        serializer.SerializeValue(ref ProjectileScaleMultiplier);
         serializer.SerializeValue(ref ReflectColor);
         serializer.SerializeValue(ref TargetFaction);
         serializer.SerializeValue(ref VisualType);

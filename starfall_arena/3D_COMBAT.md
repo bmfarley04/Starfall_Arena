@@ -123,6 +123,31 @@ Base input rule:
   - authored visuals can be particle-based or mesh-based; the current lightweight mesh option is `Assets/Shaders/3d/TractorBeamFresnel.shader`, which expects a cone/cylinder mesh with beam length mapped along UV `V`
   - in network sessions, owner/remote copies can show the beam, but only the server-authoritative copy applies pull velocity
 
+### Class 4 path
+
+- `Class4BurstWeapon3D`
+  - Class 4 primary weapon on the `Weapon3D` path
+  - fires one tracked attack attempt as `3` timed sub-bursts across `2` muzzles, for `6` total shots per trigger pull
+  - uses cooldown-style slot presentation instead of the shared overheat/resource display
+- `ConvergeBeamWeapon3D`
+  - Class 4 converge beam on the `Weapon3D` path
+  - spawns `2` beams by default and `4` while `Empower3D` is active
+  - resolves beam direction from the same replicated screen-center aim source used by the other 3D beam path, while still spawning from authored hardpoints on the ship prefab
+- `GuidedMissileWeapon3D`
+  - Class 4 missile weapon on the `Weapon3D` path
+  - launches an authored guided-missile projectile prefab through the shared projectile/network broker instead of bypassing `NetCombat3D`
+  - base and empowered missile variants use separate visual types so remote proxies and reflected-projectile cosmetics resolve the correct prefab
+- `GuidedMissileProjectile3D`
+  - full 3D homing projectile runtime for Class 4 missiles
+  - reacquires duel targets from the replicated enemy tag path when possible, otherwise falls back to the nearest valid enemy/faction target and continues straight if none exist
+- `Dodge3D`
+  - Class 4 mobility ability on the `Ability3D` path
+  - pressing the ability primes a short input window; the next valid look-stick input chooses one of four ship-relative directions: forward, back, left, or right
+  - current 3D implementation is controller-look-stick only; no KBM dodge direction fallback is authored in this pass
+- `Empower3D`
+  - timed Class 4 empower toggle on the `Ability3D` path
+  - while active, it upgrades Converge Beam from `2 -> 4` beams, reduces Dodge cooldown, and switches Guided Missile to its larger/harder-hitting empowered variant
+
 ## Networked Combat Authority
 
 Current networked 3D combat uses server authority with owner-side cosmetic prediction:
@@ -134,6 +159,8 @@ Current networked 3D combat uses server authority with owner-side cosmetic predi
 - owner-control recovery must explicitly clear `PlayerInput3D` combat suppression when `NetCombat3D` exists, because movement input can be active while combat input is still blocked
 - remote projectile cosmetics should use the local proxy's weapon/prefab bindings and log a one-shot warning if a binding is missing, rather than silently dropping the RPC
 - fast projectile validation uses normal 3D spherecasts first, then a short defender-favored rewind against server movement history
+- networked 3D beam state must resolve through a shared beam-network contract instead of assuming only `BeamWeapon3D` can receive RPC state
+- ability-driven burst accuracy, Class 4 empower state, guided-missile visual type, and dodge impulses must all stay inside the authoritative `NetCombat3D` / `NetMovement3D` path so owner prediction does not diverge from server truth
 
 ## Current Control And Aim Rules
 
@@ -166,6 +193,7 @@ Aim rules:
 - combat HUD elements that live on a scene canvas should bind through `PlayerHUDManager3D`, not by having player prefabs race to claim shared HUD objects
 - networked 3D scene HUD managers should auto-bind to the local spawned player and retry briefly after spawn, because ownership/input presentation can settle after `Player3D.OnEnable`
 - fullscreen edge-glow presentation is shared by GigaBlast charge and low-health feedback; the renderer feature must enqueue when either effect reports visible shader state
+- `PlayerWeaponAbilityHUDSpawner3D` should prefer the bound ship's `ShipData.abilityHUDPrefab` from the 3D roster and only fall back to a direct prefab override when no ship-data match exists
 
 ## Combat Documentation Rule
 

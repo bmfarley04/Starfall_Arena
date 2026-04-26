@@ -254,6 +254,8 @@ public struct ProjectileFireRequest3D
     public float slowMultiplier;
     public float slowDuration;
     public float slowEngineEmissionScale;
+    public float projectileScaleMultiplier;
+    public int accuracyAttackIdOverride;
     public System.Action<Projectile3D> onProjectileSpawned;
 }
 
