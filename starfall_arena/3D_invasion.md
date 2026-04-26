@@ -20,6 +20,12 @@ Implemented foundation:
 - `NetEnemyCombat3D` makes enemy projectile damage server-authoritative and broadcasts client cosmetics
 - `InvasionWaveManager3D` is a minimal finite-wave spawner for configured enemy prefabs
 
+## Title Screen Entry
+
+- the title-screen 3D host flow now branches through a dedicated 3D sub-select canvas before matchmaking starts
+- the duel branch still loads `3d`, while the invasion branch loads `3d_invasion`
+- invasion still uses the 3D ship roster; the title flow should not fall back to the 2D roster just because the scene token differs from the duel scene
+
 ## Mode Ownership
 
 Networked Invasion is server authoritative:

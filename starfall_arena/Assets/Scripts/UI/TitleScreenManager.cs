@@ -106,18 +106,29 @@ public class TitleScreenManager : MonoBehaviour
     [Tooltip("First selected button on the host mode select canvas")]
     [SerializeField] private GameObject hostModeSelectFirstSelected;
 
+    [Tooltip("Canvas shown after choosing 3D where the player selects duel or invasion")]
+    [SerializeField] private CanvasGroup host3DModeSelectCanvas;
+
+    [Tooltip("First selected button on the 3D mode select canvas")]
+    [SerializeField] private GameObject host3DModeSelectFirstSelected;
+
     [Header("Networking UI")]
     [SerializeField] private TMP_InputField ipAddressInputField;
     [SerializeField] private TextMeshProUGUI networkStatusText;
     [SerializeField] private TextMeshProUGUI hostModeStatusText;
+    [SerializeField] private TextMeshProUGUI hostWaitingStatusText;
 
     [Header("Host Scene Routing")]
     [Tooltip("2D gameplay scene loaded after both players lock in when hosting from title")]
     [SerializeField] private string network2DGameplaySceneName = "SampleScene";
-    [Tooltip("3D gameplay scene loaded after both players lock in when hosting from title")]
+    [Tooltip("3D duel gameplay scene loaded after both players lock in when hosting from title")]
     [SerializeField] private string network3DGameplaySceneName = "3d";
+    [Tooltip("3D invasion gameplay scene loaded after both players lock in when hosting from title")]
+    [SerializeField] private string network3DInvasionGameplaySceneName = "3d_invasion";
     [SerializeField] private string host2DStatusLabel = "2D - DUEL";
     [SerializeField] private string host3DStatusLabel = "3D - DUEL";
+    [SerializeField] private string host3DInvasionStatusLabel = "3D - INVASION";
+    [SerializeField] private string hostWaitingStatusLabel = "WAITING ON OPPONENT...";
 
     [Header("Host Mode Preview Models")]
     [Tooltip("3D preview model roots shown on the host-mode select canvas. They stay hidden until the canvas transition is fully visible.")]
@@ -140,11 +151,13 @@ public class TitleScreenManager : MonoBehaviour
     [SerializeField] private HoldActionButton joinBackButton;
     [SerializeField] private HoldActionButton waitingBackButton;
     [SerializeField] private HoldActionButton hostModeBackButton;
+    [SerializeField] private HoldActionButton host3DModeBackButton;
 
     [Header("Manual Navigation")]
     [SerializeField] private NavigationGroup joinGameNavigation;
     [SerializeField] private NavigationGroup hostWaitingNavigation;
     [SerializeField] private NavigationGroup hostModeSelectNavigation;
+    [SerializeField] private NavigationGroup host3DModeSelectNavigation;
 
     [Header("Intro: Scene Fade In")]
     [SerializeField] private SceneFadeConfig sceneFade;
@@ -216,6 +229,7 @@ public class TitleScreenManager : MonoBehaviour
         if (joinGameCanvas != null) joinGameCanvas.gameObject.SetActive(false);
         if (hostWaitingCanvas != null) hostWaitingCanvas.gameObject.SetActive(false);
         if (hostModeSelectCanvas != null) hostModeSelectCanvas.gameObject.SetActive(false);
+        if (host3DModeSelectCanvas != null) host3DModeSelectCanvas.gameObject.SetActive(false);
 
         // Hide all canvases at start (when we activate them later)
         SetCanvasHidden(mainMenuCanvas);
@@ -224,6 +238,7 @@ public class TitleScreenManager : MonoBehaviour
         SetCanvasHidden(joinGameCanvas);
         SetCanvasHidden(hostWaitingCanvas);
         SetCanvasHidden(hostModeSelectCanvas);
+        SetCanvasHidden(host3DModeSelectCanvas);
         SetHostModePreviewModelsActive(false);
 
         // Phase 1: Scene fades from black
@@ -385,8 +400,32 @@ public class TitleScreenManager : MonoBehaviour
 
     public void StartHosting3DFlow()
     {
+        if (host3DModeSelectCanvas == null)
+        {
+            StartHosting3DDuelFlow();
+            return;
+        }
+
+        if (_activeTransition != null)
+        {
+            return;
+        }
+
+        CanvasGroup source = _activeCanvas ?? hostModeSelectCanvas ?? mainMenuCanvas;
+        _activeTransition = StartCoroutine(
+            RunTransition(source, host3DModeSelectCanvas, host3DModeSelectFirstSelected));
+    }
+
+    public void StartHosting3DDuelFlow()
+    {
         _pendingHostModeLabel = host3DStatusLabel;
         StartHostingForScene(network3DGameplaySceneName);
+    }
+
+    public void StartHosting3DInvasionFlow()
+    {
+        _pendingHostModeLabel = host3DInvasionStatusLabel;
+        StartHostingForScene(network3DInvasionGameplaySceneName, network3DGameplaySceneName);
     }
 
     public void start3dhostflow()
@@ -453,6 +492,17 @@ public class TitleScreenManager : MonoBehaviour
             RunTransition(hostModeSelectCanvas, mainMenuCanvas, mainMenuFirstSelected));
     }
 
+    public void TransitionToHostModeSelectFrom3DMode()
+    {
+        if (_activeTransition != null || host3DModeSelectCanvas == null || hostModeSelectCanvas == null)
+        {
+            return;
+        }
+
+        _activeTransition = StartCoroutine(
+            RunTransition(host3DModeSelectCanvas, hostModeSelectCanvas, hostModeSelectFirstSelected));
+    }
+
     public void StartJoinFlow()
     {
         string address = ipAddressInputField != null ? ipAddressInputField.text : string.Empty;
@@ -483,6 +533,10 @@ public class TitleScreenManager : MonoBehaviour
         else if (_activeCanvas == hostModeSelectCanvas)
         {
             TransitionCanvas(hostModeSelectCanvas, mainMenuCanvas, mainMenuFirstSelected);
+        }
+        else if (_activeCanvas == host3DModeSelectCanvas)
+        {
+            TransitionToHostModeSelectFrom3DMode();
         }
     }
 
@@ -802,6 +856,14 @@ public class TitleScreenManager : MonoBehaviour
         }
     }
 
+    private void SetHostWaitingStatus(string statusLabel)
+    {
+        if (hostWaitingStatusText != null)
+        {
+            hostWaitingStatusText.text = statusLabel ?? string.Empty;
+        }
+    }
+
     private void TransitionToShipSelectFromCurrent()
     {
         if (_activeTransition != null || shipSelectCanvas == null) return;
@@ -857,6 +919,11 @@ public class TitleScreenManager : MonoBehaviour
         if (_activeCanvas == hostModeSelectCanvas)
         {
             return hostModeBackButton;
+        }
+
+        if (_activeCanvas == host3DModeSelectCanvas)
+        {
+            return host3DModeBackButton;
         }
 
         if (_activeCanvas == hostWaitingCanvas)
@@ -1004,6 +1071,11 @@ public class TitleScreenManager : MonoBehaviour
             return hostModeSelectNavigation;
         }
 
+        if (_activeCanvas == host3DModeSelectCanvas)
+        {
+            return host3DModeSelectNavigation;
+        }
+
         return default;
     }
 
@@ -1032,10 +1104,16 @@ public class TitleScreenManager : MonoBehaviour
     {
         ResetFillIfInactive(joinBackButton.fillImage, activeImage);
         ResetFillIfInactive(hostModeBackButton.fillImage, activeImage);
+        ResetFillIfInactive(host3DModeBackButton.fillImage, activeImage);
         ResetFillIfInactive(waitingBackButton.fillImage, activeImage);
     }
 
     private void StartHostingForScene(string sceneName)
+    {
+        StartHostingForScene(sceneName, sceneName);
+    }
+
+    private void StartHostingForScene(string sceneName, string rosterSceneName)
     {
         if (hostWaitingCanvas == null || _activeTransition != null)
         {
@@ -1063,10 +1141,15 @@ public class TitleScreenManager : MonoBehaviour
         }
 
         SetHostModeStatus(_pendingHostModeLabel);
+        SetHostWaitingStatus(
+            string.Equals(resolvedScene, network3DInvasionGameplaySceneName, System.StringComparison.OrdinalIgnoreCase)
+                ? "WAITING ON TEAMMATE..."
+                : hostWaitingStatusLabel);
 
         _sessionData = NetworkSessionData.Instance;
         _sessionData?.SetGameplaySceneName(resolvedScene);
-        ApplyShipRosterForGameplayScene(resolvedScene);
+        string resolvedRosterScene = string.IsNullOrWhiteSpace(rosterSceneName) ? resolvedScene : rosterSceneName.Trim();
+        ApplyShipRosterForGameplayScene(resolvedRosterScene);
 
         _netMgr = NetMgr.Instance;
         if (_netMgr == null || !_netMgr.StartHostForMenu())
