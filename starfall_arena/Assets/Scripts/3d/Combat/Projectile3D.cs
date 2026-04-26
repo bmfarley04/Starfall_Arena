@@ -468,13 +468,13 @@ public class Projectile3D : MonoBehaviour, IPooledObject3D
             return false;
         }
 
-        if (FactionMember3D.AreAllied(_shooter, entity))
-        {
-            return false;
-        }
-
         if (TargetFaction != Faction3D.Neutral)
         {
+            if (FactionMember3D.AreAllied(_shooter, entity))
+            {
+                return false;
+            }
+
             Faction3D entityFaction = FactionMember3D.ResolveFaction(entity);
             if (entityFaction != Faction3D.Neutral)
             {
