@@ -5402,7 +5402,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6962877402401494773, guid: dcd0d058af7406e4b869c55e797967e0, type: 3}
       propertyPath: m_Name
-      value: Class4_Player
+      value: 3d_class4_player
       objectReference: {fileID: 0}
     - target: {fileID: 8218329567873975671, guid: dcd0d058af7406e4b869c55e797967e0, type: 3}
       propertyPath: virtualCamera

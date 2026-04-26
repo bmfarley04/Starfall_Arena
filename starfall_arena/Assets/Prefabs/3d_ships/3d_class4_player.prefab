@@ -5230,7 +5230,7 @@ GameObject:
   - component: {fileID: 7050303922495527899}
   - component: {fileID: 5035944875366506294}
   m_Layer: 0
-  m_Name: Class4_Player
+  m_Name: 3d_class4_player
   m_TagString: Enemy
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
