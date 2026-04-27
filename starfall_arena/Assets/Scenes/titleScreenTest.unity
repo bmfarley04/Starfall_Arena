@@ -36234,7 +36234,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 76c392e42b5098c458856cdf6ecaaaa1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.EventSystems.EventSystem
-  m_FirstSelected: {fileID: 0}
+  m_FirstSelected: {fileID: 710120537}
   m_sendNavigationEvents: 1
   m_DragThreshold: 10
 --- !u!4 &912009744
@@ -44969,7 +44969,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.675, y: 0.5}
-  m_AnchoredPosition: {x: 285, y: -10}
+  m_AnchoredPosition: {x: 320, y: -10}
   m_SizeDelta: {x: 72, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1041743641
@@ -56066,7 +56066,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TitleScreenManager
   mainMenuCanvas: {fileID: 1107019607}
-  mainMenuFirstSelected: {fileID: 832990969}
+  mainMenuFirstSelected: {fileID: 710120537}
   controlsCanvas: {fileID: 895569566}
   controls3DCanvas: {fileID: 1220412757}
   enable3DControlScheme: 0
@@ -56097,8 +56097,8 @@ MonoBehaviour:
   hostModePreviewModels:
   - {fileID: 368871651}
   - {fileID: 1508728381}
-  test3DGameplaySceneName: 3dscene
-  test3DClientAddress: 10.33.102.140
+  testShortcutGameplaySceneName: networkScene
+  test3DAutoFillAddress: 10.19.121.115
   test3DHostShip: {fileID: 0}
   test3DClientShip: {fileID: 0}
   submitHoldDuration: 1
