@@ -60,6 +60,8 @@ New 3D-specific networking code lives under `Assets/Scripts/3d/Networking`.
 - remote non-owner
   - interpolates between authoritative snapshots
 
+Movement-affecting 3D abilities must be replayable from movement input history when they need owner prediction. Class 4 dodge is encoded as a one-tick dodge request plus direction in `NetInputSnapshot3D`, so owner prediction, server simulation, and reconciliation replay all start the dash from the same tick. Combat RPCs may play presentation, but they must not inject dodge movement outside `NetMovement3D`.
+
 Important phase-1 constraint:
 
 - combat input is intentionally suppressed while `NetMovement3D` is active
@@ -158,6 +160,7 @@ Important current implementation constraints:
 - client cosmetic projectile RPCs resolve local proxy bindings from the serialized `Entity3D` weapon slots first, then fall back to root `ProjectileWeapon3D`; missing source weapon or projectile prefab bindings log one-shot warnings instead of failing silently.
 - `Projectile3D` and `LaserBeam3D` now split cosmetic-only instances from server-authoritative gameplay instances.
 - combat velocity changes such as recoil, impact force, tractor pull, and teleport warps must pass through `NetMovement3D` helpers so prediction/reconciliation state is not immediately overwritten.
+- owner-predicted ability movement must enter the movement input stream. Do not apply dash-style movement only through combat RPCs or direct Rigidbody writes, because reconciliation cannot reproduce that side channel during replay.
 - slow state is treated as server-owned during network movement simulation; the server copy overrides the owner's submitted slow multiplier.
 - beam and tractor-beam aim must be replicated, not resolved from a local camera on the server or on remote proxies. The owner sends its center-screen aim direction with the initial activation RPC and with per-tick `UpdateBeamAim` / `UpdateTractorBeamAim` updates. `LaserBeam3D` and `TractorBeam3D` consume that replicated direction on every non-owner peer so damage casts and cone pulls match what the firing player actually aimed at. The owner's local cosmetic instance keeps using its own camera so local fire stays responsive.
 

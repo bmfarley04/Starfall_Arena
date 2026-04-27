@@ -147,6 +147,7 @@ Base input rule:
   - Class 4 mobility ability on the `Ability3D` path
   - pressing the ability primes a short input window; the next valid look-stick input chooses one of four ship-relative directions: forward, back, left, or right
   - current 3D implementation is controller-look-stick only; no KBM dodge direction fallback is authored in this pass
+  - in network sessions, owner dodge movement is queued through `NetMovement3D` and serialized into `NetInputSnapshot3D` so prediction, server validation, and reconciliation replay all reproduce the same dash; combat RPCs are presentation-only for dodge
 - `Empower3D`
   - timed Class 4 empower toggle on the `Ability3D` path
   - while active, it upgrades Converge Beam from `2 -> 4` beams, reduces Dodge cooldown, and switches Guided Missile to its larger/harder-hitting empowered variant
@@ -163,7 +164,8 @@ Current networked 3D combat uses server authority with owner-side cosmetic predi
 - remote projectile cosmetics should use the local proxy's weapon/prefab bindings and log a one-shot warning if a binding is missing, rather than silently dropping the RPC
 - fast projectile validation uses normal 3D spherecasts first, then a short defender-favored rewind against server movement history
 - networked 3D beam state must resolve through a shared beam-network contract instead of assuming only `BeamWeapon3D` can receive RPC state
-- ability-driven burst accuracy, Class 4 empower state, guided-missile visual type, and dodge impulses must all stay inside the authoritative `NetCombat3D` / `NetMovement3D` path so owner prediction does not diverge from server truth
+- ability-driven burst accuracy, Class 4 empower state, guided-missile visual type, and movement-affecting actions must stay inside the appropriate authoritative broker so owner prediction does not diverge from server truth
+- dodge movement belongs to `NetMovement3D` input prediction, not `NetCombat3D`; remote dodge audio/VFX should be presentation-only while remote motion comes from interpolated movement snapshots
 
 ## Current Control And Aim Rules
 

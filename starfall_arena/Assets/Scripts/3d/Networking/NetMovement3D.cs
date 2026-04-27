@@ -39,6 +39,7 @@ public class NetMovement3D : NetworkBehaviour
     private PlayerInput _playerInput;
     private PlayerCameraRig3D _cameraRig;
     private ShipFlight3D _shipFlight;
+    private Dodge3D _dodgeAbility;
     private Rigidbody _rb;
 
     private NetInputSnapshot3D[] _inputBuffer;
@@ -55,6 +56,8 @@ public class NetMovement3D : NetworkBehaviour
     private bool _loggedOwnerInputMissing;
     private bool _loggedOwnerShipFlightMissing;
     private bool _loggedMissingCombatBridge;
+    private bool _pendingDodgeRequested;
+    private Vector3 _pendingDodgeDirection;
     private int _lastSentTick = -1;
     private int _lastReceivedServerTick = -1;
     private int _lastProcessedServerTick = -1;
@@ -65,6 +68,7 @@ public class NetMovement3D : NetworkBehaviour
     private float _interpTimer;
     private Vector3 _lastAppliedVisualVelocity;
     private bool _hasLastAppliedVisualVelocity;
+    private bool _remoteDodgePresentationActive;
 
     public byte PlayerSlot => _networkPlayerIndex.Value;
 
@@ -328,30 +332,16 @@ public class NetMovement3D : NetworkBehaviour
         }
     }
 
-    public void ApplyCombatDodgeSlide(Vector3 worldDirection, float dodgeDistance, float slideDuration)
+    public bool QueuePredictedDodge(Vector3 worldDirection)
     {
-        if (worldDirection.sqrMagnitude <= 0.000001f)
+        if (!IsOwner || !IsSpawned || _movementLocked.Value || worldDirection.sqrMagnitude <= 0.0001f)
         {
-            return;
+            return false;
         }
 
-        float safeDuration = Mathf.Max(0.01f, slideDuration);
-        Vector3 normalizedDirection = worldDirection.normalized;
-        Vector3 dodgeOffset = ResolveBoundarySafeDodgeOffset(normalizedDirection, Mathf.Max(0f, dodgeDistance));
-        Vector3 dashVelocity = dodgeOffset / safeDuration;
-
-        if (dashVelocity.sqrMagnitude <= 0.000001f)
-        {
-            return;
-        }
-
-        ApplyDodgeState(ref _ownerState, ref _ownerStateInitialized, normalizedDirection, dashVelocity, safeDuration);
-        ApplyDodgeState(ref _serverState, ref _serverStateInitialized, normalizedDirection, dashVelocity, safeDuration);
-
-        if (_rb != null)
-        {
-            _rb.linearVelocity = dashVelocity;
-        }
+        _pendingDodgeRequested = true;
+        _pendingDodgeDirection = worldDirection.normalized;
+        return true;
     }
 
     public void ApplyCombatWarp(Vector3 position)
@@ -448,21 +438,22 @@ public class NetMovement3D : NetworkBehaviour
             BaseRotationMultiplier = _player != null ? _player.GetBaseRotationMultiplier() : 1f,
             AbilityRotationMultiplier = _player != null ? _player.GetAbilityRotationMultiplier() : 1f,
             ThrustMultiplier = _player != null ? _player.GetCombinedThrustMultiplier() : 1f,
-            SlowMultiplier = _player != null ? _player.GetSlowMultiplier() : 1f
+            SlowMultiplier = _player != null ? _player.GetSlowMultiplier() : 1f,
+            DodgeRequested = !_movementLocked.Value && _pendingDodgeRequested,
+            DodgeDirection = _pendingDodgeDirection
         };
+        _pendingDodgeRequested = false;
+        _pendingDodgeDirection = Vector3.zero;
 
         int inputIndex = tick % ClientInputBufferSize;
         _inputBuffer[inputIndex] = input;
 
         Vector3 previousVelocity = _ownerState.Velocity;
-        MovementSimulation3D.SimulateTick(
+        SimulateInputTick(
             ref _ownerState,
             in input,
-            _shipFlight.FlightConfig,
-            _shipFlight.FlightAssistConfig,
-            _shipFlight.LockToWorldYPlane,
-            _shipFlight.LockedWorldY,
-            dt);
+            dt,
+            validateDodge: false);
 
         ApplySimulationState(_ownerState);
         ApplyFlightTelemetry(input.LookInput, input.ThrustInput, input.FrictionEnabled, _ownerState, previousVelocity, dt);
@@ -497,6 +488,8 @@ public class NetMovement3D : NetworkBehaviour
         {
             input.LookInput = Vector2.zero;
             input.ThrustInput = 0f;
+            input.DodgeRequested = false;
+            input.DodgeDirection = Vector3.zero;
         }
 
         if (_player != null)
@@ -507,14 +500,11 @@ public class NetMovement3D : NetworkBehaviour
         _serverFrictionEnabled = input.FrictionEnabled;
 
         Vector3 previousVelocity = _serverState.Velocity;
-        MovementSimulation3D.SimulateTick(
+        SimulateInputTick(
             ref _serverState,
             in input,
-            _shipFlight.FlightConfig,
-            _shipFlight.FlightAssistConfig,
-            _shipFlight.LockToWorldYPlane,
-            _shipFlight.LockedWorldY,
-            dt);
+            dt,
+            validateDodge: true);
 
         ApplySimulationState(_serverState);
         ApplyFlightTelemetry(input.LookInput, input.ThrustInput, input.FrictionEnabled, _serverState, previousVelocity, dt);
@@ -585,14 +575,11 @@ public class NetMovement3D : NetworkBehaviour
                 continue;
             }
 
-            MovementSimulation3D.SimulateTick(
+            SimulateInputTick(
                 ref replayState,
                 in input,
-                _shipFlight.FlightConfig,
-                _shipFlight.FlightAssistConfig,
-                _shipFlight.LockToWorldYPlane,
-                _shipFlight.LockedWorldY,
-                dt);
+                dt,
+                validateDodge: false);
 
             _predictionBuffer[inputIndex] = ToSnapshot(tick, replayState, input.ThrustInput, input.FrictionEnabled);
         }
@@ -674,6 +661,7 @@ public class NetMovement3D : NetworkBehaviour
         };
 
         ApplySimulationState(interpolatedState);
+        UpdateRemoteDodgePresentation(interpolatedState);
 
         Vector3 previousVelocity = _hasLastAppliedVisualVelocity ? _lastAppliedVisualVelocity : from.Velocity;
         ApplyFlightTelemetry(interpolatedState.FilteredLookInput, Mathf.Lerp(from.ThrustInput, to.ThrustInput, t), to.FrictionEnabled, interpolatedState, previousVelocity, tickInterval);
@@ -684,6 +672,74 @@ public class NetMovement3D : NetworkBehaviour
         {
             _interpTimer -= duration;
         }
+    }
+
+    private void SimulateInputTick(
+        ref MovementState3D state,
+        in NetInputSnapshot3D input,
+        float dt,
+        bool validateDodge)
+    {
+        ApplyDodgeFromInput(ref state, in input, validateDodge);
+
+        MovementSimulation3D.SimulateTick(
+            ref state,
+            in input,
+            _shipFlight.FlightConfig,
+            _shipFlight.FlightAssistConfig,
+            _shipFlight.LockToWorldYPlane,
+            _shipFlight.LockedWorldY,
+            dt);
+    }
+
+    private void ApplyDodgeFromInput(ref MovementState3D state, in NetInputSnapshot3D input, bool validateDodge)
+    {
+        if (!input.DodgeRequested || input.DodgeDirection.sqrMagnitude <= 0.0001f)
+        {
+            return;
+        }
+
+        CacheReferences();
+        if (_dodgeAbility == null)
+        {
+            return;
+        }
+
+        if (validateDodge && !_dodgeAbility.CanAcceptNetworkDodgeRequest())
+        {
+            return;
+        }
+
+        if (!_dodgeAbility.TryResolveNetworkDodge(
+            input.DodgeDirection,
+            state.Position,
+            GetCollisionRadius(),
+            out Vector3 dashVelocity,
+            out float duration))
+        {
+            return;
+        }
+
+        state.DodgeVelocity = dashVelocity;
+        state.DodgeExitVelocity = Vector3.zero;
+        state.DodgeRemainingTime = duration;
+
+        if (validateDodge)
+        {
+            _dodgeAbility.MarkNetworkDodgeAccepted();
+        }
+    }
+
+    private void UpdateRemoteDodgePresentation(in MovementState3D state)
+    {
+        bool isDodgeActive = state.DodgeRemainingTime > 0.001f && state.DodgeVelocity.sqrMagnitude > 0.0001f;
+        if (isDodgeActive && !_remoteDodgePresentationActive)
+        {
+            CacheReferences();
+            _dodgeAbility?.PlayNetworkDodgePresentation(state.DodgeVelocity);
+        }
+
+        _remoteDodgePresentationActive = isDodgeActive;
     }
 
     private void ApplySimulationState(in MovementState3D state)
@@ -886,6 +942,7 @@ public class NetMovement3D : NetworkBehaviour
         _playerInput ??= GetComponent<PlayerInput>();
         _cameraRig ??= GetComponent<PlayerCameraRig3D>();
         _shipFlight ??= GetComponent<ShipFlight3D>();
+        _dodgeAbility ??= GetComponent<Dodge3D>();
         _rb ??= GetComponent<Rigidbody>();
     }
 
@@ -1077,30 +1134,4 @@ public class NetMovement3D : NetworkBehaviour
         ApplyMovementLock(isLocked);
     }
 
-    private void ApplyDodgeState(ref MovementState3D state, ref bool initialized, Vector3 dodgeDirection, Vector3 dashVelocity, float duration)
-    {
-        if (!initialized)
-        {
-            state = CaptureCurrentState();
-            initialized = true;
-        }
-
-        state.DodgeVelocity = dashVelocity;
-        state.DodgeExitVelocity = Vector3.zero;
-        state.DodgeRemainingTime = duration;
-    }
-
-    private Vector3 ResolveBoundarySafeDodgeOffset(Vector3 normalizedDirection, float dodgeDistance)
-    {
-        Vector3 desiredOffset = normalizedDirection * dodgeDistance;
-        if (!ArenaBoundary3D.TryGetActive(out ArenaBoundary3D boundary) || !boundary.BlocksMovement)
-        {
-            return desiredOffset;
-        }
-
-        Vector3 startPosition = _rb != null ? _rb.position : transform.position;
-        Vector3 targetPosition = startPosition + desiredOffset;
-        Vector3 clampedTarget = boundary.ClampPositionInside(targetPosition, GetCollisionRadius());
-        return clampedTarget - startPosition;
-    }
 }

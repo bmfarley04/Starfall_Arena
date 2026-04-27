@@ -216,6 +216,7 @@ public class NetCombat3D : NetworkBehaviour
         RequestAbilityToggle(NetAbilityKind3D.Class4Empower, isActive, Vector3.zero, allowServerAuthority: true);
     }
 
+    [System.Obsolete("Class 4 dodge movement is predicted through NetMovement3D input snapshots. This legacy path is presentation-only.")]
     public void RequestClass4Dodge(Vector3 worldDirection)
     {
         RequestAbilityToggle(NetAbilityKind3D.Class4Dodge, true, worldDirection);
@@ -573,7 +574,7 @@ public class NetCombat3D : NetworkBehaviour
                 GetComponent<Empower3D>()?.ApplyNetworkEmpowerState(state.IsActive, authoritative: true);
                 break;
             case NetAbilityKind3D.Class4Dodge:
-                GetComponent<Dodge3D>()?.ApplyNetworkDodge(state.AimDirection, authoritative: true);
+                GetComponent<Dodge3D>()?.PlayNetworkDodgePresentation(state.AimDirection);
                 break;
         }
 
@@ -613,7 +614,7 @@ public class NetCombat3D : NetworkBehaviour
                 GetComponent<Empower3D>()?.ApplyNetworkEmpowerState(state.IsActive, authoritative: false);
                 break;
             case NetAbilityKind3D.Class4Dodge:
-                GetComponent<Dodge3D>()?.ApplyNetworkDodge(state.AimDirection, authoritative: false);
+                GetComponent<Dodge3D>()?.PlayNetworkDodgePresentation(state.AimDirection);
                 break;
         }
     }

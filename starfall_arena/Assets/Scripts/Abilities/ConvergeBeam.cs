@@ -53,9 +53,6 @@ public class ConvergeBeam : Ability
     private bool _lastEmpoweredState;
     private bool _activeAuthoritative;
     private NetMovement _netMovement;
-    private PlayerInput _playerInput;
-    private Vector2 _currentAimDirection = Vector2.up;
-    private bool _hasNetworkAimDirection;
 
     protected override void Awake()
     {
@@ -66,7 +63,6 @@ public class ConvergeBeam : Ability
             convergeBeam.empowerAbility = GetComponent<Empower>();
         }
         _netMovement = GetComponent<NetMovement>();
-        _playerInput = GetComponent<PlayerInput>();
 
         _laserBeamSource = gameObject.AddComponent<AudioSource>();
         _laserBeamSource.playOnAwake = false;
@@ -88,17 +84,6 @@ public class ConvergeBeam : Ability
                 bool wasAuthoritative = _activeAuthoritative;
                 DestroyBeamObjects();
                 SpawnAllBeams(wasAuthoritative, NetTickUtil.IsActive ? NetTickUtil.CurrentTick : -1);
-            }
-
-            if (NetTickUtil.IsActive && _netMovement != null && _netMovement.IsSpawned && _netMovement.IsOwner)
-            {
-                Vector2 liveAimDirection = ResolveCurrentAimDirection();
-                if (liveAimDirection.sqrMagnitude > 0.0001f)
-                {
-                    _currentAimDirection = liveAimDirection.normalized;
-                    _hasNetworkAimDirection = true;
-                    _netMovement.RequestConvergeBeamAim(_currentAimDirection);
-                }
             }
 
             UpdateBeamConvergence();
@@ -207,22 +192,6 @@ public class ConvergeBeam : Ability
         }
     }
 
-    public void ApplyNetworkConvergeBeamAim(Vector2 aimDirection, bool authoritative)
-    {
-        if (aimDirection.sqrMagnitude <= 0.0001f)
-        {
-            return;
-        }
-
-        _currentAimDirection = aimDirection.normalized;
-        _hasNetworkAimDirection = true;
-
-        if (_isFiring)
-        {
-            UpdateBeamConvergence();
-        }
-    }
-
     private int GetActiveHardpointCount()
     {
         if (convergeBeam.hardpoints == null) return 0;
@@ -279,7 +248,7 @@ public class ConvergeBeam : Ability
     {
         if (_activeBeams == null) return;
 
-        Vector3 convergencePoint = ResolveCurrentConvergencePoint();
+        Vector3 convergencePoint = transform.position + transform.up * convergeBeam.convergenceDistance;
 
         for (int i = 0; i < _activeBeams.Length; i++)
         {
@@ -291,84 +260,6 @@ public class ConvergeBeam : Ability
             Vector3 direction = convergencePoint - hardpoint.position;
             _activeBeams[i].transform.rotation = Quaternion.LookRotation(Vector3.forward, direction);
         }
-    }
-
-    private Vector3 ResolveCurrentConvergencePoint()
-    {
-        if (_hasNetworkAimDirection)
-        {
-            return transform.position + (Vector3)(_currentAimDirection * convergeBeam.convergenceDistance);
-        }
-
-        if (TryResolveScreenCenterAimPoint(out Vector3 screenCenterAimPoint))
-        {
-            return screenCenterAimPoint;
-        }
-
-        return transform.position + (Vector3)(ResolveCurrentAimDirection() * convergeBeam.convergenceDistance);
-    }
-
-    private bool TryResolveScreenCenterAimPoint(out Vector3 aimPoint)
-    {
-        aimPoint = default;
-
-        Camera aimCamera = _playerInput != null && _playerInput.camera != null
-            ? _playerInput.camera
-            : Camera.main;
-        if (aimCamera == null)
-        {
-            return false;
-        }
-
-        Ray centerRay = aimCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
-        Plane gameplayPlane = new Plane(Vector3.forward, transform.position);
-        if (gameplayPlane.Raycast(centerRay, out float enter))
-        {
-            aimPoint = centerRay.GetPoint(enter);
-            aimPoint.z = transform.position.z;
-            return true;
-        }
-
-        return false;
-    }
-
-    private Vector2 ResolveCurrentAimDirection()
-    {
-        bool shouldUseReplicatedAim = _hasNetworkAimDirection
-            && (!NetTickUtil.IsActive || _netMovement == null || !_netMovement.IsSpawned || !_netMovement.IsOwner);
-        if (shouldUseReplicatedAim && _currentAimDirection.sqrMagnitude > 0.0001f)
-        {
-            return _currentAimDirection.normalized;
-        }
-
-        if (player != null)
-        {
-            Vector2 liveLookInput = player.LookInput;
-            if (liveLookInput.sqrMagnitude > 0.0001f)
-            {
-                return liveLookInput.normalized;
-            }
-        }
-
-        if (NetTickUtil.IsActive && _netMovement != null)
-        {
-            Vector2 networkLookInput = _netMovement.GetLatestLookInput();
-            if (networkLookInput.sqrMagnitude > 0.0001f)
-            {
-                return networkLookInput.normalized;
-            }
-        }
-
-        if (TryResolveScreenCenterAimPoint(out Vector3 screenCenterAimPoint))
-        {
-            Vector2 toScreenCenter = (Vector2)(screenCenterAimPoint - transform.position);
-            if (toScreenCenter.sqrMagnitude > 0.0001f)
-            {
-                return toScreenCenter.normalized;
-            }
-        }
-
-        return transform.up;
     }
 
     private void DestroyBeamObjects()
@@ -385,8 +276,6 @@ public class ConvergeBeam : Ability
             }
             _activeBeams = null;
         }
-
-        _hasNetworkAimDirection = false;
     }
 
     private bool IsEmpoweredActive()

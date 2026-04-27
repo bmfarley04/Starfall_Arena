@@ -11,6 +11,8 @@ public struct NetInputSnapshot3D : INetworkSerializable
     public float AbilityRotationMultiplier;
     public float ThrustMultiplier;
     public float SlowMultiplier;
+    public bool DodgeRequested;
+    public Vector3 DodgeDirection;
 
     public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
     {
@@ -22,6 +24,8 @@ public struct NetInputSnapshot3D : INetworkSerializable
         serializer.SerializeValue(ref AbilityRotationMultiplier);
         serializer.SerializeValue(ref ThrustMultiplier);
         serializer.SerializeValue(ref SlowMultiplier);
+        serializer.SerializeValue(ref DodgeRequested);
+        serializer.SerializeValue(ref DodgeDirection);
     }
 }
 

@@ -40,14 +40,12 @@ public class Dodge3D : Ability3D
     private bool _isDodging;
     private float _primeStartTime;
     private float _dodgeEndTime = float.NegativeInfinity;
-    private NetCombat3D _netCombat;
     private Player3D _player;
     private Coroutine _localDodgeCoroutine;
 
     protected override void Awake()
     {
         base.Awake();
-        _netCombat = GetComponent<NetCombat3D>();
         _player = entity as Player3D;
         if (dodge.empowerAbility == null)
         {
@@ -139,7 +137,51 @@ public class Dodge3D : Ability3D
             return;
         }
 
-        StartDodge(worldDirection.normalized, authoritative);
+        PlayNetworkDodgePresentation(worldDirection);
+    }
+
+    public bool CanAcceptNetworkDodgeRequest()
+    {
+        return !isLocked && !isDisabledByOtherAbility && !IsOnCooldown();
+    }
+
+    public bool TryResolveNetworkDodge(
+        Vector3 worldDirection,
+        Vector3 startPosition,
+        float collisionRadius,
+        out Vector3 dashVelocity,
+        out float duration)
+    {
+        dashVelocity = Vector3.zero;
+        duration = Mathf.Max(0.01f, dodge.slideDuration);
+
+        if (worldDirection.sqrMagnitude <= 0.0001f)
+        {
+            return false;
+        }
+
+        Vector3 normalizedDirection = worldDirection.normalized;
+        float dodgeDistance = Mathf.Max(0.01f, dodge.dodgeDistance);
+        Vector3 targetPosition = startPosition + (normalizedDirection * dodgeDistance);
+        Vector3 clampedTarget = ClampDodgePosition(targetPosition, collisionRadius);
+        Vector3 dodgeOffset = clampedTarget - startPosition;
+        dashVelocity = dodgeOffset / duration;
+        return dashVelocity.sqrMagnitude > 0.000001f;
+    }
+
+    public void MarkNetworkDodgeAccepted()
+    {
+        MarkAbilityUsed();
+    }
+
+    public void PlayNetworkDodgePresentation(Vector3 worldDirection)
+    {
+        if (worldDirection.sqrMagnitude <= 0.0001f)
+        {
+            return;
+        }
+
+        StartDodgePresentation();
     }
 
     public override void Die()
@@ -157,19 +199,19 @@ public class Dodge3D : Ability3D
     private void ExecuteDodge(Vector3 worldDirection)
     {
         _isPrimed = false;
-        MarkAbilityUsed();
 
-        if (NetTickUtil.IsActive && _netCombat != null && _netCombat.IsOwner)
+        NetMovement3D movement = GetComponent<NetMovement3D>();
+        if (CanUseNetworkDodgeMovement(movement))
         {
-            if (!_netCombat.IsServer)
+            if (movement.QueuePredictedDodge(worldDirection))
             {
+                MarkAbilityUsed();
                 StartDodgePresentation();
             }
-
-            _netCombat.RequestClass4Dodge(worldDirection);
             return;
         }
 
+        MarkAbilityUsed();
         StartDodge(worldDirection, authoritative: true);
     }
 
@@ -182,7 +224,6 @@ public class Dodge3D : Ability3D
             return;
         }
 
-        NetMovement3D movement = GetComponent<NetMovement3D>();
         if (entity == null || entity.Flight == null)
         {
             return;
@@ -191,12 +232,6 @@ public class Dodge3D : Ability3D
         Vector3 normalizedDirection = worldDirection.normalized;
         float dodgeDistance = Mathf.Max(0.01f, dodge.dodgeDistance);
         float slideDuration = Mathf.Max(0.01f, dodge.slideDuration);
-
-        if (CanUseNetworkDodgeMovement(movement))
-        {
-            movement.ApplyCombatDodgeSlide(normalizedDirection, dodgeDistance, slideDuration);
-            return;
-        }
 
         StartLocalDodgeFallback(normalizedDirection, dodgeDistance, slideDuration);
     }
@@ -240,7 +275,7 @@ public class Dodge3D : Ability3D
 
     private static bool CanUseNetworkDodgeMovement(NetMovement3D movement)
     {
-        return movement != null && NetTickUtil.IsActive && movement.IsSpawned;
+        return movement != null && NetTickUtil.IsActive && movement.IsSpawned && movement.IsOwner;
     }
 
     private void StartLocalDodgeFallback(Vector3 worldDirection, float dodgeDistance, float slideDuration)
