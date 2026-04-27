@@ -379,12 +379,14 @@ Current augment runtimes include behaviors such as:
 - fairy and augment-enhancement style effects
 - runtime-driven presentation effects (attached prefabs and one-shot particles/sounds) for augments like Blaze of Glory, Cloak, Dagger, Evasion, Regenerator, Rotator, and Thorns
 - Bubble Shield now supports an attached bubble prefab that shrinks toward a configurable minimum scale as anchored mitigation approaches stun threshold, a configurable block sound on mitigated hits, and shield-like damage-debt regen after a hit-free delay
+- Bubble Shield now mirrors authoritative damage totals back into client copies every fixed update so the shrink / stun progression stays in sync in network play instead of only updating on the server copy
 - Burst now supports an attached speed-up prefab that is active during the burst window after contact-triggered activation
+- Flyers now scale their orbit radius from the owning ship's `ShipSize`, so larger ships naturally carry their orbiting flyers farther out
 - Burner now supports a configurable burn-tick prefab spawned at random points on the burning target (renderer bounds first, radius fallback)
 - AutoCounter now supports a configurable ready-glow prefab that is shown while the auto-counter window is active and the next incoming projectile can be reflected
 - AutoCounter now also broadcasts reflected-projectile visuals through the shared network projectile-reflection path so remote clients see the reflected shot when the server confirms the augment proc
 - Regenerator and Bubble Shield now depend on replicated anchor state in network play so both the gameplay mitigation and their attached visuals stay aligned on client copies
-- Burner now replicates the burn application to client copies so burn-tick visuals can run locally on remote peers instead of only appearing on the authoritative server copy
+- Burner now replicates the burn application to client copies and also broadcasts burn-tick visuals from the server, with the client-side burn controller resolving the stored burn prefab from the loaded augment registry so remote peers see the same burn presentation when the host applies burn to them
 - AutoCounter now treats the server as the source of truth for its active window and pushes that state to client copies, preventing remote peers from running an independent timer and leaving the shield visual stuck on
 - Twin Fire now applies a persistent primary-damage reduction and fires a mirrored second primary volley per shot event using the augment's configurable second-shot delay, while preserving detected intra-burst primary shot spacing for queued extra shots
 - Twin Fire second-shot audio now falls back to the player's normal primary-fire SoundEffect when the augment-specific second-shot sound is not assigned

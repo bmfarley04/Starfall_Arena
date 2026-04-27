@@ -359,7 +359,7 @@ public abstract class Entity : MonoBehaviour
             if (shieldDamage >= damage)
             {
                 RecordDamageStats(attacker, accuracyAttackId, appliedShieldDamage);
-                BroadcastAuthoritativeCombatState(hitPoint, source, shieldTookHit, shieldBroke, impactForce, shieldIgnored || healthIgnored, artificialFairyTriggered);
+                BroadcastAuthoritativeCombatState(hitPoint, source, shieldTookHit, shieldBroke, impactForce, shieldIgnored || healthIgnored, artificialFairyTriggered, appliedShieldDamage);
                 return;
             }
 
@@ -379,7 +379,7 @@ public abstract class Entity : MonoBehaviour
         }
 
         RecordDamageStats(attacker, accuracyAttackId, appliedShieldDamage + appliedHealthDamage);
-        BroadcastAuthoritativeCombatState(hitPoint, source, shieldTookHit, shieldBroke, impactForce, shieldIgnored || healthIgnored, artificialFairyTriggered);
+        BroadcastAuthoritativeCombatState(hitPoint, source, shieldTookHit, shieldBroke, impactForce, shieldIgnored || healthIgnored, artificialFairyTriggered, appliedShieldDamage + appliedHealthDamage);
     }
 
     /// <summary>
@@ -462,7 +462,7 @@ public abstract class Entity : MonoBehaviour
         }
 
         RecordDamageStats(attacker, accuracyAttackId, appliedHealthDamage);
-        BroadcastAuthoritativeCombatState(hitPoint, source, false, false, impactForce, healthIgnored, false);
+        BroadcastAuthoritativeCombatState(hitPoint, source, false, false, impactForce, healthIgnored, false, appliedHealthDamage);
     }
 
     protected void RecordDamageStats(Entity attacker, int accuracyAttackId, float appliedDamage)
@@ -784,6 +784,16 @@ public abstract class Entity : MonoBehaviour
         _augmentController?.OnTakeDamage(0f, 0f, transform.position, source);
     }
 
+    public void NotifyNetworkDamageTaken(float damage, DamageSource source)
+    {
+        _augmentController?.OnNetworkDamageTaken(damage, source);
+    }
+
+    public void NotifyNetworkStateUpdated(float anchoredDamageTaken, bool isStunned, bool isAnchored)
+    {
+        _augmentController?.OnNetworkStateUpdated(anchoredDamageTaken, isStunned, isAnchored);
+    }
+
     public void NotifyNetworkEvasionTriggered()
     {
         _augmentController?.NotifyEvasionTriggered();
@@ -813,7 +823,7 @@ public abstract class Entity : MonoBehaviour
         }
     }
 
-    private void BroadcastAuthoritativeCombatState(Vector3 hitPoint, DamageSource source, bool shieldHit, bool shieldBreak, float impactForce, bool evasionTriggered, bool artificialFairyTriggered)
+    private void BroadcastAuthoritativeCombatState(Vector3 hitPoint, DamageSource source, bool shieldHit, bool shieldBreak, float impactForce, bool evasionTriggered, bool artificialFairyTriggered, float appliedDamage)
     {
         if (!NetTickUtil.IsActive)
         {
@@ -826,7 +836,7 @@ public abstract class Entity : MonoBehaviour
             return;
         }
 
-        netMovement.BroadcastCombatState(currentHealth, currentShield, hitPoint, source, shieldHit, shieldBreak, impactForce, evasionTriggered, artificialFairyTriggered);
+        netMovement.BroadcastCombatState(currentHealth, currentShield, hitPoint, source, shieldHit, shieldBreak, impactForce, evasionTriggered, artificialFairyTriggered, appliedDamage);
     }
 
     public void SetMaxHealthAndClampCurrent(float newMaxHealth, bool notify = true)

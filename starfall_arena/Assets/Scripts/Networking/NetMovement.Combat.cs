@@ -282,7 +282,7 @@ public partial class NetMovement
 
     // ===== COMBAT STATE =====
 
-    public void BroadcastCombatState(float health, float shield, Vector3 hitPoint, DamageSource source, bool shieldHit, bool shieldBreak, float impactForce, bool evasionTriggered, bool artificialFairyTriggered)
+    public void BroadcastCombatState(float health, float shield, Vector3 hitPoint, DamageSource source, bool shieldHit, bool shieldBreak, float impactForce, bool evasionTriggered, bool artificialFairyTriggered, float appliedDamage)
     {
         if (!IsServer)
         {
@@ -294,11 +294,11 @@ public partial class NetMovement
         float slowMultiplier = isSlowed ? _player.GetSlowMultiplier() : 1f;
         float slowRemainingTime = isSlowed ? _player.GetSlowRemainingTime() : 0f;
 
-        BroadcastCombatStateClientRpc(health, shield, hitPoint, (int)source, shieldHit, shieldBreak, impactForce, slowMultiplier, slowRemainingTime, evasionTriggered, artificialFairyTriggered);
+        BroadcastCombatStateClientRpc(health, shield, hitPoint, (int)source, shieldHit, shieldBreak, impactForce, slowMultiplier, slowRemainingTime, evasionTriggered, artificialFairyTriggered, appliedDamage);
     }
 
     [ClientRpc]
-    private void BroadcastCombatStateClientRpc(float health, float shield, Vector2 hitPoint, int source, bool shieldHit, bool shieldBreak, float impactForce, float slowMultiplier, float slowRemainingTime, bool evasionTriggered, bool artificialFairyTriggered)
+    private void BroadcastCombatStateClientRpc(float health, float shield, Vector2 hitPoint, int source, bool shieldHit, bool shieldBreak, float impactForce, float slowMultiplier, float slowRemainingTime, bool evasionTriggered, bool artificialFairyTriggered, float appliedDamage)
     {
         if (_player == null)
         {
@@ -309,6 +309,7 @@ public partial class NetMovement
         _player.ApplyAuthoritativeCombatState(health, shield, hitPoint, damageSource, shieldHit, shieldBreak);
         if (!IsServer)
         {
+            _player.NotifyNetworkDamageTaken(appliedDamage, damageSource);
             _player.NotifyAuthoritativeDamageReceived(damageSource);
 
             if (evasionTriggered)
@@ -403,6 +404,74 @@ public partial class NetMovement
         }
 
         BroadcastBurnApplicationClientRpc(augmentId, damagePerSecond, duration, tickInterval, tickEffectRandomRadius);
+    }
+
+    public void BroadcastBurnTickEffect(Vector3 position, float shipSize, float lifetime, string sourceId)
+    {
+        if (!IsServer)
+        {
+            return;
+        }
+
+        BroadcastBurnTickEffectClientRpc(position, shipSize, lifetime, sourceId);
+    }
+
+    [ClientRpc]
+    private void BroadcastBurnTickEffectClientRpc(Vector3 position, float shipSize, float lifetime, string sourceId)
+    {
+        if (IsServer)
+        {
+            return;
+        }
+
+        if (_player == null)
+        {
+            _player = GetComponent<Player>();
+        }
+
+        if (_player == null)
+        {
+            return;
+        }
+
+        BurnerDebuffController burnController = GetComponent<BurnerDebuffController>();
+        if (burnController == null)
+        {
+            burnController = gameObject.AddComponent<BurnerDebuffController>();
+        }
+
+        burnController?.PlayNetworkBurnTickEffect(position, shipSize, lifetime, sourceId);
+    }
+
+    public void BroadcastBubbleShieldState(float anchoredDamageTaken, bool isStunned, bool isAnchored)
+    {
+        if (!IsServer)
+        {
+            return;
+        }
+
+        BroadcastBubbleShieldStateClientRpc(anchoredDamageTaken, isStunned, isAnchored);
+    }
+
+    [ClientRpc]
+    private void BroadcastBubbleShieldStateClientRpc(float anchoredDamageTaken, bool isStunned, bool isAnchored)
+    {
+        if (IsServer)
+        {
+            return;
+        }
+
+        if (_player == null)
+        {
+            _player = GetComponent<Player>();
+        }
+
+        if (_player == null)
+        {
+            return;
+        }
+
+        _player.NotifyNetworkStateUpdated(anchoredDamageTaken, isStunned, isAnchored);
     }
 
     [ClientRpc]

@@ -798,6 +798,7 @@ public sealed class BubbleShieldRuntime : AugmentRuntimeBase
     private float _stunEndTime;
     private float _lastAnchoredHitTime;
     private GameObject _bubbleShieldEffectInstance;
+    private NetMovement _netMovement;
 
     public BubbleShieldRuntime(BubbleShield definition) : base(definition)
     {
@@ -807,6 +808,7 @@ public sealed class BubbleShieldRuntime : AugmentRuntimeBase
     public override void Initialize(Player player, int roundAcquired, object persistentState = null)
     {
         base.Initialize(player, roundAcquired, persistentState);
+        _netMovement = player != null ? player.GetComponent<NetMovement>() : null;
         _anchoredDamageTaken = 0f;
         _stunEndTime = -999f;
         _lastAnchoredHitTime = Time.time - Mathf.Max(0f, _definition.damageRegenDelay);
@@ -864,10 +866,63 @@ public sealed class BubbleShieldRuntime : AugmentRuntimeBase
             shieldVisualActive = true;
         }
 
-        RegenerateAnchoredDamageDebt(Time.deltaTime);
+        if (HasNetworkAuthority())
+        {
+            RegenerateAnchoredDamageDebt(Time.deltaTime);
+        }
 
         SetAttachedEffectActive(ref _bubbleShieldEffectInstance, _definition.bubbleShieldPrefab, shieldVisualActive, "BubbleShield");
         UpdateBubbleShieldScale();
+
+        if (HasNetworkAuthority())
+        {
+            BroadcastNetworkState();
+        }
+    }
+
+    public override void OnNetworkDamageTaken(float damage, DamageSource source)
+    {
+        if (player == null || !IsActiveByRounds()) return;
+        if (!player.IsAnchored) return;
+        if (IsStunned()) return;
+
+        float incomingDamage = Mathf.Max(0f, damage);
+        if (incomingDamage <= 0f)
+        {
+            return;
+        }
+
+        _anchoredDamageTaken += incomingDamage;
+        _lastAnchoredHitTime = Time.time;
+        PlaySoundEffect(_definition.blockSound);
+
+        if (_anchoredDamageTaken >= _definition.damageThresholdBeforeStun)
+        {
+            TriggerStun();
+        }
+    }
+
+    public override void OnNetworkStateUpdated(float anchoredDamageTaken, bool isStunned, bool isAnchored)
+    {
+        if (player == null || !IsActiveByRounds())
+        {
+            return;
+        }
+
+        _anchoredDamageTaken = Mathf.Max(0f, anchoredDamageTaken);
+        if (isStunned)
+        {
+            _stunEndTime = Time.time + Mathf.Max(0.05f, _definition.stunDuration);
+        }
+        else if (_stunEndTime > Time.time)
+        {
+            _stunEndTime = Time.time - 0.01f;
+        }
+
+        if (!isAnchored)
+        {
+            player.ForceAnchorState(false);
+        }
     }
 
     private bool IsStunned()
@@ -944,6 +999,27 @@ public sealed class BubbleShieldRuntime : AugmentRuntimeBase
         Vector3 baseScale = _definition.bubbleShieldPrefab.transform.localScale * Mathf.Max(0.01f, player.ShipSize);
         _bubbleShieldEffectInstance.transform.localScale = baseScale * visualMultiplier;
     }
+
+    private bool HasNetworkAuthority()
+    {
+        if (!NetTickUtil.IsActive)
+        {
+            return true;
+        }
+
+        return _netMovement != null && _netMovement.IsServer;
+    }
+
+    private void BroadcastNetworkState()
+    {
+        if (_netMovement == null || !_netMovement.IsServer)
+        {
+            return;
+        }
+
+        _netMovement.BroadcastBubbleShieldState(_anchoredDamageTaken, IsStunned(), player != null && player.IsAnchored);
+    }
+
 
     public override void OnRemoved()
     {

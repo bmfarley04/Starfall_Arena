@@ -490,6 +490,7 @@ public sealed class BurnerDebuffController : MonoBehaviour
 {
     private sealed class BurnState
     {
+        public string sourceId;
         public Player owner;
         public float damagePerSecond;
         public float tickInterval;
@@ -519,6 +520,7 @@ public sealed class BurnerDebuffController : MonoBehaviour
 
         if (_activeBurns.TryGetValue(sourceId, out BurnState existingState))
         {
+            existingState.sourceId = sourceId;
             existingState.owner = owner ?? existingState.owner;
             existingState.damagePerSecond = safeDps;
             existingState.tickInterval = safeTickInterval;
@@ -533,6 +535,7 @@ public sealed class BurnerDebuffController : MonoBehaviour
 
         _activeBurns[sourceId] = new BurnState
         {
+            sourceId = sourceId,
             owner = owner,
             damagePerSecond = safeDps,
             tickInterval = safeTickInterval,
@@ -552,11 +555,7 @@ public sealed class BurnerDebuffController : MonoBehaviour
     {
         if (_target == null || string.IsNullOrWhiteSpace(sourceId)) return;
 
-        Burner burnDefinition = null;
-        if (GameDataManager.Instance != null)
-        {
-            burnDefinition = GameDataManager.Instance.GetAugmentById(sourceId) as Burner;
-        }
+        Burner burnDefinition = ResolveBurnDefinition(sourceId);
 
         ApplyBurnInternal(sourceId, owner, dps, duration, tickInterval, burnDefinition != null ? burnDefinition.burnTickEffectPrefab : null, tickEffectRandomRadius);
     }
@@ -571,6 +570,7 @@ public sealed class BurnerDebuffController : MonoBehaviour
 
         if (_activeBurns.TryGetValue(sourceId, out BurnState existingState))
         {
+            existingState.sourceId = sourceId;
             existingState.owner = owner ?? existingState.owner;
             existingState.damagePerSecond = safeDps;
             existingState.tickInterval = safeTickInterval;
@@ -585,6 +585,7 @@ public sealed class BurnerDebuffController : MonoBehaviour
 
         _activeBurns[sourceId] = new BurnState
         {
+            sourceId = sourceId,
             owner = owner,
             damagePerSecond = safeDps,
             tickInterval = safeTickInterval,
@@ -602,13 +603,18 @@ public sealed class BurnerDebuffController : MonoBehaviour
             return;
         }
 
-        Burner burnDefinition = null;
-        if (GameDataManager.Instance != null)
+        GameObject tickEffectPrefab = null;
+        if (_activeBurns.TryGetValue(sourceId, out BurnState burnState))
         {
-            burnDefinition = GameDataManager.Instance.GetAugmentById(sourceId) as Burner;
+            tickEffectPrefab = burnState.tickEffectPrefab;
         }
 
-        GameObject tickEffectPrefab = burnDefinition != null ? burnDefinition.burnTickEffectPrefab : null;
+        if (tickEffectPrefab == null)
+        {
+            Burner burnDefinition = ResolveBurnDefinition(sourceId);
+            tickEffectPrefab = burnDefinition != null ? burnDefinition.burnTickEffectPrefab : null;
+        }
+
         if (tickEffectPrefab == null)
         {
             return;
@@ -628,6 +634,54 @@ public sealed class BurnerDebuffController : MonoBehaviour
         Destroy(effect, safeLifetime);
     }
 
+    private float ResolveBurnTickLifetime(GameObject tickEffectPrefab)
+    {
+        float lifetime = 1.5f;
+        if (tickEffectPrefab == null)
+        {
+            return lifetime;
+        }
+
+        ParticleSystem particle = tickEffectPrefab.GetComponent<ParticleSystem>();
+        if (particle != null)
+        {
+            lifetime = Mathf.Max(0.1f, particle.main.duration + particle.main.startLifetime.constantMax);
+        }
+
+        return lifetime;
+    }
+
+    private Burner ResolveBurnDefinition(string sourceId)
+    {
+        Burner burnDefinition = null;
+        if (GameDataManager.Instance != null)
+        {
+            burnDefinition = GameDataManager.Instance.GetAugmentById(sourceId) as Burner;
+        }
+
+        if (burnDefinition != null)
+        {
+            return burnDefinition;
+        }
+
+        Burner[] loadedBurners = Resources.FindObjectsOfTypeAll<Burner>();
+        if (loadedBurners == null)
+        {
+            return null;
+        }
+
+        for (int i = 0; i < loadedBurners.Length; i++)
+        {
+            Burner burner = loadedBurners[i];
+            if (burner != null && burner.augmentID == sourceId)
+            {
+                return burner;
+            }
+        }
+
+        return null;
+    }
+
     private void Update()
     {
         if (_target == null || _activeBurns.Count == 0) return;
@@ -635,6 +689,7 @@ public sealed class BurnerDebuffController : MonoBehaviour
         float totalTickDamage = 0f;
         List<string> expired = null;
         Player firstOwner = null;
+        bool shouldBroadcastVisuals = NetTickUtil.IsActive && HasDamageAuthority();
 
         foreach (KeyValuePair<string, BurnState> entry in _activeBurns)
         {
@@ -664,7 +719,19 @@ public sealed class BurnerDebuffController : MonoBehaviour
 
             for (int tick = 0; tick < dueTicks; tick++)
             {
-                SpawnBurnTickEffect(state.tickEffectPrefab, state.tickEffectRandomRadius);
+                if (shouldBroadcastVisuals && _targetNetMovement != null)
+                {
+                    Vector3 spawnPosition = ResolveRandomTargetPoint(state.tickEffectRandomRadius);
+                    float shipSize = _target is Player targetPlayer ? targetPlayer.ShipSize : 1f;
+                    float lifetime = ResolveBurnTickLifetime(state.tickEffectPrefab);
+                    _targetNetMovement.BroadcastBurnTickEffect(spawnPosition, shipSize, lifetime, entry.Key);
+
+                    SpawnBurnTickEffect(state.tickEffectPrefab, state.tickEffectRandomRadius);
+                }
+                else
+                {
+                    SpawnBurnTickEffect(state.tickEffectPrefab, state.tickEffectRandomRadius);
+                }
             }
         }
 
@@ -964,7 +1031,7 @@ public sealed class FlyersSwarmController : MonoBehaviour
 
         UpdateTarget();
 
-        float orbitRadius = Mathf.Max(0.1f, _config.orbitRadius);
+        float orbitRadius = Mathf.Max(0.1f, _config.orbitRadius) * Mathf.Max(0.01f, _owner.ShipSize);
         float orbitSpeed = _config.orbitSpeed;
         float hitRadius = Mathf.Max(0.05f, _config.hitRadius);
         float homingSpeed = Mathf.Max(0.1f, _config.homingSpeed);
