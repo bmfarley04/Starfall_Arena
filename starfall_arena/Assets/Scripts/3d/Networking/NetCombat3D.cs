@@ -8,7 +8,7 @@ using UnityEngine;
 [RequireComponent(typeof(Entity3D))]
 public class NetCombat3D : NetworkBehaviour
 {
-    private const int ProjectileVisualTypeCount = 7;
+    private const int ProjectileVisualTypeCount = 9;
 
     private readonly List<NetProjectileFireRequest3D> _projectileRequests = new List<NetProjectileFireRequest3D>(8);
     private readonly int[] _lastAcceptedProjectileTick = new int[ProjectileVisualTypeCount];
@@ -73,8 +73,8 @@ public class NetCombat3D : NetworkBehaviour
             return false;
         }
 
-        request.targetTag = ResolveEnemyTag();
-        NetProjectileVisualType3D visualType = ResolveProjectileVisualType(request.projectilePrefab);
+        ApplyProjectileTargeting(ref request);
+        NetProjectileVisualType3D visualType = ResolveProjectileVisualType(sourceWeapon, request.projectilePrefab);
         int tick = NetTickUtil.CurrentTick;
         _projectileRequests.Clear();
         sourceWeapon.BuildNetworkProjectileRequests(request, fallbackConfig, visualType, tick, _projectileRequests);
@@ -211,6 +211,17 @@ public class NetCombat3D : NetworkBehaviour
         RequestAbilityToggle(NetAbilityKind3D.TractorBeam, isActive, aimDirection);
     }
 
+    public void RequestEmpowerState(bool isActive)
+    {
+        RequestAbilityToggle(NetAbilityKind3D.Class4Empower, isActive, Vector3.zero, allowServerAuthority: true);
+    }
+
+    [System.Obsolete("Class 4 dodge movement is predicted through NetMovement3D input snapshots. This legacy path is presentation-only.")]
+    public void RequestClass4Dodge(Vector3 worldDirection)
+    {
+        RequestAbilityToggle(NetAbilityKind3D.Class4Dodge, true, worldDirection);
+    }
+
     public void RequestGigaBlastChargeState(bool isCharging, int tier)
     {
         if (!NetTickUtil.IsActive || !IsSpawned || !IsOwner)
@@ -268,7 +279,9 @@ public class NetCombat3D : NetworkBehaviour
             Damage = projectile.Damage,
             Lifetime = projectile.RemainingLifetime,
             ImpactForce = projectile.ImpactForce,
+            ProjectileScaleMultiplier = projectile.ProjectileScaleMultiplier,
             ReflectColor = reflectColor,
+            TargetFaction = projectile.TargetFaction,
             VisualType = visualType
         });
     }
@@ -317,7 +330,8 @@ public class NetCombat3D : NetworkBehaviour
         sourceWeapon.SpawnNetworkProjectile(
             projectilePrefab,
             fireRequest,
-            ResolveEnemyTag(),
+            ResolveProjectileTargetTag(fireRequest.TargetFaction),
+            fireRequest.TargetFaction,
             cosmeticOnly: false,
             networkAuthority: this,
             playMuzzleEffect: true);
@@ -365,7 +379,8 @@ public class NetCombat3D : NetworkBehaviour
         sourceWeapon.SpawnNetworkProjectile(
             projectilePrefab,
             fire,
-            ResolveEnemyTag(),
+            ResolveProjectileTargetTag(fire.TargetFaction),
+            fire.TargetFaction,
             cosmeticOnly: true,
             networkAuthority: null,
             playMuzzleEffect: true);
@@ -381,7 +396,7 @@ public class NetCombat3D : NetworkBehaviour
 
     private void HandleBeamStateServer(NetBeamState3D state)
     {
-        BeamWeapon3D beam = GetComponent<BeamWeapon3D>();
+        IBeamWeaponNetwork3D beam = GetComponent<IBeamWeaponNetwork3D>();
         if (beam == null)
         {
             return;
@@ -403,7 +418,7 @@ public class NetCombat3D : NetworkBehaviour
             return;
         }
 
-        BeamWeapon3D beam = GetComponent<BeamWeapon3D>();
+        IBeamWeaponNetwork3D beam = GetComponent<IBeamWeaponNetwork3D>();
         if (beam == null)
         {
             return;
@@ -424,7 +439,7 @@ public class NetCombat3D : NetworkBehaviour
 
     private void HandleBeamAimServer(NetAimUpdate3D update)
     {
-        GetComponent<BeamWeapon3D>()?.ApplyNetworkBeamAim(update.AimDirection);
+        GetComponent<IBeamWeaponNetwork3D>()?.ApplyNetworkBeamAim(update.AimDirection);
         BroadcastBeamAimClientRpc(update);
     }
 
@@ -436,7 +451,7 @@ public class NetCombat3D : NetworkBehaviour
             return;
         }
 
-        GetComponent<BeamWeapon3D>()?.ApplyNetworkBeamAim(update.AimDirection);
+        GetComponent<IBeamWeaponNetwork3D>()?.ApplyNetworkBeamAim(update.AimDirection);
     }
 
     [ServerRpc]
@@ -497,9 +512,15 @@ public class NetCombat3D : NetworkBehaviour
         GetComponent<Teleport3D>()?.ApplyNetworkTeleport(state.TargetPosition, authoritative: false);
     }
 
-    private void RequestAbilityToggle(NetAbilityKind3D abilityKind, bool isActive, Vector3 aimDirection)
+    private void RequestAbilityToggle(NetAbilityKind3D abilityKind, bool isActive, Vector3 aimDirection, bool allowServerAuthority = false)
     {
-        if (!NetTickUtil.IsActive || !IsSpawned || !IsOwner)
+        if (!NetTickUtil.IsActive || !IsSpawned)
+        {
+            return;
+        }
+
+        bool canRequest = IsOwner || (allowServerAuthority && IsServer);
+        if (!canRequest)
         {
             return;
         }
@@ -549,6 +570,12 @@ public class NetCombat3D : NetworkBehaviour
                 }
                 break;
             }
+            case NetAbilityKind3D.Class4Empower:
+                GetComponent<Empower3D>()?.ApplyNetworkEmpowerState(state.IsActive, authoritative: true);
+                break;
+            case NetAbilityKind3D.Class4Dodge:
+                GetComponent<Dodge3D>()?.PlayNetworkDodgePresentation(state.AimDirection);
+                break;
         }
 
         BroadcastAbilityToggleClientRpc(abilityKind, state);
@@ -583,6 +610,12 @@ public class NetCombat3D : NetworkBehaviour
                 }
                 break;
             }
+            case NetAbilityKind3D.Class4Empower:
+                GetComponent<Empower3D>()?.ApplyNetworkEmpowerState(state.IsActive, authoritative: false);
+                break;
+            case NetAbilityKind3D.Class4Dodge:
+                GetComponent<Dodge3D>()?.PlayNetworkDodgePresentation(state.AimDirection);
+                break;
         }
     }
 
@@ -661,11 +694,13 @@ public class NetCombat3D : NetworkBehaviour
             Damage = data.Damage,
             Lifetime = data.Lifetime,
             ImpactForce = data.ImpactForce,
+            TargetFaction = data.TargetFaction,
             VisualType = data.VisualType,
+            ProjectileScaleMultiplier = data.ProjectileScaleMultiplier,
             AccuracyAttackId = PlayerCombatStats3D.InvalidAttackId
         };
 
-        sourceWeapon.SpawnNetworkProjectile(projectilePrefab, fire, ResolveEnemyTag(), cosmeticOnly: true, networkAuthority: null, playMuzzleEffect: false);
+        sourceWeapon.SpawnNetworkProjectile(projectilePrefab, fire, ResolveProjectileTargetTag(data.TargetFaction), data.TargetFaction, cosmeticOnly: true, networkAuthority: null, playMuzzleEffect: false);
     }
 
     private bool AcceptProjectileTick(NetProjectileVisualType3D visualType, int tick)
@@ -684,11 +719,16 @@ public class NetCombat3D : NetworkBehaviour
         return true;
     }
 
-    private NetProjectileVisualType3D ResolveProjectileVisualType(GameObject projectilePrefab)
+    private NetProjectileVisualType3D ResolveProjectileVisualType(Weapon3D sourceWeapon, GameObject projectilePrefab)
     {
         if (projectilePrefab == null)
         {
             return NetProjectileVisualType3D.Primary;
+        }
+
+        if (sourceWeapon is GuidedMissileWeapon3D guidedMissile)
+        {
+            return guidedMissile.ResolveVisualTypeForProjectile(projectilePrefab);
         }
 
         ProjectileWeapon3D primary = _entity != null ? _entity.PrimaryWeapon : null;
@@ -735,6 +775,8 @@ public class NetCombat3D : NetworkBehaviour
             NetProjectileVisualType3D.GigaBlastTier4 => GetComponent<GigaBlastWeapon3D>()?.GetNetworkProjectilePrefab(4),
             NetProjectileVisualType3D.Class2EmpoweredShot => GetComponent<EmpoweredShot3D>()?.NetworkProjectilePrefab,
             NetProjectileVisualType3D.Class2PhysicalProjectile => GetComponent<PhysicalProjectileAbility3D>()?.NetworkProjectilePrefab,
+            NetProjectileVisualType3D.Class4GuidedMissile => GetComponent<GuidedMissileWeapon3D>()?.RegularProjectilePrefab,
+            NetProjectileVisualType3D.Class4GuidedMissileEmpowered => GetComponent<GuidedMissileWeapon3D>()?.EmpoweredProjectilePrefab,
             _ => null
         };
     }
@@ -745,6 +787,8 @@ public class NetCombat3D : NetworkBehaviour
         {
             NetProjectileVisualType3D.Class2EmpoweredShot => GetComponent<EmpoweredShot3D>(),
             NetProjectileVisualType3D.Class2PhysicalProjectile => GetComponent<PhysicalProjectileAbility3D>(),
+            NetProjectileVisualType3D.Class4GuidedMissile => GetComponent<GuidedMissileWeapon3D>(),
+            NetProjectileVisualType3D.Class4GuidedMissileEmpowered => GetComponent<GuidedMissileWeapon3D>(),
             _ => ResolvePrimaryWeapon()
         };
     }
@@ -760,6 +804,8 @@ public class NetCombat3D : NetworkBehaviour
             NetProjectileVisualType3D.GigaBlastTier4 => GetComponent<GigaBlastWeapon3D>()?.GetNetworkFireSound(4),
             NetProjectileVisualType3D.Class2EmpoweredShot => GetComponent<EmpoweredShot3D>()?.NetworkFireSound,
             NetProjectileVisualType3D.Class2PhysicalProjectile => GetComponent<PhysicalProjectileAbility3D>()?.NetworkFireSound,
+            NetProjectileVisualType3D.Class4GuidedMissile => GetComponent<GuidedMissileWeapon3D>()?.NetworkFireSound,
+            NetProjectileVisualType3D.Class4GuidedMissileEmpowered => GetComponent<GuidedMissileWeapon3D>()?.NetworkFireSound,
             _ => null
         };
     }
@@ -778,6 +824,22 @@ public class NetCombat3D : NetworkBehaviour
             2 => "Player1",
             _ => _entity != null && _entity.CompareTag("Player1") ? "Player2" : "Player1"
         };
+    }
+
+    private void ApplyProjectileTargeting(ref ProjectileFireRequest3D request)
+    {
+        if (request.targetFaction != Faction3D.Neutral)
+        {
+            request.targetTag = ResolveProjectileTargetTag(request.targetFaction);
+            return;
+        }
+
+        request.targetTag = ResolveEnemyTag();
+    }
+
+    private string ResolveProjectileTargetTag(Faction3D targetFaction)
+    {
+        return targetFaction == Faction3D.EnemyTeam ? "Enemy" : ResolveEnemyTag();
     }
 
     private void CacheReferences()
@@ -812,5 +874,7 @@ public enum NetAbilityKind3D : byte
 {
     Reflect = 0,
     Class2Shield = 1,
-    TractorBeam = 2
+    TractorBeam = 2,
+    Class4Empower = 3,
+    Class4Dodge = 4
 }

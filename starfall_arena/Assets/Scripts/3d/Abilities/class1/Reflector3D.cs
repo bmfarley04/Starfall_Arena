@@ -87,7 +87,15 @@ public class Reflector3D : Ability3D
             return false;
         }
 
-        if (!string.IsNullOrEmpty(projectile.targetTag) && !entity.CompareTag(projectile.targetTag))
+        if (projectile.TargetFaction != Faction3D.Neutral
+            && FactionMember3D.ResolveFaction(entity) != projectile.TargetFaction)
+        {
+            return false;
+        }
+
+        if (projectile.TargetFaction == Faction3D.Neutral
+            && !string.IsNullOrEmpty(projectile.targetTag)
+            && !entity.CompareTag(projectile.targetTag))
         {
             return false;
         }

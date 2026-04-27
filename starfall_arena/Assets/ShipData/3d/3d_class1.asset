@@ -22,7 +22,7 @@ MonoBehaviour:
   player2VSPositionOffset: {x: 0, y: 0, z: 0}
   player1VSRotationOffset: {x: 0, y: 0, z: 0}
   player2VSRotationOffset: {x: 0, y: 0, z: 0}
-  abilityHUDPrefab: {fileID: 6476359621877627330, guid: 58c106c511852c84b8b58b92ac726715, type: 3}
+  abilityHUDPrefab: {fileID: 0}
   stats:
     damage: 20
     hull: 100

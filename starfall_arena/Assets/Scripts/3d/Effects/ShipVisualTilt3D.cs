@@ -120,17 +120,72 @@ public class ShipVisualTilt3D : MonoBehaviour
 
     private void ValidateVisualEffects()
     {
-        visualEffects.maxBankAngle = Mathf.Max(0f, visualEffects.maxBankAngle);
-        visualEffects.maxPitchLeanAngle = Mathf.Max(0f, visualEffects.maxPitchLeanAngle);
+        if (visualEffects.maxBankAngle <= 0f)
+        {
+            visualEffects.maxBankAngle = 75f;
+        }
+        else
+        {
+            visualEffects.maxBankAngle = Mathf.Max(0f, visualEffects.maxBankAngle);
+        }
+
+        if (visualEffects.bankSensitivity == 0f)
+        {
+            visualEffects.bankSensitivity = 20f;
+        }
 
         if (Mathf.Approximately(visualEffects.steeringInputBankSensitivity, 0f))
         {
             visualEffects.steeringInputBankSensitivity = 24f;
         }
 
+        if (visualEffects.bankSmoothing <= 0f)
+        {
+            visualEffects.bankSmoothing = 8f;
+        }
+
+        if (visualEffects.bankReturnSmoothing <= 0f)
+        {
+            visualEffects.bankReturnSmoothing = 5f;
+        }
+
+        if (visualEffects.maxPitchLeanAngle <= 0f)
+        {
+            visualEffects.maxPitchLeanAngle = 40f;
+        }
+        else
+        {
+            visualEffects.maxPitchLeanAngle = Mathf.Max(0f, visualEffects.maxPitchLeanAngle);
+        }
+
+        if (visualEffects.pitchLeanSensitivity == 0f)
+        {
+            visualEffects.pitchLeanSensitivity = 12f;
+        }
+
         if (Mathf.Approximately(visualEffects.steeringInputPitchSensitivity, 0f))
         {
             visualEffects.steeringInputPitchSensitivity = 14f;
+        }
+
+        if (visualEffects.pitchLeanSmoothing <= 0f)
+        {
+            visualEffects.pitchLeanSmoothing = 8f;
+        }
+
+        if (visualEffects.pitchLeanReturnSmoothing <= 0f)
+        {
+            visualEffects.pitchLeanReturnSmoothing = 5f;
+        }
+
+        if (Mathf.Approximately(visualEffects.forwardAccelPitchSensitivity, 0f))
+        {
+            visualEffects.forwardAccelPitchSensitivity = 0.08f;
+        }
+
+        if (Mathf.Approximately(visualEffects.lateralAccelBankSensitivity, 0f))
+        {
+            visualEffects.lateralAccelBankSensitivity = 0.1f;
         }
 
         if (Mathf.Approximately(visualEffects.lateralDriftBankSensitivity, 0f))
@@ -141,26 +196,6 @@ public class ShipVisualTilt3D : MonoBehaviour
         if (Mathf.Approximately(visualEffects.verticalDriftPitchSensitivity, 0f))
         {
             visualEffects.verticalDriftPitchSensitivity = 0.35f;
-        }
-
-        if (visualEffects.bankSmoothing <= 0f)
-        {
-            visualEffects.bankSmoothing = 8f;
-        }
-
-        if (visualEffects.bankReturnSmoothing <= 0f)
-        {
-            visualEffects.bankReturnSmoothing = Mathf.Max(2f, visualEffects.bankSmoothing * 0.75f);
-        }
-
-        if (visualEffects.pitchLeanSmoothing <= 0f)
-        {
-            visualEffects.pitchLeanSmoothing = 8f;
-        }
-
-        if (visualEffects.pitchLeanReturnSmoothing <= 0f)
-        {
-            visualEffects.pitchLeanReturnSmoothing = Mathf.Max(2f, visualEffects.pitchLeanSmoothing * 0.75f);
         }
     }
 }

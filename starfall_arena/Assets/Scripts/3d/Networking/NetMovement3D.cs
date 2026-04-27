@@ -39,6 +39,7 @@ public class NetMovement3D : NetworkBehaviour
     private PlayerInput _playerInput;
     private PlayerCameraRig3D _cameraRig;
     private ShipFlight3D _shipFlight;
+    private Dodge3D _dodgeAbility;
     private Rigidbody _rb;
 
     private NetInputSnapshot3D[] _inputBuffer;
@@ -55,6 +56,8 @@ public class NetMovement3D : NetworkBehaviour
     private bool _loggedOwnerInputMissing;
     private bool _loggedOwnerShipFlightMissing;
     private bool _loggedMissingCombatBridge;
+    private bool _pendingDodgeRequested;
+    private Vector3 _pendingDodgeDirection;
     private int _lastSentTick = -1;
     private int _lastReceivedServerTick = -1;
     private int _lastProcessedServerTick = -1;
@@ -65,6 +68,7 @@ public class NetMovement3D : NetworkBehaviour
     private float _interpTimer;
     private Vector3 _lastAppliedVisualVelocity;
     private bool _hasLastAppliedVisualVelocity;
+    private bool _remoteDodgePresentationActive;
 
     public byte PlayerSlot => _networkPlayerIndex.Value;
 
@@ -328,6 +332,18 @@ public class NetMovement3D : NetworkBehaviour
         }
     }
 
+    public bool QueuePredictedDodge(Vector3 worldDirection)
+    {
+        if (!IsOwner || !IsSpawned || _movementLocked.Value || worldDirection.sqrMagnitude <= 0.0001f)
+        {
+            return false;
+        }
+
+        _pendingDodgeRequested = true;
+        _pendingDodgeDirection = worldDirection.normalized;
+        return true;
+    }
+
     public void ApplyCombatWarp(Vector3 position)
     {
         if (_rb != null)
@@ -362,12 +378,18 @@ public class NetMovement3D : NetworkBehaviour
         {
             _ownerState.Position = correctedPosition;
             _ownerState.Velocity = correctedVelocity;
+            _ownerState.DodgeVelocity = Vector3.zero;
+            _ownerState.DodgeExitVelocity = Vector3.zero;
+            _ownerState.DodgeRemainingTime = 0f;
         }
 
         if (_serverStateInitialized)
         {
             _serverState.Position = correctedPosition;
             _serverState.Velocity = correctedVelocity;
+            _serverState.DodgeVelocity = Vector3.zero;
+            _serverState.DodgeExitVelocity = Vector3.zero;
+            _serverState.DodgeRemainingTime = 0f;
         }
     }
 
@@ -416,21 +438,22 @@ public class NetMovement3D : NetworkBehaviour
             BaseRotationMultiplier = _player != null ? _player.GetBaseRotationMultiplier() : 1f,
             AbilityRotationMultiplier = _player != null ? _player.GetAbilityRotationMultiplier() : 1f,
             ThrustMultiplier = _player != null ? _player.GetCombinedThrustMultiplier() : 1f,
-            SlowMultiplier = _player != null ? _player.GetSlowMultiplier() : 1f
+            SlowMultiplier = _player != null ? _player.GetSlowMultiplier() : 1f,
+            DodgeRequested = !_movementLocked.Value && _pendingDodgeRequested,
+            DodgeDirection = _pendingDodgeDirection
         };
+        _pendingDodgeRequested = false;
+        _pendingDodgeDirection = Vector3.zero;
 
         int inputIndex = tick % ClientInputBufferSize;
         _inputBuffer[inputIndex] = input;
 
         Vector3 previousVelocity = _ownerState.Velocity;
-        MovementSimulation3D.SimulateTick(
+        SimulateInputTick(
             ref _ownerState,
             in input,
-            _shipFlight.FlightConfig,
-            _shipFlight.FlightAssistConfig,
-            _shipFlight.LockToWorldYPlane,
-            _shipFlight.LockedWorldY,
-            dt);
+            dt,
+            validateDodge: false);
 
         ApplySimulationState(_ownerState);
         ApplyFlightTelemetry(input.LookInput, input.ThrustInput, input.FrictionEnabled, _ownerState, previousVelocity, dt);
@@ -465,6 +488,8 @@ public class NetMovement3D : NetworkBehaviour
         {
             input.LookInput = Vector2.zero;
             input.ThrustInput = 0f;
+            input.DodgeRequested = false;
+            input.DodgeDirection = Vector3.zero;
         }
 
         if (_player != null)
@@ -475,14 +500,11 @@ public class NetMovement3D : NetworkBehaviour
         _serverFrictionEnabled = input.FrictionEnabled;
 
         Vector3 previousVelocity = _serverState.Velocity;
-        MovementSimulation3D.SimulateTick(
+        SimulateInputTick(
             ref _serverState,
             in input,
-            _shipFlight.FlightConfig,
-            _shipFlight.FlightAssistConfig,
-            _shipFlight.LockToWorldYPlane,
-            _shipFlight.LockedWorldY,
-            dt);
+            dt,
+            validateDodge: true);
 
         ApplySimulationState(_serverState);
         ApplyFlightTelemetry(input.LookInput, input.ThrustInput, input.FrictionEnabled, _serverState, previousVelocity, dt);
@@ -553,14 +575,11 @@ public class NetMovement3D : NetworkBehaviour
                 continue;
             }
 
-            MovementSimulation3D.SimulateTick(
+            SimulateInputTick(
                 ref replayState,
                 in input,
-                _shipFlight.FlightConfig,
-                _shipFlight.FlightAssistConfig,
-                _shipFlight.LockToWorldYPlane,
-                _shipFlight.LockedWorldY,
-                dt);
+                dt,
+                validateDodge: false);
 
             _predictionBuffer[inputIndex] = ToSnapshot(tick, replayState, input.ThrustInput, input.FrictionEnabled);
         }
@@ -635,10 +654,14 @@ public class NetMovement3D : NetworkBehaviour
             Rotation = Quaternion.Slerp(from.Rotation, to.Rotation, t),
             Velocity = Vector3.Lerp(from.Velocity, to.Velocity, t),
             FilteredLookInput = Vector2.Lerp(from.FilteredLookInput, to.FilteredLookInput, t),
-            TurnRates = Vector2.Lerp(from.TurnRates, to.TurnRates, t)
+            TurnRates = Vector2.Lerp(from.TurnRates, to.TurnRates, t),
+            DodgeVelocity = Vector3.Lerp(from.DodgeVelocity, to.DodgeVelocity, t),
+            DodgeExitVelocity = Vector3.Lerp(from.DodgeExitVelocity, to.DodgeExitVelocity, t),
+            DodgeRemainingTime = Mathf.Lerp(from.DodgeRemainingTime, to.DodgeRemainingTime, t)
         };
 
         ApplySimulationState(interpolatedState);
+        UpdateRemoteDodgePresentation(interpolatedState);
 
         Vector3 previousVelocity = _hasLastAppliedVisualVelocity ? _lastAppliedVisualVelocity : from.Velocity;
         ApplyFlightTelemetry(interpolatedState.FilteredLookInput, Mathf.Lerp(from.ThrustInput, to.ThrustInput, t), to.FrictionEnabled, interpolatedState, previousVelocity, tickInterval);
@@ -649,6 +672,74 @@ public class NetMovement3D : NetworkBehaviour
         {
             _interpTimer -= duration;
         }
+    }
+
+    private void SimulateInputTick(
+        ref MovementState3D state,
+        in NetInputSnapshot3D input,
+        float dt,
+        bool validateDodge)
+    {
+        ApplyDodgeFromInput(ref state, in input, validateDodge);
+
+        MovementSimulation3D.SimulateTick(
+            ref state,
+            in input,
+            _shipFlight.FlightConfig,
+            _shipFlight.FlightAssistConfig,
+            _shipFlight.LockToWorldYPlane,
+            _shipFlight.LockedWorldY,
+            dt);
+    }
+
+    private void ApplyDodgeFromInput(ref MovementState3D state, in NetInputSnapshot3D input, bool validateDodge)
+    {
+        if (!input.DodgeRequested || input.DodgeDirection.sqrMagnitude <= 0.0001f)
+        {
+            return;
+        }
+
+        CacheReferences();
+        if (_dodgeAbility == null)
+        {
+            return;
+        }
+
+        if (validateDodge && !_dodgeAbility.CanAcceptNetworkDodgeRequest())
+        {
+            return;
+        }
+
+        if (!_dodgeAbility.TryResolveNetworkDodge(
+            input.DodgeDirection,
+            state.Position,
+            GetCollisionRadius(),
+            out Vector3 dashVelocity,
+            out float duration))
+        {
+            return;
+        }
+
+        state.DodgeVelocity = dashVelocity;
+        state.DodgeExitVelocity = Vector3.zero;
+        state.DodgeRemainingTime = duration;
+
+        if (validateDodge)
+        {
+            _dodgeAbility.MarkNetworkDodgeAccepted();
+        }
+    }
+
+    private void UpdateRemoteDodgePresentation(in MovementState3D state)
+    {
+        bool isDodgeActive = state.DodgeRemainingTime > 0.001f && state.DodgeVelocity.sqrMagnitude > 0.0001f;
+        if (isDodgeActive && !_remoteDodgePresentationActive)
+        {
+            CacheReferences();
+            _dodgeAbility?.PlayNetworkDodgePresentation(state.DodgeVelocity);
+        }
+
+        _remoteDodgePresentationActive = isDodgeActive;
     }
 
     private void ApplySimulationState(in MovementState3D state)
@@ -692,7 +783,10 @@ public class NetMovement3D : NetworkBehaviour
             Rotation = transform.rotation,
             Velocity = _rb != null ? _rb.linearVelocity : Vector3.zero,
             FilteredLookInput = Vector2.zero,
-            TurnRates = Vector2.zero
+            TurnRates = Vector2.zero,
+            DodgeVelocity = Vector3.zero,
+            DodgeExitVelocity = Vector3.zero,
+            DodgeRemainingTime = 0f
         };
     }
 
@@ -704,7 +798,10 @@ public class NetMovement3D : NetworkBehaviour
             Rotation = snapshot.Rotation,
             Velocity = snapshot.Velocity,
             FilteredLookInput = snapshot.FilteredLookInput,
-            TurnRates = snapshot.TurnRates
+            TurnRates = snapshot.TurnRates,
+            DodgeVelocity = snapshot.DodgeVelocity,
+            DodgeExitVelocity = snapshot.DodgeExitVelocity,
+            DodgeRemainingTime = snapshot.DodgeRemainingTime
         };
     }
 
@@ -719,13 +816,17 @@ public class NetMovement3D : NetworkBehaviour
             FilteredLookInput = state.FilteredLookInput,
             TurnRates = state.TurnRates,
             ThrustInput = thrustInput,
-            FrictionEnabled = frictionEnabled
+            FrictionEnabled = frictionEnabled,
+            DodgeVelocity = state.DodgeVelocity,
+            DodgeExitVelocity = state.DodgeExitVelocity,
+            DodgeRemainingTime = state.DodgeRemainingTime
         };
     }
 
     private void ConfigureOwnerPresentation()
     {
         Camera gameplayCamera = SelectGameplayCamera();
+        CinemachineCamera cinemachineCamera = SelectGameplayCinemachineCamera();
 
         if (_playerInput3D != null)
         {
@@ -742,10 +843,11 @@ public class NetMovement3D : NetworkBehaviour
 
         if (_cameraRig != null)
         {
+            _cameraRig.SetCamera(cinemachineCamera);
             _cameraRig.SetCameraRigActive(true);
         }
 
-        BindOwnerCameraAndTracking(gameplayCamera);
+        BindOwnerCameraAndTracking(gameplayCamera, cinemachineCamera);
         SetWeaponAimCamera(gameplayCamera);
         PlayerHUDManager3D.RebindAllAutoManagers();
         _loggedOwnerInputMissing = false;
@@ -809,6 +911,30 @@ public class NetMovement3D : NetworkBehaviour
         return null;
     }
 
+    private CinemachineCamera SelectGameplayCinemachineCamera()
+    {
+        CinemachineCamera[] cinemachineCameras = FindObjectsByType<CinemachineCamera>(FindObjectsSortMode.None);
+        CinemachineCamera fallback = null;
+
+        for (int i = 0; i < cinemachineCameras.Length; i++)
+        {
+            CinemachineCamera candidate = cinemachineCameras[i];
+            if (candidate == null || !candidate.gameObject.activeInHierarchy)
+            {
+                continue;
+            }
+
+            if (candidate.isActiveAndEnabled)
+            {
+                return candidate;
+            }
+
+            fallback ??= candidate;
+        }
+
+        return fallback;
+    }
+
     private void CacheReferences()
     {
         _player ??= GetComponent<Player3D>();
@@ -816,6 +942,7 @@ public class NetMovement3D : NetworkBehaviour
         _playerInput ??= GetComponent<PlayerInput>();
         _cameraRig ??= GetComponent<PlayerCameraRig3D>();
         _shipFlight ??= GetComponent<ShipFlight3D>();
+        _dodgeAbility ??= GetComponent<Dodge3D>();
         _rb ??= GetComponent<Rigidbody>();
     }
 
@@ -877,7 +1004,7 @@ public class NetMovement3D : NetworkBehaviour
             return;
         }
 
-        BindOwnerCameraAndTracking(SelectGameplayCamera());
+        BindOwnerCameraAndTracking(SelectGameplayCamera(), SelectGameplayCinemachineCamera());
     }
 
     private float GetTickDeltaTime()
@@ -886,7 +1013,7 @@ public class NetMovement3D : NetworkBehaviour
         return tickInterval > 0f ? tickInterval : Time.fixedDeltaTime;
     }
 
-    private void BindOwnerCameraAndTracking(Camera gameplayCamera)
+    private void BindOwnerCameraAndTracking(Camera gameplayCamera, CinemachineCamera cinemachineCamera)
     {
         if (!IsOwner)
         {
@@ -898,17 +1025,9 @@ public class NetMovement3D : NetworkBehaviour
             _cameraRig.BindTrackingTarget(transform);
         }
 
-        CinemachineCamera[] cinemachineCameras = FindObjectsByType<CinemachineCamera>(FindObjectsSortMode.None);
-        for (int i = 0; i < cinemachineCameras.Length; i++)
+        if (cinemachineCamera != null)
         {
-            CinemachineCamera candidate = cinemachineCameras[i];
-            if (candidate == null || !candidate.isActiveAndEnabled)
-            {
-                continue;
-            }
-
-            candidate.Target.TrackingTarget = transform;
-            break;
+            cinemachineCamera.Target.TrackingTarget = transform;
         }
 
         if (_playerInput != null && gameplayCamera != null)
@@ -962,11 +1081,17 @@ public class NetMovement3D : NetworkBehaviour
         if (_ownerStateInitialized)
         {
             _ownerState.Velocity = Vector3.zero;
+            _ownerState.DodgeVelocity = Vector3.zero;
+            _ownerState.DodgeExitVelocity = Vector3.zero;
+            _ownerState.DodgeRemainingTime = 0f;
         }
 
         if (_serverStateInitialized)
         {
             _serverState.Velocity = Vector3.zero;
+            _serverState.DodgeVelocity = Vector3.zero;
+            _serverState.DodgeExitVelocity = Vector3.zero;
+            _serverState.DodgeRemainingTime = 0f;
         }
 
         _shipFlight?.ApplyExternalSimulationState(
@@ -1008,4 +1133,5 @@ public class NetMovement3D : NetworkBehaviour
 
         ApplyMovementLock(isLocked);
     }
+
 }

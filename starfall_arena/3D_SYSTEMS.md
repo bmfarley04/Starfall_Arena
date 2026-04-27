@@ -150,7 +150,21 @@ These classes should stay narrow and mostly coordinate dedicated 3D systems.
 ### Enemy-only 3D systems
 
 - `EnemyAIFlightController3D`
-  - produces the same movement-intent shape as player input so enemies can reuse `ShipFlight3D`
+  - simple enemy Rigidbody motor
+  - rotates toward AI-authored world-space move direction and moves forward along the enemy's facing direction
+  - intentionally contains no target selection, pathing, or attack logic
+- `EnemyTargetSensor3D`
+  - selects the nearest visible target in a configured `Faction3D`
+  - current Invasion use targets `PlayerTeam`
+- `EnemyObstacleAvoidance3D`
+  - adjusts free-flight steering with non-alloc 3D spherecast probes against asteroid/world obstacle layers
+- `BasicShooterEnemyBrain3D`
+  - first Invasion enemy brain
+  - directly pursues the nearest visible player and fires at `PlayerTeam` when aimed and off cooldown
+- `NetEnemyMovement3D`
+  - server Rigidbody-state replication for networked Invasion enemies
+- `NetEnemyCombat3D`
+  - server-authoritative enemy projectile spawning/damage with client cosmetic projectile broadcasts
 
 ### Compatibility path
 
@@ -198,7 +212,7 @@ Current folder contract:
 
 - `Core`
   - shared 3D base types and config/data definitions
-  - examples: `Entity3D`, `Ship3DTypes`
+  - examples: `Entity3D`, `Ship3DTypes`, `FactionMember3D`
 - `Entities/Player`
   - player-only 3D entity coordination, input, and local camera ownership
   - examples: `Player3D`, `PlayerInput3D`, `PlayerCameraRig3D`, `PlayerHUDManager3D`
@@ -207,7 +221,10 @@ Current folder contract:
   - examples: `PlayerAimReticle3D`, `PlayerHealthShieldHUD3D`, `PlayerLowHealthVignetteHUD3D`, `PlayerWeaponSelectionHUD3D`, `PlayerWeaponAbilityHUDSpawner3D`
 - `Entities/Enemy`
   - enemy-only 3D entity coordination and AI flight intent
-  - examples: `Enemy3D`, `EnemyAIFlightController3D`
+  - examples: `Enemy3D`, `EnemyAIFlightController3D`, `EnemyTargetSensor3D`, `EnemyObstacleAvoidance3D`, `BasicShooterEnemyBrain3D`
+- `Invasion`
+  - 3D Invasion mode flow and wave helpers
+  - examples: `InvasionWaveManager3D`
 - `Flight`
   - shared 3D ship movement and reusable flight behavior
   - examples: `ShipFlight3D`

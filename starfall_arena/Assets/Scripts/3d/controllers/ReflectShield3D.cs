@@ -172,6 +172,7 @@ public class ReflectShield3D : MonoBehaviour
         float currentDamage = (float)ProjectileDamageField.GetValue(projectile);
 
         projectile.targetTag = ResolveReflectedTargetTag(projectile.targetTag, originalShooter);
+        projectile.TargetFaction = FactionMember3D.ResolveFaction(originalShooter);
 
         ProjectileDirectionField.SetValue(projectile, reflectedDirection);
         ProjectileVelocityField.SetValue(projectile, reflectedVelocity);

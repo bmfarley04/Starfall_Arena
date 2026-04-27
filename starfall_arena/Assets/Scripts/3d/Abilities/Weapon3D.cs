@@ -373,6 +373,55 @@ public abstract class Weapon3D : MonoBehaviour, IReticleSpinSource3D
         _lastReticleSpinPulseTime = Time.time;
     }
 
+    protected void NormalizePlayerProjectileTargeting(ref ProjectileFireRequest3D request)
+    {
+        if (owner is not Player3D)
+        {
+            return;
+        }
+
+        bool hasEnemyTeamTargets = SceneHasFactionTargets(Faction3D.EnemyTeam);
+        bool hasDuelOpponentTag = TryResolveOpponentPlayerTag(out string opponentPlayerTag);
+
+        if (request.targetFaction == Faction3D.EnemyTeam)
+        {
+            if (!hasEnemyTeamTargets && hasDuelOpponentTag)
+            {
+                request.targetFaction = Faction3D.Neutral;
+                request.targetTag = opponentPlayerTag;
+            }
+            else if (hasEnemyTeamTargets && string.IsNullOrEmpty(request.targetTag))
+            {
+                request.targetTag = "Enemy";
+            }
+
+            return;
+        }
+
+        if (request.targetFaction != Faction3D.Neutral)
+        {
+            return;
+        }
+
+        bool usesGenericEnemyTag = string.IsNullOrEmpty(request.targetTag) || request.targetTag == "Enemy";
+        if (!usesGenericEnemyTag)
+        {
+            return;
+        }
+
+        if (hasEnemyTeamTargets)
+        {
+            request.targetFaction = Faction3D.EnemyTeam;
+            request.targetTag = "Enemy";
+            return;
+        }
+
+        if (hasDuelOpponentTag)
+        {
+            request.targetTag = opponentPlayerTag;
+        }
+    }
+
     protected ProjectileFireRequest3D BuildDefaultFireRequest(ProjectileWeaponConfig3D weaponConfig)
     {
         return new ProjectileFireRequest3D
@@ -381,13 +430,16 @@ public abstract class Weapon3D : MonoBehaviour, IReticleSpinSource3D
             muzzles = weaponConfig.muzzles,
             spawnAnchor = null,
             targetTag = weaponConfig.targetTag,
+            targetFaction = weaponConfig.targetFaction,
             speed = weaponConfig.speed,
             damage = weaponConfig.damage,
             lifetime = weaponConfig.lifetime,
             impactForce = weaponConfig.impactForce,
             recoilForce = weaponConfig.recoilForce,
             forwardOffset = 0f,
-            verticalOffset = 0f
+            verticalOffset = 0f,
+            projectileScaleMultiplier = 1f,
+            accuracyAttackIdOverride = PlayerCombatStats3D.InvalidAttackId
         };
     }
 
@@ -421,9 +473,11 @@ public abstract class Weapon3D : MonoBehaviour, IReticleSpinSource3D
 
         Transform[] muzzles = ResolveFiringMuzzles(request, fallbackConfig);
         PlayerCombatStats3D stats = !cosmeticOnly && owner != null ? owner.GetComponent<PlayerCombatStats3D>() : null;
-        int accuracyAttackId = stats != null
-            ? stats.BeginTrackedAttack()
-            : PlayerCombatStats3D.InvalidAttackId;
+        int accuracyAttackId = request.accuracyAttackIdOverride != PlayerCombatStats3D.InvalidAttackId
+            ? request.accuracyAttackIdOverride
+            : stats != null
+                ? stats.BeginTrackedAttack()
+                : PlayerCombatStats3D.InvalidAttackId;
 
         string resolvedTargetTag = !string.IsNullOrEmpty(request.targetTag)
             ? request.targetTag
@@ -463,7 +517,9 @@ public abstract class Weapon3D : MonoBehaviour, IReticleSpinSource3D
         Transform[] muzzles = ResolveFiringMuzzles(request, fallbackConfig);
         AimSolution aim = ResolveAimSolution();
         Vector3 inheritedVelocity = shipFlight != null ? shipFlight.LinearVelocity : Vector3.zero;
-        int accuracyAttackId = NetTickUtil.IsActive ? tick : PlayerCombatStats3D.InvalidAttackId;
+        int accuracyAttackId = request.accuracyAttackIdOverride != PlayerCombatStats3D.InvalidAttackId
+            ? request.accuracyAttackIdOverride
+            : NetTickUtil.IsActive ? tick : PlayerCombatStats3D.InvalidAttackId;
 
         for (int i = 0; i < muzzles.Length; i++)
         {
@@ -493,6 +549,8 @@ public abstract class Weapon3D : MonoBehaviour, IReticleSpinSource3D
                 SlowMultiplier = request.slowMultiplier,
                 SlowDuration = request.slowDuration,
                 SlowEngineEmissionScale = request.slowEngineEmissionScale,
+                ProjectileScaleMultiplier = request.projectileScaleMultiplier > 0f ? request.projectileScaleMultiplier : 1f,
+                TargetFaction = request.targetFaction,
                 VisualType = visualType,
                 AccuracyAttackId = accuracyAttackId
             });
@@ -503,9 +561,11 @@ public abstract class Weapon3D : MonoBehaviour, IReticleSpinSource3D
         GameObject projectilePrefab,
         in NetProjectileFireRequest3D fire,
         string targetTag,
+        Faction3D targetFaction,
         bool cosmeticOnly,
         NetCombat3D networkAuthority,
-        bool playMuzzleEffect)
+        bool playMuzzleEffect,
+        bool serverAuthoritativeGameplay = false)
     {
         if (projectilePrefab == null)
         {
@@ -525,8 +585,10 @@ public abstract class Weapon3D : MonoBehaviour, IReticleSpinSource3D
         }
 
         projectile.targetTag = targetTag;
+        projectile.TargetFaction = targetFaction != Faction3D.Neutral ? targetFaction : fire.TargetFaction;
         projectile.SetCosmeticOnly(cosmeticOnly);
         projectile.SetNetworkAuthority(networkAuthority, fire.Tick);
+        projectile.SetServerAuthoritativeGameplay(serverAuthoritativeGameplay);
         projectile.SetNetworkVisualType(fire.VisualType);
         projectile.Initialize(
             fire.Direction,
@@ -537,6 +599,8 @@ public abstract class Weapon3D : MonoBehaviour, IReticleSpinSource3D
             fire.ImpactForce,
             owner,
             fire.AccuracyAttackId);
+        ApplyProjectileScale(projectileObject.transform, fire.ProjectileScaleMultiplier);
+        projectile.SetProjectileScaleMultiplier(fire.ProjectileScaleMultiplier);
 
         if (!cosmeticOnly)
         {
@@ -614,8 +678,10 @@ public abstract class Weapon3D : MonoBehaviour, IReticleSpinSource3D
 
         Vector3 inheritedVelocity = shipFlight != null ? shipFlight.LinearVelocity : Vector3.zero;
         projectile.targetTag = targetTag;
+        projectile.TargetFaction = request.targetFaction;
         projectile.SetCosmeticOnly(cosmeticOnly);
         projectile.SetNetworkAuthority(networkAuthority, NetTickUtil.IsActive ? NetTickUtil.CurrentTick : -1);
+        projectile.SetServerAuthoritativeGameplay(false);
         projectile.SetNetworkVisualType(visualType);
         projectile.Initialize(
             fireDirection,
@@ -627,6 +693,8 @@ public abstract class Weapon3D : MonoBehaviour, IReticleSpinSource3D
             owner,
             accuracyAttackId
         );
+        ApplyProjectileScale(projectileObject.transform, request.projectileScaleMultiplier);
+        projectile.SetProjectileScaleMultiplier(request.projectileScaleMultiplier);
 
         if (request.canPierce)
         {
@@ -642,6 +710,22 @@ public abstract class Weapon3D : MonoBehaviour, IReticleSpinSource3D
         }
 
         request.onProjectileSpawned?.Invoke(projectile);
+    }
+
+    private static void ApplyProjectileScale(Transform projectileTransform, float scaleMultiplier)
+    {
+        if (projectileTransform == null)
+        {
+            return;
+        }
+
+        float safeScaleMultiplier = scaleMultiplier > 0f ? scaleMultiplier : 1f;
+        if (Mathf.Abs(safeScaleMultiplier - 1f) <= 0.0001f)
+        {
+            return;
+        }
+
+        projectileTransform.localScale *= safeScaleMultiplier;
     }
 
     private Vector3 ResolveProjectileSpawnPosition(Transform muzzle, ProjectileFireRequest3D request)
@@ -806,5 +890,63 @@ public abstract class Weapon3D : MonoBehaviour, IReticleSpinSource3D
         _lastAvailabilityChangedOnCooldown = isOnCooldown;
         _hasAvailabilitySnapshot = true;
         AvailabilityChanged?.Invoke(this);
+    }
+
+    private bool TryResolveOpponentPlayerTag(out string opponentPlayerTag)
+    {
+        opponentPlayerTag = null;
+
+        NetMovement3D movement = owner != null ? owner.GetComponent<NetMovement3D>() : null;
+        byte playerSlot = movement != null ? movement.PlayerSlot : (byte)0;
+        if (playerSlot == 1)
+        {
+            opponentPlayerTag = "Player2";
+            return true;
+        }
+
+        if (playerSlot == 2)
+        {
+            opponentPlayerTag = "Player1";
+            return true;
+        }
+
+        if (owner != null && owner.CompareTag("Player1"))
+        {
+            opponentPlayerTag = "Player2";
+            return true;
+        }
+
+        if (owner != null && owner.CompareTag("Player2"))
+        {
+            opponentPlayerTag = "Player1";
+            return true;
+        }
+
+        return false;
+    }
+
+    private static bool SceneHasFactionTargets(Faction3D targetFaction)
+    {
+        if (targetFaction == Faction3D.Neutral)
+        {
+            return false;
+        }
+
+        Entity3D[] entities = FindObjectsByType<Entity3D>(FindObjectsSortMode.None);
+        for (int i = 0; i < entities.Length; i++)
+        {
+            Entity3D entity = entities[i];
+            if (entity == null || !entity.gameObject.activeInHierarchy)
+            {
+                continue;
+            }
+
+            if (FactionMember3D.ResolveFaction(entity) == targetFaction)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

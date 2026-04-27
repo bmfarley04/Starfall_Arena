@@ -10570,6 +10570,7 @@ GameObject:
   - component: {fileID: -7814873099316739718}
   - component: {fileID: 1202045257313671994}
   - component: {fileID: 492492662401554447}
+  - component: {fileID: -6726744620669487499}
   m_Layer: 0
   m_Name: 3d_class2_player
   m_TagString: Enemy
@@ -10621,7 +10622,7 @@ MonoBehaviour:
       m_Calls: []
   m_ActionEvents: []
   m_NeverAutoSwitchControlSchemes: 1
-  m_DefaultControlScheme: Playstation
+  m_DefaultControlScheme: controller
   m_DefaultActionMap: 3d
   m_SplitScreenIndex: -1
   m_Camera: {fileID: 0}
@@ -11200,7 +11201,7 @@ MonoBehaviour:
     m_Bits: 4294967295
   maxAimDistance: 1000
   screenCenterConvergenceDistance: 220
-  screenCenterDirectionBlend: 0.35
+  screenCenterDirectionBlend: 1
   muzzleEffectPrefab: {fileID: 100004, guid: 8377d399368837240be74b846e11344c, type: 3}
   muzzleEffectLifetime: 0.05
   parentMuzzleEffectToMuzzle: 1
@@ -11216,6 +11217,7 @@ MonoBehaviour:
     - {fileID: 5124130335055446714}
     - {fileID: 5710671986816788955}
     targetTag: Enemy
+    targetFaction: 0
     cooldown: 0.25
     speed: 250
     damage: 5
@@ -11434,6 +11436,19 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NetCombat3D
   ShowTopMostFoldoutHeaderGroup: 1
+--- !u!114 &-6726744620669487499
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7114399765549422770}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 97c06a93dd649d54b9c2050d318c0a49, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::FactionMember3D
+  faction: 1
 --- !u!1 &7608548549887183838
 GameObject:
   m_ObjectHideFlags: 0

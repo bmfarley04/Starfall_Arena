@@ -11,6 +11,8 @@ public struct NetInputSnapshot3D : INetworkSerializable
     public float AbilityRotationMultiplier;
     public float ThrustMultiplier;
     public float SlowMultiplier;
+    public bool DodgeRequested;
+    public Vector3 DodgeDirection;
 
     public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
     {
@@ -22,6 +24,8 @@ public struct NetInputSnapshot3D : INetworkSerializable
         serializer.SerializeValue(ref AbilityRotationMultiplier);
         serializer.SerializeValue(ref ThrustMultiplier);
         serializer.SerializeValue(ref SlowMultiplier);
+        serializer.SerializeValue(ref DodgeRequested);
+        serializer.SerializeValue(ref DodgeDirection);
     }
 }
 
@@ -35,6 +39,9 @@ public struct NetStateSnapshot3D : INetworkSerializable
     public Vector2 TurnRates;
     public float ThrustInput;
     public bool FrictionEnabled;
+    public Vector3 DodgeVelocity;
+    public Vector3 DodgeExitVelocity;
+    public float DodgeRemainingTime;
 
     public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
     {
@@ -46,6 +53,9 @@ public struct NetStateSnapshot3D : INetworkSerializable
         serializer.SerializeValue(ref TurnRates);
         serializer.SerializeValue(ref ThrustInput);
         serializer.SerializeValue(ref FrictionEnabled);
+        serializer.SerializeValue(ref DodgeVelocity);
+        serializer.SerializeValue(ref DodgeExitVelocity);
+        serializer.SerializeValue(ref DodgeRemainingTime);
     }
 }
 
@@ -56,6 +66,9 @@ public struct MovementState3D
     public Vector3 Velocity;
     public Vector2 FilteredLookInput;
     public Vector2 TurnRates;
+    public Vector3 DodgeVelocity;
+    public Vector3 DodgeExitVelocity;
+    public float DodgeRemainingTime;
 }
 
 public enum NetProjectileVisualType3D : byte
@@ -67,6 +80,8 @@ public enum NetProjectileVisualType3D : byte
     GigaBlastTier4 = 4,
     Class2EmpoweredShot = 5,
     Class2PhysicalProjectile = 6,
+    Class4GuidedMissile = 7,
+    Class4GuidedMissileEmpowered = 8,
 }
 
 public struct NetProjectileFireRequest3D : INetworkSerializable
@@ -90,6 +105,8 @@ public struct NetProjectileFireRequest3D : INetworkSerializable
     public float SlowMultiplier;
     public float SlowDuration;
     public float SlowEngineEmissionScale;
+    public float ProjectileScaleMultiplier;
+    public Faction3D TargetFaction;
     public NetProjectileVisualType3D VisualType;
     public int AccuracyAttackId;
 
@@ -114,6 +131,8 @@ public struct NetProjectileFireRequest3D : INetworkSerializable
         serializer.SerializeValue(ref SlowMultiplier);
         serializer.SerializeValue(ref SlowDuration);
         serializer.SerializeValue(ref SlowEngineEmissionScale);
+        serializer.SerializeValue(ref ProjectileScaleMultiplier);
+        serializer.SerializeValue(ref TargetFaction);
         serializer.SerializeValue(ref VisualType);
         serializer.SerializeValue(ref AccuracyAttackId);
     }
@@ -225,7 +244,9 @@ public struct NetReflectedProjectileData3D : INetworkSerializable
     public float Damage;
     public float Lifetime;
     public float ImpactForce;
+    public float ProjectileScaleMultiplier;
     public Color ReflectColor;
+    public Faction3D TargetFaction;
     public NetProjectileVisualType3D VisualType;
 
     public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
@@ -236,7 +257,9 @@ public struct NetReflectedProjectileData3D : INetworkSerializable
         serializer.SerializeValue(ref Damage);
         serializer.SerializeValue(ref Lifetime);
         serializer.SerializeValue(ref ImpactForce);
+        serializer.SerializeValue(ref ProjectileScaleMultiplier);
         serializer.SerializeValue(ref ReflectColor);
+        serializer.SerializeValue(ref TargetFaction);
         serializer.SerializeValue(ref VisualType);
     }
 }
