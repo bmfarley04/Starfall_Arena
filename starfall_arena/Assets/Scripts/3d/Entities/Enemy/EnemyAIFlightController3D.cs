@@ -21,10 +21,12 @@ public class EnemyAIFlightController3D : MonoBehaviour
     private Vector3 _moveDirection;
     private float _speedScale;
     private bool _hasMoveIntent;
+    private bool _isMovingForward;
 
     public Vector3 MoveDirection => _hasMoveIntent ? _moveDirection : Vector3.zero;
     public float MoveSpeed => moveSpeed;
     public Vector3 LinearVelocity => _rb != null ? _rb.linearVelocity : Vector3.zero;
+    public bool IsMovingForward => _isMovingForward;
 
     private void Awake()
     {
@@ -60,8 +62,8 @@ public class EnemyAIFlightController3D : MonoBehaviour
 
         if (_hasMoveIntent)
         {
-            RotateTowardMoveDirection();
-            ApplyDeclaredVelocity();
+            Quaternion nextRotation = RotateTowardMoveDirection();
+            ApplyDeclaredVelocity(nextRotation);
         }
         else
         {
@@ -102,9 +104,9 @@ public class EnemyAIFlightController3D : MonoBehaviour
         _hasMoveIntent = false;
     }
 
-    private void RotateTowardMoveDirection()
+    private Quaternion RotateTowardMoveDirection()
     {
-        Quaternion targetRotation = Quaternion.LookRotation(_moveDirection, Vector3.up);
+        Quaternion targetRotation = ResolveTargetRotation(_moveDirection);
         Quaternion nextRotation = Quaternion.RotateTowards(
             _rb.rotation,
             targetRotation,
@@ -112,15 +114,17 @@ public class EnemyAIFlightController3D : MonoBehaviour
 
         _rb.MoveRotation(nextRotation);
         _rb.angularVelocity = Vector3.zero;
+        return nextRotation;
     }
 
-    private void ApplyDeclaredVelocity()
+    private void ApplyDeclaredVelocity(Quaternion facingRotation)
     {
-        Vector3 forward = (_rb.rotation * Vector3.forward).normalized;
+        Vector3 forward = (facingRotation * Vector3.forward).normalized;
         float facingAngle = Vector3.Angle(forward, _moveDirection);
         _rb.linearVelocity = facingAngle <= moveWhenFacingAngle
             ? forward * (moveSpeed * _speedScale)
             : Vector3.zero;
+        _isMovingForward = _rb.linearVelocity.sqrMagnitude > 0.0001f;
         _rb.angularVelocity = Vector3.zero;
     }
 
@@ -128,6 +132,38 @@ public class EnemyAIFlightController3D : MonoBehaviour
     {
         _rb.linearVelocity = Vector3.zero;
         _rb.angularVelocity = Vector3.zero;
+        _isMovingForward = false;
+    }
+
+    private Quaternion ResolveTargetRotation(Vector3 desiredDirection)
+    {
+        Vector3 forward = desiredDirection.normalized;
+        Vector3 upReference = Vector3.up;
+        float worldUpAlignment = Mathf.Abs(Vector3.Dot(forward, upReference));
+
+        if (worldUpAlignment >= 0.98f)
+        {
+            Vector3 currentUp = (_rb.rotation * Vector3.up).normalized;
+            if (Mathf.Abs(Vector3.Dot(forward, currentUp)) < 0.98f)
+            {
+                upReference = currentUp;
+            }
+            else
+            {
+                Vector3 currentRight = (_rb.rotation * Vector3.right).normalized;
+                upReference = Vector3.Cross(currentRight, forward);
+                if (upReference.sqrMagnitude <= 0.0001f)
+                {
+                    upReference = Vector3.Cross(Vector3.forward, forward);
+                }
+
+                upReference = upReference.sqrMagnitude > 0.0001f
+                    ? upReference.normalized
+                    : Vector3.up;
+            }
+        }
+
+        return Quaternion.LookRotation(forward, upReference);
     }
 
     private void ConfigureRigidbody()

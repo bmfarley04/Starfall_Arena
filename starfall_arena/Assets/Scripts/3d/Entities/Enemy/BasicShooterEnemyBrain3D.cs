@@ -17,6 +17,7 @@ public class BasicShooterEnemyBrain3D : MonoBehaviour
     [SerializeField] private float aimToleranceDegrees = 10f;
     [SerializeField] private float stopDistance = 18f;
     [SerializeField] private float fullSpeedDistance = 45f;
+    [SerializeField] private bool useObstacleAvoidance;
 
     private NetworkObject _networkObject;
     private float _nextThinkTime;
@@ -69,7 +70,7 @@ public class BasicShooterEnemyBrain3D : MonoBehaviour
             return;
         }
 
-        Vector3 steeringDirection = obstacleAvoidance != null
+        Vector3 steeringDirection = useObstacleAvoidance && obstacleAvoidance != null && obstacleAvoidance.isActiveAndEnabled
             ? obstacleAvoidance.ResolveSteeringDirection(toTarget)
             : toTarget.normalized;
 

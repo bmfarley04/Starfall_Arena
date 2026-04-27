@@ -817,6 +817,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: '::'
   shipFlight: {fileID: 2269080399608317416}
+  enemyFlight: {fileID: 0}
   thrusterEffects:
     thrusters:
     - {fileID: 308261472321220021}

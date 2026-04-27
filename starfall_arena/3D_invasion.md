@@ -16,6 +16,7 @@ Implemented foundation:
 - `EnemyTargetSensor3D` selects the nearest visible player-team entity
 - `EnemyObstacleAvoidance3D` uses non-alloc 3D physics probes to steer around asteroids/world obstacles
 - `BasicShooterEnemyBrain3D` chases the nearest visible player, slows near the target to avoid orbiting, and fires at `PlayerTeam` when aimed and off cooldown
+- `SuicideDroneEnemyBrain3D` is a dedicated kamikaze brain that always drives at the nearest player at full speed and detonates on contact/proximity using server-authoritative direct damage
 - `NetEnemyMovement3D` makes enemies server-simulated in network sessions
 - `NetEnemyCombat3D` makes enemy projectile damage server-authoritative and broadcasts client cosmetics
 - `InvasionWaveManager3D` is a minimal finite-wave spawner for configured enemy prefabs
@@ -81,8 +82,23 @@ For the first basic shooter enemy prefab:
 - add `EnemyObstacleAvoidance3D` and set `Obstacle Mask` to asteroids/world-geometry layers
 - add `BasicShooterEnemyBrain3D`
 - add `ProjectileWeapon3D`; enemy shooter weapons should use `MuzzleForward` aiming so the brain's facing direction controls shots
+- optional `ShipThrusterVfx3D` can stay on enemies; it reads `EnemyAIFlightController3D.IsMovingForward` when present
 - add `NetEnemyMovement3D` and `NetEnemyCombat3D` for networked enemies
 - set the root tag to `Enemy` for compatibility, but do not rely on that tag for new PvE damage rules
+
+For a suicide drone enemy prefab:
+
+- add `NetworkObject` if it will spawn in networked Invasion
+- add `FactionMember3D` and set faction to `EnemyTeam`
+- add `Enemy3D`
+- add `Rigidbody`
+- add `EnemyAIFlightController3D`
+- add `EnemyTargetSensor3D`
+- optionally add `EnemyObstacleAvoidance3D` if the drone should weave around asteroids instead of beelining
+- add `SuicideDroneEnemyBrain3D`
+- add `NetEnemyMovement3D` for networked movement replication
+- do not add `ProjectileWeapon3D` or `NetEnemyCombat3D` unless the drone also has a separate ranged attack
+- set the root tag to `Enemy` for compatibility, but keep target/damage filtering faction-driven
 
 For player prefabs used in Invasion:
 

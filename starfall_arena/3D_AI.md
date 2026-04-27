@@ -14,6 +14,7 @@ The 3D AI path should stay modular. Enemy prefabs should compose small scripts i
 - `EnemyAIFlightController3D`
   - simple enemy Rigidbody motor
   - receives a world-space move direction, rotates toward it, then directly sets Rigidbody velocity along its own facing direction once facing that direction
+  - exposes `IsMovingForward` for enemy thruster VFX so rotating-in-place does not light engines
   - contains no targeting, pathing, or combat decisions
 - `EnemyTargetSensor3D`
   - periodically selects the nearest target in a configured faction
@@ -28,6 +29,11 @@ The 3D AI path should stay modular. Enemy prefabs should compose small scripts i
   - directly pursues the nearest player
   - slows/stops near the target instead of overshooting into long orbit loops
   - fires its projectile weapon when aimed and off cooldown
+- `SuicideDroneEnemyBrain3D`
+  - dedicated detonation behavior for kamikaze enemies
+  - always commits to the nearest player at full speed instead of using range management
+  - detonates on contact or very close proximity so high-speed impacts do not depend entirely on a single collision callback
+  - applies damage through `Entity3D` on the authority side, then kills itself through the normal enemy death path
 
 ## Architecture Rules
 
@@ -74,7 +80,7 @@ The old backup scripts are useful for behavior vocabulary, not direct code reuse
   - should become separate range-management and beam-attack modules later
 - `SuicideEnemyScript`
   - commits to pursuit after detection and explodes on contact/low health
-  - should become a dedicated detonation brain plus explosion damage module
+  - the current 3D equivalent is `SuicideDroneEnemyBrain3D`; keep it simple and server authoritative instead of porting the old all-in-one enemy script shape
 - `BulletHellEnemyScript`
   - cycles projectile/beam patterns and can spin/freeze during attacks
   - should become pattern controller modules, not a single massive class
