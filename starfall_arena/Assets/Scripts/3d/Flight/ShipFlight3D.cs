@@ -237,7 +237,8 @@ public class ShipFlight3D : MonoBehaviour
         bool frictionActive,
         Vector3 linearVelocity,
         Vector3 linearAcceleration,
-        Vector3 recoilVelocityDelta)
+        Vector3 recoilVelocityDelta,
+        bool applyRigidbodyVelocity = true)
     {
         _lookInput = Vector2.ClampMagnitude(rawLookInput, 1f);
         _filteredLookInput = Vector2.ClampMagnitude(filteredLookInput, 1f);
@@ -257,7 +258,11 @@ public class ShipFlight3D : MonoBehaviour
 
         if (_rb != null)
         {
-            _rb.linearVelocity = linearVelocity;
+            if (applyRigidbodyVelocity)
+            {
+                _rb.linearVelocity = linearVelocity;
+            }
+
             _rb.angularDamping = frictionEnabled ? flightAssist.activeAngularDamping : 0f;
         }
     }

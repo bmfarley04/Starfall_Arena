@@ -780,7 +780,7 @@ public class NetMovement3D : NetworkBehaviour
             _rb.MoveRotation(state.Rotation);
         }
 
-        _rb.linearVelocity = GetEffectiveVelocity(state);
+        _rb.linearVelocity = state.Velocity;
     }
 
     private void ApplyFlightTelemetry(
@@ -806,7 +806,8 @@ public class NetMovement3D : NetworkBehaviour
             frictionEnabled,
             effectiveVelocity,
             linearAcceleration,
-            Vector3.zero);
+            Vector3.zero,
+            applyRigidbodyVelocity: false);
     }
 
     private MovementState3D CaptureCurrentState()
