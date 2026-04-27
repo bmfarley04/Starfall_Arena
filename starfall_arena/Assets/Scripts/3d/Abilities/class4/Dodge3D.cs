@@ -163,7 +163,7 @@ public class Dodge3D : Ability3D
         {
             if (!_netCombat.IsServer)
             {
-                StartDodge(worldDirection, authoritative: true);
+                StartDodgePresentation();
             }
 
             _netCombat.RequestClass4Dodge(worldDirection);
@@ -175,10 +175,7 @@ public class Dodge3D : Ability3D
 
     private void StartDodge(Vector3 worldDirection, bool authoritative)
     {
-        dodge.dodgeSound?.PlayAtPoint(transform.position);
-
-        _isDodging = true;
-        _dodgeEndTime = Time.time + Mathf.Max(0.01f, dodge.slideDuration);
+        StartDodgePresentation();
 
         if (!authoritative)
         {
@@ -202,6 +199,13 @@ public class Dodge3D : Ability3D
         }
 
         StartLocalDodgeFallback(normalizedDirection, dodgeDistance, slideDuration);
+    }
+
+    private void StartDodgePresentation()
+    {
+        dodge.dodgeSound?.PlayAtPoint(transform.position);
+        _isDodging = true;
+        _dodgeEndTime = Time.time + Mathf.Max(0.01f, dodge.slideDuration);
     }
 
     private Vector3 ResolveCardinalDirection(Vector2 lookInput)
@@ -258,6 +262,7 @@ public class Dodge3D : Ability3D
             yield break;
         }
 
+        float collisionRadius = ResolveCollisionRadius();
         Vector3 previousOffset = Vector3.zero;
         float elapsed = 0f;
 
@@ -267,11 +272,54 @@ public class Dodge3D : Ability3D
             float t = Mathf.Clamp01(elapsed / slideDuration);
             float eased = 1f - ((1f - t) * (1f - t));
             Vector3 currentOffset = worldDirection * (dodgeDistance * eased);
-            rb.MovePosition(rb.position + (currentOffset - previousOffset));
+            Vector3 targetPosition = rb.position + (currentOffset - previousOffset);
+            rb.MovePosition(ClampDodgePosition(targetPosition, collisionRadius));
             previousOffset = currentOffset;
             yield return new WaitForFixedUpdate();
         }
 
         _localDodgeCoroutine = null;
+    }
+
+    private float ResolveCollisionRadius()
+    {
+        NetMovement3D movement = GetComponent<NetMovement3D>();
+        if (movement != null)
+        {
+            return movement.GetCollisionRadius();
+        }
+
+        Collider collider3D = GetComponent<Collider>();
+        if (collider3D != null)
+        {
+            Bounds bounds = collider3D.bounds;
+            return Mathf.Max(bounds.extents.x, bounds.extents.y, bounds.extents.z);
+        }
+
+        Collider[] childColliders = GetComponentsInChildren<Collider>();
+        float radius = 0f;
+        for (int i = 0; i < childColliders.Length; i++)
+        {
+            Collider child = childColliders[i];
+            if (child == null)
+            {
+                continue;
+            }
+
+            Bounds bounds = child.bounds;
+            radius = Mathf.Max(radius, bounds.extents.x, bounds.extents.y, bounds.extents.z);
+        }
+
+        return radius;
+    }
+
+    private static Vector3 ClampDodgePosition(Vector3 targetPosition, float collisionRadius)
+    {
+        if (!ArenaBoundary3D.TryGetActive(out ArenaBoundary3D boundary) || !boundary.BlocksMovement)
+        {
+            return targetPosition;
+        }
+
+        return boundary.ClampPositionInside(targetPosition, collisionRadius);
     }
 }

@@ -278,7 +278,7 @@ The current duel-oriented documentation should especially treat these as establi
   - reduces rotation while active
 - `ConvergeBeam`
   - sustained multi-beam weapon that re-aims its convergence point from live look input every frame instead of locking to ship-forward at activation time
-  - in network play, the owning client must keep sending live aim updates while the beam is held, and server/remote copies must apply the latest replicated aim so authoritative damage and visuals keep following the current target instead of the initial fire point
+  - in network play, the owning client must keep sending the live convergence point while the beam is held, and server/remote copies must apply the latest replicated point so authoritative damage and visuals keep following the current target instead of the initial fire point
 - `Reflector`
   - timed reflect shield
   - modifies projectile collisions

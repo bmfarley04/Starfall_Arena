@@ -337,8 +337,13 @@ public class NetMovement3D : NetworkBehaviour
 
         float safeDuration = Mathf.Max(0.01f, slideDuration);
         Vector3 normalizedDirection = worldDirection.normalized;
-        float dashSpeed = Mathf.Max(0f, dodgeDistance) / safeDuration;
-        Vector3 dashVelocity = normalizedDirection * dashSpeed;
+        Vector3 dodgeOffset = ResolveBoundarySafeDodgeOffset(normalizedDirection, Mathf.Max(0f, dodgeDistance));
+        Vector3 dashVelocity = dodgeOffset / safeDuration;
+
+        if (dashVelocity.sqrMagnitude <= 0.000001f)
+        {
+            return;
+        }
 
         ApplyDodgeState(ref _ownerState, ref _ownerStateInitialized, normalizedDirection, dashVelocity, safeDuration);
         ApplyDodgeState(ref _serverState, ref _serverStateInitialized, normalizedDirection, dashVelocity, safeDuration);
@@ -1083,5 +1088,19 @@ public class NetMovement3D : NetworkBehaviour
         state.DodgeVelocity = dashVelocity;
         state.DodgeExitVelocity = Vector3.zero;
         state.DodgeRemainingTime = duration;
+    }
+
+    private Vector3 ResolveBoundarySafeDodgeOffset(Vector3 normalizedDirection, float dodgeDistance)
+    {
+        Vector3 desiredOffset = normalizedDirection * dodgeDistance;
+        if (!ArenaBoundary3D.TryGetActive(out ArenaBoundary3D boundary) || !boundary.BlocksMovement)
+        {
+            return desiredOffset;
+        }
+
+        Vector3 startPosition = _rb != null ? _rb.position : transform.position;
+        Vector3 targetPosition = startPosition + desiredOffset;
+        Vector3 clampedTarget = boundary.ClampPositionInside(targetPosition, GetCollisionRadius());
+        return clampedTarget - startPosition;
     }
 }
