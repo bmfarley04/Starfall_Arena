@@ -25,6 +25,7 @@ The 3D AI path should stay modular. Enemy prefabs should compose small scripts i
   - adjusts a desired free-flight direction using non-alloc spherecast probes
   - intended for asteroids and world geometry
   - this is steering/avoidance, not Unity NavMesh
+  - currently not implemented anywhere since it was extremely buggy
 - `BasicShooterEnemyBrain3D`
   - first Invasion enemy behavior
   - directly pursues the nearest player
