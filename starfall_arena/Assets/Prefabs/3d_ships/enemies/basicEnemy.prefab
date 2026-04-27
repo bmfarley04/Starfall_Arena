@@ -242,16 +242,16 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ShipFlight3D
   flight:
-    thrustAcceleration: 50
-    maxSpeed: 100
+    thrustAcceleration: 20
+    maxSpeed: 50
     lookInputResponse: 8
-    pitchSpeed: 2.5
-    yawSpeed: 2.5
+    pitchSpeed: 1
+    yawSpeed: 1
     pitchAcceleration: 12
     pitchDeceleration: 16
     yawAcceleration: 12
     yawDeceleration: 16
-    invertY: 1
+    invertY: 0
     minRotationMultiplierAtMaxSpeed: 0.1
   flightAssist:
     frictionDeceleration: 20
@@ -306,7 +306,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 37572cd229e39c843bb1cdd0c9397344, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyAIFlightController3D
-  shipFlight: {fileID: 1489676882231302956}
+  moveSpeed: 35
+  rotationDegreesPerSecond: 180
+  moveWhenFacingAngle: 12
+  useGravity: 0
+  lockToWorldYPlane: 0
+  captureInitialWorldY: 1
+  lockedWorldY: 0
 --- !u!114 &754838546632477888
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -333,7 +339,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 7279590565626816591}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b0102a7b9880bf64f87921c6c88ce3e4, type: 3}
   m_Name: 
@@ -373,7 +379,7 @@ MonoBehaviour:
   screenCenterConvergenceDistance: 150
   screenCenterDirectionBlend: 0.35
   muzzleEffectPrefab: {fileID: 100004, guid: 8377d399368837240be74b846e11344c, type: 3}
-  muzzleEffectLifetime: 2
+  muzzleEffectLifetime: 0.05
   parentMuzzleEffectToMuzzle: 1
   projectileSpawnLocalOffset: {x: 0, y: 0, z: 2}
   muzzleEffectLocalOffset: {x: 0, y: 0, z: 1.5}
@@ -436,7 +442,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 7279590565626816591}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 9e8f7219683416a4e967c145de82d06f, type: 3}
   m_Name: 
@@ -478,6 +484,8 @@ MonoBehaviour:
   netEnemyCombat: {fileID: 0}
   thinkInterval: 0.05
   aimToleranceDegrees: 10
+  stopDistance: 18
+  fullSpeedDistance: 45
 --- !u!1001 &225114612700398349
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -512,7 +520,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4794134011377992, guid: 1c111fbbf4aa7f845b544cb0c0ce09cf, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -0.008
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4794134011377992, guid: 1c111fbbf4aa7f845b544cb0c0ce09cf, type: 3}
       propertyPath: m_LocalRotation.w
@@ -1215,15 +1223,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7597733967398337195, guid: 433d19638a778ce4eabe1f05ad84a3c1, type: 3}
       propertyPath: m_LocalRotation.x
-      value: -0
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7597733967398337195, guid: 433d19638a778ce4eabe1f05ad84a3c1, type: 3}
       propertyPath: m_LocalRotation.y
-      value: -0.9961947
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 7597733967398337195, guid: 433d19638a778ce4eabe1f05ad84a3c1, type: 3}
       propertyPath: m_LocalRotation.z
-      value: 0.08715596
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7597733967398337195, guid: 433d19638a778ce4eabe1f05ad84a3c1, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x

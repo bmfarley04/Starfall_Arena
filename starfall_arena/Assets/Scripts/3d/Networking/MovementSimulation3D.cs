@@ -77,6 +77,7 @@ public static class MovementSimulation3D
         float dt)
     {
         float effectiveThrustInput = input.ThrustMultiplier > 0f ? Mathf.Max(0f, input.ThrustInput) : 0f;
+        bool passiveLinearAssistEnabled = input.FrictionEnabled && assist.frictionDeceleration > 0f;
         Quaternion inverseRotation = Quaternion.Inverse(state.Rotation);
         Vector3 localVelocity = inverseRotation * state.Velocity;
 
@@ -84,16 +85,19 @@ public static class MovementSimulation3D
         {
             localVelocity.z += effectiveThrustInput * flight.thrustAcceleration * input.ThrustMultiplier * input.SlowMultiplier * dt;
         }
-        else if (input.FrictionEnabled)
+        else if (passiveLinearAssistEnabled)
         {
             localVelocity.z = Mathf.MoveTowards(localVelocity.z, 0f, assist.frictionDeceleration * dt);
         }
 
-        localVelocity.x = Mathf.MoveTowards(localVelocity.x, 0f, assist.lateralDriftDamping * dt);
-        localVelocity.y = Mathf.MoveTowards(localVelocity.y, 0f, assist.verticalDriftDamping * dt);
+        if (passiveLinearAssistEnabled)
+        {
+            localVelocity.x = Mathf.MoveTowards(localVelocity.x, 0f, assist.lateralDriftDamping * dt);
+            localVelocity.y = Mathf.MoveTowards(localVelocity.y, 0f, assist.verticalDriftDamping * dt);
+        }
 
         Vector3 worldVelocity = state.Rotation * localVelocity;
-        worldVelocity = ApplyVelocityAlignment(worldVelocity, effectiveThrustInput, state, flight, assist, dt);
+        worldVelocity = ApplyVelocityAlignment(worldVelocity, effectiveThrustInput, state, flight, assist, passiveLinearAssistEnabled, dt);
 
         float effectiveMaxSpeed = Mathf.Max(0f, flight.maxSpeed * input.SlowMultiplier);
         if (effectiveMaxSpeed > 0f && worldVelocity.magnitude > effectiveMaxSpeed)
@@ -110,9 +114,10 @@ public static class MovementSimulation3D
         in MovementState3D state,
         in ShipFlightConfig3D flight,
         in ShipFlightAssistConfig3D assist,
+        bool passiveLinearAssistEnabled,
         float dt)
     {
-        if (assist.velocityAlignmentStrength <= 0f || effectiveThrustInput <= 0.05f || worldVelocity.sqrMagnitude <= MinSpeedSqrMagnitude)
+        if (!passiveLinearAssistEnabled || assist.velocityAlignmentStrength <= 0f || effectiveThrustInput <= 0.05f || worldVelocity.sqrMagnitude <= MinSpeedSqrMagnitude)
         {
             return worldVelocity;
         }

@@ -59,7 +59,7 @@ public struct ShipFlightConfig3D
 public struct ShipFlightAssistConfig3D
 {
     [Header("Flight Assist (Friction)")]
-    [Tooltip("How fast velocity bleeds off when not thrusting (units/s^2). Does not affect max speed while thrusting.")]
+    [Tooltip("How fast forward velocity bleeds off when not thrusting (units/s^2). When set to 0, passive linear assist is skipped so coasting preserves world-space momentum instead of being re-damped through the ship's local axes.")]
     public float frictionDeceleration;
     [Tooltip("Angular damping applied to rotation when friction is active.")]
     public float activeAngularDamping;

@@ -16,16 +16,16 @@ The 3D AI path should stay modular. Enemy prefabs should compose small scripts i
   - receives a world-space move direction, rotates toward it, then directly sets Rigidbody velocity along its own facing direction once facing that direction
   - contains no targeting, pathing, or combat decisions
 - `EnemyTargetSensor3D`
-  - periodically selects the nearest visible target in a configured faction
+  - periodically selects the nearest target in a configured faction
   - current basic shooter target faction is `PlayerTeam`
-  - uses obstacle line-of-sight blockers instead of tags
+  - does not gate targeting through obstacle line-of-sight checks
 - `EnemyObstacleAvoidance3D`
   - adjusts a desired free-flight direction using non-alloc spherecast probes
   - intended for asteroids and world geometry
   - this is steering/avoidance, not Unity NavMesh
 - `BasicShooterEnemyBrain3D`
   - first Invasion enemy behavior
-  - directly pursues the nearest visible player
+  - directly pursues the nearest player
   - slows/stops near the target instead of overshooting into long orbit loops
   - fires its projectile weapon when aimed and off cooldown
 
