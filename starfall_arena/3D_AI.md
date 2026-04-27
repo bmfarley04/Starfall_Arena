@@ -29,6 +29,12 @@ The 3D AI path should stay modular. Enemy prefabs should compose small scripts i
   - directly pursues the nearest player
   - slows/stops near the target instead of overshooting into long orbit loops
   - fires its projectile weapon when aimed and off cooldown
+- `ArtilleryBeamEnemyBrain3D`
+  - long-range beam enemy behavior translated from the old artillery concept
+  - maintains a standoff band instead of hard-chasing into point-blank range
+  - can face the player while thrusting backward so it keeps pressure on targets that close the gap
+  - requires aim plus line-of-sight before sustaining its beam
+  - keeps high-level fire/movement decisions on a think interval, but must refresh active beam aim every frame so the beam visual stays locked to moving targets instead of updating at AI cadence
 - `SuicideDroneEnemyBrain3D`
   - dedicated detonation behavior for kamikaze enemies
   - always commits to the nearest player at full speed instead of using range management
@@ -42,6 +48,7 @@ The 3D AI path should stay modular. Enemy prefabs should compose small scripts i
 - The default enemy movement contract is intentionally blunt: choose a world-space direction, rotate the enemy nose toward it, and set velocity to `transform.forward * speed` once the enemy is facing that direction.
 - Do not preserve sideways drift, acceleration curves, player-style look input, or inherited velocity in the baseline enemy motor.
 - Basic shooter pursuit may scale speed down near the target, but facing gates belong in `EnemyAIFlightController3D`.
+- Enemy brains that need kiting must be able to declare facing and movement separately. Artillery enemies need to keep the nose on target while translating backward, so the flight controller now supports a "face here, move there" contract instead of assuming every enemy always flies nose-first.
 - Target selection should use `FactionMember3D`, not generic `"Player"` tag lookups.
 - Obstacle avoidance should use batched/non-alloc physics queries where possible.
 - Do not put wave logic, scoring, or mode state inside individual enemy brains.
@@ -77,7 +84,7 @@ The old backup scripts are useful for behavior vocabulary, not direct code reuse
   - maps to the first `BasicShooterEnemyBrain3D`
 - `ArtilleryEnemyScript`
   - kites at range, checks line of sight, fires beams
-  - should become separate range-management and beam-attack modules later
+  - the current 3D equivalent is `ArtilleryBeamEnemyBrain3D`, which keeps the old behavior vocabulary but reuses shared 3D flight, targeting, and beam runtime instead of bundling movement/combat/audio into one script
 - `SuicideEnemyScript`
   - commits to pursuit after detection and explodes on contact/low health
   - the current 3D equivalent is `SuicideDroneEnemyBrain3D`; keep it simple and server authoritative instead of porting the old all-in-one enemy script shape

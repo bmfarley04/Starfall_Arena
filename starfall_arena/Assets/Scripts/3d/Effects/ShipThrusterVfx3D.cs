@@ -162,7 +162,7 @@ public class ShipThrusterVfx3D : MonoBehaviour
     {
         if (enemyFlight != null)
         {
-            return enemyFlight.IsMovingForward ? 1f : 0f;
+            return enemyFlight.IsApplyingThrust ? 1f : 0f;
         }
 
         if (shipFlight != null)

@@ -112,6 +112,8 @@ When updating docs:
 
 When writing or changing code in this repo:
 
+- MAKE SURE TO ADD TOOLTIPS TO ANY PARAMETERS WHICH MIGHT BE UNCLEAR
+- FOCUS ON CLEAR NAMING CONVENTIONS FOR SERIALZIED PARAMETERS
 - prefer the simplest solution that fully solves the stated task
 - when a task is explicitly scoped to the 3D implementation path, do not edit non-3D gameplay scripts without first getting the user's permission
 - prioritize readability and maintainability over cleverness

@@ -8,6 +8,7 @@ public class BeamWeapon3D : Weapon3D, IBeamWeaponNetwork3D
         [Header("Beam Settings")]
         public GameObject beamPrefab;
         public string targetTag;
+        public Faction3D targetFaction;
         public float damagePerSecond;
         public float maxDistance;
         public float recoilForcePerSecond;
@@ -251,7 +252,11 @@ public class BeamWeapon3D : Weapon3D, IBeamWeaponNetwork3D
 
         Transform muzzle = beam.muzzle != null ? beam.muzzle : Owner != null ? Owner.transform : transform;
         string resolvedTargetTag = beam.targetTag;
-        if (authoritative && NetTickUtil.IsActive && _netCombat != null && _netCombat.IsSpawned)
+        if (authoritative
+            && beam.targetFaction == Faction3D.Neutral
+            && NetTickUtil.IsActive
+            && _netCombat != null
+            && _netCombat.IsSpawned)
         {
             string enemyTag = _netCombat.GetEnemyTag();
             if (!string.IsNullOrEmpty(enemyTag))
@@ -261,6 +266,7 @@ public class BeamWeapon3D : Weapon3D, IBeamWeaponNetwork3D
         }
         _activeBeam.Initialize(
             resolvedTargetTag,
+            beam.targetFaction,
             beam.damagePerSecond,
             beam.maxDistance,
             beam.recoilForcePerSecond,

@@ -13,6 +13,7 @@ public class NetEnemyCombat3D : NetworkBehaviour
     private NetEnemyMovement3D _movement;
     private bool _loggedMissingWeapon;
     private bool _loggedMissingProjectile;
+    private bool _loggedMissingBeamWeapon;
 
     private void Awake()
     {
@@ -70,6 +71,62 @@ public class NetEnemyCombat3D : NetworkBehaviour
         }
 
         sourceWeapon.NetworkFireSound?.PlayAtPoint(transform.position);
+        return true;
+    }
+
+    public bool SetBeamState(BeamWeapon3D sourceWeapon, bool isFiring, Vector3 aimDirection)
+    {
+        if (!IsServer || !IsSpawned)
+        {
+            return false;
+        }
+
+        if (sourceWeapon == null)
+        {
+            LogWarningOnce(ref _loggedMissingBeamWeapon, "[NetEnemyCombat3D] Enemy beam update was ignored because no BeamWeapon3D source was supplied.");
+            return false;
+        }
+
+        if (isFiring && aimDirection.sqrMagnitude > 0.0001f)
+        {
+            sourceWeapon.ApplyNetworkBeamAim(aimDirection.normalized);
+        }
+
+        sourceWeapon.ApplyNetworkBeamState(isFiring, authoritative: true, NetTickUtil.CurrentTick);
+        BroadcastEnemyBeamStateClientRpc(new NetBeamState3D
+        {
+            Tick = NetTickUtil.CurrentTick,
+            IsFiring = isFiring,
+            AimDirection = aimDirection.sqrMagnitude > 0.0001f ? aimDirection.normalized : Vector3.zero
+        });
+        return true;
+    }
+
+    public bool UpdateBeamAim(BeamWeapon3D sourceWeapon, Vector3 aimDirection)
+    {
+        if (!IsServer || !IsSpawned)
+        {
+            return false;
+        }
+
+        if (sourceWeapon == null)
+        {
+            LogWarningOnce(ref _loggedMissingBeamWeapon, "[NetEnemyCombat3D] Enemy beam aim update was ignored because no BeamWeapon3D source was supplied.");
+            return false;
+        }
+
+        if (aimDirection.sqrMagnitude <= 0.0001f)
+        {
+            return false;
+        }
+
+        Vector3 normalizedAim = aimDirection.normalized;
+        sourceWeapon.ApplyNetworkBeamAim(normalizedAim);
+        BroadcastEnemyBeamAimClientRpc(new NetAimUpdate3D
+        {
+            Tick = NetTickUtil.CurrentTick,
+            AimDirection = normalizedAim
+        });
         return true;
     }
 
@@ -140,10 +197,55 @@ public class NetEnemyCombat3D : NetworkBehaviour
         sourceWeapon.NetworkFireSound?.PlayAtPoint(transform.position);
     }
 
+    [ClientRpc]
+    private void BroadcastEnemyBeamStateClientRpc(NetBeamState3D state)
+    {
+        if (IsServer)
+        {
+            return;
+        }
+
+        if (!TryResolveBeamWeapon(out BeamWeapon3D beamWeapon))
+        {
+            LogWarningOnce(ref _loggedMissingBeamWeapon, "[NetEnemyCombat3D] Client received an enemy beam RPC, but the enemy proxy could not resolve a BeamWeapon3D.");
+            return;
+        }
+
+        if (state.IsFiring && state.AimDirection.sqrMagnitude > 0.0001f)
+        {
+            beamWeapon.ApplyNetworkBeamAim(state.AimDirection);
+        }
+
+        beamWeapon.ApplyNetworkBeamState(state.IsFiring, authoritative: false, PlayerCombatStats3D.InvalidAttackId);
+    }
+
+    [ClientRpc]
+    private void BroadcastEnemyBeamAimClientRpc(NetAimUpdate3D update)
+    {
+        if (IsServer)
+        {
+            return;
+        }
+
+        if (!TryResolveBeamWeapon(out BeamWeapon3D beamWeapon))
+        {
+            LogWarningOnce(ref _loggedMissingBeamWeapon, "[NetEnemyCombat3D] Client received an enemy beam aim RPC, but the enemy proxy could not resolve a BeamWeapon3D.");
+            return;
+        }
+
+        beamWeapon.ApplyNetworkBeamAim(update.AimDirection);
+    }
+
     private void CacheReferences()
     {
         _enemy ??= GetComponent<Enemy3D>();
         _movement ??= GetComponent<NetEnemyMovement3D>();
+    }
+
+    private bool TryResolveBeamWeapon(out BeamWeapon3D beamWeapon)
+    {
+        beamWeapon = GetComponent<BeamWeapon3D>();
+        return beamWeapon != null;
     }
 
     private void LogWarningOnce(ref bool flag, string message)

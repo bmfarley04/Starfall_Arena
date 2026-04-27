@@ -16,9 +16,11 @@ Implemented foundation:
 - `EnemyTargetSensor3D` selects the nearest visible player-team entity
 - `EnemyObstacleAvoidance3D` uses non-alloc 3D physics probes to steer around asteroids/world obstacles
 - `BasicShooterEnemyBrain3D` chases the nearest visible player, slows near the target to avoid orbiting, and fires at `PlayerTeam` when aimed and off cooldown
+- `ArtilleryBeamEnemyBrain3D` holds a longer standoff range, kites backward when pressured, and sustains a faction-targeted beam only while it still has line-of-sight and aim on a player-team target
 - `SuicideDroneEnemyBrain3D` is a dedicated kamikaze brain that always drives at the nearest player at full speed and detonates on contact/proximity using server-authoritative direct damage
 - `NetEnemyMovement3D` makes enemies server-simulated in network sessions
 - `NetEnemyCombat3D` makes enemy projectile damage server-authoritative and broadcasts client cosmetics
+- enemy beam prefabs may now use an optional `BeamVisualDriver3D` such as `ForgeBeamVisualDriver3D` for presentation, but enemy beam gameplay still stays inside `LaserBeam3D` / `NetEnemyCombat3D`
 - `InvasionWaveManager3D` is a minimal finite-wave spawner for configured enemy prefabs
 
 ## Title Screen Entry
@@ -98,6 +100,21 @@ For a suicide drone enemy prefab:
 - add `SuicideDroneEnemyBrain3D`
 - add `NetEnemyMovement3D` for networked movement replication
 - do not add `ProjectileWeapon3D` or `NetEnemyCombat3D` unless the drone also has a separate ranged attack
+- set the root tag to `Enemy` for compatibility, but keep target/damage filtering faction-driven
+
+For an artillery beam enemy prefab:
+
+- add `NetworkObject` if it will spawn in networked Invasion
+- add `FactionMember3D` and set faction to `EnemyTeam`
+- add `Enemy3D`
+- add `Rigidbody`
+- add `EnemyAIFlightController3D`
+- add `EnemyTargetSensor3D`
+- optionally add `EnemyObstacleAvoidance3D` if the artillery ship should path around asteroids while closing distance
+- add `ArtilleryBeamEnemyBrain3D`
+- add `BeamWeapon3D`; set its `targetFaction` to `PlayerTeam` and keep `targetTag` empty unless you intentionally need legacy fallback
+- if you want the Forge line-renderer look, use `Assets/Prefabs/Weapons/Projectiles/3d/projectiles/enemies/beam/enemy_beam_forge_red.prefab` as the beam prefab instead of the older cylinder-based enemy beam
+- add `NetEnemyMovement3D` and `NetEnemyCombat3D` for networked movement plus beam cosmetic replication
 - set the root tag to `Enemy` for compatibility, but keep target/damage filtering faction-driven
 
 For player prefabs used in Invasion:

@@ -10,6 +10,7 @@ public class ConvergeBeamWeapon3D : Weapon3D, IBeamWeaponNetwork3D
         [Header("Beam Settings")]
         public GameObject beamPrefab;
         public string targetTag;
+        public Faction3D targetFaction;
         public float damagePerSecond;
         public float maxDistance;
         public float recoilForcePerSecond;
@@ -291,7 +292,11 @@ public class ConvergeBeamWeapon3D : Weapon3D, IBeamWeaponNetwork3D
 
         _activeBeams = new LaserBeam3D[_activeHardpoints.Length];
         string resolvedTargetTag = convergeBeam.targetTag;
-        if (_activeBeamAuthoritative && NetTickUtil.IsActive && _netCombat != null && _netCombat.IsSpawned)
+        if (_activeBeamAuthoritative
+            && convergeBeam.targetFaction == Faction3D.Neutral
+            && NetTickUtil.IsActive
+            && _netCombat != null
+            && _netCombat.IsSpawned)
         {
             string enemyTag = _netCombat.GetEnemyTag();
             if (!string.IsNullOrEmpty(enemyTag))
@@ -318,6 +323,7 @@ public class ConvergeBeamWeapon3D : Weapon3D, IBeamWeaponNetwork3D
 
             beam.Initialize(
                 resolvedTargetTag,
+                convergeBeam.targetFaction,
                 convergeBeam.damagePerSecond,
                 convergeBeam.maxDistance,
                 convergeBeam.recoilForcePerSecond,

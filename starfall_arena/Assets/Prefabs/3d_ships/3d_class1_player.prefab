@@ -1095,6 +1095,7 @@ MonoBehaviour:
   beam:
     beamPrefab: {fileID: 100000, guid: 7767d0d49caff014ba0e057220a05183, type: 3}
     targetTag: Enemy
+    targetFaction: 0
     damagePerSecond: 50
     maxDistance: 1000
     recoilForcePerSecond: 0
