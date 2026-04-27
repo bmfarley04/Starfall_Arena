@@ -587,7 +587,7 @@ public class NetMovement3D : NetworkBehaviour
         }
 
         _ownerState = replayState;
-        ApplySimulationState(_ownerState);
+        ApplySimulationState(_ownerState, snap: true);
 
         int latestInputIndex = currentTick % ClientInputBufferSize;
         Vector2 latestLookInput = _inputBuffer[latestInputIndex].Tick == currentTick
@@ -602,7 +602,7 @@ public class NetMovement3D : NetworkBehaviour
     private void ApplyAuthoritativeCorrection(NetStateSnapshot3D snapshot)
     {
         _ownerState = ToMovementState(snapshot);
-        ApplySimulationState(_ownerState);
+        ApplySimulationState(_ownerState, snap: true);
         ApplyFlightTelemetry(snapshot.FilteredLookInput, snapshot.ThrustInput, snapshot.FrictionEnabled, _ownerState, GetEffectiveVelocity(_ownerState), GetTickDeltaTime());
     }
 
@@ -766,12 +766,21 @@ public class NetMovement3D : NetworkBehaviour
             : state.Velocity;
     }
 
-    private void ApplySimulationState(in MovementState3D state)
+    private void ApplySimulationState(in MovementState3D state, bool snap = false)
     {
-        _rb.position = state.Position;
-        _rb.rotation = state.Rotation;
+        if (snap)
+        {
+            _rb.position = state.Position;
+            _rb.rotation = state.Rotation;
+            transform.SetPositionAndRotation(state.Position, state.Rotation);
+        }
+        else
+        {
+            _rb.MovePosition(state.Position);
+            _rb.MoveRotation(state.Rotation);
+        }
+
         _rb.linearVelocity = GetEffectiveVelocity(state);
-        transform.SetPositionAndRotation(state.Position, state.Rotation);
     }
 
     private void ApplyFlightTelemetry(
@@ -787,14 +796,15 @@ public class NetMovement3D : NetworkBehaviour
             return;
         }
 
-        Vector3 linearAcceleration = dt > 0f ? (state.Velocity - previousVelocity) / dt : Vector3.zero;
+        Vector3 effectiveVelocity = GetEffectiveVelocity(state);
+        Vector3 linearAcceleration = dt > 0f ? (effectiveVelocity - previousVelocity) / dt : Vector3.zero;
         _shipFlight.ApplyExternalSimulationState(
             rawLookInput,
             state.FilteredLookInput,
             state.TurnRates,
             thrustInput,
             frictionEnabled,
-            state.Velocity,
+            effectiveVelocity,
             linearAcceleration,
             Vector3.zero);
     }
