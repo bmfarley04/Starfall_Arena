@@ -131,7 +131,6 @@ public class ConvergeBeamWeapon3D : Weapon3D, IBeamWeaponNetwork3D
             _netCombat.RequestBeamState(true, aimDirection);
             if (!_netCombat.IsServer)
             {
-                ApplyNetworkBeamAim(aimDirection);
                 StartBeam(authoritative: false, PlayerCombatStats3D.InvalidAttackId);
             }
             return;
@@ -442,7 +441,7 @@ public class ConvergeBeamWeapon3D : Weapon3D, IBeamWeaponNetwork3D
 
     private Vector3 ResolveOwnerAimDirection()
     {
-        if (_hasPendingNetworkAim)
+        if (ShouldUseReplicatedAim())
         {
             return _pendingNetworkAimDirection;
         }
@@ -464,7 +463,7 @@ public class ConvergeBeamWeapon3D : Weapon3D, IBeamWeaponNetwork3D
     {
         Vector3 origin = transform.position;
 
-        if (_hasPendingNetworkAim)
+        if (ShouldUseReplicatedAim())
         {
             return origin + (_pendingNetworkAimDirection * Mathf.Max(1f, convergeBeam.fallbackAimDistance));
         }
@@ -486,6 +485,15 @@ public class ConvergeBeamWeapon3D : Weapon3D, IBeamWeaponNetwork3D
         }
 
         return rayPoint;
+    }
+
+    private bool ShouldUseReplicatedAim()
+    {
+        return _hasPendingNetworkAim
+            && NetTickUtil.IsActive
+            && _netCombat != null
+            && _netCombat.IsSpawned
+            && !_netCombat.IsOwner;
     }
 
     private bool IsEmpoweredActive()
