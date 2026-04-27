@@ -53,33 +53,6 @@ public partial class NetMovement
         SubmitConvergeBeamStateServerRpc(state);
     }
 
-    public void RequestConvergeBeamAim(Vector2 aimDirection)
-    {
-        if (!NetTickUtil.IsActive || !IsOwner)
-        {
-            return;
-        }
-
-        if (aimDirection.sqrMagnitude <= 0.0001f)
-        {
-            return;
-        }
-
-        NetConvergeBeamAimState state = new NetConvergeBeamAimState
-        {
-            Tick = NetTickUtil.CurrentTick,
-            AimDirection = aimDirection.normalized
-        };
-
-        if (IsServer)
-        {
-            HandleConvergeBeamAimServer(state);
-            return;
-        }
-
-        SubmitConvergeBeamAimServerRpc(state);
-    }
-
     public void RequestFireTrailState(bool isActive)
     {
         if (!NetTickUtil.IsActive || !IsOwner)
@@ -467,12 +440,6 @@ public partial class NetMovement
     }
 
     [ServerRpc]
-    private void SubmitConvergeBeamAimServerRpc(NetConvergeBeamAimState state, ServerRpcParams rpcParams = default)
-    {
-        HandleConvergeBeamAimServer(state);
-    }
-
-    [ServerRpc]
     private void SubmitFireTrailStateServerRpc(NetFireTrailState state, ServerRpcParams rpcParams = default)
     {
         HandleFireTrailStateServer(state);
@@ -610,18 +577,6 @@ public partial class NetMovement
 
         convergeBeam.ApplyNetworkConvergeBeamState(state.IsFiring, authoritative: true, requestedTick: state.Tick);
         BroadcastConvergeBeamStateClientRpc(state);
-    }
-
-    private void HandleConvergeBeamAimServer(NetConvergeBeamAimState state)
-    {
-        ConvergeBeam convergeBeam = GetComponent<ConvergeBeam>();
-        if (convergeBeam == null)
-        {
-            return;
-        }
-
-        convergeBeam.ApplyNetworkConvergeBeamAim(state.AimDirection, authoritative: true);
-        BroadcastConvergeBeamAimClientRpc(state);
     }
 
     private void HandleFireTrailStateServer(NetFireTrailState state)
@@ -855,18 +810,6 @@ public partial class NetMovement
 
         ConvergeBeam convergeBeam = GetComponent<ConvergeBeam>();
         convergeBeam?.ApplyNetworkConvergeBeamState(state.IsFiring, authoritative: false, requestedTick: state.Tick);
-    }
-
-    [ClientRpc]
-    private void BroadcastConvergeBeamAimClientRpc(NetConvergeBeamAimState state)
-    {
-        if (IsServer || IsOwner)
-        {
-            return;
-        }
-
-        ConvergeBeam convergeBeam = GetComponent<ConvergeBeam>();
-        convergeBeam?.ApplyNetworkConvergeBeamAim(state.AimDirection, authoritative: false);
     }
 
     [ClientRpc]
