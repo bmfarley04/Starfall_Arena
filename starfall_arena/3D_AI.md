@@ -30,6 +30,7 @@ The 3D AI path should stay modular. Enemy prefabs should compose small scripts i
   - directly pursues the nearest player
   - slows/stops near the target instead of overshooting into long orbit loops
   - fires its projectile weapon when aimed and off cooldown
+  - should use `ProjectileWeaponEnemy3D` for direct-fire guns so the AI path stays muzzle-forward and avoids player-only weapon overhead
 - `ArtilleryBeamEnemyBrain3D`
   - long-range beam enemy behavior translated from the old artillery concept
   - maintains a standoff band instead of hard-chasing into point-blank range
@@ -46,6 +47,18 @@ The 3D AI path should stay modular. Enemy prefabs should compose small scripts i
   - always commits to the nearest player at full speed instead of using range management
   - detonates on contact or very close proximity so high-speed impacts do not depend entirely on a single collision callback
   - applies damage through `Entity3D` on the authority side, then kills itself through the normal enemy death path
+- `TankEnemyBrain3D`
+  - slow, high-HP heavy that lumbers toward the player and holds at a wide stop band (default 35m) instead of kiting or rushing in
+  - reuses the basic shooter speed-scale shape; turn rate is intentionally tuned slow on the prefab's `EnemyAIFlightController3D` so players can flank
+  - drives two independent enemy-only weapons: a `ProjectileWeaponEnemy3D` slow heavy cannon (tight aim tolerance, short cooldown) and a `MissileWeaponEnemy3D` homing launcher whose projectile prefab is a `MissileProjectile3D` (wide aim tolerance, long cooldown)
+  - each weapon's own cooldown still gates fire rate, but the brain also applies a small cross-weapon stagger delay after a successful shot so the cannon and missile launcher do not both dump on the same frame when both are ready
+  - intentionally cheaper than the artillery brain: no line-of-sight raycast, no per-frame aim refresh, no beam state machine
+- `RammerEnemyBrain3D`
+  - fast strike enemy whose only gimmick is slamming into the player to displace them
+  - pursues the nearest player at full speed, no stop band, no projectiles, no abilities
+  - on contact (overlap-sphere check around `ramDetectionDistance`), applies small chip damage and calls `NetMovement3D.ApplyCombatVelocityDelta(awayDirection * knockbackVelocity)` on the hit player so the velocity boost replicates correctly across the network (same hook the existing weapon-recoil path already uses)
+  - after a hit, enters a disengage state for `disengageDuration` seconds (or until the rammer is `disengageDistance` away), steering directly away from the target so it visibly arcs out and turns around instead of grinding on the player's hull
+  - survives the impact - this is not a kamikaze. Knockback is the entire identity; damage is secondary.
 
 ## Architecture Rules
 

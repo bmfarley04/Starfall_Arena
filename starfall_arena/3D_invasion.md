@@ -18,6 +18,8 @@ Implemented foundation:
 - `BasicShooterEnemyBrain3D` chases the nearest visible player, slows near the target to avoid orbiting, and fires at `PlayerTeam` when aimed and off cooldown
 - `ArtilleryBeamEnemyBrain3D` holds a longer standoff range, kites backward when pressured, and sustains a faction-targeted beam only while it still has line-of-sight and aim on a player-team target
 - `SuicideDroneEnemyBrain3D` is a dedicated kamikaze brain that always drives at the nearest player at full speed and detonates on contact/proximity using server-authoritative direct damage
+- `TankEnemyBrain3D` is a slow, high-HP heavy that advances to a wide hold-band, then sits and pressures the player with two independent weapons: a slow heavy cannon and a homing missile launcher; it reuses `ProjectileWeapon3D` for both slots and `MissileProjectile3D` as the missile prefab
+- `RammerEnemyBrain3D` is a fast strike enemy that chases the player at full speed and slams into them on contact for chip damage plus a large knockback, then arcs away to circle back; the knockback routes through the existing `NetMovement3D.ApplyCombatVelocityDelta` recoil hook so the impulse replicates correctly across the network without a new RPC
 - `NetEnemyMovement3D` makes enemies server-simulated in network sessions
 - `NetEnemyCombat3D` makes enemy projectile damage server-authoritative and broadcasts client cosmetics
 - enemy beam prefabs may now use an optional `BeamVisualDriver3D` such as `ForgeBeamVisualDriver3D` for presentation, but enemy beam gameplay still stays inside `LaserBeam3D` / `NetEnemyCombat3D`
@@ -116,6 +118,35 @@ For an artillery beam enemy prefab:
 - if you want the Forge line-renderer look, use `Assets/Prefabs/Weapons/Projectiles/3d/projectiles/enemies/beam/enemy_beam_forge_red.prefab` as the beam prefab instead of the older cylinder-based enemy beam
 - add `NetEnemyMovement3D` and `NetEnemyCombat3D` for networked movement plus beam cosmetic replication
 - set the root tag to `Enemy` for compatibility, but keep target/damage filtering faction-driven
+
+For a tank enemy prefab:
+
+- add `NetworkObject` if it will spawn in networked Invasion
+- add `FactionMember3D` and set faction to `EnemyTeam`
+- add `Enemy3D`
+- add `Rigidbody` (gravity off; tune drag for the slow lumbering feel)
+- add `EnemyAIFlightController3D`; tune `moveSpeed` low and `rotationDegreesPerSecond` low so the tank visibly turns slowly and players can strafe around it
+- add `EnemyTargetSensor3D`
+- optionally add `EnemyObstacleAvoidance3D` if the tank should weave around asteroids while advancing
+- add **two** `ProjectileWeapon3D` components on the same root: one configured as the slow heavy cannon (slow projectile speed, high damage, short-to-medium cooldown), one configured as the homing missile launcher (longer cooldown, projectile prefab is a `MissileProjectile3D` variant). Set both weapons' `targetFaction` to `PlayerTeam` and use `MuzzleForward` aiming. Wire each weapon's muzzle Transform to its own visible barrel/launcher on the model.
+- add `TankEnemyBrain3D` and assign both weapon references in its inspector (cannon slot and missile slot are explicitly serialized, since `GetComponent<ProjectileWeapon3D>()` would only resolve the first one)
+- add `NetEnemyMovement3D` and `NetEnemyCombat3D` for networked movement plus replicated fire
+- set the root tag to `Enemy` for compatibility, but keep target/damage filtering faction-driven
+- set a high `maxHealth` on `Entity3D` to lean into the tank identity
+
+For a rammer enemy prefab:
+
+- add `NetworkObject` if it will spawn in networked Invasion
+- add `FactionMember3D` and set faction to `EnemyTeam`
+- add `Enemy3D`
+- add `Rigidbody` (gravity off, low drag for fast pursuit feel)
+- add `EnemyAIFlightController3D`; tune `moveSpeed` high and `rotationDegreesPerSecond` high so it can actually arc back around for another pass after a hit
+- add `EnemyTargetSensor3D`
+- optionally add `EnemyObstacleAvoidance3D` if the rammer should weave around asteroids while charging
+- add `RammerEnemyBrain3D`; tune `knockbackVelocity` first since that single value drives the whole feel of the enemy
+- add `NetEnemyMovement3D` for networked movement replication; `NetEnemyCombat3D` is **not** required since the rammer has no projectile weapons (and the knockback hook lives on the player's `NetMovement3D`, not on the enemy)
+- set the root tag to `Enemy` for compatibility, but keep target/damage filtering faction-driven
+- set moderate `maxHealth` on `Entity3D` (lower than the tank - this is a fast strike unit, not a bruiser)
 
 For player prefabs used in Invasion:
 

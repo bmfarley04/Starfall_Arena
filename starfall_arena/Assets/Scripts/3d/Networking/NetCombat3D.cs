@@ -8,7 +8,7 @@ using UnityEngine;
 [RequireComponent(typeof(Entity3D))]
 public class NetCombat3D : NetworkBehaviour
 {
-    private const int ProjectileVisualTypeCount = 9;
+    private const int ProjectileVisualTypeCount = 11;
 
     private readonly List<NetProjectileFireRequest3D> _projectileRequests = new List<NetProjectileFireRequest3D>(8);
     private readonly int[] _lastAcceptedProjectileTick = new int[ProjectileVisualTypeCount];

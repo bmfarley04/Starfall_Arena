@@ -71,8 +71,15 @@ Base input rule:
 ### Shared combat support
 
 - `ProjectileWeapon3D`
-  - shared projectile spawn/cooldown ownership for player and enemy ships
+  - shared projectile spawn/cooldown ownership for player ships, plus older enemy prefabs that have not been migrated yet
   - routes network-session projectile fire through `NetCombat3D` while preserving local non-network behavior
+- `ProjectileWeaponEnemy3D`
+  - stripped-down enemy-only direct-fire projectile weapon
+  - always fires muzzle-forward and keeps only cooldown, muzzle, projectile, recoil, and muzzle-FX data
+  - should be preferred for AI projectile weapons that do not need player slot selection, screen-center aiming, or resource/HUD behavior
+- `MissileWeaponEnemy3D`
+  - stripped-down enemy-only missile launcher that reuses the same minimal volley/cooldown path as `ProjectileWeaponEnemy3D`
+  - expects a projectile prefab with `MissileProjectile3D` and supports multi-muzzle launches for enemy salvos
 - `StupidTurret3D`
   - scene-test firing driver for stationary or non-piloted 3D ships
   - should be paired with `ProjectileWeapon3D` aim set to `MuzzleForward` when the goal is "fire where the ship is facing"

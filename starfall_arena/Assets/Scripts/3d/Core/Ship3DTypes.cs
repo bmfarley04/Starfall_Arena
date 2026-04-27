@@ -218,17 +218,27 @@ public struct PlayerCameraRigConfig3D
 public struct ProjectileWeaponConfig3D
 {
     [Header("Projectile")]
+    [Tooltip("Projectile prefab spawned by this weapon. The prefab must contain a Projectile3D-derived component.")]
     public GameObject projectilePrefab;
+    [Tooltip("One or more muzzle transforms. When left empty, the weapon falls back to its own transform.")]
     public Transform[] muzzles;
+    [Tooltip("Legacy tag fallback used by older duel projectile paths when no explicit faction is supplied.")]
     public string targetTag;
+    [Tooltip("Preferred gameplay target faction for this projectile. Enemy AI weapons should usually target PlayerTeam.")]
     public Faction3D targetFaction;
 
     [Header("Combat")]
+    [Tooltip("Seconds between shots or volleys.")]
     public float cooldown;
+    [Tooltip("Projectile travel speed before inherited ship velocity is added.")]
     public float speed;
+    [Tooltip("Damage dealt on hit before shields/hull split the result.")]
     public float damage;
+    [Tooltip("Maximum projectile lifetime in seconds before despawn.")]
     public float lifetime;
+    [Tooltip("Optional impact force passed into projectile hit handling.")]
     public float impactForce;
+    [Tooltip("Optional recoil impulse applied back to the firing ship.")]
     public float recoilForce;
     [Tooltip("Overheat added per base projectile fired. This is ignored by ability-specific projectile requests for now.")]
     public float energyCost;

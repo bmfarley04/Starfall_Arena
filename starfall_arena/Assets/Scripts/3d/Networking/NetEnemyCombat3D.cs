@@ -11,6 +11,7 @@ public class NetEnemyCombat3D : NetworkBehaviour
 
     private Enemy3D _enemy;
     private NetEnemyMovement3D _movement;
+    private IEnemyProjectileWeapon3D[] _projectileWeapons;
     private bool _loggedMissingWeapon;
     private bool _loggedMissingProjectile;
     private bool _loggedMissingBeamWeapon;
@@ -20,7 +21,7 @@ public class NetEnemyCombat3D : NetworkBehaviour
         CacheReferences();
     }
 
-    public bool TryFireProjectilePattern(ProjectileWeapon3D sourceWeapon, Faction3D targetFaction)
+    public bool TryFireProjectilePattern(IEnemyProjectileWeapon3D sourceWeapon, Faction3D targetFaction)
     {
         if (!IsServer || !IsSpawned)
         {
@@ -29,14 +30,14 @@ public class NetEnemyCombat3D : NetworkBehaviour
 
         if (sourceWeapon == null)
         {
-            LogWarningOnce(ref _loggedMissingWeapon, "[NetEnemyCombat3D] Enemy projectile fire was ignored because no ProjectileWeapon3D source was supplied.");
+            LogWarningOnce(ref _loggedMissingWeapon, "[NetEnemyCombat3D] Enemy projectile fire was ignored because no enemy projectile weapon source was supplied.");
             return false;
         }
 
         ProjectileWeaponConfig3D config = sourceWeapon.WeaponConfig;
         if (config.projectilePrefab == null)
         {
-            LogWarningOnce(ref _loggedMissingProjectile, $"[NetEnemyCombat3D] Enemy projectile fire from {sourceWeapon.name} was ignored because its projectile prefab is missing.");
+            LogWarningOnce(ref _loggedMissingProjectile, $"[NetEnemyCombat3D] Enemy projectile fire from {sourceWeapon.GetType().Name} was ignored because its projectile prefab is missing.");
             return false;
         }
 
@@ -45,21 +46,8 @@ public class NetEnemyCombat3D : NetworkBehaviour
             return false;
         }
 
-        ProjectileFireRequest3D request = new ProjectileFireRequest3D
-        {
-            projectilePrefab = config.projectilePrefab,
-            muzzles = config.muzzles,
-            targetTag = string.Empty,
-            targetFaction = targetFaction,
-            speed = config.speed,
-            damage = config.damage,
-            lifetime = config.lifetime,
-            impactForce = config.impactForce,
-            recoilForce = config.recoilForce
-        };
-
         _projectileRequests.Clear();
-        sourceWeapon.BuildNetworkProjectileRequests(request, config, NetProjectileVisualType3D.Primary, NetTickUtil.CurrentTick, _projectileRequests);
+        sourceWeapon.BuildNetworkProjectileRequests(targetFaction, NetTickUtil.CurrentTick, _projectileRequests);
         if (_projectileRequests.Count == 0)
         {
             return false;
@@ -67,7 +55,7 @@ public class NetEnemyCombat3D : NetworkBehaviour
 
         for (int i = 0; i < _projectileRequests.Count; i++)
         {
-            SpawnAuthoritativeProjectile(sourceWeapon, config.projectilePrefab, _projectileRequests[i], targetFaction);
+            SpawnAuthoritativeProjectile(sourceWeapon, _projectileRequests[i], targetFaction);
         }
 
         sourceWeapon.NetworkFireSound?.PlayAtPoint(transform.position);
@@ -131,18 +119,15 @@ public class NetEnemyCombat3D : NetworkBehaviour
     }
 
     private void SpawnAuthoritativeProjectile(
-        ProjectileWeapon3D sourceWeapon,
-        GameObject projectilePrefab,
+        IEnemyProjectileWeapon3D sourceWeapon,
         NetProjectileFireRequest3D fireRequest,
         Faction3D targetFaction)
     {
         sourceWeapon.SpawnNetworkProjectile(
-            projectilePrefab,
             fireRequest,
             string.Empty,
             targetFaction,
             cosmeticOnly: false,
-            networkAuthority: null,
             playMuzzleEffect: true,
             serverAuthoritativeGameplay: true);
 
@@ -167,11 +152,10 @@ public class NetEnemyCombat3D : NetworkBehaviour
         }
 
         CacheReferences();
-        ProjectileWeapon3D sourceWeapon = _enemy != null ? _enemy.PrimaryWeapon : GetComponent<ProjectileWeapon3D>();
-        GameObject projectilePrefab = sourceWeapon != null ? sourceWeapon.WeaponConfig.projectilePrefab : null;
-        if (sourceWeapon == null || projectilePrefab == null)
+        IEnemyProjectileWeapon3D sourceWeapon = ResolveProjectileWeapon(spawnData.Fire.VisualType);
+        if (sourceWeapon == null || sourceWeapon.GetProjectilePrefab() == null)
         {
-            LogWarningOnce(ref _loggedMissingProjectile, "[NetEnemyCombat3D] Client received an enemy projectile cosmetic RPC, but the enemy proxy could not resolve a primary projectile weapon/prefab.");
+            LogWarningOnce(ref _loggedMissingProjectile, $"[NetEnemyCombat3D] Client received an enemy projectile cosmetic RPC for {spawnData.Fire.VisualType}, but the enemy proxy could not resolve the matching enemy weapon/prefab.");
             return;
         }
 
@@ -186,13 +170,12 @@ public class NetEnemyCombat3D : NetworkBehaviour
         }
 
         sourceWeapon.SpawnNetworkProjectile(
-            projectilePrefab,
             fire,
             string.Empty,
             fire.TargetFaction,
             cosmeticOnly: true,
-            networkAuthority: null,
-            playMuzzleEffect: true);
+            playMuzzleEffect: true,
+            serverAuthoritativeGameplay: false);
 
         sourceWeapon.NetworkFireSound?.PlayAtPoint(transform.position);
     }
@@ -240,6 +223,7 @@ public class NetEnemyCombat3D : NetworkBehaviour
     {
         _enemy ??= GetComponent<Enemy3D>();
         _movement ??= GetComponent<NetEnemyMovement3D>();
+        CacheProjectileWeapons();
     }
 
     private bool TryResolveBeamWeapon(out BeamWeapon3D beamWeapon)
@@ -257,5 +241,53 @@ public class NetEnemyCombat3D : NetworkBehaviour
 
         Debug.LogWarning(message, this);
         flag = true;
+    }
+
+    private void CacheProjectileWeapons()
+    {
+        if (_projectileWeapons != null && _projectileWeapons.Length > 0)
+        {
+            return;
+        }
+
+        MonoBehaviour[] behaviours = GetComponents<MonoBehaviour>();
+        int count = 0;
+        for (int i = 0; i < behaviours.Length; i++)
+        {
+            if (behaviours[i] is IEnemyProjectileWeapon3D)
+            {
+                count++;
+            }
+        }
+
+        _projectileWeapons = new IEnemyProjectileWeapon3D[count];
+        int writeIndex = 0;
+        for (int i = 0; i < behaviours.Length; i++)
+        {
+            if (behaviours[i] is IEnemyProjectileWeapon3D projectileWeapon)
+            {
+                _projectileWeapons[writeIndex++] = projectileWeapon;
+            }
+        }
+    }
+
+    private IEnemyProjectileWeapon3D ResolveProjectileWeapon(NetProjectileVisualType3D visualType)
+    {
+        CacheProjectileWeapons();
+        if (_projectileWeapons == null)
+        {
+            return null;
+        }
+
+        for (int i = 0; i < _projectileWeapons.Length; i++)
+        {
+            IEnemyProjectileWeapon3D projectileWeapon = _projectileWeapons[i];
+            if (projectileWeapon != null && projectileWeapon.UsesVisualType(visualType))
+            {
+                return projectileWeapon;
+            }
+        }
+
+        return null;
     }
 }

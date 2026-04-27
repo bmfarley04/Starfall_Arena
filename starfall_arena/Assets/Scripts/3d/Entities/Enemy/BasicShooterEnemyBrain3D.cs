@@ -8,15 +8,34 @@ using UnityEngine;
 public class BasicShooterEnemyBrain3D : MonoBehaviour
 {
     [Header("Basic Shooter")]
-    [SerializeField] private ProjectileWeapon3D primaryWeapon;
+    [Tooltip("Enemy-only direct-fire projectile weapon. This stripped-down AI version always fires muzzle-forward instead of using player aim logic.")]
+    [SerializeField] private ProjectileWeaponEnemy3D primaryWeapon;
+
+    [Tooltip("AI flight motor that drives the Rigidbody. Auto-assigned from this GameObject if left empty.")]
     [SerializeField] private EnemyAIFlightController3D flightController;
+
+    [Tooltip("Faction-aware target sensor. Auto-assigned from this GameObject if left empty.")]
     [SerializeField] private EnemyTargetSensor3D targetSensor;
+
+    [Tooltip("Optional spherecast obstacle avoidance. Leave empty (or disable useObstacleAvoidance) for the cheapest path.")]
     [SerializeField] private EnemyObstacleAvoidance3D obstacleAvoidance;
+
+    [Tooltip("Network combat helper for replicated enemy projectile fire. Auto-assigned from this GameObject if left empty.")]
     [SerializeField] private NetEnemyCombat3D netEnemyCombat;
+
+    [Tooltip("Seconds between AI decision ticks. Lower is more responsive but costs more CPU.")]
     [SerializeField] private float thinkInterval = 0.05f;
+
+    [Tooltip("Max angle (degrees) between the enemy's forward and the target direction before it will fire.")]
     [SerializeField] private float aimToleranceDegrees = 10f;
+
+    [Tooltip("Distance (meters) at which the enemy stops advancing and holds position to fire.")]
     [SerializeField] private float stopDistance = 18f;
+
+    [Tooltip("Distance (meters) beyond which the enemy moves at full speed toward the target.")]
     [SerializeField] private float fullSpeedDistance = 45f;
+
+    [Tooltip("If true, route steering through the obstacle avoidance component when one is assigned.")]
     [SerializeField] private bool useObstacleAvoidance;
 
     private NetworkObject _networkObject;
@@ -24,7 +43,7 @@ public class BasicShooterEnemyBrain3D : MonoBehaviour
 
     private void Awake()
     {
-        primaryWeapon ??= GetComponent<ProjectileWeapon3D>();
+        primaryWeapon ??= GetComponent<ProjectileWeaponEnemy3D>();
         flightController ??= GetComponent<EnemyAIFlightController3D>();
         targetSensor ??= GetComponent<EnemyTargetSensor3D>();
         obstacleAvoidance ??= GetComponent<EnemyObstacleAvoidance3D>();
