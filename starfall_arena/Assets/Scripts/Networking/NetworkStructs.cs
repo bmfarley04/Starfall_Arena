@@ -230,6 +230,18 @@ public struct NetConvergeBeamState : INetworkSerializable
     }
 }
 
+public struct NetConvergeBeamAimState : INetworkSerializable
+{
+    public int Tick;
+    public Vector2 AimDirection;
+
+    public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
+    {
+        serializer.SerializeValue(ref Tick);
+        serializer.SerializeValue(ref AimDirection);
+    }
+}
+
 public struct NetFireTrailState : INetworkSerializable
 {
     public int Tick;
