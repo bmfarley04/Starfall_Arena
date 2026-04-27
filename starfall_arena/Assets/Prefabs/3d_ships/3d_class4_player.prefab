@@ -5279,7 +5279,7 @@ MonoBehaviour:
       m_Calls: []
   m_ActionEvents: []
   m_NeverAutoSwitchControlSchemes: 1
-  m_DefaultControlScheme: controller
+  m_DefaultControlScheme: Playstation
   m_DefaultActionMap: 3d
   m_SplitScreenIndex: -1
   m_Camera: {fileID: 0}
@@ -5935,7 +5935,7 @@ MonoBehaviour:
       targetFaction: 0
       cooldown: 10
       speed: 120
-      damage: 30
+      damage: 40
       lifetime: 5
       impactForce: 0
       recoilForce: 0
@@ -5947,7 +5947,7 @@ MonoBehaviour:
     fireSound: {fileID: 11400000, guid: 873f5f679d305474fba8afb9a88cf822, type: 2}
     regular:
       missilePrefab: {fileID: 152452, guid: a8f09a644404f9c4b907b62b3bb2d207, type: 3}
-      damageMultiplier: 1
+      damageMultiplier: 5
       speedMultiplier: 0.5
       impactMultiplier: 0
       recoilMultiplier: 0
@@ -5955,7 +5955,7 @@ MonoBehaviour:
       sizeMultiplier: 1
     empowered:
       missilePrefab: {fileID: 152452, guid: a8f09a644404f9c4b907b62b3bb2d207, type: 3}
-      damageMultiplier: 1.6
+      damageMultiplier: 7
       speedMultiplier: 1.5
       impactMultiplier: 0
       recoilMultiplier: 0
@@ -6055,7 +6055,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 623134825
+  GlobalObjectIdHash: 3311927117
   InScenePlacedSourceGlobalObjectIdHash: 2698202182
   DeferredDespawnTick: 0
   Ownership: 1

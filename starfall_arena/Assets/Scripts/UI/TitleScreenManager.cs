@@ -79,10 +79,6 @@ public class TitleScreenManager : MonoBehaviour
     [Tooltip("3D controls screen canvas")]
     [SerializeField] private CanvasGroup controls3DCanvas;
 
-    [Header("Controls Menu")]
-    [Tooltip("If false, the title screen will not offer or allow switching to the 3D controls screen.")]
-    [SerializeField] private bool enable3DControlScheme = true;
-
     [Tooltip("First selected button on the 2D controls screen (for controller navigation)")]
     [SerializeField] private GameObject controlsFirstSelected;
 
@@ -146,10 +142,10 @@ public class TitleScreenManager : MonoBehaviour
     [SerializeField] private GameObject[] hostModePreviewModels;
 
     [Header("3D Test Flow")]
-    [Tooltip("2D gameplay scene used by the title test shortcuts.")]
-    [SerializeField] private string testShortcutGameplaySceneName = "networkScene";
-    [Tooltip("Address auto-filled into the join field by the title test shortcuts.")]
-    [SerializeField] private string test3DAutoFillAddress = "10.33.102.140";
+    [Tooltip("3D gameplay scene used by the test-only title shortcuts.")]
+    [SerializeField] private string test3DGameplaySceneName = "3dscene";
+    [Tooltip("Direct-connect address used by the client-side 3D test shortcut.")]
+    [SerializeField] private string test3DClientAddress = "10.33.102.140";
     [Tooltip("Optional override for the host's auto-selected 3D test ship. Falls back to 3d_class1 by ship ID.")]
     [SerializeField] private ShipData test3DHostShip;
     [Tooltip("Optional override for the client's auto-selected 3D test ship. Falls back to 3d_class2 by ship ID.")]
@@ -249,10 +245,6 @@ public class TitleScreenManager : MonoBehaviour
         SetCanvasHidden(mainMenuCanvas);
         SetCanvasHidden(controlsCanvas);
         SetCanvasHidden(controls3DCanvas);
-        if (!enable3DControlScheme && controls3DCanvas != null)
-        {
-            controls3DCanvas.gameObject.SetActive(false);
-        }
         SetCanvasHidden(shipSelectCanvas);
         SetCanvasHidden(joinGameCanvas);
         SetCanvasHidden(hostWaitingCanvas);
@@ -461,13 +453,54 @@ public class TitleScreenManager : MonoBehaviour
     public void start3dhostflow()
     {
         Reset3DTestFlowState();
-        TransitionTo3DTestShipSelect();
+        _isRunning3DTestFlow = true;
+        _is3DTestHostFlow = true;
+        _pendingHostModeLabel = host3DStatusLabel;
+
+        if (!Prepare3DTestShipSelections())
+        {
+            return;
+        }
+
+        StartHostingForScene(test3DGameplaySceneName);
     }
 
     public void start3dclientflow()
     {
         Reset3DTestFlowState();
-        TransitionTo3DTestShipSelect();
+        _isRunning3DTestFlow = true;
+        _is3DTestHostFlow = false;
+
+        if (!Prepare3DTestShipSelections())
+        {
+            return;
+        }
+
+        if (ipAddressInputField != null)
+        {
+            ipAddressInputField.text = test3DClientAddress;
+        }
+
+        _netMgr = NetMgr.Instance;
+        _sessionData = NetworkSessionData.Instance;
+        bool started = _netMgr != null && _netMgr.StartClientForMenu(test3DClientAddress);
+        if (!started)
+        {
+            Reset3DTestFlowState();
+            return;
+        }
+
+        HandleStatusMessageChanged("Connecting to 3D test host...");
+
+        if (joinGameCanvas != null && _activeTransition == null)
+        {
+            CanvasGroup source = _activeCanvas ?? mainMenuCanvas;
+            if (source != joinGameCanvas)
+            {
+                _activeTransition = StartCoroutine(
+                    RunTransition(source, joinGameCanvas, joinGameFirstSelected));
+            }
+        }
     }
 
     public void TransitionToOnlineMenuFromHostMode()
@@ -904,7 +937,7 @@ public class TitleScreenManager : MonoBehaviour
 
     private HoldActionButton GetActiveBackButton()
     {
-        if (_activeCanvas == controlsCanvas || (enable3DControlScheme && _activeCanvas == controls3DCanvas))
+        if (_activeCanvas == controlsCanvas || _activeCanvas == controls3DCanvas)
         {
             return GetControlsBackButton(_activeCanvas);
         }
@@ -939,7 +972,7 @@ public class TitleScreenManager : MonoBehaviour
             return _resolvedControlsBackButton;
         }
 
-        if (enable3DControlScheme && canvas == controls3DCanvas && _resolvedControls3DBackButton.target != null)
+        if (canvas == controls3DCanvas && _resolvedControls3DBackButton.target != null)
         {
             return _resolvedControls3DBackButton;
         }
@@ -969,7 +1002,7 @@ public class TitleScreenManager : MonoBehaviour
                 fillImage = fillImage
             };
 
-            if (enable3DControlScheme && canvas == controls3DCanvas)
+            if (canvas == controls3DCanvas)
             {
                 _resolvedControls3DBackButton = resolvedButton;
                 return _resolvedControls3DBackButton;
@@ -1066,12 +1099,6 @@ public class TitleScreenManager : MonoBehaviour
 
     private bool HandleControlsSchemeNavigation()
     {
-        if (!enable3DControlScheme)
-        {
-            _controlsSchemeNavigationLatch = false;
-            return false;
-        }
-
         CanvasGroup activeControlsCanvas = GetActiveControlsCanvas();
         if (activeControlsCanvas == null)
         {
@@ -1140,7 +1167,7 @@ public class TitleScreenManager : MonoBehaviour
             return controlsCanvas;
         }
 
-        if (enable3DControlScheme && _activeCanvas == controls3DCanvas)
+        if (_activeCanvas == controls3DCanvas)
         {
             return controls3DCanvas;
         }
@@ -1150,7 +1177,7 @@ public class TitleScreenManager : MonoBehaviour
 
     private void TransitionToControls3D()
     {
-        if (!enable3DControlScheme || _activeTransition != null || controlsCanvas == null || controls3DCanvas == null)
+        if (_activeTransition != null || controlsCanvas == null || controls3DCanvas == null)
         {
             return;
         }
@@ -1161,7 +1188,7 @@ public class TitleScreenManager : MonoBehaviour
 
     private void TransitionToControls2D()
     {
-        if (!enable3DControlScheme || _activeTransition != null || controlsCanvas == null || controls3DCanvas == null)
+        if (_activeTransition != null || controlsCanvas == null || controls3DCanvas == null)
         {
             return;
         }
@@ -1232,12 +1259,6 @@ public class TitleScreenManager : MonoBehaviour
 
     private void PrimeControlsSchemeNavigationLatch()
     {
-        if (!enable3DControlScheme)
-        {
-            _controlsSchemeNavigationLatch = false;
-            return;
-        }
-
         _controlsSchemeNavigationLatch = ResolveControlsSchemeNavigationDirection() != 0;
     }
 
@@ -1301,7 +1322,7 @@ public class TitleScreenManager : MonoBehaviour
 
     private bool IsControlsCanvasActive()
     {
-        return _activeCanvas == controlsCanvas || (enable3DControlScheme && _activeCanvas == controls3DCanvas);
+        return _activeCanvas == controlsCanvas || _activeCanvas == controls3DCanvas;
     }
 
     private static int ResolveNavigationDirection(Vector2 navigationInput)
@@ -1465,51 +1486,9 @@ public class TitleScreenManager : MonoBehaviour
             return false;
         }
 
-        ApplyShipRosterForGameplayScene(testShortcutGameplaySceneName);
+        ApplyShipRosterForGameplayScene(test3DGameplaySceneName);
         GameDataManager.Instance?.SetSelectedShips(hostShip, clientShip);
         return true;
-    }
-
-    private void TransitionTo3DTestShipSelect()
-    {
-        if (_activeTransition != null)
-        {
-            return;
-        }
-
-        if (ipAddressInputField != null)
-        {
-            ipAddressInputField.text = test3DAutoFillAddress;
-        }
-
-        _netMgr = NetMgr.Instance;
-        _netMgr?.CancelCurrentAttempt();
-
-        _sessionData = NetworkSessionData.Instance;
-        if (_sessionData != null)
-        {
-            _sessionData.ResetToTitleLocal();
-        }
-
-        HandleStatusMessageChanged(string.Empty);
-        ApplyShipRosterForGameplayScene(testShortcutGameplaySceneName);
-        shipSelectManager?.BeginGameplayScenePreload();
-
-        CanvasGroup source = _activeCanvas ?? mainMenuCanvas;
-        if (source == shipSelectCanvas)
-        {
-            ApplyShipRosterForGameplayScene(testShortcutGameplaySceneName);
-            shipSelectManager?.gameObject.SetActive(true);
-            shipSelectManager?.ResetToPlayer1();
-            shipSelectManager?.PreloadShipData();
-            shipSelectManager?.BeginGameplayScenePreload();
-            shipSelectManager?.ActivateShipWhenVisible();
-            RefreshSelection(shipSelectFirstSelected);
-            return;
-        }
-
-        _activeTransition = StartCoroutine(
-            RunTransition(source, shipSelectCanvas, shipSelectFirstSelected));
     }
 
     private ShipData Resolve3DTestShip(bool hostShip)
