@@ -167,8 +167,9 @@ Base input rule:
   - does not use the base projectile hit effect path; missile impact presentation should come from the authored explosion setup instead
 - `Dodge3D`
   - Class 4 mobility ability on the `Ability3D` path
-  - pressing the ability primes a short input window; the next valid look-stick input chooses one of four ship-relative directions: forward, back, left, or right
-  - current 3D implementation is controller-look-stick only; no KBM dodge direction fallback is authored in this pass
+  - pressing the ability primes a short input window; the next valid left-stick movement input chooses one of four ship-relative directions: forward, back, left, or right
+  - the controller dodge direction comes from `PlayerInput3D.OnLook` / `MoveInput`, while free-look steering still comes from `OnFreeLook`
+  - current 3D implementation is controller-left-stick only; no KBM dodge direction fallback is authored in this pass
   - in network sessions, owner dodge movement is queued through `NetMovement3D` and serialized into `NetInputSnapshot3D` so prediction, server validation, and reconciliation replay all reproduce the same dash; combat RPCs are presentation-only for dodge
 - `Empower3D`
   - timed Class 4 empower toggle on the `Ability3D` path

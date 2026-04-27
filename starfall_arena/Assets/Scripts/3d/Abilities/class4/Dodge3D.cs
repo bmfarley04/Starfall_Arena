@@ -13,7 +13,8 @@ public class Dodge3D : Ability3D
         public float dodgeDistance;
         public float slideDuration;
         public float primeWindow;
-        public float lookDeadzone;
+        [Tooltip("Minimum left-stick magnitude required during the prime window before Dodge commits to a direction.")]
+        public float directionInputDeadzone;
 
         [Header("Empowerment")]
         public Empower3D empowerAbility;
@@ -32,7 +33,7 @@ public class Dodge3D : Ability3D
         dodgeDistance = 8f,
         slideDuration = 0.2f,
         primeWindow = 1.5f,
-        lookDeadzone = 0.35f,
+        directionInputDeadzone = 0.35f,
         empoweredCooldown = 1f
     };
 
@@ -75,16 +76,16 @@ public class Dodge3D : Ability3D
             return;
         }
 
-        Vector2 lookInput = _player != null && _player.PlayerInput3D != null
-            ? _player.PlayerInput3D.LookInput
+        Vector2 directionalInput = _player != null && _player.PlayerInput3D != null
+            ? _player.PlayerInput3D.MoveInput
             : Vector2.zero;
 
-        if (lookInput.magnitude <= Mathf.Clamp01(dodge.lookDeadzone))
+        if (directionalInput.magnitude <= Mathf.Clamp01(dodge.directionInputDeadzone))
         {
             return;
         }
 
-        ExecuteDodge(ResolveCardinalDirection(lookInput));
+        ExecuteDodge(ResolveCardinalDirection(directionalInput));
     }
 
     public override bool TryUseAbility(InputValue value)
@@ -253,16 +254,16 @@ public class Dodge3D : Ability3D
         _dodgeEndTime = Time.time + Mathf.Max(0.01f, dodge.slideDuration);
     }
 
-    private Vector3 ResolveCardinalDirection(Vector2 lookInput)
+    private Vector3 ResolveCardinalDirection(Vector2 directionalInput)
     {
         Vector3 direction;
-        if (Mathf.Abs(lookInput.x) >= Mathf.Abs(lookInput.y))
+        if (Mathf.Abs(directionalInput.x) >= Mathf.Abs(directionalInput.y))
         {
-            direction = lookInput.x >= 0f ? transform.right : -transform.right;
+            direction = directionalInput.x >= 0f ? transform.right : -transform.right;
         }
         else
         {
-            direction = lookInput.y >= 0f ? transform.forward : -transform.forward;
+            direction = directionalInput.y >= 0f ? transform.forward : -transform.forward;
         }
 
         if (entity != null && entity.Flight != null && entity.Flight.LockToWorldYPlane)

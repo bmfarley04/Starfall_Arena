@@ -6,10 +6,12 @@ public class PlayerInput3D : MonoBehaviour, IShipFlightInputSource
     [SerializeField] private ShipFlight3D shipFlight;
     [SerializeField] private Entity3D entity;
     [SerializeField] private PlayerInput playerInput;
+    [Tooltip("Sensitivity multiplier for mouse delta when keyboard/mouse is the active control scheme.")]
     [SerializeField] private float mouseLookSensitivity = 0.02f;
 
     private Vector2 _lookInput;
     private Vector2 _gamepadLookInput;
+    private Vector2 _moveInput;
     private float _thrustInput;
     private bool _toggleFrictionPressed;
     private bool _fireHeld;
@@ -21,6 +23,7 @@ public class PlayerInput3D : MonoBehaviour, IShipFlightInputSource
     private const string KeyboardMouseScheme = "key+mouse";
 
     public Vector2 LookInput => _lookInput;
+    public Vector2 MoveInput => _moveInput;
     public float ThrustInput => _thrustInput;
     public bool IsFireHeld => _fireHeld;
     public bool IsCombatInputSuppressed => _combatInputSuppressed;
@@ -86,6 +89,11 @@ public class PlayerInput3D : MonoBehaviour, IShipFlightInputSource
     public void OnFreeLook(InputValue value)
     {
         _gamepadLookInput = value.Get<Vector2>();
+    }
+
+    public void OnLook(InputValue value)
+    {
+        _moveInput = value.Get<Vector2>();
     }
 
     public void OnThrust(InputValue value)
