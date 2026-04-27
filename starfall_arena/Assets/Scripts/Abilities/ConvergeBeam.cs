@@ -54,8 +54,8 @@ public class ConvergeBeam : Ability
     private bool _activeAuthoritative;
     private NetMovement _netMovement;
     private PlayerInput _playerInput;
-    private Vector2 _currentAimPoint;
-    private bool _hasNetworkAimPoint;
+    private Vector2 _currentAimDirection = Vector2.up;
+    private bool _hasNetworkAimDirection;
 
     protected override void Awake()
     {
@@ -92,11 +92,12 @@ public class ConvergeBeam : Ability
 
             if (NetTickUtil.IsActive && _netMovement != null && _netMovement.IsSpawned && _netMovement.IsOwner)
             {
-                if (TryResolveScreenCenterAimPoint(out Vector3 liveAimPoint))
+                Vector2 liveAimDirection = ResolveCurrentAimDirection();
+                if (liveAimDirection.sqrMagnitude > 0.0001f)
                 {
-                    _currentAimPoint = new Vector2(liveAimPoint.x, liveAimPoint.y);
-                    _hasNetworkAimPoint = true;
-                    _netMovement.RequestConvergeBeamAim(_currentAimPoint);
+                    _currentAimDirection = liveAimDirection.normalized;
+                    _hasNetworkAimDirection = true;
+                    _netMovement.RequestConvergeBeamAim(_currentAimDirection);
                 }
             }
 
@@ -206,10 +207,15 @@ public class ConvergeBeam : Ability
         }
     }
 
-    public void ApplyNetworkConvergeBeamAim(Vector2 aimPoint, bool authoritative)
+    public void ApplyNetworkConvergeBeamAim(Vector2 aimDirection, bool authoritative)
     {
-        _currentAimPoint = aimPoint;
-        _hasNetworkAimPoint = true;
+        if (aimDirection.sqrMagnitude <= 0.0001f)
+        {
+            return;
+        }
+
+        _currentAimDirection = aimDirection.normalized;
+        _hasNetworkAimDirection = true;
 
         if (_isFiring)
         {
@@ -289,9 +295,9 @@ public class ConvergeBeam : Ability
 
     private Vector3 ResolveCurrentConvergencePoint()
     {
-        if (_hasNetworkAimPoint)
+        if (_hasNetworkAimDirection)
         {
-            return new Vector3(_currentAimPoint.x, _currentAimPoint.y, transform.position.z);
+            return transform.position + (Vector3)(_currentAimDirection * convergeBeam.convergenceDistance);
         }
 
         if (TryResolveScreenCenterAimPoint(out Vector3 screenCenterAimPoint))
@@ -328,6 +334,13 @@ public class ConvergeBeam : Ability
 
     private Vector2 ResolveCurrentAimDirection()
     {
+        bool shouldUseReplicatedAim = _hasNetworkAimDirection
+            && (!NetTickUtil.IsActive || _netMovement == null || !_netMovement.IsSpawned || !_netMovement.IsOwner);
+        if (shouldUseReplicatedAim && _currentAimDirection.sqrMagnitude > 0.0001f)
+        {
+            return _currentAimDirection.normalized;
+        }
+
         if (player != null)
         {
             Vector2 liveLookInput = player.LookInput;
@@ -343,6 +356,15 @@ public class ConvergeBeam : Ability
             if (networkLookInput.sqrMagnitude > 0.0001f)
             {
                 return networkLookInput.normalized;
+            }
+        }
+
+        if (TryResolveScreenCenterAimPoint(out Vector3 screenCenterAimPoint))
+        {
+            Vector2 toScreenCenter = (Vector2)(screenCenterAimPoint - transform.position);
+            if (toScreenCenter.sqrMagnitude > 0.0001f)
+            {
+                return toScreenCenter.normalized;
             }
         }
 
@@ -364,7 +386,7 @@ public class ConvergeBeam : Ability
             _activeBeams = null;
         }
 
-        _hasNetworkAimPoint = false;
+        _hasNetworkAimDirection = false;
     }
 
     private bool IsEmpoweredActive()

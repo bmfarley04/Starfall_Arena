@@ -53,9 +53,14 @@ public partial class NetMovement
         SubmitConvergeBeamStateServerRpc(state);
     }
 
-    public void RequestConvergeBeamAim(Vector2 aimPoint)
+    public void RequestConvergeBeamAim(Vector2 aimDirection)
     {
         if (!NetTickUtil.IsActive || !IsOwner)
+        {
+            return;
+        }
+
+        if (aimDirection.sqrMagnitude <= 0.0001f)
         {
             return;
         }
@@ -63,7 +68,7 @@ public partial class NetMovement
         NetConvergeBeamAimState state = new NetConvergeBeamAimState
         {
             Tick = NetTickUtil.CurrentTick,
-            AimPoint = aimPoint
+            AimDirection = aimDirection.normalized
         };
 
         if (IsServer)
@@ -615,7 +620,7 @@ public partial class NetMovement
             return;
         }
 
-        convergeBeam.ApplyNetworkConvergeBeamAim(state.AimPoint, authoritative: true);
+        convergeBeam.ApplyNetworkConvergeBeamAim(state.AimDirection, authoritative: true);
         BroadcastConvergeBeamAimClientRpc(state);
     }
 
@@ -861,7 +866,7 @@ public partial class NetMovement
         }
 
         ConvergeBeam convergeBeam = GetComponent<ConvergeBeam>();
-        convergeBeam?.ApplyNetworkConvergeBeamAim(state.AimPoint, authoritative: false);
+        convergeBeam?.ApplyNetworkConvergeBeamAim(state.AimDirection, authoritative: false);
     }
 
     [ClientRpc]

@@ -278,7 +278,7 @@ The current duel-oriented documentation should especially treat these as establi
   - reduces rotation while active
 - `ConvergeBeam`
   - sustained multi-beam weapon that re-aims its convergence point from live look input every frame instead of locking to ship-forward at activation time
-  - in network play, the owning client must keep sending the live convergence point while the beam is held, and server/remote copies must apply the latest replicated point so authoritative damage and visuals keep following the current target instead of the initial fire point
+  - in network play, the owning client must keep sending the live aim direction while the beam is held, and server/remote copies must derive convergence from the latest replicated direction so authoritative damage and visuals keep following the current target instead of the initial fire point
 - `Reflector`
   - timed reflect shield
   - modifies projectile collisions
@@ -309,7 +309,7 @@ Networked combat note:
 - Bug note: `Class3_Player.prefab` friction tuning must stay aligned with the shared `Player` friction system. If `frictionDelay` or `frictionDeceleration` are left at zero, the Class3 friction toggle will look broken even when the network/input code is correct.
 - Bug note: ship classes must not declare a second serialized field named `fireCooldown` when `Player` already owns the runtime cooldown field. Unity can report "The same field name is serialized multiple times" for that shadowed-name pattern, which breaks inspector editing. Use a class-local backing field such as `_fireCooldown` and copy it into `Player.fireCooldown` in `Awake()`.
 - Bug note: networked piercing projectiles must suppress repeat hits on the same target for the lifetime of that flight. Local play relies on `OnTriggerEnter2D`, but the network path uses repeated server-side sweeps against rewind history. Without a per-projectile hit registry, a piercing `GigaBlast` can damage the same player on successive server ticks and look like an instant kill even though the configured single-hit damage is correct.
-- Bug note: `ConvergeBeam` must compute its convergence point from live aim input, not just `transform.up`. Using ship-forward makes the beams feel sticky while held because the convergence target only follows hull rotation instead of the player's current mouse/controller aim.
+- Bug note: `ConvergeBeam` must compute its convergence from live aim input and replicate the live aim direction while held, not just reuse the first convergence point or `transform.up`. Reusing a fixed point or ship-forward makes the beams feel sticky because networked server/remote copies keep firing at the initial target instead of the player's current controller aim.
 - Bug note: `Invisibility` should explicitly hide and restore ship renderers during activation instead of relying on layer changes alone. The layer swap is still needed for targeting/filtering, but by itself it is not reliable enough as player-facing feedback.
 - Bug note: `Invisibility` is enemy-facing concealment, not self-blindness. The owning player should keep seeing their own ship, and invisibility should immediately break when Class3 takes another offensive action such as primary fire, `FireWall`, `FaerieShift`, or `TriggerBomb`.
 - reinforced hull now uses a separate `sizeScaleMultiplier` on the augment asset, so ship visual scaling can be tuned independently from the health bonus instead of inheriting `healthMultiplier`.
