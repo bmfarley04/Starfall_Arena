@@ -142,7 +142,17 @@ public class Dodge3D : Ability3D
 
     public bool CanAcceptNetworkDodgeRequest()
     {
-        return !isLocked && !isDisabledByOtherAbility && !IsOnCooldown();
+        return CanAcceptNetworkDodgeState() && !IsOnCooldown();
+    }
+
+    public bool CanAcceptNetworkDodgeState()
+    {
+        return !isLocked && !isDisabledByOtherAbility;
+    }
+
+    public float GetNetworkDodgeCooldownDuration()
+    {
+        return GetCooldownDuration();
     }
 
     public bool TryResolveNetworkDodge(

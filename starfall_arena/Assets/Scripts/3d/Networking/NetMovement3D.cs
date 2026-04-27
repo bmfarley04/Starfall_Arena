@@ -58,6 +58,7 @@ public class NetMovement3D : NetworkBehaviour
     private bool _loggedMissingCombatBridge;
     private bool _pendingDodgeRequested;
     private Vector3 _pendingDodgeDirection;
+    private int _lastAcceptedDodgeTick = -1;
     private int _lastSentTick = -1;
     private int _lastReceivedServerTick = -1;
     private int _lastProcessedServerTick = -1;
@@ -97,6 +98,7 @@ public class NetMovement3D : NetworkBehaviour
         _serverState = _ownerState;
         _ownerStateInitialized = true;
         _serverStateInitialized = true;
+        _lastAcceptedDodgeTick = -1;
 
         if (IsOwner)
         {
@@ -448,7 +450,7 @@ public class NetMovement3D : NetworkBehaviour
         int inputIndex = tick % ClientInputBufferSize;
         _inputBuffer[inputIndex] = input;
 
-        Vector3 previousVelocity = _ownerState.Velocity;
+        Vector3 previousVelocity = GetEffectiveVelocity(_ownerState);
         SimulateInputTick(
             ref _ownerState,
             in input,
@@ -499,7 +501,7 @@ public class NetMovement3D : NetworkBehaviour
 
         _serverFrictionEnabled = input.FrictionEnabled;
 
-        Vector3 previousVelocity = _serverState.Velocity;
+        Vector3 previousVelocity = GetEffectiveVelocity(_serverState);
         SimulateInputTick(
             ref _serverState,
             in input,
@@ -591,7 +593,9 @@ public class NetMovement3D : NetworkBehaviour
         Vector2 latestLookInput = _inputBuffer[latestInputIndex].Tick == currentTick
             ? _inputBuffer[latestInputIndex].LookInput
             : Vector2.zero;
-        Vector3 previousVelocity = predicted.Tick == currentTick ? predicted.Velocity : serverState.Velocity;
+        Vector3 previousVelocity = predicted.Tick == currentTick
+            ? GetEffectiveVelocity(ToMovementState(predicted))
+            : GetEffectiveVelocity(ToMovementState(serverState));
         ApplyFlightTelemetry(latestLookInput, _predictionBuffer[latestInputIndex].ThrustInput, _predictionBuffer[latestInputIndex].FrictionEnabled, _ownerState, previousVelocity, dt);
     }
 
@@ -599,7 +603,7 @@ public class NetMovement3D : NetworkBehaviour
     {
         _ownerState = ToMovementState(snapshot);
         ApplySimulationState(_ownerState);
-        ApplyFlightTelemetry(snapshot.FilteredLookInput, snapshot.ThrustInput, snapshot.FrictionEnabled, _ownerState, snapshot.Velocity, GetTickDeltaTime());
+        ApplyFlightTelemetry(snapshot.FilteredLookInput, snapshot.ThrustInput, snapshot.FrictionEnabled, _ownerState, GetEffectiveVelocity(_ownerState), GetTickDeltaTime());
     }
 
     private void BufferInterpolationState(NetStateSnapshot3D state)
@@ -663,9 +667,9 @@ public class NetMovement3D : NetworkBehaviour
         ApplySimulationState(interpolatedState);
         UpdateRemoteDodgePresentation(interpolatedState);
 
-        Vector3 previousVelocity = _hasLastAppliedVisualVelocity ? _lastAppliedVisualVelocity : from.Velocity;
+        Vector3 previousVelocity = _hasLastAppliedVisualVelocity ? _lastAppliedVisualVelocity : GetEffectiveVelocity(ToMovementState(from));
         ApplyFlightTelemetry(interpolatedState.FilteredLookInput, Mathf.Lerp(from.ThrustInput, to.ThrustInput, t), to.FrictionEnabled, interpolatedState, previousVelocity, tickInterval);
-        _lastAppliedVisualVelocity = interpolatedState.Velocity;
+        _lastAppliedVisualVelocity = GetEffectiveVelocity(interpolatedState);
         _hasLastAppliedVisualVelocity = true;
 
         if (t >= 1f)
@@ -705,7 +709,7 @@ public class NetMovement3D : NetworkBehaviour
             return;
         }
 
-        if (validateDodge && !_dodgeAbility.CanAcceptNetworkDodgeRequest())
+        if (validateDodge && !CanAcceptNetworkDodgeAtTick(input.Tick))
         {
             return;
         }
@@ -721,13 +725,26 @@ public class NetMovement3D : NetworkBehaviour
         }
 
         state.DodgeVelocity = dashVelocity;
-        state.DodgeExitVelocity = Vector3.zero;
+        state.DodgeExitVelocity = state.Velocity;
         state.DodgeRemainingTime = duration;
 
         if (validateDodge)
         {
+            _lastAcceptedDodgeTick = input.Tick;
             _dodgeAbility.MarkNetworkDodgeAccepted();
         }
+    }
+
+    private bool CanAcceptNetworkDodgeAtTick(int inputTick)
+    {
+        if (_dodgeAbility == null || !_dodgeAbility.CanAcceptNetworkDodgeState())
+        {
+            return false;
+        }
+
+        float cooldownDuration = Mathf.Max(0f, _dodgeAbility.GetNetworkDodgeCooldownDuration());
+        int cooldownTicks = Mathf.CeilToInt(cooldownDuration / Mathf.Max(0.0001f, GetTickDeltaTime()));
+        return _lastAcceptedDodgeTick < 0 || inputTick >= _lastAcceptedDodgeTick + cooldownTicks;
     }
 
     private void UpdateRemoteDodgePresentation(in MovementState3D state)
@@ -742,11 +759,18 @@ public class NetMovement3D : NetworkBehaviour
         _remoteDodgePresentationActive = isDodgeActive;
     }
 
+    private static Vector3 GetEffectiveVelocity(in MovementState3D state)
+    {
+        return state.DodgeRemainingTime > 0.001f
+            ? state.Velocity + state.DodgeVelocity
+            : state.Velocity;
+    }
+
     private void ApplySimulationState(in MovementState3D state)
     {
         _rb.position = state.Position;
         _rb.rotation = state.Rotation;
-        _rb.linearVelocity = state.Velocity;
+        _rb.linearVelocity = GetEffectiveVelocity(state);
         transform.SetPositionAndRotation(state.Position, state.Rotation);
     }
 
