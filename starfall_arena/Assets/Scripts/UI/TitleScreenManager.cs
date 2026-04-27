@@ -461,13 +461,13 @@ public class TitleScreenManager : MonoBehaviour
     public void start3dhostflow()
     {
         Reset3DTestFlowState();
-        StartTestShortcutHostingFlow();
+        TransitionTo3DTestShipSelect();
     }
 
     public void start3dclientflow()
     {
         Reset3DTestFlowState();
-        TransitionToTestShortcutJoinFlow();
+        TransitionTo3DTestShipSelect();
     }
 
     public void TransitionToOnlineMenuFromHostMode()
@@ -1470,13 +1470,7 @@ public class TitleScreenManager : MonoBehaviour
         return true;
     }
 
-    private void StartTestShortcutHostingFlow()
-    {
-        _pendingHostModeLabel = host2DStatusLabel;
-        StartHostingForScene(testShortcutGameplaySceneName);
-    }
-
-    private void TransitionToTestShortcutJoinFlow()
+    private void TransitionTo3DTestShipSelect()
     {
         if (_activeTransition != null)
         {
@@ -1498,39 +1492,24 @@ public class TitleScreenManager : MonoBehaviour
         }
 
         HandleStatusMessageChanged(string.Empty);
-
-        if (joinGameCanvas == null)
-        {
-            return;
-        }
+        ApplyShipRosterForGameplayScene(testShortcutGameplaySceneName);
+        shipSelectManager?.BeginGameplayScenePreload();
 
         CanvasGroup source = _activeCanvas ?? mainMenuCanvas;
-        if (source == joinGameCanvas)
+        if (source == shipSelectCanvas)
         {
-            RefreshSelection(joinGameFirstSelected);
-            StartJoinFlow();
+            ApplyShipRosterForGameplayScene(testShortcutGameplaySceneName);
+            shipSelectManager?.gameObject.SetActive(true);
+            shipSelectManager?.ResetToPlayer1();
+            shipSelectManager?.PreloadShipData();
+            shipSelectManager?.BeginGameplayScenePreload();
+            shipSelectManager?.ActivateShipWhenVisible();
+            RefreshSelection(shipSelectFirstSelected);
             return;
         }
 
         _activeTransition = StartCoroutine(
-            RunTransition(source, joinGameCanvas, joinGameFirstSelected));
-        StartCoroutine(AutoStartJoinFlowAfterTransition());
-    }
-
-    private IEnumerator AutoStartJoinFlowAfterTransition()
-    {
-        while (_activeTransition != null)
-        {
-            yield return null;
-        }
-
-        if (_activeCanvas != joinGameCanvas)
-        {
-            yield break;
-        }
-
-        RefreshSelection(joinGameFirstSelected);
-        StartJoinFlow();
+            RunTransition(source, shipSelectCanvas, shipSelectFirstSelected));
     }
 
     private ShipData Resolve3DTestShip(bool hostShip)
