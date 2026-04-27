@@ -53,6 +53,7 @@ public class ConvergeBeam : Ability
     private bool _lastEmpoweredState;
     private bool _activeAuthoritative;
     private NetMovement _netMovement;
+    private PlayerInput _playerInput;
 
     protected override void Awake()
     {
@@ -63,6 +64,7 @@ public class ConvergeBeam : Ability
             convergeBeam.empowerAbility = GetComponent<Empower>();
         }
         _netMovement = GetComponent<NetMovement>();
+        _playerInput = GetComponent<PlayerInput>();
 
         _laserBeamSource = gameObject.AddComponent<AudioSource>();
         _laserBeamSource.playOnAwake = false;
@@ -248,8 +250,7 @@ public class ConvergeBeam : Ability
     {
         if (_activeBeams == null) return;
 
-        Vector2 aimDirection = ResolveCurrentAimDirection();
-        Vector3 convergencePoint = transform.position + (Vector3)(aimDirection * convergeBeam.convergenceDistance);
+        Vector3 convergencePoint = ResolveCurrentConvergencePoint();
 
         for (int i = 0; i < _activeBeams.Length; i++)
         {
@@ -261,6 +262,45 @@ public class ConvergeBeam : Ability
             Vector3 direction = convergencePoint - hardpoint.position;
             _activeBeams[i].transform.rotation = Quaternion.LookRotation(Vector3.forward, direction);
         }
+    }
+
+    private Vector3 ResolveCurrentConvergencePoint()
+    {
+        if (TryResolveLocalMouseAimPoint(out Vector3 mouseAimPoint))
+        {
+            return mouseAimPoint;
+        }
+
+        Vector2 aimDirection = ResolveCurrentAimDirection();
+        return transform.position + (Vector3)(aimDirection * convergeBeam.convergenceDistance);
+    }
+
+    private bool TryResolveLocalMouseAimPoint(out Vector3 aimPoint)
+    {
+        aimPoint = default;
+
+        if (Mouse.current == null || _playerInput == null || !_playerInput.enabled)
+        {
+            return false;
+        }
+
+        string controlScheme = _playerInput.currentControlScheme ?? string.Empty;
+        if (controlScheme != "key+mouse")
+        {
+            return false;
+        }
+
+        Camera aimCamera = _playerInput.camera != null ? _playerInput.camera : Camera.main;
+        if (aimCamera == null)
+        {
+            return false;
+        }
+
+        Vector3 mouseScreenPosition = Mouse.current.position.ReadValue();
+        mouseScreenPosition.z = Mathf.Abs(transform.position.z - aimCamera.transform.position.z);
+        aimPoint = aimCamera.ScreenToWorldPoint(mouseScreenPosition);
+        aimPoint.z = transform.position.z;
+        return true;
     }
 
     private Vector2 ResolveCurrentAimDirection()
