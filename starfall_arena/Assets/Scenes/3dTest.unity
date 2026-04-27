@@ -587,6 +587,18 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: 29e536f4c676f8041839c13babdfdffc, type: 2}
+    - target: {fileID: 7923495400978395692, guid: f61f8562fbabcce479e46013c7cc7686, type: 3}
+      propertyPath: m_Size.z
+      value: 44.03772
+      objectReference: {fileID: 0}
+    - target: {fileID: 7923495400978395692, guid: f61f8562fbabcce479e46013c7cc7686, type: 3}
+      propertyPath: m_Center.y
+      value: 1.3402528e-14
+      objectReference: {fileID: 0}
+    - target: {fileID: 7923495400978395692, guid: f61f8562fbabcce479e46013c7cc7686, type: 3}
+      propertyPath: m_Center.z
+      value: 1.2038043
+      objectReference: {fileID: 0}
     - target: {fileID: 7964909398133108317, guid: f61f8562fbabcce479e46013c7cc7686, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
@@ -22304,9 +22316,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 185599ac3c6fbc443a2d893679f47258, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RammerEnemyBrain3D
-  enemy: {fileID: 0}
-  flightController: {fileID: 0}
-  targetSensor: {fileID: 0}
+  enemy: {fileID: 5988061463180451875}
+  flightController: {fileID: 6563768459028780574}
+  targetSensor: {fileID: 8489083175166800548}
   obstacleAvoidance: {fileID: 0}
   thinkInterval: 0.05
   ramDetectionDistance: 2.5
