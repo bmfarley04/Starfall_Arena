@@ -101,6 +101,7 @@ public partial class NetMovement : NetworkBehaviour
     private int _lastServerAccuracyAttackId = Player.InvalidAttackId;
     private bool _lastOwnerFrictionEnabled;
     private bool _lastServerFrictionEnabled;
+    private Vector2 _latestLookInput;
 
     // ===== LIFECYCLE =====
 
@@ -429,6 +430,11 @@ public partial class NetMovement : NetworkBehaviour
         return Mathf.Max(bounds.extents.x, bounds.extents.y);
     }
 
+    public Vector2 GetLatestLookInput()
+    {
+        return _latestLookInput;
+    }
+
     private void AssignOwnerCameraAndTracking(PlayerInput playerInput)
     {
         CinemachineCamera targetCinemachine = FindFirstObjectByType<CinemachineCamera>();
@@ -647,6 +653,7 @@ public partial class NetMovement : NetworkBehaviour
             AbilityRotationMultiplier = _player.GetAbilityRotationMultiplier(),
             AbilityThrustMultiplier = _player.GetAbilityThrustMultiplier(),
         };
+        _latestLookInput = input.LookInput;
 
         if (input.FrictionEnabled != _lastOwnerFrictionEnabled)
         {
@@ -730,6 +737,7 @@ public partial class NetMovement : NetworkBehaviour
     {
         float dt = NetTickUtil.TickInterval;
         if (dt <= 0f) dt = Time.fixedDeltaTime; // fallback
+        _latestLookInput = input.LookInput;
 
         if (input.FrictionEnabled != _lastServerFrictionEnabled)
         {

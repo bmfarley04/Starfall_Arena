@@ -546,15 +546,75 @@ public class TargetAwarenessHUD3D : PlayerHUDBindingTarget3D
             return false;
         }
 
-        if (FactionMember3D.TryGetExplicitFaction(BoundPlayer, out Faction3D boundFaction)
-            && FactionMember3D.TryGetExplicitFaction(entity, out Faction3D targetFaction)
-            && boundFaction != Faction3D.Neutral
-            && boundFaction == targetFaction)
+        if (ShouldSuppressSameFactionTarget(entity))
         {
             return false;
         }
 
         return entity.CurrentHealth > 0f;
+    }
+
+    private bool ShouldSuppressSameFactionTarget(Entity3D entity)
+    {
+        if (!FactionMember3D.TryGetExplicitFaction(BoundPlayer, out Faction3D boundFaction)
+            || !FactionMember3D.TryGetExplicitFaction(entity, out Faction3D targetFaction)
+            || boundFaction == Faction3D.Neutral
+            || boundFaction != targetFaction)
+        {
+            return false;
+        }
+
+        // Duel opponents still share PlayerTeam after the PvE faction rollout.
+        // Preserve Player1/Player2 hostility so target awareness does not hide the remote player.
+        return !IsDuelOpponent(entity);
+    }
+
+    private bool IsDuelOpponent(Entity3D entity)
+    {
+        if (entity == null || BoundPlayer == null || entity is not Player3D)
+        {
+            return false;
+        }
+
+        return TryResolveOpponentPlayerTag(BoundPlayer, out string opponentTag)
+            && entity.CompareTag(opponentTag);
+    }
+
+    private static bool TryResolveOpponentPlayerTag(Entity3D entity, out string opponentTag)
+    {
+        opponentTag = null;
+        if (entity == null)
+        {
+            return false;
+        }
+
+        NetMovement3D movement = entity.GetComponent<NetMovement3D>();
+        byte playerSlot = movement != null ? movement.PlayerSlot : (byte)0;
+        if (playerSlot == 1)
+        {
+            opponentTag = "Player2";
+            return true;
+        }
+
+        if (playerSlot == 2)
+        {
+            opponentTag = "Player1";
+            return true;
+        }
+
+        if (entity.CompareTag("Player1"))
+        {
+            opponentTag = "Player2";
+            return true;
+        }
+
+        if (entity.CompareTag("Player2"))
+        {
+            opponentTag = "Player1";
+            return true;
+        }
+
+        return false;
     }
 
     private static bool IsLayerInMask(int layer, LayerMask mask)

@@ -248,7 +248,8 @@ public class ConvergeBeam : Ability
     {
         if (_activeBeams == null) return;
 
-        Vector3 convergencePoint = transform.position + transform.up * convergeBeam.convergenceDistance;
+        Vector2 aimDirection = ResolveCurrentAimDirection();
+        Vector3 convergencePoint = transform.position + (Vector3)(aimDirection * convergeBeam.convergenceDistance);
 
         for (int i = 0; i < _activeBeams.Length; i++)
         {
@@ -260,6 +261,29 @@ public class ConvergeBeam : Ability
             Vector3 direction = convergencePoint - hardpoint.position;
             _activeBeams[i].transform.rotation = Quaternion.LookRotation(Vector3.forward, direction);
         }
+    }
+
+    private Vector2 ResolveCurrentAimDirection()
+    {
+        if (player != null)
+        {
+            Vector2 liveLookInput = player.LookInput;
+            if (liveLookInput.sqrMagnitude > 0.0001f)
+            {
+                return liveLookInput.normalized;
+            }
+        }
+
+        if (NetTickUtil.IsActive && _netMovement != null)
+        {
+            Vector2 networkLookInput = _netMovement.GetLatestLookInput();
+            if (networkLookInput.sqrMagnitude > 0.0001f)
+            {
+                return networkLookInput.normalized;
+            }
+        }
+
+        return transform.up;
     }
 
     private void DestroyBeamObjects()
