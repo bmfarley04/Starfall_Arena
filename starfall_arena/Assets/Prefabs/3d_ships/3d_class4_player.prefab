@@ -5496,8 +5496,8 @@ MonoBehaviour:
   splitStateOffsetRigs: []
   anchorConfig:
     enabled: 1
-    rotationMultiplier: 3
-    thrustMultiplier: 0.3
+    rotationMultiplier: 5
+    thrustMultiplier: 0
   audioConfig:
     shieldDamageSound: {fileID: 11400000, guid: 87784f1904ec9074c86e30516fb1e37e, type: 2}
     hullDamageSound: {fileID: 11400000, guid: 4532575f5b2177b41872e0135a7f6ebb, type: 2}
@@ -5520,7 +5520,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: '::'
   flight:
-    thrustAcceleration: 40
+    thrustAcceleration: 60
     maxSpeed: 60
     lookInputResponse: 10
     pitchSpeed: 1
@@ -5532,11 +5532,11 @@ MonoBehaviour:
     invertY: 1
     minRotationMultiplierAtMaxSpeed: 0.5
   flightAssist:
-    frictionDeceleration: 3
-    activeAngularDamping: 2
-    lateralDriftDamping: 18
-    verticalDriftDamping: 16
-    velocityAlignmentStrength: 3
+    frictionDeceleration: 0.1
+    activeAngularDamping: 5
+    lateralDriftDamping: 22
+    verticalDriftDamping: 22
+    velocityAlignmentStrength: 5
   inputSourceBehaviour: {fileID: 2709859321838343538}
   entity: {fileID: 7926965533672300583}
   frictionEnabled: 1
@@ -6055,7 +6055,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 3311927117
+  GlobalObjectIdHash: 3466037049
   InScenePlacedSourceGlobalObjectIdHash: 2698202182
   DeferredDespawnTick: 0
   Ownership: 1

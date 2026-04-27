@@ -5800,7 +5800,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &1872632152
 Transform:
   m_ObjectHideFlags: 0
@@ -6424,6 +6424,10 @@ PrefabInstance:
       propertyPath: flightAssist.activeAngularDamping
       value: 2
       objectReference: {fileID: 0}
+    - target: {fileID: 1489676882231302956, guid: 45b170708adafd343bd4e110edf859cc, type: 3}
+      propertyPath: flightAssist.velocityAlignmentStrength
+      value: 3
+      objectReference: {fileID: 0}
     - target: {fileID: 7279590565626816591, guid: 45b170708adafd343bd4e110edf859cc, type: 3}
       propertyPath: m_Name
       value: basicEnemy
@@ -6533,22 +6537,6 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 4650194337417168327, guid: dcd0d058af7406e4b869c55e797967e0, type: 3}
-      propertyPath: flightAssist.lateralDriftDamping
-      value: 22
-      objectReference: {fileID: 0}
-    - target: {fileID: 4650194337417168327, guid: dcd0d058af7406e4b869c55e797967e0, type: 3}
-      propertyPath: flightAssist.activeAngularDamping
-      value: 5
-      objectReference: {fileID: 0}
-    - target: {fileID: 4650194337417168327, guid: dcd0d058af7406e4b869c55e797967e0, type: 3}
-      propertyPath: flightAssist.frictionDeceleration
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4650194337417168327, guid: dcd0d058af7406e4b869c55e797967e0, type: 3}
-      propertyPath: flightAssist.verticalDriftDamping
-      value: 22
-      objectReference: {fileID: 0}
     - target: {fileID: 6386536840028923439, guid: dcd0d058af7406e4b869c55e797967e0, type: 3}
       propertyPath: GlobalObjectIdHash
       value: 3466037049
@@ -6556,14 +6544,6 @@ PrefabInstance:
     - target: {fileID: 6962877402401494773, guid: dcd0d058af7406e4b869c55e797967e0, type: 3}
       propertyPath: m_Name
       value: 3d_class4_player
-      objectReference: {fileID: 0}
-    - target: {fileID: 7926965533672300583, guid: dcd0d058af7406e4b869c55e797967e0, type: 3}
-      propertyPath: anchorConfig.thrustMultiplier
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 7926965533672300583, guid: dcd0d058af7406e4b869c55e797967e0, type: 3}
-      propertyPath: anchorConfig.rotationMultiplier
-      value: 5
       objectReference: {fileID: 0}
     - target: {fileID: 8218329567873975671, guid: dcd0d058af7406e4b869c55e797967e0, type: 3}
       propertyPath: virtualCamera
