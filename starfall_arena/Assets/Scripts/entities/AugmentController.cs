@@ -160,22 +160,6 @@ public class AugmentController : MonoBehaviour
         }
     }
 
-    public void OnNetworkDamageTaken(float damage, DamageSource source)
-    {
-        foreach (IAugmentRuntime runtime in _runtimes)
-        {
-            runtime?.OnNetworkDamageTaken(damage, source);
-        }
-    }
-
-    public void OnNetworkStateUpdated(float anchoredDamageTaken, bool isStunned, bool isAnchored)
-    {
-        foreach (IAugmentRuntime runtime in _runtimes)
-        {
-            runtime?.OnNetworkStateUpdated(anchoredDamageTaken, isStunned, isAnchored);
-        }
-    }
-
     public bool ConsumeArtificialFairyTriggeredFlag()
     {
         bool triggered = _artificialFairyTriggeredSinceLastConsume;
@@ -229,13 +213,13 @@ public class AugmentController : MonoBehaviour
         }
     }
 
-    public void SetAutoCounterNetworkActiveState(bool active)
+    public void NotifyAutoCounterStateUpdated(bool isActive)
     {
         foreach (IAugmentRuntime runtime in _runtimes)
         {
             if (runtime is AutoCounterRuntime autoCounterRuntime)
             {
-                autoCounterRuntime.SetNetworkActiveState(active);
+                autoCounterRuntime.OnNetworkActiveStateUpdated(isActive);
             }
         }
     }

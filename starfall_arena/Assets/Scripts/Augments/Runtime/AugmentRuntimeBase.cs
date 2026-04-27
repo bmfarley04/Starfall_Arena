@@ -33,10 +33,6 @@ public abstract class AugmentRuntimeBase : IAugmentRuntime
 
     public virtual void OnTakeDamage(float damage, float impactForce, Vector3 hitPoint, DamageSource source) { }
 
-    public virtual void OnNetworkDamageTaken(float damage, DamageSource source) { }
-
-    public virtual void OnNetworkStateUpdated(float anchoredDamageTaken, bool isStunned, bool isAnchored) { }
-
     public virtual void OnBeforeTakeDamage(ref float damage, ref bool shieldIgnored, ref bool healthIgnored, DamageSource source) { }
 
     public virtual void OnTakeDirectDamage(float damage, float impactForce, Vector3 hitPoint, DamageSource source) { }

@@ -57,19 +57,17 @@ public class Class4 : Player
 
         NetMovement netMovement = GetComponent<NetMovement>();
         bool useNetwork = NetTickUtil.IsActive && netMovement != null && netMovement.IsSpawned && netMovement.IsOwner;
+        int burstTick = NetTickUtil.CurrentTick;
+
         for (int i = 0; i < burstCount; i++)
         {
-            int shotTick = NetTickUtil.CurrentTick;
-            bool ignoreCooldown = i > 0;
-
             if (useNetwork)
             {
-                FireBurstShotNetworked(netMovement, shotTick, ignoreCooldown);
+                FireBurstShotNetworked(netMovement, burstTick);
             }
             else
             {
                 FireBurstShotLocal();
-                PrimaryFireExecutionBus.Raise(this, PrimaryFireExecutionSource.PlayerInput);
             }
 
             if (projectileFireSound != null)
@@ -112,7 +110,7 @@ public class Class4 : Player
         ApplyRecoil(projectileWeapon.recoilForce);
     }
 
-    private void FireBurstShotNetworked(NetMovement netMovement, int shotTick, bool ignoreCooldown)
+    private void FireBurstShotNetworked(NetMovement netMovement, int burstTick)
     {
         for (int turretIndex = 0; turretIndex < turrets.Length; turretIndex++)
         {
@@ -139,7 +137,7 @@ public class Class4 : Player
 
             netMovement.RequestPrimaryFire(new NetFireRequest
             {
-                Tick = shotTick,
+                Tick = burstTick,
                 SpawnPosition = turret.position,
                 Direction = direction.normalized,
                 InheritedVelocity = Vector2.zero,
@@ -155,9 +153,6 @@ public class Class4 : Player
                 CanPierce = false,
                 AppliesSlow = false,
                 VisualType = NetProjectileVisualType.Primary,
-                IgnoreCooldown = ignoreCooldown,
-                OwnerPredicted = true,
-                FireSource = (byte)PrimaryFireExecutionSource.PlayerInput,
             });
         }
 

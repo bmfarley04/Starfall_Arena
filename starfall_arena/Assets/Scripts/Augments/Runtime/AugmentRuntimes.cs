@@ -798,7 +798,6 @@ public sealed class BubbleShieldRuntime : AugmentRuntimeBase
     private float _stunEndTime;
     private float _lastAnchoredHitTime;
     private GameObject _bubbleShieldEffectInstance;
-    private NetMovement _netMovement;
 
     public BubbleShieldRuntime(BubbleShield definition) : base(definition)
     {
@@ -808,7 +807,6 @@ public sealed class BubbleShieldRuntime : AugmentRuntimeBase
     public override void Initialize(Player player, int roundAcquired, object persistentState = null)
     {
         base.Initialize(player, roundAcquired, persistentState);
-        _netMovement = player != null ? player.GetComponent<NetMovement>() : null;
         _anchoredDamageTaken = 0f;
         _stunEndTime = -999f;
         _lastAnchoredHitTime = Time.time - Mathf.Max(0f, _definition.damageRegenDelay);
@@ -866,63 +864,10 @@ public sealed class BubbleShieldRuntime : AugmentRuntimeBase
             shieldVisualActive = true;
         }
 
-        if (HasNetworkAuthority())
-        {
-            RegenerateAnchoredDamageDebt(Time.deltaTime);
-        }
+        RegenerateAnchoredDamageDebt(Time.deltaTime);
 
         SetAttachedEffectActive(ref _bubbleShieldEffectInstance, _definition.bubbleShieldPrefab, shieldVisualActive, "BubbleShield");
         UpdateBubbleShieldScale();
-
-        if (HasNetworkAuthority())
-        {
-            BroadcastNetworkState();
-        }
-    }
-
-    public override void OnNetworkDamageTaken(float damage, DamageSource source)
-    {
-        if (player == null || !IsActiveByRounds()) return;
-        if (!player.IsAnchored) return;
-        if (IsStunned()) return;
-
-        float incomingDamage = Mathf.Max(0f, damage);
-        if (incomingDamage <= 0f)
-        {
-            return;
-        }
-
-        _anchoredDamageTaken += incomingDamage;
-        _lastAnchoredHitTime = Time.time;
-        PlaySoundEffect(_definition.blockSound);
-
-        if (_anchoredDamageTaken >= _definition.damageThresholdBeforeStun)
-        {
-            TriggerStun();
-        }
-    }
-
-    public override void OnNetworkStateUpdated(float anchoredDamageTaken, bool isStunned, bool isAnchored)
-    {
-        if (player == null || !IsActiveByRounds())
-        {
-            return;
-        }
-
-        _anchoredDamageTaken = Mathf.Max(0f, anchoredDamageTaken);
-        if (isStunned)
-        {
-            _stunEndTime = Time.time + Mathf.Max(0.05f, _definition.stunDuration);
-        }
-        else if (_stunEndTime > Time.time)
-        {
-            _stunEndTime = Time.time - 0.01f;
-        }
-
-        if (!isAnchored)
-        {
-            player.ForceAnchorState(false);
-        }
     }
 
     private bool IsStunned()
@@ -999,27 +944,6 @@ public sealed class BubbleShieldRuntime : AugmentRuntimeBase
         Vector3 baseScale = _definition.bubbleShieldPrefab.transform.localScale * Mathf.Max(0.01f, player.ShipSize);
         _bubbleShieldEffectInstance.transform.localScale = baseScale * visualMultiplier;
     }
-
-    private bool HasNetworkAuthority()
-    {
-        if (!NetTickUtil.IsActive)
-        {
-            return true;
-        }
-
-        return _netMovement != null && _netMovement.IsServer;
-    }
-
-    private void BroadcastNetworkState()
-    {
-        if (_netMovement == null || !_netMovement.IsServer)
-        {
-            return;
-        }
-
-        _netMovement.BroadcastBubbleShieldState(_anchoredDamageTaken, IsStunned(), player != null && player.IsAnchored);
-    }
-
 
     public override void OnRemoved()
     {
@@ -1262,6 +1186,8 @@ public sealed class BurnerRuntime : AugmentRuntimeBase
         if (!IsActiveByRounds()) return;
         if (!HasAuthority()) return;
 
+        string sourceId = ResolveBurnSourceId();
+
         int targetId = target.GetInstanceID();
         if (_reapplyTimers.TryGetValue(targetId, out float nextAllowedTime) && Time.time < nextAllowedTime)
         {
@@ -1275,14 +1201,43 @@ public sealed class BurnerRuntime : AugmentRuntimeBase
         }
 
         burnController.ApplyBurn(
-            Definition.augmentID,
+            sourceId,
             player,
             _definition.burnDamagePerSecond,
             _definition.burnDuration,
             _definition.burnTickInterval,
             _definition.burnTickEffectPrefab,
             _definition.burnTickRandomRadius);
+
+        if (NetTickUtil.IsActive && _netMovement != null && _netMovement.IsServer)
+        {
+            NetMovement targetMovement = target.GetComponent<NetMovement>();
+            targetMovement?.BroadcastBurnApplied(
+                sourceId,
+                Definition.augmentID,
+                _netMovement.NetworkObjectId,
+                _definition.burnDamagePerSecond,
+                _definition.burnDuration,
+                _definition.burnTickInterval,
+                _definition.burnTickRandomRadius);
+        }
+
         _reapplyTimers[targetId] = Time.time + Mathf.Max(0.01f, _definition.reapplyThrottle);
+    }
+
+    private string ResolveBurnSourceId()
+    {
+        if (player == null)
+        {
+            return Definition.augmentID;
+        }
+
+        if (NetTickUtil.IsActive && _netMovement != null && _netMovement.IsSpawned)
+        {
+            return $"{Definition.augmentID}_{_netMovement.NetworkObjectId}";
+        }
+
+        return $"{Definition.augmentID}_{player.GetInstanceID()}";
     }
 
     private bool HasAuthority()
@@ -1304,7 +1259,7 @@ public sealed class AutoCounterRuntime : AugmentRuntimeBase
     private float _nextCastTime;
     private float _deactivateTime;
     private bool _isActive;
-    private bool _networkActiveState;
+    private bool _lastBroadcastActiveState;
     private GameObject _readyGlowEffectInstance;
 
     public AutoCounterRuntime(AutoCounter definition) : base(definition)
@@ -1330,7 +1285,7 @@ public sealed class AutoCounterRuntime : AugmentRuntimeBase
         _nextCastTime = Time.time;
         _deactivateTime = -999f;
         _isActive = false;
-        _networkActiveState = false;
+        _lastBroadcastActiveState = false;
         _reflector.SetActive(false);
     }
 
@@ -1338,81 +1293,60 @@ public sealed class AutoCounterRuntime : AugmentRuntimeBase
     {
         if (player == null || _reflector == null) return;
 
-        if (NetTickUtil.IsActive && !HasAuthority())
-        {
-            _reflector.SetActive(_networkActiveState);
-            SetAttachedEffectActive(ref _readyGlowEffectInstance, _definition.readyGlowPrefab, _networkActiveState, "AutoCounterReadyGlow");
-            return;
-        }
+        bool authoritative = HasAuthority();
 
         if (!IsActiveByRounds())
         {
-            if (_isActive)
+            SetLocalActiveState(false);
+
+            if (authoritative)
             {
-                _reflector.SetActive(false);
-                _isActive = false;
-                BroadcastNetworkActiveState(false);
+                BroadcastActiveStateIfChanged();
             }
 
-            SetAttachedEffectActive(ref _readyGlowEffectInstance, _definition.readyGlowPrefab, false, "AutoCounterReadyGlow");
+            return;
+        }
+
+        if (!authoritative)
+        {
+            ApplyCurrentVisualState();
             return;
         }
 
         if (!_isActive)
         {
-            SetAttachedEffectActive(ref _readyGlowEffectInstance, _definition.readyGlowPrefab, false, "AutoCounterReadyGlow");
+            ApplyCurrentVisualState();
 
             if (Time.time >= _nextCastTime)
             {
-                _isActive = true;
+                SetLocalActiveState(true);
                 _deactivateTime = Time.time + Mathf.Max(0.05f, _definition.activeDuration);
-                _reflector.SetActive(true);
-                SetAttachedEffectActive(ref _readyGlowEffectInstance, _definition.readyGlowPrefab, true, "AutoCounterReadyGlow");
-                BroadcastNetworkActiveState(true);
             }
+
+            BroadcastActiveStateIfChanged();
             return;
         }
 
-        SetAttachedEffectActive(ref _readyGlowEffectInstance, _definition.readyGlowPrefab, true, "AutoCounterReadyGlow");
+        ApplyCurrentVisualState();
 
         if (Time.time >= _deactivateTime)
         {
-            _isActive = false;
-            _reflector.SetActive(false);
+            SetLocalActiveState(false);
             _nextCastTime = Time.time + Mathf.Max(0.05f, _definition.autocastInterval);
-            SetAttachedEffectActive(ref _readyGlowEffectInstance, _definition.readyGlowPrefab, false, "AutoCounterReadyGlow");
-            BroadcastNetworkActiveState(false);
         }
+
+        BroadcastActiveStateIfChanged();
     }
 
-    public void SetNetworkActiveState(bool active)
+    public void OnNetworkActiveStateUpdated(bool isActive)
     {
-        _networkActiveState = active;
-
-        if (_reflector != null)
+        if (HasAuthority())
         {
-            _reflector.SetActive(active);
+            return;
         }
 
-        SetAttachedEffectActive(ref _readyGlowEffectInstance, _definition.readyGlowPrefab, active, "AutoCounterReadyGlow");
-    }
-
-    private void BroadcastNetworkActiveState(bool active)
-    {
-        if (_netMovement != null && _netMovement.IsServer && NetTickUtil.IsActive)
-        {
-            _netMovement.BroadcastAutoCounterState(active);
-        }
-    }
-
-    private bool HasAuthority()
-    {
-        if (!NetTickUtil.IsActive)
-        {
-            return true;
-        }
-
-        return _netMovement != null && _netMovement.IsServer;
+        bool shouldBeActive = IsActiveByRounds() && isActive;
+        SetLocalActiveState(shouldBeActive);
     }
 
     private void HandleProjectileReflected(ProjectileScript projectile, Vector2 hitPoint)
@@ -1448,6 +1382,44 @@ public sealed class AutoCounterRuntime : AugmentRuntimeBase
         SetAttachedEffectActive(ref _readyGlowEffectInstance, _definition.readyGlowPrefab, false, "AutoCounterReadyGlow");
 
         _isActive = false;
+    }
+
+    private bool HasAuthority()
+    {
+        if (!NetTickUtil.IsActive)
+        {
+            return true;
+        }
+
+        return _netMovement != null && _netMovement.IsServer;
+    }
+
+    private void SetLocalActiveState(bool active)
+    {
+        _isActive = active;
+        ApplyCurrentVisualState();
+    }
+
+    private void ApplyCurrentVisualState()
+    {
+        _reflector.SetActive(_isActive);
+        SetAttachedEffectActive(ref _readyGlowEffectInstance, _definition.readyGlowPrefab, _isActive, "AutoCounterReadyGlow");
+    }
+
+    private void BroadcastActiveStateIfChanged()
+    {
+        if (_netMovement == null || !_netMovement.IsServer)
+        {
+            return;
+        }
+
+        if (_isActive == _lastBroadcastActiveState)
+        {
+            return;
+        }
+
+        _lastBroadcastActiveState = _isActive;
+        _netMovement.BroadcastAutoCounterState(_isActive);
     }
 }
 
@@ -1567,10 +1539,9 @@ public abstract class NearbyBindingRuntimeBase<TDefinition> : AugmentRuntimeBase
 public sealed class TwinFireRuntime : AugmentRuntimeBase
 {
     private readonly TwinFire _definition;
-    private readonly Queue<float> _scheduledSecondShotTimes = new Queue<float>();
+    private float _pendingSecondShotTime = -1f;
+    private bool _pendingSecondShot;
     private NetMovement _netMovement;
-    private float _lastPrimaryFireEventTime = -1f;
-    private float _lastScheduledTwinShotTime = -1f;
 
     public TwinFireRuntime(TwinFire definition) : base(definition)
     {
@@ -1581,9 +1552,6 @@ public sealed class TwinFireRuntime : AugmentRuntimeBase
     {
         base.Initialize(player, roundAcquired, persistentState);
         _netMovement = player != null ? player.GetComponent<NetMovement>() : null;
-        _scheduledSecondShotTimes.Clear();
-        _lastPrimaryFireEventTime = -1f;
-        _lastScheduledTwinShotTime = -1f;
         PrimaryFireExecutionBus.PrimaryFireExecuted += HandlePrimaryFireExecuted;
     }
 
@@ -1602,12 +1570,11 @@ public sealed class TwinFireRuntime : AugmentRuntimeBase
         else
         {
             RemoveMultiplier(player.damageMultipliers);
-            _scheduledSecondShotTimes.Clear();
-            _lastScheduledTwinShotTime = -1f;
+            _pendingSecondShot = false;
             return;
         }
 
-        if (_scheduledSecondShotTimes.Count <= 0)
+        if (!_pendingSecondShot || Time.time < _pendingSecondShotTime)
         {
             return;
         }
@@ -1617,26 +1584,18 @@ public sealed class TwinFireRuntime : AugmentRuntimeBase
             return;
         }
 
-        float now = Time.time;
-        while (_scheduledSecondShotTimes.Count > 0 && _scheduledSecondShotTimes.Peek() <= now)
+        if (TryFirePrimaryVolleyFromAugment(_definition.secondShotDamageMultiplier, _definition.ignoreCooldownForSecondShot, PrimaryFireExecutionSource.TwinFire, playSound: false))
         {
-            _scheduledSecondShotTimes.Dequeue();
-
-            if (TryFirePrimaryVolleyFromAugment(_definition.secondShotDamageMultiplier, _definition.ignoreCooldownForSecondShot, PrimaryFireExecutionSource.TwinFire, playSound: false))
-            {
-                PlaySoundEffect(ResolveSecondShotSoundEffect());
-            }
-
-            now = Time.time;
+            PlaySoundEffect(_definition.secondShotSound);
         }
+
+        _pendingSecondShot = false;
     }
 
     public override void OnRemoved()
     {
         PrimaryFireExecutionBus.PrimaryFireExecuted -= HandlePrimaryFireExecuted;
-        _scheduledSecondShotTimes.Clear();
-        _lastPrimaryFireEventTime = -1f;
-        _lastScheduledTwinShotTime = -1f;
+        _pendingSecondShot = false;
 
         if (player != null)
         {
@@ -1661,56 +1620,8 @@ public sealed class TwinFireRuntime : AugmentRuntimeBase
             return;
         }
 
-        if (!HasAuthority())
-        {
-            return;
-        }
-
-        float now = Time.time;
-        float primaryShotInterval = -1f;
-        if (_lastPrimaryFireEventTime >= 0f)
-        {
-            primaryShotInterval = now - _lastPrimaryFireEventTime;
-        }
-
-        _lastPrimaryFireEventTime = now;
-
-        float delay = Mathf.Max(0f, _definition.secondShotDelay);
-        if (delay <= 0f)
-        {
-            if (TryFirePrimaryVolleyFromAugment(_definition.secondShotDamageMultiplier, _definition.ignoreCooldownForSecondShot, PrimaryFireExecutionSource.TwinFire, playSound: false))
-            {
-                PlaySoundEffect(ResolveSecondShotSoundEffect());
-            }
-
-            return;
-        }
-
-        float scheduledTime = now + delay;
-
-        bool hasValidPrimaryInterval = primaryShotInterval > 0.0001f;
-        if (hasValidPrimaryInterval && player != null)
-        {
-            float primaryCooldown = Mathf.Max(0.0001f, player.PrimaryFireCooldown);
-            bool isLikelyIntraBurstInterval = primaryShotInterval < primaryCooldown * 0.9f;
-            if (isLikelyIntraBurstInterval && _lastScheduledTwinShotTime >= 0f)
-            {
-                scheduledTime = Mathf.Max(scheduledTime, _lastScheduledTwinShotTime + primaryShotInterval);
-            }
-        }
-
-        _scheduledSecondShotTimes.Enqueue(scheduledTime);
-        _lastScheduledTwinShotTime = scheduledTime;
-    }
-
-    private SoundEffect ResolveSecondShotSoundEffect()
-    {
-        if (_definition.secondShotSound != null)
-        {
-            return _definition.secondShotSound;
-        }
-
-        return player != null ? player.projectileFireSound : null;
+        _pendingSecondShot = true;
+        _pendingSecondShotTime = Time.time + Mathf.Max(0f, _definition.secondShotDelay);
     }
 
     private bool HasAuthority()
@@ -1804,7 +1715,6 @@ public sealed class MindBindingRuntime : NearbyBindingRuntimeBase<MindBinding>
 {
     private readonly MindBinding _definition;
     private float _nextAllowedTriggerTime;
-    private bool _suppressInitialVisualUpdate = true;
 
     public MindBindingRuntime(MindBinding definition) : base(definition)
     {
@@ -1822,13 +1732,6 @@ public sealed class MindBindingRuntime : NearbyBindingRuntimeBase<MindBinding>
     {
         if (player == null)
         {
-            return;
-        }
-
-        if (_suppressInitialVisualUpdate)
-        {
-            _suppressInitialVisualUpdate = false;
-            HideBindingLinks();
             return;
         }
 

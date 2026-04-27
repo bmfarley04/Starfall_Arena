@@ -101,7 +101,6 @@ public partial class NetMovement : NetworkBehaviour
     private int _lastServerAccuracyAttackId = Player.InvalidAttackId;
     private bool _lastOwnerFrictionEnabled;
     private bool _lastServerFrictionEnabled;
-    private bool _lastBroadcastAnchorState;
 
     // ===== LIFECYCLE =====
 
@@ -120,7 +119,6 @@ public partial class NetMovement : NetworkBehaviour
             _player.onFrictionToggled += HandleFrictionToggled;
             _lastOwnerFrictionEnabled = _player.IsFrictionEnabled;
             _lastServerFrictionEnabled = _player.IsFrictionEnabled;
-            _lastBroadcastAnchorState = _player.IsAnchored;
         }
 
         _movementLocked.OnValueChanged += HandleMovementLockedChanged;
@@ -635,7 +633,6 @@ public partial class NetMovement : NetworkBehaviour
         // Drive thruster visuals on the owner (Player.FixedUpdate skips the
         // _isThrusting assignment when externalMovementControl is true).
         _player.ApplyNetworkThrustState(_player.IsThrustPressed);
-        _player.ForceAnchorState(_player.IsAnchored);
 
         // 1. Sample input from Player's read-only getters
         NetInputSnapshot input = new NetInputSnapshot
@@ -763,12 +760,6 @@ public partial class NetMovement : NetworkBehaviour
             _player.ApplyExternalVisualTiltState(input.VisualBankAngle, input.VisualPitchAngle);
             _player.ApplyNetworkThrustState(input.Thrust);
             _player.ForceAnchorState(input.Anchor);
-
-            if (input.Anchor != _lastBroadcastAnchorState)
-            {
-                _lastBroadcastAnchorState = input.Anchor;
-                BroadcastAnchorStateClientRpc(input.Anchor);
-            }
         }
 
         PublishAuthoritativeState(
@@ -839,22 +830,6 @@ public partial class NetMovement : NetworkBehaviour
         {
             BufferInterpolationState(serverState);
         }
-    }
-
-    [ClientRpc]
-    private void BroadcastAnchorStateClientRpc(bool anchored)
-    {
-        if (IsServer)
-        {
-            return;
-        }
-
-        if (_player == null)
-        {
-            _player = GetComponent<Player>();
-        }
-
-        _player?.ForceAnchorState(anchored);
     }
 
     // ===== RECONCILIATION =====

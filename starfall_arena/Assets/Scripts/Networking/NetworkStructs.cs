@@ -72,7 +72,7 @@ public struct NetStateSnapshot : INetworkSerializable
     /// <summary>Authoritative visual pitch angle for the 3D ship model.</summary>
     public float VisualPitchAngle;
 
-    /// <summary>Authoritative anchor state so remote copies can drive anchor-dependent augments.</summary>
+    /// <summary>Authoritative anchor state so anchor-gated augments evaluate consistently.</summary>
     public bool Anchor;
 
     /// <summary>Anchor drag accumulator (needed for reconciliation replay).</summary>
