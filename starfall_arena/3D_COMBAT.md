@@ -88,6 +88,18 @@ Base input rule:
   - now supports explicit `targetFaction` filtering in addition to the older `targetTag` fallback, which is required for Invasion enemies because the 3D project does not use a generic `"Player"` tag
   - can optionally delegate beam presentation to a `BeamVisualDriver3D` component, so enemy-only beams can use alternate looks such as Forge3D line-renderer visuals without changing gameplay authority or the default player beam path
   - can optionally require forward-only aim, which clamps any backward-facing resolved aim back onto the beam's forward reference; use this on enemy hardpoint beams when camera-style aim data should never let the beam fire behind the muzzle
+  - beam visuals may use a lightly smoothed visual endpoint while gameplay damage stays exact; in perspective, long beams exaggerate tiny aim changes at their far tip, so presentation smoothing is preferred over making the gameplay ray less accurate
+- `ForgeEnemyBeam3D`
+  - enemy-only unified Forge beam runtime
+  - owns the authoritative hit ray, damage, line length, and impact placement in one script so the visual endpoint and gameplay endpoint cannot drift apart
+  - should stay attached to the authored muzzle/anchor transform so it behaves like the original Forge plasma beam: one stable hardpoint transform, one hit query, one endpoint
+  - if gameplay forgiveness is needed for readability, tune the beam's own `hitscanRadius` here rather than on `BeamWeapon3D`; the runtime that owns the cast should also own the forgiveness width
+  - like the shared beam runtime, it should smooth its rendered endpoint/direction rather than showing every tiny long-range endpoint hop literally; keep damage exact and make only the presentation slightly forgiving
+  - should be used for the artillery enemy Forge beam path instead of layering Forge visuals on top of `LaserBeam3D`
+- `BeamWeapon3D`
+  - beam-capacity weapons can now enforce a minimum remaining energy threshold before the beam is allowed to start again
+  - beam weapons can also keep their rotation penalty alive for a short post-fire linger window, which is useful for AI beam enemies that would otherwise stop firing, instantly pivot at full speed, and then re-fire
+  - use that threshold on AI beam enemies so they do not spam start requests every frame while nearly empty
 - `Reflector3D`
   - Class 1 reflect ability for the 3D path
   - owns cooldown, active window, projectile reflection rules, and reflected-projectile audio

@@ -23,6 +23,7 @@ public class ArtilleryBeamEnemyBrain3D : MonoBehaviour
     [SerializeField] private float optimalRange = 36f;
     [SerializeField] private float rangeBuffer = 5f;
     [SerializeField] private float maxEngagementRange = 60f;
+    [SerializeField] private float minimumBeamRestartEnergy = 40f;
     [SerializeField] private bool useObstacleAvoidance = true;
     [SerializeField] private LayerMask lineOfSightMask = ~0;
 
@@ -124,49 +125,78 @@ public class ArtilleryBeamEnemyBrain3D : MonoBehaviour
             return;
         }
 
-        bool isInRange = distanceToTarget <= Mathf.Max(0f, maxEngagementRange);
-        bool isAimed = Vector3.Angle(transform.forward, targetDirection) <= Mathf.Max(0f, aimToleranceDegrees);
-        bool hasLineOfSight = isInRange && HasLineOfSight(target);
-
-        if (!isInRange || !isAimed || !hasLineOfSight)
+        Vector3 fireDirection = beamWeapon.GetBeamForwardDirection();
+        Vector3 beamOrigin = beamWeapon.GetBeamOrigin(fireDirection);
+        Vector3 toTargetFromBeam = ResolveTargetPoint(target) - beamOrigin;
+        float beamToTargetDistance = toTargetFromBeam.magnitude;
+        if (beamToTargetDistance <= 0.0001f)
         {
             StopBeam();
             return;
         }
 
-        StartOrUpdateBeam(targetDirection);
+        Vector3 targetDirectionFromBeam = toTargetFromBeam / beamToTargetDistance;
+        bool isInRange = distanceToTarget <= Mathf.Max(0f, maxEngagementRange);
+        bool isAimed = Vector3.Angle(fireDirection, targetDirectionFromBeam) <= Mathf.Max(0f, aimToleranceDegrees);
+        bool canStartOrSustainBeam = CanStartOrSustainBeam();
+        bool hasLineOfSight = isInRange && HasLineOfSight(target, beamOrigin, fireDirection);
+
+        if (!isInRange || !isAimed || !hasLineOfSight || !canStartOrSustainBeam)
+        {
+            StopBeam();
+            return;
+        }
+
+        StartOrUpdateBeam(fireDirection);
+    }
+
+    private bool CanStartOrSustainBeam()
+    {
+        if (beamWeapon == null)
+        {
+            return false;
+        }
+
+        if (beamWeapon.IsBeamActive)
+        {
+            return true;
+        }
+
+        if (!beamWeapon.CanStartBeamNow())
+        {
+            return false;
+        }
+
+        float remainingEnergy = beamWeapon.GetRemainingBeamEnergy();
+        if (remainingEnergy <= 0f)
+        {
+            return false;
+        }
+
+        return remainingEnergy + 0.001f >= Mathf.Max(0f, minimumBeamRestartEnergy);
     }
 
     private void RefreshActiveBeamAim()
     {
-        if (!_beamActive || beamWeapon == null)
+        if (beamWeapon == null)
         {
             return;
         }
 
-        Entity3D target = _currentTarget != null ? _currentTarget : targetSensor != null ? targetSensor.GetTarget() : null;
-        if (target == null)
-        {
-            StopBeam();
-            _currentTarget = null;
-            return;
-        }
-
-        Vector3 targetPoint = ResolveTargetPoint(target);
-        Vector3 toTarget = targetPoint - transform.position;
-        if (toTarget.sqrMagnitude <= 0.0001f)
+        _beamActive = beamWeapon.IsBeamActive;
+        if (!_beamActive)
         {
             return;
         }
 
-        Vector3 targetDirection = toTarget.normalized;
+        Vector3 fireDirection = beamWeapon.GetBeamForwardDirection();
         if (NetTickUtil.IsActive && netEnemyCombat != null && netEnemyCombat.IsSpawned)
         {
-            netEnemyCombat.UpdateBeamAim(beamWeapon, targetDirection);
+            netEnemyCombat.UpdateBeamAim(beamWeapon, fireDirection);
         }
         else
         {
-            beamWeapon.ApplyNetworkBeamAim(targetDirection);
+            beamWeapon.ApplyNetworkBeamAim(fireDirection);
         }
     }
 
@@ -205,28 +235,25 @@ public class ArtilleryBeamEnemyBrain3D : MonoBehaviour
         _currentTarget = null;
     }
 
-    private bool HasLineOfSight(Entity3D target)
+    private bool HasLineOfSight(Entity3D target, Vector3 origin, Vector3 fireDirection)
     {
         if (target == null)
         {
             return false;
         }
 
-        Vector3 origin = beamWeapon.transform.position;
-        Vector3 targetPoint = ResolveTargetPoint(target);
-        Vector3 toTarget = targetPoint - origin;
-        float distanceToTarget = toTarget.magnitude;
-        if (distanceToTarget <= 0.0001f)
+        Vector3 normalizedDirection = fireDirection.sqrMagnitude > 0.0001f ? fireDirection.normalized : transform.forward;
+        float rayDistance = Mathf.Max(0f, maxEngagementRange);
+        if (rayDistance <= 0.0001f)
         {
-            return true;
+            return false;
         }
 
-        Vector3 direction = toTarget / distanceToTarget;
         int hitCount = Physics.RaycastNonAlloc(
             origin,
-            direction,
+            normalizedDirection,
             LineOfSightHits,
-            distanceToTarget,
+            rayDistance,
             lineOfSightMask,
             QueryTriggerInteraction.Ignore);
 

@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class LaserBeam3D : MonoBehaviour
+public class LaserBeam3D : MonoBehaviour, IBeamRuntime3D
 {
     [Header("Beam Visual - Core")]
     [Tooltip("Inner beam mesh (capsule). Bright core of the beam.")]
@@ -31,6 +31,12 @@ public class LaserBeam3D : MonoBehaviour
     [Header("Aim Constraints")]
     [SerializeField] private bool requireForwardAim;
 
+    [Header("Visual Smoothing")]
+    [SerializeField] private bool smoothVisualEndpoint = true;
+    [SerializeField] private float visualEndpointSmoothTime = 0.05f;
+    [SerializeField] private float visualEndpointDeadzone = 0.35f;
+    [SerializeField] private float visualEndpointSnapDistance = 10f;
+
     private bool _isFiring;
     private string _targetTag;
     private Faction3D _targetFaction;
@@ -54,6 +60,9 @@ public class LaserBeam3D : MonoBehaviour
 
     private GameObject _impactInstance;
     private GameObject _muzzleInstance;
+    private Vector3 _smoothedVisualEndpoint;
+    private Vector3 _visualEndpointVelocity;
+    private bool _hasSmoothedVisualEndpoint;
 
     void Awake()
     {
@@ -126,6 +135,7 @@ public class LaserBeam3D : MonoBehaviour
     public void StartFiring()
     {
         _isFiring = true;
+        ResetVisualSmoothing();
 
         if (visualDriver != null)
         {
@@ -159,6 +169,7 @@ public class LaserBeam3D : MonoBehaviour
     public void StopFiring()
     {
         _isFiring = false;
+        ResetVisualSmoothing();
 
         if (visualDriver != null)
         {
@@ -216,10 +227,12 @@ public class LaserBeam3D : MonoBehaviour
         }
 
         float beamLength;
+        Vector3 actualEndpoint;
 
         if (hitSomething)
         {
             beamLength = ResolveBeamLength(origin, aimDirection, hit);
+            actualEndpoint = hit.point;
 
             Entity3D damageable = ResolveHitEntity(hit.collider);
             if (damageable != null && IsMatchingTarget(damageable))
@@ -244,13 +257,12 @@ public class LaserBeam3D : MonoBehaviour
             if (_impactInstance != null)
             {
                 _impactInstance.SetActive(true);
-                _impactInstance.transform.position = hit.point;
-                _impactInstance.transform.rotation = Quaternion.LookRotation(hit.normal, Vector3.up);
             }
         }
         else
         {
             beamLength = _maxDistance;
+            actualEndpoint = origin + (aimDirection * beamLength);
             _timeSinceLastShieldHit = 0f;
             _currentTargetShield = null;
 
@@ -260,15 +272,34 @@ public class LaserBeam3D : MonoBehaviour
             }
         }
 
+        Vector3 visualEndpoint = ResolveVisualEndpoint(actualEndpoint);
+        Vector3 visualDirection = visualEndpoint - origin;
+        if (visualDirection.sqrMagnitude <= 0.0001f)
+        {
+            visualDirection = aimDirection;
+        }
+        else
+        {
+            visualDirection = visualDirection.normalized;
+        }
+
+        float visualBeamLength = Vector3.Distance(origin, visualEndpoint);
+
+        if (_impactInstance != null && hitSomething)
+        {
+            _impactInstance.transform.position = visualEndpoint;
+            _impactInstance.transform.rotation = Quaternion.LookRotation(-visualDirection, ResolveStableUpVector(visualDirection));
+        }
+
         if (visualDriver != null)
         {
             visualDriver.UpdateBeamVisual(
                 origin,
-                aimDirection,
-                beamLength,
+                visualDirection,
+                visualBeamLength,
                 hitSomething,
-                hitSomething ? hit.point : origin + (aimDirection * beamLength),
-                hitSomething ? hit.normal : -aimDirection);
+                visualEndpoint,
+                -visualDirection);
         }
         else
         {
@@ -276,10 +307,10 @@ public class LaserBeam3D : MonoBehaviour
             // Capsule default is 2 units tall along its local Y axis.
             // We orient it so local Y points along aimDirection, then scale Y to match beam length.
             // Position offset = half the length along aimDirection so the base stays at origin.
-            Quaternion beamRotation = Quaternion.LookRotation(aimDirection, Vector3.up)
+            Quaternion beamRotation = Quaternion.LookRotation(visualDirection, ResolveStableUpVector(visualDirection))
                                     * Quaternion.Euler(90f, 0f, 0f); // rotate so capsule Y aligns with forward
-            Vector3 beamCenter = origin + aimDirection * (beamLength * 0.5f);
-            float halfLength = beamLength * 0.5f;
+            Vector3 beamCenter = origin + visualDirection * (visualBeamLength * 0.5f);
+            float halfLength = visualBeamLength * 0.5f;
 
             if (beamCore != null)
             {
@@ -301,7 +332,7 @@ public class LaserBeam3D : MonoBehaviour
             if (_muzzleInstance != null)
             {
                 _muzzleInstance.transform.position = origin;
-                _muzzleInstance.transform.rotation = Quaternion.LookRotation(aimDirection, Vector3.up);
+                _muzzleInstance.transform.rotation = Quaternion.LookRotation(visualDirection, ResolveStableUpVector(visualDirection));
             }
         }
     }
@@ -440,6 +471,65 @@ public class LaserBeam3D : MonoBehaviour
         return Vector3.Dot(forwardReference, normalizedDirection) > 0f
             ? normalizedDirection
             : forwardReference;
+    }
+
+    private Vector3 ResolveVisualEndpoint(Vector3 targetEndpoint)
+    {
+        if (!smoothVisualEndpoint || visualEndpointSmoothTime <= 0f)
+        {
+            _smoothedVisualEndpoint = targetEndpoint;
+            _visualEndpointVelocity = Vector3.zero;
+            _hasSmoothedVisualEndpoint = true;
+            return targetEndpoint;
+        }
+
+        if (!_hasSmoothedVisualEndpoint)
+        {
+            _smoothedVisualEndpoint = targetEndpoint;
+            _visualEndpointVelocity = Vector3.zero;
+            _hasSmoothedVisualEndpoint = true;
+            return targetEndpoint;
+        }
+
+        float distance = Vector3.Distance(_smoothedVisualEndpoint, targetEndpoint);
+        if (distance >= Mathf.Max(0f, visualEndpointSnapDistance))
+        {
+            _smoothedVisualEndpoint = targetEndpoint;
+            _visualEndpointVelocity = Vector3.zero;
+            return targetEndpoint;
+        }
+
+        if (distance <= Mathf.Max(0f, visualEndpointDeadzone))
+        {
+            return _smoothedVisualEndpoint;
+        }
+
+        _smoothedVisualEndpoint = Vector3.SmoothDamp(
+            _smoothedVisualEndpoint,
+            targetEndpoint,
+            ref _visualEndpointVelocity,
+            visualEndpointSmoothTime,
+            Mathf.Infinity,
+            Time.deltaTime);
+        return _smoothedVisualEndpoint;
+    }
+
+    private void ResetVisualSmoothing()
+    {
+        _smoothedVisualEndpoint = Vector3.zero;
+        _visualEndpointVelocity = Vector3.zero;
+        _hasSmoothedVisualEndpoint = false;
+    }
+
+    private static Vector3 ResolveStableUpVector(Vector3 direction)
+    {
+        Vector3 normalizedDirection = direction.sqrMagnitude > 0.0001f ? direction.normalized : Vector3.forward;
+        if (Mathf.Abs(Vector3.Dot(normalizedDirection, Vector3.up)) > 0.995f)
+        {
+            return Vector3.forward;
+        }
+
+        return Vector3.up;
     }
 
     private bool CanApplyGameplay()

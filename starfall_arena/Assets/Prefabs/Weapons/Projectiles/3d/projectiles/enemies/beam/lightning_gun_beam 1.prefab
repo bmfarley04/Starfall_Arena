@@ -198,8 +198,7 @@ GameObject:
   m_Component:
   - component: {fileID: 400002}
   - component: {fileID: 12000002}
-  - component: {fileID: 265394688348894742}
-  - component: {fileID: 8429414355712321326}
+  - component: {fileID: 5463147454495946534}
   m_Layer: 0
   m_Name: lightning_gun_beam 1
   m_TagString: Untagged
@@ -345,7 +344,7 @@ LineRenderer:
   m_UseWorldSpace: 0
   m_Loop: 0
   m_ApplyActiveColorSpace: 0
---- !u!114 &265394688348894742
+--- !u!114 &5463147454495946534
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -354,43 +353,26 @@ MonoBehaviour:
   m_GameObject: {fileID: 100002}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e741427cb32455849b2ed83ed70ff79f, type: 3}
+  m_Script: {fileID: 11500000, guid: 7743057dbf8a47fe81291fd1732b1496, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::LaserBeam3D
-  beamCore: {fileID: 0}
-  coreRadius: 0.15
-  beamGlow: {fileID: 0}
-  glowRadius: 0.4
-  visualDriver: {fileID: 0}
-  impactEffectPrefab: {fileID: 0}
-  muzzleEffectPrefab: {fileID: 0}
-  laserHitInterval: 0.2
-  hitscanRadius: 1
-  collisionMask:
-    serializedVersion: 2
-    m_Bits: 4294967295
---- !u!114 &8429414355712321326
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 100002}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e590668aa5584e3ebac3a69a61a4b73b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ForgeBeamVisualDriver3D
-  lineRenderer: {fileID: 0}
-  impactAnchor: {fileID: 0}
-  muzzleAnchor: {fileID: 0}
+  m_EditorClassIdentifier: Assembly-CSharp::ForgeEnemyBeam3D
+  lineRenderer: {fileID: 12000002}
+  impactAnchor: {fileID: 400010}
+  muzzleAnchor: {fileID: 400012}
   muzzleForwardOffset: 0.1
-  impactBackwardOffset: 0.5
+  impactBackwardOffset: 0.05
   textureScaleMultiplier: 0.05
   animateUv: 1
   uvTime: -6
   textureScaleProperty: _BaseMap
   uvOffsetProperty: _Offset
+  collisionMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  hitscanRadius: 0.35
+  laserHitInterval: 0.2
+  requireForwardAim: 1
+  followAnchorTransform: 1
 --- !u!1 &100004
 GameObject:
   m_ObjectHideFlags: 0

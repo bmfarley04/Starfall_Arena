@@ -1,0 +1,674 @@
+using System.Collections.Generic;
+using UnityEngine;
+
+[DisallowMultipleComponent]
+[RequireComponent(typeof(LineRenderer))]
+public class ForgeEnemyBeam3D : MonoBehaviour, IBeamRuntime3D
+{
+    private static readonly RaycastHit[] BeamHits = new RaycastHit[16];
+
+    [Header("Forge Beam Visuals")]
+    [SerializeField] private LineRenderer lineRenderer;
+    [SerializeField] private Transform impactAnchor;
+    [SerializeField] private Transform muzzleAnchor;
+    [SerializeField] private float muzzleForwardOffset = 0.1f;
+    [SerializeField] private float impactBackwardOffset = 0.05f;
+    [SerializeField] private float textureScaleMultiplier = 0.05f;
+    [SerializeField] private bool animateUv = true;
+    [SerializeField] private float uvTime = -6f;
+    [SerializeField] private string textureScaleProperty = "_BaseMap";
+    [SerializeField] private string uvOffsetProperty = "_Offset";
+
+    [Header("Beam Hit")]
+    [SerializeField] private LayerMask collisionMask = ~0;
+    [SerializeField] private float hitscanRadius = 0.35f;
+    [SerializeField] private float laserHitInterval = 0.2f;
+    [SerializeField] private bool requireForwardAim = true;
+    [SerializeField] private bool followAnchorTransform = true;
+
+    [Header("Visual Smoothing")]
+    [SerializeField] private bool smoothVisualEndpoint = true;
+    [SerializeField] private float visualEndpointSmoothTime = 0.05f;
+    [SerializeField] private float visualEndpointDeadzone = 0.35f;
+    [SerializeField] private float visualEndpointSnapDistance = 10f;
+
+    private readonly List<ParticleSystem> _beamParticles = new List<ParticleSystem>(8);
+    private readonly List<Renderer> _beamRenderers = new List<Renderer>(8);
+    private ParticleSystem[] _impactParticleSystems;
+    private Renderer[] _impactRenderers;
+
+    private bool _isFiring;
+    private bool _impactVisible;
+    private string _targetTag;
+    private Faction3D _targetFaction;
+    private float _maxDistance;
+    private float _damagePerSecond;
+    private float _recoilForcePerSecond;
+    private float _impactForce;
+    private Entity3D _shooter;
+    private Transform _positionAnchor;
+    private Transform _directionSource;
+    private Camera _aimCamera;
+    private bool _isCosmeticOnly;
+    private NetCombat3D _networkAuthority;
+    private bool _hasNetworkAim;
+    private Vector3 _networkAimDirection;
+    private int _accuracyAttackId = PlayerCombatStats3D.InvalidAttackId;
+    private float _anchorOffset;
+    private float _verticalOffset;
+    private float _timeSinceLastShieldHit;
+    private ShieldController _currentTargetShield;
+    private float _initialUvOffset;
+    private float _animateUvTime;
+    private Vector3 _smoothedVisualEndpoint;
+    private Vector3 _visualEndpointVelocity;
+    private bool _hasSmoothedVisualEndpoint;
+
+    private void Awake()
+    {
+        lineRenderer ??= GetComponent<LineRenderer>();
+        if (lineRenderer != null)
+        {
+            lineRenderer.useWorldSpace = false;
+        }
+
+        _impactParticleSystems = impactAnchor != null ? impactAnchor.GetComponentsInChildren<ParticleSystem>(true) : null;
+        _impactRenderers = impactAnchor != null ? impactAnchor.GetComponentsInChildren<Renderer>(true) : null;
+        CacheNonImpactVisuals();
+
+        _initialUvOffset = Random.Range(0f, 5f);
+        SetBeamVisualsActive(false);
+        SetImpactVisualsActive(false);
+    }
+
+    public void Initialize(string targetTag, Faction3D targetFaction, float damagePerSecond, float maxDistance,
+        float recoilForcePerSecond, float impactForce, Entity3D shooter,
+        Transform positionAnchor = null, float anchorOffset = 0f, float verticalOffset = 0f, Camera aimCamera = null)
+    {
+        _targetTag = targetTag;
+        _targetFaction = targetFaction;
+        _damagePerSecond = damagePerSecond;
+        _maxDistance = maxDistance;
+        _recoilForcePerSecond = recoilForcePerSecond;
+        _impactForce = impactForce;
+        _shooter = shooter;
+        _positionAnchor = positionAnchor != null ? positionAnchor : shooter.transform;
+        _directionSource = positionAnchor != null ? positionAnchor : shooter.transform;
+        _aimCamera = aimCamera;
+        _anchorOffset = anchorOffset;
+        _verticalOffset = verticalOffset;
+        AttachToAnchorTransform();
+    }
+
+    public void SetCosmeticOnly(bool isCosmeticOnly)
+    {
+        _isCosmeticOnly = isCosmeticOnly;
+    }
+
+    public void SetNetworkAuthority(NetCombat3D networkAuthority)
+    {
+        _networkAuthority = networkAuthority;
+    }
+
+    public void SetAccuracyAttackId(int attackId)
+    {
+        _accuracyAttackId = attackId;
+    }
+
+    public void SetNetworkAim(Vector3 direction)
+    {
+        if (direction.sqrMagnitude <= 0.0001f)
+        {
+            return;
+        }
+
+        _hasNetworkAim = true;
+        _networkAimDirection = direction.normalized;
+    }
+
+    public void ClearNetworkAim()
+    {
+        _hasNetworkAim = false;
+    }
+
+    public float GetRecoilForcePerSecond()
+    {
+        return _recoilForcePerSecond;
+    }
+
+    public void StartFiring()
+    {
+        _isFiring = true;
+        _animateUvTime = 0f;
+        ResetVisualSmoothing();
+        SetBeamVisualsActive(true);
+        SetImpactVisualsActive(false);
+    }
+
+    public void StopFiring()
+    {
+        _isFiring = false;
+        ResetVisualSmoothing();
+        SetImpactVisualsActive(false);
+        SetBeamVisualsActive(false);
+        _timeSinceLastShieldHit = 0f;
+        _currentTargetShield = null;
+    }
+
+    private void Update()
+    {
+        if (!_isFiring)
+        {
+            return;
+        }
+
+        FireBeam();
+    }
+
+    private void FireBeam()
+    {
+        Vector3 aimDirection = ResolveAimDirection();
+        Vector3 origin = ResolveBeamOrigin(aimDirection);
+
+        bool hitSomething = TryFindBeamHit(origin, aimDirection, out RaycastHit hit);
+
+        float beamLength = _maxDistance;
+        Vector3 actualEndpoint = origin + (aimDirection * _maxDistance);
+
+        if (hitSomething)
+        {
+            beamLength = Mathf.Clamp(hit.distance, 0f, _maxDistance);
+            actualEndpoint = hit.point;
+
+            Entity3D damageable = ResolveHitEntity(hit.collider);
+            if (damageable != null && IsMatchingTarget(damageable))
+            {
+                if (CanApplyGameplay())
+                {
+                    float damageThisFrame = _damagePerSecond * Time.deltaTime;
+                    damageable.TakeDamage(damageThisFrame, hit.point, _shooter, DamageSource3D.Beam, _accuracyAttackId);
+
+                    Rigidbody targetRb = hit.collider.attachedRigidbody;
+                    if (targetRb != null && _impactForce > 0f)
+                    {
+                        Vector3 velocityDelta = aimDirection * (_impactForce * Time.deltaTime);
+                        targetRb.linearVelocity += velocityDelta;
+                        targetRb.GetComponent<NetMovement3D>()?.ApplyCombatVelocityDelta(velocityDelta);
+                    }
+                }
+
+                UpdateShieldHitEffects(damageable, hit.point);
+            }
+            else
+            {
+                _timeSinceLastShieldHit = 0f;
+                _currentTargetShield = null;
+            }
+        }
+        else
+        {
+            _timeSinceLastShieldHit = 0f;
+            _currentTargetShield = null;
+        }
+
+        Vector3 visualEndpoint = ResolveVisualEndpoint(actualEndpoint);
+        Vector3 visualDirection = visualEndpoint - origin;
+        if (visualDirection.sqrMagnitude <= 0.0001f)
+        {
+            visualDirection = aimDirection;
+        }
+        else
+        {
+            visualDirection = visualDirection.normalized;
+        }
+
+        float visualBeamLength = Vector3.Distance(origin, visualEndpoint);
+        UpdateBeamVisuals(origin, visualDirection, visualBeamLength, hitSomething, visualEndpoint);
+    }
+
+    private void UpdateBeamVisuals(Vector3 origin, Vector3 visualDirection, float beamLength, bool hitSomething, Vector3 impactPoint)
+    {
+        transform.position = origin;
+        transform.rotation = Quaternion.LookRotation(visualDirection, ResolveUpVector(visualDirection));
+
+        if (lineRenderer != null)
+        {
+            lineRenderer.positionCount = 2;
+            lineRenderer.SetPosition(0, Vector3.zero);
+            lineRenderer.SetPosition(1, new Vector3(0f, 0f, beamLength));
+            UpdateTextureScale(beamLength);
+            UpdateTextureOffset();
+        }
+
+        if (muzzleAnchor != null)
+        {
+            muzzleAnchor.localPosition = new Vector3(0f, 0f, muzzleForwardOffset);
+            muzzleAnchor.localRotation = Quaternion.identity;
+        }
+
+        if (impactAnchor != null)
+        {
+            if (hitSomething)
+            {
+                SetImpactVisualsActive(true);
+                impactAnchor.position = impactPoint - (transform.forward * Mathf.Max(0f, impactBackwardOffset));
+                impactAnchor.rotation = Quaternion.LookRotation(-visualDirection, ResolveUpVector(-visualDirection));
+            }
+            else
+            {
+                SetImpactVisualsActive(false);
+            }
+        }
+    }
+
+    private void UpdateTextureScale(float beamLength)
+    {
+        if (lineRenderer == null)
+        {
+            return;
+        }
+
+        Material material = lineRenderer.material;
+        if (material == null || !material.HasProperty(textureScaleProperty))
+        {
+            return;
+        }
+
+        float textureScale = Mathf.Max(0f, beamLength) * textureScaleMultiplier;
+        material.SetTextureScale(textureScaleProperty, new Vector2(textureScale, 1f));
+    }
+
+    private void UpdateTextureOffset()
+    {
+        if (!animateUv || lineRenderer == null)
+        {
+            return;
+        }
+
+        Material material = lineRenderer.material;
+        if (material == null || !material.HasProperty(uvOffsetProperty))
+        {
+            return;
+        }
+
+        _animateUvTime += Time.deltaTime;
+        if (_animateUvTime > 1f)
+        {
+            _animateUvTime = 0f;
+        }
+
+        float offset = (_animateUvTime * uvTime) + _initialUvOffset;
+        material.SetVector(uvOffsetProperty, new Vector2(offset, 0f));
+    }
+
+    private void UpdateShieldHitEffects(Entity3D target, Vector3 hitPoint)
+    {
+        if (target.CurrentShield <= 0f)
+        {
+            _currentTargetShield = null;
+            return;
+        }
+
+        ShieldController shieldController = target.GetComponentInChildren<ShieldController>(true);
+        if (shieldController == null)
+        {
+            return;
+        }
+
+        if (_currentTargetShield != shieldController)
+        {
+            shieldController.OnHit(hitPoint);
+            _currentTargetShield = shieldController;
+            _timeSinceLastShieldHit = 0f;
+        }
+        else
+        {
+            _timeSinceLastShieldHit += Time.deltaTime;
+            if (_timeSinceLastShieldHit >= laserHitInterval)
+            {
+                shieldController.OnHit(hitPoint);
+                _timeSinceLastShieldHit = 0f;
+            }
+        }
+    }
+
+    private Entity3D ResolveHitEntity(Collider hitCollider)
+    {
+        if (hitCollider == null)
+        {
+            return null;
+        }
+
+        Entity3D entity = hitCollider.GetComponent<Entity3D>();
+        if (entity != null)
+        {
+            return entity;
+        }
+
+        if (hitCollider.attachedRigidbody != null)
+        {
+            entity = hitCollider.attachedRigidbody.GetComponent<Entity3D>();
+            if (entity != null)
+            {
+                return entity;
+            }
+        }
+
+        return hitCollider.GetComponentInParent<Entity3D>();
+    }
+
+    private bool IsMatchingTarget(Entity3D entity)
+    {
+        if (entity == null)
+        {
+            return false;
+        }
+
+        if (_targetFaction != Faction3D.Neutral)
+        {
+            if (FactionMember3D.AreAllied(_shooter, entity))
+            {
+                return false;
+            }
+
+            Faction3D entityFaction = FactionMember3D.ResolveFaction(entity);
+            if (entityFaction != Faction3D.Neutral)
+            {
+                return entityFaction == _targetFaction;
+            }
+        }
+
+        return !string.IsNullOrEmpty(_targetTag) && entity.CompareTag(_targetTag);
+    }
+
+    private Vector3 ResolveAimDirection()
+    {
+        if (followAnchorTransform && _directionSource != null && _directionSource.forward.sqrMagnitude > 0.0001f)
+        {
+            return _directionSource.forward.normalized;
+        }
+
+        Vector3 resolvedDirection = Vector3.zero;
+
+        if (_hasNetworkAim)
+        {
+            resolvedDirection = _networkAimDirection;
+        }
+        else if (_aimCamera != null)
+        {
+            Ray centerRay = _aimCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
+            if (centerRay.direction.sqrMagnitude > 0.0001f)
+            {
+                resolvedDirection = centerRay.direction.normalized;
+                return ResolveForwardConstrainedDirection(resolvedDirection);
+            }
+        }
+
+        if (resolvedDirection.sqrMagnitude <= 0.0001f)
+        {
+            resolvedDirection = _directionSource != null && _directionSource.forward.sqrMagnitude > 0.0001f
+                ? _directionSource.forward.normalized
+                : transform.forward;
+        }
+
+        return ResolveForwardConstrainedDirection(resolvedDirection);
+    }
+
+    private Vector3 ResolveForwardConstrainedDirection(Vector3 resolvedDirection)
+    {
+        Vector3 forwardReference = _directionSource != null && _directionSource.forward.sqrMagnitude > 0.0001f
+            ? _directionSource.forward.normalized
+            : transform.forward.normalized;
+
+        if (!requireForwardAim)
+        {
+            return resolvedDirection.sqrMagnitude > 0.0001f ? resolvedDirection.normalized : forwardReference;
+        }
+
+        Vector3 normalizedDirection = resolvedDirection.sqrMagnitude > 0.0001f
+            ? resolvedDirection.normalized
+            : forwardReference;
+
+        return Vector3.Dot(forwardReference, normalizedDirection) > 0f
+            ? normalizedDirection
+            : forwardReference;
+    }
+
+    private bool CanApplyGameplay()
+    {
+        if (_isCosmeticOnly)
+        {
+            return false;
+        }
+
+        if (!NetTickUtil.IsActive)
+        {
+            return true;
+        }
+
+        return _networkAuthority != null && _networkAuthority.IsServer;
+    }
+
+    private void CacheNonImpactVisuals()
+    {
+        _beamParticles.Clear();
+        _beamRenderers.Clear();
+
+        ParticleSystem[] allParticles = GetComponentsInChildren<ParticleSystem>(true);
+        for (int i = 0; i < allParticles.Length; i++)
+        {
+            ParticleSystem particleSystem = allParticles[i];
+            if (particleSystem == null || (impactAnchor != null && particleSystem.transform.IsChildOf(impactAnchor)))
+            {
+                continue;
+            }
+
+            _beamParticles.Add(particleSystem);
+        }
+
+        Renderer[] allRenderers = GetComponentsInChildren<Renderer>(true);
+        for (int i = 0; i < allRenderers.Length; i++)
+        {
+            Renderer renderer = allRenderers[i];
+            if (renderer == null || (impactAnchor != null && renderer.transform.IsChildOf(impactAnchor)))
+            {
+                continue;
+            }
+
+            _beamRenderers.Add(renderer);
+        }
+    }
+
+    private void SetBeamVisualsActive(bool isActive)
+    {
+        for (int i = 0; i < _beamRenderers.Count; i++)
+        {
+            if (_beamRenderers[i] != null)
+            {
+                _beamRenderers[i].enabled = isActive;
+            }
+        }
+
+        for (int i = 0; i < _beamParticles.Count; i++)
+        {
+            ParticleSystem particleSystem = _beamParticles[i];
+            if (particleSystem == null)
+            {
+                continue;
+            }
+
+            if (isActive)
+            {
+                particleSystem.Clear(true);
+                particleSystem.Play(true);
+            }
+            else
+            {
+                particleSystem.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+            }
+        }
+    }
+
+    private void SetImpactVisualsActive(bool isActive)
+    {
+        if (_impactVisible == isActive)
+        {
+            return;
+        }
+
+        _impactVisible = isActive;
+
+        if (_impactRenderers != null)
+        {
+            for (int i = 0; i < _impactRenderers.Length; i++)
+            {
+                if (_impactRenderers[i] != null)
+                {
+                    _impactRenderers[i].enabled = isActive;
+                }
+            }
+        }
+
+        if (_impactParticleSystems == null)
+        {
+            return;
+        }
+
+        for (int i = 0; i < _impactParticleSystems.Length; i++)
+        {
+            ParticleSystem particleSystem = _impactParticleSystems[i];
+            if (particleSystem == null)
+            {
+                continue;
+            }
+
+            if (isActive)
+            {
+                particleSystem.Clear(true);
+                particleSystem.Play(true);
+            }
+            else
+            {
+                particleSystem.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+            }
+        }
+    }
+
+    private static Vector3 ResolveUpVector(Vector3 aimDirection)
+    {
+        Vector3 normalizedDirection = aimDirection.normalized;
+        if (Mathf.Abs(Vector3.Dot(normalizedDirection, Vector3.up)) > 0.995f)
+        {
+            return Vector3.forward;
+        }
+
+        return Vector3.up;
+    }
+
+    private Vector3 ResolveVisualEndpoint(Vector3 targetEndpoint)
+    {
+        if (!smoothVisualEndpoint || visualEndpointSmoothTime <= 0f)
+        {
+            _smoothedVisualEndpoint = targetEndpoint;
+            _visualEndpointVelocity = Vector3.zero;
+            _hasSmoothedVisualEndpoint = true;
+            return targetEndpoint;
+        }
+
+        if (!_hasSmoothedVisualEndpoint)
+        {
+            _smoothedVisualEndpoint = targetEndpoint;
+            _visualEndpointVelocity = Vector3.zero;
+            _hasSmoothedVisualEndpoint = true;
+            return targetEndpoint;
+        }
+
+        float distance = Vector3.Distance(_smoothedVisualEndpoint, targetEndpoint);
+        if (distance >= Mathf.Max(0f, visualEndpointSnapDistance))
+        {
+            _smoothedVisualEndpoint = targetEndpoint;
+            _visualEndpointVelocity = Vector3.zero;
+            return targetEndpoint;
+        }
+
+        if (distance <= Mathf.Max(0f, visualEndpointDeadzone))
+        {
+            return _smoothedVisualEndpoint;
+        }
+
+        _smoothedVisualEndpoint = Vector3.SmoothDamp(
+            _smoothedVisualEndpoint,
+            targetEndpoint,
+            ref _visualEndpointVelocity,
+            visualEndpointSmoothTime,
+            Mathf.Infinity,
+            Time.deltaTime);
+        return _smoothedVisualEndpoint;
+    }
+
+    private void ResetVisualSmoothing()
+    {
+        _smoothedVisualEndpoint = Vector3.zero;
+        _visualEndpointVelocity = Vector3.zero;
+        _hasSmoothedVisualEndpoint = false;
+    }
+
+    private void AttachToAnchorTransform()
+    {
+        if (!followAnchorTransform || _directionSource == null)
+        {
+            return;
+        }
+
+        transform.SetParent(_directionSource, false);
+        transform.localPosition = new Vector3(0f, _verticalOffset, _anchorOffset);
+        transform.localRotation = Quaternion.identity;
+    }
+
+    private Vector3 ResolveBeamOrigin(Vector3 aimDirection)
+    {
+        if (followAnchorTransform)
+        {
+            return transform.position;
+        }
+
+        Vector3 normalizedDirection = aimDirection.sqrMagnitude > 0.0001f ? aimDirection.normalized : transform.forward;
+        Transform originAnchor = _positionAnchor != null ? _positionAnchor : transform;
+        return originAnchor.position + (normalizedDirection * _anchorOffset) + (originAnchor.up * _verticalOffset);
+    }
+
+    private bool TryFindBeamHit(Vector3 origin, Vector3 aimDirection, out RaycastHit nearestHit)
+    {
+        nearestHit = default;
+        Vector3 normalizedDirection = aimDirection.sqrMagnitude > 0.0001f ? aimDirection.normalized : transform.forward;
+        int hitCount = hitscanRadius > 0.001f
+            ? Physics.SphereCastNonAlloc(origin, hitscanRadius, normalizedDirection, BeamHits, _maxDistance, collisionMask, QueryTriggerInteraction.Ignore)
+            : Physics.RaycastNonAlloc(origin, normalizedDirection, BeamHits, _maxDistance, collisionMask, QueryTriggerInteraction.Ignore);
+
+        float nearestDistance = float.MaxValue;
+        bool foundHit = false;
+        for (int i = 0; i < hitCount; i++)
+        {
+            RaycastHit candidate = BeamHits[i];
+            Collider candidateCollider = candidate.collider;
+            if (candidateCollider == null)
+            {
+                continue;
+            }
+
+            if (_shooter != null && candidateCollider.transform.IsChildOf(_shooter.transform))
+            {
+                continue;
+            }
+
+            if (candidate.distance < nearestDistance)
+            {
+                nearestDistance = candidate.distance;
+                nearestHit = candidate;
+                foundHit = true;
+            }
+        }
+
+        return foundHit;
+    }
+}

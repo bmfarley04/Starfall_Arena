@@ -18,6 +18,7 @@ public class EnemyAIFlightController3D : MonoBehaviour
 
     private Rigidbody _rb;
     private NetworkObject _networkObject;
+    private Entity3D _entity;
     private Vector3 _moveDirection;
     private Vector3 _facingDirection;
     private float _speedScale;
@@ -38,6 +39,7 @@ public class EnemyAIFlightController3D : MonoBehaviour
     {
         _rb = GetComponent<Rigidbody>();
         _networkObject = GetComponent<NetworkObject>();
+        _entity = GetComponent<Entity3D>();
         ConfigureRigidbody();
         CacheLockedWorldYIfNeeded();
     }
@@ -155,7 +157,7 @@ public class EnemyAIFlightController3D : MonoBehaviour
         Quaternion nextRotation = Quaternion.RotateTowards(
             _rb.rotation,
             targetRotation,
-            rotationDegreesPerSecond * Time.fixedDeltaTime);
+            GetEffectiveRotationDegreesPerSecond() * Time.fixedDeltaTime);
 
         _rb.MoveRotation(nextRotation);
         _rb.angularVelocity = Vector3.zero;
@@ -220,6 +222,12 @@ public class EnemyAIFlightController3D : MonoBehaviour
         _rb.linearDamping = 0f;
         _rb.angularDamping = 0f;
         _rb.interpolation = RigidbodyInterpolation.Interpolate;
+    }
+
+    private float GetEffectiveRotationDegreesPerSecond()
+    {
+        float multiplier = _entity != null ? _entity.GetCombinedRotationMultiplier() : 1f;
+        return Mathf.Max(0f, rotationDegreesPerSecond * Mathf.Max(0f, multiplier));
     }
 
     private void CacheLockedWorldYIfNeeded()

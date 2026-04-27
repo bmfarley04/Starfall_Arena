@@ -20,6 +20,8 @@ public class BeamWeapon3D : Weapon3D, IBeamWeaponNetwork3D
         public Transform muzzle;
         [Tooltip("Rotation speed multiplier when beam is active (0.3 = 70% slower)")]
         public float rotationMultiplier;
+        [Tooltip("How long the rotation penalty should linger after the beam stops, to prevent instant pivot-and-refire behavior.")]
+        public float postFireRotationPenaltyDuration;
 
         [Header("Beam Capacity")]
         [Tooltip("Maximum beam capacity (100 units)")]
@@ -28,6 +30,8 @@ public class BeamWeapon3D : Weapon3D, IBeamWeaponNetwork3D
         public float drainRate;
         [Tooltip("How fast beam capacity regenerates when not firing (units per second)")]
         public float regenRate;
+        [Tooltip("Minimum remaining beam energy required before the weapon is allowed to start firing again.")]
+        public float minimumStartEnergy;
 
         [Header("Sound Effects")]
         [Tooltip("Looping sound played while the beam is firing.")]
@@ -38,14 +42,17 @@ public class BeamWeapon3D : Weapon3D, IBeamWeaponNetwork3D
     [SerializeField] private BeamWeaponConfig3D beam;
     [SerializeField] private AudioSource beamLoopAudioSource;
 
-    private LaserBeam3D _activeBeam;
+    private IBeamRuntime3D _activeBeam;
+    private MonoBehaviour _activeBeamComponent;
     private NetCombat3D _netCombat;
     private bool _activeBeamAuthoritative = true;
     private Vector3 _pendingNetworkAim;
     private bool _hasPendingNetworkAim;
     private int _activeBeamAttackId = PlayerCombatStats3D.InvalidAttackId;
+    private float _rotationPenaltyUntilTime = float.NegativeInfinity;
 
     private bool UsesBeamCapacity => beam.capacity > 0f && beam.drainRate > 0f;
+    public bool IsBeamActive => _activeBeam != null;
 
     protected override void Awake()
     {
@@ -108,6 +115,61 @@ public class BeamWeapon3D : Weapon3D, IBeamWeaponNetwork3D
         }
     }
 
+    public bool CanStartBeamNow()
+    {
+        if (beam.beamPrefab == null || _activeBeam != null)
+        {
+            return false;
+        }
+
+        if (!UsesBeamCapacity)
+        {
+            return true;
+        }
+
+        float remainingEnergy = GetRemainingBeamEnergy();
+        float minimumStartEnergy = Mathf.Clamp(beam.minimumStartEnergy, 0f, Mathf.Max(0f, beam.capacity));
+        float firstFrameCost = Mathf.Max(beam.drainRate * Time.fixedDeltaTime, 0f);
+        float requiredEnergy = Mathf.Max(minimumStartEnergy, firstFrameCost);
+        return remainingEnergy + 0.001f >= requiredEnergy;
+    }
+
+    public float GetRemainingBeamEnergy()
+    {
+        if (!UsesBeamCapacity)
+        {
+            return 0f;
+        }
+
+        return Mathf.Max(0f, beam.capacity - CurrentResourceUsage);
+    }
+
+    public Vector3 GetBeamForwardDirection()
+    {
+        Transform muzzle = beam.muzzle != null ? beam.muzzle : Owner != null ? Owner.transform : transform;
+        if (muzzle != null && muzzle.forward.sqrMagnitude > 0.0001f)
+        {
+            return muzzle.forward.normalized;
+        }
+
+        return transform.forward.sqrMagnitude > 0.0001f ? transform.forward.normalized : Vector3.forward;
+    }
+
+    public Vector3 GetBeamOrigin(Vector3 aimDirection)
+    {
+        Transform muzzle = beam.muzzle != null ? beam.muzzle : Owner != null ? Owner.transform : transform;
+        Vector3 normalizedDirection = aimDirection.sqrMagnitude > 0.0001f
+            ? aimDirection.normalized
+            : GetBeamForwardDirection();
+
+        if (muzzle == null)
+        {
+            return transform.position + (normalizedDirection * beam.offsetDistance) + (transform.up * beam.verticalOffset);
+        }
+
+        return muzzle.position + (normalizedDirection * beam.offsetDistance) + (muzzle.up * beam.verticalOffset);
+    }
+
     private Vector3 ResolveOwnerAimDirection()
     {
         Camera cam = AimCamera;
@@ -131,12 +193,7 @@ public class BeamWeapon3D : Weapon3D, IBeamWeaponNetwork3D
 
     protected override void OnFirePressed()
     {
-        if (_activeBeam != null || beam.beamPrefab == null)
-        {
-            return;
-        }
-
-        if (UsesBeamCapacity && !CanSpendResource(beam.drainRate * Time.fixedDeltaTime))
+        if (!CanStartBeamNow())
         {
             return;
         }
@@ -176,7 +233,8 @@ public class BeamWeapon3D : Weapon3D, IBeamWeaponNetwork3D
 
     public override float GetRotationMultiplier()
     {
-        return _activeBeam != null ? beam.rotationMultiplier : 1f;
+        bool shouldApplyPenalty = _activeBeam != null || Time.time < _rotationPenaltyUntilTime;
+        return shouldApplyPenalty ? beam.rotationMultiplier : 1f;
     }
 
     public override bool IsReticleSpinActive()
@@ -231,6 +289,11 @@ public class BeamWeapon3D : Weapon3D, IBeamWeaponNetwork3D
 
     private void StartBeam(bool authoritative, int accuracyAttackId)
     {
+        if (_activeBeam == null && !CanStartBeamNow())
+        {
+            return;
+        }
+
         if (_activeBeam != null)
         {
             _activeBeamAuthoritative = authoritative;
@@ -243,8 +306,20 @@ public class BeamWeapon3D : Weapon3D, IBeamWeaponNetwork3D
         }
 
         GameObject beamObj = Instantiate(beam.beamPrefab, Vector3.zero, Quaternion.identity);
-        _activeBeam = beamObj.GetComponent<LaserBeam3D>();
-        if (_activeBeam == null)
+        _activeBeam = null;
+        _activeBeamComponent = null;
+        MonoBehaviour[] beamBehaviours = beamObj.GetComponents<MonoBehaviour>();
+        for (int i = 0; i < beamBehaviours.Length; i++)
+        {
+            if (beamBehaviours[i] is IBeamRuntime3D runtime)
+            {
+                _activeBeam = runtime;
+                _activeBeamComponent = beamBehaviours[i];
+                break;
+            }
+        }
+
+        if (_activeBeam == null || _activeBeamComponent == null)
         {
             Destroy(beamObj);
             return;
@@ -300,8 +375,18 @@ public class BeamWeapon3D : Weapon3D, IBeamWeaponNetwork3D
         if (_activeBeam != null)
         {
             _activeBeam.StopFiring();
-            Destroy(_activeBeam.gameObject);
+            Destroy(_activeBeamComponent.gameObject);
             _activeBeam = null;
+            _activeBeamComponent = null;
+        }
+
+        if (beam.postFireRotationPenaltyDuration > 0f)
+        {
+            _rotationPenaltyUntilTime = Time.time + beam.postFireRotationPenaltyDuration;
+        }
+        else
+        {
+            _rotationPenaltyUntilTime = float.NegativeInfinity;
         }
 
         _activeBeamAuthoritative = true;

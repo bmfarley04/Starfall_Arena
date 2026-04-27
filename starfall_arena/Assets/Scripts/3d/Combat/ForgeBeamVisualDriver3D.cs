@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 [DisallowMultipleComponent]
@@ -26,10 +27,10 @@ public class ForgeBeamVisualDriver3D : BeamVisualDriver3D
     private void Awake()
     {
         lineRenderer ??= GetComponent<LineRenderer>();
-        _particleSystems = GetComponentsInChildren<ParticleSystem>(true);
-        _renderers = GetComponentsInChildren<Renderer>(true);
         _impactParticleSystems = impactAnchor != null ? impactAnchor.GetComponentsInChildren<ParticleSystem>(true) : null;
         _impactRenderers = impactAnchor != null ? impactAnchor.GetComponentsInChildren<Renderer>(true) : null;
+        _particleSystems = CollectNonImpactParticleSystems();
+        _renderers = CollectNonImpactRenderers();
         _initialUvOffset = Random.Range(0f, 5f);
         if (lineRenderer != null)
         {
@@ -91,7 +92,7 @@ public class ForgeBeamVisualDriver3D : BeamVisualDriver3D
             if (hitSomething)
             {
                 SetImpactVisualsActive(true);
-                impactAnchor.position = hitPoint - (normalizedDirection * impactBackwardOffset);
+                impactAnchor.position = hitPoint - (normalizedDirection * Mathf.Max(0f, impactBackwardOffset));
                 impactAnchor.rotation = Quaternion.LookRotation(
                     hitNormal.sqrMagnitude > 0.0001f ? hitNormal.normalized : -normalizedDirection,
                     ResolveUpVector(hitNormal.sqrMagnitude > 0.0001f ? hitNormal.normalized : -normalizedDirection));
@@ -241,6 +242,52 @@ public class ForgeBeamVisualDriver3D : BeamVisualDriver3D
                 particleSystem.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
             }
         }
+    }
+
+    private ParticleSystem[] CollectNonImpactParticleSystems()
+    {
+        ParticleSystem[] allParticleSystems = GetComponentsInChildren<ParticleSystem>(true);
+        if (impactAnchor == null || allParticleSystems == null || allParticleSystems.Length == 0)
+        {
+            return allParticleSystems;
+        }
+
+        List<ParticleSystem> filtered = new List<ParticleSystem>(allParticleSystems.Length);
+        for (int i = 0; i < allParticleSystems.Length; i++)
+        {
+            ParticleSystem particleSystem = allParticleSystems[i];
+            if (particleSystem == null || particleSystem.transform.IsChildOf(impactAnchor))
+            {
+                continue;
+            }
+
+            filtered.Add(particleSystem);
+        }
+
+        return filtered.ToArray();
+    }
+
+    private Renderer[] CollectNonImpactRenderers()
+    {
+        Renderer[] allRenderers = GetComponentsInChildren<Renderer>(true);
+        if (impactAnchor == null || allRenderers == null || allRenderers.Length == 0)
+        {
+            return allRenderers;
+        }
+
+        List<Renderer> filtered = new List<Renderer>(allRenderers.Length);
+        for (int i = 0; i < allRenderers.Length; i++)
+        {
+            Renderer renderer = allRenderers[i];
+            if (renderer == null || renderer.transform.IsChildOf(impactAnchor))
+            {
+                continue;
+            }
+
+            filtered.Add(renderer);
+        }
+
+        return filtered.ToArray();
     }
 
     private static Vector3 ResolveUpVector(Vector3 aimDirection)

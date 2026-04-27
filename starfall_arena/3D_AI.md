@@ -15,6 +15,7 @@ The 3D AI path should stay modular. Enemy prefabs should compose small scripts i
   - simple enemy Rigidbody motor
   - receives a world-space move direction, rotates toward it, then directly sets Rigidbody velocity along its own facing direction once facing that direction
   - exposes `IsMovingForward` for enemy thruster VFX so rotating-in-place does not light engines
+  - must still consume the owning `Entity3D` rotation multipliers, or active beam/charge weapons can advertise turn penalties that never affect enemy aim in practice
   - contains no targeting, pathing, or combat decisions
 - `EnemyTargetSensor3D`
   - periodically selects the nearest target in a configured faction
@@ -35,6 +36,11 @@ The 3D AI path should stay modular. Enemy prefabs should compose small scripts i
   - can face the player while thrusting backward so it keeps pressure on targets that close the gap
   - requires aim plus line-of-sight before sustaining its beam
   - keeps high-level fire/movement decisions on a think interval, but must refresh active beam aim every frame so the beam visual stays locked to moving targets instead of updating at AI cadence
+  - treats the beam as a strict forward hardpoint, not a free-aim attack: it should only fire down the current beam forward direction and only when the target falls inside that forward lane
+  - should also enforce its own restart-energy threshold so a depleted beam weapon does not spam restart attempts every think tick while it is still nearly empty
+  - when using Forge beam visuals, prefer the dedicated `ForgeEnemyBeam3D` runtime so the enemy's visible beam, damage ray, and hit flare all share one endpoint calculation
+  - for the Forge artillery beam path, keep the beam transform attached to the muzzle/forward anchor instead of rebuilding its world origin from the current aim vector each frame; the original Forge plasma beam assumes a stable hardpoint transform
+  - if the enemy is still "stutter-pivoting" between beam bursts, prefer a short post-fire beam rotation-penalty linger instead of globally lowering the motor's base turn speed; that keeps the artillery identity without making all non-beam turning feel sluggish
 - `SuicideDroneEnemyBrain3D`
   - dedicated detonation behavior for kamikaze enemies
   - always commits to the nearest player at full speed instead of using range management
