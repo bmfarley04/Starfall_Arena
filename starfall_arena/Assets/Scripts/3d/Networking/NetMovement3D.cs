@@ -17,7 +17,6 @@ public class NetMovement3D : NetworkBehaviour
 
     [Header("Reconciliation")]
     [SerializeField] private float reconciliationThreshold = 0.1f;
-    [SerializeField] private float smoothCorrectionThreshold = 1.25f;
 
     [Header("Interpolation")]
     [SerializeField] private int interpolationBufferTicks = 2;
@@ -587,9 +586,8 @@ public class NetMovement3D : NetworkBehaviour
             _predictionBuffer[inputIndex] = ToSnapshot(tick, replayState, input.ThrustInput, input.FrictionEnabled);
         }
 
-        float correctionDistance = Vector3.Distance(transform.position, replayState.Position);
         _ownerState = replayState;
-        ApplySimulationState(_ownerState, snap: correctionDistance > Mathf.Max(reconciliationThreshold, smoothCorrectionThreshold));
+        ApplySimulationState(_ownerState, snap: true);
 
         int latestInputIndex = currentTick % ClientInputBufferSize;
         Vector2 latestLookInput = _inputBuffer[latestInputIndex].Tick == currentTick
