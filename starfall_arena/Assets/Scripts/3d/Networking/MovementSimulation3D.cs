@@ -66,35 +66,7 @@ public static class MovementSimulation3D
         in ShipFlightAssistConfig3D assist,
         float dt)
     {
-        if (HandleActiveDodge(ref state, dt))
-        {
-            return;
-        }
-
-        state.DodgeVelocity = Vector3.zero;
-        state.DodgeExitVelocity = Vector3.zero;
-
         HandleThrustAndAssist(ref state, input, flight, assist, dt);
-    }
-
-    private static bool HandleActiveDodge(ref MovementState3D state, float dt)
-    {
-        if (state.DodgeRemainingTime <= 0f)
-        {
-            return false;
-        }
-
-        state.Velocity = state.DodgeVelocity;
-        state.DodgeRemainingTime = Mathf.Max(0f, state.DodgeRemainingTime - dt);
-
-        if (state.DodgeRemainingTime <= 0f)
-        {
-            state.Velocity = state.DodgeExitVelocity;
-            state.DodgeVelocity = Vector3.zero;
-            state.DodgeExitVelocity = Vector3.zero;
-        }
-
-        return true;
     }
 
     private static void HandleThrustAndAssist(
@@ -156,6 +128,23 @@ public static class MovementSimulation3D
     private static void IntegratePosition(ref MovementState3D state, float dt)
     {
         state.Position += state.Velocity * dt;
+
+        if (state.DodgeRemainingTime <= 0f)
+        {
+            state.DodgeVelocity = Vector3.zero;
+            state.DodgeExitVelocity = Vector3.zero;
+            return;
+        }
+
+        float dodgeStep = Mathf.Min(dt, state.DodgeRemainingTime);
+        state.Position += state.DodgeVelocity * dodgeStep;
+        state.DodgeRemainingTime = Mathf.Max(0f, state.DodgeRemainingTime - dt);
+
+        if (state.DodgeRemainingTime <= 0f)
+        {
+            state.DodgeVelocity = Vector3.zero;
+            state.DodgeExitVelocity = Vector3.zero;
+        }
     }
 
     private static Vector2 GetEffectiveSteeringInput(Vector2 filteredLookInput, bool invertY)

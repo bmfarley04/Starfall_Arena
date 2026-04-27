@@ -119,12 +119,12 @@ public class Dodge3D : Ability3D
 
     public override float GetRotationMultiplier()
     {
-        return _isDodging ? 0f : 1f;
+        return 1f;
     }
 
     public override float GetThrustMultiplier()
     {
-        return _isDodging ? 0f : 1f;
+        return 1f;
     }
 
     protected override float GetCooldownDuration()
@@ -258,25 +258,20 @@ public class Dodge3D : Ability3D
             yield break;
         }
 
-        Vector3 startPosition = rb.position;
-        Vector3 endPosition = startPosition + (worldDirection * dodgeDistance);
-        Vector3 carriedVelocity = rb.linearVelocity;
+        Vector3 previousOffset = Vector3.zero;
         float elapsed = 0f;
-
-        rb.linearVelocity = Vector3.zero;
 
         while (elapsed < slideDuration)
         {
             elapsed += Time.fixedDeltaTime;
             float t = Mathf.Clamp01(elapsed / slideDuration);
             float eased = 1f - ((1f - t) * (1f - t));
-            Vector3 nextPosition = Vector3.Lerp(startPosition, endPosition, eased);
-            rb.MovePosition(nextPosition);
+            Vector3 currentOffset = worldDirection * (dodgeDistance * eased);
+            rb.MovePosition(rb.position + (currentOffset - previousOffset));
+            previousOffset = currentOffset;
             yield return new WaitForFixedUpdate();
         }
 
-        rb.MovePosition(endPosition);
-        rb.linearVelocity = carriedVelocity;
         _localDodgeCoroutine = null;
     }
 }

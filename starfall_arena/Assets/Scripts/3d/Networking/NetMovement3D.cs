@@ -320,21 +320,11 @@ public class NetMovement3D : NetworkBehaviour
         if (_ownerStateInitialized)
         {
             _ownerState.Velocity += velocityDelta;
-            if (_ownerState.DodgeRemainingTime > 0f)
-            {
-                _ownerState.DodgeVelocity += velocityDelta;
-                _ownerState.DodgeExitVelocity += velocityDelta;
-            }
         }
 
         if (_serverStateInitialized)
         {
             _serverState.Velocity += velocityDelta;
-            if (_serverState.DodgeRemainingTime > 0f)
-            {
-                _serverState.DodgeVelocity += velocityDelta;
-                _serverState.DodgeExitVelocity += velocityDelta;
-            }
         }
     }
 
@@ -1090,10 +1080,8 @@ public class NetMovement3D : NetworkBehaviour
             initialized = true;
         }
 
-        Vector3 carriedVelocity = state.Velocity;
         state.DodgeVelocity = dashVelocity;
-        state.DodgeExitVelocity = carriedVelocity;
+        state.DodgeExitVelocity = Vector3.zero;
         state.DodgeRemainingTime = duration;
-        state.Velocity = dashVelocity;
     }
 }

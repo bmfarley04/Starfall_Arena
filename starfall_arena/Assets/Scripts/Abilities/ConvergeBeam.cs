@@ -266,41 +266,37 @@ public class ConvergeBeam : Ability
 
     private Vector3 ResolveCurrentConvergencePoint()
     {
-        if (TryResolveLocalMouseAimPoint(out Vector3 mouseAimPoint))
+        if (TryResolveScreenCenterAimPoint(out Vector3 screenCenterAimPoint))
         {
-            return mouseAimPoint;
+            return screenCenterAimPoint;
         }
 
         Vector2 aimDirection = ResolveCurrentAimDirection();
         return transform.position + (Vector3)(aimDirection * convergeBeam.convergenceDistance);
     }
 
-    private bool TryResolveLocalMouseAimPoint(out Vector3 aimPoint)
+    private bool TryResolveScreenCenterAimPoint(out Vector3 aimPoint)
     {
         aimPoint = default;
 
-        if (Mouse.current == null || _playerInput == null || !_playerInput.enabled)
-        {
-            return false;
-        }
-
-        string controlScheme = _playerInput.currentControlScheme ?? string.Empty;
-        if (controlScheme != "key+mouse")
-        {
-            return false;
-        }
-
-        Camera aimCamera = _playerInput.camera != null ? _playerInput.camera : Camera.main;
+        Camera aimCamera = _playerInput != null && _playerInput.camera != null
+            ? _playerInput.camera
+            : Camera.main;
         if (aimCamera == null)
         {
             return false;
         }
 
-        Vector3 mouseScreenPosition = Mouse.current.position.ReadValue();
-        mouseScreenPosition.z = Mathf.Abs(transform.position.z - aimCamera.transform.position.z);
-        aimPoint = aimCamera.ScreenToWorldPoint(mouseScreenPosition);
-        aimPoint.z = transform.position.z;
-        return true;
+        Ray centerRay = aimCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
+        Plane gameplayPlane = new Plane(Vector3.forward, transform.position);
+        if (gameplayPlane.Raycast(centerRay, out float enter))
+        {
+            aimPoint = centerRay.GetPoint(enter);
+            aimPoint.z = transform.position.z;
+            return true;
+        }
+
+        return false;
     }
 
     private Vector2 ResolveCurrentAimDirection()
