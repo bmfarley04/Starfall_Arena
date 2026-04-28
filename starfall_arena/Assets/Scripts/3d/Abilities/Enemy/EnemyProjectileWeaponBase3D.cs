@@ -97,7 +97,17 @@ public abstract class EnemyProjectileWeaponBase3D : MonoBehaviour, IEnemyProject
             return false;
         }
 
-        return FireLocalVolley(targetFaction, fireDirectionOverride);
+        return FireLocalVolley(targetFaction, fireDirectionOverride, useConvergencePoint: false, convergencePoint: Vector3.zero);
+    }
+
+    public bool TryFireAtFactionConverged(Faction3D targetFaction, Vector3 convergencePoint)
+    {
+        if (!TryConsumeFireGate())
+        {
+            return false;
+        }
+
+        return FireLocalVolley(targetFaction, Vector3.zero, useConvergencePoint: true, convergencePoint);
     }
 
     public virtual bool TryConsumeFireGate()
@@ -123,6 +133,16 @@ public abstract class EnemyProjectileWeaponBase3D : MonoBehaviour, IEnemyProject
 
     public void BuildNetworkProjectileRequests(Faction3D targetFaction, int tick, List<NetProjectileFireRequest3D> output, Vector3 fireDirectionOverride)
     {
+        BuildNetworkProjectileRequestsInternal(targetFaction, tick, output, fireDirectionOverride, useConvergencePoint: false, convergencePoint: Vector3.zero);
+    }
+
+    public void BuildNetworkProjectileRequestsConverged(Faction3D targetFaction, int tick, List<NetProjectileFireRequest3D> output, Vector3 convergencePoint)
+    {
+        BuildNetworkProjectileRequestsInternal(targetFaction, tick, output, Vector3.zero, useConvergencePoint: true, convergencePoint);
+    }
+
+    private void BuildNetworkProjectileRequestsInternal(Faction3D targetFaction, int tick, List<NetProjectileFireRequest3D> output, Vector3 fireDirectionOverride, bool useConvergencePoint, Vector3 convergencePoint)
+    {
         if (output == null || !HasValidProjectilePrefab())
         {
             return;
@@ -135,12 +155,13 @@ public abstract class EnemyProjectileWeaponBase3D : MonoBehaviour, IEnemyProject
         for (int i = 0; i < muzzles.Length; i++)
         {
             Transform spawnMuzzle = muzzles[i] != null ? muzzles[i] : transform;
-            Vector3 fireDirection = ResolveFireDirection(spawnMuzzle, fireDirectionOverride);
+            Vector3 spawnPosition = ResolveProjectileSpawnPosition(spawnMuzzle);
+            Vector3 fireDirection = ResolveFireDirection(spawnMuzzle, fireDirectionOverride, useConvergencePoint, convergencePoint, spawnPosition);
             Quaternion fireRotation = Quaternion.LookRotation(fireDirection, ResolveUpVector(fireDirection));
             output.Add(new NetProjectileFireRequest3D
             {
                 Tick = tick,
-                SpawnPosition = ResolveProjectileSpawnPosition(spawnMuzzle),
+                SpawnPosition = spawnPosition,
                 SpawnRotation = fireRotation,
                 MuzzleEffectPosition = spawnMuzzle.TransformPoint(muzzleEffectLocalOffset),
                 MuzzleEffectRotation = fireRotation,
@@ -199,7 +220,7 @@ public abstract class EnemyProjectileWeaponBase3D : MonoBehaviour, IEnemyProject
         return projectilePrefab != null;
     }
 
-    private bool FireLocalVolley(Faction3D targetFaction, Vector3 fireDirectionOverride)
+    private bool FireLocalVolley(Faction3D targetFaction, Vector3 fireDirectionOverride, bool useConvergencePoint, Vector3 convergencePoint)
     {
         GameObject projectilePrefab = GetProjectilePrefab();
         if (projectilePrefab == null)
@@ -213,13 +234,14 @@ public abstract class EnemyProjectileWeaponBase3D : MonoBehaviour, IEnemyProject
         for (int i = 0; i < muzzles.Length; i++)
         {
             Transform spawnMuzzle = muzzles[i] != null ? muzzles[i] : transform;
-            Vector3 fireDirection = ResolveFireDirection(spawnMuzzle, fireDirectionOverride);
+            Vector3 spawnPosition = ResolveProjectileSpawnPosition(spawnMuzzle);
+            Vector3 fireDirection = ResolveFireDirection(spawnMuzzle, fireDirectionOverride, useConvergencePoint, convergencePoint, spawnPosition);
             SpawnMuzzleEffect(spawnMuzzle, fireDirection);
 
             NetProjectileFireRequest3D fire = new NetProjectileFireRequest3D
             {
                 Tick = NetTickUtil.IsActive ? NetTickUtil.CurrentTick : -1,
-                SpawnPosition = ResolveProjectileSpawnPosition(spawnMuzzle),
+                SpawnPosition = spawnPosition,
                 SpawnRotation = Quaternion.LookRotation(fireDirection, ResolveUpVector(fireDirection)),
                 Direction = fireDirection,
                 InheritedVelocity = GetInheritedVelocity(),
@@ -341,11 +363,21 @@ public abstract class EnemyProjectileWeaponBase3D : MonoBehaviour, IEnemyProject
             + (muzzle.forward * projectileSpawnLocalOffset.z);
     }
 
-    private Vector3 ResolveFireDirection(Transform muzzle, Vector3 fireDirectionOverride)
+    private Vector3 ResolveFireDirection(Transform muzzle, Vector3 fireDirectionOverride, bool useConvergencePoint, Vector3 convergencePoint, Vector3 spawnPosition)
     {
-        Vector3 fireDirection = fireDirectionOverride.sqrMagnitude > 0.0001f
-            ? fireDirectionOverride
-            : muzzle != null ? muzzle.forward : transform.forward;
+        Vector3 fireDirection = Vector3.zero;
+        if (useConvergencePoint)
+        {
+            fireDirection = convergencePoint - spawnPosition;
+        }
+
+        if (fireDirection.sqrMagnitude <= 0.0001f)
+        {
+            fireDirection = fireDirectionOverride.sqrMagnitude > 0.0001f
+                ? fireDirectionOverride
+                : muzzle != null ? muzzle.forward : transform.forward;
+        }
+
         if (fireDirection.sqrMagnitude <= 0.0001f)
         {
             fireDirection = transform.forward.sqrMagnitude > 0.0001f ? transform.forward : Vector3.forward;

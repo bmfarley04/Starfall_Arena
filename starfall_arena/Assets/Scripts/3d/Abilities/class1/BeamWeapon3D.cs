@@ -18,6 +18,8 @@ public class BeamWeapon3D : Weapon3D, IBeamWeaponNetwork3D
         public float verticalOffset;
         [Tooltip("Optional muzzle transform for beam origin. Falls back to the entity transform if unset.")]
         public Transform muzzle;
+        [Tooltip("Optional transform whose +Z/forward axis defines beam aim and cast direction. Use this when the muzzle is positioned correctly but its local forward points away from the intended shot lane.")]
+        public Transform directionReference;
         [Tooltip("Rotation speed multiplier when beam is active (0.3 = 70% slower)")]
         public float rotationMultiplier;
         [Tooltip("How long the rotation penalty should linger after the beam stops, to prevent instant pivot-and-refire behavior.")]
@@ -146,10 +148,10 @@ public class BeamWeapon3D : Weapon3D, IBeamWeaponNetwork3D
 
     public Vector3 GetBeamForwardDirection()
     {
-        Transform muzzle = beam.muzzle != null ? beam.muzzle : Owner != null ? Owner.transform : transform;
-        if (muzzle != null && muzzle.forward.sqrMagnitude > 0.0001f)
+        Transform directionSource = ResolveBeamDirectionSource();
+        if (directionSource != null && directionSource.forward.sqrMagnitude > 0.0001f)
         {
-            return muzzle.forward.normalized;
+            return directionSource.forward.normalized;
         }
 
         return transform.forward.sqrMagnitude > 0.0001f ? transform.forward.normalized : Vector3.forward;
@@ -182,10 +184,10 @@ public class BeamWeapon3D : Weapon3D, IBeamWeaponNetwork3D
             }
         }
 
-        Transform muzzle = beam.muzzle != null ? beam.muzzle : Owner != null ? Owner.transform : transform;
-        if (muzzle != null && muzzle.forward.sqrMagnitude > 0.0001f)
+        Transform directionSource = ResolveBeamDirectionSource();
+        if (directionSource != null && directionSource.forward.sqrMagnitude > 0.0001f)
         {
-            return muzzle.forward.normalized;
+            return directionSource.forward.normalized;
         }
 
         return transform.forward;
@@ -351,6 +353,10 @@ public class BeamWeapon3D : Weapon3D, IBeamWeaponNetwork3D
             beam.offsetDistance,
             beam.verticalOffset,
             AimCamera);
+        if (_activeBeam is IBeamDirectionSource3D directionSourceConsumer)
+        {
+            directionSourceConsumer.SetBeamDirectionSource(ResolveBeamDirectionSource());
+        }
 
         _activeBeamAuthoritative = authoritative;
         _activeBeamAttackId = authoritative ? accuracyAttackId : PlayerCombatStats3D.InvalidAttackId;
@@ -424,5 +430,20 @@ public class BeamWeapon3D : Weapon3D, IBeamWeaponNetwork3D
         }
 
         beamLoopAudioSource.Stop();
+    }
+
+    private Transform ResolveBeamDirectionSource()
+    {
+        if (beam.directionReference != null)
+        {
+            return beam.directionReference;
+        }
+
+        if (beam.muzzle != null)
+        {
+            return beam.muzzle;
+        }
+
+        return Owner != null ? Owner.transform : transform;
     }
 }

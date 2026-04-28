@@ -28,6 +28,16 @@ public class NetEnemyCombat3D : NetworkBehaviour
 
     public bool TryFireProjectilePattern(IEnemyProjectileWeapon3D sourceWeapon, Faction3D targetFaction, Vector3 fireDirectionOverride)
     {
+        return TryFireProjectilePatternInternal(sourceWeapon, targetFaction, fireDirectionOverride, useConvergencePoint: false, convergencePoint: Vector3.zero);
+    }
+
+    public bool TryFireProjectilePatternConverged(IEnemyProjectileWeapon3D sourceWeapon, Faction3D targetFaction, Vector3 convergencePoint)
+    {
+        return TryFireProjectilePatternInternal(sourceWeapon, targetFaction, Vector3.zero, useConvergencePoint: true, convergencePoint);
+    }
+
+    private bool TryFireProjectilePatternInternal(IEnemyProjectileWeapon3D sourceWeapon, Faction3D targetFaction, Vector3 fireDirectionOverride, bool useConvergencePoint, Vector3 convergencePoint)
+    {
         if (!IsServer || !IsSpawned)
         {
             return false;
@@ -52,7 +62,15 @@ public class NetEnemyCombat3D : NetworkBehaviour
         }
 
         _projectileRequests.Clear();
-        sourceWeapon.BuildNetworkProjectileRequests(targetFaction, NetTickUtil.CurrentTick, _projectileRequests, fireDirectionOverride);
+        if (useConvergencePoint)
+        {
+            sourceWeapon.BuildNetworkProjectileRequestsConverged(targetFaction, NetTickUtil.CurrentTick, _projectileRequests, convergencePoint);
+        }
+        else
+        {
+            sourceWeapon.BuildNetworkProjectileRequests(targetFaction, NetTickUtil.CurrentTick, _projectileRequests, fireDirectionOverride);
+        }
+
         if (_projectileRequests.Count == 0)
         {
             return false;

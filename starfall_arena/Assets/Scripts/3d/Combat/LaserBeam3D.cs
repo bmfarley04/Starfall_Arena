@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class LaserBeam3D : MonoBehaviour, IBeamRuntime3D
+public class LaserBeam3D : MonoBehaviour, IBeamRuntime3D, IBeamDirectionSource3D
 {
     [Header("Beam Visual - Core")]
     [Tooltip("Inner beam mesh (capsule). Bright core of the beam.")]
@@ -94,6 +94,11 @@ public class LaserBeam3D : MonoBehaviour, IBeamRuntime3D
         _aimCamera = aimCamera;
         _anchorOffset = anchorOffset;
         _verticalOffset = verticalOffset;
+    }
+
+    public void SetBeamDirectionSource(Transform directionSource)
+    {
+        _directionSource = directionSource != null ? directionSource : _positionAnchor;
     }
 
     public void SetCosmeticOnly(bool isCosmeticOnly)

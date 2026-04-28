@@ -33,7 +33,32 @@ internal static class MissileWeaponInspectorUtility
     public static void DrawWithoutMuzzleEffects(SerializedObject serializedObject)
     {
         serializedObject.Update();
-        Editor.DrawPropertiesExcluding(serializedObject, HiddenMuzzleEffectProperties);
+        SerializedProperty property = serializedObject.GetIterator();
+        bool enterChildren = true;
+        while (property.NextVisible(enterChildren))
+        {
+            enterChildren = false;
+            if (ShouldHide(property.name))
+            {
+                continue;
+            }
+
+            EditorGUILayout.PropertyField(property, includeChildren: true);
+        }
+
         serializedObject.ApplyModifiedProperties();
+    }
+
+    private static bool ShouldHide(string propertyName)
+    {
+        for (int i = 0; i < HiddenMuzzleEffectProperties.Length; i++)
+        {
+            if (HiddenMuzzleEffectProperties[i] == propertyName)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

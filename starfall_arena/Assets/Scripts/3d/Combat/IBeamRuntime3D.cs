@@ -14,3 +14,8 @@ public interface IBeamRuntime3D
     void StartFiring();
     void StopFiring();
 }
+
+public interface IBeamDirectionSource3D
+{
+    void SetBeamDirectionSource(Transform directionSource);
+}

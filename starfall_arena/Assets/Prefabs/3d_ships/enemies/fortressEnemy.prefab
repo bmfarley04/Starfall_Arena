@@ -4971,6 +4971,10 @@ GameObject:
   - component: {fileID: 9212841648702151964}
   - component: {fileID: 3792316846408591602}
   - component: {fileID: 7110419251988611543}
+  - component: {fileID: 8069542890572493184}
+  - component: {fileID: 6718276907644461098}
+  - component: {fileID: 3394221799534837996}
+  - component: {fileID: 8593575025823692486}
   m_Layer: 0
   m_Name: fortressEnemy
   m_TagString: Enemy
@@ -5056,7 +5060,7 @@ Rigidbody:
   m_IsKinematic: 0
   m_Interpolate: 0
   m_Constraints: 0
-  m_CollisionDetection: 0
+  m_CollisionDetection: 1
 --- !u!114 &2098559476186883158
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5219,7 +5223,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 644032932
+  GlobalObjectIdHash: 1704975728
   InScenePlacedSourceGlobalObjectIdHash: 0
   DeferredDespawnTick: 0
   Ownership: 1
@@ -5246,6 +5250,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ArtilleryFortressEnemyBrain3D
   ShowTopMostFoldoutHeaderGroup: 1
   cannonWeapon: {fileID: 5850985854856374077}
+  missileWeapon: {fileID: 8069542890572493184}
+  closeRangeTurretWeapons: []
   flightController: {fileID: 4036106999025840659}
   targetSensor: {fileID: 109184916424653513}
   netEnemyCombat: {fileID: 0}
@@ -5255,9 +5261,14 @@ MonoBehaviour:
   useLeadAim: 1
   leadAimRefinementPasses: 2
   chargeWindUpDuration: 3
-  maxFiringRange: 500
+  maxFiringRange: 700
   approachRangeBuffer: 200
   outOfRangeApproachSpeedScale: 1
+  maxMissileRange: 200
+  missileAimToleranceDegrees: 180
+  missileToCannonStaggerDelay: 0.35
+  maxTurretRange: 100
+  turretToCannonStaggerDelay: 0.15
   loseTargetMaxDistance: 0
 --- !u!114 &7110419251988611543
 MonoBehaviour:
@@ -5353,6 +5364,134 @@ MonoBehaviour:
   chargeLight: {fileID: 0}
   chargeLightMaxAddedIntensity: 5
   fadeOutDuration: 0.12
+--- !u!114 &8069542890572493184
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5723954577492871350}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7f98704ce77e4ca1bf266ea88a739b48, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::StaggeredMissileWeaponEnemy3D
+  weaponConfig:
+    projectilePrefab: {fileID: 152452, guid: 1c9b1a31f9a4cc24b8f9799470f3f17f, type: 3}
+    muzzles:
+    - {fileID: 5857087358678646052}
+    - {fileID: 6626983591841678614}
+    - {fileID: 1544521036087974432}
+    - {fileID: 6660665804115325744}
+    targetTag: 
+    targetFaction: 1
+    cooldown: 8
+    speed: 120
+    damage: 20
+    lifetime: 5
+    impactForce: 0
+    recoilForce: 0
+    energyCost: 0
+  owner: {fileID: 787491762512831262}
+  shipFlight: {fileID: 3868431509488167245}
+  firingBody: {fileID: 6550973204764136432}
+  fireSound: {fileID: 11400000, guid: 873f5f679d305474fba8afb9a88cf822, type: 2}
+  muzzleEffectPrefab: {fileID: 0}
+  muzzleEffectLifetime: 2
+  parentMuzzleEffectToMuzzle: 1
+  projectileSpawnLocalOffset: {x: 0, y: 0, z: 2}
+  muzzleEffectLocalOffset: {x: 0, y: 0, z: 1.5}
+  projectilePrewarmCount: 12
+  muzzleEffectPrewarmCount: 4
+  fireOneLauncherPerShot: 1
+  loopLauncherSequence: 1
+  startingLauncherIndex: 0
+  launcherStaggerInterval: 0.75
+--- !u!114 &6718276907644461098
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5723954577492871350}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5590813c77d626f4f9901df94d5165fd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MissileLauncherYawTracker3D
+  targetSensor: {fileID: 109184916424653513}
+  missileWeapon: {fileID: 8069542890572493184}
+  launcherPivots:
+  - {fileID: 1544521036087974432}
+  - {fileID: 6626983591841678614}
+  - {fileID: 5857087358678646052}
+  - {fileID: 6660665804115325744}
+  yawOnly: 1
+  yawDegreesPerSecond: 180
+  localYawOffsetDegrees: 0
+  maxYawFromRestDegrees: 0
+  targetRefreshInterval: 0.1
+  returnToRestWhenIdle: 1
+--- !u!114 &3394221799534837996
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5723954577492871350}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3111ee73332200748bc1a2b3148136a2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::StaggeredProjectileWeaponEnemy3D
+  weaponConfig:
+    projectilePrefab: {fileID: 0}
+    muzzles: []
+    targetTag: 
+    targetFaction: 1
+    cooldown: 0.25
+    speed: 120
+    damage: 10
+    lifetime: 5
+    impactForce: 0
+    recoilForce: 0
+    energyCost: 0
+  owner: {fileID: 0}
+  shipFlight: {fileID: 0}
+  firingBody: {fileID: 0}
+  fireSound: {fileID: 0}
+  muzzleEffectPrefab: {fileID: 0}
+  muzzleEffectLifetime: 2
+  parentMuzzleEffectToMuzzle: 1
+  projectileSpawnLocalOffset: {x: 0, y: 0, z: 2}
+  muzzleEffectLocalOffset: {x: 0, y: 0, z: 1.5}
+  projectilePrewarmCount: 12
+  muzzleEffectPrewarmCount: 4
+  fireOneTurretPerShot: 1
+  loopTurretSequence: 1
+  startingTurretIndex: 0
+  turretStaggerInterval: 0.2
+--- !u!114 &8593575025823692486
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5723954577492871350}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f7de8f699f2375b41a692a9b48fd1e60, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectileTurretYawTracker3D
+  targetSensor: {fileID: 0}
+  turretWeapon: {fileID: 0}
+  turretPivots: []
+  yawOnly: 1
+  yawDegreesPerSecond: 240
+  localYawOffsetDegrees: 0
+  maxYawFromRestDegrees: 0
+  targetRefreshInterval: 0.1
+  returnToRestWhenIdle: 1
 --- !u!1 &6236320655394904132
 GameObject:
   m_ObjectHideFlags: 0
@@ -5363,7 +5502,7 @@ GameObject:
   m_Component:
   - component: {fileID: 8660933304488466221}
   m_Layer: 0
-  m_Name: missile_muzzle
+  m_Name: missile_muzzles
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -5409,7 +5548,7 @@ Transform:
   m_GameObject: {fileID: 8345787974501357322}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 16.751}
+  m_LocalPosition: {x: 0, y: -3.96, z: -0.2}
   m_LocalScale: {x: 0.7, y: 0.7, z: 0.7}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -10760,6 +10899,11 @@ MonoBehaviour:
   mass: 0.5
   linearDamping: 0.5
   angularDamping: 0.3
+--- !u!4 &1544521036087974432 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 8136531968458484585, guid: daa57ba9a3361874f9d1bd377c8bb7d8, type: 3}
+  m_PrefabInstance: {fileID: 7315526972484333897}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1697378749006398972 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 8217862052096865461, guid: daa57ba9a3361874f9d1bd377c8bb7d8, type: 3}
@@ -11416,6 +11560,11 @@ MonoBehaviour:
   mass: 0.5
   linearDamping: 0.5
   angularDamping: 0.3
+--- !u!4 &5857087358678646052 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 3804825825812876397, guid: daa57ba9a3361874f9d1bd377c8bb7d8, type: 3}
+  m_PrefabInstance: {fileID: 7315526972484333897}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &5866483194384972616 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 3813447618423081473, guid: daa57ba9a3361874f9d1bd377c8bb7d8, type: 3}
@@ -11683,6 +11832,11 @@ MeshRenderer:
   m_CorrespondingSourceObject: {fileID: 4480245052169178933, guid: daa57ba9a3361874f9d1bd377c8bb7d8, type: 3}
   m_PrefabInstance: {fileID: 7315526972484333897}
   m_PrefabAsset: {fileID: 0}
+--- !u!4 &6626983591841678614 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 4499728738831266911, guid: daa57ba9a3361874f9d1bd377c8bb7d8, type: 3}
+  m_PrefabInstance: {fileID: 7315526972484333897}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &6628622165363446460 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 4501455274341786613, guid: daa57ba9a3361874f9d1bd377c8bb7d8, type: 3}
@@ -11746,6 +11900,11 @@ MonoBehaviour:
   mass: 0.5
   linearDamping: 0.5
   angularDamping: 0.3
+--- !u!4 &6660665804115325744 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 4173298947014853241, guid: daa57ba9a3361874f9d1bd377c8bb7d8, type: 3}
+  m_PrefabInstance: {fileID: 7315526972484333897}
+  m_PrefabAsset: {fileID: 0}
 --- !u!23 &6678406757050636954 stripped
 MeshRenderer:
   m_CorrespondingSourceObject: {fileID: 4119543009532832723, guid: daa57ba9a3361874f9d1bd377c8bb7d8, type: 3}

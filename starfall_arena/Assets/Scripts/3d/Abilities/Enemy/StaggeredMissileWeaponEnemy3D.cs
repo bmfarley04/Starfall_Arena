@@ -10,6 +10,9 @@ public class StaggeredMissileWeaponEnemy3D : MissileWeaponEnemy3D
     [Tooltip("If true, the launcher index wraps back to the first muzzle after the last one. If false, it clamps to the last muzzle until reset or re-enabled.")]
     [SerializeField] private bool loopLauncherSequence = true;
 
+    [Tooltip("If true, each staggered missile picks a random configured launcher instead of using the sequential launcher index.")]
+    [SerializeField] private bool randomizeLauncherSelection;
+
     [Tooltip("Starting launcher index used when this component is enabled. Leave at 0 for the first configured muzzle.")]
     [SerializeField] private int startingLauncherIndex;
 
@@ -84,7 +87,7 @@ public class StaggeredMissileWeaponEnemy3D : MissileWeaponEnemy3D
             return base.ResolveFiringMuzzles();
         }
 
-        int index = Mathf.Clamp(_nextLauncherIndex, 0, WeaponConfig.muzzles.Length - 1);
+        int index = ResolveLauncherIndex();
         _singleMuzzle[0] = WeaponConfig.muzzles[index] != null ? WeaponConfig.muzzles[index] : transform;
         return _singleMuzzle;
     }
@@ -114,6 +117,11 @@ public class StaggeredMissileWeaponEnemy3D : MissileWeaponEnemy3D
             return;
         }
 
+        if (randomizeLauncherSelection)
+        {
+            return;
+        }
+
         int next = _nextLauncherIndex + 1;
         if (next >= WeaponConfig.muzzles.Length)
         {
@@ -121,6 +129,21 @@ public class StaggeredMissileWeaponEnemy3D : MissileWeaponEnemy3D
         }
 
         _nextLauncherIndex = next;
+    }
+
+    private int ResolveLauncherIndex()
+    {
+        if (WeaponConfig.muzzles == null || WeaponConfig.muzzles.Length == 0)
+        {
+            return 0;
+        }
+
+        if (randomizeLauncherSelection)
+        {
+            return Random.Range(0, WeaponConfig.muzzles.Length);
+        }
+
+        return Mathf.Clamp(_nextLauncherIndex, 0, WeaponConfig.muzzles.Length - 1);
     }
 
     private bool ShouldUseStaggeredSequence()

@@ -79,6 +79,11 @@ Base input rule:
   - when an enemy brain supplies a fire direction, aim tolerance is only a permission gate; the projectile launches along the requested target/lead direction instead of inheriting the remaining muzzle-facing error
   - when no fire direction is supplied, falls back to muzzle-forward firing for simple turret/test cases
   - should be preferred for AI projectile weapons that do not need player slot selection, screen-center aiming, or resource/HUD behavior
+- `StaggeredProjectileWeaponEnemy3D`
+  - enemy-only direct-fire projectile rack for small hardpoints such as fortress laser-bolt turrets
+  - consumes the inherited weapon cooldown once to start a rack sequence, then fires one configured muzzle at a time using `turretStaggerInterval` until the sequence finishes
+  - can either walk the configured muzzles sequentially or pick a random turret for each staggered shot
+  - uses `EnemySecondaryProjectile` as its network visual type so client cosmetic replay can distinguish small turret bolts from the fortress's heavy cannon projectile
 - `MissileWeaponEnemy3D`
   - stripped-down enemy-only missile launcher that reuses the same minimal volley/cooldown path as `ProjectileWeaponEnemy3D`
   - expects a projectile prefab with `MissileProjectile3D` and supports multi-muzzle launches for enemy salvos
@@ -86,6 +91,7 @@ Base input rule:
 - `StaggeredMissileWeaponEnemy3D`
   - enemy-only guided missile launcher variant for racks with several authored launcher transforms
   - consumes the inherited weapon cooldown once to start a rack sequence, then fires one configured muzzle at a time using `launcherStaggerInterval` until the sequence finishes
+  - can either walk the configured launchers sequentially or pick a random launcher for each staggered missile
   - uses the same enemy projectile/network contract as `MissileWeaponEnemy3D`; gameplay fire stays server-authoritative through `NetEnemyCombat3D`, while clients receive the normal cosmetic projectile RPC
 - `StupidTurret3D`
   - scene-test firing driver for stationary or non-piloted 3D ships
@@ -109,11 +115,20 @@ Base input rule:
   - should stay attached to the authored muzzle/anchor transform so it behaves like the original Forge plasma beam: one stable hardpoint transform, one hit query, one endpoint
   - if gameplay forgiveness is needed for readability, tune the beam's own `hitscanRadius` here rather than on `BeamWeapon3D`; the runtime that owns the cast should also own the forgiveness width
   - like the shared beam runtime, it should smooth its rendered endpoint/direction rather than showing every tiny long-range endpoint hop literally; keep damage exact and make only the presentation slightly forgiving
+  - can render optional jittered lightning segments directly through the unified runtime; keep stock Forge raycast scripts such as `F3DLightning` disabled on gameplay beam prefabs so they do not fight the 3D beam authority
   - should be used for the artillery enemy Forge beam path instead of layering Forge visuals on top of `LaserBeam3D`
+- `TriumvirateLightningLinkVisual3D`
+  - cosmetic-only ship-to-ship lightning link driver for Triumvirate-style enemy tells
+  - can reuse the `enemy_lightning_beam` visual prefab, but disables gameplay beam/raycast scripts on the spawned link instance and drives the line renderer between two enemy anchors
+  - does not apply damage, slow, force, or network authority; player-facing damage stays in the enemy brain/final beam path
 - `BeamWeapon3D`
   - beam-capacity weapons can now enforce a minimum remaining energy threshold before the beam is allowed to start again
   - beam weapons can also keep their rotation penalty alive for a short post-fire linger window, which is useful for AI beam enemies that would otherwise stop firing, instantly pivot at full speed, and then re-fire
+  - beam origin and beam direction can be authored separately: `Muzzle` controls where the beam starts, while `Direction Reference` can supply the +Z/forward axis used by AI aim checks and runtime casts when a visual muzzle's local forward is rotated for art placement
   - use that threshold on AI beam enemies so they do not spam start requests every frame while nearly empty
+- `IBeamDirectionSource3D`
+  - optional runtime extension for beam prefabs that need a separate transform for aim/cast direction
+  - `ForgeEnemyBeam3D` and `LaserBeam3D` consume it so authored beam visuals can keep their muzzle anchor while aiming from a clean forward reference
 - `Reflector3D`
   - Class 1 reflect ability for the 3D path
   - owns cooldown, active window, projectile reflection rules, and reflected-projectile audio

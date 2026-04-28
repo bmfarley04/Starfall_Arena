@@ -1103,6 +1103,7 @@ MonoBehaviour:
     offsetDistance: 1.6
     verticalOffset: 0.25
     muzzle: {fileID: 7090334439712929002}
+    directionReference: {fileID: 0}
     rotationMultiplier: 0.3
     postFireRotationPenaltyDuration: 0
     capacity: 100

@@ -17,11 +17,12 @@ Implemented foundation:
 - `EnemyObstacleAvoidance3D` uses non-alloc 3D physics probes to steer around asteroids/world obstacles
 - `BasicShooterEnemyBrain3D` chases the nearest visible player, slows near the target to avoid orbiting, and fires at `PlayerTeam` when aimed and off cooldown
 - `ArtilleryBeamEnemyBrain3D` holds a longer standoff range, kites backward when pressured, and sustains a faction-targeted beam only while it still has line-of-sight and aim on a player-team target
-- `ArtilleryFortressEnemyBrain3D` is a limited-range siege enemy that mostly anchors, slowly creeps into cannon range when close enough to engage, lead-aims a slow heavy cannonball, locks its fire direction during charge windup, optionally fires close-range guided missiles, and replicates the charge telegraph to clients
+- `ArtilleryFortressEnemyBrain3D` is a limited-range siege enemy that mostly anchors, slowly creeps into cannon range when close enough to engage, lead-aims a slow heavy cannonball, locks its fire direction during charge windup, optionally fires close-range guided missiles and staggered laser-bolt turrets, and replicates the charge telegraph to clients
 - `SuicideDroneEnemyBrain3D` is a dedicated kamikaze brain that always drives at the nearest player at full speed and detonates on contact/proximity using server-authoritative direct damage
 - `TankEnemyBrain3D` is a slow, high-HP heavy that advances to a wide hold-band, then sits and pressures the player with two independent weapons: a slow heavy cannon and a homing missile launcher; it reuses `ProjectileWeapon3D` for both slots and `MissileProjectile3D` as the missile prefab
 - `RammerEnemyBrain3D` is a fast strike enemy that chases the player at full speed and slams into them on contact for chip damage plus a large knockback, then arcs away to circle back; the knockback routes through the existing `NetMovement3D.ApplyCombatVelocityDelta` recoil hook so the impulse replicates correctly across the network without a new RPC
-- `SplitterEnemyDeathSpawner3D` adds the Splitter enemy identity as an authority-side death callback: when the medium parent dies, it asks `InvasionWaveManager3D` to spawn configured smaller enemy prefabs at the death location and track them as normal wave enemies
+- `SplitterEnemyBrain3D` owns the Splitter enemy identity: the parent hybrid chooses between projectile and beam pressure based on range plus a random overlap band, then on death asks `InvasionWaveManager3D` to spawn the same prefab twice as smaller role-locked children
+- `TriumvirateEnemyBrain3D` owns the Triumvirate enemy identity: small linked beam ships form a triangle, reveal cosmetic lightning links, and then fire a survivor-scaled lightning beam where the full three-ship version is the only slow-applying version
 - `NetEnemyMovement3D` makes enemies server-simulated in network sessions
 - `NetEnemyCombat3D` makes enemy projectile damage server-authoritative and broadcasts client cosmetics
 - enemy beam prefabs may now use an optional `BeamVisualDriver3D` such as `ForgeBeamVisualDriver3D` for presentation, but enemy beam gameplay still stays inside `LaserBeam3D` / `NetEnemyCombat3D`
@@ -130,9 +131,12 @@ For an artillery fortress enemy prefab:
 - add `EnemyAIFlightController3D`; tune `moveSpeed` low, roughly `20-30`, and `rotationDegreesPerSecond` low, roughly `35-60`, so the fortress can creep into range without becoming a chaser
 - add `EnemyTargetSensor3D`; set `detectionRadius` to at least `maxFiringRange + approachRangeBuffer` so the fortress can acquire targets before they enter cannon range
 - add `ProjectileWeaponEnemy3D`; configure it as the slow heavy cannon with high damage, long lifetime, long cooldown, `targetFaction = PlayerTeam`, empty `targetTag`, and a muzzle wired to the visible barrel
-- optionally add `StaggeredMissileWeaponEnemy3D` for a guided missile rack; assign each launcher Transform to `weaponConfig.muzzles`, use a projectile prefab with `MissileProjectile3D` in guided mode, set `targetFaction = PlayerTeam`, leave `targetTag` empty, tune the inherited missile weapon cooldown as the full rack activation cooldown (for example `8-10s`), and tune `launcherStaggerInterval` as the spacing between individual launcher shots (for example `0.5-1s`)
+- optionally add `StaggeredMissileWeaponEnemy3D` for a guided missile rack; assign each launcher Transform to `weaponConfig.muzzles`, use a projectile prefab with `MissileProjectile3D` in guided mode, set `targetFaction = PlayerTeam`, leave `targetTag` empty, tune the inherited missile weapon cooldown as the full rack activation cooldown (for example `8-10s`), tune `launcherStaggerInterval` as the spacing between individual launcher shots (for example `0.5-1s`), and enable `Randomize Launcher Selection` if missiles should pick a random launcher each shot instead of looping
+- optionally add `MissileLauncherYawTracker3D`; assign the same launcher transforms as `launcherPivots` or leave them empty to auto-use the missile weapon's muzzles, keep `Yaw Only` enabled, start with `yawDegreesPerSecond = 180`, set `localYawOffsetDegrees` only if the model's launcher-forward axis is not local +Z, and set `maxYawFromRestDegrees` to `0` for unlimited yaw or a small clamp if the model should not swivel too far
+- optionally add one or more `StaggeredProjectileWeaponEnemy3D` components for small close-range laser-bolt turrets; assign turret muzzle transforms to `weaponConfig.muzzles`, set `targetFaction = PlayerTeam`, tune the inherited cooldown as the full turret-rack activation cooldown, tune `turretStaggerInterval` as the delay between individual turret bolts, and enable `Randomize Turret Selection` if bolts should pick a random turret each shot instead of looping
+- optionally add `ProjectileTurretYawTracker3D`; for two-part turrets, add one `Turret Binding` per turret, assign the yawing base to `Base Yaw Pivot`, assign its child barrel/head to `Pitch Pivot`, enable `Use Base X Rotation` only for side-mounted bases whose horizontal swivel axis is local X instead of local Y, tune `localYawOffsetDegrees` if the base forward axis is not local +Z, tune `localPitchOffsetDegrees` or `Invert Pitch` if the barrel elevates the wrong way, and clamp `maxYawFromRestDegrees` / `maxPitchFromRestDegrees` if the model should not swivel too far. If `Turret Bindings` is empty, the component falls back to legacy yaw-only `turretPivots` or the turret weapon's muzzles.
 - add `ArtilleryFortressChargeTelegraph3D`; assign the ship/body renderers, ensure the material supports emission, keep `Add To Shared Material Emission` off if this fortress should override the shared material's normal glow, leave `Use Charge Color Override` off to preserve the material's emission color while scaling intensity, set `Idle Emission Intensity` to a small nonzero value for a dim idle glow or `0` to leave the original emission color untouched at idle, and set `Max Charge Emission Intensity` around `4-5`; optionally assign a child VFX root or light for a stronger charge tell
-- add `ArtilleryFortressEnemyBrain3D`; assign the cannon weapon, optional missile weapon, and charge telegraph if auto-assignment does not find them; start with `maxFiringRange = 200`, `approachRangeBuffer = 100`, `outOfRangeApproachSpeedScale = 0.2`, `maxMissileRange = 100-120`, `missileAimToleranceDegrees = 45`, and `missileToCannonStaggerDelay = 0.35`
+- add `ArtilleryFortressEnemyBrain3D`; assign the cannon weapon, optional missile weapon, optional close-range turret weapons, and charge telegraph if auto-assignment does not find them; start with `maxFiringRange = 200`, `approachRangeBuffer = 100`, `outOfRangeApproachSpeedScale = 0.2`, `maxMissileRange = 100-120`, `missileAimToleranceDegrees = 45`, `missileToCannonStaggerDelay = 0.35`, `maxTurretRange = 80-100`, and `turretToCannonStaggerDelay = 0.15`
 - add `NetEnemyMovement3D` and `NetEnemyCombat3D` for networked movement plus replicated projectile fire and charge presentation
 - set the root tag to `Enemy` for compatibility, but keep target/damage filtering faction-driven
 - set high `maxHealth` on `Entity3D` so the fortress survives a real assault
@@ -184,15 +188,41 @@ For a rammer enemy prefab:
 
 For a Splitter enemy prefab:
 
-- build the medium parent on top of a normal enemy behavior stack, usually the basic shooter or another simple pressure brain
-- add `SplitterEnemyDeathSpawner3D` to the parent prefab
-- assign `Split Enemy Prefab` to the smaller, faster child enemy prefab
+- add `NetworkObject` if it will spawn in networked Invasion
+- add `FactionMember3D` and set faction to `EnemyTeam`
+- add `Enemy3D`
+- add `Rigidbody`
+- add `EnemyAIFlightController3D`
+- add `EnemyTargetSensor3D`
+- add `ProjectileWeaponEnemy3D`; configure it for the closer-range projectile pressure, with `targetFaction = PlayerTeam`
+- add `BeamWeapon3D`; configure it for farther-range laser pressure, with `targetFaction = PlayerTeam`
+- add `SplitterEnemyBrain3D`
+- assign `Splitter Prefab` to this same prefab asset; this is a self-reference to one prefab, not a second child prefab
+- assign the projectile weapon, beam weapon, flight controller, target sensor, and `NetEnemyCombat3D` if auto-assignment does not find them
 - keep `Split Count = 2` for the intended current design
-- tune `Split Spawn Radius` wide enough that child colliders do not overlap the dying parent or each other
-- keep `Prevent Child Splitting` enabled unless intentionally prototyping multi-level split chains; the current implemented Splitter design is one split level
-- the child prefab should still be a normal networked enemy prefab: `NetworkObject` for networked Invasion, `FactionMember3D = EnemyTeam`, `Enemy3D`, `Rigidbody`, `EnemyAIFlightController3D`, target sensor, brain, and `NetEnemyMovement3D`/`NetEnemyCombat3D` as appropriate for its attack
-- tune the child prefab faster and lower-health than the parent so killing the parent temporarily worsens the local threat without turning the wave into a long cleanup slog
-- add the parent Splitter prefab to `InvasionWaveManager3D` wave entries; spawned children are added to the same alive-enemy tracking automatically and must be cleared before the wave completes
+- tune `Child Scale Multiplier`, `Child Move Speed Multiplier`, `Child Max Health`, and `Child Max Shield` on the brain; spawned children inherit the same prefab but are shrunk, sped up, and refilled to those child stats
+- child `0` becomes beam-only and child `1` becomes projectile-only; their unused weapon component is disabled by the brain
+- tune `Projectile Preferred Distance`, `Beam Preferred Distance`, `Mixed Range Beam Chance`, and `Mixed Range Width` to control how often the parent chooses each weapon when both are reasonable
+- tune `Projectile Convergence Distance` so multi-muzzle projectile volleys cross at the intended distance in front of the Splitter instead of flying parallel from widely spaced hardpoints
+- enable `Log Weapon Choices` temporarily when debugging weapon selection; it reports whether the Splitter chose projectile or beam and whether that choice fired or was blocked
+- add `NetEnemyMovement3D` and `NetEnemyCombat3D` for networked movement plus replicated projectile/beam fire
+- set the root tag to `Enemy` for compatibility, but keep target/damage filtering faction-driven
+- add the Splitter prefab to `InvasionWaveManager3D` wave entries; spawned children are added to the same alive-enemy tracking automatically and must be cleared before the wave completes
+
+For a Triumvirate enemy prefab:
+
+- add `NetworkObject` if it will spawn in networked Invasion
+- add `FactionMember3D` and set faction to `EnemyTeam`
+- add `Enemy3D`
+- add `Rigidbody`
+- add `EnemyAIFlightController3D`
+- add `EnemyTargetSensor3D`
+- add `BeamWeapon3D`; assign `enemy_lightning_beam.prefab`, set `targetFaction = PlayerTeam`, and set the weapon's `damagePerSecond = 0` if `TriumvirateEnemyBrain3D` is owning one/two/three-member damage scaling
+- add `TriumvirateEnemyBrain3D`; assign the final beam weapon and `NetEnemyCombat3D`, assign `Link Lightning Prefab` to `enemy_lightning_beam.prefab`, and tune the one/two/three-member damage fields plus full-triad slow fields
+- either assign all three `Squad Members` explicitly after placing/spawning a group, or spawn them close together with the same `Squad Key` and an `Auto Link Radius` large enough for discovery
+- add `NetEnemyMovement3D` and `NetEnemyCombat3D` for networked movement plus final beam presentation
+- set low `Entity3D` health so the intended counterplay is destroying ships during formation/linking before the full slow beam fires
+- add Triumvirate entries to waves in multiples of three; the brain can degrade to two or one survivor, but the intended enemy identity assumes a three-ship group at spawn
 
 For player prefabs used in Invasion:
 

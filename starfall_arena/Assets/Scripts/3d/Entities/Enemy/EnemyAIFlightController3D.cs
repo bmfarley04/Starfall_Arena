@@ -148,6 +148,11 @@ public class EnemyAIFlightController3D : MonoBehaviour
         _moveBackward = false;
     }
 
+    public void OverrideMoveSpeed(float newMoveSpeed)
+    {
+        moveSpeed = Mathf.Max(0f, newMoveSpeed);
+    }
+
     private Quaternion RotateTowardDesiredFacing()
     {
         Vector3 desiredFacing = _hasFacingIntent

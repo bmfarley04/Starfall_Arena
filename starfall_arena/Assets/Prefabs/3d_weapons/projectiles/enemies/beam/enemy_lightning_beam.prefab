@@ -159,7 +159,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 100000}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: cff0637a442fa1d448d0e544a0a4dd2e, type: 3}
   m_Name: 
@@ -200,7 +200,7 @@ GameObject:
   - component: {fileID: 12000002}
   - component: {fileID: 5463147454495946534}
   m_Layer: 0
-  m_Name: lightning_gun_beam 1
+  m_Name: enemy_lightning_beam
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -369,10 +369,18 @@ MonoBehaviour:
   collisionMask:
     serializedVersion: 2
     m_Bits: 4294967295
-  hitscanRadius: 0.35
+  hitscanRadius: 0.45
   laserHitInterval: 0.2
   requireForwardAim: 1
   followAnchorTransform: 1
+  smoothVisualEndpoint: 1
+  visualEndpointSmoothTime: 0.05
+  visualEndpointDeadzone: 0.35
+  visualEndpointSnapDistance: 10
+  useLightningJitter: 1
+  lightningPointCount: 5
+  lightningAmplitude: 0.35
+  lightningJitterInterval: 0.05
 --- !u!1 &100004
 GameObject:
   m_ObjectHideFlags: 0
@@ -38763,7 +38771,7 @@ Light:
   m_Type: 2
   m_Color: {r: 0.7647059, g: 0.8636917, b: 1, a: 1}
   m_Intensity: 0.47
-  m_Range: 250
+  m_Range: 60
   m_SpotAngle: 30
   m_InnerSpotAngle: 21.80208
   m_CookieSize2D: {x: 10, y: 10}

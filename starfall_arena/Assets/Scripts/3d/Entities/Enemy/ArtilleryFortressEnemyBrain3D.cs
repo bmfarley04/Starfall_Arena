@@ -21,6 +21,9 @@ public class ArtilleryFortressEnemyBrain3D : NetworkBehaviour
     [Tooltip("Optional close-range guided missile launcher. Assign StaggeredMissileWeaponEnemy3D when this fortress has multiple launcher transforms that should fire one at a time.")]
     [SerializeField] private MissileWeaponEnemy3D missileWeapon;
 
+    [Tooltip("Optional close-range laser-bolt turret weapons. Each weapon can own many turret muzzle transforms and stagger them independently from the cannon and missile rack.")]
+    [SerializeField] private StaggeredProjectileWeaponEnemy3D[] closeRangeTurretWeapons;
+
     [Tooltip("AI flight motor that drives the Rigidbody. The fortress normally rotates in place, but can creep forward when the target is just outside cannon range. Auto-assigned from this GameObject if left empty.")]
     [SerializeField] private EnemyAIFlightController3D flightController;
 
@@ -73,6 +76,13 @@ public class ArtilleryFortressEnemyBrain3D : NetworkBehaviour
     [Tooltip("Seconds after a missile launch before the fortress can start a cannon charge. Prevents close-range missiles and cannon windup from triggering on the same frame.")]
     [SerializeField] private float missileToCannonStaggerDelay = 0.35f;
 
+    [Header("Close-Range Turrets")]
+    [Tooltip("Maximum distance (meters) at which the fortress can fire its small laser-bolt turrets. These turrets are independent close-range pressure and do not require the cannon charge state.")]
+    [SerializeField] private float maxTurretRange = 100f;
+
+    [Tooltip("Seconds after a turret bolt launch before the fortress can start a cannon charge. Keeps close-range chip fire from starting on the exact same frame as the heavy cannon windup.")]
+    [SerializeField] private float turretToCannonStaggerDelay = 0.15f;
+
     [Header("Targeting Safety")]
     [Tooltip("Optional absolute hard cap on engagement distance, in meters. 0 means the brain uses Max Firing Range + Approach Range Buffer as its cap.")]
     [SerializeField] private float loseTargetMaxDistance = 0f;
@@ -91,6 +101,11 @@ public class ArtilleryFortressEnemyBrain3D : NetworkBehaviour
         cannonWeapon ??= GetComponent<ProjectileWeaponEnemy3D>();
         missileWeapon ??= GetComponent<StaggeredMissileWeaponEnemy3D>();
         missileWeapon ??= GetComponent<MissileWeaponEnemy3D>();
+        if (closeRangeTurretWeapons == null || closeRangeTurretWeapons.Length == 0)
+        {
+            closeRangeTurretWeapons = GetComponents<StaggeredProjectileWeaponEnemy3D>();
+        }
+
         flightController ??= GetComponent<EnemyAIFlightController3D>();
         targetSensor ??= GetComponent<EnemyTargetSensor3D>();
         netEnemyCombat ??= GetComponent<NetEnemyCombat3D>();
@@ -110,6 +125,8 @@ public class ArtilleryFortressEnemyBrain3D : NetworkBehaviour
         maxMissileRange = Mathf.Max(0f, maxMissileRange);
         missileAimToleranceDegrees = Mathf.Clamp(missileAimToleranceDegrees, 0f, 180f);
         missileToCannonStaggerDelay = Mathf.Max(0f, missileToCannonStaggerDelay);
+        maxTurretRange = Mathf.Max(0f, maxTurretRange);
+        turretToCannonStaggerDelay = Mathf.Max(0f, turretToCannonStaggerDelay);
         loseTargetMaxDistance = Mathf.Max(0f, loseTargetMaxDistance);
     }
 
@@ -152,6 +169,11 @@ public class ArtilleryFortressEnemyBrain3D : NetworkBehaviour
         {
             CancelChargeAndAcquire(clearFlightIntent: true);
             return;
+        }
+
+        if (TryFireCloseRangeTurret(target))
+        {
+            _cannonBlockedUntilTime = Time.time + turretToCannonStaggerDelay;
         }
 
         switch (_state)
@@ -311,6 +333,39 @@ public class ArtilleryFortressEnemyBrain3D : NetworkBehaviour
         return missileWeapon.TryFireAtFaction(Faction3D.PlayerTeam, toTarget.normalized);
     }
 
+    private bool TryFireCloseRangeTurret(Entity3D target)
+    {
+        if (closeRangeTurretWeapons == null || closeRangeTurretWeapons.Length == 0 || !IsTargetInsideTurretRange(target))
+        {
+            return false;
+        }
+
+        Vector3 toTarget = target.transform.position - transform.position;
+        if (toTarget.sqrMagnitude <= 0.0001f)
+        {
+            return false;
+        }
+
+        Vector3 fireDirection = toTarget.normalized;
+        bool firedAny = false;
+        for (int i = 0; i < closeRangeTurretWeapons.Length; i++)
+        {
+            StaggeredProjectileWeaponEnemy3D turretWeapon = closeRangeTurretWeapons[i];
+            if (turretWeapon == null || !turretWeapon.IsFireGateReady)
+            {
+                continue;
+            }
+
+            bool fired = NetTickUtil.IsActive && netEnemyCombat != null && netEnemyCombat.IsSpawned
+                ? netEnemyCombat.TryFireProjectilePattern(turretWeapon, Faction3D.PlayerTeam, fireDirection)
+                : turretWeapon.TryFireAtFaction(Faction3D.PlayerTeam, fireDirection);
+
+            firedAny |= fired;
+        }
+
+        return firedAny;
+    }
+
     private bool TryHandleOutOfFiringRange(Entity3D target, Vector3 aimDirection)
     {
         if (IsTargetInsideFiringRange(target))
@@ -388,6 +443,17 @@ public class ArtilleryFortressEnemyBrain3D : NetworkBehaviour
         }
 
         float range = Mathf.Max(0.01f, maxMissileRange);
+        return (target.transform.position - transform.position).sqrMagnitude <= range * range;
+    }
+
+    private bool IsTargetInsideTurretRange(Entity3D target)
+    {
+        if (!IsTrackedTargetValid(target) || maxTurretRange <= 0f)
+        {
+            return false;
+        }
+
+        float range = Mathf.Max(0.01f, maxTurretRange);
         return (target.transform.position - transform.position).sqrMagnitude <= range * range;
     }
 

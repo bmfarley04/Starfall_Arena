@@ -63,6 +63,26 @@ public abstract class Entity3D : MonoBehaviour
     public float CurrentSlowMultiplier => GetSlowMultiplier();
     public bool IsSlowed => Time.time < slowEndTime && currentSlowMultiplier < 1f;
 
+    public void OverrideMaxHealthAndShield(float newMaxHealth, float newMaxShield, bool refillCurrentValues)
+    {
+        maxHealth = Mathf.Max(1f, newMaxHealth);
+        maxShield = Mathf.Max(0f, newMaxShield);
+
+        if (refillCurrentValues)
+        {
+            currentHealth = maxHealth;
+            currentShield = maxShield;
+        }
+        else
+        {
+            currentHealth = Mathf.Clamp(currentHealth, 0f, maxHealth);
+            currentShield = Mathf.Clamp(currentShield, 0f, maxShield);
+        }
+
+        OnHealthChanged();
+        OnShieldChanged();
+    }
+
     public Ability3D GetAbility(int index)
     {
         if (index < 0 || index >= abilities.Length)

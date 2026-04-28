@@ -4856,7 +4856,7 @@ MonoBehaviour:
     accelerationDuration: 0.25
   despawn:
     delayDespawn: 1
-    despawnDelay: 0.35
+    despawnDelay: 1
     delayedParticles:
     - {fileID: 19852452}
     - {fileID: 19852454}

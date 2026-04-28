@@ -84,6 +84,7 @@ public enum NetProjectileVisualType3D : byte
     Class4GuidedMissileEmpowered = 8,
     EnemyProjectile = 9,
     EnemyMissile = 10,
+    EnemySecondaryProjectile = 11,
 }
 
 public struct NetProjectileFireRequest3D : INetworkSerializable

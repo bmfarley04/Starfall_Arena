@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -113,6 +114,11 @@ public class InvasionWaveManager3D : MonoBehaviour
 
     public Enemy3D SpawnEnemyAt(GameObject enemyPrefab, Vector3 spawnPosition, Quaternion spawnRotation)
     {
+        return SpawnEnemyAt(enemyPrefab, spawnPosition, spawnRotation, null);
+    }
+
+    public Enemy3D SpawnEnemyAt(GameObject enemyPrefab, Vector3 spawnPosition, Quaternion spawnRotation, Action<GameObject> configureBeforeNetworkSpawn)
+    {
         if (!HasSpawnAuthority())
         {
             return null;
@@ -125,6 +131,7 @@ public class InvasionWaveManager3D : MonoBehaviour
         }
 
         GameObject enemyObject = Instantiate(enemyPrefab, spawnPosition, spawnRotation);
+        configureBeforeNetworkSpawn?.Invoke(enemyObject);
 
         if (NetTickUtil.IsActive)
         {

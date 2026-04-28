@@ -3,7 +3,7 @@ using UnityEngine;
 
 [DisallowMultipleComponent]
 [RequireComponent(typeof(LineRenderer))]
-public class ForgeEnemyBeam3D : MonoBehaviour, IBeamRuntime3D
+public class ForgeEnemyBeam3D : MonoBehaviour, IBeamRuntime3D, IBeamDirectionSource3D
 {
     private static readonly RaycastHit[] BeamHits = new RaycastHit[16];
 
@@ -31,6 +31,16 @@ public class ForgeEnemyBeam3D : MonoBehaviour, IBeamRuntime3D
     [SerializeField] private float visualEndpointSmoothTime = 0.05f;
     [SerializeField] private float visualEndpointDeadzone = 0.35f;
     [SerializeField] private float visualEndpointSnapDistance = 10f;
+
+    [Header("Lightning Shape")]
+    [Tooltip("If enabled, the line renderer is rebuilt with jittered intermediate points instead of a single straight segment.")]
+    [SerializeField] private bool useLightningJitter;
+    [Tooltip("Total points in the line, including start and end. Values below 2 fall back to a straight two-point beam.")]
+    [SerializeField] private int lightningPointCount = 2;
+    [Tooltip("Maximum sideways offset applied to each intermediate lightning point, in local beam units.")]
+    [SerializeField] private float lightningAmplitude = 0.25f;
+    [Tooltip("Seconds between lightning shape randomization steps.")]
+    [SerializeField] private float lightningJitterInterval = 0.05f;
 
     private readonly List<ParticleSystem> _beamParticles = new List<ParticleSystem>(8);
     private readonly List<Renderer> _beamRenderers = new List<Renderer>(8);
@@ -63,6 +73,7 @@ public class ForgeEnemyBeam3D : MonoBehaviour, IBeamRuntime3D
     private Vector3 _smoothedVisualEndpoint;
     private Vector3 _visualEndpointVelocity;
     private bool _hasSmoothedVisualEndpoint;
+    private float _nextLightningJitterTime;
 
     private void Awake()
     {
@@ -98,6 +109,11 @@ public class ForgeEnemyBeam3D : MonoBehaviour, IBeamRuntime3D
         _anchorOffset = anchorOffset;
         _verticalOffset = verticalOffset;
         AttachToAnchorTransform();
+    }
+
+    public void SetBeamDirectionSource(Transform directionSource)
+    {
+        _directionSource = directionSource != null ? directionSource : _positionAnchor;
     }
 
     public void SetCosmeticOnly(bool isCosmeticOnly)
@@ -233,9 +249,7 @@ public class ForgeEnemyBeam3D : MonoBehaviour, IBeamRuntime3D
 
         if (lineRenderer != null)
         {
-            lineRenderer.positionCount = 2;
-            lineRenderer.SetPosition(0, Vector3.zero);
-            lineRenderer.SetPosition(1, new Vector3(0f, 0f, beamLength));
+            UpdateLineRendererPoints(beamLength);
             UpdateTextureScale(beamLength);
             UpdateTextureOffset();
         }
@@ -276,6 +290,47 @@ public class ForgeEnemyBeam3D : MonoBehaviour, IBeamRuntime3D
 
         float textureScale = Mathf.Max(0f, beamLength) * textureScaleMultiplier;
         material.SetTextureScale(textureScaleProperty, new Vector2(textureScale, 1f));
+    }
+
+    private void UpdateLineRendererPoints(float beamLength)
+    {
+        if (lineRenderer == null)
+        {
+            return;
+        }
+
+        if (!useLightningJitter || lightningPointCount <= 2 || lightningAmplitude <= 0f)
+        {
+            lineRenderer.positionCount = 2;
+            lineRenderer.SetPosition(0, Vector3.zero);
+            lineRenderer.SetPosition(1, new Vector3(0f, 0f, beamLength));
+            return;
+        }
+
+        int pointCount = Mathf.Max(2, lightningPointCount);
+        if (lineRenderer.positionCount != pointCount)
+        {
+            lineRenderer.positionCount = pointCount;
+            _nextLightningJitterTime = 0f;
+        }
+
+        lineRenderer.SetPosition(0, Vector3.zero);
+        lineRenderer.SetPosition(pointCount - 1, new Vector3(0f, 0f, beamLength));
+
+        if (Time.time < _nextLightningJitterTime)
+        {
+            return;
+        }
+
+        _nextLightningJitterTime = Time.time + Mathf.Max(0.01f, lightningJitterInterval);
+        float lastPointIndex = Mathf.Max(1f, pointCount - 1f);
+        for (int i = 1; i < pointCount - 1; i++)
+        {
+            float z = beamLength * (i / lastPointIndex);
+            float x = Random.Range(-lightningAmplitude, lightningAmplitude);
+            float y = Random.Range(-lightningAmplitude, lightningAmplitude);
+            lineRenderer.SetPosition(i, new Vector3(x, y, z));
+        }
     }
 
     private void UpdateTextureOffset()
@@ -615,12 +670,12 @@ public class ForgeEnemyBeam3D : MonoBehaviour, IBeamRuntime3D
 
     private void AttachToAnchorTransform()
     {
-        if (!followAnchorTransform || _directionSource == null)
+        if (!followAnchorTransform || _positionAnchor == null)
         {
             return;
         }
 
-        transform.SetParent(_directionSource, false);
+        transform.SetParent(_positionAnchor, false);
         transform.localPosition = new Vector3(0f, _verticalOffset, _anchorOffset);
         transform.localRotation = Quaternion.identity;
     }

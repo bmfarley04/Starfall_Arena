@@ -15,6 +15,7 @@ The 3D AI path should stay modular. Enemy prefabs should compose small scripts i
   - simple enemy Rigidbody motor
   - receives a world-space move direction, rotates toward it, then directly sets Rigidbody velocity along its own facing direction once facing that direction
   - exposes `IsMovingForward` for enemy thruster VFX so rotating-in-place does not light engines
+  - exposes a runtime move-speed override for spawn variants such as Splitter children that reuse the same prefab but need faster movement
   - must still consume the owning `Entity3D` rotation multipliers, or active beam/charge weapons can advertise turn penalties that never affect enemy aim in practice
   - contains no targeting, pathing, or combat decisions
 - `EnemyTargetSensor3D`
@@ -57,6 +58,9 @@ The 3D AI path should stay modular. Enemy prefabs should compose small scripts i
   - can optionally fire close-range guided missiles through `MissileWeaponEnemy3D` or `StaggeredMissileWeaponEnemy3D`; missile fire is gated by `maxMissileRange`, a looser missile aim tolerance, and the missile weapon's own cooldown
   - with `StaggeredMissileWeaponEnemy3D`, the missile weapon cooldown starts the full rack sequence and `launcherStaggerInterval` spaces the individual launcher shots inside that sequence
   - after a successful missile launch, briefly delays cannon charge startup with `missileToCannonStaggerDelay` so close-range missiles and the heavy cannon do not begin on the same frame
+  - missile rack hardpoints can use `MissileLauncherYawTracker3D` to visually yaw child launcher transforms toward the current target; this is presentation/initial-hardpoint alignment only, not a firing-decision brain
+  - can also drive one or more `StaggeredProjectileWeaponEnemy3D` close-range turret weapons for laser-bolt chip pressure; these turrets fire independently while the cannon acquires or charges, as long as the target is inside `maxTurretRange`
+  - turret hardpoints can use `ProjectileTurretYawTracker3D` to track the current target without becoming another AI decision owner; use `Turret Bindings` for two-part turrets where the base rotates local Y and the child turret/barrel rotates local X for elevation
   - charge readability is presentation-only through `ArtilleryFortressChargeTelegraph3D`; the server replicates start/stop visual state to clients, but clients still do not run AI or firing decisions
 - `SuicideDroneEnemyBrain3D`
   - dedicated detonation behavior for kamikaze enemies
@@ -95,11 +99,24 @@ The 3D AI path should stay modular. Enemy prefabs should compose small scripts i
   - separation steering (`EnemySeparation3D`) is wired into Stalk and post-eject Disengage. It is intentionally NOT applied during the locked Charge or during the reverse-thrust Eject - any sideways drift would re-open the flight controller's facing-vs-move angle gate and zero the velocity (the freeze documented in `3D_BUGS.md`)
   - `ramDetectionDistance` should be tuned to at least `(rammer collider radius + target collider radius + ~0.5m safety)` so the hit fires before geometric overlap. `contactDetectionMask` should be set to the layer(s) used by player ship colliders for reliable detection in cluttered scenes
   - survives the impact - this is not a kamikaze. Knockback is the entire identity; damage is secondary.
-- `SplitterEnemyDeathSpawner3D`
-  - not a movement/combat brain; it is a death-spawn module that can be added to a normal enemy prefab to create the Splitter archetype
-  - subscribes to `Enemy3D.Died` and runs only on the spawn-authority side, then delegates child instantiation/tracking to `InvasionWaveManager3D`
-  - should spawn smaller, faster child prefabs with `Prevent Child Splitting` enabled for the current one-level Splitter design
-  - child enemies remain ordinary enemies after spawning, so their movement, targeting, attacks, networking, and death tracking come from the usual 3D Invasion components
+- `SplitterEnemyBrain3D`
+  - medium enemy that carries both `ProjectileWeaponEnemy3D` and `BeamWeapon3D`
+  - parent role (`ParentHybrid`) chooses projectile pressure closer in and beam pressure farther out, with a tunable mixed-range random roll so it can still use either weapon when both are reasonable
+  - beam mode follows the same hardpoint-forward contract as `ArtilleryBeamEnemyBrain3D`: it checks whether the target is in the beam forward lane and starts/updates the beam with `BeamWeapon3D.GetBeamForwardDirection()`
+  - if the Splitter's beam muzzle is positioned correctly but its local forward axis is not the intended shot lane, assign `BeamWeapon3D.Direction Reference` to a clean forward-facing child transform; the brain, `ForgeEnemyBeam3D`, and `LaserBeam3D` will all use that direction source while the muzzle remains the origin
+  - parent hybrids do not automatically fall back to projectile fire after choosing beam; use `Log Weapon Choices` to see whether a beam choice was blocked by aim, energy, or weapon setup
+  - projectile mode supports an authored convergence distance so each muzzle aims toward the same point ahead of the Splitter instead of firing parallel from wide hardpoints
+  - subscribes to `Enemy3D.Died` and runs splitting only on the spawn-authority side, then delegates child instantiation/tracking to `InvasionWaveManager3D`
+  - spawns the same prefab, not separate child prefabs; configure `Splitter Prefab` as a self-reference to the authored Splitter prefab
+  - spawned child `0` becomes beam-only and child `1` becomes projectile-only; each child disables the weapon it is not allowed to use, applies the configured child scale/speed, and overrides max health/shield through `Entity3D.OverrideMaxHealthAndShield(...)`
+  - child role/scale/health are applied before network spawn on the server and synchronized to clients for presentation, while movement, targeting, attacks, networking, and wave death tracking remain on the usual Invasion components
+- `TriumvirateEnemyBrain3D`
+  - coordinated low-health beam enemy intended to spawn in groups of three
+  - the lowest-instance surviving member acts as the server-authoritative coordinator and directly assigns formation/facing intents to the surviving squad
+  - the squad first moves into a triangle formation near the target, holds briefly, then reveals cosmetic lightning links in order: member `0 -> 1`, `1 -> 2`, `2 -> 0`
+  - if one or two members die before the final beam, the remaining members continue the pattern with fewer links and lower final beam damage; only the full three-member beam applies the configured slow
+  - final player-facing damage is owned by the brain's non-alloc beam cast so one/two/three survivor strength can be tuned independently; configure the `BeamWeapon3D` visual beam damage to `0` when the brain owns damage
+  - `Squad Members` may be authored directly, but the brain can also auto-link to the closest same-key Triumvirate members within `Auto Link Radius`
 
 ## Architecture Rules
 
