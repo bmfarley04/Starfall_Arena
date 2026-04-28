@@ -39,6 +39,8 @@ public class TriumvirateEnemyBrain3D : NetworkBehaviour
     [SerializeField] private float formationTolerance = 2.25f;
     [Tooltip("Speed scale used while moving into the triangle formation.")]
     [SerializeField] private float formationSpeedScale = 0.65f;
+    [Tooltip("If true, the triangle is kept on the squad's current world-Y plane. Leave off for the intended two-low / one-high vertical triangle.")]
+    [SerializeField] private bool keepFormationOnWorldYPlane;
     [Tooltip("Seconds the squad holds formation before the first link appears.")]
     [SerializeField] private float settleDuration = 0.75f;
 
@@ -86,6 +88,14 @@ public class TriumvirateEnemyBrain3D : NetworkBehaviour
     [Tooltip("Layers considered by the final beam damage ray. Include player colliders and line-of-sight blockers.")]
     [SerializeField] private LayerMask finalBeamMask = ~0;
 
+    [Header("Debug")]
+    [Tooltip("If true, logs coordinator state changes and major Triumvirate attack milestones.")]
+    [SerializeField] private bool logStateChanges = true;
+    [Tooltip("If true, logs formation progress while the squad is trying to reach triangle slots.")]
+    [SerializeField] private bool logFormationProgress;
+    [Tooltip("Minimum seconds between repeated formation progress logs.")]
+    [SerializeField] private float formationProgressLogInterval = 0.5f;
+
     private readonly List<TriumvirateEnemyBrain3D> _activeMembers = new List<TriumvirateEnemyBrain3D>(3);
     private readonly List<GameObject> _activeLinks = new List<GameObject>(3);
     private readonly List<(TriumvirateEnemyBrain3D A, TriumvirateEnemyBrain3D B)> _pendingLinks = new List<(TriumvirateEnemyBrain3D, TriumvirateEnemyBrain3D)>(3);
@@ -101,6 +111,7 @@ public class TriumvirateEnemyBrain3D : NetworkBehaviour
     private int _survivorCountAtBeamStart;
     private int _lastActiveMemberCount;
     private bool _beamActive;
+    private float _nextFormationProgressLogTime;
 
     private bool IsAlive => _enemy != null && _enemy.CurrentHealth > 0f && gameObject.activeInHierarchy;
 
@@ -139,6 +150,7 @@ public class TriumvirateEnemyBrain3D : NetworkBehaviour
         Entity3D target = ResolveTarget();
         if (target == null)
         {
+            LogStateMessage("No target available; clearing flight intent and waiting in Forming.");
             StopFinalBeam();
             ClearLinkVisuals();
             SetState(SquadState.Forming, 0f);
@@ -186,6 +198,7 @@ public class TriumvirateEnemyBrain3D : NetworkBehaviour
         bool allInPlace = MoveSquadIntoFormation(target);
         if (allInPlace)
         {
+            LogStateMessage("Triangle formation reached; settling before link sequence.");
             SetState(SquadState.Settling, settleDuration);
         }
     }
@@ -212,7 +225,8 @@ public class TriumvirateEnemyBrain3D : NetworkBehaviour
             right = Vector3.right;
         }
         right.Normalize();
-        Vector3 up = Vector3.Cross(toTarget, right).normalized;
+        Vector3 formationUp = keepFormationOnWorldYPlane ? Vector3.zero : Vector3.up;
+        float farthestMemberDistance = 0f;
 
         for (int i = 0; i < _activeMembers.Count; i++)
         {
@@ -222,14 +236,16 @@ public class TriumvirateEnemyBrain3D : NetworkBehaviour
                 continue;
             }
 
-            Vector3 slot = ResolveFormationSlot(center, right, up, i, _activeMembers.Count, triangleRadius);
+            Vector3 slot = ResolveFormationSlot(center, right, formationUp, i, _activeMembers.Count, triangleRadius, keepFormationOnWorldYPlane);
             Vector3 toSlot = slot - member.transform.position;
             float distance = toSlot.magnitude;
+            farthestMemberDistance = Mathf.Max(farthestMemberDistance, distance);
             Vector3 faceDirection = targetPosition - member.transform.position;
             if (distance > formationTolerance)
             {
                 allInPlace = false;
-                member._flightController?.SetFlightIntent(toSlot / Mathf.Max(distance, 0.0001f), faceDirection, formationSpeedScale, moveBackward: false);
+                Vector3 slotDirection = toSlot / Mathf.Max(distance, 0.0001f);
+                member._flightController?.SetFlightIntent(slotDirection, slotDirection, formationSpeedScale, moveBackward: false);
             }
             else
             {
@@ -237,6 +253,7 @@ public class TriumvirateEnemyBrain3D : NetworkBehaviour
             }
         }
 
+        LogFormationProgressIfNeeded(farthestMemberDistance);
         return allInPlace;
     }
 
@@ -249,6 +266,7 @@ public class TriumvirateEnemyBrain3D : NetworkBehaviour
 
         if (_pendingLinks.Count == 0)
         {
+            LogStateMessage("No valid survivor links to show; advancing to final charge delay.");
             SetState(SquadState.ChargeDelay, finalChargeDelay);
             return;
         }
@@ -260,6 +278,7 @@ public class TriumvirateEnemyBrain3D : NetworkBehaviour
 
         if (_nextLinkIndex < _pendingLinks.Count)
         {
+            LogStateMessage($"Spawning link {_nextLinkIndex + 1}/{_pendingLinks.Count}: {_pendingLinks[_nextLinkIndex].A.name} -> {_pendingLinks[_nextLinkIndex].B.name}.");
             SpawnLinkVisual(_pendingLinks[_nextLinkIndex].A, _pendingLinks[_nextLinkIndex].B);
             _nextLinkIndex++;
             _stateEndTime = Time.time + Mathf.Max(0.01f, linkStepDuration);
@@ -271,8 +290,8 @@ public class TriumvirateEnemyBrain3D : NetworkBehaviour
 
     private void UpdateFinalBeam(Entity3D target)
     {
-        TriumvirateEnemyBrain3D source = ResolveBeamSource();
-        if (source == null)
+        RefreshActiveMembers();
+        if (_activeMembers.Count == 0)
         {
             StopFinalBeam();
             SetState(SquadState.Cooldown, attackCooldown);
@@ -280,143 +299,174 @@ public class TriumvirateEnemyBrain3D : NetworkBehaviour
         }
 
         Vector3 targetPoint = ResolveTargetPoint(target);
-        Vector3 aimDirection = targetPoint - source.transform.position;
-        if (aimDirection.sqrMagnitude <= 0.0001f)
+        for (int i = 0; i < _activeMembers.Count; i++)
         {
-            aimDirection = source.transform.forward;
-        }
+            TriumvirateEnemyBrain3D member = _activeMembers[i];
+            if (member == null || !member.IsAlive)
+            {
+                continue;
+            }
 
-        source._flightController?.SetFacingDirection(aimDirection);
-        Vector3 fireDirection = source.finalBeamWeapon != null ? source.finalBeamWeapon.GetBeamForwardDirection() : source.transform.forward;
+            Vector3 aimDirection = targetPoint - member.transform.position;
+            if (aimDirection.sqrMagnitude <= 0.0001f)
+            {
+                aimDirection = member.transform.forward;
+            }
+
+            member._flightController?.SetFacingDirection(aimDirection);
+        }
 
         if (!_beamActive)
         {
             _survivorCountAtBeamStart = Mathf.Clamp(_activeMembers.Count, 1, 3);
-            StartFinalBeam(source, fireDirection);
+            LogStateMessage($"Starting final converged beam from {_survivorCountAtBeamStart} surviving member(s). Total DPS={ResolveDamagePerSecond():F1}, slowEnabled={_survivorCountAtBeamStart >= 3}.");
+            StartFinalBeams(targetPoint);
             _stateEndTime = Time.time + Mathf.Max(0.01f, finalBeamDuration);
         }
         else
         {
-            RefreshFinalBeamAim(source, fireDirection);
+            RefreshFinalBeamAims(targetPoint);
         }
 
-        ApplyFinalBeamGameplay(source, fireDirection);
+        ApplyFinalBeamGameplay(targetPoint);
 
         if (Time.time >= _stateEndTime)
         {
+            LogStateMessage("Final beam duration complete; entering cooldown.");
             StopFinalBeam();
             ClearLinkVisuals();
             SetState(SquadState.Cooldown, attackCooldown);
         }
     }
 
-    private void StartFinalBeam(TriumvirateEnemyBrain3D source, Vector3 aimDirection)
+    private void StartFinalBeams(Vector3 targetPoint)
     {
-        if (source.finalBeamWeapon == null)
+        for (int i = 0; i < _activeMembers.Count; i++)
         {
-            return;
-        }
+            TriumvirateEnemyBrain3D member = _activeMembers[i];
+            if (member == null || !member.IsAlive || member.finalBeamWeapon == null)
+            {
+                continue;
+            }
 
-        if (NetTickUtil.IsActive && source.netEnemyCombat != null && source.netEnemyCombat.IsSpawned)
-        {
-            source.netEnemyCombat.SetBeamState(source.finalBeamWeapon, true, aimDirection);
-        }
-        else
-        {
-            source.finalBeamWeapon.ApplyNetworkBeamAim(aimDirection);
-            source.finalBeamWeapon.ApplyNetworkBeamState(true, authoritative: true, PlayerCombatStats3D.InvalidAttackId);
+            Vector3 aimDirection = ResolveMemberAimDirection(member, targetPoint);
+            if (NetTickUtil.IsActive && member.netEnemyCombat != null && member.netEnemyCombat.IsSpawned)
+            {
+                member.netEnemyCombat.SetBeamState(member.finalBeamWeapon, true, aimDirection);
+            }
+            else
+            {
+                member.finalBeamWeapon.ApplyNetworkBeamAim(aimDirection);
+                member.finalBeamWeapon.ApplyNetworkBeamState(true, authoritative: true, PlayerCombatStats3D.InvalidAttackId);
+            }
         }
 
         _beamActive = true;
     }
 
-    private void RefreshFinalBeamAim(TriumvirateEnemyBrain3D source, Vector3 aimDirection)
+    private void RefreshFinalBeamAims(Vector3 targetPoint)
     {
-        if (source.finalBeamWeapon == null)
+        for (int i = 0; i < _activeMembers.Count; i++)
         {
-            return;
-        }
+            TriumvirateEnemyBrain3D member = _activeMembers[i];
+            if (member == null || !member.IsAlive || member.finalBeamWeapon == null)
+            {
+                continue;
+            }
 
-        if (NetTickUtil.IsActive && source.netEnemyCombat != null && source.netEnemyCombat.IsSpawned)
-        {
-            source.netEnemyCombat.UpdateBeamAim(source.finalBeamWeapon, aimDirection);
-        }
-        else
-        {
-            source.finalBeamWeapon.ApplyNetworkBeamAim(aimDirection);
+            Vector3 aimDirection = ResolveMemberAimDirection(member, targetPoint);
+            if (NetTickUtil.IsActive && member.netEnemyCombat != null && member.netEnemyCombat.IsSpawned)
+            {
+                member.netEnemyCombat.UpdateBeamAim(member.finalBeamWeapon, aimDirection);
+            }
+            else
+            {
+                member.finalBeamWeapon.ApplyNetworkBeamAim(aimDirection);
+            }
         }
     }
 
     private void StopFinalBeam()
     {
-        TriumvirateEnemyBrain3D source = ResolveBeamSource();
-        if (source != null && source.finalBeamWeapon != null)
+        RefreshActiveMembers();
+        for (int i = 0; i < _activeMembers.Count; i++)
         {
-            if (NetTickUtil.IsActive && source.netEnemyCombat != null && source.netEnemyCombat.IsSpawned)
+            TriumvirateEnemyBrain3D member = _activeMembers[i];
+            if (member == null || member.finalBeamWeapon == null)
             {
-                source.netEnemyCombat.SetBeamState(source.finalBeamWeapon, false, source.transform.forward);
+                continue;
+            }
+
+            if (NetTickUtil.IsActive && member.netEnemyCombat != null && member.netEnemyCombat.IsSpawned)
+            {
+                member.netEnemyCombat.SetBeamState(member.finalBeamWeapon, false, member.transform.forward);
             }
             else
             {
-                source.finalBeamWeapon.ApplyNetworkBeamState(false, authoritative: true, PlayerCombatStats3D.InvalidAttackId);
+                member.finalBeamWeapon.ApplyNetworkBeamState(false, authoritative: true, PlayerCombatStats3D.InvalidAttackId);
             }
         }
 
         _beamActive = false;
     }
 
-    private void ApplyFinalBeamGameplay(TriumvirateEnemyBrain3D source, Vector3 fireDirection)
+    private void ApplyFinalBeamGameplay(Vector3 targetPoint)
     {
-        if (!CanApplyGameplay(source))
+        float damagePerSource = ResolveDamagePerSecond() / Mathf.Max(1, _survivorCountAtBeamStart);
+        for (int i = 0; i < _activeMembers.Count; i++)
         {
-            return;
-        }
-
-        Vector3 direction = fireDirection.sqrMagnitude > 0.0001f ? fireDirection.normalized : source.transform.forward;
-        Vector3 origin = source.finalBeamWeapon != null ? source.finalBeamWeapon.GetBeamOrigin(direction) : source.transform.position;
-        int hitCount = finalBeamHitscanRadius > 0.001f
-            ? Physics.SphereCastNonAlloc(origin, finalBeamHitscanRadius, direction, BeamHits, finalBeamRange, finalBeamMask, QueryTriggerInteraction.Ignore)
-            : Physics.RaycastNonAlloc(origin, direction, BeamHits, finalBeamRange, finalBeamMask, QueryTriggerInteraction.Ignore);
-
-        Entity3D nearestTarget = null;
-        Vector3 nearestPoint = origin + direction * finalBeamRange;
-        float nearestDistance = float.MaxValue;
-        for (int i = 0; i < hitCount; i++)
-        {
-            RaycastHit hit = BeamHits[i];
-            if (hit.collider == null || hit.collider.transform.IsChildOf(source.transform))
+            TriumvirateEnemyBrain3D source = _activeMembers[i];
+            if (!CanApplyGameplay(source))
             {
                 continue;
             }
 
-            if (hit.distance >= nearestDistance)
+            Vector3 direction = ResolveMemberAimDirection(source, targetPoint);
+            Vector3 origin = source.finalBeamWeapon != null ? source.finalBeamWeapon.GetBeamOrigin(direction) : source.transform.position;
+            int hitCount = finalBeamHitscanRadius > 0.001f
+                ? Physics.SphereCastNonAlloc(origin, finalBeamHitscanRadius, direction, BeamHits, finalBeamRange, finalBeamMask, QueryTriggerInteraction.Ignore)
+                : Physics.RaycastNonAlloc(origin, direction, BeamHits, finalBeamRange, finalBeamMask, QueryTriggerInteraction.Ignore);
+
+            Entity3D nearestTarget = null;
+            Vector3 nearestPoint = origin + direction * finalBeamRange;
+            float nearestDistance = float.MaxValue;
+            for (int hitIndex = 0; hitIndex < hitCount; hitIndex++)
+            {
+                RaycastHit hit = BeamHits[hitIndex];
+                if (hit.collider == null || hit.collider.transform.IsChildOf(source.transform))
+                {
+                    continue;
+                }
+
+                if (hit.distance >= nearestDistance)
+                {
+                    continue;
+                }
+
+                Entity3D candidate = ResolveHitEntity(hit.collider);
+                if (candidate == null || FactionMember3D.ResolveFaction(candidate) != Faction3D.PlayerTeam)
+                {
+                    continue;
+                }
+
+                nearestTarget = candidate;
+                nearestPoint = hit.point;
+                nearestDistance = hit.distance;
+            }
+
+            if (nearestTarget == null)
             {
                 continue;
             }
 
-            Entity3D candidate = ResolveHitEntity(hit.collider);
-            if (candidate == null || FactionMember3D.ResolveFaction(candidate) != Faction3D.PlayerTeam)
+            nearestTarget.TakeDamage(damagePerSource * Time.deltaTime, nearestPoint, source._enemy, DamageSource3D.Beam);
+            if (_survivorCountAtBeamStart >= 3)
             {
-                continue;
-            }
-
-            nearestTarget = candidate;
-            nearestPoint = hit.point;
-            nearestDistance = hit.distance;
-        }
-
-        if (nearestTarget == null)
-        {
-            return;
-        }
-
-        nearestTarget.TakeDamage(ResolveDamagePerSecond() * Time.deltaTime, nearestPoint, source._enemy, DamageSource3D.Beam);
-        if (_survivorCountAtBeamStart >= 3)
-        {
-            nearestTarget.ApplySlow(fullTriadSlowMultiplier, fullTriadSlowDuration);
-            if (fullTriadSlowEngineEmissionScale < 1f)
-            {
-                nearestTarget.ThrusterVfx?.ApplyTemporaryEmissionRateScale(fullTriadSlowEngineEmissionScale, fullTriadSlowDuration);
+                nearestTarget.ApplySlow(fullTriadSlowMultiplier, fullTriadSlowDuration);
+                if (fullTriadSlowEngineEmissionScale < 1f)
+                {
+                    nearestTarget.ThrusterVfx?.ApplyTemporaryEmissionRateScale(fullTriadSlowEngineEmissionScale, fullTriadSlowDuration);
+                }
             }
         }
     }
@@ -447,6 +497,7 @@ public class TriumvirateEnemyBrain3D : NetworkBehaviour
 
         _nextLinkIndex = 0;
         _stateEndTime = Time.time;
+        LogStateMessage($"Built link sequence with {_pendingLinks.Count} link(s) for {_activeMembers.Count} surviving member(s).");
     }
 
     private void SpawnLinkVisual(TriumvirateEnemyBrain3D a, TriumvirateEnemyBrain3D b)
@@ -611,6 +662,7 @@ public class TriumvirateEnemyBrain3D : NetworkBehaviour
         }
 
         _lastActiveMemberCount = _activeMembers.Count;
+        LogStateMessage($"Survivor count changed to {_activeMembers.Count}.");
         if (_state == SquadState.Forming || _state == SquadState.Settling || _state == SquadState.Cooldown)
         {
             return;
@@ -618,6 +670,7 @@ public class TriumvirateEnemyBrain3D : NetworkBehaviour
 
         StopFinalBeam();
         ClearLinkVisuals();
+        LogStateMessage("Survivor count changed during attack sequence; restarting formation with remaining members.");
         SetState(SquadState.Forming, 0f);
     }
 
@@ -631,6 +684,7 @@ public class TriumvirateEnemyBrain3D : NetworkBehaviour
     {
         if (_state != nextState)
         {
+            LogStateMessage($"State {_state} -> {nextState}. Duration={duration:F2}s, survivors={_activeMembers.Count}.");
             if (nextState == SquadState.Forming || nextState == SquadState.Cooldown)
             {
                 ClearLinkVisuals();
@@ -652,6 +706,43 @@ public class TriumvirateEnemyBrain3D : NetworkBehaviour
         {
             SetState(nextState, 0f);
         }
+    }
+
+    private Vector3 ResolveMemberAimDirection(TriumvirateEnemyBrain3D member, Vector3 targetPoint)
+    {
+        if (member == null)
+        {
+            return transform.forward;
+        }
+
+        Vector3 direction = targetPoint - member.transform.position;
+        if (direction.sqrMagnitude > 0.0001f)
+        {
+            return direction.normalized;
+        }
+
+        return member.transform.forward.sqrMagnitude > 0.0001f ? member.transform.forward.normalized : Vector3.forward;
+    }
+
+    private void LogFormationProgressIfNeeded(float farthestMemberDistance)
+    {
+        if (!logFormationProgress || Time.time < _nextFormationProgressLogTime)
+        {
+            return;
+        }
+
+        _nextFormationProgressLogTime = Time.time + Mathf.Max(0.05f, formationProgressLogInterval);
+        LogStateMessage($"Forming triangle: farthest member is {farthestMemberDistance:F1}m from slot; tolerance={formationTolerance:F1}m.");
+    }
+
+    private void LogStateMessage(string message)
+    {
+        if (!logStateChanges)
+        {
+            return;
+        }
+
+        Debug.Log($"[{nameof(TriumvirateEnemyBrain3D)}] {name}: {message}", this);
     }
 
     private void ClearSquadFlightIntent()
@@ -706,15 +797,38 @@ public class TriumvirateEnemyBrain3D : NetworkBehaviour
         return NetworkManager.Singleton == null || NetworkManager.Singleton.IsServer;
     }
 
-    private static Vector3 ResolveFormationSlot(Vector3 center, Vector3 right, Vector3 up, int index, int count, float radius)
+    private static Vector3 ResolveFormationSlot(Vector3 center, Vector3 right, Vector3 up, int index, int count, float radius, bool planarFormation)
     {
         if (count <= 1)
         {
             return center;
         }
 
-        float angle = (Mathf.PI * 2f * index) / count;
-        return center + ((right * Mathf.Cos(angle)) + (up * Mathf.Sin(angle))) * Mathf.Max(0f, radius);
+        if (planarFormation)
+        {
+            float angle = (Mathf.PI * 2f * index) / count;
+            Vector3 forwardOnPlane = Vector3.Cross(right, Vector3.up);
+            if (forwardOnPlane.sqrMagnitude <= 0.0001f)
+            {
+                forwardOnPlane = Vector3.forward;
+            }
+
+            return center + ((right * Mathf.Cos(angle)) + (forwardOnPlane.normalized * Mathf.Sin(angle))) * Mathf.Max(0f, radius);
+        }
+
+        float resolvedRadius = Mathf.Max(0f, radius);
+        if (count == 2)
+        {
+            return center + right * (index == 0 ? -resolvedRadius * 0.5f : resolvedRadius * 0.5f) - up * (resolvedRadius * 0.35f);
+        }
+
+        if (index == 0)
+        {
+            return center + up * resolvedRadius;
+        }
+
+        float lowerSide = index == 1 ? -1f : 1f;
+        return center + (right * (lowerSide * resolvedRadius * 0.866f)) - (up * resolvedRadius * 0.5f);
     }
 
     private static Entity3D ResolveHitEntity(Collider hitCollider)

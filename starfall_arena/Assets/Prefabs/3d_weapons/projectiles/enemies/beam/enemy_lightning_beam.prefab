@@ -87,7 +87,7 @@ LineRenderer:
   - {x: 0, y: 0, z: 10}
   m_Parameters:
     serializedVersion: 3
-    widthMultiplier: 1
+    widthMultiplier: 2.4999764
     widthCurve:
       serializedVersion: 2
       m_Curve:
@@ -357,6 +357,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ForgeEnemyBeam3D
   lineRenderer: {fileID: 12000002}
+  additionalLineRenderers:
+  - {fileID: 12000000}
   impactAnchor: {fileID: 400010}
   muzzleAnchor: {fileID: 400012}
   muzzleForwardOffset: 0.1
@@ -371,7 +373,7 @@ MonoBehaviour:
     m_Bits: 4294967295
   hitscanRadius: 0.45
   laserHitInterval: 0.2
-  requireForwardAim: 1
+  requireForwardAim: 0
   followAnchorTransform: 1
   smoothVisualEndpoint: 1
   visualEndpointSmoothTime: 0.05

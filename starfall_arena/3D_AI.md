@@ -32,6 +32,13 @@ The 3D AI path should stay modular. Enemy prefabs should compose small scripts i
   - non-alloc `OverlapSphere` against an `agentMask` LayerMask; pushes the desired direction away from same-faction allies inside `allyRadius` and biases laterally away from non-ally entities (e.g. the player) inside the smaller `playerProximityRadius`
   - intended chaining: `desired -> separation -> obstacleAvoidance -> flight controller`
   - currently consumed by `RammerEnemyBrain3D` (gated behind a `useSeparation` brain toggle); other enemy brains can opt in by adding the component to their prefab and calling its API the same way
+- `EnemyStrafeMover3D`
+  - reusable world-space lateral/vertical strafe overlay that sits beside `EnemyAIFlightController3D` on the same Rigidbody
+  - the enemy flight controller can only thrust forward/backward along its facing direction; the strafe mover is what enables true sideways motion while the flight controller continues to drive rotation
+  - brain calls `BeginStrafe(worldVelocity, durationSeconds)`; the mover writes the requested velocity to the Rigidbody every `FixedUpdate` until the timer expires, then auto-stops
+  - runs at `[DefaultExecutionOrder(100)]` so its velocity write happens after `EnemyAIFlightController3D` and either replaces it or stacks on top, depending on `combineWithFlightThrust`
+  - enforces a per-prefab `maxStrafeSpeed` cap and an optional `lockToWorldYPlane` flag so the mover never violates a planar test scene
+  - currently consumed by `DuelistEnemyBrain3D` for both the orbit strafe and reactive dodges; other brains can opt in by adding the component to the prefab and calling the same API
 - `BasicShooterEnemyBrain3D`
   - first Invasion enemy behavior
   - directly pursues the nearest player
@@ -110,10 +117,24 @@ The 3D AI path should stay modular. Enemy prefabs should compose small scripts i
   - spawns the same prefab, not separate child prefabs; configure `Splitter Prefab` as a self-reference to the authored Splitter prefab
   - spawned child `0` becomes beam-only and child `1` becomes projectile-only; each child disables the weapon it is not allowed to use, applies the configured child scale/speed, and overrides max health/shield through `Entity3D.OverrideMaxHealthAndShield(...)`
   - child role/scale/health are applied before network spawn on the server and synchronized to clients for presentation, while movement, targeting, attacks, networking, and wave death tracking remain on the usual Invasion components
+- `DuelistEnemyBrain3D`
+  - mid-tier flanker enemy that hangs in the player's mid-range pocket and juggles three weapons one at a time
+  - kit is `ProjectileWeaponEnemy3D` (close), `MissileWeaponEnemy3D` (mid), and `BeamWeapon3D` (long); the brain picks the highest-scoring weapon for the current range with a small `vibesChance` random pick over the rest of the valid set so the choice is not perfectly deterministic
+  - explicitly does NOT fire multiple weapons in parallel: when the chosen weapon for the current think tick is not the beam, any active beam is stopped first
+  - holds at 100-200m by default and uses a perch loop similar to `GlassCannonInterceptorEnemyBrain3D`, but the perch picker scores candidate directions and applies a `forwardArcAvoidanceWeight` penalty to perches inside the target's forward cone so the duelist drifts toward the player's flanks/rear instead of perching head-on
+  - while engaging, drives `EnemyStrafeMover3D` to slide laterally (with a small vertical tilt) at `orbitStrafeSpeed`; this is real world-space strafe motion that runs while `EnemyAIFlightController3D` keeps the nose locked on the target
+  - reacts to incoming player fire: every `threatScanInterval` it does a non-alloc `OverlapSphere` against `projectileLayers`, filters for `Projectile3D.TargetFaction == EnemyTeam` (i.e. fired by the player team), keeps only projectiles whose velocity is heading at the duelist (dot >= `threatHeadingDotThreshold`), and rolls `dodgeChancePerThreat` to trigger a perpendicular `EnemyStrafeMover3D` dodge burst at `dodgeSpeed` for `dodgeDuration`
+  - dodges are gated by `dodgeCooldown` so the duelist cannot chain-dodge a stream of fire, and weapon fire is suppressed for the dodge window so the dodge tell stays readable
+  - beam path mirrors `SplitterEnemyBrain3D` (`GetBeamForwardDirection` + `GetBeamOrigin` for the precise aim check, `NetEnemyCombat3D.SetBeamState` / `UpdateBeamAim` for replication)
+  - there is no projectile-warning sensor today; the threat scan is folded into the brain. If a second enemy needs the same behavior, extract the scan into a reusable `IncomingProjectileSensor3D` component then
 - `TriumvirateEnemyBrain3D`
   - coordinated low-health beam enemy intended to spawn in groups of three
   - the lowest-instance surviving member acts as the server-authoritative coordinator and directly assigns formation/facing intents to the surviving squad
   - the squad first moves into a triangle formation near the target, holds briefly, then reveals cosmetic lightning links in order: member `0 -> 1`, `1 -> 2`, `2 -> 0`
+  - formation approach faces each member toward its assigned slot until it arrives, then turns toward the player; this matches `EnemyAIFlightController3D`'s forward-move contract and prevents local test scenes from freezing after target acquisition
+  - uses a vertical two-low / one-high triangle by default; `Keep Formation On World Y Plane` is only a fallback for planar-only test prefabs and should be off for the intended read
+  - final beam fire starts from every surviving member and converges on the target; damage is divided per emitter so the configured one/two/three-member DPS remains the total squad damage
+  - `Log State Changes` reports state transitions and major milestones, while `Log Formation Progress` reports repeated slot-distance diagnostics during setup testing
   - if one or two members die before the final beam, the remaining members continue the pattern with fewer links and lower final beam damage; only the full three-member beam applies the configured slow
   - final player-facing damage is owned by the brain's non-alloc beam cast so one/two/three survivor strength can be tuned independently; configure the `BeamWeapon3D` visual beam damage to `0` when the brain owns damage
   - `Squad Members` may be authored directly, but the brain can also auto-link to the closest same-key Triumvirate members within `Auto Link Radius`

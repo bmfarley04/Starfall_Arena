@@ -209,6 +209,30 @@ For a Splitter enemy prefab:
 - set the root tag to `Enemy` for compatibility, but keep target/damage filtering faction-driven
 - add the Splitter prefab to `InvasionWaveManager3D` wave entries; spawned children are added to the same alive-enemy tracking automatically and must be cleared before the wave completes
 
+For a Duelist enemy prefab:
+
+- add `NetworkObject` if it will spawn in networked Invasion
+- add `FactionMember3D` and set faction to `EnemyTeam`
+- add `Enemy3D`
+- add `Rigidbody` (gravity off, low drag for clean strafe response)
+- add `EnemyAIFlightController3D`; tune `moveSpeed` mid-to-high for clean repositioning between perches and `rotationDegreesPerSecond` high enough that the duelist can track the player while strafing laterally
+- add `EnemyStrafeMover3D`; this is what enables true sideways/vertical strafe motion. Set `Max Strafe Speed` higher than the brain's `Dodge Speed` so the cap never clips the dodge, leave `Combine With Flight Thrust` on, and match `Lock To World Y Plane` to the flight controller's flag if you are testing in a planar scene
+- add `EnemyTargetSensor3D`; set `Detection Range` to at least `Beam Preferred Center + Beam Half Width` (default ~250m) so the duelist can acquire targets out at full beam range
+- optionally add `EnemySeparation3D` if multiple duelists may spawn together and should not stack on the same flank
+- optionally add `EnemyObstacleAvoidance3D` if the duelist needs to weave around asteroids while repositioning
+- add `ProjectileWeaponEnemy3D`; configure as the close-range projectile pressure (fast bolts, short cooldown), `targetFaction = PlayerTeam`
+- add `MissileWeaponEnemy3D`; configure as the mid-range guided missile, `targetFaction = PlayerTeam`, and make sure its projectile prefab carries `MissileProjectile3D`
+- add `BeamWeapon3D`; configure as the long-range beam, `targetFaction = PlayerTeam`. Use `Direction Reference` if the model's beam muzzle local forward is not the intended shot lane
+- add `DuelistEnemyBrain3D`; auto-assignment will pick up the three weapons, the flight controller, the strafe mover, the target sensor, and `NetEnemyCombat3D`. Required wiring you must do by hand:
+  - set `Projectile Layers` to the layers your projectile prefabs live on under `Assets/Prefabs/3d_weapons/projectiles/` (the threat scan only reacts to projectiles on those layers)
+  - confirm `Preferred Range Min/Max` (defaults `100`/`200`) and the per-weapon `Preferred Center` / `Half Width` bands match the engagement distance you want
+  - tune `Vibes Chance` if the duelist feels too predictable (or too erratic) about which weapon it picks
+  - tune `Dodge Chance Per Threat` and `Dodge Cooldown` to set how often dodges actually fire when projectiles come in
+- add `NetEnemyMovement3D` and `NetEnemyCombat3D` for networked movement plus replicated projectile and beam fire
+- set the root tag to `Enemy` for compatibility, but keep target/damage filtering faction-driven
+- set moderate `Entity3D` max health; the duelist is a flanker, not a tank, but it should survive longer than a glass-cannon interceptor
+- register the duelist prefab in `Assets/DefaultNetworkPrefabs.asset` for NGO before adding it to wave entries
+
 For a Triumvirate enemy prefab:
 
 - add `NetworkObject` if it will spawn in networked Invasion
@@ -219,6 +243,8 @@ For a Triumvirate enemy prefab:
 - add `EnemyTargetSensor3D`
 - add `BeamWeapon3D`; assign `enemy_lightning_beam.prefab`, set `targetFaction = PlayerTeam`, and set the weapon's `damagePerSecond = 0` if `TriumvirateEnemyBrain3D` is owning one/two/three-member damage scaling
 - add `TriumvirateEnemyBrain3D`; assign the final beam weapon and `NetEnemyCombat3D`, assign `Link Lightning Prefab` to `enemy_lightning_beam.prefab`, and tune the one/two/three-member damage fields plus full-triad slow fields
+- leave `Keep Formation On World Y Plane` off for the intended vertical triangle with one ship high and two low; only enable it if a local test prefab is deliberately locked to a planar Y flight level
+- use `Log State Changes` and temporary `Log Formation Progress` while testing scene setup so stuck states report whether the squad is forming, linking, charging, firing, or cooling down
 - either assign all three `Squad Members` explicitly after placing/spawning a group, or spawn them close together with the same `Squad Key` and an `Auto Link Radius` large enough for discovery
 - add `NetEnemyMovement3D` and `NetEnemyCombat3D` for networked movement plus final beam presentation
 - set low `Entity3D` health so the intended counterplay is destroying ships during formation/linking before the full slow beam fires

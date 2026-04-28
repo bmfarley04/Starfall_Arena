@@ -8,7 +8,10 @@ public class ForgeEnemyBeam3D : MonoBehaviour, IBeamRuntime3D, IBeamDirectionSou
     private static readonly RaycastHit[] BeamHits = new RaycastHit[16];
 
     [Header("Forge Beam Visuals")]
+    [Tooltip("Primary line renderer controlled by this runtime. Keep this assigned for single-line Forge beam prefabs.")]
     [SerializeField] private LineRenderer lineRenderer;
+    [Tooltip("Extra line renderers that must follow the same gameplay ray. Use this for lightning prefabs with child or overlay line renderers.")]
+    [SerializeField] private LineRenderer[] additionalLineRenderers = new LineRenderer[0];
     [SerializeField] private Transform impactAnchor;
     [SerializeField] private Transform muzzleAnchor;
     [SerializeField] private float muzzleForwardOffset = 0.1f;
@@ -44,8 +47,10 @@ public class ForgeEnemyBeam3D : MonoBehaviour, IBeamRuntime3D, IBeamDirectionSou
 
     private readonly List<ParticleSystem> _beamParticles = new List<ParticleSystem>(8);
     private readonly List<Renderer> _beamRenderers = new List<Renderer>(8);
+    private readonly List<LineRenderer> _controlledLineRenderers = new List<LineRenderer>(2);
     private ParticleSystem[] _impactParticleSystems;
     private Renderer[] _impactRenderers;
+    private Vector3[] _lightningPoints;
 
     private bool _isFiring;
     private bool _impactVisible;
@@ -78,10 +83,7 @@ public class ForgeEnemyBeam3D : MonoBehaviour, IBeamRuntime3D, IBeamDirectionSou
     private void Awake()
     {
         lineRenderer ??= GetComponent<LineRenderer>();
-        if (lineRenderer != null)
-        {
-            lineRenderer.useWorldSpace = false;
-        }
+        CacheControlledLineRenderers();
 
         _impactParticleSystems = impactAnchor != null ? impactAnchor.GetComponentsInChildren<ParticleSystem>(true) : null;
         _impactRenderers = impactAnchor != null ? impactAnchor.GetComponentsInChildren<Renderer>(true) : null;
@@ -247,12 +249,9 @@ public class ForgeEnemyBeam3D : MonoBehaviour, IBeamRuntime3D, IBeamDirectionSou
         transform.position = origin;
         transform.rotation = Quaternion.LookRotation(visualDirection, ResolveUpVector(visualDirection));
 
-        if (lineRenderer != null)
-        {
-            UpdateLineRendererPoints(beamLength);
-            UpdateTextureScale(beamLength);
-            UpdateTextureOffset();
-        }
+        UpdateLineRendererPoints(beamLength);
+        UpdateTextureScale(beamLength);
+        UpdateTextureOffset();
 
         if (muzzleAnchor != null)
         {
@@ -277,71 +276,99 @@ public class ForgeEnemyBeam3D : MonoBehaviour, IBeamRuntime3D, IBeamDirectionSou
 
     private void UpdateTextureScale(float beamLength)
     {
-        if (lineRenderer == null)
-        {
-            return;
-        }
-
-        Material material = lineRenderer.material;
-        if (material == null || !material.HasProperty(textureScaleProperty))
-        {
-            return;
-        }
-
         float textureScale = Mathf.Max(0f, beamLength) * textureScaleMultiplier;
-        material.SetTextureScale(textureScaleProperty, new Vector2(textureScale, 1f));
+        for (int i = 0; i < _controlledLineRenderers.Count; i++)
+        {
+            LineRenderer renderer = _controlledLineRenderers[i];
+            if (renderer == null)
+            {
+                continue;
+            }
+
+            Material material = renderer.material;
+            if (material == null || !material.HasProperty(textureScaleProperty))
+            {
+                continue;
+            }
+
+            material.SetTextureScale(textureScaleProperty, new Vector2(textureScale, 1f));
+        }
     }
 
     private void UpdateLineRendererPoints(float beamLength)
     {
-        if (lineRenderer == null)
+        if (_controlledLineRenderers.Count == 0)
         {
             return;
         }
 
         if (!useLightningJitter || lightningPointCount <= 2 || lightningAmplitude <= 0f)
         {
-            lineRenderer.positionCount = 2;
-            lineRenderer.SetPosition(0, Vector3.zero);
-            lineRenderer.SetPosition(1, new Vector3(0f, 0f, beamLength));
+            for (int i = 0; i < _controlledLineRenderers.Count; i++)
+            {
+                LineRenderer renderer = _controlledLineRenderers[i];
+                if (renderer == null)
+                {
+                    continue;
+                }
+
+                renderer.positionCount = 2;
+                renderer.SetPosition(0, Vector3.zero);
+                renderer.SetPosition(1, new Vector3(0f, 0f, beamLength));
+            }
             return;
         }
 
         int pointCount = Mathf.Max(2, lightningPointCount);
-        if (lineRenderer.positionCount != pointCount)
+        if (_lightningPoints == null || _lightningPoints.Length != pointCount)
         {
-            lineRenderer.positionCount = pointCount;
+            _lightningPoints = new Vector3[pointCount];
             _nextLightningJitterTime = 0f;
         }
 
-        lineRenderer.SetPosition(0, Vector3.zero);
-        lineRenderer.SetPosition(pointCount - 1, new Vector3(0f, 0f, beamLength));
-
-        if (Time.time < _nextLightningJitterTime)
+        bool shouldRandomize = Time.time >= _nextLightningJitterTime;
+        if (shouldRandomize)
         {
-            return;
+            _nextLightningJitterTime = Time.time + Mathf.Max(0.01f, lightningJitterInterval);
         }
 
-        _nextLightningJitterTime = Time.time + Mathf.Max(0.01f, lightningJitterInterval);
+        _lightningPoints[0] = Vector3.zero;
+        _lightningPoints[pointCount - 1] = new Vector3(0f, 0f, beamLength);
         float lastPointIndex = Mathf.Max(1f, pointCount - 1f);
-        for (int i = 1; i < pointCount - 1; i++)
+        if (shouldRandomize)
         {
-            float z = beamLength * (i / lastPointIndex);
-            float x = Random.Range(-lightningAmplitude, lightningAmplitude);
-            float y = Random.Range(-lightningAmplitude, lightningAmplitude);
-            lineRenderer.SetPosition(i, new Vector3(x, y, z));
+            for (int i = 1; i < pointCount - 1; i++)
+            {
+                float z = beamLength * (i / lastPointIndex);
+                float x = Random.Range(-lightningAmplitude, lightningAmplitude);
+                float y = Random.Range(-lightningAmplitude, lightningAmplitude);
+                _lightningPoints[i] = new Vector3(x, y, z);
+            }
+        }
+        else
+        {
+            for (int i = 1; i < pointCount - 1; i++)
+            {
+                _lightningPoints[i].z = beamLength * (i / lastPointIndex);
+            }
+        }
+
+        for (int i = 0; i < _controlledLineRenderers.Count; i++)
+        {
+            LineRenderer renderer = _controlledLineRenderers[i];
+            if (renderer == null)
+            {
+                continue;
+            }
+
+            renderer.positionCount = pointCount;
+            renderer.SetPositions(_lightningPoints);
         }
     }
 
     private void UpdateTextureOffset()
     {
-        if (!animateUv || lineRenderer == null)
-        {
-            return;
-        }
-
-        Material material = lineRenderer.material;
-        if (material == null || !material.HasProperty(uvOffsetProperty))
+        if (!animateUv || _controlledLineRenderers.Count == 0)
         {
             return;
         }
@@ -353,7 +380,22 @@ public class ForgeEnemyBeam3D : MonoBehaviour, IBeamRuntime3D, IBeamDirectionSou
         }
 
         float offset = (_animateUvTime * uvTime) + _initialUvOffset;
-        material.SetVector(uvOffsetProperty, new Vector2(offset, 0f));
+        for (int i = 0; i < _controlledLineRenderers.Count; i++)
+        {
+            LineRenderer renderer = _controlledLineRenderers[i];
+            if (renderer == null)
+            {
+                continue;
+            }
+
+            Material material = renderer.material;
+            if (material == null || !material.HasProperty(uvOffsetProperty))
+            {
+                continue;
+            }
+
+            material.SetVector(uvOffsetProperty, new Vector2(offset, 0f));
+        }
     }
 
     private void UpdateShieldHitEffects(Entity3D target, Vector3 hitPoint)
@@ -438,18 +480,14 @@ public class ForgeEnemyBeam3D : MonoBehaviour, IBeamRuntime3D, IBeamDirectionSou
 
     private Vector3 ResolveAimDirection()
     {
-        if (followAnchorTransform && _directionSource != null && _directionSource.forward.sqrMagnitude > 0.0001f)
+        if (_hasNetworkAim)
         {
-            return _directionSource.forward.normalized;
+            return ResolveForwardConstrainedDirection(_networkAimDirection);
         }
 
         Vector3 resolvedDirection = Vector3.zero;
 
-        if (_hasNetworkAim)
-        {
-            resolvedDirection = _networkAimDirection;
-        }
-        else if (_aimCamera != null)
+        if (_aimCamera != null)
         {
             Ray centerRay = _aimCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
             if (centerRay.direction.sqrMagnitude > 0.0001f)
@@ -457,6 +495,11 @@ public class ForgeEnemyBeam3D : MonoBehaviour, IBeamRuntime3D, IBeamDirectionSou
                 resolvedDirection = centerRay.direction.normalized;
                 return ResolveForwardConstrainedDirection(resolvedDirection);
             }
+        }
+
+        if (followAnchorTransform && _directionSource != null && _directionSource.forward.sqrMagnitude > 0.0001f)
+        {
+            return _directionSource.forward.normalized;
         }
 
         if (resolvedDirection.sqrMagnitude <= 0.0001f)
@@ -725,5 +768,38 @@ public class ForgeEnemyBeam3D : MonoBehaviour, IBeamRuntime3D, IBeamDirectionSou
         }
 
         return foundHit;
+    }
+
+    private void CacheControlledLineRenderers()
+    {
+        _controlledLineRenderers.Clear();
+        AddControlledLineRenderer(lineRenderer);
+
+        if (additionalLineRenderers != null)
+        {
+            for (int i = 0; i < additionalLineRenderers.Length; i++)
+            {
+                AddControlledLineRenderer(additionalLineRenderers[i]);
+            }
+        }
+
+        for (int i = 0; i < _controlledLineRenderers.Count; i++)
+        {
+            LineRenderer renderer = _controlledLineRenderers[i];
+            if (renderer != null)
+            {
+                renderer.useWorldSpace = false;
+            }
+        }
+    }
+
+    private void AddControlledLineRenderer(LineRenderer renderer)
+    {
+        if (renderer == null || _controlledLineRenderers.Contains(renderer))
+        {
+            return;
+        }
+
+        _controlledLineRenderers.Add(renderer);
     }
 }

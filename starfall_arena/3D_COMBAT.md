@@ -116,6 +116,8 @@ Base input rule:
   - if gameplay forgiveness is needed for readability, tune the beam's own `hitscanRadius` here rather than on `BeamWeapon3D`; the runtime that owns the cast should also own the forgiveness width
   - like the shared beam runtime, it should smooth its rendered endpoint/direction rather than showing every tiny long-range endpoint hop literally; keep damage exact and make only the presentation slightly forgiving
   - can render optional jittered lightning segments directly through the unified runtime; keep stock Forge raycast scripts such as `F3DLightning` disabled on gameplay beam prefabs so they do not fight the 3D beam authority
+  - lightning-style prefabs with several authored `LineRenderer` components should register every gameplay beam line on `additionalLineRenderers` so all visible strands are driven by the same resolved aim and hit ray
+  - explicit AI/network aim is resolved before the hardpoint-forward fallback, which lets coordinated enemies such as the Triumvirate converge several anchored beams on one target while still using the Forge beam hit/runtime path
   - should be used for the artillery enemy Forge beam path instead of layering Forge visuals on top of `LaserBeam3D`
 - `TriumvirateLightningLinkVisual3D`
   - cosmetic-only ship-to-ship lightning link driver for Triumvirate-style enemy tells
