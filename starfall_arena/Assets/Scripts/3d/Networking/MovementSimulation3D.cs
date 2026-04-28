@@ -138,18 +138,42 @@ public static class MovementSimulation3D
         {
             state.DodgeVelocity = Vector3.zero;
             state.DodgeExitVelocity = Vector3.zero;
+            state.DodgeDuration = 0f;
             return;
         }
 
-        float dodgeStep = Mathf.Min(dt, state.DodgeRemainingTime);
-        state.Position += state.DodgeVelocity * dodgeStep;
+        float duration = Mathf.Max(0.0001f, state.DodgeDuration);
+        float previousProgress = Mathf.Clamp01((duration - state.DodgeRemainingTime) / duration);
+        float nextRemainingTime = Mathf.Max(0f, state.DodgeRemainingTime - dt);
+        float nextProgress = Mathf.Clamp01((duration - nextRemainingTime) / duration);
+        Vector3 totalDodgeOffset = state.DodgeVelocity * duration;
+        state.Position += totalDodgeOffset * (EaseOutCubic(nextProgress) - EaseOutCubic(previousProgress));
         state.DodgeRemainingTime = Mathf.Max(0f, state.DodgeRemainingTime - dt);
 
         if (state.DodgeRemainingTime <= 0f)
         {
             state.DodgeVelocity = Vector3.zero;
             state.DodgeExitVelocity = Vector3.zero;
+            state.DodgeDuration = 0f;
         }
+    }
+
+    public static Vector3 GetCurrentDodgeVelocity(in MovementState3D state)
+    {
+        if (state.DodgeRemainingTime <= 0.001f || state.DodgeDuration <= 0.0001f)
+        {
+            return Vector3.zero;
+        }
+
+        float progress = Mathf.Clamp01((state.DodgeDuration - state.DodgeRemainingTime) / state.DodgeDuration);
+        float easeDerivative = 3f * (1f - progress) * (1f - progress);
+        return state.DodgeVelocity * easeDerivative;
+    }
+
+    public static float EaseOutCubic(float t)
+    {
+        float inverse = 1f - Mathf.Clamp01(t);
+        return 1f - (inverse * inverse * inverse);
     }
 
     private static Vector2 GetEffectiveSteeringInput(Vector2 filteredLookInput, bool invertY)

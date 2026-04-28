@@ -42,6 +42,7 @@ public struct NetStateSnapshot3D : INetworkSerializable
     public Vector3 DodgeVelocity;
     public Vector3 DodgeExitVelocity;
     public float DodgeRemainingTime;
+    public float DodgeDuration;
 
     public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
     {
@@ -56,6 +57,7 @@ public struct NetStateSnapshot3D : INetworkSerializable
         serializer.SerializeValue(ref DodgeVelocity);
         serializer.SerializeValue(ref DodgeExitVelocity);
         serializer.SerializeValue(ref DodgeRemainingTime);
+        serializer.SerializeValue(ref DodgeDuration);
     }
 }
 
@@ -69,6 +71,7 @@ public struct MovementState3D
     public Vector3 DodgeVelocity;
     public Vector3 DodgeExitVelocity;
     public float DodgeRemainingTime;
+    public float DodgeDuration;
 }
 
 public enum NetProjectileVisualType3D : byte

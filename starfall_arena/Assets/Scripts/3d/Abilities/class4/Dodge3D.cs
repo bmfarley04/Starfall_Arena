@@ -193,6 +193,7 @@ public class Dodge3D : Ability3D
     public void MarkNetworkDodgeAccepted()
     {
         MarkAbilityUsed();
+        _player?.BeginDodgeInvulnerability(Mathf.Max(0.01f, dodge.slideDuration));
     }
 
     public void PlayNetworkDodgePresentation(Vector3 worldDirection)
@@ -202,7 +203,7 @@ public class Dodge3D : Ability3D
             return;
         }
 
-        StartDodgePresentation();
+        StartDodgePresentation(worldDirection);
     }
 
     public override void Die()
@@ -227,7 +228,7 @@ public class Dodge3D : Ability3D
             if (movement.QueuePredictedDodge(worldDirection))
             {
                 MarkAbilityUsed();
-                StartDodgePresentation();
+                StartDodgePresentation(worldDirection);
             }
             return;
         }
@@ -238,7 +239,7 @@ public class Dodge3D : Ability3D
 
     private void StartDodge(Vector3 worldDirection, bool authoritative)
     {
-        StartDodgePresentation();
+        StartDodgePresentation(worldDirection);
 
         if (!authoritative)
         {
@@ -257,11 +258,14 @@ public class Dodge3D : Ability3D
         StartLocalDodgeFallback(normalizedDirection, dodgeDistance, slideDuration);
     }
 
-    private void StartDodgePresentation()
+    private void StartDodgePresentation(Vector3 worldDirection)
     {
         dodge.dodgeSound?.PlayAtPoint(transform.position);
         _isDodging = true;
         _dodgeEndTime = Time.time + Mathf.Max(0.01f, dodge.slideDuration);
+        _player?.BeginDodgeInvulnerability(Mathf.Max(0.01f, dodge.slideDuration));
+        _player?.BeginDodgeCameraLag(Mathf.Max(0.01f, dodge.slideDuration));
+        _player?.BeginDodgeBarrelRoll(worldDirection, Mathf.Max(0.01f, dodge.slideDuration));
     }
 
     private Vector3 ResolveCardinalDirection(Vector2 directionalInput)
@@ -319,21 +323,30 @@ public class Dodge3D : Ability3D
         }
 
         float collisionRadius = ResolveCollisionRadius();
-        Vector3 previousOffset = Vector3.zero;
+        Vector3 startPosition = rb.position;
+        Vector3 targetPosition = ClampDodgePosition(startPosition + (worldDirection.normalized * dodgeDistance), collisionRadius);
+        Vector3 previousPosition = startPosition;
         float elapsed = 0f;
 
         while (elapsed < slideDuration)
         {
             elapsed += Time.fixedDeltaTime;
             float t = Mathf.Clamp01(elapsed / slideDuration);
-            float eased = 1f - ((1f - t) * (1f - t));
-            Vector3 currentOffset = worldDirection * (dodgeDistance * eased);
-            Vector3 targetPosition = rb.position + (currentOffset - previousOffset);
-            rb.MovePosition(ClampDodgePosition(targetPosition, collisionRadius));
-            previousOffset = currentOffset;
+            float eased = MovementSimulation3D.EaseOutCubic(t);
+            Vector3 flightDelta = rb.position - previousPosition;
+            startPosition += flightDelta;
+            targetPosition += flightDelta;
+
+            Vector3 currentPosition = Vector3.Lerp(startPosition, targetPosition, eased);
+            currentPosition = ClampDodgePosition(currentPosition, collisionRadius);
+            rb.MovePosition(currentPosition);
+            previousPosition = currentPosition;
             yield return new WaitForFixedUpdate();
         }
 
+        Vector3 finalPosition = ClampDodgePosition(targetPosition, collisionRadius);
+        rb.position = finalPosition;
+        transform.position = finalPosition;
         _localDodgeCoroutine = null;
     }
 

@@ -5243,6 +5243,7 @@ GameObject:
   - component: {fileID: 112552674757024519}
   - component: {fileID: 7050303922495527899}
   - component: {fileID: 5035944875366506294}
+  - component: {fileID: 4307210007083528062}
   m_Layer: 0
   m_Name: 3d_class4_player
   m_TagString: Enemy
@@ -5509,7 +5510,7 @@ MonoBehaviour:
   deathEffects: {fileID: 8288383124772000926}
   playerInput3D: {fileID: 2709859321838343538}
   playerCameraRig3D: {fileID: 8218329567873975671}
-  aimAssist3D: {fileID: 0}
+  aimAssist3D: {fileID: 4307210007083528062}
   hudManager3D: {fileID: 0}
   splitStateLightningRigs: []
   splitStateOffsetRigs: []
@@ -5517,6 +5518,13 @@ MonoBehaviour:
     enabled: 1
     rotationMultiplier: 5
     thrustMultiplier: 0
+  dodgeConfig:
+    enabled: 1
+    cooldown: 1
+    dodgeDistance: 6
+    slideDuration: 0.18
+    invulnerabilityDuration: 0.24
+  logDodgeDebug: 1
   audioConfig:
     shieldDamageSound: {fileID: 11400000, guid: 87784f1904ec9074c86e30516fb1e37e, type: 2}
     hullDamageSound: {fileID: 11400000, guid: 4532575f5b2177b41872e0135a7f6ebb, type: 2}
@@ -5592,6 +5600,11 @@ MonoBehaviour:
     lateralAccelBankSensitivity: 0.1
     lateralDriftBankSensitivity: 0.5
     verticalDriftPitchSensitivity: 0.35
+  barrelRoll:
+    degrees: 360
+    durationMultiplier: 1.1
+    minDuration: 0.5
+    entryBankAngle: 28
 --- !u!114 &5575656626900202751
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5744,8 +5757,13 @@ MonoBehaviour:
   shipFlight: {fileID: 4650194337417168327}
   entity: {fileID: 7926965533672300583}
   playerInput: {fileID: 3034305952669885816}
-  aimAssist: {fileID: 0}
+  aimAssist: {fileID: 4307210007083528062}
   mouseLookSensitivity: 0.5
+  dodgeFlickThreshold: 0.3
+  dodgeFlickResetThreshold: 0.3
+  dodgeFlickMaxVertical: 0.3
+  dodgeFlickMaxTime: 0.18
+  logDodgeFlickDebug: 1
 --- !u!114 &8218329567873975671
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5778,6 +5796,10 @@ MonoBehaviour:
     followRotationDampingDuringTurn: 0.25
     aimDampingAtRest: 0.1
     aimDampingDuringTurn: 0.25
+  dodgeLagExtraDuration: 0.12
+  dodgePositionDamping: 0.85
+  dodgeRotationDamping: 0.45
+  dodgeAimDamping: 0.35
 --- !u!114 &8288383124772000926
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5817,7 +5839,7 @@ MonoBehaviour:
     recoveryPerSecond: 30
   aimMode: 1
   aimCamera: {fileID: 0}
-  aimAssist: {fileID: 0}
+  aimAssist: {fileID: 4307210007083528062}
   aimCollisionMask:
     serializedVersion: 2
     m_Bits: 4294967295
@@ -5958,8 +5980,8 @@ MonoBehaviour:
       muzzles: []
       targetTag: Enemy
       targetFaction: 0
-      cooldown: 10
-      speed: 120
+      cooldown: 5
+      speed: 180
       damage: 30
       lifetime: 5
       impactForce: 0
@@ -6135,6 +6157,51 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::FactionMember3D
   faction: 1
+--- !u!114 &4307210007083528062
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6962877402401494773}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c29d2ede4b1814f298a7fde1a5fcc258, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AimAssist3D
+  aimAssistEnabled: 0
+  strengthPreset: 2
+  aimCamera: {fileID: 0}
+  owner: {fileID: 7926965533672300583}
+  playerInput: {fileID: 3034305952669885816}
+  targetMask:
+    serializedVersion: 2
+    m_Bits: 1
+  lineOfSightMask:
+    serializedVersion: 2
+    m_Bits: 257
+  targetFaction: 2
+  minimumDetectionRadius: 1.25
+  lineOfSightPadding: 0.05
+  presets:
+    barelyThere:
+      slowdownMultiplier: 0.92
+      assistConeAngle: 3.5
+      maxAssistRange: 90
+      screenDistanceWeight: 0.85
+      maxAngularCorrection: 1.25
+    subtle:
+      slowdownMultiplier: 0.8
+      assistConeAngle: 6
+      maxAssistRange: 300
+      screenDistanceWeight: 0.75
+      maxAngularCorrection: 2.5
+    light:
+      slowdownMultiplier: 0.68
+      assistConeAngle: 8
+      maxAssistRange: 145
+      screenDistanceWeight: 0.65
+      maxAngularCorrection: 4
 --- !u!1 &8101278649858300069
 GameObject:
   m_ObjectHideFlags: 0

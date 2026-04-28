@@ -70,7 +70,7 @@ Rigidbody:
   m_IsKinematic: 0
   m_Interpolate: 1
   m_Constraints: 0
-  m_CollisionDetection: 0
+  m_CollisionDetection: 2
 --- !u!114 &5121586720941418845
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -136,6 +136,10 @@ MonoBehaviour:
   maxShield: 10
   shieldController: {fileID: 516975953484171994}
   impulseRecoilPitchSensitivity: 1
+  uprightRecoveryEnabled: 1
+  uprightRecoveryDelay: 2.5
+  uprightRecoveryDegreesPerSecond: 90
+  uprightRecoveryInputDeadZone: 0.05
   weapons:
   - {fileID: 0}
   selectedWeaponIndex: 0
@@ -305,6 +309,7 @@ MonoBehaviour:
   flightController: {fileID: 107427888545359193}
   targetSensor: {fileID: 6943316115824602533}
   obstacleAvoidance: {fileID: 0}
+  patrol: {fileID: 0}
   separation: {fileID: 0}
   netEnemyCombat: {fileID: 0}
   thinkInterval: 0.05
@@ -324,6 +329,19 @@ MonoBehaviour:
   maxBurstDuration: 1.25
   useSeparation: 0
   useObstacleAvoidance: 0
+--- !u!114 &9100000000000000004
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1837983289991426574}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bfab71f04e15488aa75cd8ce1856c6d3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyBalanceProfileApplier3D
+  profile: {fileID: 11400000, guid: 4912292ae8d345b592a1c146324db18c, type: 2}
 --- !u!1 &3030521018079085080
 GameObject:
   m_ObjectHideFlags: 0
@@ -5922,17 +5940,3 @@ MonoBehaviour:
   mass: 0.5
   linearDamping: 0.5
   angularDamping: 0.3
-
---- !u!114 &9100000000000000004
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1837983289991426574}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: bfab71f04e15488aa75cd8ce1856c6d3, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::EnemyBalanceProfileApplier3D
-  profile: {fileID: 11400000, guid: 4912292ae8d345b592a1c146324db18c, type: 2}

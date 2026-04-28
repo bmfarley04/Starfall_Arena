@@ -2,12 +2,36 @@ using UnityEngine;
 
 public class ShipVisualTilt3D : MonoBehaviour
 {
+    [System.Serializable]
+    private struct BarrelRollConfig3D
+    {
+        [Tooltip("Degrees the visual model rolls during a dodge. 360 is a full barrel roll.")]
+        public float degrees;
+        [Tooltip("Multiplies the dodge slide duration to determine visual roll duration.")]
+        public float durationMultiplier;
+        [Tooltip("Minimum seconds for the visual roll.")]
+        public float minDuration;
+        [Tooltip("Extra bank applied into the dodge direction while the roll starts.")]
+        public float entryBankAngle;
+    }
+
     [SerializeField] private Entity3D entity;
     [SerializeField] private ShipFlight3D shipFlight;
     [SerializeField] private VisualEffects3DConfig visualEffects;
+    [Header("Dodge Barrel Roll")]
+    [SerializeField] private BarrelRollConfig3D barrelRoll = new BarrelRollConfig3D
+    {
+        degrees = 360f,
+        durationMultiplier = 1.1f,
+        minDuration = 0.18f,
+        entryBankAngle = 28f
+    };
 
     private float _currentBankAngle;
     private float _currentPitchLeanAngle;
+    private float _barrelRollStartTime = float.NegativeInfinity;
+    private float _barrelRollDuration = 0.18f;
+    private int _barrelRollDirection = 1;
     private Quaternion _visualBaseLocalRotation = Quaternion.identity;
 
     private void Awake()
@@ -46,6 +70,13 @@ public class ShipVisualTilt3D : MonoBehaviour
         visualEffects = config;
         ValidateVisualEffects();
         CacheBaseRotation();
+    }
+
+    public void BeginBarrelRoll(int horizontalDirection, float dodgeDuration)
+    {
+        _barrelRollDirection = horizontalDirection >= 0 ? -1 : 1;
+        _barrelRollDuration = Mathf.Max(Mathf.Max(0.01f, dodgeDuration) * Mathf.Max(0.01f, barrelRoll.durationMultiplier), Mathf.Max(0.01f, barrelRoll.minDuration));
+        _barrelRollStartTime = Time.time;
     }
 
     private void CacheBaseRotation()
@@ -97,8 +128,33 @@ public class ShipVisualTilt3D : MonoBehaviour
         _currentPitchLeanAngle = DampAngle(_currentPitchLeanAngle, targetPitchLeanAngle, visualEffects.pitchLeanSmoothing, visualEffects.pitchLeanReturnSmoothing);
 
         Quaternion pitchQuat = Quaternion.AngleAxis(_currentPitchLeanAngle, Vector3.right);
-        Quaternion bankQuat = Quaternion.AngleAxis(_currentBankAngle, Vector3.forward);
-        visualEffects.visualModel.localRotation = _visualBaseLocalRotation * pitchQuat * bankQuat;
+        Quaternion bankQuat = Quaternion.AngleAxis(_currentBankAngle + GetBarrelRollEntryBankAngle(), Vector3.forward);
+        Quaternion barrelRollQuat = Quaternion.AngleAxis(GetBarrelRollAngle(), Vector3.forward);
+        visualEffects.visualModel.localRotation = _visualBaseLocalRotation * pitchQuat * bankQuat * barrelRollQuat;
+    }
+
+    private float GetBarrelRollAngle()
+    {
+        if (Time.time >= _barrelRollStartTime + _barrelRollDuration)
+        {
+            return 0f;
+        }
+
+        float t = Mathf.Clamp01((Time.time - _barrelRollStartTime) / Mathf.Max(0.01f, _barrelRollDuration));
+        float eased = SmoothStep01(t);
+        return _barrelRollDirection * Mathf.Max(0f, barrelRoll.degrees) * eased;
+    }
+
+    private float GetBarrelRollEntryBankAngle()
+    {
+        if (Time.time >= _barrelRollStartTime + _barrelRollDuration)
+        {
+            return 0f;
+        }
+
+        float t = Mathf.Clamp01((Time.time - _barrelRollStartTime) / Mathf.Max(0.01f, _barrelRollDuration));
+        float pulse = Mathf.Sin(t * Mathf.PI);
+        return _barrelRollDirection * Mathf.Max(0f, barrelRoll.entryBankAngle) * pulse;
     }
 
     private float GetImpulseRecoilPitchSensitivity()
@@ -120,6 +176,26 @@ public class ShipVisualTilt3D : MonoBehaviour
 
     private void ValidateVisualEffects()
     {
+        if (barrelRoll.degrees <= 0f)
+        {
+            barrelRoll.degrees = 360f;
+        }
+
+        if (barrelRoll.durationMultiplier <= 0f)
+        {
+            barrelRoll.durationMultiplier = 1.1f;
+        }
+
+        if (barrelRoll.minDuration <= 0f)
+        {
+            barrelRoll.minDuration = 0.18f;
+        }
+
+        if (barrelRoll.entryBankAngle < 0f)
+        {
+            barrelRoll.entryBankAngle = 0f;
+        }
+
         if (visualEffects.maxBankAngle <= 0f)
         {
             visualEffects.maxBankAngle = 75f;
@@ -197,5 +273,10 @@ public class ShipVisualTilt3D : MonoBehaviour
         {
             visualEffects.verticalDriftPitchSensitivity = 0.35f;
         }
+    }
+
+    private static float SmoothStep01(float t)
+    {
+        return t * t * (3f - (2f * t));
     }
 }

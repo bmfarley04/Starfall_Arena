@@ -14759,7 +14759,7 @@ Rigidbody:
   m_IsKinematic: 0
   m_Interpolate: 1
   m_Constraints: 0
-  m_CollisionDetection: 0
+  m_CollisionDetection: 2
 --- !u!114 &5479257193394350753
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -14862,6 +14862,10 @@ MonoBehaviour:
   maxShield: 500
   shieldController: {fileID: 5051197136738508982}
   impulseRecoilPitchSensitivity: 1
+  uprightRecoveryEnabled: 1
+  uprightRecoveryDelay: 2.5
+  uprightRecoveryDegreesPerSecond: 90
+  uprightRecoveryInputDeadZone: 0.05
   weapons:
   - {fileID: 0}
   selectedWeaponIndex: 0
@@ -14892,6 +14896,7 @@ MonoBehaviour:
   flightController: {fileID: 1829365813681681002}
   targetSensor: {fileID: 3740084540234369247}
   obstacleAvoidance: {fileID: 0}
+  patrol: {fileID: 0}
   netEnemyCombat: {fileID: 0}
   thinkInterval: 0.05
   cannonAimToleranceDegrees: 8
@@ -14972,6 +14977,19 @@ MonoBehaviour:
   muzzleEffectLocalOffset: {x: 0, y: 0, z: 1.5}
   projectilePrewarmCount: 4
   muzzleEffectPrewarmCount: 0
+--- !u!114 &9100000000000000007
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6067267420352304793}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bfab71f04e15488aa75cd8ce1856c6d3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyBalanceProfileApplier3D
+  profile: {fileID: 11400000, guid: 8ac3605a4bb745f38954630305ba5695, type: 2}
 --- !u!1 &6236253945820780736
 GameObject:
   m_ObjectHideFlags: 0
@@ -16175,17 +16193,3 @@ MonoBehaviour:
   mass: 0.5
   linearDamping: 0.5
   angularDamping: 0.3
-
---- !u!114 &9100000000000000007
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6067267420352304793}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: bfab71f04e15488aa75cd8ce1856c6d3, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::EnemyBalanceProfileApplier3D
-  profile: {fileID: 11400000, guid: 8ac3605a4bb745f38954630305ba5695, type: 2}

@@ -383,6 +383,7 @@ public class NetMovement3D : NetworkBehaviour
             _ownerState.DodgeVelocity = Vector3.zero;
             _ownerState.DodgeExitVelocity = Vector3.zero;
             _ownerState.DodgeRemainingTime = 0f;
+            _ownerState.DodgeDuration = 0f;
         }
 
         if (_serverStateInitialized)
@@ -392,6 +393,7 @@ public class NetMovement3D : NetworkBehaviour
             _serverState.DodgeVelocity = Vector3.zero;
             _serverState.DodgeExitVelocity = Vector3.zero;
             _serverState.DodgeRemainingTime = 0f;
+            _serverState.DodgeDuration = 0f;
         }
     }
 
@@ -661,7 +663,8 @@ public class NetMovement3D : NetworkBehaviour
             TurnRates = Vector2.Lerp(from.TurnRates, to.TurnRates, t),
             DodgeVelocity = Vector3.Lerp(from.DodgeVelocity, to.DodgeVelocity, t),
             DodgeExitVelocity = Vector3.Lerp(from.DodgeExitVelocity, to.DodgeExitVelocity, t),
-            DodgeRemainingTime = Mathf.Lerp(from.DodgeRemainingTime, to.DodgeRemainingTime, t)
+            DodgeRemainingTime = Mathf.Lerp(from.DodgeRemainingTime, to.DodgeRemainingTime, t),
+            DodgeDuration = Mathf.Lerp(from.DodgeDuration, to.DodgeDuration, t)
         };
 
         ApplySimulationState(interpolatedState);
@@ -720,7 +723,8 @@ public class NetMovement3D : NetworkBehaviour
         }
 
         CacheReferences();
-        if (_dodgeAbility == null)
+        bool useClassDodgeAbility = _dodgeAbility != null;
+        if (!useClassDodgeAbility && _player == null)
         {
             return;
         }
@@ -730,12 +734,23 @@ public class NetMovement3D : NetworkBehaviour
             return;
         }
 
-        if (!_dodgeAbility.TryResolveNetworkDodge(
-            input.DodgeDirection,
-            state.Position,
-            GetCollisionRadius(),
-            out Vector3 dashVelocity,
-            out float duration))
+        Vector3 dashVelocity;
+        float duration;
+        bool resolvedDodge = useClassDodgeAbility
+            ? _dodgeAbility.TryResolveNetworkDodge(
+                input.DodgeDirection,
+                state.Position,
+                GetCollisionRadius(),
+                out dashVelocity,
+                out duration)
+            : _player.TryResolveNetworkDodge(
+                input.DodgeDirection,
+                state.Position,
+                GetCollisionRadius(),
+                out dashVelocity,
+                out duration);
+
+        if (!resolvedDodge)
         {
             return;
         }
@@ -743,22 +758,36 @@ public class NetMovement3D : NetworkBehaviour
         state.DodgeVelocity = dashVelocity;
         state.DodgeExitVelocity = state.Velocity;
         state.DodgeRemainingTime = duration;
+        state.DodgeDuration = duration;
 
         if (validateDodge)
         {
             _lastAcceptedDodgeTick = input.Tick;
-            _dodgeAbility.MarkNetworkDodgeAccepted();
+            if (useClassDodgeAbility)
+            {
+                _dodgeAbility.MarkNetworkDodgeAccepted();
+            }
+            else
+            {
+                _player.MarkNetworkDodgeAccepted();
+            }
         }
     }
 
     private bool CanAcceptNetworkDodgeAtTick(int inputTick)
     {
-        if (_dodgeAbility == null || !_dodgeAbility.CanAcceptNetworkDodgeState())
+        bool useClassDodgeAbility = _dodgeAbility != null;
+        bool canAcceptState = useClassDodgeAbility
+            ? _dodgeAbility.CanAcceptNetworkDodgeState()
+            : _player != null && _player.CanAcceptNetworkDodgeState();
+        if (!canAcceptState)
         {
             return false;
         }
 
-        float cooldownDuration = Mathf.Max(0f, _dodgeAbility.GetNetworkDodgeCooldownDuration());
+        float cooldownDuration = Mathf.Max(0f, useClassDodgeAbility
+            ? _dodgeAbility.GetNetworkDodgeCooldownDuration()
+            : _player.GetNetworkDodgeCooldownDuration());
         int cooldownTicks = Mathf.CeilToInt(cooldownDuration / Mathf.Max(0.0001f, GetTickDeltaTime()));
         return _lastAcceptedDodgeTick < 0 || inputTick >= _lastAcceptedDodgeTick + cooldownTicks;
     }
@@ -769,7 +798,14 @@ public class NetMovement3D : NetworkBehaviour
         if (isDodgeActive && !_remoteDodgePresentationActive)
         {
             CacheReferences();
-            _dodgeAbility?.PlayNetworkDodgePresentation(state.DodgeVelocity);
+            if (_dodgeAbility != null)
+            {
+                _dodgeAbility.PlayNetworkDodgePresentation(state.DodgeVelocity);
+            }
+            else
+            {
+                _player?.PlayNetworkDodgePresentation(state.DodgeVelocity);
+            }
         }
 
         _remoteDodgePresentationActive = isDodgeActive;
@@ -778,7 +814,7 @@ public class NetMovement3D : NetworkBehaviour
     private static Vector3 GetEffectiveVelocity(in MovementState3D state)
     {
         return state.DodgeRemainingTime > 0.001f
-            ? state.Velocity + state.DodgeVelocity
+            ? state.Velocity + MovementSimulation3D.GetCurrentDodgeVelocity(state)
             : state.Velocity;
     }
 
@@ -836,7 +872,8 @@ public class NetMovement3D : NetworkBehaviour
             TurnRates = Vector2.zero,
             DodgeVelocity = Vector3.zero,
             DodgeExitVelocity = Vector3.zero,
-            DodgeRemainingTime = 0f
+            DodgeRemainingTime = 0f,
+            DodgeDuration = 0f
         };
     }
 
@@ -851,7 +888,8 @@ public class NetMovement3D : NetworkBehaviour
             TurnRates = snapshot.TurnRates,
             DodgeVelocity = snapshot.DodgeVelocity,
             DodgeExitVelocity = snapshot.DodgeExitVelocity,
-            DodgeRemainingTime = snapshot.DodgeRemainingTime
+            DodgeRemainingTime = snapshot.DodgeRemainingTime,
+            DodgeDuration = snapshot.DodgeDuration
         };
     }
 
@@ -869,7 +907,8 @@ public class NetMovement3D : NetworkBehaviour
             FrictionEnabled = frictionEnabled,
             DodgeVelocity = state.DodgeVelocity,
             DodgeExitVelocity = state.DodgeExitVelocity,
-            DodgeRemainingTime = state.DodgeRemainingTime
+            DodgeRemainingTime = state.DodgeRemainingTime,
+            DodgeDuration = state.DodgeDuration
         };
     }
 
@@ -1134,6 +1173,7 @@ public class NetMovement3D : NetworkBehaviour
             _ownerState.DodgeVelocity = Vector3.zero;
             _ownerState.DodgeExitVelocity = Vector3.zero;
             _ownerState.DodgeRemainingTime = 0f;
+            _ownerState.DodgeDuration = 0f;
         }
 
         if (_serverStateInitialized)
@@ -1142,6 +1182,7 @@ public class NetMovement3D : NetworkBehaviour
             _serverState.DodgeVelocity = Vector3.zero;
             _serverState.DodgeExitVelocity = Vector3.zero;
             _serverState.DodgeRemainingTime = 0f;
+            _serverState.DodgeDuration = 0f;
         }
 
         _shipFlight?.ApplyExternalSimulationState(

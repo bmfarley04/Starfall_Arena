@@ -33,6 +33,19 @@ Transform:
   - {fileID: 5916552770770675125}
   m_Father: {fileID: 1497443038219400980}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &9200000000000000002
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 507668435990495}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3a0c3a2dd905405f9cc204c46dfd9e67, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerBalanceProfileApplier3D
+  profile: {fileID: 11400000, guid: 4b0e7ae1d0a7445fabc5f4a279f538ef, type: 2}
 --- !u!1 &156134833942544853
 GameObject:
   m_ObjectHideFlags: 0
@@ -10839,6 +10852,7 @@ MonoBehaviour:
   deathEffects: {fileID: 2273685839450933136}
   playerInput3D: {fileID: 7607067697537861543}
   playerCameraRig3D: {fileID: 8106419607673637394}
+  aimAssist3D: {fileID: 0}
   hudManager3D: {fileID: 0}
   splitStateLightningRigs: []
   splitStateOffsetRigs: []
@@ -10846,6 +10860,13 @@ MonoBehaviour:
     enabled: 1
     rotationMultiplier: 3
     thrustMultiplier: 0.3
+  dodgeConfig:
+    enabled: 1
+    cooldown: 0.85
+    dodgeDistance: 14
+    slideDuration: 0.18
+    invulnerabilityDuration: 0.24
+  logDodgeDebug: 1
   audioConfig:
     shieldDamageSound: {fileID: 11400000, guid: fd2754dd24955964c99c8be0471fb1d2, type: 2}
     hullDamageSound: {fileID: 11400000, guid: f9265c3e881424f4da91b40830f8b194, type: 2}
@@ -10921,6 +10942,11 @@ MonoBehaviour:
     lateralAccelBankSensitivity: 0.1
     lateralDriftBankSensitivity: 0.5
     verticalDriftPitchSensitivity: 0.35
+  barrelRoll:
+    degrees: 360
+    durationMultiplier: 1.1
+    minDuration: 0.18
+    entryBankAngle: 28
 --- !u!114 &5146304943643758601
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -11074,7 +11100,13 @@ MonoBehaviour:
   shipFlight: {fileID: 279171780386237379}
   entity: {fileID: 4860835452147509291}
   playerInput: {fileID: 1971979917992463640}
+  aimAssist: {fileID: 0}
   mouseLookSensitivity: 0.5
+  dodgeFlickThreshold: 0.55
+  dodgeFlickResetThreshold: 0.35
+  dodgeFlickMaxVertical: 0.65
+  dodgeFlickMaxTime: 0.18
+  logDodgeFlickDebug: 1
 --- !u!114 &8106419607673637394
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -11107,6 +11139,10 @@ MonoBehaviour:
     followRotationDampingDuringTurn: 0.25
     aimDampingAtRest: 0.1
     aimDampingDuringTurn: 0.25
+  dodgeLagExtraDuration: 0.12
+  dodgePositionDamping: 0.85
+  dodgeRotationDamping: 0.45
+  dodgeAimDamping: 0.35
 --- !u!114 &2273685839450933136
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -11202,6 +11238,7 @@ MonoBehaviour:
     recoveryPerSecond: 30
   aimMode: 1
   aimCamera: {fileID: 0}
+  aimAssist: {fileID: 0}
   aimCollisionMask:
     serializedVersion: 2
     m_Bits: 4294967295
@@ -11253,6 +11290,7 @@ MonoBehaviour:
     recoveryPerSecond: 30
   aimMode: 1
   aimCamera: {fileID: 0}
+  aimAssist: {fileID: 0}
   aimCollisionMask:
     serializedVersion: 2
     m_Bits: 4294967295
@@ -11301,6 +11339,7 @@ MonoBehaviour:
     recoveryPerSecond: 30
   aimMode: 1
   aimCamera: {fileID: 0}
+  aimAssist: {fileID: 0}
   aimCollisionMask:
     serializedVersion: 2
     m_Bits: 4294967295
@@ -20740,16 +20779,3 @@ MonoBehaviour:
   mass: 0.5
   linearDamping: 0.5
   angularDamping: 0.3
---- !u!114 &9200000000000000002
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 507668435990495}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3a0c3a2dd905405f9cc204c46dfd9e67, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::PlayerBalanceProfileApplier3D
-  profile: {fileID: 11400000, guid: 4b0e7ae1d0a7445fabc5f4a279f538ef, type: 2}

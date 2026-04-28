@@ -4941,7 +4941,7 @@ Rigidbody:
   m_IsKinematic: 0
   m_Interpolate: 1
   m_Constraints: 0
-  m_CollisionDetection: 0
+  m_CollisionDetection: 2
 --- !u!114 &2916615696815183919
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4971,6 +4971,10 @@ MonoBehaviour:
   maxShield: 100
   shieldController: {fileID: 7074334004112924475}
   impulseRecoilPitchSensitivity: 1
+  uprightRecoveryEnabled: 1
+  uprightRecoveryDelay: 2.5
+  uprightRecoveryDegreesPerSecond: 90
+  uprightRecoveryInputDeadZone: 0.05
   weapons:
   - {fileID: 0}
   selectedWeaponIndex: 0
@@ -5077,6 +5081,7 @@ MonoBehaviour:
     recoveryPerSecond: 30
   aimMode: 1
   aimCamera: {fileID: 0}
+  aimAssist: {fileID: 0}
   aimCollisionMask:
     serializedVersion: 2
     m_Bits: 4294967295
@@ -5125,6 +5130,7 @@ MonoBehaviour:
   flightController: {fileID: 3132292780157064821}
   targetSensor: {fileID: 5880156582198937469}
   obstacleAvoidance: {fileID: 0}
+  patrol: {fileID: 0}
   beamWeapon: {fileID: 3081354594133750957}
   netEnemyCombat: {fileID: 0}
   thinkInterval: 0.05
@@ -5139,6 +5145,19 @@ MonoBehaviour:
   lineOfSightMask:
     serializedVersion: 2
     m_Bits: 4294967295
+--- !u!114 &9100000000000000002
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2461026213711029054}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bfab71f04e15488aa75cd8ce1856c6d3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyBalanceProfileApplier3D
+  profile: {fileID: 11400000, guid: 2f091593120f4c7abaf88bb712fd532d, type: 2}
 --- !u!1 &2884287284395979221
 GameObject:
   m_ObjectHideFlags: 0
@@ -10410,17 +10429,3 @@ MonoBehaviour:
   mass: 0.5
   linearDamping: 0.5
   angularDamping: 0.3
-
---- !u!114 &9100000000000000002
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2461026213711029054}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: bfab71f04e15488aa75cd8ce1856c6d3, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::EnemyBalanceProfileApplier3D
-  profile: {fileID: 11400000, guid: 2f091593120f4c7abaf88bb712fd532d, type: 2}

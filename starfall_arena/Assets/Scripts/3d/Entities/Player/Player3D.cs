@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -23,6 +24,21 @@ public class Player3D : Entity3D
         public float rotationMultiplier;
         [Tooltip("Multiplies ShipFlight3D thrust acceleration while Anchor is held. Zero fully suppresses thrust.")]
         public float thrustMultiplier;
+    }
+
+    [System.Serializable]
+    public struct PlayerDodgeConfig3D
+    {
+        [Tooltip("If disabled, left-stick flick dodge input is ignored for this player.")]
+        public bool enabled;
+        [Tooltip("Seconds before another generic flick dodge can be accepted.")]
+        public float cooldown;
+        [Tooltip("World distance covered by the dodge slide.")]
+        public float dodgeDistance;
+        [Tooltip("Seconds spent sliding sideways.")]
+        public float slideDuration;
+        [Tooltip("Seconds of invulnerability granted when the dodge begins.")]
+        public float invulnerabilityDuration;
     }
 
     [System.Serializable]
@@ -55,6 +71,17 @@ public class Player3D : Entity3D
         rotationMultiplier = 3f,
         thrustMultiplier = 0f
     };
+    [Header("Flick Dodge")]
+    [SerializeField] private PlayerDodgeConfig3D dodgeConfig = new PlayerDodgeConfig3D
+    {
+        enabled = true,
+        cooldown = 0.85f,
+        dodgeDistance = 14f,
+        slideDuration = 0.18f,
+        invulnerabilityDuration = 0.24f
+    };
+    [Tooltip("Logs generic/player dodge acceptance and rejection reasons.")]
+    [SerializeField] private bool logDodgeDebug = true;
     [Header("Player 3D Audio")]
     [SerializeField] private Player3DAudioConfig audioConfig = new Player3DAudioConfig
     {
@@ -83,12 +110,17 @@ public class Player3D : Entity3D
     private AudioSource[] _audioSourcePool;
     private AudioSource _beamHitLoopSource;
     private PlayerChromaticAberration3D _chromaticAberrationFx;
+    private NetMovement3D _netMovement3D;
+    private Coroutine _localDodgeCoroutine;
     private float _lastBeamDamageTime = float.NegativeInfinity;
     private float _lastShieldHitTime = float.NegativeInfinity;
     private float _nextShieldRegenSyncTime = float.NegativeInfinity;
+    private float _lastDodgeTime = float.NegativeInfinity;
+    private float _dodgeInvulnerableUntil = float.NegativeInfinity;
     private bool _anchorHeld;
 
     public bool IsAnchorActive => anchorConfig.enabled && _anchorHeld;
+    public bool IsDodgeInvulnerable => Time.time < _dodgeInvulnerableUntil;
 
     public void ApplyProfile(PlayerBalanceProfile3D.CoreStats core)
     {
@@ -107,6 +139,7 @@ public class Player3D : Entity3D
         playerCameraRig3D ??= GetComponent<PlayerCameraRig3D>();
         aimAssist3D ??= GetComponent<AimAssist3D>();
         _chromaticAberrationFx = GetComponent<PlayerChromaticAberration3D>();
+        _netMovement3D = GetComponent<NetMovement3D>();
         InitializeAudio();
 
         if (playerInput3D != null && shipFlight != null)
@@ -151,6 +184,136 @@ public class Player3D : Entity3D
         ApplySplitStatePresentation();
     }
 
+    public bool TryDodge(int horizontalDirection)
+    {
+        if (horizontalDirection == 0)
+        {
+            LogDodgeRejected("horizontalDirection was 0");
+            return false;
+        }
+
+        if (!CanUseGenericDodge(out string rejectionReason))
+        {
+            LogDodgeRejected(rejectionReason);
+            return false;
+        }
+
+        Vector3 worldDirection = ResolveDodgeDirection(horizontalDirection);
+        if (worldDirection.sqrMagnitude <= 0.0001f)
+        {
+            LogDodgeRejected($"resolved world direction was zero. horizontalDirection={horizontalDirection}");
+            return false;
+        }
+
+        LogDodgeDebug($"try dodge accepted preflight. direction={(horizontalDirection > 0 ? "right" : "left")} worldDirection={worldDirection} networkActive={NetTickUtil.IsActive}");
+
+        _netMovement3D ??= GetComponent<NetMovement3D>();
+        if (CanUseNetworkDodgeMovement(_netMovement3D))
+        {
+            Dodge3D classDodgeAbility = GetComponent<Dodge3D>();
+            if (classDodgeAbility != null && !classDodgeAbility.CanAcceptNetworkDodgeRequest())
+            {
+                LogDodgeRejected("class Dodge3D ability rejected network dodge request");
+                return false;
+            }
+
+            if (!_netMovement3D.QueuePredictedDodge(worldDirection))
+            {
+                LogDodgeRejected("NetMovement3D.QueuePredictedDodge returned false");
+                return false;
+            }
+
+            if (classDodgeAbility != null)
+            {
+                LogDodgeDebug("queued class Dodge3D predicted dodge");
+                classDodgeAbility.MarkNetworkDodgeAccepted();
+                classDodgeAbility.PlayNetworkDodgePresentation(worldDirection);
+                return true;
+            }
+
+            MarkGenericDodgeAccepted();
+            PlayGenericDodgePresentation(worldDirection);
+            LogDodgeDebug("queued generic predicted dodge");
+            return true;
+        }
+
+        MarkGenericDodgeAccepted();
+        PlayGenericDodgePresentation(worldDirection);
+        StartLocalDodgeFallback(
+            worldDirection.normalized,
+            Mathf.Max(0.01f, dodgeConfig.dodgeDistance),
+            Mathf.Max(0.01f, dodgeConfig.slideDuration));
+        LogDodgeDebug("started local dodge fallback");
+        return true;
+    }
+
+    public bool CanAcceptNetworkDodgeState()
+    {
+        return dodgeConfig.enabled && currentHealth > 0f;
+    }
+
+    public float GetNetworkDodgeCooldownDuration()
+    {
+        return Mathf.Max(0f, dodgeConfig.cooldown);
+    }
+
+    public bool TryResolveNetworkDodge(
+        Vector3 worldDirection,
+        Vector3 startPosition,
+        float collisionRadius,
+        out Vector3 dashVelocity,
+        out float duration)
+    {
+        dashVelocity = Vector3.zero;
+        duration = Mathf.Max(0.01f, dodgeConfig.slideDuration);
+
+        if (!CanAcceptNetworkDodgeState() || worldDirection.sqrMagnitude <= 0.0001f)
+        {
+            return false;
+        }
+
+        Vector3 targetPosition = startPosition + (worldDirection.normalized * Mathf.Max(0.01f, dodgeConfig.dodgeDistance));
+        Vector3 clampedTarget = ClampDodgePosition(targetPosition, collisionRadius);
+        dashVelocity = (clampedTarget - startPosition) / duration;
+        return dashVelocity.sqrMagnitude > 0.000001f;
+    }
+
+    public void MarkNetworkDodgeAccepted()
+    {
+        MarkGenericDodgeAccepted();
+    }
+
+    public void PlayNetworkDodgePresentation(Vector3 worldDirection)
+    {
+        PlayGenericDodgePresentation(worldDirection);
+    }
+
+    public void BeginDodgeInvulnerability(float duration)
+    {
+        if (duration <= 0f)
+        {
+            return;
+        }
+
+        _dodgeInvulnerableUntil = Mathf.Max(_dodgeInvulnerableUntil, Time.time + duration);
+    }
+
+    public void BeginDodgeCameraLag(float duration)
+    {
+        playerCameraRig3D?.BeginDodgeLag(duration);
+    }
+
+    public void BeginDodgeBarrelRoll(Vector3 worldDirection, float duration)
+    {
+        if (worldDirection.sqrMagnitude <= 0.0001f)
+        {
+            return;
+        }
+
+        int horizontalDirection = Vector3.Dot(worldDirection.normalized, transform.right) >= 0f ? 1 : -1;
+        shipVisualTilt?.BeginBarrelRoll(horizontalDirection, duration);
+    }
+
     public override void TakeDamage(
         float damage,
         Vector3 hitPoint,
@@ -158,6 +321,11 @@ public class Player3D : Entity3D
         DamageSource3D source = DamageSource3D.Projectile,
         int accuracyAttackId = PlayerCombatStats3D.InvalidAttackId)
     {
+        if (IsDodgeInvulnerable)
+        {
+            return;
+        }
+
         _lastShieldHitTime = Time.time;
         float previousShield = currentShield;
         float previousHealth = currentHealth;
@@ -203,6 +371,8 @@ public class Player3D : Entity3D
     protected override void Die()
     {
         _anchorHeld = false;
+        StopLocalDodgeFallback();
+        _dodgeInvulnerableUntil = float.NegativeInfinity;
         ApplySplitStatePresentation();
         StopBeamHitLoop();
         _chromaticAberrationFx?.ClearEffect();
@@ -213,6 +383,8 @@ public class Player3D : Entity3D
     {
         UnsubscribeFromWeaponAvailability();
         _anchorHeld = false;
+        StopLocalDodgeFallback();
+        _dodgeInvulnerableUntil = float.NegativeInfinity;
         ApplySplitStatePresentation();
         StopBeamHitLoop();
         _chromaticAberrationFx?.ClearEffect();
@@ -302,6 +474,11 @@ public class Player3D : Entity3D
         Entity3D attacker = null,
         int accuracyAttackId = PlayerCombatStats3D.InvalidAttackId)
     {
+        if (IsDodgeInvulnerable)
+        {
+            return;
+        }
+
         _lastShieldHitTime = Time.time;
         base.TakeDirectDamage(damage, hitPoint, attacker, accuracyAttackId);
     }
@@ -542,5 +719,183 @@ public class Player3D : Entity3D
                 _nextShieldRegenSyncTime = Time.time + regenSyncInterval;
             }
         }
+    }
+
+    private bool CanUseGenericDodge(out string rejectionReason)
+    {
+        if (!dodgeConfig.enabled)
+        {
+            rejectionReason = "dodgeConfig.enabled is false";
+            return false;
+        }
+
+        if (currentHealth <= 0f)
+        {
+            rejectionReason = $"player health is not positive currentHealth={currentHealth:0.00}";
+            return false;
+        }
+
+        float readyTime = _lastDodgeTime + Mathf.Max(0f, dodgeConfig.cooldown);
+        if (Time.time < readyTime)
+        {
+            rejectionReason = $"on cooldown remaining={readyTime - Time.time:0.000}s cooldown={dodgeConfig.cooldown:0.000}s";
+            return false;
+        }
+
+        rejectionReason = string.Empty;
+        return true;
+    }
+
+    private void MarkGenericDodgeAccepted()
+    {
+        _lastDodgeTime = Time.time;
+        BeginDodgeInvulnerability(Mathf.Max(0f, dodgeConfig.invulnerabilityDuration));
+        LogDodgeDebug($"marked dodge accepted. cooldown={dodgeConfig.cooldown:0.000}s iframes={dodgeConfig.invulnerabilityDuration:0.000}s");
+    }
+
+    private void PlayGenericDodgePresentation(Vector3 worldDirection)
+    {
+        BeginDodgeInvulnerability(Mathf.Max(0f, dodgeConfig.invulnerabilityDuration));
+        BeginDodgeCameraLag(Mathf.Max(dodgeConfig.slideDuration, dodgeConfig.invulnerabilityDuration));
+        BeginDodgeBarrelRoll(worldDirection, Mathf.Max(0.01f, dodgeConfig.slideDuration));
+        RecordCombatActivity(0.25f);
+        LogDodgeDebug($"played dodge presentation. worldDirection={worldDirection} slideDuration={dodgeConfig.slideDuration:0.000}s distance={dodgeConfig.dodgeDistance:0.00}");
+    }
+
+    private Vector3 ResolveDodgeDirection(int horizontalDirection)
+    {
+        Vector3 direction = horizontalDirection >= 0 ? transform.right : -transform.right;
+        if (shipFlight != null && shipFlight.LockToWorldYPlane)
+        {
+            direction = Vector3.ProjectOnPlane(direction, Vector3.up);
+        }
+
+        if (direction.sqrMagnitude > 0.0001f)
+        {
+            return direction.normalized;
+        }
+
+        return horizontalDirection >= 0 ? Vector3.right : Vector3.left;
+    }
+
+    private void StartLocalDodgeFallback(Vector3 worldDirection, float dodgeDistance, float slideDuration)
+    {
+        StopLocalDodgeFallback();
+        _localDodgeCoroutine = StartCoroutine(LocalDodgeSlideCoroutine(worldDirection, dodgeDistance, slideDuration));
+    }
+
+    private IEnumerator LocalDodgeSlideCoroutine(Vector3 worldDirection, float dodgeDistance, float slideDuration)
+    {
+        Rigidbody rb = shipFlight != null ? shipFlight.Rigidbody : null;
+        if (rb == null)
+        {
+            _localDodgeCoroutine = null;
+            yield break;
+        }
+
+        float collisionRadius = ResolveCollisionRadius();
+        Vector3 startPosition = rb.position;
+        Vector3 targetPosition = ClampDodgePosition(startPosition + (worldDirection.normalized * dodgeDistance), collisionRadius);
+        Vector3 previousPosition = startPosition;
+        float elapsed = 0f;
+
+        while (elapsed < slideDuration)
+        {
+            elapsed += Time.fixedDeltaTime;
+            float t = Mathf.Clamp01(elapsed / slideDuration);
+            float eased = MovementSimulation3D.EaseOutCubic(t);
+            Vector3 flightDelta = rb.position - previousPosition;
+            startPosition += flightDelta;
+            targetPosition += flightDelta;
+
+            Vector3 currentPosition = Vector3.Lerp(startPosition, targetPosition, eased);
+            currentPosition = ClampDodgePosition(currentPosition, collisionRadius);
+            rb.MovePosition(currentPosition);
+            previousPosition = currentPosition;
+            yield return new WaitForFixedUpdate();
+        }
+
+        Vector3 finalPosition = ClampDodgePosition(targetPosition, collisionRadius);
+        rb.position = finalPosition;
+        transform.position = finalPosition;
+        _localDodgeCoroutine = null;
+    }
+
+    private void StopLocalDodgeFallback()
+    {
+        if (_localDodgeCoroutine == null)
+        {
+            return;
+        }
+
+        StopCoroutine(_localDodgeCoroutine);
+        _localDodgeCoroutine = null;
+    }
+
+    private float ResolveCollisionRadius()
+    {
+        _netMovement3D ??= GetComponent<NetMovement3D>();
+        if (_netMovement3D != null)
+        {
+            return _netMovement3D.GetCollisionRadius();
+        }
+
+        Collider collider3D = GetComponent<Collider>();
+        if (collider3D != null)
+        {
+            Bounds bounds = collider3D.bounds;
+            return Mathf.Max(bounds.extents.x, bounds.extents.y, bounds.extents.z);
+        }
+
+        Collider[] childColliders = GetComponentsInChildren<Collider>();
+        float radius = 0.5f;
+        for (int i = 0; i < childColliders.Length; i++)
+        {
+            Collider child = childColliders[i];
+            if (child == null)
+            {
+                continue;
+            }
+
+            Bounds bounds = child.bounds;
+            radius = Mathf.Max(radius, bounds.extents.x, bounds.extents.y, bounds.extents.z);
+        }
+
+        return radius;
+    }
+
+    private static Vector3 ClampDodgePosition(Vector3 targetPosition, float collisionRadius)
+    {
+        if (!ArenaBoundary3D.TryGetActive(out ArenaBoundary3D boundary) || !boundary.BlocksMovement)
+        {
+            return targetPosition;
+        }
+
+        return boundary.ClampPositionInside(targetPosition, collisionRadius);
+    }
+
+    private static bool CanUseNetworkDodgeMovement(NetMovement3D movement)
+    {
+        return movement != null && NetTickUtil.IsActive && movement.IsSpawned && movement.IsOwner;
+    }
+
+    private void LogDodgeRejected(string reason)
+    {
+        if (!logDodgeDebug)
+        {
+            return;
+        }
+
+        Debug.Log($"[Dodge3D] {name} dodge rejected: {reason}", this);
+    }
+
+    private void LogDodgeDebug(string message)
+    {
+        if (!logDodgeDebug)
+        {
+            return;
+        }
+
+        Debug.Log($"[Dodge3D] {name} {message}", this);
     }
 }

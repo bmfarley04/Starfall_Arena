@@ -26325,14 +26325,6 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
-    - target: {fileID: 111100000000000103, guid: dcd0d058af7406e4b869c55e797967e0, type: 3}
-      propertyPath: guidedMissile.baseProjectile.speed
-      value: 180
-      objectReference: {fileID: 0}
-    - target: {fileID: 111100000000000103, guid: dcd0d058af7406e4b869c55e797967e0, type: 3}
-      propertyPath: guidedMissile.baseProjectile.cooldown
-      value: 5
-      objectReference: {fileID: 0}
     - target: {fileID: 2405419149928654638, guid: dcd0d058af7406e4b869c55e797967e0, type: 3}
       propertyPath: chromaticConfig.volume
       value: 
