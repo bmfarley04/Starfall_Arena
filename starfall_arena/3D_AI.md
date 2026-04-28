@@ -26,6 +26,11 @@ The 3D AI path should stay modular. Enemy prefabs should compose small scripts i
   - intended for asteroids and world geometry
   - this is steering/avoidance, not Unity NavMesh
   - currently not implemented anywhere since it was extremely buggy
+- `EnemySeparation3D`
+  - shared inter-agent separation steering helper that mirrors the `EnemyObstacleAvoidance3D` API (`ResolveSteeringDirection(Vector3 desired)`)
+  - non-alloc `OverlapSphere` against an `agentMask` LayerMask; pushes the desired direction away from same-faction allies inside `allyRadius` and biases laterally away from non-ally entities (e.g. the player) inside the smaller `playerProximityRadius`
+  - intended chaining: `desired -> separation -> obstacleAvoidance -> flight controller`
+  - currently consumed by `RammerEnemyBrain3D` (gated behind a `useSeparation` brain toggle); other enemy brains can opt in by adding the component to their prefab and calling its API the same way
 - `BasicShooterEnemyBrain3D`
   - first Invasion enemy behavior
   - directly pursues the nearest player
@@ -58,7 +63,11 @@ The 3D AI path should stay modular. Enemy prefabs should compose small scripts i
   - fast strike enemy whose only gimmick is slamming into the player to displace them
   - pursues the nearest player at full speed, no stop band, no projectiles, no abilities
   - on contact (overlap-sphere check around `ramDetectionDistance`), applies small chip damage and calls `NetMovement3D.ApplyCombatVelocityDelta(awayDirection * knockbackVelocity)` on the hit player so the velocity boost replicates correctly across the network (same hook the existing weapon-recoil path already uses)
-  - after a hit, enters a disengage state for `disengageDuration` seconds (or until the rammer is `disengageDistance` away), steering directly away from the target so it visibly arcs out and turns around instead of grinding on the player's hull
+  - contact detection runs every `FixedUpdate` (independent of the steering think interval) so a high-closure-rate approach can never skip past the trigger threshold and end up embedded in the player's geometry before the hit fires
+  - on hit, enters a layered disengage: a short reverse-thrust eject window (`ejectDuration`, default 0.35s) where the rammer keeps its nose pointed at the target but is physically pulled backward at full `moveSpeed` via `EnemyAIFlightController3D.SetFlightIntent(awayDirection, toTargetDirection, 1f, moveBackward: true)`, followed by the existing face-away forward disengage for the remainder of `disengageDuration`. The eject phase prevents the rammer from freezing in place inside the player's collider while rotating around (see `3D_BUGS.md`)
+  - while disengaging, every collider on the rammer is paired with every collider on the rammed entity through `Physics.IgnoreCollision(..., true)` and reverted on disengage end, `OnDisable`, or target loss. This guarantees no physical entanglement with the player after impact even in pathological cases (player charging in, multiple rammers piling on, etc.). Gated behind `useCollisionExemption` for designer override
+  - separation steering (`EnemySeparation3D`) is wired into both pursuit and post-eject disengage so a swarm of rammers fans out on approach instead of all converging on the same vector
+  - `ramDetectionDistance` should be tuned to at least `(rammer collider radius + target collider radius + ~0.5m safety)` so the hit fires before geometric overlap
   - survives the impact - this is not a kamikaze. Knockback is the entire identity; damage is secondary.
 
 ## Architecture Rules
@@ -93,7 +102,8 @@ Planned later pathing layers may include:
 - formation anchors
 - tactical orbit/kite positions
 - flow-field or waypoint goals for large waves
-- local separation between enemies
+
+Local separation between enemies is now implemented as `EnemySeparation3D` (currently consumed by `RammerEnemyBrain3D`); other brains can opt in by adding the component to their prefab and routing their desired steering vector through it the same way they route through `EnemyObstacleAvoidance3D`.
 
 ## Old Stellar Onslaught Inspiration
 
