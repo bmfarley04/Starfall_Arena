@@ -130,9 +130,10 @@ The 3D AI path should stay modular. Enemy prefabs should compose small scripts i
 - `TriumvirateEnemyBrain3D`
   - coordinated low-health beam enemy intended to spawn in groups of three
   - the lowest-instance surviving member acts as the server-authoritative coordinator and directly assigns formation/facing intents to the surviving squad
-  - the squad first moves into a triangle formation near the target, holds briefly, then reveals cosmetic lightning links in order: member `0 -> 1`, `1 -> 2`, `2 -> 0`
+  - each member can declare a fixed `Formation Slot Preference` (`Top`, `LowerLeft`, or `LowerRight`); `Auto` members are assigned a stable open slot by the coordinator so the triangle does not reshuffle while the ships are moving
+  - the squad first moves into a small triangle formation around its current group center, holds briefly, then reveals cosmetic lightning links in order: member `0 -> 1`, `1 -> 2`, `2 -> 0`
   - formation approach faces each member toward its assigned slot until it arrives, then turns toward the player; this matches `EnemyAIFlightController3D`'s forward-move contract and prevents local test scenes from freezing after target acquisition
-  - uses a vertical two-low / one-high triangle by default; `Keep Formation On World Y Plane` is only a fallback for planar-only test prefabs and should be off for the intended read
+  - uses a compact vertical two-low / one-high triangle by default; tune `Vertical Triangle Width` and `Vertical Triangle Height` for the intended read, and leave `Anchor Formation Near Current Squad` enabled unless the squad should intentionally relocate to a fixed target distance before linking
   - final beam fire starts from every surviving member and converges on the target; damage is divided per emitter so the configured one/two/three-member DPS remains the total squad damage
   - `Log State Changes` reports state transitions and major milestones, while `Log Formation Progress` reports repeated slot-distance diagnostics during setup testing
   - if one or two members die before the final beam, the remaining members continue the pattern with fewer links and lower final beam damage; only the full three-member beam applies the configured slow

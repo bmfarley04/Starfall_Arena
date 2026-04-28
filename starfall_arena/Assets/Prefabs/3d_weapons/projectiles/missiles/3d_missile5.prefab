@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 452450}
   - component: {fileID: 19852452}
   - component: {fileID: 19952452}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: Flame
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -4743,7 +4743,7 @@ GameObject:
   - component: {fileID: 3352454}
   - component: {fileID: 2352454}
   - component: {fileID: -7760053660490831882}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: 3d_missile5
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -4875,7 +4875,7 @@ GameObject:
   - component: {fileID: 452454}
   - component: {fileID: 19852454}
   - component: {fileID: 19952454}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: SmokeTrail
   m_TagString: Untagged
   m_Icon: {fileID: 0}

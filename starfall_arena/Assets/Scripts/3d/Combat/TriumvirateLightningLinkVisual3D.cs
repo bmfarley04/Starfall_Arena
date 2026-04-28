@@ -17,72 +17,31 @@ public class TriumvirateLightningLinkVisual3D : MonoBehaviour
     [Tooltip("Seconds between link randomization steps.")]
     [SerializeField] private float jitterInterval = 0.05f;
 
-    private LineRenderer _lineRenderer;
-    private ParticleSystem[] _particles;
-    private float _nextJitterTime;
+    private ForgeEnemyBeam3D _forgeBeam;
+    private bool _linkStarted;
 
     private void Awake()
     {
-        _lineRenderer = GetComponentInChildren<LineRenderer>(true);
-        _particles = GetComponentsInChildren<ParticleSystem>(true);
-        DisablePrefabBeamRuntime();
+        _forgeBeam = GetComponent<ForgeEnemyBeam3D>();
+        DisableStockForgeLightning();
     }
 
     private void OnEnable()
     {
-        PlayParticles();
-        _nextJitterTime = 0f;
+        StartForgeLink();
     }
 
     private void OnDisable()
     {
-        StopParticles();
+        _forgeBeam?.StopFiring();
+        _linkStarted = false;
     }
 
     private void LateUpdate()
     {
-        if (startAnchor == null || endAnchor == null || _lineRenderer == null)
+        if (!_linkStarted)
         {
-            return;
-        }
-
-        Vector3 start = startAnchor.position;
-        Vector3 end = endAnchor.position;
-        Vector3 span = end - start;
-        float distance = span.magnitude;
-        if (distance <= 0.001f)
-        {
-            return;
-        }
-
-        Vector3 forward = span / distance;
-        transform.position = start;
-        transform.rotation = Quaternion.LookRotation(forward, ResolveUpVector(forward));
-
-        int resolvedPointCount = Mathf.Max(2, pointCount);
-        if (_lineRenderer.positionCount != resolvedPointCount)
-        {
-            _lineRenderer.positionCount = resolvedPointCount;
-            _nextJitterTime = 0f;
-        }
-
-        _lineRenderer.useWorldSpace = false;
-        _lineRenderer.SetPosition(0, Vector3.zero);
-        _lineRenderer.SetPosition(resolvedPointCount - 1, new Vector3(0f, 0f, distance));
-
-        if (Time.time < _nextJitterTime)
-        {
-            return;
-        }
-
-        _nextJitterTime = Time.time + Mathf.Max(0.01f, jitterInterval);
-        float lastPointIndex = Mathf.Max(1f, resolvedPointCount - 1f);
-        for (int i = 1; i < resolvedPointCount - 1; i++)
-        {
-            float z = distance * (i / lastPointIndex);
-            float x = Random.Range(-amplitude, amplitude);
-            float y = Random.Range(-amplitude, amplitude);
-            _lineRenderer.SetPosition(i, new Vector3(x, y, z));
+            StartForgeLink();
         }
     }
 
@@ -93,67 +52,30 @@ public class TriumvirateLightningLinkVisual3D : MonoBehaviour
         pointCount = Mathf.Max(2, linePointCount);
         amplitude = Mathf.Max(0f, lineAmplitude);
         jitterInterval = Mathf.Max(0.01f, lineJitterInterval);
-        _nextJitterTime = 0f;
+        _linkStarted = false;
+        StartForgeLink();
     }
 
-    private void DisablePrefabBeamRuntime()
+    private void StartForgeLink()
     {
-        ForgeEnemyBeam3D forgeBeam = GetComponent<ForgeEnemyBeam3D>();
-        if (forgeBeam != null)
-        {
-            forgeBeam.enabled = false;
-        }
-
-        FORGE3D.F3DLightning forgeLightning = GetComponent<FORGE3D.F3DLightning>();
-        if (forgeLightning != null)
-        {
-            forgeLightning.enabled = false;
-        }
-    }
-
-    private void PlayParticles()
-    {
-        if (_particles == null)
+        if (_forgeBeam == null || startAnchor == null || endAnchor == null)
         {
             return;
         }
 
-        for (int i = 0; i < _particles.Length; i++)
-        {
-            if (_particles[i] == null)
-            {
-                continue;
-            }
-
-            _particles[i].Clear(true);
-            _particles[i].Play(true);
-        }
+        _forgeBeam.StartCosmeticLink(startAnchor, endAnchor, pointCount, amplitude, jitterInterval);
+        _linkStarted = true;
     }
 
-    private void StopParticles()
+    private void DisableStockForgeLightning()
     {
-        if (_particles == null)
+        FORGE3D.F3DLightning[] forgeLightnings = GetComponentsInChildren<FORGE3D.F3DLightning>(true);
+        for (int i = 0; i < forgeLightnings.Length; i++)
         {
-            return;
-        }
-
-        for (int i = 0; i < _particles.Length; i++)
-        {
-            if (_particles[i] != null)
+            if (forgeLightnings[i] != null)
             {
-                _particles[i].Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+                forgeLightnings[i].enabled = false;
             }
         }
-    }
-
-    private static Vector3 ResolveUpVector(Vector3 forward)
-    {
-        Vector3 normalizedForward = forward.sqrMagnitude > 0.0001f ? forward.normalized : Vector3.forward;
-        if (Mathf.Abs(Vector3.Dot(normalizedForward, Vector3.up)) > 0.98f)
-        {
-            return Vector3.right;
-        }
-
-        return Vector3.up;
     }
 }

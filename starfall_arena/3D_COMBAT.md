@@ -121,7 +121,8 @@ Base input rule:
   - should be used for the artillery enemy Forge beam path instead of layering Forge visuals on top of `LaserBeam3D`
 - `TriumvirateLightningLinkVisual3D`
   - cosmetic-only ship-to-ship lightning link driver for Triumvirate-style enemy tells
-  - can reuse the `enemy_lightning_beam` visual prefab, but disables gameplay beam/raycast scripts on the spawned link instance and drives the line renderer between two enemy anchors
+  - can reuse the `enemy_lightning_beam` visual prefab by disabling stock Forge `F3DLightning` scripts and starting `ForgeEnemyBeam3D` in fixed-endpoint cosmetic link mode between two enemy anchors
+  - relies on the same Forge enemy beam visual runtime as the final beam, so line renderer length, jitter, muzzle/impact anchors, and UV scrolling stay consistent between link tells and the damaging beam
   - does not apply damage, slow, force, or network authority; player-facing damage stays in the enemy brain/final beam path
 - `BeamWeapon3D`
   - beam-capacity weapons can now enforce a minimum remaining energy threshold before the beam is allowed to start again

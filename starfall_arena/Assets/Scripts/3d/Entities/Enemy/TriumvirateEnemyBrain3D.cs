@@ -18,7 +18,19 @@ public class TriumvirateEnemyBrain3D : NetworkBehaviour
         Cooldown
     }
 
+    private enum FormationSlotPreference
+    {
+        Auto,
+        Top,
+        LowerLeft,
+        LowerRight
+    }
+
     private static readonly RaycastHit[] BeamHits = new RaycastHit[16];
+    private const int TopSlotIndex = 0;
+    private const int LowerLeftSlotIndex = 1;
+    private const int LowerRightSlotIndex = 2;
+    private const int FormationSlotCount = 3;
 
     [Header("Squad")]
     [Tooltip("Optional authored squad references. Leave empty to auto-link to the closest Triumvirate members with the same Squad Key.")]
@@ -31,10 +43,18 @@ public class TriumvirateEnemyBrain3D : NetworkBehaviour
     [SerializeField] private float autoLinkRetryInterval = 0.5f;
 
     [Header("Formation")]
-    [Tooltip("Distance from the target where the triangle center should settle before linking.")]
+    [Tooltip("Optional fixed slot for this squad member. Leave Auto to let the coordinator assign a stable slot when the squad first forms.")]
+    [SerializeField] private FormationSlotPreference formationSlotPreference = FormationSlotPreference.Auto;
+    [Tooltip("Distance from the target where the triangle center should settle before linking when Anchor Formation Near Current Squad is disabled.")]
     [SerializeField] private float formationDistanceFromTarget = 32f;
     [Tooltip("Radius of the triangle each surviving member tries to occupy.")]
     [SerializeField] private float triangleRadius = 8f;
+    [Tooltip("If true, the squad forms its triangle around its current group center instead of first relocating to Formation Distance From Target.")]
+    [SerializeField] private bool anchorFormationNearCurrentSquad = true;
+    [Tooltip("Horizontal spacing between the two lower ships in the vertical triangle formation.")]
+    [SerializeField] private float verticalTriangleWidth = 8f;
+    [Tooltip("Height of the upper ship above the two lower ships in the vertical triangle formation.")]
+    [SerializeField] private float verticalTriangleHeight = 3f;
     [Tooltip("How close each ship must be to its assigned triangle point before linking can begin.")]
     [SerializeField] private float formationTolerance = 2.25f;
     [Tooltip("Speed scale used while moving into the triangle formation.")]
@@ -99,6 +119,7 @@ public class TriumvirateEnemyBrain3D : NetworkBehaviour
     private readonly List<TriumvirateEnemyBrain3D> _activeMembers = new List<TriumvirateEnemyBrain3D>(3);
     private readonly List<GameObject> _activeLinks = new List<GameObject>(3);
     private readonly List<(TriumvirateEnemyBrain3D A, TriumvirateEnemyBrain3D B)> _pendingLinks = new List<(TriumvirateEnemyBrain3D, TriumvirateEnemyBrain3D)>(3);
+    private readonly bool[] _claimedFormationSlots = new bool[FormationSlotCount];
 
     private Enemy3D _enemy;
     private EnemyAIFlightController3D _flightController;
@@ -112,6 +133,8 @@ public class TriumvirateEnemyBrain3D : NetworkBehaviour
     private int _lastActiveMemberCount;
     private bool _beamActive;
     private float _nextFormationProgressLogTime;
+    private int _assignedFormationSlot = -1;
+    private bool _loggedDuplicateFormationSlot;
 
     private bool IsAlive => _enemy != null && _enemy.CurrentHealth > 0f && gameObject.activeInHierarchy;
 
@@ -211,11 +234,15 @@ public class TriumvirateEnemyBrain3D : NetworkBehaviour
     private bool MoveSquadIntoFormation(Entity3D target)
     {
         bool allInPlace = true;
+        EnsureFormationSlotAssignments();
         Vector3 targetPosition = ResolveTargetPoint(target);
-        Vector3 centerDirection = (transform.position - targetPosition).sqrMagnitude > 0.0001f
-            ? (transform.position - targetPosition).normalized
+        Vector3 squadCenter = ResolveActiveSquadCenter();
+        Vector3 centerDirection = (squadCenter - targetPosition).sqrMagnitude > 0.0001f
+            ? (squadCenter - targetPosition).normalized
             : -target.transform.forward;
-        Vector3 center = targetPosition + centerDirection * Mathf.Max(1f, formationDistanceFromTarget);
+        Vector3 center = anchorFormationNearCurrentSquad
+            ? squadCenter
+            : targetPosition + centerDirection * Mathf.Max(1f, formationDistanceFromTarget);
         Vector3 toTarget = (targetPosition - center).sqrMagnitude > 0.0001f
             ? (targetPosition - center).normalized
             : transform.forward;
@@ -236,7 +263,17 @@ public class TriumvirateEnemyBrain3D : NetworkBehaviour
                 continue;
             }
 
-            Vector3 slot = ResolveFormationSlot(center, right, formationUp, i, _activeMembers.Count, triangleRadius, keepFormationOnWorldYPlane);
+            int formationSlot = ResolveMemberFormationSlot(member, i);
+            Vector3 slot = ResolveFormationSlot(
+                center,
+                right,
+                formationUp,
+                formationSlot,
+                _activeMembers.Count,
+                triangleRadius,
+                keepFormationOnWorldYPlane,
+                verticalTriangleWidth,
+                verticalTriangleHeight);
             Vector3 toSlot = slot - member.transform.position;
             float distance = toSlot.magnitude;
             farthestMemberDistance = Mathf.Max(farthestMemberDistance, distance);
@@ -745,6 +782,140 @@ public class TriumvirateEnemyBrain3D : NetworkBehaviour
         Debug.Log($"[{nameof(TriumvirateEnemyBrain3D)}] {name}: {message}", this);
     }
 
+    private Vector3 ResolveActiveSquadCenter()
+    {
+        RefreshActiveMembers();
+        if (_activeMembers.Count == 0)
+        {
+            return transform.position;
+        }
+
+        Vector3 center = Vector3.zero;
+        int count = 0;
+        for (int i = 0; i < _activeMembers.Count; i++)
+        {
+            TriumvirateEnemyBrain3D member = _activeMembers[i];
+            if (member == null || !member.IsAlive)
+            {
+                continue;
+            }
+
+            center += member.transform.position;
+            count++;
+        }
+
+        return count > 0 ? center / count : transform.position;
+    }
+
+    private void EnsureFormationSlotAssignments()
+    {
+        for (int i = 0; i < FormationSlotCount; i++)
+        {
+            _claimedFormationSlots[i] = false;
+        }
+
+        for (int i = 0; i < _activeMembers.Count; i++)
+        {
+            TriumvirateEnemyBrain3D member = _activeMembers[i];
+            if (member == null || !member.IsAlive)
+            {
+                continue;
+            }
+
+            int explicitSlot = member.ResolveExplicitFormationSlotIndex();
+            if (explicitSlot >= 0 && TryClaimFormationSlot(explicitSlot))
+            {
+                member._assignedFormationSlot = explicitSlot;
+                member._loggedDuplicateFormationSlot = false;
+            }
+            else if (explicitSlot >= 0)
+            {
+                member._assignedFormationSlot = -1;
+                if (!member._loggedDuplicateFormationSlot)
+                {
+                    member._loggedDuplicateFormationSlot = true;
+                    LogStateMessage($"{member.name} has a duplicate explicit Triumvirate formation slot; assigning an open slot instead.");
+                }
+            }
+        }
+
+        for (int i = 0; i < _activeMembers.Count; i++)
+        {
+            TriumvirateEnemyBrain3D member = _activeMembers[i];
+            if (member == null || !member.IsAlive || member.ResolveExplicitFormationSlotIndex() >= 0)
+            {
+                continue;
+            }
+
+            if (TryClaimFormationSlot(member._assignedFormationSlot))
+            {
+                continue;
+            }
+
+            member._assignedFormationSlot = -1;
+        }
+
+        for (int i = 0; i < _activeMembers.Count; i++)
+        {
+            TriumvirateEnemyBrain3D member = _activeMembers[i];
+            if (member == null || !member.IsAlive || member._assignedFormationSlot >= 0)
+            {
+                continue;
+            }
+
+            member._assignedFormationSlot = ClaimFirstOpenFormationSlot();
+        }
+    }
+
+    private bool TryClaimFormationSlot(int slotIndex)
+    {
+        if (slotIndex < 0 || slotIndex >= FormationSlotCount || _claimedFormationSlots[slotIndex])
+        {
+            return false;
+        }
+
+        _claimedFormationSlots[slotIndex] = true;
+        return true;
+    }
+
+    private int ClaimFirstOpenFormationSlot()
+    {
+        for (int i = 0; i < FormationSlotCount; i++)
+        {
+            if (TryClaimFormationSlot(i))
+            {
+                return i;
+            }
+        }
+
+        return TopSlotIndex;
+    }
+
+    private int ResolveExplicitFormationSlotIndex()
+    {
+        switch (formationSlotPreference)
+        {
+            case FormationSlotPreference.Top:
+                return TopSlotIndex;
+            case FormationSlotPreference.LowerLeft:
+                return LowerLeftSlotIndex;
+            case FormationSlotPreference.LowerRight:
+                return LowerRightSlotIndex;
+            default:
+                return -1;
+        }
+    }
+
+    private static int ResolveMemberFormationSlot(TriumvirateEnemyBrain3D member, int fallbackIndex)
+    {
+        if (member != null && member._assignedFormationSlot >= 0)
+        {
+            return member._assignedFormationSlot;
+        }
+
+        return Mathf.Clamp(fallbackIndex, 0, FormationSlotCount - 1);
+    }
+
     private void ClearSquadFlightIntent()
     {
         RefreshActiveMembers();
@@ -797,7 +968,8 @@ public class TriumvirateEnemyBrain3D : NetworkBehaviour
         return NetworkManager.Singleton == null || NetworkManager.Singleton.IsServer;
     }
 
-    private static Vector3 ResolveFormationSlot(Vector3 center, Vector3 right, Vector3 up, int index, int count, float radius, bool planarFormation)
+    private static Vector3 ResolveFormationSlot(Vector3 center, Vector3 right, Vector3 up, int index, int count, float radius,
+        bool planarFormation, float verticalWidth, float verticalHeight)
     {
         if (count <= 1)
         {
@@ -816,19 +988,22 @@ public class TriumvirateEnemyBrain3D : NetworkBehaviour
             return center + ((right * Mathf.Cos(angle)) + (forwardOnPlane.normalized * Mathf.Sin(angle))) * Mathf.Max(0f, radius);
         }
 
-        float resolvedRadius = Mathf.Max(0f, radius);
+        float resolvedWidth = Mathf.Max(0f, verticalWidth);
+        float resolvedHeight = Mathf.Max(0f, verticalHeight);
         if (count == 2)
         {
-            return center + right * (index == 0 ? -resolvedRadius * 0.5f : resolvedRadius * 0.5f) - up * (resolvedRadius * 0.35f);
+            return center + right * (index == 0 ? -resolvedWidth * 0.5f : resolvedWidth * 0.5f);
         }
 
+        float upperOffset = resolvedHeight * (2f / 3f);
+        float lowerOffset = resolvedHeight * (1f / 3f);
         if (index == 0)
         {
-            return center + up * resolvedRadius;
+            return center + up * upperOffset;
         }
 
         float lowerSide = index == 1 ? -1f : 1f;
-        return center + (right * (lowerSide * resolvedRadius * 0.866f)) - (up * resolvedRadius * 0.5f);
+        return center + (right * (lowerSide * resolvedWidth * 0.5f)) - (up * lowerOffset);
     }
 
     private static Entity3D ResolveHitEntity(Collider hitCollider)

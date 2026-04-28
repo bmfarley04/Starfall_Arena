@@ -79,6 +79,9 @@ public class ForgeEnemyBeam3D : MonoBehaviour, IBeamRuntime3D, IBeamDirectionSou
     private Vector3 _visualEndpointVelocity;
     private bool _hasSmoothedVisualEndpoint;
     private float _nextLightningJitterTime;
+    private bool _isFixedEndpointCosmetic;
+    private Transform _fixedEndpointStart;
+    private Transform _fixedEndpointEnd;
 
     private void Awake()
     {
@@ -163,9 +166,36 @@ public class ForgeEnemyBeam3D : MonoBehaviour, IBeamRuntime3D, IBeamDirectionSou
         SetImpactVisualsActive(false);
     }
 
+    public void StartCosmeticLink(Transform startAnchor, Transform endAnchor, int pointCount, float amplitude, float jitterInterval)
+    {
+        if (startAnchor == null || endAnchor == null)
+        {
+            return;
+        }
+
+        _fixedEndpointStart = startAnchor;
+        _fixedEndpointEnd = endAnchor;
+        _isFixedEndpointCosmetic = true;
+        _isCosmeticOnly = true;
+        _targetTag = null;
+        _targetFaction = Faction3D.Neutral;
+        _damagePerSecond = 0f;
+        _impactForce = 0f;
+        _recoilForcePerSecond = 0f;
+        lightningPointCount = Mathf.Max(2, pointCount);
+        lightningAmplitude = Mathf.Max(0f, amplitude);
+        lightningJitterInterval = Mathf.Max(0.01f, jitterInterval);
+        useLightningJitter = lightningPointCount > 2 && lightningAmplitude > 0f;
+        transform.SetParent(null, true);
+        StartFiring();
+    }
+
     public void StopFiring()
     {
         _isFiring = false;
+        _isFixedEndpointCosmetic = false;
+        _fixedEndpointStart = null;
+        _fixedEndpointEnd = null;
         ResetVisualSmoothing();
         SetImpactVisualsActive(false);
         SetBeamVisualsActive(false);
@@ -180,7 +210,36 @@ public class ForgeEnemyBeam3D : MonoBehaviour, IBeamRuntime3D, IBeamDirectionSou
             return;
         }
 
-        FireBeam();
+        if (_isFixedEndpointCosmetic)
+        {
+            FireFixedEndpointCosmeticBeam();
+        }
+        else
+        {
+            FireBeam();
+        }
+    }
+
+    private void FireFixedEndpointCosmeticBeam()
+    {
+        if (_fixedEndpointStart == null || _fixedEndpointEnd == null)
+        {
+            StopFiring();
+            return;
+        }
+
+        Vector3 origin = _fixedEndpointStart.position;
+        Vector3 endpoint = _fixedEndpointEnd.position;
+        Vector3 span = endpoint - origin;
+        float distance = span.magnitude;
+        if (distance <= 0.001f)
+        {
+            SetImpactVisualsActive(false);
+            return;
+        }
+
+        Vector3 visualDirection = span / distance;
+        UpdateBeamVisuals(origin, visualDirection, distance, hitSomething: true, endpoint);
     }
 
     private void FireBeam()
