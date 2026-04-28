@@ -5186,7 +5186,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 1248542248
+  GlobalObjectIdHash: 2768231278
   InScenePlacedSourceGlobalObjectIdHash: 0
   DeferredDespawnTick: 0
   Ownership: 1
@@ -5237,6 +5237,7 @@ MonoBehaviour:
   linkJitterInterval: 0.05
   finalBeamWeapon: {fileID: 8560116361619406247}
   netEnemyCombat: {fileID: 0}
+  chargeTelegraph: {fileID: 0}
   finalBeamRange: 500
   finalBeamHitscanRadius: 0.45
   oneMemberDamagePerSecond: 10
@@ -5652,7 +5653,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 960985444
+  GlobalObjectIdHash: 2782346728
   InScenePlacedSourceGlobalObjectIdHash: 0
   DeferredDespawnTick: 0
   Ownership: 1
@@ -5703,6 +5704,7 @@ MonoBehaviour:
   linkJitterInterval: 0.05
   finalBeamWeapon: {fileID: 4069157214293576489}
   netEnemyCombat: {fileID: 0}
+  chargeTelegraph: {fileID: 0}
   finalBeamRange: 500
   finalBeamHitscanRadius: 0.45
   oneMemberDamagePerSecond: 10
@@ -10820,7 +10822,7 @@ Rigidbody:
   serializedVersion: 5
   m_Mass: 1
   m_LinearDamping: 0
-  m_AngularDamping: 0
+  m_AngularDamping: 2
   m_CenterOfMass: {x: 0, y: 0, z: 0}
   m_InertiaTensor: {x: 1, y: 1, z: 1}
   m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
@@ -11016,7 +11018,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 1264913716
+  GlobalObjectIdHash: 3061633967
   InScenePlacedSourceGlobalObjectIdHash: 0
   DeferredDespawnTick: 0
   Ownership: 1
@@ -11067,6 +11069,7 @@ MonoBehaviour:
   linkJitterInterval: 0.05
   finalBeamWeapon: {fileID: 1445180964325999496}
   netEnemyCombat: {fileID: 0}
+  chargeTelegraph: {fileID: 0}
   finalBeamRange: 500
   finalBeamHitscanRadius: 0.45
   oneMemberDamagePerSecond: 10

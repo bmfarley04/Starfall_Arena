@@ -114,13 +114,13 @@ public class DuelistEnemyBrain3D : MonoBehaviour
     [SerializeField] private float orbitVerticalTiltAmount = 0.5f;
 
     [Header("Weapon Selection")]
-    [Tooltip("Range/aim band for the close-range projectile weapon.")]
+    [Tooltip("Range/aim band for the close-range projectile weapon. Aim tolerance is intentionally generous (default 30) because the player can cross huge angles around the duelist at close range faster than the flight controller can rotate; the actual shot direction is still resolved toward the target, so wide aim tolerance does not become wide miss error.")]
     [SerializeField]
     private WeaponRangeBand projectileBand = new WeaponRangeBand
     {
         preferredCenter = 110f,
         halfWidth = 30f,
-        aimToleranceDegrees = 8f
+        aimToleranceDegrees = 30f
     };
 
     [Tooltip("Range/aim band for the mid-range missile weapon. Missiles can use looser aim tolerance because they steer after launch.")]
@@ -324,13 +324,31 @@ public class DuelistEnemyBrain3D : MonoBehaviour
 
     private void UpdateReposition(Entity3D target, Vector3 targetDirection, float distanceToTarget)
     {
+        bool tooFar = distanceToTarget > preferredRangeMax;
+        bool timedOut = Time.time >= _stateEndsAt;
+
+        if (timedOut)
+        {
+            BeginEngage(targetDirection, distanceToTarget);
+            return;
+        }
+
+        if (tooFar)
+        {
+            // Direct pursuit at full speed. Don't waste time detouring to a perch on the far
+            // side of the player when we are simply out of range. The orbit/perch refresh
+            // during Engage handles flank seeking once we are back in band.
+            Vector3 steeredPursuit = ResolveSteering(targetDirection);
+            flightController?.SetFlightIntent(steeredPursuit, targetDirection, 1f, moveBackward: false);
+            return;
+        }
+
+        // In-band perch fly: drift to the chosen flank position so the duelist does not
+        // sit at one orbit angle for the entire fight.
         Vector3 toPerch = _perchPosition - transform.position;
         float toPerchDistance = toPerch.magnitude;
         bool reachedPerch = toPerchDistance <= Mathf.Max(0.1f, perchArrivalDistance);
-        bool timedOut = Time.time >= _stateEndsAt;
-        bool insidePreferredBand = distanceToTarget >= preferredRangeMin && distanceToTarget <= preferredRangeMax;
-
-        if (reachedPerch || timedOut || insidePreferredBand)
+        if (reachedPerch)
         {
             BeginEngage(targetDirection, distanceToTarget);
             return;
@@ -343,8 +361,12 @@ public class DuelistEnemyBrain3D : MonoBehaviour
 
     private void UpdateEngage(Entity3D target, Vector3 targetDirection, float distanceToTarget)
     {
-        bool outOfBand = distanceToTarget < preferredRangeMin || distanceToTarget > preferredRangeMax;
-        if (outOfBand || Time.time >= _nextPerchRefreshAt)
+        // Only kick out of engage when too FAR from the band, or when the perch refresh timer
+        // expires. Being closer than preferredRangeMin is fine: keep facing/firing/orbit-strafing
+        // and let the natural drift bring us back out. Otherwise the brain repositions every tick
+        // when the player closes inside us, which silently suppresses all fire.
+        bool tooFar = distanceToTarget > preferredRangeMax;
+        if (tooFar || Time.time >= _nextPerchRefreshAt)
         {
             BeginReposition(target);
             return;
@@ -486,8 +508,16 @@ public class DuelistEnemyBrain3D : MonoBehaviour
         {
             return 0f;
         }
+        // Asymmetric falloff: full score at any distance up to and including Preferred Center
+        // (a close-range gun should still fire at point-blank), and a soft falloff above center
+        // out to center + Half Width. Beyond that the weapon scores 0 and another weapon should
+        // win the pick.
         float halfWidth = Mathf.Max(0.01f, band.halfWidth);
-        float distanceError = Mathf.Abs(distanceToTarget - band.preferredCenter);
+        if (distanceToTarget <= band.preferredCenter)
+        {
+            return 1f;
+        }
+        float distanceError = distanceToTarget - band.preferredCenter;
         return 1f - Mathf.Clamp01(distanceError / halfWidth);
     }
 
@@ -525,7 +555,11 @@ public class DuelistEnemyBrain3D : MonoBehaviour
         }
 
         float halfWidth = Mathf.Max(0.01f, beamBand.halfWidth);
-        float distanceError = Mathf.Abs(distanceToTarget - beamBand.preferredCenter);
+        if (distanceToTarget <= beamBand.preferredCenter)
+        {
+            return 1f;
+        }
+        float distanceError = distanceToTarget - beamBand.preferredCenter;
         return 1f - Mathf.Clamp01(distanceError / halfWidth);
     }
 

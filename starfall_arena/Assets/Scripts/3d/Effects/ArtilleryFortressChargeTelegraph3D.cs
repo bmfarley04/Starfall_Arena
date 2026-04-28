@@ -25,6 +25,9 @@ public class ArtilleryFortressChargeTelegraph3D : MonoBehaviour
     [Tooltip("If true, charge emission is added on top of the shared material's authored emission. If false, this renderer gets its own local emission range, which can idle lower than the shared material without duplicating it.")]
     [SerializeField] private bool addToSharedMaterialEmission;
 
+    [Tooltip("If true, renderers with no authored emission color are ignored. Keep this enabled when auto-collecting child renderers so shields/transparent effects are not forced to black.")]
+    [SerializeField] private bool onlyAffectAuthoredEmissionRenderers = true;
+
     [Tooltip("Local emission intensity when the fortress is not charging. Set very low (for example 0-0.1) when the shared material is normally bright but this enemy should start dim.")]
     [SerializeField] private float idleEmissionIntensity = 0f;
 
@@ -51,7 +54,10 @@ public class ArtilleryFortressChargeTelegraph3D : MonoBehaviour
     {
         public Renderer Renderer;
         public MaterialPropertyBlock PropertyBlock;
+        public MaterialPropertyBlock OriginalPropertyBlock;
+        public bool HadOriginalPropertyBlock;
         public Color BaseEmissionColor;
+        public bool CanApplyEmission;
     }
 
     private RendererState[] _rendererStates;
@@ -79,7 +85,7 @@ public class ArtilleryFortressChargeTelegraph3D : MonoBehaviour
     private void OnEnable()
     {
         CacheReferences();
-        ApplyNormalizedIntensity(0f);
+        RestoreBaselineVisuals();
         SetChargeVfxActive(false);
     }
 
@@ -111,6 +117,7 @@ public class ArtilleryFortressChargeTelegraph3D : MonoBehaviour
             if (fadeProgress >= 1f)
             {
                 _isFadingOut = false;
+                RestoreBaselineVisuals();
                 SetChargeVfxActive(false);
             }
         }
@@ -160,7 +167,7 @@ public class ArtilleryFortressChargeTelegraph3D : MonoBehaviour
         if (immediate || fadeOutDuration <= 0.0001f)
         {
             _isFadingOut = false;
-            ApplyNormalizedIntensity(0f);
+            RestoreBaselineVisuals();
             SetChargeVfxActive(false);
             return;
         }
@@ -193,11 +200,22 @@ public class ArtilleryFortressChargeTelegraph3D : MonoBehaviour
         for (int i = 0; i < _rendererStates.Length; i++)
         {
             Renderer renderer = chargeRenderers[i];
+            MaterialPropertyBlock originalPropertyBlock = new MaterialPropertyBlock();
+            bool hadOriginalPropertyBlock = false;
+            if (renderer != null)
+            {
+                renderer.GetPropertyBlock(originalPropertyBlock);
+                hadOriginalPropertyBlock = !originalPropertyBlock.isEmpty;
+            }
+
             _rendererStates[i] = new RendererState
             {
                 Renderer = renderer,
                 PropertyBlock = new MaterialPropertyBlock(),
-                BaseEmissionColor = ResolveBaseEmissionColor(renderer)
+                OriginalPropertyBlock = originalPropertyBlock,
+                HadOriginalPropertyBlock = hadOriginalPropertyBlock,
+                BaseEmissionColor = ResolveBaseEmissionColor(renderer),
+                CanApplyEmission = CanApplyEmissionToRenderer(renderer)
             };
         }
     }
@@ -223,6 +241,28 @@ public class ArtilleryFortressChargeTelegraph3D : MonoBehaviour
         return sharedMaterial.HasProperty(_emissionColorPropertyId)
             ? sharedMaterial.GetColor(_emissionColorPropertyId)
             : Color.black;
+    }
+
+    private bool CanApplyEmissionToRenderer(Renderer targetRenderer)
+    {
+        if (targetRenderer == null || targetRenderer.sharedMaterial == null)
+        {
+            return false;
+        }
+
+        Material sharedMaterial = targetRenderer.sharedMaterial;
+        if (!sharedMaterial.HasProperty(_emissionColorPropertyId))
+        {
+            return false;
+        }
+
+        if (!onlyAffectAuthoredEmissionRenderers)
+        {
+            return true;
+        }
+
+        Color emissionColor = sharedMaterial.GetColor(_emissionColorPropertyId);
+        return HasVisibleColor(emissionColor);
     }
 
     private float EvaluateChargeCurve(float normalizedTime)
@@ -265,14 +305,12 @@ public class ArtilleryFortressChargeTelegraph3D : MonoBehaviour
             return;
         }
 
-        state.Renderer.GetPropertyBlock(state.PropertyBlock);
-        if (!addToSharedMaterialEmission && emissionIntensity <= 0.0001f)
+        if (!state.CanApplyEmission)
         {
-            state.PropertyBlock.SetColor(_emissionColorPropertyId, state.BaseEmissionColor);
-            state.Renderer.SetPropertyBlock(state.PropertyBlock);
             return;
         }
 
+        state.Renderer.GetPropertyBlock(state.PropertyBlock);
         Color localEmission = ResolveEmissionColor(state) * Mathf.Max(0f, emissionIntensity);
         Color targetEmission = addToSharedMaterialEmission
             ? state.BaseEmissionColor + localEmission
@@ -289,6 +327,11 @@ public class ArtilleryFortressChargeTelegraph3D : MonoBehaviour
         }
 
         return NormalizeEmissionColor(state.BaseEmissionColor);
+    }
+
+    private static bool HasVisibleColor(Color color)
+    {
+        return Mathf.Max(color.r, Mathf.Max(color.g, color.b)) > 0.0001f;
     }
 
     private static Color NormalizeEmissionColor(Color color)
@@ -317,5 +360,34 @@ public class ArtilleryFortressChargeTelegraph3D : MonoBehaviour
         {
             chargeLight.enabled = true;
         }
+    }
+
+    private void RestoreBaselineVisuals()
+    {
+        _currentNormalizedIntensity = 0f;
+        if (_rendererStates != null)
+        {
+            for (int i = 0; i < _rendererStates.Length; i++)
+            {
+                RestoreRendererBaseline(_rendererStates[i]);
+            }
+        }
+
+        if (chargeLight != null)
+        {
+            float baseIntensity = _cachedLightIntensity ? _baseLightIntensity : chargeLight.intensity;
+            chargeLight.intensity = baseIntensity;
+            chargeLight.enabled = chargeLight.intensity > 0.0001f;
+        }
+    }
+
+    private static void RestoreRendererBaseline(RendererState state)
+    {
+        if (state.Renderer == null)
+        {
+            return;
+        }
+
+        state.Renderer.SetPropertyBlock(state.HadOriginalPropertyBlock ? state.OriginalPropertyBlock : null);
     }
 }

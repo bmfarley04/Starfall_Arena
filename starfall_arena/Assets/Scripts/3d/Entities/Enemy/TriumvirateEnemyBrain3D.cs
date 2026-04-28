@@ -83,6 +83,8 @@ public class TriumvirateEnemyBrain3D : NetworkBehaviour
     [SerializeField] private BeamWeapon3D finalBeamWeapon;
     [Tooltip("Network combat helper used to replicate the final beam visual.")]
     [SerializeField] private NetEnemyCombat3D netEnemyCombat;
+    [Tooltip("Optional charge glow telegraph on this member. Reuses the artillery fortress telegraph behavior for renderer emission, VFX, and light buildup.")]
+    [SerializeField] private ArtilleryFortressChargeTelegraph3D chargeTelegraph;
     [Tooltip("Maximum final beam damage range.")]
     [SerializeField] private float finalBeamRange = 70f;
     [Tooltip("Spherecast radius used by the final beam damage check.")]
@@ -135,6 +137,7 @@ public class TriumvirateEnemyBrain3D : NetworkBehaviour
     private float _nextFormationProgressLogTime;
     private int _assignedFormationSlot = -1;
     private bool _loggedDuplicateFormationSlot;
+    private bool _chargeTelegraphActive;
 
     private bool IsAlive => _enemy != null && _enemy.CurrentHealth > 0f && gameObject.activeInHierarchy;
 
@@ -146,12 +149,15 @@ public class TriumvirateEnemyBrain3D : NetworkBehaviour
         _networkObject = GetComponent<NetworkObject>();
         finalBeamWeapon ??= GetComponent<BeamWeapon3D>();
         netEnemyCombat ??= GetComponent<NetEnemyCombat3D>();
+        chargeTelegraph ??= GetComponentInChildren<ArtilleryFortressChargeTelegraph3D>(true);
     }
 
     private void OnDisable()
     {
         StopFinalBeam();
         ClearLinkVisuals(replicateToClients: false);
+        chargeTelegraph?.StopCharge(immediate: true);
+        StopSquadChargeTelegraphs(immediate: true);
         _flightController?.ClearFlightIntent();
     }
 
@@ -176,6 +182,7 @@ public class TriumvirateEnemyBrain3D : NetworkBehaviour
             LogStateMessage("No target available; clearing flight intent and waiting in Forming.");
             StopFinalBeam();
             ClearLinkVisuals();
+            StopSquadChargeTelegraphs(immediate: true);
             SetState(SquadState.Forming, 0f);
             ClearSquadFlightIntent();
             return;
@@ -707,6 +714,7 @@ public class TriumvirateEnemyBrain3D : NetworkBehaviour
 
         StopFinalBeam();
         ClearLinkVisuals();
+        StopSquadChargeTelegraphs(immediate: true);
         LogStateMessage("Survivor count changed during attack sequence; restarting formation with remaining members.");
         SetState(SquadState.Forming, 0f);
     }
@@ -725,11 +733,21 @@ public class TriumvirateEnemyBrain3D : NetworkBehaviour
             if (nextState == SquadState.Forming || nextState == SquadState.Cooldown)
             {
                 ClearLinkVisuals();
+                StopSquadChargeTelegraphs(immediate: true);
             }
 
             if (nextState == SquadState.Linking)
             {
                 BuildLinkSequence();
+                PlaySquadChargeTelegraphs(ResolveChargeTelegraphDuration());
+            }
+            else if (nextState == SquadState.ChargeDelay && !_chargeTelegraphActive)
+            {
+                PlaySquadChargeTelegraphs(finalChargeDelay);
+            }
+            else if (nextState == SquadState.Firing)
+            {
+                StopSquadChargeTelegraphs(immediate: false);
             }
         }
 
@@ -743,6 +761,48 @@ public class TriumvirateEnemyBrain3D : NetworkBehaviour
         {
             SetState(nextState, 0f);
         }
+    }
+
+    private float ResolveChargeTelegraphDuration()
+    {
+        float linkDuration = Mathf.Max(0.01f, linkStepDuration) * Mathf.Max(0, _pendingLinks.Count);
+        return Mathf.Max(0.01f, linkDuration + Mathf.Max(0f, finalChargeDelay));
+    }
+
+    private void PlaySquadChargeTelegraphs(float duration)
+    {
+        RefreshActiveMembers();
+        float resolvedDuration = Mathf.Max(0.01f, duration);
+        bool anyTelegraphPlayed = false;
+        for (int i = 0; i < _activeMembers.Count; i++)
+        {
+            TriumvirateEnemyBrain3D member = _activeMembers[i];
+            if (member == null || !member.IsAlive || member.chargeTelegraph == null)
+            {
+                continue;
+            }
+
+            member.chargeTelegraph.PlayCharge(resolvedDuration);
+            anyTelegraphPlayed = true;
+        }
+
+        _chargeTelegraphActive = anyTelegraphPlayed;
+    }
+
+    private void StopSquadChargeTelegraphs(bool immediate)
+    {
+        RefreshActiveMembers();
+        for (int i = 0; i < _activeMembers.Count; i++)
+        {
+            TriumvirateEnemyBrain3D member = _activeMembers[i];
+            if (member != null && member.chargeTelegraph != null)
+            {
+                member.chargeTelegraph.StopCharge(immediate);
+            }
+        }
+
+        chargeTelegraph?.StopCharge(immediate);
+        _chargeTelegraphActive = false;
     }
 
     private Vector3 ResolveMemberAimDirection(TriumvirateEnemyBrain3D member, Vector3 targetPoint)
