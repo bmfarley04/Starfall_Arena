@@ -23,7 +23,7 @@ Implemented foundation:
 - `RammerEnemyBrain3D` is a fast strike enemy that chases the player at full speed and slams into them on contact for chip damage plus a large knockback, then arcs away to circle back; the knockback routes through the existing `NetMovement3D.ApplyCombatVelocityDelta` recoil hook so the impulse replicates correctly across the network without a new RPC
 - `SplitterEnemyBrain3D` owns the Splitter enemy identity: the parent hybrid chooses between projectile and beam pressure based on range plus a random overlap band, then on death asks `InvasionWaveManager3D` to spawn the same prefab twice as smaller role-locked children
 - `TriumvirateEnemyBrain3D` owns the Triumvirate enemy identity: small linked beam ships form a triangle, reveal cosmetic lightning links, and then fire a survivor-scaled lightning beam where the full three-ship version is the only slow-applying version
-- `SwarmScoutEnemyBrain3D` owns the Swarm Scout enemy identity: fragile fast flyers orbit the player in linked swarms, stay moving constantly, and only alert nearby enemy sensors to the player's position if the full required survivor count remains alive near the player through the warmup
+- `SwarmScoutEnemyBrain3D` owns the Swarm Scout enemy identity: fragile fast flyers move in linked formations, default to a pentagon-style flyby through/past the player, can fall back to orbit behavior through a movement-pattern dropdown, and only alert nearby enemy sensors if the required survivor count remains alive near the player through the warmup
 - `NetEnemyMovement3D` makes enemies server-simulated in network sessions
 - `NetEnemyCombat3D` makes enemy projectile damage server-authoritative and broadcasts client cosmetics
 - enemy beam prefabs may now use an optional `BeamVisualDriver3D` such as `ForgeBeamVisualDriver3D` for presentation, but enemy beam gameplay still stays inside `LaserBeam3D` / `NetEnemyCombat3D`
@@ -281,7 +281,8 @@ For a Swarm Scout enemy prefab:
 - add `EnemyTargetSensor3D` with enough detection range to find players before entering orbit
 - add `EnemyPatrol3D` for no-target search behavior; the brain also keeps its last/fallback heading if patrol is unavailable so the scout does not intentionally idle
 - optionally add `EnemySeparation3D` and `EnemyObstacleAvoidance3D` if swarms need local spreading or asteroid steering
-- add `SwarmScoutEnemyBrain3D`; keep `Intended Swarm Size = 5`, `Required Survivors For Alert = 5`, `Alert Broadcast Radius = 1400`, `Alert Warmup Seconds = 3`, and `Alert Duration = 6` as the starting tuning
+- add `SwarmScoutEnemyBrain3D`; use `Movement Pattern = Formation Flyby` for the pentagon pass-through behavior, or switch to `Orbit Helix` as the fallback if the flyby needs more tuning
+- start with `Intended Swarm Size = 5`, `Formation Radius = 26`, `Formation Overshoot Distance = 180`, `Required Survivors For Alert = 5`, `Alert Broadcast Radius = 1400`, `Alert Warmup Seconds = 3`, and `Alert Duration = 6`
 - add `NetEnemyMovement3D`; `NetEnemyCombat3D` is not required because scouts do not fire weapons
 - create a `SwarmScoutEnemyBalanceProfile3D` asset, assign it through `EnemyBalanceProfileApplier3D`, and keep prefab-only wiring such as visuals, audio, collision, network references, and death effects on the prefab
 - set the root tag to `Enemy` for compatibility, but keep target/damage filtering faction-driven

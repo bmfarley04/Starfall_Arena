@@ -459,24 +459,14 @@ public class ConvergeBeamWeapon3D : Weapon3D, IBeamWeaponNetwork3D
         }
     }
 
-    private Vector3 ResolveOwnerAimDirection()
+    protected override Vector3 ResolveOwnerAimDirection()
     {
         if (ShouldUseReplicatedAim())
         {
             return _pendingNetworkAimDirection;
         }
 
-        Camera cam = AimCamera;
-        if (cam != null)
-        {
-            Ray centerRay = cam.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
-            if (centerRay.direction.sqrMagnitude > 0.0001f)
-            {
-                return centerRay.direction.normalized;
-            }
-        }
-
-        return transform.forward.sqrMagnitude > 0.0001f ? transform.forward.normalized : Vector3.forward;
+        return base.ResolveOwnerAimDirection();
     }
 
     private Vector3 ResolveAimPoint()
@@ -494,12 +484,13 @@ public class ConvergeBeamWeapon3D : Weapon3D, IBeamWeaponNetwork3D
             return origin + (ResolveOwnerAimDirection() * Mathf.Max(1f, convergeBeam.fallbackAimDistance));
         }
 
-        Ray centerRay = cam.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
+        Vector3 aimDirection = ResolveOwnerAimDirection();
         float maxAimDistance = convergeBeam.maxAimDistance > 0f ? convergeBeam.maxAimDistance : 1000f;
         float fallbackAimDistance = convergeBeam.fallbackAimDistance > 0f ? convergeBeam.fallbackAimDistance : 150f;
-        Vector3 rayPoint = centerRay.origin + (centerRay.direction * Mathf.Max(fallbackAimDistance, maxAimDistance));
+        Vector3 rayOrigin = cam.transform.position;
+        Vector3 rayPoint = rayOrigin + (aimDirection * Mathf.Max(fallbackAimDistance, maxAimDistance));
 
-        if (Physics.Raycast(centerRay, out RaycastHit hit, maxAimDistance, convergeBeam.aimCollisionMask, QueryTriggerInteraction.Ignore))
+        if (Physics.Raycast(rayOrigin, aimDirection, out RaycastHit hit, maxAimDistance, convergeBeam.aimCollisionMask, QueryTriggerInteraction.Ignore))
         {
             rayPoint = hit.point;
         }

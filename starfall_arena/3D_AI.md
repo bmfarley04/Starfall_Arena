@@ -150,7 +150,9 @@ The 3D AI path should stay modular. Enemy prefabs should compose small scripts i
   - `Squad Members` may be authored directly, but the brain can also auto-link to the closest same-key Triumvirate members within `Auto Link Radius`
 - `SwarmScoutEnemyBrain3D`
   - fragile fast flyer intended to spawn in organized groups of five
-  - auto-links nearby scouts with the same `Swarm Key`, assigns stable phase slots, and flies a constant-speed orbit/helix around the current player target instead of stopping to aim or fire
+  - auto-links nearby scouts with the same `Swarm Key`, assigns stable phase slots, and uses the `Movement Pattern` dropdown to choose between the current `FormationFlyby` pass and the original `OrbitHelix` fallback
+  - `FormationFlyby` keeps the scouts in a rolling polygon around an empty center, drives that formation center through/past the player, then starts another pass so the player can thread the middle while shooting the ships down
+  - `OrbitHelix` preserves the earlier constant-speed orbit/corkscrew around the player target
   - has no weapons, ram, or contact damage; its threat is informational, not direct damage
   - if the linked swarm keeps at least `Required Survivors For Alert` alive near the player for `Alert Warmup Seconds`, it calls `EnemyTargetSensor3D.ReceiveTargetAlert(...)` on enemy sensors near the player so heavier enemies can acquire beyond their normal detection radius for a short duration
   - alerts are server-authoritative in networked Invasion because the brain only runs on the server/host; clients receive movement through `NetEnemyMovement3D`

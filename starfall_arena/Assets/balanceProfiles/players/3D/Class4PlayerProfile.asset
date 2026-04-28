@@ -39,7 +39,7 @@ MonoBehaviour:
     velocityAlignmentStrength: 5
   projectileWeapons:
   - cooldown: 1.5
-    speed: 250
+    speed: 500
     damage: 10
     lifetime: 5
     energyCost: 0

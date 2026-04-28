@@ -222,6 +222,8 @@ public abstract class EnemyBalanceProfile3D : ScriptableObject
         [Min(1)] public int intendedSwarmSize;
         [Tooltip("Living linked scouts required before an alert can be broadcast.")]
         [Min(1)] public int requiredSurvivorsForAlert;
+        [Tooltip("Primary movement behavior for the swarm.")]
+        public SwarmScoutMovementPattern movementPattern;
         [Tooltip("Preferred orbit radius around the player target.")]
         [Min(0f)] public float orbitRadius;
         [Tooltip("Per-slot radius variation so scouts do not stack perfectly.")]
@@ -234,6 +236,20 @@ public abstract class EnemyBalanceProfile3D : ScriptableObject
         [Min(0f)] public float verticalAmplitude;
         [Tooltip("Speed of the vertical corkscrew motion.")]
         [Min(0f)] public float verticalFrequency;
+        [Tooltip("Radius of the polygon formation around its empty center.")]
+        [Min(0f)] public float formationRadius;
+        [Tooltip("How far past the player the formation center flies before resetting.")]
+        [Min(0f)] public float formationOvershootDistance;
+        [Tooltip("Strength used to pull each scout toward its polygon slot.")]
+        [Min(0f)] public float formationSlotCorrectionWeight;
+        [Tooltip("Strength used to drive the formation forward through the player.")]
+        [Min(0f)] public float formationForwardWeight;
+        [Tooltip("Minimum distance before a fresh formation run can start.")]
+        [Min(0f)] public float formationMinRunStartDistance;
+        [Tooltip("Maximum seconds before a formation run resets.")]
+        [Min(0.1f)] public float formationMaxRunDuration;
+        [Tooltip("Degrees per second that the polygon rolls during a flyby.")]
+        [Min(0f)] public float formationRollDegreesPerSecond;
         [Tooltip("Distance from the player where survivors count toward alert warmup.")]
         [Min(0f)] public float alertProbeRange;
         [Tooltip("Seconds the required survivors must stay near the player before alerting.")]

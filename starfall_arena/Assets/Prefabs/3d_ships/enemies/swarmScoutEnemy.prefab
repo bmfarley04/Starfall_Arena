@@ -5266,12 +5266,20 @@ MonoBehaviour:
   requiredSurvivorsForAlert: 3
   autoLinkRefreshInterval: 0.5
   thinkInterval: 0.04
+  movementPattern: 1
   orbitRadius: 20
   orbitThickness: 12
   radialCorrectionWeight: 1.2
   tangentialWeight: 1.8
   verticalAmplitude: 14
   verticalFrequency: 1.1
+  formationRadius: 26
+  formationOvershootDistance: 180
+  formationSlotCorrectionWeight: 2.4
+  formationForwardWeight: 2
+  formationMinRunStartDistance: 70
+  formationMaxRunDuration: 4.5
+  formationRollDegreesPerSecond: 35
   useSeparation: 0
   useObstacleAvoidance: 0
   alertProbeRange: 450

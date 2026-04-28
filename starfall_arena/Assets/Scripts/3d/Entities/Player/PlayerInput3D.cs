@@ -6,6 +6,7 @@ public class PlayerInput3D : MonoBehaviour, IShipFlightInputSource
     [SerializeField] private ShipFlight3D shipFlight;
     [SerializeField] private Entity3D entity;
     [SerializeField] private PlayerInput playerInput;
+    [SerializeField] private AimAssist3D aimAssist;
     [Tooltip("Sensitivity multiplier for mouse delta when keyboard/mouse is the active control scheme.")]
     [SerializeField] private float mouseLookSensitivity = 0.02f;
 
@@ -33,6 +34,7 @@ public class PlayerInput3D : MonoBehaviour, IShipFlightInputSource
         shipFlight ??= GetComponent<ShipFlight3D>();
         entity ??= GetComponent<Entity3D>();
         playerInput ??= GetComponent<PlayerInput>();
+        aimAssist ??= GetComponent<AimAssist3D>();
 
         if (shipFlight != null)
         {
@@ -162,7 +164,7 @@ public class PlayerInput3D : MonoBehaviour, IShipFlightInputSource
             return;
         }
 
-        _lookInput = _gamepadLookInput;
+        _lookInput = _gamepadLookInput * ResolveGamepadAimSlowdownMultiplier();
     }
 
     private void UpdateCursorLockState()
@@ -185,6 +187,16 @@ public class PlayerInput3D : MonoBehaviour, IShipFlightInputSource
         }
 
         return string.Equals(playerInput.currentControlScheme, KeyboardMouseScheme, System.StringComparison.OrdinalIgnoreCase);
+    }
+
+    private float ResolveGamepadAimSlowdownMultiplier()
+    {
+        if (aimAssist == null)
+        {
+            return 1f;
+        }
+
+        return aimAssist.GetLookSlowdownMultiplier();
     }
 
     private static void SetCursorLocked(bool locked)

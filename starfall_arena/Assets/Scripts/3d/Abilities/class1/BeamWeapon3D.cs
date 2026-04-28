@@ -196,25 +196,19 @@ public class BeamWeapon3D : Weapon3D, IBeamWeaponNetwork3D
         return muzzle.position + (normalizedDirection * beam.offsetDistance) + (muzzle.up * beam.verticalOffset);
     }
 
-    private Vector3 ResolveOwnerAimDirection()
+    protected override Vector3 ResolveOwnerAimDirection()
     {
-        Camera cam = AimCamera;
-        if (cam != null)
+        if (NetTickUtil.IsActive
+            && _netCombat != null
+            && _netCombat.IsSpawned
+            && !_netCombat.IsOwner
+            && _hasPendingNetworkAim
+            && _pendingNetworkAim.sqrMagnitude > 0.0001f)
         {
-            Ray centerRay = cam.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
-            if (centerRay.direction.sqrMagnitude > 0.0001f)
-            {
-                return centerRay.direction.normalized;
-            }
+            return _pendingNetworkAim.normalized;
         }
 
-        Transform directionSource = ResolveBeamDirectionSource();
-        if (directionSource != null && directionSource.forward.sqrMagnitude > 0.0001f)
-        {
-            return directionSource.forward.normalized;
-        }
-
-        return transform.forward;
+        return base.ResolveOwnerAimDirection();
     }
 
     protected override void OnFirePressed()

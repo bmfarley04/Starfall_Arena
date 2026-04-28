@@ -43,6 +43,7 @@ public class Player3D : Entity3D
     [Header("Player-Only 3D Systems")]
     [SerializeField] protected PlayerInput3D playerInput3D;
     [SerializeField] protected PlayerCameraRig3D playerCameraRig3D;
+    [SerializeField] private AimAssist3D aimAssist3D;
     [SerializeField] private PlayerHUDManager3D hudManager3D;
     [Header("Split State")]
     [SerializeField] private List<SplitStateLightningRig3D> splitStateLightningRigs = new();
@@ -77,6 +78,7 @@ public class Player3D : Entity3D
 
     public PlayerInput3D PlayerInput3D => playerInput3D;
     public PlayerCameraRig3D PlayerCameraRig3D => playerCameraRig3D;
+    public AimAssist3D AimAssist3D => aimAssist3D;
 
     private AudioSource[] _audioSourcePool;
     private AudioSource _beamHitLoopSource;
@@ -103,6 +105,7 @@ public class Player3D : Entity3D
         base.Awake();
         playerInput3D ??= GetComponent<PlayerInput3D>();
         playerCameraRig3D ??= GetComponent<PlayerCameraRig3D>();
+        aimAssist3D ??= GetComponent<AimAssist3D>();
         _chromaticAberrationFx = GetComponent<PlayerChromaticAberration3D>();
         InitializeAudio();
 

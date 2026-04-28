@@ -2,6 +2,12 @@ using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
 
+public enum SwarmScoutMovementPattern
+{
+    OrbitHelix,
+    FormationFlyby
+}
+
 [DisallowMultipleComponent]
 [RequireComponent(typeof(Enemy3D))]
 [RequireComponent(typeof(EnemyAIFlightController3D))]
@@ -34,9 +40,13 @@ public class SwarmScoutEnemyBrain3D : MonoBehaviour
     [Tooltip("Seconds between swarm discovery refreshes.")]
     [SerializeField] private float autoLinkRefreshInterval = 0.5f;
 
-    [Header("Orbit Movement")]
+    [Header("Movement Mode")]
     [Tooltip("Seconds between AI steering decisions. Lower is more responsive but costs more CPU.")]
     [SerializeField] private float thinkInterval = 0.04f;
+    [Tooltip("Primary movement behavior. Formation Flyby sends the swarm through the player with a hole in the middle; Orbit Helix preserves the original circling fallback.")]
+    [SerializeField] private SwarmScoutMovementPattern movementPattern = SwarmScoutMovementPattern.FormationFlyby;
+
+    [Header("Orbit Movement")]
     [Tooltip("Preferred radius around the target while the scouts orbit.")]
     [SerializeField] private float orbitRadius = 65f;
     [Tooltip("Extra per-slot radius variation so the swarm reads as organized but not stacked.")]
@@ -49,6 +59,24 @@ public class SwarmScoutEnemyBrain3D : MonoBehaviour
     [SerializeField] private float verticalAmplitude = 14f;
     [Tooltip("Vertical wave speed used by the orbit helix.")]
     [SerializeField] private float verticalFrequency = 1.1f;
+
+    [Header("Formation Flyby")]
+    [Tooltip("Radius of the polygon formation around its empty center. Larger values make the player pass through a wider hole.")]
+    [SerializeField] private float formationRadius = 26f;
+    [Tooltip("How far past the player the formation center tries to fly before beginning another run.")]
+    [SerializeField] private float formationOvershootDistance = 180f;
+    [Tooltip("How strongly each scout corrects toward its assigned polygon slot during a flyby.")]
+    [SerializeField] private float formationSlotCorrectionWeight = 2.4f;
+    [Tooltip("How strongly the whole formation keeps driving forward through the player.")]
+    [SerializeField] private float formationForwardWeight = 2f;
+    [Tooltip("Minimum distance from the player before the swarm can start a fresh run. Prevents tiny jittery pass resets inside the player pocket.")]
+    [SerializeField] private float formationMinRunStartDistance = 70f;
+    [Tooltip("Maximum seconds before a formation run is force-reset even if the swarm did not cleanly pass the player.")]
+    [SerializeField] private float formationMaxRunDuration = 4.5f;
+    [Tooltip("Degrees per second that the polygon slowly rolls while flying at the player.")]
+    [SerializeField] private float formationRollDegreesPerSecond = 35f;
+
+    [Header("Steering")]
     [Tooltip("If true, route orbit steering through the separation component when one is assigned.")]
     [SerializeField] private bool useSeparation = true;
     [Tooltip("If true, route orbit steering through the obstacle avoidance component when one is assigned.")]
@@ -75,6 +103,9 @@ public class SwarmScoutEnemyBrain3D : MonoBehaviour
     private float _nearTargetStartedAt = -1f;
     private float _nextAlertAllowedAt;
     private int _slotIndex;
+    private Vector3 _formationRunDirection;
+    private float _formationRunStartedAt;
+    private bool _hasFormationRun;
 
     private bool IsAlive => _enemy != null && _enemy.CurrentHealth > 0f && gameObject.activeInHierarchy;
 
@@ -102,6 +133,13 @@ public class SwarmScoutEnemyBrain3D : MonoBehaviour
         tangentialWeight = Mathf.Max(0f, tangentialWeight);
         verticalAmplitude = Mathf.Max(0f, verticalAmplitude);
         verticalFrequency = Mathf.Max(0f, verticalFrequency);
+        formationRadius = Mathf.Max(0f, formationRadius);
+        formationOvershootDistance = Mathf.Max(0f, formationOvershootDistance);
+        formationSlotCorrectionWeight = Mathf.Max(0f, formationSlotCorrectionWeight);
+        formationForwardWeight = Mathf.Max(0f, formationForwardWeight);
+        formationMinRunStartDistance = Mathf.Max(0f, formationMinRunStartDistance);
+        formationMaxRunDuration = Mathf.Max(0.1f, formationMaxRunDuration);
+        formationRollDegreesPerSecond = Mathf.Max(0f, formationRollDegreesPerSecond);
         alertProbeRange = Mathf.Max(0f, alertProbeRange);
         alertWarmupSeconds = Mathf.Max(0f, alertWarmupSeconds);
         alertBroadcastRadius = Mathf.Max(0f, alertBroadcastRadius);
@@ -115,6 +153,7 @@ public class SwarmScoutEnemyBrain3D : MonoBehaviour
         _nextAutoLinkTime = 0f;
         _nearTargetStartedAt = -1f;
         _nextAlertAllowedAt = 0f;
+        _hasFormationRun = false;
     }
 
     private void OnDisable()
@@ -122,6 +161,7 @@ public class SwarmScoutEnemyBrain3D : MonoBehaviour
         flightController?.ClearFlightIntent();
         _linkedScouts.Clear();
         _nearTargetStartedAt = -1f;
+        _hasFormationRun = false;
     }
 
     public void ApplyProfile(EnemyBalanceProfile3D.SwarmScoutBrainStats stats)
@@ -130,12 +170,20 @@ public class SwarmScoutEnemyBrain3D : MonoBehaviour
         autoLinkRadius = Mathf.Max(0f, stats.autoLinkRadius);
         intendedSwarmSize = Mathf.Max(1, stats.intendedSwarmSize);
         requiredSurvivorsForAlert = Mathf.Max(1, stats.requiredSurvivorsForAlert);
+        movementPattern = stats.movementPattern;
         orbitRadius = Mathf.Max(0f, stats.orbitRadius);
         orbitThickness = Mathf.Max(0f, stats.orbitThickness);
         radialCorrectionWeight = Mathf.Max(0f, stats.radialCorrectionWeight);
         tangentialWeight = Mathf.Max(0f, stats.tangentialWeight);
         verticalAmplitude = Mathf.Max(0f, stats.verticalAmplitude);
         verticalFrequency = Mathf.Max(0f, stats.verticalFrequency);
+        formationRadius = Mathf.Max(0f, stats.formationRadius);
+        formationOvershootDistance = Mathf.Max(0f, stats.formationOvershootDistance);
+        formationSlotCorrectionWeight = Mathf.Max(0f, stats.formationSlotCorrectionWeight);
+        formationForwardWeight = Mathf.Max(0f, stats.formationForwardWeight);
+        formationMinRunStartDistance = Mathf.Max(0f, stats.formationMinRunStartDistance);
+        formationMaxRunDuration = Mathf.Max(0.1f, stats.formationMaxRunDuration);
+        formationRollDegreesPerSecond = Mathf.Max(0f, stats.formationRollDegreesPerSecond);
         alertProbeRange = Mathf.Max(0f, stats.alertProbeRange);
         alertWarmupSeconds = Mathf.Max(0f, stats.alertWarmupSeconds);
         alertBroadcastRadius = Mathf.Max(0f, stats.alertBroadcastRadius);
@@ -167,7 +215,17 @@ public class SwarmScoutEnemyBrain3D : MonoBehaviour
             return;
         }
 
-        FlyOrbit(target);
+        switch (movementPattern)
+        {
+            case SwarmScoutMovementPattern.OrbitHelix:
+                FlyOrbit(target);
+                break;
+            case SwarmScoutMovementPattern.FormationFlyby:
+            default:
+                FlyFormationFlyby(target);
+                break;
+        }
+
         UpdateAlertWarmup(target);
     }
 
@@ -250,6 +308,98 @@ public class SwarmScoutEnemyBrain3D : MonoBehaviour
             + Vector3.up * yError;
         desired = ResolveSteering(desired.sqrMagnitude > MinDirectionSqrMagnitude ? desired.normalized : tangent);
         flightController?.SetMoveDirection(desired, 1f);
+    }
+
+    private void FlyFormationFlyby(Entity3D target)
+    {
+        Vector3 targetPosition = target.transform.position;
+        Vector3 swarmCenter = ResolveLinkedSwarmCenter();
+        RefreshFormationRun(targetPosition, swarmCenter);
+
+        Vector3 runDirection = _formationRunDirection.sqrMagnitude > MinDirectionSqrMagnitude
+            ? _formationRunDirection.normalized
+            : ResolveDirectionToTarget(targetPosition, swarmCenter);
+        Vector3 right = Vector3.Cross(Vector3.up, runDirection);
+        if (right.sqrMagnitude <= MinDirectionSqrMagnitude)
+        {
+            right = Vector3.Cross(transform.up, runDirection);
+        }
+
+        right = right.sqrMagnitude > MinDirectionSqrMagnitude ? right.normalized : Vector3.right;
+        Vector3 formationUp = Vector3.Cross(runDirection, right).normalized;
+        int phaseCount = Mathf.Max(1, intendedSwarmSize);
+        float slotRadians = ((_slotIndex % phaseCount) / (float)phaseCount) * Mathf.PI * 2f;
+        slotRadians += Time.time * formationRollDegreesPerSecond * Mathf.Deg2Rad;
+
+        Vector3 ringOffset = (right * Mathf.Cos(slotRadians) + formationUp * Mathf.Sin(slotRadians)) * formationRadius;
+        Vector3 desiredFormationCenter = targetPosition + runDirection * formationOvershootDistance;
+        Vector3 desiredSlot = desiredFormationCenter + ringOffset;
+        Vector3 toSlot = desiredSlot - transform.position;
+        Vector3 slotCorrection = toSlot.sqrMagnitude > MinDirectionSqrMagnitude ? toSlot.normalized : Vector3.zero;
+        Vector3 desired = runDirection * formationForwardWeight + slotCorrection * formationSlotCorrectionWeight;
+
+        desired = ResolveSteering(desired.sqrMagnitude > MinDirectionSqrMagnitude ? desired.normalized : runDirection);
+        flightController?.SetMoveDirection(desired, 1f);
+    }
+
+    private void RefreshFormationRun(Vector3 targetPosition, Vector3 swarmCenter)
+    {
+        if (!_hasFormationRun)
+        {
+            BeginFormationRun(targetPosition, swarmCenter);
+            return;
+        }
+
+        float runProgress = Vector3.Dot(swarmCenter - targetPosition, _formationRunDirection);
+        bool passedTarget = runProgress >= formationOvershootDistance * 0.75f;
+        bool timedOut = Time.time - _formationRunStartedAt >= formationMaxRunDuration;
+        if (!passedTarget && !timedOut)
+        {
+            return;
+        }
+
+        float distanceToTarget = Vector3.Distance(swarmCenter, targetPosition);
+        if (distanceToTarget >= formationMinRunStartDistance || timedOut)
+        {
+            BeginFormationRun(targetPosition, swarmCenter);
+        }
+    }
+
+    private void BeginFormationRun(Vector3 targetPosition, Vector3 swarmCenter)
+    {
+        _formationRunDirection = ResolveDirectionToTarget(targetPosition, swarmCenter);
+        _formationRunStartedAt = Time.time;
+        _hasFormationRun = true;
+    }
+
+    private Vector3 ResolveDirectionToTarget(Vector3 targetPosition, Vector3 swarmCenter)
+    {
+        Vector3 toTarget = targetPosition - swarmCenter;
+        if (toTarget.sqrMagnitude > MinDirectionSqrMagnitude)
+        {
+            return toTarget.normalized;
+        }
+
+        return transform.forward.sqrMagnitude > MinDirectionSqrMagnitude ? transform.forward.normalized : Vector3.forward;
+    }
+
+    private Vector3 ResolveLinkedSwarmCenter()
+    {
+        Vector3 center = Vector3.zero;
+        int count = 0;
+        for (int i = 0; i < _linkedScouts.Count; i++)
+        {
+            SwarmScoutEnemyBrain3D scout = _linkedScouts[i];
+            if (scout == null || !scout.IsAlive)
+            {
+                continue;
+            }
+
+            center += scout.transform.position;
+            count++;
+        }
+
+        return count > 0 ? center / count : transform.position;
     }
 
     private void UpdateAlertWarmup(Entity3D target)
