@@ -18,6 +18,13 @@ public class EnemyTargetSensor3D : MonoBehaviour
         _currentTarget = null;
     }
 
+    public void ApplyProfile(EnemyBalanceProfile3D.CoreStats core)
+    {
+        detectionRange = Mathf.Max(0f, core.detectionRange);
+        _currentTarget = null;
+        _nextRefreshTime = 0f;
+    }
+
     public Entity3D RefreshTargetNow()
     {
         _nextRefreshTime = Time.time + Mathf.Max(0.02f, refreshInterval);

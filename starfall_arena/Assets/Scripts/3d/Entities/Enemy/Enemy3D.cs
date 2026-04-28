@@ -13,6 +13,11 @@ public class Enemy3D : Entity3D
     public NetEnemyMovement3D NetEnemyMovement => netEnemyMovement;
     public NetEnemyCombat3D NetEnemyCombat => netEnemyCombat;
 
+    public void ApplyProfile(EnemyBalanceProfile3D.CoreStats core)
+    {
+        OverrideMaxHealthAndShield(core.maxHealth, core.maxShield, refillCurrentValues: true);
+    }
+
     protected override void Awake()
     {
         base.Awake();

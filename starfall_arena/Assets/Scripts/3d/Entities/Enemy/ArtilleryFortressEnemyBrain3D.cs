@@ -117,6 +117,24 @@ public class ArtilleryFortressEnemyBrain3D : NetworkBehaviour
         _networkObject = GetComponent<NetworkObject>();
     }
 
+    public void ApplyProfile(EnemyBalanceProfile3D.ArtilleryFortressBrainStats stats)
+    {
+        thinkInterval = Mathf.Max(0.01f, stats.thinkInterval);
+        aimToleranceDegrees = Mathf.Clamp(stats.aimToleranceDegrees, 0f, 180f);
+        useLeadAim = stats.useLeadAim;
+        leadAimRefinementPasses = Mathf.Clamp(stats.leadAimRefinementPasses, 1, 3);
+        chargeWindUpDuration = Mathf.Max(0f, stats.chargeWindUpDuration);
+        maxFiringRange = Mathf.Max(0.01f, stats.maxFiringRange);
+        approachRangeBuffer = Mathf.Max(0f, stats.approachRangeBuffer);
+        outOfRangeApproachSpeedScale = Mathf.Clamp01(stats.outOfRangeApproachSpeedScale);
+        maxMissileRange = Mathf.Max(0f, stats.maxMissileRange);
+        missileAimToleranceDegrees = Mathf.Clamp(stats.missileAimToleranceDegrees, 0f, 180f);
+        missileToCannonStaggerDelay = Mathf.Max(0f, stats.missileToCannonStaggerDelay);
+        maxTurretRange = Mathf.Max(0f, stats.maxTurretRange);
+        turretToCannonStaggerDelay = Mathf.Max(0f, stats.turretToCannonStaggerDelay);
+        loseTargetMaxDistance = Mathf.Max(0f, stats.loseTargetMaxDistance);
+    }
+
     private void OnValidate()
     {
         thinkInterval = Mathf.Max(0.01f, thinkInterval);

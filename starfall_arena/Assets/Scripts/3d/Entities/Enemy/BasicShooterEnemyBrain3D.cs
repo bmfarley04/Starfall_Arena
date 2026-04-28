@@ -55,6 +55,14 @@ public class BasicShooterEnemyBrain3D : MonoBehaviour
         _networkObject = GetComponent<NetworkObject>();
     }
 
+    public void ApplyProfile(EnemyBalanceProfile3D.BasicShooterBrainStats stats)
+    {
+        thinkInterval = Mathf.Max(0.01f, stats.thinkInterval);
+        aimToleranceDegrees = Mathf.Clamp(stats.aimToleranceDegrees, 0f, 180f);
+        stopDistance = Mathf.Max(0f, stats.stopDistance);
+        fullSpeedDistance = Mathf.Max(stopDistance + 0.01f, stats.fullSpeedDistance);
+    }
+
     private void OnDisable()
     {
         flightController?.ClearFlightIntent();

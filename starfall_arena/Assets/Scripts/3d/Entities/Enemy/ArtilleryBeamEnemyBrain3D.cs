@@ -44,6 +44,18 @@ public class ArtilleryBeamEnemyBrain3D : MonoBehaviour
         _networkObject = GetComponent<NetworkObject>();
     }
 
+    public void ApplyProfile(EnemyBalanceProfile3D.ArtilleryBeamBrainStats stats)
+    {
+        thinkInterval = Mathf.Max(0.01f, stats.thinkInterval);
+        aimToleranceDegrees = Mathf.Clamp(stats.aimToleranceDegrees, 0f, 180f);
+        keepAwayDistance = Mathf.Max(0f, stats.keepAwayDistance);
+        retreatFullSpeedDistance = Mathf.Max(0f, stats.retreatFullSpeedDistance);
+        optimalRange = Mathf.Max(0f, stats.optimalRange);
+        rangeBuffer = Mathf.Max(0f, stats.rangeBuffer);
+        maxEngagementRange = Mathf.Max(0f, stats.maxEngagementRange);
+        minimumBeamRestartEnergy = Mathf.Max(0f, stats.minimumBeamRestartEnergy);
+    }
+
     private void OnDisable()
     {
         StopBeam();

@@ -72,6 +72,16 @@ public class TankEnemyBrain3D : MonoBehaviour
         _networkObject = GetComponent<NetworkObject>();
     }
 
+    public void ApplyProfile(EnemyBalanceProfile3D.TankBrainStats stats)
+    {
+        thinkInterval = Mathf.Max(0.01f, stats.thinkInterval);
+        cannonAimToleranceDegrees = Mathf.Clamp(stats.cannonAimToleranceDegrees, 0f, 180f);
+        missileAimToleranceDegrees = Mathf.Clamp(stats.missileAimToleranceDegrees, 0f, 180f);
+        weaponStaggerDelay = Mathf.Max(0f, stats.weaponStaggerDelay);
+        stopDistance = Mathf.Max(0f, stats.stopDistance);
+        fullSpeedDistance = Mathf.Max(stopDistance + 0.01f, stats.fullSpeedDistance);
+    }
+
     private void OnDisable()
     {
         flightController?.ClearFlightIntent();

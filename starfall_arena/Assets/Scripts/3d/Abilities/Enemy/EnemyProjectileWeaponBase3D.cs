@@ -215,6 +215,14 @@ public abstract class EnemyProjectileWeaponBase3D : MonoBehaviour, IEnemyProject
         return weaponConfig.projectilePrefab;
     }
 
+    public void ApplyProfile(EnemyBalanceProfile3D.ProjectileWeaponStats stats)
+    {
+        weaponConfig.cooldown = Mathf.Max(0f, stats.cooldown);
+        weaponConfig.speed = Mathf.Max(0f, stats.speed);
+        weaponConfig.damage = Mathf.Max(0f, stats.damage);
+        weaponConfig.lifetime = Mathf.Max(0f, stats.lifetime);
+    }
+
     protected virtual bool ValidateProjectilePrefab(GameObject projectilePrefab)
     {
         return projectilePrefab != null;

@@ -36,6 +36,14 @@ public class SuicideDroneEnemyBrain3D : MonoBehaviour
         _networkObject = GetComponent<NetworkObject>();
     }
 
+    public void ApplyProfile(EnemyBalanceProfile3D.SuicideDroneBrainStats stats)
+    {
+        thinkInterval = Mathf.Max(0.01f, stats.thinkInterval);
+        detonationDamage = Mathf.Max(0f, stats.detonationDamage);
+        detonationRadius = Mathf.Max(0f, stats.detonationRadius);
+        contactDetonationDistance = Mathf.Max(0f, stats.contactDetonationDistance);
+    }
+
     private void OnDisable()
     {
         _hasDetonated = false;

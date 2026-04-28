@@ -154,6 +154,12 @@ public class EnemyAIFlightController3D : MonoBehaviour
         moveSpeed = Mathf.Max(0f, newMoveSpeed);
     }
 
+    public void ApplyProfile(EnemyBalanceProfile3D.CoreStats core)
+    {
+        moveSpeed = Mathf.Max(0f, core.moveSpeed);
+        rotationDegreesPerSecond = Mathf.Max(0f, core.rotationDegreesPerSecond);
+    }
+
     private Quaternion RotateTowardDesiredFacing()
     {
         Vector3 desiredFacing = _hasFacingIntent
