@@ -281,6 +281,17 @@ When adding a new 3D script, place it under the subsystem it serves first. Do no
 - optional lensing samples `_CameraOpaqueTexture`; use `PC_RPAsset.asset` or another URP asset with opaque texture enabled when enabling the lensing shell, because the default `UniversalRP.asset` keeps opaque texture disabled
 - the v1 color profile is material-driven white/cyan HDR tuning; a planned 1D blackbody LUT can be added later if multiple authored star temperatures become a real content need
 
+## Pulsar Effect Authoring
+
+- the 3D pulsar centerpiece uses `Starfall/3D/Pulsar/CoreSurface` for the opaque emissive neutron-star sphere and `Starfall/3D/Pulsar/Jet` for two additive transparent polar jet cylinders
+- `Assets/Prefabs/3d_effects/Pulsar3D.prefab` wires the root `PulsarVisual3D`, a `Core` sphere, and `NorthJet` / `SouthJet` children with trigger `CapsuleCollider` volumes matched to the visible jet cylinders
+- keep pulsar rotation on `PulsarVisual3D` / transform rotation instead of baking the spin entirely into shader math; this keeps the visible beam direction, trigger volumes, and future gameplay hit checks aligned
+- `PulsarVisual3D` pushes `_ExternalPulseIntensity` into each assigned shared material; the prefab uses separate north/south jet materials so `_OutwardSign` can be baked per jet without requiring material property blocks during prefab import
+- the jet shader supports an optional seamless noise texture, but still has procedural noise so the prefab remains usable if the texture is replaced or temporarily missing
+- tune visible size through child transform scale and the `PulsarVisual3D` gameplay query radii/length, not shader displacement, so future damage volumes stay predictable
+- this prefab is currently visual plus trigger-volume authoring; any actual damage, networking authority, or scoring behavior should be owned by a separate gameplay system before it is treated as a match hazard
+- bloom is not owned by the shader; the materials output HDR values, but the active camera must render post-processing and the scene/global volume must have Bloom intensity above zero
+
 ## Change Classification Rule
 
 3D work should explicitly call out whether it is:

@@ -4862,7 +4862,7 @@ MonoBehaviour:
     - {fileID: 19852454}
   impact:
     explosionPrefab: {fileID: 100014, guid: d96258cdf841f5e4d8af97dce9661d8c, type: 3}
-    explosionScale: 0.5
+    explosionScale: 2
     impactSound: {fileID: 11400000, guid: 52e8c58e387b89849affa74c78d6d899, type: 2}
 --- !u!1 &152454
 GameObject:

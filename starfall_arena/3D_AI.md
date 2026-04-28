@@ -35,8 +35,8 @@ The 3D AI path should stay modular. Enemy prefabs should compose small scripts i
   - first Invasion enemy behavior
   - directly pursues the nearest player
   - slows/stops near the target instead of overshooting into long orbit loops
-  - fires its projectile weapon when aimed and off cooldown
-  - should use `ProjectileWeaponEnemy3D` for direct-fire guns so the AI path stays muzzle-forward and avoids player-only weapon overhead
+  - fires its projectile weapon when aimed and off cooldown; its aim tolerance controls when the enemy is allowed to shoot, while the actual projectile direction is the current target direction
+  - should use `ProjectileWeaponEnemy3D` for direct-fire guns so the AI path avoids player-only weapon overhead while still letting the brain supply the actual shot direction
 - `ArtilleryBeamEnemyBrain3D`
   - long-range beam enemy behavior translated from the old artillery concept
   - maintains a standoff band instead of hard-chasing into point-blank range
@@ -48,6 +48,16 @@ The 3D AI path should stay modular. Enemy prefabs should compose small scripts i
   - when using Forge beam visuals, prefer the dedicated `ForgeEnemyBeam3D` runtime so the enemy's visible beam, damage ray, and hit flare all share one endpoint calculation
   - for the Forge artillery beam path, keep the beam transform attached to the muzzle/forward anchor instead of rebuilding its world origin from the current aim vector each frame; the original Forge plasma beam assumes a stable hardpoint transform
   - if the enemy is still "stutter-pivoting" between beam bursts, prefer a short post-fire beam rotation-penalty linger instead of globally lowering the motor's base turn speed; that keeps the artillery identity without making all non-beam turning feel sluggish
+- `ArtilleryFortressEnemyBrain3D`
+  - long-range siege enemy that mostly anchors in place, but slowly creeps forward when the target is outside cannon range and inside its approach buffer
+  - uses lead aim based on the assigned cannon projectile speed and the target Rigidbody velocity, then locks the chosen fire direction at charge start
+  - aim tolerance only gates when the charge can begin; the cannonball launches along the locked lead direction after windup so a few degrees of allowed facing error does not become a long-range miss
+  - state machine: `Acquiring` faces the live lead direction until target range, aim, and weapon readiness line up; `Charging` holds the locked direction for `chargeWindUpDuration`, then fires once through `NetEnemyCombat3D` in networked Invasion or directly offline
+  - cannot start or finish charged shots outside `maxFiringRange`; when outside range but within `maxFiringRange + approachRangeBuffer`, it uses `SetFlightIntent` with `outOfRangeApproachSpeedScale` to lumber into range
+  - can optionally fire close-range guided missiles through `MissileWeaponEnemy3D` or `StaggeredMissileWeaponEnemy3D`; missile fire is gated by `maxMissileRange`, a looser missile aim tolerance, and the missile weapon's own cooldown
+  - with `StaggeredMissileWeaponEnemy3D`, the missile weapon cooldown starts the full rack sequence and `launcherStaggerInterval` spaces the individual launcher shots inside that sequence
+  - after a successful missile launch, briefly delays cannon charge startup with `missileToCannonStaggerDelay` so close-range missiles and the heavy cannon do not begin on the same frame
+  - charge readability is presentation-only through `ArtilleryFortressChargeTelegraph3D`; the server replicates start/stop visual state to clients, but clients still do not run AI or firing decisions
 - `SuicideDroneEnemyBrain3D`
   - dedicated detonation behavior for kamikaze enemies
   - always commits to the nearest player at full speed instead of using range management
@@ -57,9 +67,18 @@ The 3D AI path should stay modular. Enemy prefabs should compose small scripts i
   - slow, high-HP heavy that lumbers toward the player and holds at a wide stop band (default 35m) instead of kiting or rushing in
   - reuses the basic shooter speed-scale shape; turn rate is intentionally tuned slow on the prefab's `EnemyAIFlightController3D` so players can flank
   - drives two independent enemy-only weapons: a `ProjectileWeaponEnemy3D` slow heavy cannon (tight aim tolerance, short cooldown) and a `MissileWeaponEnemy3D` homing launcher whose projectile prefab is a `MissileProjectile3D` (wide aim tolerance, long cooldown)
+  - aim tolerances gate when each weapon may fire; the projectile/missile launch direction is still resolved toward the target instead of using the remaining muzzle-forward offset
   - each weapon's own cooldown still gates fire rate, but the brain also applies a small cross-weapon stagger delay after a successful shot so the cannon and missile launcher do not both dump on the same frame when both are ready
   - intentionally cheaper than the artillery brain: no line-of-sight raycast, no per-frame aim refresh, no beam state machine
+- `GlassCannonInterceptorEnemyBrain3D`
+  - fragile, high-pressure ranged enemy whose identity is a readable loop: `Reposition` -> `Settle` -> `Burst` -> `Recover`
+  - chooses a new world-space perch around the current player target at roughly 40-50m, using lateral plus vertical bias so it relocates through the full 3D flight volume without becoming a noisy continuous orbit
+  - stops moving during `Settle`, `Burst`, and `Recover`; those stationary beats are the intended player accuracy-check windows because the prefab should die to one player shot
+  - fires short `ProjectileWeaponEnemy3D` bursts only while its nose is within a tight aim tolerance of the player; shots travel toward the player's current position, not with predictive lead, and do not preserve the residual tolerance angle as shot error
+  - keeps movement simple and learnable by cycling perch direction deterministically instead of dodging individual player shots
+  - should be tuned as a glass cannon on the prefab: very low `Entity3D` health, high `EnemyAIFlightController3D.moveSpeed`, fast turn rate, and a fast high-damage bolt weapon
 - `RammerEnemyBrain3D`
+  - CURRENTLY DEPRECATED DUE TO COLLIDER BUGS
   - fast strike enemy whose identity is committed straight-line charges with strong knockback, not constant pursuit
   - state machine: `Stalk` -> `WindUp` -> `Charge` -> `Disengage` -> `Stalk`. Every transition is server-authoritative
     - **Stalk**: closes at full speed when farther than `stalkDistance`, then drifts at `stalkSpeedScale` once inside that band. The rammer hangs near the player while waiting for the next charge to be ready, so the player can read the breathing room
@@ -76,6 +95,11 @@ The 3D AI path should stay modular. Enemy prefabs should compose small scripts i
   - separation steering (`EnemySeparation3D`) is wired into Stalk and post-eject Disengage. It is intentionally NOT applied during the locked Charge or during the reverse-thrust Eject - any sideways drift would re-open the flight controller's facing-vs-move angle gate and zero the velocity (the freeze documented in `3D_BUGS.md`)
   - `ramDetectionDistance` should be tuned to at least `(rammer collider radius + target collider radius + ~0.5m safety)` so the hit fires before geometric overlap. `contactDetectionMask` should be set to the layer(s) used by player ship colliders for reliable detection in cluttered scenes
   - survives the impact - this is not a kamikaze. Knockback is the entire identity; damage is secondary.
+- `SplitterEnemyDeathSpawner3D`
+  - not a movement/combat brain; it is a death-spawn module that can be added to a normal enemy prefab to create the Splitter archetype
+  - subscribes to `Enemy3D.Died` and runs only on the spawn-authority side, then delegates child instantiation/tracking to `InvasionWaveManager3D`
+  - should spawn smaller, faster child prefabs with `Prevent Child Splitting` enabled for the current one-level Splitter design
+  - child enemies remain ordinary enemies after spawning, so their movement, targeting, attacks, networking, and death tracking come from the usual 3D Invasion components
 
 ## Architecture Rules
 

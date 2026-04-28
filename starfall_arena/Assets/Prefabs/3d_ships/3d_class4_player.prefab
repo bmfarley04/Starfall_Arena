@@ -5443,7 +5443,7 @@ Rigidbody:
   serializedVersion: 5
   m_Mass: 1
   m_LinearDamping: 0
-  m_AngularDamping: 2
+  m_AngularDamping: 5
   m_CenterOfMass: {x: 0, y: 0, z: 0}
   m_InertiaTensor: {x: 1, y: 1, z: 1}
   m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
@@ -5459,7 +5459,7 @@ Rigidbody:
   m_IsKinematic: 0
   m_Interpolate: 1
   m_Constraints: 0
-  m_CollisionDetection: 0
+  m_CollisionDetection: 1
 --- !u!114 &7926965533672300583
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5472,8 +5472,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 472a711a0b2023940b16aa210d0274a3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: '::'
-  maxHealth: 100
-  maxShield: 100
+  maxHealth: 1000
+  maxShield: 1000
   shieldController: {fileID: 7730684126597357551}
   impulseRecoilPitchSensitivity: 10
   weapons:
@@ -5586,6 +5586,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: '::'
   shipFlight: {fileID: 4650194337417168327}
+  enemyFlight: {fileID: 0}
   thrusterEffects:
     thrusters:
     - {fileID: 2628001361749432156}
@@ -5865,6 +5866,7 @@ MonoBehaviour:
   convergeBeam:
     beamPrefab: {fileID: 100000, guid: 7767d0d49caff014ba0e057220a05183, type: 3}
     targetTag: Enemy
+    targetFaction: 0
     damagePerSecond: 25
     maxDistance: 1000
     recoilForcePerSecond: 0
@@ -5948,7 +5950,7 @@ MonoBehaviour:
     regular:
       missilePrefab: {fileID: 152452, guid: a8f09a644404f9c4b907b62b3bb2d207, type: 3}
       damageMultiplier: 1
-      speedMultiplier: 0.5
+      speedMultiplier: 1
       impactMultiplier: 0
       recoilMultiplier: 0
       lifetimeOverride: 5
@@ -5979,7 +5981,7 @@ MonoBehaviour:
     dodgeDistance: 20
     slideDuration: 0.35
     primeWindow: 1.5
-    lookDeadzone: 0.35
+    directionInputDeadzone: 0.35
     empowerAbility: {fileID: 111100000000000105}
     forceEmpowered: 0
     empoweredCooldown: 1
@@ -6055,7 +6057,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 3466037049
+  GlobalObjectIdHash: 3311927117
   InScenePlacedSourceGlobalObjectIdHash: 2698202182
   DeferredDespawnTick: 0
   Ownership: 1

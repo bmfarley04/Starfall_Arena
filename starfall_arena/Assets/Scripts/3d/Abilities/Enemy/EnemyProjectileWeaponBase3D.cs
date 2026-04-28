@@ -61,8 +61,11 @@ public abstract class EnemyProjectileWeaponBase3D : MonoBehaviour, IEnemyProject
     public SoundEffect NetworkFireSound => fireSound;
     public abstract NetProjectileVisualType3D NetworkVisualType { get; }
 
+    public virtual bool IsFireGateReady => Time.time >= _nextFireTime && HasValidProjectilePrefab();
+
     protected Entity3D Owner => owner;
     protected ShipFlight3D ShipFlight => shipFlight;
+    protected virtual bool SupportsMuzzleEffects => true;
 
     protected virtual void Awake()
     {
@@ -76,7 +79,7 @@ public abstract class EnemyProjectileWeaponBase3D : MonoBehaviour, IEnemyProject
             GameObjectPool3D.Prewarm(projectilePrefab, projectilePrewarmCount);
         }
 
-        if (muzzleEffectPrefab != null)
+        if (SupportsMuzzleEffects && muzzleEffectPrefab != null)
         {
             GameObjectPool3D.Prewarm(muzzleEffectPrefab, muzzleEffectPrewarmCount);
         }
@@ -84,15 +87,20 @@ public abstract class EnemyProjectileWeaponBase3D : MonoBehaviour, IEnemyProject
 
     public bool TryFireAtFaction(Faction3D targetFaction)
     {
+        return TryFireAtFaction(targetFaction, Vector3.zero);
+    }
+
+    public bool TryFireAtFaction(Faction3D targetFaction, Vector3 fireDirectionOverride)
+    {
         if (!TryConsumeFireGate())
         {
             return false;
         }
 
-        return FireLocalVolley(targetFaction);
+        return FireLocalVolley(targetFaction, fireDirectionOverride);
     }
 
-    public bool TryConsumeFireGate()
+    public virtual bool TryConsumeFireGate()
     {
         if (Time.time < _nextFireTime)
         {
@@ -110,6 +118,11 @@ public abstract class EnemyProjectileWeaponBase3D : MonoBehaviour, IEnemyProject
 
     public void BuildNetworkProjectileRequests(Faction3D targetFaction, int tick, List<NetProjectileFireRequest3D> output)
     {
+        BuildNetworkProjectileRequests(targetFaction, tick, output, Vector3.zero);
+    }
+
+    public void BuildNetworkProjectileRequests(Faction3D targetFaction, int tick, List<NetProjectileFireRequest3D> output, Vector3 fireDirectionOverride)
+    {
         if (output == null || !HasValidProjectilePrefab())
         {
             return;
@@ -117,18 +130,20 @@ public abstract class EnemyProjectileWeaponBase3D : MonoBehaviour, IEnemyProject
 
         Transform[] muzzles = ResolveFiringMuzzles();
         Vector3 inheritedVelocity = GetInheritedVelocity();
+        int requestsBefore = output.Count;
 
         for (int i = 0; i < muzzles.Length; i++)
         {
             Transform spawnMuzzle = muzzles[i] != null ? muzzles[i] : transform;
-            Vector3 fireDirection = ResolveFireDirection(spawnMuzzle);
+            Vector3 fireDirection = ResolveFireDirection(spawnMuzzle, fireDirectionOverride);
+            Quaternion fireRotation = Quaternion.LookRotation(fireDirection, ResolveUpVector(fireDirection));
             output.Add(new NetProjectileFireRequest3D
             {
                 Tick = tick,
                 SpawnPosition = ResolveProjectileSpawnPosition(spawnMuzzle),
-                SpawnRotation = Quaternion.LookRotation(fireDirection, ResolveUpVector(fireDirection)),
+                SpawnRotation = fireRotation,
                 MuzzleEffectPosition = spawnMuzzle.TransformPoint(muzzleEffectLocalOffset),
-                MuzzleEffectRotation = spawnMuzzle.rotation,
+                MuzzleEffectRotation = fireRotation,
                 Direction = fireDirection,
                 InheritedVelocity = inheritedVelocity,
                 Speed = weaponConfig.speed,
@@ -143,6 +158,8 @@ public abstract class EnemyProjectileWeaponBase3D : MonoBehaviour, IEnemyProject
                 AccuracyAttackId = PlayerCombatStats3D.InvalidAttackId
             });
         }
+
+        OnNetworkVolleyBuilt(output.Count - requestsBefore);
     }
 
     public void SpawnNetworkProjectile(
@@ -159,7 +176,7 @@ public abstract class EnemyProjectileWeaponBase3D : MonoBehaviour, IEnemyProject
             return;
         }
 
-        if (playMuzzleEffect)
+        if (playMuzzleEffect && SupportsMuzzleEffects)
         {
             SpawnMuzzleEffect(fire.MuzzleEffectPosition, fire.MuzzleEffectRotation);
         }
@@ -182,7 +199,7 @@ public abstract class EnemyProjectileWeaponBase3D : MonoBehaviour, IEnemyProject
         return projectilePrefab != null;
     }
 
-    private bool FireLocalVolley(Faction3D targetFaction)
+    private bool FireLocalVolley(Faction3D targetFaction, Vector3 fireDirectionOverride)
     {
         GameObject projectilePrefab = GetProjectilePrefab();
         if (projectilePrefab == null)
@@ -196,8 +213,8 @@ public abstract class EnemyProjectileWeaponBase3D : MonoBehaviour, IEnemyProject
         for (int i = 0; i < muzzles.Length; i++)
         {
             Transform spawnMuzzle = muzzles[i] != null ? muzzles[i] : transform;
-            Vector3 fireDirection = ResolveFireDirection(spawnMuzzle);
-            SpawnMuzzleEffect(spawnMuzzle);
+            Vector3 fireDirection = ResolveFireDirection(spawnMuzzle, fireDirectionOverride);
+            SpawnMuzzleEffect(spawnMuzzle, fireDirection);
 
             NetProjectileFireRequest3D fire = new NetProjectileFireRequest3D
             {
@@ -233,6 +250,7 @@ public abstract class EnemyProjectileWeaponBase3D : MonoBehaviour, IEnemyProject
         }
 
         fireSound?.PlayAtPoint(transform.position);
+        OnLocalVolleyFired(spawnedCount);
         return true;
     }
 
@@ -275,7 +293,7 @@ public abstract class EnemyProjectileWeaponBase3D : MonoBehaviour, IEnemyProject
         return true;
     }
 
-    private bool HasValidProjectilePrefab()
+    protected bool HasValidProjectilePrefab()
     {
         GameObject projectilePrefab = GetProjectilePrefab();
         if (projectilePrefab == null)
@@ -297,7 +315,7 @@ public abstract class EnemyProjectileWeaponBase3D : MonoBehaviour, IEnemyProject
         return false;
     }
 
-    private Transform[] ResolveFiringMuzzles()
+    protected virtual Transform[] ResolveFiringMuzzles()
     {
         if (weaponConfig.muzzles != null && weaponConfig.muzzles.Length > 0)
         {
@@ -305,6 +323,14 @@ public abstract class EnemyProjectileWeaponBase3D : MonoBehaviour, IEnemyProject
         }
 
         return new[] { transform };
+    }
+
+    protected virtual void OnLocalVolleyFired(int spawnedCount)
+    {
+    }
+
+    protected virtual void OnNetworkVolleyBuilt(int requestCount)
+    {
     }
 
     private Vector3 ResolveProjectileSpawnPosition(Transform muzzle)
@@ -315,9 +341,11 @@ public abstract class EnemyProjectileWeaponBase3D : MonoBehaviour, IEnemyProject
             + (muzzle.forward * projectileSpawnLocalOffset.z);
     }
 
-    private Vector3 ResolveFireDirection(Transform muzzle)
+    private Vector3 ResolveFireDirection(Transform muzzle, Vector3 fireDirectionOverride)
     {
-        Vector3 fireDirection = muzzle != null ? muzzle.forward : transform.forward;
+        Vector3 fireDirection = fireDirectionOverride.sqrMagnitude > 0.0001f
+            ? fireDirectionOverride
+            : muzzle != null ? muzzle.forward : transform.forward;
         if (fireDirection.sqrMagnitude <= 0.0001f)
         {
             fireDirection = transform.forward.sqrMagnitude > 0.0001f ? transform.forward : Vector3.forward;
@@ -328,14 +356,23 @@ public abstract class EnemyProjectileWeaponBase3D : MonoBehaviour, IEnemyProject
 
     private void SpawnMuzzleEffect(Transform muzzle)
     {
-        if (muzzle == null || muzzleEffectPrefab == null)
+        Vector3 fireDirection = muzzle != null ? muzzle.forward : transform.forward;
+        SpawnMuzzleEffect(muzzle, fireDirection);
+    }
+
+    private void SpawnMuzzleEffect(Transform muzzle, Vector3 fireDirection)
+    {
+        if (muzzle == null || !SupportsMuzzleEffects || muzzleEffectPrefab == null)
         {
             return;
         }
 
         Transform parent = parentMuzzleEffectToMuzzle ? muzzle : null;
         Vector3 spawnPosition = muzzle.TransformPoint(muzzleEffectLocalOffset);
-        GameObject effectObject = GameObjectPool3D.Spawn(muzzleEffectPrefab, spawnPosition, muzzle.rotation, parent);
+        Quaternion spawnRotation = fireDirection.sqrMagnitude > 0.0001f
+            ? Quaternion.LookRotation(fireDirection.normalized, ResolveUpVector(fireDirection))
+            : muzzle.rotation;
+        GameObject effectObject = GameObjectPool3D.Spawn(muzzleEffectPrefab, spawnPosition, spawnRotation, parent);
         PooledObject3D pooled = effectObject != null ? effectObject.GetComponent<PooledObject3D>() : null;
         if (pooled != null)
         {
@@ -345,7 +382,7 @@ public abstract class EnemyProjectileWeaponBase3D : MonoBehaviour, IEnemyProject
 
     private void SpawnMuzzleEffect(Vector3 position, Quaternion rotation)
     {
-        if (muzzleEffectPrefab == null)
+        if (!SupportsMuzzleEffects || muzzleEffectPrefab == null)
         {
             return;
         }

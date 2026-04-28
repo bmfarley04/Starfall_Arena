@@ -31,10 +31,10 @@ public class TankEnemyBrain3D : MonoBehaviour
     [SerializeField] private float thinkInterval = 0.05f;
 
     [Header("Aim Tolerances")]
-    [Tooltip("Max angle (degrees) between the tank's forward and the target direction before the cannon will fire. Keep tight - slow shells need to lead well.")]
+    [Tooltip("Max angle (degrees) between the tank's forward and the target direction before the cannon will fire. This gates permission to fire; launched shots use the target direction so allowed facing error does not become projectile error.")]
     [SerializeField] private float cannonAimToleranceDegrees = 8f;
 
-    [Tooltip("Max angle (degrees) between the tank's forward and the target direction before the missile launcher will fire. Keep loose - missiles guide themselves after launch.")]
+    [Tooltip("Max angle (degrees) between the tank's forward and the target direction before the missile launcher will fire. This gates permission to fire; missiles still launch toward the target before guidance takes over.")]
     [SerializeField] private float missileAimToleranceDegrees = 35f;
 
     [Header("Fire Cadence")]
@@ -174,10 +174,10 @@ public class TankEnemyBrain3D : MonoBehaviour
 
         if (NetTickUtil.IsActive && netEnemyCombat != null && netEnemyCombat.IsSpawned)
         {
-            return netEnemyCombat.TryFireProjectilePattern(weapon, Faction3D.PlayerTeam);
+            return netEnemyCombat.TryFireProjectilePattern(weapon, Faction3D.PlayerTeam, toTargetNormalized);
         }
 
-        return weapon.TryFireAtFaction(Faction3D.PlayerTeam);
+        return weapon.TryFireAtFaction(Faction3D.PlayerTeam, toTargetNormalized);
     }
 
     private float ResolveDistanceSpeedScale(float distanceToTarget)

@@ -8,8 +8,11 @@ public interface IEnemyProjectileWeapon3D
     NetProjectileVisualType3D NetworkVisualType { get; }
 
     bool TryFireAtFaction(Faction3D targetFaction);
+    bool TryFireAtFaction(Faction3D targetFaction, Vector3 fireDirectionOverride);
     bool TryConsumeFireGate();
+    bool IsFireGateReady { get; }
     void BuildNetworkProjectileRequests(Faction3D targetFaction, int tick, List<NetProjectileFireRequest3D> output);
+    void BuildNetworkProjectileRequests(Faction3D targetFaction, int tick, List<NetProjectileFireRequest3D> output, Vector3 fireDirectionOverride);
     void SpawnNetworkProjectile(
         NetProjectileFireRequest3D fire,
         string targetTag,

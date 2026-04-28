@@ -23,6 +23,11 @@ public class NetEnemyCombat3D : NetworkBehaviour
 
     public bool TryFireProjectilePattern(IEnemyProjectileWeapon3D sourceWeapon, Faction3D targetFaction)
     {
+        return TryFireProjectilePattern(sourceWeapon, targetFaction, Vector3.zero);
+    }
+
+    public bool TryFireProjectilePattern(IEnemyProjectileWeapon3D sourceWeapon, Faction3D targetFaction, Vector3 fireDirectionOverride)
+    {
         if (!IsServer || !IsSpawned)
         {
             return false;
@@ -47,7 +52,7 @@ public class NetEnemyCombat3D : NetworkBehaviour
         }
 
         _projectileRequests.Clear();
-        sourceWeapon.BuildNetworkProjectileRequests(targetFaction, NetTickUtil.CurrentTick, _projectileRequests);
+        sourceWeapon.BuildNetworkProjectileRequests(targetFaction, NetTickUtil.CurrentTick, _projectileRequests, fireDirectionOverride);
         if (_projectileRequests.Count == 0)
         {
             return false;

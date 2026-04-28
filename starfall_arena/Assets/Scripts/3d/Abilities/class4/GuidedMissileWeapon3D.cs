@@ -50,6 +50,8 @@ public class GuidedMissileWeapon3D : Weapon3D
     public GameObject RegularProjectilePrefab => guidedMissile.regular.missilePrefab;
     public GameObject EmpoweredProjectilePrefab => guidedMissile.empowered.missilePrefab;
 
+    protected override bool SupportsMuzzleEffects => false;
+
     protected override void Awake()
     {
         base.Awake();

@@ -111,17 +111,19 @@ public class InvasionWaveManager3D : MonoBehaviour
         }
     }
 
-    private void SpawnEnemy(GameObject enemyPrefab)
+    public Enemy3D SpawnEnemyAt(GameObject enemyPrefab, Vector3 spawnPosition, Quaternion spawnRotation)
     {
-        if (enemyPrefab == null)
+        if (!HasSpawnAuthority())
         {
-            Debug.LogWarning("[InvasionWaveManager3D] Wave entry skipped because enemyPrefab is missing.", this);
-            return;
+            return null;
         }
 
-        Transform spawnPoint = ResolveSpawnPoint();
-        Vector3 spawnPosition = spawnPoint != null ? spawnPoint.position : transform.position;
-        Quaternion spawnRotation = spawnPoint != null ? spawnPoint.rotation : transform.rotation;
+        if (enemyPrefab == null)
+        {
+            Debug.LogWarning("[InvasionWaveManager3D] Enemy spawn skipped because enemyPrefab is missing.", this);
+            return null;
+        }
+
         GameObject enemyObject = Instantiate(enemyPrefab, spawnPosition, spawnRotation);
 
         if (NetTickUtil.IsActive)
@@ -131,7 +133,7 @@ public class InvasionWaveManager3D : MonoBehaviour
             {
                 Debug.LogError($"[InvasionWaveManager3D] Networked enemy prefab '{enemyPrefab.name}' is missing NetworkObject.", enemyObject);
                 Destroy(enemyObject);
-                return;
+                return null;
             }
 
             networkObject.Spawn(true);
@@ -142,10 +144,19 @@ public class InvasionWaveManager3D : MonoBehaviour
         {
             Debug.LogError($"[InvasionWaveManager3D] Enemy prefab '{enemyPrefab.name}' is missing Enemy3D.", enemyObject);
             Destroy(enemyObject);
-            return;
+            return null;
         }
 
         TrackEnemy(enemy);
+        return enemy;
+    }
+
+    private Enemy3D SpawnEnemy(GameObject enemyPrefab)
+    {
+        Transform spawnPoint = ResolveSpawnPoint();
+        Vector3 spawnPosition = spawnPoint != null ? spawnPoint.position : transform.position;
+        Quaternion spawnRotation = spawnPoint != null ? spawnPoint.rotation : transform.rotation;
+        return SpawnEnemyAt(enemyPrefab, spawnPosition, spawnRotation);
     }
 
     private Transform ResolveSpawnPoint()

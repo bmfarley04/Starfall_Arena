@@ -2,7 +2,7 @@ using UnityEngine;
 
 public class WhiteDwarfStarVisual3D : MonoBehaviour
 {
-    private static readonly int ExternalPulseIntensityId = Shader.PropertyToID("_ExternalPulseIntensity");
+    private const string ExternalPulseIntensityName = "_ExternalPulseIntensity";
 
     [Header("Renderers")]
     [Tooltip("Renderer using Starfall/3D/WhiteDwarf/CoreSurface. Property blocks are used so the shared material is not duplicated at runtime.")]
@@ -33,8 +33,6 @@ public class WhiteDwarfStarVisual3D : MonoBehaviour
 
     [Tooltip("Extra distance beyond Lensing Enable Distance before the shell is hidden again, preventing visible flicker near the threshold.")]
     [SerializeField] [Min(0f)] private float lensingDisableHysteresis = 20f;
-
-    private readonly MaterialPropertyBlock _propertyBlock = new MaterialPropertyBlock();
 
     private Camera _cachedCamera;
     private bool _isLensingVisible;
@@ -113,14 +111,12 @@ public class WhiteDwarfStarVisual3D : MonoBehaviour
 
     private void ApplyPulseToRenderer(Renderer targetRenderer, float pulse)
     {
-        if (targetRenderer == null)
+        if (targetRenderer == null || targetRenderer.sharedMaterial == null)
         {
             return;
         }
 
-        targetRenderer.GetPropertyBlock(_propertyBlock);
-        _propertyBlock.SetFloat(ExternalPulseIntensityId, pulse);
-        targetRenderer.SetPropertyBlock(_propertyBlock);
+        targetRenderer.sharedMaterial.SetFloat(ExternalPulseIntensityName, pulse);
     }
 
     private void UpdateLensingVisibility()

@@ -81,6 +81,7 @@ public abstract class Weapon3D : MonoBehaviour, IReticleSpinSource3D
     public float CooldownReadyRatio => GetCooldownReadyRatio();
     public bool UsesResourceAvailability => availabilityMode == AvailabilityMode3D.ResourceConsumption;
     public bool UsesCooldownAvailability => availabilityMode == AvailabilityMode3D.Cooldown;
+    protected virtual bool SupportsMuzzleEffects => true;
 
     protected virtual void Awake()
     {
@@ -97,7 +98,7 @@ public abstract class Weapon3D : MonoBehaviour, IReticleSpinSource3D
             }
         }
 
-        if (muzzleEffectPrefab != null)
+        if (SupportsMuzzleEffects && muzzleEffectPrefab != null)
         {
             GameObjectPool3D.Prewarm(muzzleEffectPrefab, muzzleEffectPrewarmCount);
         }
@@ -572,7 +573,7 @@ public abstract class Weapon3D : MonoBehaviour, IReticleSpinSource3D
             return;
         }
 
-        if (playMuzzleEffect)
+        if (playMuzzleEffect && SupportsMuzzleEffects)
         {
             SpawnMuzzleEffect(fire.MuzzleEffectPosition, fire.MuzzleEffectRotation);
         }
@@ -796,7 +797,7 @@ public abstract class Weapon3D : MonoBehaviour, IReticleSpinSource3D
 
     private void SpawnMuzzleEffect(Transform muzzle)
     {
-        if (muzzleEffectPrefab == null)
+        if (!SupportsMuzzleEffects || muzzleEffectPrefab == null)
         {
             return;
         }
@@ -813,7 +814,7 @@ public abstract class Weapon3D : MonoBehaviour, IReticleSpinSource3D
 
     private void SpawnMuzzleEffect(Vector3 position, Quaternion rotation)
     {
-        if (muzzleEffectPrefab == null)
+        if (!SupportsMuzzleEffects || muzzleEffectPrefab == null)
         {
             return;
         }

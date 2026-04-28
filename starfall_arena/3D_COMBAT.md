@@ -75,11 +75,18 @@ Base input rule:
   - routes network-session projectile fire through `NetCombat3D` while preserving local non-network behavior
 - `ProjectileWeaponEnemy3D`
   - stripped-down enemy-only direct-fire projectile weapon
-  - always fires muzzle-forward and keeps only cooldown, muzzle, projectile, recoil, and muzzle-FX data
+  - keeps only cooldown, muzzle, projectile, recoil, muzzle-FX data, and an optional brain-supplied fire direction
+  - when an enemy brain supplies a fire direction, aim tolerance is only a permission gate; the projectile launches along the requested target/lead direction instead of inheriting the remaining muzzle-facing error
+  - when no fire direction is supplied, falls back to muzzle-forward firing for simple turret/test cases
   - should be preferred for AI projectile weapons that do not need player slot selection, screen-center aiming, or resource/HUD behavior
 - `MissileWeaponEnemy3D`
   - stripped-down enemy-only missile launcher that reuses the same minimal volley/cooldown path as `ProjectileWeaponEnemy3D`
   - expects a projectile prefab with `MissileProjectile3D` and supports multi-muzzle launches for enemy salvos
+  - suppresses inherited muzzle-FX spawning because missile prefabs should carry their own exhaust/trail/launch presentation instead of using generic gun muzzle flashes
+- `StaggeredMissileWeaponEnemy3D`
+  - enemy-only guided missile launcher variant for racks with several authored launcher transforms
+  - consumes the inherited weapon cooldown once to start a rack sequence, then fires one configured muzzle at a time using `launcherStaggerInterval` until the sequence finishes
+  - uses the same enemy projectile/network contract as `MissileWeaponEnemy3D`; gameplay fire stays server-authoritative through `NetEnemyCombat3D`, while clients receive the normal cosmetic projectile RPC
 - `StupidTurret3D`
   - scene-test firing driver for stationary or non-piloted 3D ships
   - should be paired with `ProjectileWeapon3D` aim set to `MuzzleForward` when the goal is "fire where the ship is facing"
@@ -159,6 +166,7 @@ Base input rule:
   - Class 4 missile weapon on the `Weapon3D` path
   - launches an authored guided-missile projectile prefab through the shared projectile/network broker instead of bypassing `NetCombat3D`
   - base and empowered missile variants use separate visual types so remote proxies and reflected-projectile cosmetics resolve the correct prefab
+  - suppresses inherited muzzle-FX spawning for the same reason as enemy missile weapons: the missile projectile prefab owns exhaust, trails, delayed renderer despawn, and impact presentation
 - `MissileProjectile3D`
   - full 3D homing projectile runtime for Class 4 missiles
   - reacquires targets from the explicit projectile faction first so the same prefab works in duel and Invasion flows; specific duel player tags remain a compatibility fallback

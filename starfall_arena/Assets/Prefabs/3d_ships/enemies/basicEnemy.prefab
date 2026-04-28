@@ -160,8 +160,7 @@ GameObject:
   - component: {fileID: 7411681282315552791}
   - component: {fileID: 8333524130418560552}
   - component: {fileID: 754838546632477888}
-  - component: {fileID: 7794965051313904393}
-  - component: {fileID: 8058368397022116202}
+  - component: {fileID: 6839147771054517269}
   - component: {fileID: 3111052346147751391}
   - component: {fileID: 8521091187178700546}
   - component: {fileID: 8102121692020982188}
@@ -199,7 +198,7 @@ Rigidbody:
   serializedVersion: 5
   m_Mass: 1
   m_LinearDamping: 0
-  m_AngularDamping: 0.05
+  m_AngularDamping: 2
   m_CenterOfMass: {x: 0, y: 0, z: 0}
   m_InertiaTensor: {x: 1, y: 1, z: 1}
   m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
@@ -213,7 +212,7 @@ Rigidbody:
   m_ImplicitTensor: 1
   m_UseGravity: 0
   m_IsKinematic: 0
-  m_Interpolate: 0
+  m_Interpolate: 1
   m_Constraints: 0
   m_CollisionDetection: 0
 --- !u!114 &695693369330019818
@@ -282,7 +281,7 @@ MonoBehaviour:
   shieldController: {fileID: 1984556137921537830}
   impulseRecoilPitchSensitivity: 1
   weapons:
-  - {fileID: 8058368397022116202}
+  - {fileID: 0}
   selectedWeaponIndex: 0
   abilities: []
   shipFlight: {fileID: 1489676882231302956}
@@ -326,32 +325,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyTargetSensor3D
   targetFaction: 1
-  detectionRange: 800
+  detectionRange: 5000
   refreshInterval: 0.15
-  lineOfSightBlockers:
-    serializedVersion: 2
-    m_Bits: 0
-  lineOfSightRadius: 0.5
---- !u!114 &7794965051313904393
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7279590565626816591}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b0102a7b9880bf64f87921c6c88ce3e4, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::EnemyObstacleAvoidance3D
-  obstacleMask:
-    serializedVersion: 2
-    m_Bits: 256
-  lookAheadDistance: 100
-  probeRadius: 3
-  avoidanceStrength: 1.5
-  whiskerAngle: 28
---- !u!114 &8058368397022116202
+--- !u!114 &6839147771054517269
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -360,45 +336,33 @@ MonoBehaviour:
   m_GameObject: {fileID: 7279590565626816591}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 94e74930c9de4c5d97378d9d47fcafb8, type: 3}
+  m_Script: {fileID: 11500000, guid: 8b4e3cbca7291e54aa74081675226417, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ProjectileWeapon3D
-  availabilityMode: 1
-  reticleFillColor: {r: 1, g: 1, b: 1, a: 1}
-  owner: {fileID: 7411681282315552791}
-  shipFlight: {fileID: 1489676882231302956}
-  resource:
-    capacity: 100
-    recoveryPerSecond: 30
-  aimMode: 0
-  aimCamera: {fileID: 0}
-  aimCollisionMask:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  maxAimDistance: 1000
-  screenCenterConvergenceDistance: 150
-  screenCenterDirectionBlend: 0.35
-  muzzleEffectPrefab: {fileID: 100004, guid: 8377d399368837240be74b846e11344c, type: 3}
-  muzzleEffectLifetime: 0.05
-  parentMuzzleEffectToMuzzle: 1
-  projectileSpawnLocalOffset: {x: 0, y: 0, z: 2}
-  muzzleEffectLocalOffset: {x: 0, y: 0, z: 1.5}
-  projectilePrewarmCount: 12
-  muzzleEffectPrewarmCount: 4
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectileWeaponEnemy3D
   weaponConfig:
     projectilePrefab: {fileID: 100004, guid: 10bd1b989a094b9478ab5747169dd1e1, type: 3}
     muzzles:
     - {fileID: 6501978813318897820}
-    targetTag: Enemy
+    targetTag: 
     targetFaction: 1
-    cooldown: 0.25
+    cooldown: 2
     speed: 120
     damage: 10
     lifetime: 5
     impactForce: 0
     recoilForce: 0
-    energyCost: 18
+    energyCost: 0
+  owner: {fileID: 7411681282315552791}
+  shipFlight: {fileID: 1489676882231302956}
+  firingBody: {fileID: 6994173486931492103}
   fireSound: {fileID: 0}
+  muzzleEffectPrefab: {fileID: 100004, guid: 8377d399368837240be74b846e11344c, type: 3}
+  muzzleEffectLifetime: 0.05
+  parentMuzzleEffectToMuzzle: 1
+  projectileSpawnLocalOffset: {x: 0, y: 0, z: 2}
+  muzzleEffectLocalOffset: {x: 0, y: 0, z: 1.5}
+  projectilePrewarmCount: 4
+  muzzleEffectPrewarmCount: 2
 --- !u!114 &3111052346147751391
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -412,6 +376,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ShipThrusterVfx3D
   shipFlight: {fileID: 1489676882231302956}
+  enemyFlight: {fileID: 0}
   thrusterEffects:
     thrusters:
     - {fileID: 2659739174165192653}
@@ -477,15 +442,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a4b93c27db532be499e7ead4f62c59dd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BasicShooterEnemyBrain3D
-  primaryWeapon: {fileID: 8058368397022116202}
+  primaryWeapon: {fileID: 0}
   flightController: {fileID: 8333524130418560552}
   targetSensor: {fileID: 754838546632477888}
-  obstacleAvoidance: {fileID: 7794965051313904393}
+  obstacleAvoidance: {fileID: 0}
   netEnemyCombat: {fileID: 0}
   thinkInterval: 0.05
   aimToleranceDegrees: 10
   stopDistance: 18
   fullSpeedDistance: 45
+  useObstacleAvoidance: 0
 --- !u!1001 &225114612700398349
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1167,7 +1133,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4618339506310719171, guid: 433d19638a778ce4eabe1f05ad84a3c1, type: 3}
       propertyPath: InitialModule.startSize.scalar
-      value: 1.3
+      value: 1.7
       objectReference: {fileID: 0}
     - target: {fileID: 4618339506310719171, guid: 433d19638a778ce4eabe1f05ad84a3c1, type: 3}
       propertyPath: InitialModule.startSpeed.scalar
@@ -1179,7 +1145,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4618339506310719171, guid: 433d19638a778ce4eabe1f05ad84a3c1, type: 3}
       propertyPath: InitialModule.startLifetime.scalar
-      value: 1.7
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 4618339506310719171, guid: 433d19638a778ce4eabe1f05ad84a3c1, type: 3}
       propertyPath: InitialModule.startColor.maxColor.b

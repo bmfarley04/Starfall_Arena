@@ -8,7 +8,7 @@ using UnityEngine;
 public class BasicShooterEnemyBrain3D : MonoBehaviour
 {
     [Header("Basic Shooter")]
-    [Tooltip("Enemy-only direct-fire projectile weapon. This stripped-down AI version always fires muzzle-forward instead of using player aim logic.")]
+    [Tooltip("Enemy-only direct-fire projectile weapon. The brain gates firing by nose tolerance, then supplies the target direction so long-range shots are aimed at the player instead of inheriting the remaining tolerance error.")]
     [SerializeField] private ProjectileWeaponEnemy3D primaryWeapon;
 
     [Tooltip("AI flight motor that drives the Rigidbody. Auto-assigned from this GameObject if left empty.")]
@@ -102,11 +102,11 @@ public class BasicShooterEnemyBrain3D : MonoBehaviour
 
         if (NetTickUtil.IsActive && netEnemyCombat != null && netEnemyCombat.IsSpawned)
         {
-            netEnemyCombat.TryFireProjectilePattern(primaryWeapon, Faction3D.PlayerTeam);
+            netEnemyCombat.TryFireProjectilePattern(primaryWeapon, Faction3D.PlayerTeam, toTarget.normalized);
             return;
         }
 
-        primaryWeapon.TryFireAtFaction(Faction3D.PlayerTeam);
+        primaryWeapon.TryFireAtFaction(Faction3D.PlayerTeam, toTarget.normalized);
     }
 
     private bool IsAimedAtTarget(Vector3 toTarget)
