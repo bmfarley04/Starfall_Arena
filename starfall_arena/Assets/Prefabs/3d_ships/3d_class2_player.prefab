@@ -9,6 +9,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 670368857817404439}
+  - component: {fileID: 9200000000000000002}
   m_Layer: 0
   m_Name: enginepoint3
   m_TagString: Untagged
@@ -10819,6 +10820,10 @@ MonoBehaviour:
   maxShield: 100
   shieldController: {fileID: 3132001650250044452}
   impulseRecoilPitchSensitivity: 10
+  uprightRecoveryEnabled: 1
+  uprightRecoveryDelay: 2.5
+  uprightRecoveryDegreesPerSecond: 90
+  uprightRecoveryInputDeadZone: 0.05
   weapons:
   - {fileID: 3009000303518804356}
   - {fileID: 8372746202662312326}
@@ -20735,3 +20740,16 @@ MonoBehaviour:
   mass: 0.5
   linearDamping: 0.5
   angularDamping: 0.3
+--- !u!114 &9200000000000000002
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 507668435990495}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3a0c3a2dd905405f9cc204c46dfd9e67, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerBalanceProfileApplier3D
+  profile: {fileID: 11400000, guid: 4b0e7ae1d0a7445fabc5f4a279f538ef, type: 2}

@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d1a96bc1d2334bb4a8f0e77821d7ea01, type: 3}
+  m_Name: BasicEnemyProfile
+  m_EditorClassIdentifier: 
+  core:
+    maxHealth: 100
+    maxShield: 100
+    moveSpeed: 35
+    rotationDegreesPerSecond: 180
+    detectionRange: 5000
+  projectileWeapons:
+  - cooldown: 2
+    speed: 120
+    damage: 10
+    lifetime: 5
+  beamWeapons: []
+  brain:
+    thinkInterval: 0.05
+    aimToleranceDegrees: 10
+    stopDistance: 18
+    fullSpeedDistance: 45

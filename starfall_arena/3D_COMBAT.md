@@ -224,6 +224,7 @@ Current player control rule:
 - while held, Anchor applies `Player3D` inspector-configured thrust and rotation multipliers to `ShipFlight3D`
 - while held, Anchor can enable configured `SplitStateLightningRig3D` and `ShipSplitOffsetRig3D` components under the player
 - default Anchor tuning is `thrustMultiplier = 0` and `rotationMultiplier = 3`
+- each active 3D player prefab should have the matching `PlayerBalanceProfile3D`-derived asset and a `PlayerBalanceProfileApplier3D` reference on the prefab root. Tune health, shield regen, Anchor multipliers, flight handling, weapon balance, and class-specific ability numbers in the profile; keep cameras, models, VFX, audio, muzzles, projectile prefabs, UI, layers, and network references on the prefab.
 
 Current 3D flight rule that affects combat feel:
 

@@ -88,6 +88,16 @@ public class Player3D : Entity3D
 
     public bool IsAnchorActive => anchorConfig.enabled && _anchorHeld;
 
+    public void ApplyProfile(PlayerBalanceProfile3D.CoreStats core)
+    {
+        OverrideMaxHealthAndShield(core.maxHealth, core.maxShield, refillCurrentValues: true);
+        shieldRegen.regenDelay = Mathf.Max(0f, core.shieldRegenDelay);
+        shieldRegen.regenRate = Mathf.Max(0f, core.shieldRegenRate);
+        anchorConfig.enabled = core.anchorEnabled;
+        anchorConfig.rotationMultiplier = Mathf.Max(0f, core.anchorRotationMultiplier);
+        anchorConfig.thrustMultiplier = Mathf.Max(0f, core.anchorThrustMultiplier);
+    }
+
     protected override void Awake()
     {
         base.Awake();

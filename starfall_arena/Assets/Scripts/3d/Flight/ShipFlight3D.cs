@@ -161,6 +161,32 @@ public class ShipFlight3D : MonoBehaviour
         }
     }
 
+    public void ApplyProfile(PlayerBalanceProfile3D.FlightStats flightStats, PlayerBalanceProfile3D.FlightAssistStats assistStats)
+    {
+        flight.thrustAcceleration = Mathf.Max(0f, flightStats.thrustAcceleration);
+        flight.maxSpeed = Mathf.Max(0.01f, flightStats.maxSpeed);
+        flight.lookInputResponse = Mathf.Max(0.01f, flightStats.lookInputResponse);
+        flight.pitchSpeed = Mathf.Max(0.01f, flightStats.pitchSpeed);
+        flight.yawSpeed = Mathf.Max(0.01f, flightStats.yawSpeed);
+        flight.pitchAcceleration = Mathf.Max(0.01f, flightStats.pitchAcceleration);
+        flight.pitchDeceleration = Mathf.Max(0.01f, flightStats.pitchDeceleration);
+        flight.yawAcceleration = Mathf.Max(0.01f, flightStats.yawAcceleration);
+        flight.yawDeceleration = Mathf.Max(0.01f, flightStats.yawDeceleration);
+        flight.minRotationMultiplierAtMaxSpeed = Mathf.Clamp01(flightStats.minRotationMultiplierAtMaxSpeed);
+
+        flightAssist.frictionDeceleration = Mathf.Max(0f, assistStats.frictionDeceleration);
+        flightAssist.activeAngularDamping = Mathf.Max(0f, assistStats.activeAngularDamping);
+        flightAssist.lateralDriftDamping = Mathf.Max(0.01f, assistStats.lateralDriftDamping);
+        flightAssist.verticalDriftDamping = Mathf.Max(0.01f, assistStats.verticalDriftDamping);
+        flightAssist.velocityAlignmentStrength = Mathf.Max(0f, assistStats.velocityAlignmentStrength);
+
+        ValidateConfigValues();
+        if (_rb != null)
+        {
+            _rb.angularDamping = frictionEnabled ? flightAssist.activeAngularDamping : 0f;
+        }
+    }
+
     public void SetInputSource(MonoBehaviour sourceBehaviour)
     {
         inputSourceBehaviour = sourceBehaviour;

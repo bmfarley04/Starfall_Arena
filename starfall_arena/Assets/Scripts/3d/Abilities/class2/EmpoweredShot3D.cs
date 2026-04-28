@@ -58,6 +58,16 @@ public class EmpoweredShot3D : Weapon3D
     public GameObject NetworkProjectilePrefab => empoweredShot.projectilePrefab;
     public SoundEffect NetworkFireSound => empoweredShot.fireSound;
 
+    public void ApplyProfile(Class2PlayerBalanceProfile3D.EmpoweredShotStats stats)
+    {
+        empoweredShot.cooldown = Mathf.Max(0f, stats.cooldown);
+        empoweredShot.damageMultiplier = Mathf.Max(0f, stats.damageMultiplier);
+        empoweredShot.speedMultiplier = Mathf.Max(0f, stats.speedMultiplier);
+        empoweredShot.lifetime = Mathf.Max(0f, stats.lifetime);
+        empoweredShot.slowMultiplier = Mathf.Clamp01(stats.slowMultiplier);
+        empoweredShot.slowDuration = Mathf.Max(0f, stats.slowDuration);
+    }
+
     protected override void Awake()
     {
         base.Awake();

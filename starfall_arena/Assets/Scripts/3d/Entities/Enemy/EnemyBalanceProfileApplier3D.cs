@@ -23,7 +23,7 @@ public class EnemyBalanceProfileApplier3D : MonoBehaviour
 
         ApplySharedCore();
         ApplyWeapons();
-        ApplyBrains();
+        profile.ApplyBrainStats(gameObject);
     }
 
     private void ApplySharedCore()
@@ -64,26 +64,4 @@ public class EnemyBalanceProfileApplier3D : MonoBehaviour
         }
     }
 
-    private void ApplyBrains()
-    {
-        ApplyBrainStats<BasicShooterEnemyBrain3D>(brain => brain.ApplyProfile(profile.basicShooter));
-        ApplyBrainStats<ArtilleryBeamEnemyBrain3D>(brain => brain.ApplyProfile(profile.artilleryBeam));
-        ApplyBrainStats<ArtilleryFortressEnemyBrain3D>(brain => brain.ApplyProfile(profile.artilleryFortress));
-        ApplyBrainStats<SuicideDroneEnemyBrain3D>(brain => brain.ApplyProfile(profile.suicideDrone));
-        ApplyBrainStats<TankEnemyBrain3D>(brain => brain.ApplyProfile(profile.tank));
-        ApplyBrainStats<GlassCannonInterceptorEnemyBrain3D>(brain => brain.ApplyProfile(profile.glassCannon));
-        ApplyBrainStats<SplitterEnemyBrain3D>(brain => brain.ApplyProfile(profile.splitter));
-        ApplyBrainStats<DuelistEnemyBrain3D>(brain => brain.ApplyProfile(profile.duelist));
-        ApplyBrainStats<TriumvirateEnemyBrain3D>(brain => brain.ApplyProfile(profile.triumvirate));
-    }
-
-    private void ApplyBrainStats<TBrain>(System.Action<TBrain> apply)
-        where TBrain : MonoBehaviour
-    {
-        TBrain[] brains = GetComponentsInChildren<TBrain>(true);
-        for (int i = 0; i < brains.Length; i++)
-        {
-            apply(brains[i]);
-        }
-    }
 }

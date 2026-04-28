@@ -9,6 +9,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 8856779165183346799}
+  - component: {fileID: 9200000000000000001}
   m_Layer: 0
   m_Name: projectile transform
   m_TagString: Untagged
@@ -707,6 +708,10 @@ MonoBehaviour:
   maxShield: 100
   shieldController: {fileID: 5034837498720385779}
   impulseRecoilPitchSensitivity: 10
+  uprightRecoveryEnabled: 1
+  uprightRecoveryDelay: 2.5
+  uprightRecoveryDegreesPerSecond: 90
+  uprightRecoveryInputDeadZone: 0.05
   weapons:
   - {fileID: 6928815812079169362}
   - {fileID: 6766116784638287846}
@@ -8543,3 +8548,16 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 400000, guid: ca8124efa1821ab499a166f17d05dd2e, type: 3}
   m_PrefabInstance: {fileID: 9215830185541281756}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &9200000000000000001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 548853281862698234}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3a0c3a2dd905405f9cc204c46dfd9e67, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerBalanceProfileApplier3D
+  profile: {fileID: 11400000, guid: 0c87cc08e52e4663a54cb50ed1abec10, type: 2}

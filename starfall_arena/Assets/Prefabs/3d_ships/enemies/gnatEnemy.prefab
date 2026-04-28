@@ -20,6 +20,7 @@ GameObject:
   - component: {fileID: 8407136640758178129}
   - component: {fileID: 4610729949207790201}
   - component: {fileID: 6683755836656951077}
+  - component: {fileID: 9100000000000000004}
   m_Layer: 0
   m_Name: gnatEnemy
   m_TagString: Enemy
@@ -5921,3 +5922,17 @@ MonoBehaviour:
   mass: 0.5
   linearDamping: 0.5
   angularDamping: 0.3
+
+--- !u!114 &9100000000000000004
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1837983289991426574}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bfab71f04e15488aa75cd8ce1856c6d3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyBalanceProfileApplier3D
+  profile: {fileID: 11400000, guid: 4912292ae8d345b592a1c146324db18c, type: 2}

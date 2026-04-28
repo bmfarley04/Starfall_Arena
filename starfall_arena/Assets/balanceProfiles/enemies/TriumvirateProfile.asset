@@ -1,0 +1,73 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0bbd8f2b4ac547d6afa3e6fb35cd6f0c, type: 3}
+  m_Name: TriumvirateProfile
+  m_EditorClassIdentifier: 
+  core:
+    maxHealth: 50
+    maxShield: 150
+    moveSpeed: 30
+    rotationDegreesPerSecond: 100
+    detectionRange: 5000
+  projectileWeapons: []
+  beamWeapons:
+  - damagePerSecond: 0
+    maxDistance: 1000
+    capacity: 200
+    drainRate: 20
+    regenRate: 20
+    minimumStartEnergy: 20
+    rotationMultiplier: 0.2
+    postFireRotationPenaltyDuration: 0.3
+  - damagePerSecond: 0
+    maxDistance: 1000
+    capacity: 200
+    drainRate: 20
+    regenRate: 20
+    minimumStartEnergy: 20
+    rotationMultiplier: 0.2
+    postFireRotationPenaltyDuration: 0.3
+  - damagePerSecond: 0
+    maxDistance: 1000
+    capacity: 200
+    drainRate: 20
+    regenRate: 20
+    minimumStartEnergy: 20
+    rotationMultiplier: 0.2
+    postFireRotationPenaltyDuration: 0.3
+  brain:
+    autoLinkRadius: 300
+    autoLinkRetryInterval: 0.5
+    formationDistanceFromTarget: 300
+    triangleRadius: 30
+    anchorFormationNearCurrentSquad: 1
+    verticalTriangleWidth: 20
+    verticalTriangleHeight: 20
+    formationTolerance: 4
+    formationSpeedScale: 1
+    keepFormationOnWorldYPlane: 0
+    settleDuration: 0.75
+    linkStepDuration: 1
+    finalChargeDelay: 2
+    linkPointCount: 4
+    linkAmplitude: 0.45
+    linkJitterInterval: 0.05
+    finalBeamRange: 500
+    finalBeamHitscanRadius: 0.45
+    oneMemberDamagePerSecond: 10
+    twoMemberDamagePerSecond: 20
+    threeMemberDamagePerSecond: 40
+    finalBeamDuration: 3
+    attackCooldown: 5
+    fullTriadSlowMultiplier: 0.7
+    fullTriadSlowDuration: 0.35
+    fullTriadSlowEngineEmissionScale: 0.7

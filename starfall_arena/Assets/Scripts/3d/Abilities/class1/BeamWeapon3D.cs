@@ -148,6 +148,18 @@ public class BeamWeapon3D : Weapon3D, IBeamWeaponNetwork3D
         beam.postFireRotationPenaltyDuration = Mathf.Max(0f, stats.postFireRotationPenaltyDuration);
     }
 
+    public void ApplyProfile(PlayerBalanceProfile3D.BeamWeaponStats stats)
+    {
+        beam.damagePerSecond = Mathf.Max(0f, stats.damagePerSecond);
+        beam.maxDistance = Mathf.Max(0f, stats.maxDistance);
+        beam.capacity = Mathf.Max(0f, stats.capacity);
+        beam.drainRate = Mathf.Max(0f, stats.drainRate);
+        beam.regenRate = Mathf.Max(0f, stats.regenRate);
+        beam.minimumStartEnergy = Mathf.Max(0f, stats.minimumStartEnergy);
+        beam.rotationMultiplier = Mathf.Max(0f, stats.rotationMultiplier);
+        beam.postFireRotationPenaltyDuration = Mathf.Max(0f, stats.postFireRotationPenaltyDuration);
+    }
+
     public float GetRemainingBeamEnergy()
     {
         if (!UsesBeamCapacity)

@@ -209,6 +209,42 @@ public class GigaBlastWeapon3D : Weapon3D
         return GetFireSoundForTier(tier);
     }
 
+    public void ApplyProfile(Class1PlayerBalanceProfile3D.GigaBlastStats stats)
+    {
+        gigaBlast.timing.cooldown = Mathf.Max(0f, stats.cooldown);
+        gigaBlast.timing.minChargeTime = Mathf.Max(0f, stats.minChargeTime);
+        gigaBlast.timing.maxChargeTime = Mathf.Max(gigaBlast.timing.minChargeTime, stats.maxChargeTime);
+        gigaBlast.timing.projectileLifetime = Mathf.Max(0f, stats.projectileLifetime);
+
+        gigaBlast.tierThresholds.tier1Time = Mathf.Max(0f, stats.tier1Time);
+        gigaBlast.tierThresholds.tier2Time = Mathf.Max(gigaBlast.tierThresholds.tier1Time, stats.tier2Time);
+        gigaBlast.tierThresholds.tier3Time = Mathf.Max(gigaBlast.tierThresholds.tier2Time, stats.tier3Time);
+        gigaBlast.tierThresholds.tier4Time = Mathf.Max(gigaBlast.tierThresholds.tier3Time, stats.tier4Time);
+
+        ApplyTierProfile(stats.tier1, ref gigaBlast.movementPenalties.tier1ThrustMultiplier, ref gigaBlast.movementPenalties.tier1RotationMultiplier, ref gigaBlast.projectileScaling.tier1SpeedMultiplier, ref gigaBlast.projectileScaling.tier1DamageMultiplier, ref gigaBlast.projectileScaling.tier1SpawnOffset);
+        ApplyTierProfile(stats.tier2, ref gigaBlast.movementPenalties.tier2ThrustMultiplier, ref gigaBlast.movementPenalties.tier2RotationMultiplier, ref gigaBlast.projectileScaling.tier2SpeedMultiplier, ref gigaBlast.projectileScaling.tier2DamageMultiplier, ref gigaBlast.projectileScaling.tier2SpawnOffset);
+        ApplyTierProfile(stats.tier3, ref gigaBlast.movementPenalties.tier3ThrustMultiplier, ref gigaBlast.movementPenalties.tier3RotationMultiplier, ref gigaBlast.projectileScaling.tier3SpeedMultiplier, ref gigaBlast.projectileScaling.tier3DamageMultiplier, ref gigaBlast.projectileScaling.tier3SpawnOffset);
+        ApplyTierProfile(stats.tier4, ref gigaBlast.movementPenalties.tier4ThrustMultiplier, ref gigaBlast.movementPenalties.tier4RotationMultiplier, ref gigaBlast.projectileScaling.tier4SpeedMultiplier, ref gigaBlast.projectileScaling.tier4DamageMultiplier, ref gigaBlast.projectileScaling.tier4SpawnOffset);
+
+        gigaBlast.pierce.tier3DamageMultiplierPerPierce = Mathf.Max(0f, stats.tier3DamageMultiplierPerPierce);
+        gigaBlast.pierce.tier4DamageMultiplierPerPierce = Mathf.Max(0f, stats.tier4DamageMultiplierPerPierce);
+    }
+
+    private static void ApplyTierProfile(
+        Class1PlayerBalanceProfile3D.TierStats stats,
+        ref float thrustMultiplier,
+        ref float rotationMultiplier,
+        ref float speedMultiplier,
+        ref float damageMultiplier,
+        ref float spawnOffset)
+    {
+        thrustMultiplier = Mathf.Clamp01(stats.thrustMultiplier);
+        rotationMultiplier = Mathf.Clamp01(stats.rotationMultiplier);
+        speedMultiplier = Mathf.Max(0f, stats.speedMultiplier);
+        damageMultiplier = Mathf.Max(0f, stats.damageMultiplier);
+        spawnOffset = Mathf.Max(0f, stats.spawnOffset);
+    }
+
     protected override void Awake()
     {
         base.Awake();

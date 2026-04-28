@@ -9,37 +9,73 @@ public class EnemyTargetSensor3D : MonoBehaviour
     [SerializeField] private float refreshInterval = 0.15f;
 
     private Entity3D _currentTarget;
+    private Entity3D _alertedTarget;
+    private float _alertedTargetExpiresAt;
     private float _nextRefreshTime;
 
-    public Entity3D CurrentTarget => _currentTarget;
+    public Entity3D CurrentTarget => ResolveCurrentTarget();
 
     private void OnDisable()
     {
         _currentTarget = null;
+        _alertedTarget = null;
+        _alertedTargetExpiresAt = 0f;
     }
 
     public void ApplyProfile(EnemyBalanceProfile3D.CoreStats core)
     {
         detectionRange = Mathf.Max(0f, core.detectionRange);
         _currentTarget = null;
+        _alertedTarget = null;
+        _alertedTargetExpiresAt = 0f;
         _nextRefreshTime = 0f;
+    }
+
+    public void ReceiveTargetAlert(Entity3D target, float duration)
+    {
+        if (duration <= 0f || !IsCandidateTarget(target))
+        {
+            return;
+        }
+
+        _alertedTarget = target;
+        _alertedTargetExpiresAt = Mathf.Max(_alertedTargetExpiresAt, Time.time + duration);
     }
 
     public Entity3D RefreshTargetNow()
     {
         _nextRefreshTime = Time.time + Mathf.Max(0.02f, refreshInterval);
         _currentTarget = FindNearestTarget();
-        return _currentTarget;
+        return ResolveCurrentTarget();
     }
 
     public Entity3D GetTarget()
     {
-        if (Time.time >= _nextRefreshTime || !IsStillValid(_currentTarget))
+        bool hasValidNormalTarget = IsStillValid(_currentTarget);
+        bool hasValidAlertTarget = IsAlertStillValid();
+        if (Time.time >= _nextRefreshTime || (!hasValidNormalTarget && !hasValidAlertTarget))
         {
             return RefreshTargetNow();
         }
 
-        return _currentTarget;
+        return hasValidNormalTarget ? _currentTarget : _alertedTarget;
+    }
+
+    private Entity3D ResolveCurrentTarget()
+    {
+        if (IsStillValid(_currentTarget))
+        {
+            return _currentTarget;
+        }
+
+        if (IsAlertStillValid())
+        {
+            return _alertedTarget;
+        }
+
+        _alertedTarget = null;
+        _alertedTargetExpiresAt = 0f;
+        return null;
     }
 
     private Entity3D FindNearestTarget()
@@ -79,6 +115,11 @@ public class EnemyTargetSensor3D : MonoBehaviour
 
         Vector3 toTarget = target.transform.position - transform.position;
         return toTarget.sqrMagnitude <= detectionRange * detectionRange;
+    }
+
+    private bool IsAlertStillValid()
+    {
+        return Time.time < _alertedTargetExpiresAt && IsCandidateTarget(_alertedTarget);
     }
 
     private bool IsCandidateTarget(Entity3D candidate)

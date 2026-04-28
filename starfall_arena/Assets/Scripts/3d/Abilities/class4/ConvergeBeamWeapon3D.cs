@@ -114,6 +114,18 @@ public class ConvergeBeamWeapon3D : Weapon3D, IBeamWeaponNetwork3D
         return !IsBeamActive;
     }
 
+    public void ApplyProfile(Class4PlayerBalanceProfile3D.ConvergeBeamStats stats)
+    {
+        convergeBeam.damagePerSecond = Mathf.Max(0f, stats.damagePerSecond);
+        convergeBeam.maxDistance = Mathf.Max(0f, stats.maxDistance);
+        convergeBeam.rotationMultiplier = Mathf.Max(0f, stats.rotationMultiplier);
+        convergeBeam.baseBeamCount = Mathf.Max(1, stats.baseBeamCount);
+        convergeBeam.empoweredBeamCount = Mathf.Max(1, stats.empoweredBeamCount);
+        convergeBeam.capacity = Mathf.Max(0f, stats.capacity);
+        convergeBeam.drainRate = Mathf.Max(0f, stats.drainRate);
+        convergeBeam.regenRate = Mathf.Max(0f, stats.regenRate);
+    }
+
     protected override void OnFirePressed()
     {
         if (IsBeamActive || convergeBeam.beamPrefab == null)

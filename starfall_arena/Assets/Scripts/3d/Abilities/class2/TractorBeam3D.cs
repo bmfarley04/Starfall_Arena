@@ -180,6 +180,16 @@ public class TractorBeam3D : Ability3D
         return used;
     }
 
+    public void ApplyProfile(Class2PlayerBalanceProfile3D.TractorBeamStats stats)
+    {
+        tractorBeam.cooldown = Mathf.Max(0f, stats.cooldown);
+        tractorBeam.duration = Mathf.Max(0f, stats.duration);
+        tractorBeam.coneHalfAngle = Mathf.Clamp(stats.coneHalfAngle, 5f, 90f);
+        tractorBeam.coneRange = Mathf.Max(0f, stats.coneRange);
+        tractorBeam.pullSpeed = Mathf.Max(0f, stats.pullSpeed);
+        tractorBeam.stopDistance = Mathf.Max(0f, stats.stopDistance);
+    }
+
     public override void UseAbility(InputValue value)
     {
         if (!value.isPressed)

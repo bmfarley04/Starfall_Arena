@@ -4845,6 +4845,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 5724936144381898695}
+  - component: {fileID: 9100000000000000008}
   m_Layer: 0
   m_Name: triumvirate
   m_TagString: Untagged
@@ -17437,3 +17438,17 @@ MonoBehaviour:
   mass: 0.5
   linearDamping: 0.5
   angularDamping: 0.3
+
+--- !u!114 &9100000000000000008
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3197767798142550287}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bfab71f04e15488aa75cd8ce1856c6d3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyBalanceProfileApplier3D
+  profile: {fileID: 11400000, guid: 8d1e4fb9d41d44539c629ac0e9dceebb, type: 2}

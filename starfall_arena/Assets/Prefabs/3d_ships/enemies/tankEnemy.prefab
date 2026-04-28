@@ -14673,6 +14673,7 @@ GameObject:
   - component: {fileID: 8333375227253951137}
   - component: {fileID: 3512165761194535520}
   - component: {fileID: 1147188122427946202}
+  - component: {fileID: 9100000000000000007}
   m_Layer: 0
   m_Name: tankEnemy
   m_TagString: Enemy
@@ -16174,3 +16175,17 @@ MonoBehaviour:
   mass: 0.5
   linearDamping: 0.5
   angularDamping: 0.3
+
+--- !u!114 &9100000000000000007
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6067267420352304793}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bfab71f04e15488aa75cd8ce1856c6d3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyBalanceProfileApplier3D
+  profile: {fileID: 11400000, guid: 8ac3605a4bb745f38954630305ba5695, type: 2}

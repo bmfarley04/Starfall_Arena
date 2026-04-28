@@ -4975,6 +4975,7 @@ GameObject:
   - component: {fileID: 6718276907644461098}
   - component: {fileID: 3394221799534837996}
   - component: {fileID: 8593575025823692486}
+  - component: {fileID: 9100000000000000006}
   m_Layer: 0
   m_Name: fortressEnemy
   m_TagString: Enemy
@@ -12250,3 +12251,17 @@ MeshRenderer:
   m_CorrespondingSourceObject: {fileID: 1757402552343193095, guid: daa57ba9a3361874f9d1bd377c8bb7d8, type: 3}
   m_PrefabInstance: {fileID: 7315526972484333897}
   m_PrefabAsset: {fileID: 0}
+
+--- !u!114 &9100000000000000006
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5723954577492871350}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bfab71f04e15488aa75cd8ce1856c6d3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyBalanceProfileApplier3D
+  profile: {fileID: 11400000, guid: fee9f571fae94d948ac76e02e7931932, type: 2}

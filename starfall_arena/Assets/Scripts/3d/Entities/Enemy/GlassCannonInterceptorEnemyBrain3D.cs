@@ -115,6 +115,25 @@ public class GlassCannonInterceptorEnemyBrain3D : MonoBehaviour
         _networkObject = GetComponent<NetworkObject>();
     }
 
+    public void ApplyProfile(EnemyBalanceProfile3D.GlassCannonBrainStats stats)
+    {
+        thinkInterval = Mathf.Max(0.01f, stats.thinkInterval);
+        preferredRangeMin = Mathf.Max(0f, stats.preferredRangeMin);
+        preferredRangeMax = Mathf.Max(preferredRangeMin + 0.01f, stats.preferredRangeMax);
+        perchArrivalDistance = Mathf.Max(0.1f, stats.perchArrivalDistance);
+        maxRepositionDuration = Mathf.Max(0.1f, stats.maxRepositionDuration);
+        lateralPerchBias = Mathf.Max(0f, stats.lateralPerchBias);
+        verticalPerchBias = Mathf.Max(0f, stats.verticalPerchBias);
+        outwardPerchBias = Mathf.Max(0f, stats.outwardPerchBias);
+        preBurstSettleDuration = Mathf.Max(0f, stats.preBurstSettleDuration);
+        maxSettleDuration = Mathf.Max(0.01f, stats.maxSettleDuration);
+        shotsPerBurst = Mathf.Max(1, stats.shotsPerBurst);
+        burstShotInterval = Mathf.Max(0.01f, stats.burstShotInterval);
+        aimToleranceDegrees = Mathf.Clamp(stats.aimToleranceDegrees, 0f, 180f);
+        postBurstRecoverDuration = Mathf.Max(0f, stats.postBurstRecoverDuration);
+        maxBurstDuration = Mathf.Max(0.1f, stats.maxBurstDuration);
+    }
+
     private void OnValidate()
     {
         thinkInterval = Mathf.Max(0.01f, thinkInterval);

@@ -139,6 +139,29 @@ public class SplitterEnemyBrain3D : NetworkBehaviour
         ApplyRoleWeaponState();
     }
 
+    public void ApplyProfile(EnemyBalanceProfile3D.SplitterBrainStats stats)
+    {
+        thinkInterval = Mathf.Max(0.01f, stats.thinkInterval);
+        holdDistance = Mathf.Max(0f, stats.holdDistance);
+        fullSpeedDistance = Mathf.Max(holdDistance + 0.01f, stats.fullSpeedDistance);
+        projectileAimToleranceDegrees = Mathf.Clamp(stats.projectileAimToleranceDegrees, 0f, 180f);
+        beamAimToleranceDegrees = Mathf.Clamp(stats.beamAimToleranceDegrees, 0f, 180f);
+        projectilePreferredDistance = Mathf.Max(0f, stats.projectilePreferredDistance);
+        beamPreferredDistance = Mathf.Max(0f, stats.beamPreferredDistance);
+        mixedRangeBeamChance = Mathf.Clamp01(stats.mixedRangeBeamChance);
+        mixedRangeWidth = Mathf.Max(0f, stats.mixedRangeWidth);
+        decisionHoldDuration = Mathf.Max(0f, stats.decisionHoldDuration);
+        minimumBeamRestartEnergy = Mathf.Max(0f, stats.minimumBeamRestartEnergy);
+        projectileConvergenceDistance = Mathf.Max(0f, stats.projectileConvergenceDistance);
+        splitCount = Mathf.Max(1, stats.splitCount);
+        splitSpawnRadius = Mathf.Max(0f, stats.splitSpawnRadius);
+        verticalSpawnJitter = Mathf.Max(0f, stats.verticalSpawnJitter);
+        childScaleMultiplier = Mathf.Max(0.01f, stats.childScaleMultiplier);
+        childMoveSpeedMultiplier = Mathf.Max(0f, stats.childMoveSpeedMultiplier);
+        childMaxHealth = Mathf.Max(1f, stats.childMaxHealth);
+        childMaxShield = Mathf.Max(0f, stats.childMaxShield);
+    }
+
     private void OnEnable()
     {
         if (_enemy != null)

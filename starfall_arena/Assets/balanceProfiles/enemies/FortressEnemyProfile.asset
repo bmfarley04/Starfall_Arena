@@ -1,0 +1,49 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 558d30256d814b409ccab494e8079b84, type: 3}
+  m_Name: FortressEnemyProfile
+  m_EditorClassIdentifier: 
+  core:
+    maxHealth: 500
+    maxShield: 1000
+    moveSpeed: 20
+    rotationDegreesPerSecond: 40
+    detectionRange: 5000
+  projectileWeapons:
+  - cooldown: 15
+    speed: 500
+    damage: 100
+    lifetime: 5
+  - cooldown: 8
+    speed: 120
+    damage: 20
+    lifetime: 5
+  - cooldown: 0.25
+    speed: 120
+    damage: 10
+    lifetime: 5
+  beamWeapons: []
+  brain:
+    thinkInterval: 0.05
+    aimToleranceDegrees: 4
+    useLeadAim: 1
+    leadAimRefinementPasses: 2
+    chargeWindUpDuration: 3
+    maxFiringRange: 700
+    approachRangeBuffer: 200
+    outOfRangeApproachSpeedScale: 1
+    maxMissileRange: 200
+    missileAimToleranceDegrees: 180
+    missileToCannonStaggerDelay: 0.35
+    maxTurretRange: 100
+    turretToCannonStaggerDelay: 0.15
+    loseTargetMaxDistance: 0

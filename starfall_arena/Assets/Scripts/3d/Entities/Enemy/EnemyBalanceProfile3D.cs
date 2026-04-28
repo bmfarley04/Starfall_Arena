@@ -1,8 +1,7 @@
 using System;
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "EnemyBalanceProfile3D", menuName = "Starfall Arena/3D/Enemy Balance Profile", order = 10)]
-public class EnemyBalanceProfile3D : ScriptableObject
+public abstract class EnemyBalanceProfile3D : ScriptableObject
 {
     [Serializable]
     public struct CoreStats
@@ -212,6 +211,41 @@ public class EnemyBalanceProfile3D : ScriptableObject
         [Range(0f, 1f)] public float fullTriadSlowEngineEmissionScale;
     }
 
+    [Serializable]
+    public struct SwarmScoutBrainStats
+    {
+        [Tooltip("Seconds between scout steering decisions.")]
+        [Min(0.01f)] public float thinkInterval;
+        [Tooltip("Maximum distance used when nearby scouts discover each other as one swarm.")]
+        [Min(0f)] public float autoLinkRadius;
+        [Tooltip("Expected full swarm size used for slot and phase spacing.")]
+        [Min(1)] public int intendedSwarmSize;
+        [Tooltip("Living linked scouts required before an alert can be broadcast.")]
+        [Min(1)] public int requiredSurvivorsForAlert;
+        [Tooltip("Preferred orbit radius around the player target.")]
+        [Min(0f)] public float orbitRadius;
+        [Tooltip("Per-slot radius variation so scouts do not stack perfectly.")]
+        [Min(0f)] public float orbitThickness;
+        [Tooltip("Strength of inward/outward correction toward the assigned orbit band.")]
+        [Min(0f)] public float radialCorrectionWeight;
+        [Tooltip("Strength of tangential movement around the player.")]
+        [Min(0f)] public float tangentialWeight;
+        [Tooltip("Height of the vertical corkscrew motion around the target.")]
+        [Min(0f)] public float verticalAmplitude;
+        [Tooltip("Speed of the vertical corkscrew motion.")]
+        [Min(0f)] public float verticalFrequency;
+        [Tooltip("Distance from the player where survivors count toward alert warmup.")]
+        [Min(0f)] public float alertProbeRange;
+        [Tooltip("Seconds the required survivors must stay near the player before alerting.")]
+        [Min(0f)] public float alertWarmupSeconds;
+        [Tooltip("Enemy sensors within this radius of the player receive the target alert.")]
+        [Min(0f)] public float alertBroadcastRadius;
+        [Tooltip("Seconds alerted enemies remember the player if normal detection does not take over.")]
+        [Min(0f)] public float alertDuration;
+        [Tooltip("Minimum seconds between repeated alert broadcasts from the same scout.")]
+        [Min(0f)] public float alertCooldown;
+    }
+
     [Header("Shared Core")]
     [Tooltip("Health, shield, movement, and target-acquisition numbers shared by every Enemy3D component under the profiled prefab.")]
     public CoreStats core = new CoreStats
@@ -230,23 +264,15 @@ public class EnemyBalanceProfile3D : ScriptableObject
     [Tooltip("Beam weapon stats, applied by component order to BeamWeapon3D components under the prefab. This intentionally excludes beam prefab, muzzle, target faction, offsets, recoil, impact force, and audio setup.")]
     public BeamWeaponStats[] beamWeapons = Array.Empty<BeamWeaponStats>();
 
-    [Header("Brains")]
-    [Tooltip("Applied only when the prefab has BasicShooterEnemyBrain3D.")]
-    public BasicShooterBrainStats basicShooter;
-    [Tooltip("Applied only when the prefab has ArtilleryBeamEnemyBrain3D.")]
-    public ArtilleryBeamBrainStats artilleryBeam;
-    [Tooltip("Applied only when the prefab has ArtilleryFortressEnemyBrain3D.")]
-    public ArtilleryFortressBrainStats artilleryFortress;
-    [Tooltip("Applied only when the prefab has SuicideDroneEnemyBrain3D.")]
-    public SuicideDroneBrainStats suicideDrone;
-    [Tooltip("Applied only when the prefab has TankEnemyBrain3D.")]
-    public TankBrainStats tank;
-    [Tooltip("Applied only when the prefab has GlassCannonInterceptorEnemyBrain3D, including the gnat enemy prefab.")]
-    public GlassCannonBrainStats glassCannon;
-    [Tooltip("Applied only when the prefab has SplitterEnemyBrain3D.")]
-    public SplitterBrainStats splitter;
-    [Tooltip("Applied only when the prefab has DuelistEnemyBrain3D.")]
-    public DuelistBrainStats duelist;
-    [Tooltip("Applied to every TriumvirateEnemyBrain3D under the prefab, including grouped multi-member prefabs.")]
-    public TriumvirateBrainStats triumvirate;
+    public abstract void ApplyBrainStats(GameObject prefabRoot);
+
+    protected void ApplyBrainStats<TBrain>(GameObject prefabRoot, Action<TBrain> apply)
+        where TBrain : MonoBehaviour
+    {
+        TBrain[] brains = prefabRoot.GetComponentsInChildren<TBrain>(true);
+        for (int i = 0; i < brains.Length; i++)
+        {
+            apply(brains[i]);
+        }
+    }
 }

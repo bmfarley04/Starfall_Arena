@@ -154,6 +154,36 @@ public class TriumvirateEnemyBrain3D : NetworkBehaviour
         chargeTelegraph ??= GetComponentInChildren<ArtilleryFortressChargeTelegraph3D>(true);
     }
 
+    public void ApplyProfile(EnemyBalanceProfile3D.TriumvirateBrainStats stats)
+    {
+        autoLinkRadius = Mathf.Max(0f, stats.autoLinkRadius);
+        autoLinkRetryInterval = Mathf.Max(0.02f, stats.autoLinkRetryInterval);
+        formationDistanceFromTarget = Mathf.Max(0f, stats.formationDistanceFromTarget);
+        triangleRadius = Mathf.Max(0f, stats.triangleRadius);
+        anchorFormationNearCurrentSquad = stats.anchorFormationNearCurrentSquad;
+        verticalTriangleWidth = Mathf.Max(0f, stats.verticalTriangleWidth);
+        verticalTriangleHeight = Mathf.Max(0f, stats.verticalTriangleHeight);
+        formationTolerance = Mathf.Max(0.01f, stats.formationTolerance);
+        formationSpeedScale = Mathf.Clamp01(stats.formationSpeedScale);
+        keepFormationOnWorldYPlane = stats.keepFormationOnWorldYPlane;
+        settleDuration = Mathf.Max(0f, stats.settleDuration);
+        linkStepDuration = Mathf.Max(0f, stats.linkStepDuration);
+        finalChargeDelay = Mathf.Max(0f, stats.finalChargeDelay);
+        linkPointCount = Mathf.Max(1, stats.linkPointCount);
+        linkAmplitude = Mathf.Max(0f, stats.linkAmplitude);
+        linkJitterInterval = Mathf.Max(0.01f, stats.linkJitterInterval);
+        finalBeamRange = Mathf.Max(0f, stats.finalBeamRange);
+        finalBeamHitscanRadius = Mathf.Max(0f, stats.finalBeamHitscanRadius);
+        oneMemberDamagePerSecond = Mathf.Max(0f, stats.oneMemberDamagePerSecond);
+        twoMemberDamagePerSecond = Mathf.Max(0f, stats.twoMemberDamagePerSecond);
+        threeMemberDamagePerSecond = Mathf.Max(0f, stats.threeMemberDamagePerSecond);
+        finalBeamDuration = Mathf.Max(0f, stats.finalBeamDuration);
+        attackCooldown = Mathf.Max(0f, stats.attackCooldown);
+        fullTriadSlowMultiplier = Mathf.Clamp01(stats.fullTriadSlowMultiplier);
+        fullTriadSlowDuration = Mathf.Max(0f, stats.fullTriadSlowDuration);
+        fullTriadSlowEngineEmissionScale = Mathf.Clamp01(stats.fullTriadSlowEngineEmissionScale);
+    }
+
     private void OnDisable()
     {
         StopFinalBeam();

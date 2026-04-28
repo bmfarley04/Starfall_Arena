@@ -227,6 +227,48 @@ public class DuelistEnemyBrain3D : MonoBehaviour
         _threatBuffer = new Collider[Mathf.Max(1, threatScanBufferSize)];
     }
 
+    public void ApplyProfile(EnemyBalanceProfile3D.DuelistBrainStats stats)
+    {
+        thinkInterval = Mathf.Max(0.01f, stats.thinkInterval);
+        preferredRangeMin = Mathf.Max(0f, stats.preferredRangeMin);
+        preferredRangeMax = Mathf.Max(preferredRangeMin + 0.01f, stats.preferredRangeMax);
+        perchArrivalDistance = Mathf.Max(0.1f, stats.perchArrivalDistance);
+        maxRepositionDuration = Mathf.Max(0.1f, stats.maxRepositionDuration);
+        perchRefreshInterval = Mathf.Max(0.1f, stats.perchRefreshInterval);
+        lateralPerchBias = Mathf.Max(0f, stats.lateralPerchBias);
+        verticalPerchBias = Mathf.Max(0f, stats.verticalPerchBias);
+        outwardPerchBias = Mathf.Max(0f, stats.outwardPerchBias);
+        forwardArcAvoidanceWeight = Mathf.Clamp01(stats.forwardArcAvoidanceWeight);
+        perchCandidateCount = Mathf.Clamp(stats.perchCandidateCount, 2, 16);
+        strafeRollInterval = Mathf.Max(0.1f, stats.strafeRollInterval);
+        orbitStrafeSpeed = Mathf.Max(0f, stats.orbitStrafeSpeed);
+        orbitVerticalTiltAmount = Mathf.Clamp01(stats.orbitVerticalTiltAmount);
+        projectileBand = ToWeaponRangeBand(stats.projectileBand);
+        missileBand = ToWeaponRangeBand(stats.missileBand);
+        beamBand = ToWeaponRangeBand(stats.beamBand);
+        vibesChance = Mathf.Clamp01(stats.vibesChance);
+        minimumBeamRestartEnergy = Mathf.Max(0f, stats.minimumBeamRestartEnergy);
+        threatScanInterval = Mathf.Max(0.02f, stats.threatScanInterval);
+        threatScanRadius = Mathf.Max(0.1f, stats.threatScanRadius);
+        dodgeChancePerThreat = Mathf.Clamp01(stats.dodgeChancePerThreat);
+        dodgeCooldown = Mathf.Max(0f, stats.dodgeCooldown);
+        dodgeDuration = Mathf.Max(0.05f, stats.dodgeDuration);
+        dodgeSpeed = Mathf.Max(0f, stats.dodgeSpeed);
+        threatHeadingDotThreshold = Mathf.Clamp01(stats.threatHeadingDotThreshold);
+        threatScanBufferSize = Mathf.Clamp(stats.threatScanBufferSize, 1, 64);
+        _threatBuffer = new Collider[threatScanBufferSize];
+    }
+
+    private static WeaponRangeBand ToWeaponRangeBand(EnemyBalanceProfile3D.WeaponRangeBandStats stats)
+    {
+        return new WeaponRangeBand
+        {
+            preferredCenter = Mathf.Max(0f, stats.preferredCenter),
+            halfWidth = Mathf.Max(0f, stats.halfWidth),
+            aimToleranceDegrees = Mathf.Clamp(stats.aimToleranceDegrees, 0f, 180f)
+        };
+    }
+
     private void OnValidate()
     {
         thinkInterval = Mathf.Max(0.01f, thinkInterval);

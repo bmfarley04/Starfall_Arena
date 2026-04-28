@@ -131,6 +131,16 @@ public class Dodge3D : Ability3D
         return IsEmpoweredActive() ? dodge.empoweredCooldown : dodge.cooldown;
     }
 
+    public void ApplyProfile(Class4PlayerBalanceProfile3D.DodgeStats stats)
+    {
+        dodge.cooldown = Mathf.Max(0f, stats.cooldown);
+        dodge.dodgeDistance = Mathf.Max(0f, stats.dodgeDistance);
+        dodge.slideDuration = Mathf.Max(0.01f, stats.slideDuration);
+        dodge.primeWindow = Mathf.Max(0f, stats.primeWindow);
+        dodge.directionInputDeadzone = Mathf.Clamp01(stats.directionInputDeadzone);
+        dodge.empoweredCooldown = Mathf.Max(0f, stats.empoweredCooldown);
+    }
+
     public void ApplyNetworkDodge(Vector3 worldDirection, bool authoritative)
     {
         if (worldDirection.sqrMagnitude <= 0.0001f)

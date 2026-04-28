@@ -152,6 +152,13 @@ public class Teleport3D : Ability3D
         return teleport.cooldown;
     }
 
+    public void ApplyProfile(Class1PlayerBalanceProfile3D.Class1Stats stats)
+    {
+        teleport.cooldown = Mathf.Max(0f, stats.teleportCooldown);
+        teleport.preTeleportDelay = Mathf.Max(0f, stats.teleportPreDelay);
+        teleport.teleportDistance = Mathf.Max(0f, stats.teleportDistance);
+    }
+
     public override void Die()
     {
         if (_teleportCoroutine != null)

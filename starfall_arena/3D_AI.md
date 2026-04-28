@@ -148,6 +148,12 @@ The 3D AI path should stay modular. Enemy prefabs should compose small scripts i
   - if one or two members die before the final beam, the remaining members continue the pattern with fewer links and lower final beam damage; only the full three-member beam applies the configured slow
   - final player-facing damage is owned by the brain's non-alloc beam cast so one/two/three survivor strength can be tuned independently; configure the `BeamWeapon3D` visual beam damage to `0` when the brain owns damage
   - `Squad Members` may be authored directly, but the brain can also auto-link to the closest same-key Triumvirate members within `Auto Link Radius`
+- `SwarmScoutEnemyBrain3D`
+  - fragile fast flyer intended to spawn in organized groups of five
+  - auto-links nearby scouts with the same `Swarm Key`, assigns stable phase slots, and flies a constant-speed orbit/helix around the current player target instead of stopping to aim or fire
+  - has no weapons, ram, or contact damage; its threat is informational, not direct damage
+  - if the linked swarm keeps at least `Required Survivors For Alert` alive near the player for `Alert Warmup Seconds`, it calls `EnemyTargetSensor3D.ReceiveTargetAlert(...)` on enemy sensors near the player so heavier enemies can acquire beyond their normal detection radius for a short duration
+  - alerts are server-authoritative in networked Invasion because the brain only runs on the server/host; clients receive movement through `NetEnemyMovement3D`
 
 ## Architecture Rules
 
@@ -158,12 +164,14 @@ The 3D AI path should stay modular. Enemy prefabs should compose small scripts i
 - Basic shooter pursuit may scale speed down near the target, but facing gates belong in `EnemyAIFlightController3D`.
 - Enemy brains that need kiting must be able to declare facing and movement separately. Artillery enemies need to keep the nose on target while translating backward, so the flight controller now supports a "face here, move there" contract instead of assuming every enemy always flies nose-first.
 - Target selection should use `FactionMember3D`, not generic `"Player"` tag lookups.
+- Temporary target sharing should go through `EnemyTargetSensor3D.ReceiveTargetAlert(...)` so normal detection remains the primary path and alert-based acquisition expires automatically.
 - Obstacle avoidance should use batched/non-alloc physics queries where possible.
 - Patrol/search behavior should be procedural and per-enemy, not a manually authored shared waypoint list. Shared waypoint lists create long-term traffic hotspots in a large 3D volume.
 - Patrol should only run as a no-target fallback. Once `EnemyTargetSensor3D` reacquires a player, the enemy's normal brain should immediately take movement and combat ownership back.
 - Do not put wave logic, scoring, or mode state inside individual enemy brains.
 - Do not make clients run gameplay AI in networked Invasion.
-- Keep tuning on prefab inspector fields for now. ScriptableObject enemy profiles are not part of the first slice.
+- Every new active 3D enemy prefab needs the matching `EnemyBalanceProfile3D`-derived asset and an `EnemyBalanceProfileApplier3D` reference on the prefab root. Tune extracted balance numbers in the profile: health, shield, move speed, turn speed, detection range, weapon damage/speed/cooldowns/lifetime/beam energy, and that enemy's active brain behavior timings/ranges.
+- Keep prefab wiring on prefab inspector fields: projectile/beam prefab references, muzzles, visuals, layers, audio, pooling, debug toggles, patrol bounds, network references, and other scene/object bindings stay out of balance profiles.
 
 ## Pathing Model
 

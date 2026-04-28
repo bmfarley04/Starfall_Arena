@@ -4854,6 +4854,7 @@ GameObject:
   - component: {fileID: 7007259809539868391}
   - component: {fileID: 6201011263396867847}
   - component: {fileID: 6130407770603137240}
+  - component: {fileID: 9100000000000000003}
   m_Layer: 0
   m_Name: suicideEnemy
   m_TagString: Enemy
@@ -10404,3 +10405,17 @@ MonoBehaviour:
   mass: 0.5
   linearDamping: 0.5
   angularDamping: 0.3
+
+--- !u!114 &9100000000000000003
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2865276719882564100}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bfab71f04e15488aa75cd8ce1856c6d3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyBalanceProfileApplier3D
+  profile: {fileID: 11400000, guid: 52016d456b4241a49399ef8ce0b131aa, type: 2}

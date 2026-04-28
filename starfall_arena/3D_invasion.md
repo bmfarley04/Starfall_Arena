@@ -23,6 +23,7 @@ Implemented foundation:
 - `RammerEnemyBrain3D` is a fast strike enemy that chases the player at full speed and slams into them on contact for chip damage plus a large knockback, then arcs away to circle back; the knockback routes through the existing `NetMovement3D.ApplyCombatVelocityDelta` recoil hook so the impulse replicates correctly across the network without a new RPC
 - `SplitterEnemyBrain3D` owns the Splitter enemy identity: the parent hybrid chooses between projectile and beam pressure based on range plus a random overlap band, then on death asks `InvasionWaveManager3D` to spawn the same prefab twice as smaller role-locked children
 - `TriumvirateEnemyBrain3D` owns the Triumvirate enemy identity: small linked beam ships form a triangle, reveal cosmetic lightning links, and then fire a survivor-scaled lightning beam where the full three-ship version is the only slow-applying version
+- `SwarmScoutEnemyBrain3D` owns the Swarm Scout enemy identity: fragile fast flyers orbit the player in linked swarms, stay moving constantly, and only alert nearby enemy sensors to the player's position if the full required survivor count remains alive near the player through the warmup
 - `NetEnemyMovement3D` makes enemies server-simulated in network sessions
 - `NetEnemyCombat3D` makes enemy projectile damage server-authoritative and broadcasts client cosmetics
 - enemy beam prefabs may now use an optional `BeamVisualDriver3D` such as `ForgeBeamVisualDriver3D` for presentation, but enemy beam gameplay still stays inside `LaserBeam3D` / `NetEnemyCombat3D`
@@ -92,6 +93,7 @@ For the first basic shooter enemy prefab:
 - add `ProjectileWeaponEnemy3D`; the brain's aim tolerance gates when shots are allowed, and the brain supplies the target direction when firing so the projectile does not inherit the allowed facing error at long range
 - optional `ShipThrusterVfx3D` can stay on enemies; it reads `EnemyAIFlightController3D.IsMovingForward` when present
 - add `NetEnemyMovement3D` and `NetEnemyCombat3D` for networked enemies
+- create an `EnemyBalanceProfile3D` asset, initialize it from the prefab's current health, movement, detection, weapon, and brain tuning, then add `EnemyBalanceProfileApplier3D` on the prefab root and assign the profile before adding the prefab to waves
 - set the root tag to `Enemy` for compatibility, but do not rely on that tag for new PvE damage rules
 
 For a suicide drone enemy prefab:
@@ -107,6 +109,7 @@ For a suicide drone enemy prefab:
 - add `SuicideDroneEnemyBrain3D`
 - add `NetEnemyMovement3D` for networked movement replication
 - do not add `ProjectileWeapon3D` or `NetEnemyCombat3D` unless the drone also has a separate ranged attack
+- create an `EnemyBalanceProfile3D` asset, initialize it from the prefab's current health, movement, detection, weapon, and brain tuning, then add `EnemyBalanceProfileApplier3D` on the prefab root and assign the profile before adding the prefab to waves
 - set the root tag to `Enemy` for compatibility, but keep target/damage filtering faction-driven
 
 For an artillery beam enemy prefab:
@@ -123,6 +126,7 @@ For an artillery beam enemy prefab:
 - add `BeamWeapon3D`; set its `targetFaction` to `PlayerTeam` and keep `targetTag` empty unless you intentionally need legacy fallback
 - if you want the Forge line-renderer look, use `Assets/Prefabs/Weapons/Projectiles/3d/projectiles/enemies/beam/enemy_beam_forge_red.prefab` as the beam prefab instead of the older cylinder-based enemy beam
 - add `NetEnemyMovement3D` and `NetEnemyCombat3D` for networked movement plus beam cosmetic replication
+- create an `EnemyBalanceProfile3D` asset, initialize it from the prefab's current health, movement, detection, weapon, and brain tuning, then add `EnemyBalanceProfileApplier3D` on the prefab root and assign the profile before adding the prefab to waves
 - set the root tag to `Enemy` for compatibility, but keep target/damage filtering faction-driven
 
 For an artillery fortress enemy prefab:
@@ -142,6 +146,7 @@ For an artillery fortress enemy prefab:
 - add `ArtilleryFortressChargeTelegraph3D`; assign the ship/body renderers, ensure the material supports emission, keep `Add To Shared Material Emission` off if this fortress should override the shared material's normal glow, leave `Use Charge Color Override` off to preserve the material's emission color while scaling intensity, set `Idle Emission Intensity` to a small nonzero value for a dim idle glow or `0` to leave the original emission color untouched at idle, and set `Max Charge Emission Intensity` around `4-5`; optionally assign a child VFX root or light for a stronger charge tell
 - add `ArtilleryFortressEnemyBrain3D`; assign the cannon weapon, optional missile weapon, optional close-range turret weapons, and charge telegraph if auto-assignment does not find them; start with `maxFiringRange = 200`, `approachRangeBuffer = 100`, `outOfRangeApproachSpeedScale = 0.2`, `maxMissileRange = 100-120`, `missileAimToleranceDegrees = 45`, `missileToCannonStaggerDelay = 0.35`, `maxTurretRange = 80-100`, and `turretToCannonStaggerDelay = 0.15`
 - add `NetEnemyMovement3D` and `NetEnemyCombat3D` for networked movement plus replicated projectile fire and charge presentation
+- create an `EnemyBalanceProfile3D` asset, initialize it from the prefab's current health, movement, detection, weapon, and brain tuning, then add `EnemyBalanceProfileApplier3D` on the prefab root and assign the profile before adding the prefab to waves
 - set the root tag to `Enemy` for compatibility, but keep target/damage filtering faction-driven
 - set high `maxHealth` on `Entity3D` so the fortress survives a real assault
 
@@ -158,6 +163,7 @@ For a tank enemy prefab:
 - add **two** `ProjectileWeapon3D` components on the same root: one configured as the slow heavy cannon (slow projectile speed, high damage, short-to-medium cooldown), one configured as the homing missile launcher (longer cooldown, projectile prefab is a `MissileProjectile3D` variant). Set both weapons' `targetFaction` to `PlayerTeam` and use `MuzzleForward` aiming. Wire each weapon's muzzle Transform to its own visible barrel/launcher on the model.
 - add `TankEnemyBrain3D` and assign both weapon references in its inspector (cannon slot and missile slot are explicitly serialized, since `GetComponent<ProjectileWeapon3D>()` would only resolve the first one)
 - add `NetEnemyMovement3D` and `NetEnemyCombat3D` for networked movement plus replicated fire
+- create an `EnemyBalanceProfile3D` asset, initialize it from the prefab's current health, movement, detection, weapon, and brain tuning, then add `EnemyBalanceProfileApplier3D` on the prefab root and assign the profile before adding the prefab to waves
 - set the root tag to `Enemy` for compatibility, but keep target/damage filtering faction-driven
 - set a high `maxHealth` on `Entity3D` to lean into the tank identity
 
@@ -175,6 +181,7 @@ For a glass cannon interceptor enemy prefab:
 - add `ProjectileWeaponEnemy3D`; configure it as the short-burst gun with roughly 10 damage, 0.2s cooldown, fast hitscan-like projectile speed, and `targetFaction = PlayerTeam`; the interceptor brain will gate firing by nose tolerance and launch shots toward the target
 - add `GlassCannonInterceptorEnemyBrain3D`; start with `preferredRangeMin = 40`, `preferredRangeMax = 50`, `shotsPerBurst = 3`, `preBurstSettleDuration = 0.35`, and `postBurstRecoverDuration = 0.3`
 - add `NetEnemyMovement3D` and `NetEnemyCombat3D` for networked movement plus replicated projectile fire
+- create an `EnemyBalanceProfile3D` asset, initialize it from the prefab's current health, movement, detection, weapon, and brain tuning, then add `EnemyBalanceProfileApplier3D` on the prefab root and assign the profile before adding the prefab to waves
 - set the root tag to `Enemy` for compatibility, but keep target/damage filtering faction-driven
 - set `Entity3D` max health to 15 so a single normal player shot can one-shot it
 
@@ -190,6 +197,7 @@ For a rammer enemy prefab:
 - optionally add `EnemyObstacleAvoidance3D` if the rammer should weave around asteroids while charging
 - add `RammerEnemyBrain3D`; tune `knockbackVelocity` first since that single value drives the whole feel of the enemy
 - add `NetEnemyMovement3D` for networked movement replication; `NetEnemyCombat3D` is **not** required since the rammer has no projectile weapons (and the knockback hook lives on the player's `NetMovement3D`, not on the enemy)
+- rammers are deprecated and currently excluded from `EnemyBalanceProfile3D` extraction; do not add deprecated rammer prefabs to active waves until that path is revived deliberately
 - set the root tag to `Enemy` for compatibility, but keep target/damage filtering faction-driven
 - set moderate `maxHealth` on `Entity3D` (lower than the tank - this is a fast strike unit, not a bruiser)
 
@@ -214,6 +222,7 @@ For a Splitter enemy prefab:
 - tune `Projectile Convergence Distance` so multi-muzzle projectile volleys cross at the intended distance in front of the Splitter instead of flying parallel from widely spaced hardpoints
 - enable `Log Weapon Choices` temporarily when debugging weapon selection; it reports whether the Splitter chose projectile or beam and whether that choice fired or was blocked
 - add `NetEnemyMovement3D` and `NetEnemyCombat3D` for networked movement plus replicated projectile/beam fire
+- create an `EnemyBalanceProfile3D` asset, initialize it from the prefab's current health, movement, detection, weapon, and brain tuning, then add `EnemyBalanceProfileApplier3D` on the prefab root and assign the profile before adding the prefab to waves
 - set the root tag to `Enemy` for compatibility, but keep target/damage filtering faction-driven
 - add the Splitter prefab to `InvasionWaveManager3D` wave entries; spawned children are added to the same alive-enemy tracking automatically and must be cleared before the wave completes
 
@@ -238,6 +247,7 @@ For a Duelist enemy prefab:
   - tune `Vibes Chance` if the duelist feels too predictable (or too erratic) about which weapon it picks
   - tune `Dodge Chance Per Threat` and `Dodge Cooldown` to set how often dodges actually fire when projectiles come in
 - add `NetEnemyMovement3D` and `NetEnemyCombat3D` for networked movement plus replicated projectile and beam fire
+- create an `EnemyBalanceProfile3D` asset, initialize it from the prefab's current health, movement, detection, weapon, and brain tuning, then add `EnemyBalanceProfileApplier3D` on the prefab root and assign the profile before adding the prefab to waves
 - set the root tag to `Enemy` for compatibility, but keep target/damage filtering faction-driven
 - set moderate `Entity3D` max health; the duelist is a flanker, not a tank, but it should survive longer than a glass-cannon interceptor
 - register the duelist prefab in `Assets/DefaultNetworkPrefabs.asset` for NGO before adding it to wave entries
@@ -257,13 +267,31 @@ For a Triumvirate enemy prefab:
 - use `Log State Changes` and temporary `Log Formation Progress` while testing scene setup so stuck states report whether the squad is forming, linking, charging, firing, or cooling down
 - either assign all three `Squad Members` explicitly after placing/spawning a group, or spawn them close together with the same `Squad Key` and an `Auto Link Radius` large enough for discovery
 - add `NetEnemyMovement3D` and `NetEnemyCombat3D` for networked movement plus final beam presentation
+- create an `EnemyBalanceProfile3D` asset, initialize it from the prefab's current health, movement, detection, weapon, and brain tuning, then add `EnemyBalanceProfileApplier3D` on the prefab root and assign the profile before adding the prefab to waves
 - set low `Entity3D` health so the intended counterplay is destroying ships during formation/linking before the full slow beam fires
 - add Triumvirate entries to waves in multiples of three; the brain can degrade to two or one survivor, but the intended enemy identity assumes a three-ship group at spawn
+
+For a Swarm Scout enemy prefab:
+
+- add `NetworkObject` if it will spawn in networked Invasion
+- add `FactionMember3D` and set faction to `EnemyTeam`
+- add `Enemy3D`
+- add `Rigidbody` with gravity off
+- add `EnemyAIFlightController3D`; tune `moveSpeed` and `rotationDegreesPerSecond` very high, and set `moveWhenFacingAngle` wide enough that scouts keep moving through aggressive turns
+- add `EnemyTargetSensor3D` with enough detection range to find players before entering orbit
+- add `EnemyPatrol3D` for no-target search behavior; the brain also keeps its last/fallback heading if patrol is unavailable so the scout does not intentionally idle
+- optionally add `EnemySeparation3D` and `EnemyObstacleAvoidance3D` if swarms need local spreading or asteroid steering
+- add `SwarmScoutEnemyBrain3D`; keep `Intended Swarm Size = 5`, `Required Survivors For Alert = 5`, `Alert Broadcast Radius = 1400`, `Alert Warmup Seconds = 3`, and `Alert Duration = 6` as the starting tuning
+- add `NetEnemyMovement3D`; `NetEnemyCombat3D` is not required because scouts do not fire weapons
+- create a `SwarmScoutEnemyBalanceProfile3D` asset, assign it through `EnemyBalanceProfileApplier3D`, and keep prefab-only wiring such as visuals, audio, collision, network references, and death effects on the prefab
+- set the root tag to `Enemy` for compatibility, but keep target/damage filtering faction-driven
+- add Swarm Scout entries to waves in clustered counts of five with little or no spawn delay so the linked movement and full-survivor alert gate read correctly
 
 For player prefabs used in Invasion:
 
 - add `FactionMember3D`
 - set faction to `PlayerTeam`
+- assign the matching `PlayerBalanceProfile3D` asset through `PlayerBalanceProfileApplier3D` before using the prefab in Invasion, so PvE tuning stays in the profile instead of drifting across prefab inspector fields
 - set player projectile weapon configs that should damage enemies to `targetFaction = EnemyTeam`
 - keep existing `Player1` / `Player2` tags for slot compatibility
 
