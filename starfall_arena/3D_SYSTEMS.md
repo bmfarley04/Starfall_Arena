@@ -271,6 +271,16 @@ When adding a new 3D script, place it under the subsystem it serves first. Do no
 - the disk shader is quad-friendly: it converts centered UVs to polar coordinates, uses polar angle/radius for circular swirl motion, and masks the square corners away; keep the black hole centered at UV `(0.5, 0.5)`
 - the current PC/3D URP path has opaque texture enabled; any renderer asset used for this effect must keep opaque texture enabled or the lensing shader will not have a valid scene color source
 
+## White Dwarf Star Shader Authoring
+
+- the 3D white dwarf centerpiece uses three materials: `Starfall/3D/WhiteDwarf/CoreSurface` for the opaque emissive sphere, `Starfall/3D/WhiteDwarf/CoronaShell` for the inflated additive atmosphere, and optional `Starfall/3D/WhiteDwarf/CompactLensing` for near-field screen-space shimmer
+- `Assets/Prefabs/3d_effects/WhiteDwarfStar3D.prefab` wires these layers as `Core`, `CoronaShell`, and `LensingShell`; the lensing renderer starts disabled and is intended only for close gameplay-centerpiece shots
+- `WhiteDwarfStarVisual3D` pushes `_ExternalPulseIntensity` through material property blocks so shared material assets are not duplicated at runtime; keep this effect visual-only unless a separate gameplay system explicitly owns hazards or gravity
+- tune visible size through child transform scale, not shader displacement, so combat readability bounds and any future gameplay volumes stay predictable
+- bloom is not owned by the shader; the materials output HDR values, but the active camera must render post-processing and the scene/global volume must have Bloom intensity above zero
+- optional lensing samples `_CameraOpaqueTexture`; use `PC_RPAsset.asset` or another URP asset with opaque texture enabled when enabling the lensing shell, because the default `UniversalRP.asset` keeps opaque texture disabled
+- the v1 color profile is material-driven white/cyan HDR tuning; a planned 1D blackbody LUT can be added later if multiple authored star temperatures become a real content need
+
 ## Change Classification Rule
 
 3D work should explicitly call out whether it is:

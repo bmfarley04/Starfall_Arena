@@ -1,0 +1,41 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: WhiteDwarf_Lensing_Optional
+  m_Shader: {fileID: 4800000, guid: 469b09f8b15c4a11b8845fc80d8f1a47, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs: []
+    m_Ints: []
+    m_Floats:
+    - _BendClamp: 0.227
+    - _BendFalloff: 2.2
+    - _BendStrength: 0.35
+    - _ChromaticAberration: 0.0093
+    - _ExternalPulseIntensity: 0.19
+    - _LensGlowIntensity: 3.29
+    - _LensGlowPower: 3.1
+    - _LensOpacity: 0.277
+    - _ObjectRadius: 0.5
+    - _OuterFade: 0.351
+    m_Colors:
+    - _LensGlowColor: {r: 0.7, g: 2.2, b: 6.5, a: 1}
+  m_BuildTextureStacks: []
+  m_AllowLocking: 1
