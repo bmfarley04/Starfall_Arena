@@ -15,7 +15,7 @@ MonoBehaviour:
   core:
     maxHealth: 1
     maxShield: 0
-    moveSpeed: 30
+    moveSpeed: 40
     rotationDegreesPerSecond: 200
     detectionRange: 2000
   projectileWeapons: []

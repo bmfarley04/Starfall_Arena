@@ -17,7 +17,7 @@ MonoBehaviour:
     maxShield: 100
     moveSpeed: 35
     rotationDegreesPerSecond: 180
-    detectionRange: 5000
+    detectionRange: 500
   projectileWeapons:
   - cooldown: 2
     speed: 120

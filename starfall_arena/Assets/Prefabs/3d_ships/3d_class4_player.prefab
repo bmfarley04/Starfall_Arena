@@ -32,6 +32,19 @@ Transform:
   m_Children: []
   m_Father: {fileID: 190829179039992599}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &9200000000000000003
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 110191405034944514}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3a0c3a2dd905405f9cc204c46dfd9e67, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerBalanceProfileApplier3D
+  profile: {fileID: 11400000, guid: 13cf2d4bdde843f993283dbb7e54a32b, type: 2}
 --- !u!1 &111100000000000001
 GameObject:
   m_ObjectHideFlags: 0
@@ -5477,6 +5490,10 @@ MonoBehaviour:
   maxShield: 1000
   shieldController: {fileID: 7730684126597357551}
   impulseRecoilPitchSensitivity: 10
+  uprightRecoveryEnabled: 1
+  uprightRecoveryDelay: 5
+  uprightRecoveryDegreesPerSecond: 45
+  uprightRecoveryInputDeadZone: 0.05
   weapons:
   - {fileID: 111100000000000101}
   - {fileID: 111100000000000102}
@@ -5492,6 +5509,7 @@ MonoBehaviour:
   deathEffects: {fileID: 8288383124772000926}
   playerInput3D: {fileID: 2709859321838343538}
   playerCameraRig3D: {fileID: 8218329567873975671}
+  aimAssist3D: {fileID: 0}
   hudManager3D: {fileID: 0}
   splitStateLightningRigs: []
   splitStateOffsetRigs: []
@@ -5726,6 +5744,7 @@ MonoBehaviour:
   shipFlight: {fileID: 4650194337417168327}
   entity: {fileID: 7926965533672300583}
   playerInput: {fileID: 3034305952669885816}
+  aimAssist: {fileID: 0}
   mouseLookSensitivity: 0.5
 --- !u!114 &8218329567873975671
 MonoBehaviour:
@@ -5798,6 +5817,7 @@ MonoBehaviour:
     recoveryPerSecond: 30
   aimMode: 1
   aimCamera: {fileID: 0}
+  aimAssist: {fileID: 0}
   aimCollisionMask:
     serializedVersion: 2
     m_Bits: 4294967295
@@ -5851,6 +5871,7 @@ MonoBehaviour:
     recoveryPerSecond: 4
   aimMode: 1
   aimCamera: {fileID: 0}
+  aimAssist: {fileID: 0}
   aimCollisionMask:
     serializedVersion: 2
     m_Bits: 4294967295
@@ -5917,6 +5938,7 @@ MonoBehaviour:
     recoveryPerSecond: 30
   aimMode: 1
   aimCamera: {fileID: 0}
+  aimAssist: {fileID: 0}
   aimCollisionMask:
     serializedVersion: 2
     m_Bits: 4294967295
@@ -7118,16 +7140,3 @@ ParticleSystem:
   m_CorrespondingSourceObject: {fileID: 4618339506310719171, guid: 433d19638a778ce4eabe1f05ad84a3c1, type: 3}
   m_PrefabInstance: {fileID: 7237049440075051423}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &9200000000000000003
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 110191405034944514}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3a0c3a2dd905405f9cc204c46dfd9e67, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::PlayerBalanceProfileApplier3D
-  profile: {fileID: 11400000, guid: 13cf2d4bdde843f993283dbb7e54a32b, type: 2}
