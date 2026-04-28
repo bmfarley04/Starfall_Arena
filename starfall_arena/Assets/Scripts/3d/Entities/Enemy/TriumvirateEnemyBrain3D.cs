@@ -126,6 +126,7 @@ public class TriumvirateEnemyBrain3D : NetworkBehaviour
     private Enemy3D _enemy;
     private EnemyAIFlightController3D _flightController;
     private EnemyTargetSensor3D _targetSensor;
+    private EnemyPatrol3D _patrol;
     private NetworkObject _networkObject;
     private float _nextAutoLinkTime;
     private float _stateEndTime;
@@ -146,6 +147,7 @@ public class TriumvirateEnemyBrain3D : NetworkBehaviour
         _enemy = GetComponent<Enemy3D>();
         _flightController = GetComponent<EnemyAIFlightController3D>();
         _targetSensor = GetComponent<EnemyTargetSensor3D>();
+        _patrol = GetComponent<EnemyPatrol3D>() ?? gameObject.AddComponent<EnemyPatrol3D>();
         _networkObject = GetComponent<NetworkObject>();
         finalBeamWeapon ??= GetComponent<BeamWeapon3D>();
         netEnemyCombat ??= GetComponent<NetEnemyCombat3D>();
@@ -184,7 +186,7 @@ public class TriumvirateEnemyBrain3D : NetworkBehaviour
             ClearLinkVisuals();
             StopSquadChargeTelegraphs(immediate: true);
             SetState(SquadState.Forming, 0f);
-            ClearSquadFlightIntent();
+            PatrolSquadOrClearFlightIntent();
             return;
         }
 
@@ -982,6 +984,26 @@ public class TriumvirateEnemyBrain3D : NetworkBehaviour
         for (int i = 0; i < _activeMembers.Count; i++)
         {
             _activeMembers[i]?._flightController?.ClearFlightIntent();
+        }
+    }
+
+    private void PatrolSquadOrClearFlightIntent()
+    {
+        RefreshActiveMembers();
+        for (int i = 0; i < _activeMembers.Count; i++)
+        {
+            TriumvirateEnemyBrain3D member = _activeMembers[i];
+            if (member == null)
+            {
+                continue;
+            }
+
+            if (member._patrol != null && member._patrol.isActiveAndEnabled && member._patrol.TryUpdatePatrolIntent())
+            {
+                continue;
+            }
+
+            member._flightController?.ClearFlightIntent();
         }
     }
 

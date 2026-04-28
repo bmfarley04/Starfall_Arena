@@ -30,6 +30,9 @@ public class ArtilleryFortressEnemyBrain3D : NetworkBehaviour
     [Tooltip("Faction-aware target sensor. Set its detectionRadius high (e.g. 200-300m) on the prefab - that radius is what enforces the fortress's long-range identity. Auto-assigned from this GameObject if left empty.")]
     [SerializeField] private EnemyTargetSensor3D targetSensor;
 
+    [Tooltip("Optional patrol fallback used when no player-team target is inside detection range.")]
+    [SerializeField] private EnemyPatrol3D patrol;
+
     [Tooltip("Network combat helper for replicated firing. Auto-assigned from this GameObject if left empty. Required for multiplayer projectile fire.")]
     [SerializeField] private NetEnemyCombat3D netEnemyCombat;
 
@@ -108,6 +111,7 @@ public class ArtilleryFortressEnemyBrain3D : NetworkBehaviour
 
         flightController ??= GetComponent<EnemyAIFlightController3D>();
         targetSensor ??= GetComponent<EnemyTargetSensor3D>();
+        patrol ??= GetComponent<EnemyPatrol3D>() ?? gameObject.AddComponent<EnemyPatrol3D>();
         netEnemyCombat ??= GetComponent<NetEnemyCombat3D>();
         chargeTelegraph ??= GetComponentInChildren<ArtilleryFortressChargeTelegraph3D>(true);
         _networkObject = GetComponent<NetworkObject>();
@@ -167,7 +171,8 @@ public class ArtilleryFortressEnemyBrain3D : NetworkBehaviour
         Entity3D target = ResolveTrackedTarget();
         if (!IsTargetEngageable(target))
         {
-            CancelChargeAndAcquire(clearFlightIntent: true);
+            CancelChargeAndAcquire(clearFlightIntent: false);
+            PatrolOrClearFlightIntent();
             return;
         }
 
@@ -481,6 +486,16 @@ public class ArtilleryFortressEnemyBrain3D : NetworkBehaviour
 
         _state = FortressState.Acquiring;
         _lockedFireDirection = Vector3.zero;
+    }
+
+    private void PatrolOrClearFlightIntent()
+    {
+        if (patrol != null && patrol.isActiveAndEnabled && patrol.TryUpdatePatrolIntent())
+        {
+            return;
+        }
+
+        flightController?.ClearFlightIntent();
     }
 
     private void StartChargeTelegraph(float duration)

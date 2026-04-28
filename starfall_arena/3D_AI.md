@@ -32,6 +32,13 @@ The 3D AI path should stay modular. Enemy prefabs should compose small scripts i
   - non-alloc `OverlapSphere` against an `agentMask` LayerMask; pushes the desired direction away from same-faction allies inside `allyRadius` and biases laterally away from non-ally entities (e.g. the player) inside the smaller `playerProximityRadius`
   - intended chaining: `desired -> separation -> obstacleAvoidance -> flight controller`
   - currently consumed by `RammerEnemyBrain3D` (gated behind a `useSeparation` brain toggle); other enemy brains can opt in by adding the component to their prefab and calling its API the same way
+- `EnemyPatrol3D`
+  - reusable no-target fallback for Invasion enemies so they search the arena instead of freezing when players are outside detection range
+  - generates patrol waypoints at runtime; designers do not author scene waypoint lists
+  - samples points inside the active `ArenaBoundary3D` bounds when one exists, otherwise uses a serialized fallback arena box (default `5000 x 5000 x 5000`)
+  - rejects tiny patrol legs, keeps an edge margin away from force-field walls, biases routes slightly toward the enemy's current forward direction, and uses per-instance waypoint seeds so enemies do not all choose the same route
+  - can route patrol steering through `EnemySeparation3D` and `EnemyObstacleAvoidance3D`; this avoids shared waypoint hotspots and helps nearby enemies fan out while searching
+  - is consumed by enemy brains only when their `EnemyTargetSensor3D` returns no target; engagement brains still own all chase, attack, formation, and weapon decisions once a player is detected
 - `EnemyStrafeMover3D`
   - reusable world-space lateral/vertical strafe overlay that sits beside `EnemyAIFlightController3D` on the same Rigidbody
   - the enemy flight controller can only thrust forward/backward along its facing direction; the strafe mover is what enables true sideways motion while the flight controller continues to drive rotation
@@ -152,6 +159,8 @@ The 3D AI path should stay modular. Enemy prefabs should compose small scripts i
 - Enemy brains that need kiting must be able to declare facing and movement separately. Artillery enemies need to keep the nose on target while translating backward, so the flight controller now supports a "face here, move there" contract instead of assuming every enemy always flies nose-first.
 - Target selection should use `FactionMember3D`, not generic `"Player"` tag lookups.
 - Obstacle avoidance should use batched/non-alloc physics queries where possible.
+- Patrol/search behavior should be procedural and per-enemy, not a manually authored shared waypoint list. Shared waypoint lists create long-term traffic hotspots in a large 3D volume.
+- Patrol should only run as a no-target fallback. Once `EnemyTargetSensor3D` reacquires a player, the enemy's normal brain should immediately take movement and combat ownership back.
 - Do not put wave logic, scoring, or mode state inside individual enemy brains.
 - Do not make clients run gameplay AI in networked Invasion.
 - Keep tuning on prefab inspector fields for now. ScriptableObject enemy profiles are not part of the first slice.

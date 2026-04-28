@@ -12,6 +12,7 @@ public class SuicideDroneEnemyBrain3D : MonoBehaviour
     [SerializeField] private EnemyAIFlightController3D flightController;
     [SerializeField] private EnemyTargetSensor3D targetSensor;
     [SerializeField] private EnemyObstacleAvoidance3D obstacleAvoidance;
+    [SerializeField] private EnemyPatrol3D patrol;
     [SerializeField] private float thinkInterval = 0.05f;
     [SerializeField] private float detonationDamage = 35f;
     [SerializeField] private float detonationRadius = 4f;
@@ -31,6 +32,7 @@ public class SuicideDroneEnemyBrain3D : MonoBehaviour
         flightController ??= GetComponent<EnemyAIFlightController3D>();
         targetSensor ??= GetComponent<EnemyTargetSensor3D>();
         obstacleAvoidance ??= GetComponent<EnemyObstacleAvoidance3D>();
+        patrol ??= GetComponent<EnemyPatrol3D>() ?? gameObject.AddComponent<EnemyPatrol3D>();
         _networkObject = GetComponent<NetworkObject>();
     }
 
@@ -90,7 +92,7 @@ public class SuicideDroneEnemyBrain3D : MonoBehaviour
         Entity3D target = targetSensor != null ? targetSensor.GetTarget() : null;
         if (target == null)
         {
-            flightController?.ClearFlightIntent();
+            PatrolOrClearFlightIntent();
             return;
         }
 
@@ -113,6 +115,16 @@ public class SuicideDroneEnemyBrain3D : MonoBehaviour
             : toTarget.normalized;
 
         flightController?.SetMoveDirection(steeringDirection, 1f);
+    }
+
+    private void PatrolOrClearFlightIntent()
+    {
+        if (patrol != null && patrol.isActiveAndEnabled && patrol.TryUpdatePatrolIntent())
+        {
+            return;
+        }
+
+        flightController?.ClearFlightIntent();
     }
 
     private void Detonate()

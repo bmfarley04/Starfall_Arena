@@ -64,6 +64,9 @@ public class DuelistEnemyBrain3D : MonoBehaviour
     [Tooltip("Optional spherecast obstacle avoidance. Leave empty (or disable Use Obstacle Avoidance) for the cheapest path.")]
     [SerializeField] private EnemyObstacleAvoidance3D obstacleAvoidance;
 
+    [Tooltip("Optional patrol fallback used when no player-team target is inside detection range.")]
+    [SerializeField] private EnemyPatrol3D patrol;
+
     [Header("Think Loop")]
     [Tooltip("Seconds between AI decision ticks. Lower is more responsive but costs more CPU.")]
     [SerializeField] private float thinkInterval = 0.06f;
@@ -219,6 +222,7 @@ public class DuelistEnemyBrain3D : MonoBehaviour
         netEnemyCombat ??= GetComponent<NetEnemyCombat3D>();
         separation ??= GetComponent<EnemySeparation3D>();
         obstacleAvoidance ??= GetComponent<EnemyObstacleAvoidance3D>();
+        patrol ??= GetComponent<EnemyPatrol3D>() ?? gameObject.AddComponent<EnemyPatrol3D>();
         _networkObject = GetComponent<NetworkObject>();
         _threatBuffer = new Collider[Mathf.Max(1, threatScanBufferSize)];
     }
@@ -283,7 +287,8 @@ public class DuelistEnemyBrain3D : MonoBehaviour
         if (target == null)
         {
             StopBeam();
-            flightController?.ClearFlightIntent();
+            strafeMover?.StopStrafe();
+            PatrolOrClearFlightIntent();
             return;
         }
 
@@ -915,6 +920,16 @@ public class DuelistEnemyBrain3D : MonoBehaviour
             result = obstacleAvoidance.ResolveSteeringDirection(result);
         }
         return result;
+    }
+
+    private void PatrolOrClearFlightIntent()
+    {
+        if (patrol != null && patrol.isActiveAndEnabled && patrol.TryUpdatePatrolIntent())
+        {
+            return;
+        }
+
+        flightController?.ClearFlightIntent();
     }
 
     private Entity3D ResolveTarget()

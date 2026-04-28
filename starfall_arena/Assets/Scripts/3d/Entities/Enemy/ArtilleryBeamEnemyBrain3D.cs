@@ -14,6 +14,7 @@ public class ArtilleryBeamEnemyBrain3D : MonoBehaviour
     [SerializeField] private EnemyAIFlightController3D flightController;
     [SerializeField] private EnemyTargetSensor3D targetSensor;
     [SerializeField] private EnemyObstacleAvoidance3D obstacleAvoidance;
+    [SerializeField] private EnemyPatrol3D patrol;
     [SerializeField] private BeamWeapon3D beamWeapon;
     [SerializeField] private NetEnemyCombat3D netEnemyCombat;
     [SerializeField] private float thinkInterval = 0.05f;
@@ -37,6 +38,7 @@ public class ArtilleryBeamEnemyBrain3D : MonoBehaviour
         flightController ??= GetComponent<EnemyAIFlightController3D>();
         targetSensor ??= GetComponent<EnemyTargetSensor3D>();
         obstacleAvoidance ??= GetComponent<EnemyObstacleAvoidance3D>();
+        patrol ??= GetComponent<EnemyPatrol3D>() ?? gameObject.AddComponent<EnemyPatrol3D>();
         beamWeapon ??= GetComponent<BeamWeapon3D>();
         netEnemyCombat ??= GetComponent<NetEnemyCombat3D>();
         _networkObject = GetComponent<NetworkObject>();
@@ -77,7 +79,7 @@ public class ArtilleryBeamEnemyBrain3D : MonoBehaviour
         if (target == null)
         {
             StopBeam();
-            flightController?.ClearFlightIntent();
+            PatrolOrClearFlightIntent();
             return;
         }
 
@@ -93,6 +95,16 @@ public class ArtilleryBeamEnemyBrain3D : MonoBehaviour
         Vector3 targetDirection = toTarget / distanceToTarget;
         UpdateMovement(targetDirection, distanceToTarget);
         UpdateBeam(target, targetDirection, distanceToTarget);
+    }
+
+    private void PatrolOrClearFlightIntent()
+    {
+        if (patrol != null && patrol.isActiveAndEnabled && patrol.TryUpdatePatrolIntent())
+        {
+            return;
+        }
+
+        flightController?.ClearFlightIntent();
     }
 
     private void UpdateMovement(Vector3 targetDirection, float distanceToTarget)

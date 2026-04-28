@@ -32,6 +32,9 @@ public class RammerEnemyBrain3D : MonoBehaviour
     [Tooltip("Optional inter-agent separation steering. Leave empty (or disable useSeparation) to skip. Recommended for swarms so multiple rammers fan out instead of stacking on the same vector.")]
     [SerializeField] private EnemySeparation3D separation;
 
+    [Tooltip("Optional patrol fallback used when no player-team target is inside detection range.")]
+    [SerializeField] private EnemyPatrol3D patrol;
+
     [Header("Think Loop")]
     [Tooltip("Seconds between AI steering decisions. Lower is more responsive but costs more CPU. Note: contact detection runs every FixedUpdate independently of this so high-closure-rate approaches do not skip the ram trigger.")]
     [SerializeField] private float thinkInterval = 0.05f;
@@ -119,6 +122,7 @@ public class RammerEnemyBrain3D : MonoBehaviour
         targetSensor ??= GetComponent<EnemyTargetSensor3D>();
         obstacleAvoidance ??= GetComponent<EnemyObstacleAvoidance3D>();
         separation ??= GetComponent<EnemySeparation3D>();
+        patrol ??= GetComponent<EnemyPatrol3D>() ?? gameObject.AddComponent<EnemyPatrol3D>();
         _networkObject = GetComponent<NetworkObject>();
         _previousFixedUpdatePosition = transform.position;
     }
@@ -239,7 +243,7 @@ public class RammerEnemyBrain3D : MonoBehaviour
     {
         if (target == null)
         {
-            flightController?.ClearFlightIntent();
+            PatrolOrClearFlightIntent();
             return;
         }
 
@@ -279,6 +283,16 @@ public class RammerEnemyBrain3D : MonoBehaviour
         // without closing distance fast enough to make the wind-up window meaningless.
         Vector3 desired = toTarget.normalized;
         flightController?.SetFlightIntent(desired, desired, 0.05f, moveBackward: false);
+    }
+
+    private void PatrolOrClearFlightIntent()
+    {
+        if (patrol != null && patrol.isActiveAndEnabled && patrol.TryUpdatePatrolIntent())
+        {
+            return;
+        }
+
+        flightController?.ClearFlightIntent();
     }
 
     private void UpdateChargeSteering()

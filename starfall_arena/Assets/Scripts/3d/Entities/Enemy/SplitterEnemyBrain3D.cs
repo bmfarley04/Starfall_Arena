@@ -34,6 +34,9 @@ public class SplitterEnemyBrain3D : NetworkBehaviour
     [Tooltip("Optional spherecast obstacle avoidance. Leave empty (or disable useObstacleAvoidance) for the cheapest path.")]
     [SerializeField] private EnemyObstacleAvoidance3D obstacleAvoidance;
 
+    [Tooltip("Optional patrol fallback used when no player-team target is inside detection range.")]
+    [SerializeField] private EnemyPatrol3D patrol;
+
     [Tooltip("Network combat helper for replicated enemy projectile and beam fire. Auto-assigned from this GameObject if left empty.")]
     [SerializeField] private NetEnemyCombat3D netEnemyCombat;
 
@@ -131,6 +134,7 @@ public class SplitterEnemyBrain3D : NetworkBehaviour
         flightController ??= GetComponent<EnemyAIFlightController3D>();
         targetSensor ??= GetComponent<EnemyTargetSensor3D>();
         obstacleAvoidance ??= GetComponent<EnemyObstacleAvoidance3D>();
+        patrol ??= GetComponent<EnemyPatrol3D>() ?? gameObject.AddComponent<EnemyPatrol3D>();
         netEnemyCombat ??= GetComponent<NetEnemyCombat3D>();
         ApplyRoleWeaponState();
     }
@@ -170,7 +174,7 @@ public class SplitterEnemyBrain3D : NetworkBehaviour
         if (target == null)
         {
             StopBeam();
-            flightController?.ClearFlightIntent();
+            PatrolOrClearFlightIntent();
             return;
         }
 
@@ -194,6 +198,16 @@ public class SplitterEnemyBrain3D : NetworkBehaviour
 
         _nextThinkTime = Time.time + Mathf.Max(0.01f, thinkInterval);
         Think(target, targetDirection, distanceToTarget);
+    }
+
+    private void PatrolOrClearFlightIntent()
+    {
+        if (patrol != null && patrol.isActiveAndEnabled && patrol.TryUpdatePatrolIntent())
+        {
+            return;
+        }
+
+        flightController?.ClearFlightIntent();
     }
 
     public void InitializeSplitChildAsProjectile()

@@ -407,6 +407,24 @@ public class ArenaBoundary3D : NetworkBehaviour
             Mathf.Clamp(position.z, center.y - halfLength, center.y + halfLength));
     }
 
+    public Bounds GetCurrentWorldBounds(float margin = 0f)
+    {
+        margin = Mathf.Max(0f, margin);
+        float halfWidth = Mathf.Max(0f, (_currentWidth * 0.5f) - margin);
+        float halfLength = Mathf.Max(0f, (_currentLength * 0.5f) - margin);
+        float minBoundsY = Mathf.Min(_currentMinY + margin, _currentMaxY);
+        float maxBoundsY = Mathf.Max(_currentMaxY - margin, minBoundsY);
+        Vector3 boundsCenter = new Vector3(
+            center.x,
+            (minBoundsY + maxBoundsY) * 0.5f,
+            center.y);
+        Vector3 boundsSize = new Vector3(
+            halfWidth * 2f,
+            Mathf.Max(0f, maxBoundsY - minBoundsY),
+            halfLength * 2f);
+        return new Bounds(boundsCenter, boundsSize);
+    }
+
     private void UpdateShrink()
     {
         if (!_active || _currentWaveIndex >= waves.Count)

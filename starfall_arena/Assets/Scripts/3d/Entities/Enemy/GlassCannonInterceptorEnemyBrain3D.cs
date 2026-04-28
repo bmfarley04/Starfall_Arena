@@ -28,6 +28,9 @@ public class GlassCannonInterceptorEnemyBrain3D : MonoBehaviour
     [Tooltip("Optional spherecast obstacle avoidance. Leave empty (or disable useObstacleAvoidance) for the cheapest path.")]
     [SerializeField] private EnemyObstacleAvoidance3D obstacleAvoidance;
 
+    [Tooltip("Optional patrol fallback used when no player-team target is inside detection range.")]
+    [SerializeField] private EnemyPatrol3D patrol;
+
     [Tooltip("Optional inter-agent separation steering. Useful if multiple interceptors are active and should not stack on the same perch.")]
     [SerializeField] private EnemySeparation3D separation;
 
@@ -106,6 +109,7 @@ public class GlassCannonInterceptorEnemyBrain3D : MonoBehaviour
         flightController ??= GetComponent<EnemyAIFlightController3D>();
         targetSensor ??= GetComponent<EnemyTargetSensor3D>();
         obstacleAvoidance ??= GetComponent<EnemyObstacleAvoidance3D>();
+        patrol ??= GetComponent<EnemyPatrol3D>() ?? gameObject.AddComponent<EnemyPatrol3D>();
         separation ??= GetComponent<EnemySeparation3D>();
         netEnemyCombat ??= GetComponent<NetEnemyCombat3D>();
         _networkObject = GetComponent<NetworkObject>();
@@ -170,7 +174,7 @@ public class GlassCannonInterceptorEnemyBrain3D : MonoBehaviour
         Entity3D target = ResolveTarget();
         if (target == null)
         {
-            flightController?.ClearFlightIntent();
+            PatrolOrClearFlightIntent();
             return;
         }
 
@@ -205,6 +209,16 @@ public class GlassCannonInterceptorEnemyBrain3D : MonoBehaviour
         Vector3 desired = toPerch.sqrMagnitude > 0.0001f ? toPerch.normalized : DirectionToTarget(target);
         Vector3 steered = ResolveSteering(desired);
         flightController?.SetMoveDirection(steered, 1f);
+    }
+
+    private void PatrolOrClearFlightIntent()
+    {
+        if (patrol != null && patrol.isActiveAndEnabled && patrol.TryUpdatePatrolIntent())
+        {
+            return;
+        }
+
+        flightController?.ClearFlightIntent();
     }
 
     private void UpdateSettle(Entity3D target)

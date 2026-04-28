@@ -86,6 +86,7 @@ For the first basic shooter enemy prefab:
 - `ShipFlight3D` may still exist because `Enemy3D` inherits shared `Entity3D`, but `Enemy3D` disables it at runtime so it does not fight enemy movement
 - add `EnemyAIFlightController3D`
 - add `EnemyTargetSensor3D`
+- add `EnemyPatrol3D` so the enemy searches the arena when players are outside detection range; it generates runtime waypoints from the active `ArenaBoundary3D` or its fallback `5000 x 5000 x 5000` bounds, so no manual scene waypoint placement is needed
 - add `EnemyObstacleAvoidance3D` and set `Obstacle Mask` to asteroids/world-geometry layers
 - add `BasicShooterEnemyBrain3D`
 - add `ProjectileWeaponEnemy3D`; the brain's aim tolerance gates when shots are allowed, and the brain supplies the target direction when firing so the projectile does not inherit the allowed facing error at long range
@@ -101,6 +102,7 @@ For a suicide drone enemy prefab:
 - add `Rigidbody`
 - add `EnemyAIFlightController3D`
 - add `EnemyTargetSensor3D`
+- add `EnemyPatrol3D` for no-target arena search behavior
 - optionally add `EnemyObstacleAvoidance3D` if the drone should weave around asteroids instead of beelining
 - add `SuicideDroneEnemyBrain3D`
 - add `NetEnemyMovement3D` for networked movement replication
@@ -115,6 +117,7 @@ For an artillery beam enemy prefab:
 - add `Rigidbody`
 - add `EnemyAIFlightController3D`
 - add `EnemyTargetSensor3D`
+- add `EnemyPatrol3D` for no-target arena search behavior
 - optionally add `EnemyObstacleAvoidance3D` if the artillery ship should path around asteroids while closing distance
 - add `ArtilleryBeamEnemyBrain3D`
 - add `BeamWeapon3D`; set its `targetFaction` to `PlayerTeam` and keep `targetTag` empty unless you intentionally need legacy fallback
@@ -130,6 +133,7 @@ For an artillery fortress enemy prefab:
 - add `Rigidbody` with gravity off
 - add `EnemyAIFlightController3D`; tune `moveSpeed` low, roughly `20-30`, and `rotationDegreesPerSecond` low, roughly `35-60`, so the fortress can creep into range without becoming a chaser
 - add `EnemyTargetSensor3D`; set `detectionRadius` to at least `maxFiringRange + approachRangeBuffer` so the fortress can acquire targets before they enter cannon range
+- add `EnemyPatrol3D` for no-target arena search behavior; keep its `patrolSpeedScale` low if the fortress should feel like it is sweeping slowly rather than roaming aggressively
 - add `ProjectileWeaponEnemy3D`; configure it as the slow heavy cannon with high damage, long lifetime, long cooldown, `targetFaction = PlayerTeam`, empty `targetTag`, and a muzzle wired to the visible barrel
 - optionally add `StaggeredMissileWeaponEnemy3D` for a guided missile rack; assign each launcher Transform to `weaponConfig.muzzles`, use a projectile prefab with `MissileProjectile3D` in guided mode, set `targetFaction = PlayerTeam`, leave `targetTag` empty, tune the inherited missile weapon cooldown as the full rack activation cooldown (for example `8-10s`), tune `launcherStaggerInterval` as the spacing between individual launcher shots (for example `0.5-1s`), and enable `Randomize Launcher Selection` if missiles should pick a random launcher each shot instead of looping
 - optionally add `MissileLauncherYawTracker3D`; assign the same launcher transforms as `launcherPivots` or leave them empty to auto-use the missile weapon's muzzles, keep `Yaw Only` enabled, start with `yawDegreesPerSecond = 180`, set `localYawOffsetDegrees` only if the model's launcher-forward axis is not local +Z, and set `maxYawFromRestDegrees` to `0` for unlimited yaw or a small clamp if the model should not swivel too far
@@ -149,6 +153,7 @@ For a tank enemy prefab:
 - add `Rigidbody` (gravity off; tune drag for the slow lumbering feel)
 - add `EnemyAIFlightController3D`; tune `moveSpeed` low and `rotationDegreesPerSecond` low so the tank visibly turns slowly and players can strafe around it
 - add `EnemyTargetSensor3D`
+- add `EnemyPatrol3D` for no-target arena search behavior
 - optionally add `EnemyObstacleAvoidance3D` if the tank should weave around asteroids while advancing
 - add **two** `ProjectileWeapon3D` components on the same root: one configured as the slow heavy cannon (slow projectile speed, high damage, short-to-medium cooldown), one configured as the homing missile launcher (longer cooldown, projectile prefab is a `MissileProjectile3D` variant). Set both weapons' `targetFaction` to `PlayerTeam` and use `MuzzleForward` aiming. Wire each weapon's muzzle Transform to its own visible barrel/launcher on the model.
 - add `TankEnemyBrain3D` and assign both weapon references in its inspector (cannon slot and missile slot are explicitly serialized, since `GetComponent<ProjectileWeapon3D>()` would only resolve the first one)
@@ -164,6 +169,7 @@ For a glass cannon interceptor enemy prefab:
 - add `Rigidbody` (gravity off, low drag)
 - add `EnemyAIFlightController3D`; tune `moveSpeed` very high and `rotationDegreesPerSecond` high so the ship can relocate quickly, then snap into a firing posture before its burst
 - add `EnemyTargetSensor3D`
+- add `EnemyPatrol3D` for no-target arena search behavior
 - optionally add `EnemySeparation3D` if multiple interceptors may spawn together and should not stack on the same perch
 - optionally add `EnemyObstacleAvoidance3D` if the interceptor needs to steer around asteroids during repositioning
 - add `ProjectileWeaponEnemy3D`; configure it as the short-burst gun with roughly 10 damage, 0.2s cooldown, fast hitscan-like projectile speed, and `targetFaction = PlayerTeam`; the interceptor brain will gate firing by nose tolerance and launch shots toward the target
@@ -180,6 +186,7 @@ For a rammer enemy prefab:
 - add `Rigidbody` (gravity off, low drag for fast pursuit feel)
 - add `EnemyAIFlightController3D`; tune `moveSpeed` high and `rotationDegreesPerSecond` high so it can actually arc back around for another pass after a hit
 - add `EnemyTargetSensor3D`
+- add `EnemyPatrol3D` for no-target arena search behavior
 - optionally add `EnemyObstacleAvoidance3D` if the rammer should weave around asteroids while charging
 - add `RammerEnemyBrain3D`; tune `knockbackVelocity` first since that single value drives the whole feel of the enemy
 - add `NetEnemyMovement3D` for networked movement replication; `NetEnemyCombat3D` is **not** required since the rammer has no projectile weapons (and the knockback hook lives on the player's `NetMovement3D`, not on the enemy)
@@ -194,6 +201,7 @@ For a Splitter enemy prefab:
 - add `Rigidbody`
 - add `EnemyAIFlightController3D`
 - add `EnemyTargetSensor3D`
+- add `EnemyPatrol3D` for no-target arena search behavior; spawned children inherit the same patrol fallback
 - add `ProjectileWeaponEnemy3D`; configure it for the closer-range projectile pressure, with `targetFaction = PlayerTeam`
 - add `BeamWeapon3D`; configure it for farther-range laser pressure, with `targetFaction = PlayerTeam`
 - add `SplitterEnemyBrain3D`
@@ -218,6 +226,7 @@ For a Duelist enemy prefab:
 - add `EnemyAIFlightController3D`; tune `moveSpeed` mid-to-high for clean repositioning between perches and `rotationDegreesPerSecond` high enough that the duelist can track the player while strafing laterally
 - add `EnemyStrafeMover3D`; this is what enables true sideways/vertical strafe motion. Set `Max Strafe Speed` higher than the brain's `Dodge Speed` so the cap never clips the dodge, leave `Combine With Flight Thrust` on, and match `Lock To World Y Plane` to the flight controller's flag if you are testing in a planar scene
 - add `EnemyTargetSensor3D`; set `Detection Range` to at least `Beam Preferred Center + Beam Half Width` (default ~250m) so the duelist can acquire targets out at full beam range
+- add `EnemyPatrol3D` for no-target arena search behavior; patrol stops the strafe overlay before taking over so the duelist does not slide while searching
 - optionally add `EnemySeparation3D` if multiple duelists may spawn together and should not stack on the same flank
 - optionally add `EnemyObstacleAvoidance3D` if the duelist needs to weave around asteroids while repositioning
 - add `ProjectileWeaponEnemy3D`; configure as the close-range projectile pressure (fast bolts, short cooldown), `targetFaction = PlayerTeam`
@@ -241,6 +250,7 @@ For a Triumvirate enemy prefab:
 - add `Rigidbody`
 - add `EnemyAIFlightController3D`
 - add `EnemyTargetSensor3D`
+- add `EnemyPatrol3D` for no-target arena search behavior; the coordinator lets all surviving squad members patrol independently until a player is reacquired, then formation logic takes movement back
 - add `BeamWeapon3D`; assign `enemy_lightning_beam.prefab`, set `targetFaction = PlayerTeam`, and set the weapon's `damagePerSecond = 0` if `TriumvirateEnemyBrain3D` is owning one/two/three-member damage scaling
 - add `TriumvirateEnemyBrain3D`; assign the final beam weapon and `NetEnemyCombat3D`, assign `Link Lightning Prefab` to `enemy_lightning_beam.prefab`, and tune the one/two/three-member damage fields plus full-triad slow fields
 - leave `Keep Formation On World Y Plane` off for the intended vertical triangle with one ship high and two low; only enable it if a local test prefab is deliberately locked to a planar Y flight level
