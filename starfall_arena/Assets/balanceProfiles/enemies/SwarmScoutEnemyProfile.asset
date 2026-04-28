@@ -13,19 +13,19 @@ MonoBehaviour:
   m_Name: SwarmScoutEnemyProfile
   m_EditorClassIdentifier: 
   core:
-    maxHealth: 8
+    maxHealth: 1
     maxShield: 0
-    moveSpeed: 135
-    rotationDegreesPerSecond: 540
-    detectionRange: 5000
+    moveSpeed: 30
+    rotationDegreesPerSecond: 200
+    detectionRange: 2000
   projectileWeapons: []
   beamWeapons: []
   brain:
     thinkInterval: 0.04
-    autoLinkRadius: 100
+    autoLinkRadius: 200
     intendedSwarmSize: 5
-    requiredSurvivorsForAlert: 5
-    orbitRadius: 65
+    requiredSurvivorsForAlert: 3
+    orbitRadius: 20
     orbitThickness: 12
     radialCorrectionWeight: 1.2
     tangentialWeight: 1.8
