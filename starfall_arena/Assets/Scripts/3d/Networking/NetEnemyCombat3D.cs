@@ -81,6 +81,7 @@ public class NetEnemyCombat3D : NetworkBehaviour
             SpawnAuthoritativeProjectile(sourceWeapon, _projectileRequests[i], targetFaction);
         }
 
+        _enemy?.RecordCombatActivity();
         sourceWeapon.NetworkFireSound?.PlayAtPoint(transform.position);
         return true;
     }
@@ -104,6 +105,7 @@ public class NetEnemyCombat3D : NetworkBehaviour
         }
 
         sourceWeapon.ApplyNetworkBeamState(isFiring, authoritative: true, NetTickUtil.CurrentTick);
+        _enemy?.RecordCombatActivity();
         BroadcastEnemyBeamStateClientRpc(new NetBeamState3D
         {
             Tick = NetTickUtil.CurrentTick,

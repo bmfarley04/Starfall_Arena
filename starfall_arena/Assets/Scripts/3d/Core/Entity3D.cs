@@ -21,6 +21,16 @@ public abstract class Entity3D : MonoBehaviour
     [Tooltip("Multiplier for how much recoil/impulse affects visual pitch independent of thrust pitch.")]
     [SerializeField] protected float impulseRecoilPitchSensitivity = 1f;
 
+    [Header("Upright Recovery")]
+    [Tooltip("If enabled, the entity gently rolls back upright after recent combat and manual rotation have settled.")]
+    [SerializeField] private bool uprightRecoveryEnabled = true;
+    [Tooltip("Seconds after taking damage or firing before upright recovery can begin.")]
+    [SerializeField] private float uprightRecoveryDelay = 2.5f;
+    [Tooltip("Maximum roll correction speed once upright recovery is active.")]
+    [SerializeField] private float uprightRecoveryDegreesPerSecond = 90f;
+    [Tooltip("Look/turn input below this value is treated as idle for upright recovery.")]
+    [SerializeField] private float uprightRecoveryInputDeadZone = 0.05f;
+
     [Header("Weapons")]
     [SerializeField] protected Weapon3D[] weapons = new Weapon3D[3];
     [SerializeField] protected int selectedWeaponIndex;
@@ -43,6 +53,7 @@ public abstract class Entity3D : MonoBehaviour
     protected NetCombat3D netCombat3D;
 
     private bool _isDead;
+    private float _uprightRecoverySuppressedUntil;
 
     public event Action<Entity3D> Died;
 
@@ -62,6 +73,8 @@ public abstract class Entity3D : MonoBehaviour
     public float ImpulseRecoilPitchSensitivity => impulseRecoilPitchSensitivity;
     public float CurrentSlowMultiplier => GetSlowMultiplier();
     public bool IsSlowed => Time.time < slowEndTime && currentSlowMultiplier < 1f;
+    public bool UprightRecoveryEnabled => uprightRecoveryEnabled;
+    public float UprightRecoveryInputDeadZone => uprightRecoveryInputDeadZone;
 
     public void OverrideMaxHealthAndShield(float newMaxHealth, float newMaxShield, bool refillCurrentValues)
     {
@@ -240,6 +253,14 @@ public abstract class Entity3D : MonoBehaviour
         lastDamageDirection = Vector3.zero;
         currentSlowMultiplier = 1f;
         slowEndTime = 0f;
+        RecordCombatActivity();
+    }
+
+    protected virtual void OnValidate()
+    {
+        uprightRecoveryDelay = Mathf.Max(0f, uprightRecoveryDelay);
+        uprightRecoveryDegreesPerSecond = Mathf.Max(0f, uprightRecoveryDegreesPerSecond);
+        uprightRecoveryInputDeadZone = Mathf.Max(0f, uprightRecoveryInputDeadZone);
     }
 
     public virtual void TakeDamage(float damage, Vector3 hitPoint, Entity3D attacker = null, DamageSource3D source = DamageSource3D.Projectile, int accuracyAttackId = PlayerCombatStats3D.InvalidAttackId)
@@ -257,6 +278,7 @@ public abstract class Entity3D : MonoBehaviour
         float previousShield = currentShield;
         float previousHealth = currentHealth;
 
+        RecordCombatActivity();
         lastDamageDirection = ResolveDamageDirection(hitPoint);
 
         if (currentShield > 0f)
@@ -315,6 +337,7 @@ public abstract class Entity3D : MonoBehaviour
         float previousShield = currentShield;
         float previousHealth = currentHealth;
 
+        RecordCombatActivity();
         lastDamageDirection = ResolveDamageDirection(hitPoint);
         currentHealth = Mathf.Max(0f, currentHealth - damage);
         OnHealthChanged();
@@ -353,6 +376,43 @@ public abstract class Entity3D : MonoBehaviour
         }
 
         return currentSlowMultiplier;
+    }
+
+    public void RecordCombatActivity(float extraDelay = 0f)
+    {
+        float recoveryDelay = Mathf.Max(0f, uprightRecoveryDelay + extraDelay);
+        _uprightRecoverySuppressedUntil = Mathf.Max(_uprightRecoverySuppressedUntil, Time.time + recoveryDelay);
+    }
+
+    public bool ShouldApplyUprightRecovery(bool hasRotationIntent)
+    {
+        if (!uprightRecoveryEnabled || _isDead || hasRotationIntent || Time.time < _uprightRecoverySuppressedUntil)
+        {
+            return false;
+        }
+
+        for (int i = 0; i < weapons.Length; i++)
+        {
+            Weapon3D weapon = weapons[i];
+            if (weapon != null && (weapon.IsFireHeld || weapon.IsReticleSpinActive()))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    public Quaternion ApplyUprightRecovery(Quaternion currentRotation, float deltaTime, bool hasRotationIntent)
+    {
+        if (deltaTime <= 0f || !ShouldApplyUprightRecovery(hasRotationIntent))
+        {
+            return currentRotation;
+        }
+
+        Quaternion targetRotation = ResolveUprightRotation(currentRotation);
+        float maxDegreesDelta = Mathf.Max(0f, uprightRecoveryDegreesPerSecond) * deltaTime;
+        return Quaternion.RotateTowards(currentRotation, targetRotation, maxDegreesDelta);
     }
 
     protected virtual void Die()
@@ -445,6 +505,30 @@ public abstract class Entity3D : MonoBehaviour
 
         Vector3 damageDirection = transform.position - hitPoint;
         return damageDirection.sqrMagnitude > 0.0001f ? damageDirection.normalized : Vector3.zero;
+    }
+
+    private static Quaternion ResolveUprightRotation(Quaternion currentRotation)
+    {
+        Vector3 forward = currentRotation * Vector3.forward;
+        if (forward.sqrMagnitude <= 0.0001f)
+        {
+            return currentRotation;
+        }
+
+        forward.Normalize();
+        Vector3 upReference = Vector3.ProjectOnPlane(Vector3.up, forward);
+        if (upReference.sqrMagnitude <= 0.0001f)
+        {
+            Vector3 right = Vector3.ProjectOnPlane(currentRotation * Vector3.right, Vector3.up);
+            if (right.sqrMagnitude <= 0.0001f)
+            {
+                right = Vector3.right;
+            }
+
+            upReference = Vector3.Cross(forward, right.normalized);
+        }
+
+        return Quaternion.LookRotation(forward, upReference.normalized);
     }
 
     private void RecordDamageStats(Entity3D attacker, float previousHealth, float previousShield, DamageSource3D source, int accuracyAttackId)

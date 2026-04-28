@@ -500,6 +500,7 @@ public abstract class Weapon3D : MonoBehaviour, IReticleSpinSource3D
 
         fireSound?.PlayAtPoint(transform.position);
         RecordReticleSpinPulse();
+        owner?.RecordCombatActivity();
         return true;
     }
 

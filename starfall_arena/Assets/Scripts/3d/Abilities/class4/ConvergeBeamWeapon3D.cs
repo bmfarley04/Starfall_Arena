@@ -263,6 +263,7 @@ public class ConvergeBeamWeapon3D : Weapon3D, IBeamWeaponNetwork3D
             Owner?.GetComponent<PlayerCombatStats3D>()?.RecordTrackedAttackFired(_activeBeamAttackId);
         }
 
+        Owner?.RecordCombatActivity();
         StartBeamLoopSound();
     }
 
@@ -350,6 +351,7 @@ public class ConvergeBeamWeapon3D : Weapon3D, IBeamWeaponNetwork3D
         _activeBeamAuthoritative = true;
         _activeBeamAttackId = PlayerCombatStats3D.InvalidAttackId;
         _hasPendingNetworkAim = false;
+        Owner?.RecordCombatActivity();
         StopBeamLoopSound();
     }
 

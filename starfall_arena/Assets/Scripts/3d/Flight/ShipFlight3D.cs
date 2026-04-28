@@ -315,6 +315,16 @@ public class ShipFlight3D : MonoBehaviour
 
         Vector3 localAngularVelocity = new Vector3(_currentTurnRates.x, _currentTurnRates.y, 0f);
         _rb.angularVelocity = transform.TransformDirection(localAngularVelocity);
+
+        float recoveryDeadZone = entity != null ? entity.UprightRecoveryInputDeadZone : 0.05f;
+        bool hasRotationIntent = steeringInput.sqrMagnitude > recoveryDeadZone * recoveryDeadZone
+            || Mathf.Abs(_currentTurnRates.x) > 0.01f
+            || Mathf.Abs(_currentTurnRates.y) > 0.01f;
+        if (entity != null && entity.ShouldApplyUprightRecovery(hasRotationIntent))
+        {
+            _rb.MoveRotation(entity.ApplyUprightRecovery(_rb.rotation, Time.fixedDeltaTime, hasRotationIntent));
+            _rb.angularVelocity = Vector3.zero;
+        }
     }
 
     private void HandleThrustAndAssist()

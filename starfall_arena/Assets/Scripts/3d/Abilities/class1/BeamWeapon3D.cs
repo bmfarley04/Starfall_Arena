@@ -373,6 +373,7 @@ public class BeamWeapon3D : Weapon3D, IBeamWeaponNetwork3D
             _activeBeam.SetNetworkAim(_pendingNetworkAim);
         }
         _activeBeam.StartFiring();
+        Owner?.RecordCombatActivity();
         StartBeamLoopSound();
     }
 
@@ -398,6 +399,7 @@ public class BeamWeapon3D : Weapon3D, IBeamWeaponNetwork3D
         _activeBeamAuthoritative = true;
         _activeBeamAttackId = PlayerCombatStats3D.InvalidAttackId;
         _hasPendingNetworkAim = false;
+        Owner?.RecordCombatActivity();
         StopBeamLoopSound();
     }
 

@@ -272,6 +272,7 @@ public abstract class EnemyProjectileWeaponBase3D : MonoBehaviour, IEnemyProject
         }
 
         fireSound?.PlayAtPoint(transform.position);
+        owner?.RecordCombatActivity();
         OnLocalVolleyFired(spawnedCount);
         return true;
     }

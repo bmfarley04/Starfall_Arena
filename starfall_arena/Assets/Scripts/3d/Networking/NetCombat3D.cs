@@ -87,6 +87,7 @@ public class NetCombat3D : NetworkBehaviour
         if (!IsServer)
         {
             sourceWeapon.FireProjectilePatternLocal(request, fallbackConfig, fireSound, cosmeticOnly: true, networkAuthority: null, visualType);
+            _entity?.RecordCombatActivity();
             for (int i = 0; i < _projectileRequests.Count; i++)
             {
                 SubmitProjectileFireServerRpc(_projectileRequests[i]);
@@ -99,6 +100,7 @@ public class NetCombat3D : NetworkBehaviour
             HandleProjectileFireServer(_projectileRequests[i]);
         }
 
+        _entity?.RecordCombatActivity();
         return true;
     }
 
@@ -341,6 +343,7 @@ public class NetCombat3D : NetworkBehaviour
             _movement?.ApplyCombatVelocityDelta(-fireRequest.Direction.normalized * fireRequest.RecoilForce);
         }
 
+        _entity?.RecordCombatActivity();
         BroadcastProjectileSpawnClientRpc(new NetProjectileSpawnData3D
         {
             Fire = fireRequest,
@@ -407,6 +410,7 @@ public class NetCombat3D : NetworkBehaviour
             beam.ApplyNetworkBeamAim(state.AimDirection);
         }
         beam.ApplyNetworkBeamState(state.IsFiring, authoritative: true, state.Tick);
+        _entity?.RecordCombatActivity();
         BroadcastBeamStateClientRpc(state);
     }
 
@@ -567,6 +571,7 @@ public class NetCombat3D : NetworkBehaviour
                         tractorBeam.ApplyNetworkTractorBeamAim(state.AimDirection);
                     }
                     tractorBeam.ApplyNetworkTractorBeamState(state.IsActive, authoritative: true);
+                    _entity?.RecordCombatActivity();
                 }
                 break;
             }

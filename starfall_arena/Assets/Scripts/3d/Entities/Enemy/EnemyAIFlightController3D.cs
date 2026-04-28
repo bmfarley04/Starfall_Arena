@@ -85,6 +85,7 @@ public class EnemyAIFlightController3D : MonoBehaviour
             StopMovement();
         }
 
+        ApplyUprightRecovery();
         EnforceFlightPlane();
     }
 
@@ -188,6 +189,23 @@ public class EnemyAIFlightController3D : MonoBehaviour
         _rb.angularVelocity = Vector3.zero;
         _isMovingForward = false;
         _isMovingBackward = false;
+    }
+
+    private void ApplyUprightRecovery()
+    {
+        if (_entity == null || _rb == null)
+        {
+            return;
+        }
+
+        bool hasRotationIntent = _hasFacingIntent;
+        if (!_entity.ShouldApplyUprightRecovery(hasRotationIntent))
+        {
+            return;
+        }
+
+        _rb.MoveRotation(_entity.ApplyUprightRecovery(_rb.rotation, Time.fixedDeltaTime, hasRotationIntent));
+        _rb.angularVelocity = Vector3.zero;
     }
 
     private Quaternion ResolveTargetRotation(Vector3 desiredDirection)

@@ -694,6 +694,22 @@ public class NetMovement3D : NetworkBehaviour
             _shipFlight.LockToWorldYPlane,
             _shipFlight.LockedWorldY,
             dt);
+
+        ApplyUprightRecovery(ref state, in input, dt);
+    }
+
+    private void ApplyUprightRecovery(ref MovementState3D state, in NetInputSnapshot3D input, float dt)
+    {
+        if (_player == null)
+        {
+            return;
+        }
+
+        float recoveryDeadZone = _player.UprightRecoveryInputDeadZone;
+        bool hasRotationIntent = input.LookInput.sqrMagnitude > recoveryDeadZone * recoveryDeadZone
+            || Mathf.Abs(state.TurnRates.x) > 0.01f
+            || Mathf.Abs(state.TurnRates.y) > 0.01f;
+        state.Rotation = _player.ApplyUprightRecovery(state.Rotation, dt, hasRotationIntent);
     }
 
     private void ApplyDodgeFromInput(ref MovementState3D state, in NetInputSnapshot3D input, bool validateDodge)
