@@ -8,6 +8,14 @@ using UnityEngine;
 [RequireComponent(typeof(EnemyTargetSensor3D))]
 public class RammerEnemyBrain3D : MonoBehaviour
 {
+    private enum RammerState
+    {
+        Stalk,
+        WindUp,
+        Charge,
+        Disengage
+    }
+
     [Header("Rammer Enemy")]
     [Tooltip("The Enemy3D this brain belongs to. Auto-assigned from this GameObject if left empty. Used as the attacker reference when applying ram damage.")]
     [SerializeField] private Enemy3D enemy;
@@ -21,54 +29,88 @@ public class RammerEnemyBrain3D : MonoBehaviour
     [Tooltip("Optional spherecast obstacle avoidance. Leave empty (or disable useObstacleAvoidance) for the cheapest path.")]
     [SerializeField] private EnemyObstacleAvoidance3D obstacleAvoidance;
 
-    [Tooltip("Optional inter-agent separation steering. Leave empty (or disable useSeparation) to skip. Recommended for any enemy that swarms a single target so multiple rammers fan out instead of stacking on the same vector.")]
+    [Tooltip("Optional inter-agent separation steering. Leave empty (or disable useSeparation) to skip. Recommended for swarms so multiple rammers fan out instead of stacking on the same vector.")]
     [SerializeField] private EnemySeparation3D separation;
 
     [Header("Think Loop")]
     [Tooltip("Seconds between AI steering decisions. Lower is more responsive but costs more CPU. Note: contact detection runs every FixedUpdate independently of this so high-closure-rate approaches do not skip the ram trigger.")]
     [SerializeField] private float thinkInterval = 0.05f;
 
+    [Header("Stalk Behavior")]
+    [Tooltip("Preferred standoff distance (meters) during stalking. The rammer closes at full speed when farther than this and slows to stalkSpeedScale when within this range, hovering near the player while waiting for the next charge to be ready.")]
+    [SerializeField] private float stalkDistance = 30f;
+
+    [Tooltip("Speed scale (0-1) used when within stalkDistance. A value below 1 makes the rammer drift instead of barreling in, so the player can read that it is winding up between charges.")]
+    [Range(0.05f, 1f)]
+    [SerializeField] private float stalkSpeedScale = 0.55f;
+
+    [Header("Charge Behavior")]
+    [Tooltip("Distance (meters) at which the rammer commits to a charge. Must be smaller than stalkDistance for the windup-then-charge cadence to read clearly.")]
+    [SerializeField] private float chargeStartDistance = 22f;
+
+    [Tooltip("Telegraph duration (seconds) the rammer spends locking onto the player before launching a charge. Gives the player a window to react. Set to 0 to launch instantly (not recommended - removes the read).")]
+    [SerializeField] private float windUpDuration = 0.4f;
+
+    [Tooltip("Maximum committed flight time (seconds) for one charge before the rammer gives up and disengages without a hit. Sized to cover the chargeStartDistance plus chargeOvershootDistance at moveSpeed.")]
+    [SerializeField] private float chargeMaxDuration = 1.5f;
+
+    [Tooltip("Distance (meters) past the wind-up-locked vector's predicted contact point at which the rammer auto-ends the charge. Ensures the rammer doesn't fly arbitrarily far when it whiffs.")]
+    [SerializeField] private float chargeOvershootDistance = 8f;
+
+    [Tooltip("Cooldown (seconds) after a charge ends (hit OR miss) before the rammer can wind up another charge. Forces visible breathing room between attacks.")]
+    [SerializeField] private float chargeCooldown = 1.5f;
+
     [Header("Ram Impact")]
-    [Tooltip("Distance (meters) at which a player-team entity in front of/around the rammer counts as a contact and triggers a ram hit. IMPORTANT: this should be larger than (rammer collider radius + player collider radius + ~0.5m safety) so the hit fires before the rammer's geometry embeds in the player's. Mirrors the suicide drone's contact distance pattern.")]
-    [SerializeField] private float ramDetectionDistance = 2.5f;
+    [Tooltip("Layers searched by ram contact detection. Should include the player ship's collider layer. Leave at Everything (-1) for backward-compatible behavior, but a narrow mask is more reliable in cluttered scenes (the OverlapSphere buffer cannot be filled with irrelevant colliders).")]
+    [SerializeField] private LayerMask contactDetectionMask = ~0;
+
+    [Tooltip("Distance (meters) at which a player-team entity in front of/around the rammer counts as a contact and triggers a ram hit. IMPORTANT: this should be larger than (rammer collider radius + player collider radius + ~0.5m safety) so the hit fires before the rammer's geometry embeds in the player's. The detection sweep also extends along the rammer's actual movement vector each FixedUpdate to catch tunneling.")]
+    [SerializeField] private float ramDetectionDistance = 3f;
 
     [Tooltip("Damage applied to the player on a successful ram hit. The knockback is the threat - keep this small.")]
     [SerializeField] private float ramDamage = 15f;
 
-    [Tooltip("Velocity (m/s) added to the player's existing motion in the away-from-rammer direction on hit. Routed through NetMovement3D.ApplyCombatVelocityDelta so the impulse replicates correctly across the network.")]
-    [SerializeField] private float knockbackVelocity = 25f;
+    [Tooltip("Velocity (m/s) added to the player's existing motion in the away-from-rammer direction on hit. Routed through NetMovement3D.ApplyCombatVelocityDelta so the impulse replicates correctly across the network. Default sized to feel like 'sent reeling' on a charge connect.")]
+    [SerializeField] private float knockbackVelocity = 60f;
 
     [Tooltip("Optional small upward component (m/s) added on top of the away-direction knockback to give the hit a vertical jolt feel. Default 0 - 3D space combat reads weird with arbitrary up impulses.")]
     [SerializeField] private float knockbackUpwardBias = 0f;
 
     [Header("Disengage")]
-    [Tooltip("Seconds the rammer steers away from the target after a successful ram hit before re-engaging. Lets it visibly arc out and turn around for another pass instead of grinding on the player's hull. Includes the eject window below.")]
+    [Tooltip("Seconds the rammer steers away from the target after a charge ends (hit or miss) before re-engaging. Includes the eject window below.")]
     [SerializeField] private float disengageDuration = 1.25f;
 
     [Tooltip("Distance (meters) the rammer must reach during disengage before it is allowed to re-engage early. Whichever happens first - this distance or disengageDuration - ends the disengage state.")]
     [SerializeField] private float disengageDistance = 30f;
 
-    [Tooltip("Reverse-thrust window (seconds) at the start of disengage. The rammer keeps its nose pointed at the target but is physically pulled backward at moveSpeed, so it never freezes in place inside the player's collider while rotating around. After this window the rammer transitions to the normal face-away-and-fly disengage.")]
+    [Tooltip("Reverse-thrust window (seconds) at the start of a HIT-disengage. The rammer keeps its nose pointed at the target but is physically pulled backward at moveSpeed, so it never freezes in place inside the player's collider while rotating around. Misses skip the eject and go straight to forward disengage.")]
     [SerializeField] private float ejectDuration = 0.35f;
 
-    [Tooltip("If true, the rammer's own colliders are temporarily exempted from colliding with the rammed target's colliders for the full disengage duration. Guarantees no physical entanglement with the player after impact even in pathological cases (player charging into the rammer, multiple rammers piling in, etc.). Re-enabled when disengage ends or the rammer is disabled.")]
+    [Tooltip("If true, the rammer's own colliders are temporarily exempted from colliding with the rammed target's colliders for the full disengage duration after a HIT. Guarantees no physical entanglement with the player after impact even in pathological cases. Re-enabled when disengage ends or the rammer is disabled.")]
     [SerializeField] private bool useCollisionExemption = true;
 
-    [Tooltip("If true, route steering through the obstacle avoidance component when one is assigned. If false or no avoidance component exists, the rammer steers straight at/away from the target.")]
+    [Header("Steering Composition")]
+    [Tooltip("If true, route stalk and post-eject disengage steering through the obstacle avoidance component when one is assigned. Charge steering ignores this flag on purpose - the locked charge vector should not be perturbed.")]
     [SerializeField] private bool useObstacleAvoidance = true;
 
-    [Tooltip("If true, route steering through the separation component when one is assigned. If false or no separation component exists, the rammer steers without inter-agent fan-out.")]
+    [Tooltip("If true, route stalk and post-eject disengage steering through the separation component when one is assigned. Charge steering ignores this flag on purpose - the locked charge vector should not be perturbed.")]
     [SerializeField] private bool useSeparation = true;
 
-    private readonly Collider[] _overlapResults = new Collider[8];
+    private readonly Collider[] _overlapResults = new Collider[16];
+    private readonly RaycastHit[] _sweepResults = new RaycastHit[16];
     private readonly List<(Collider self, Collider other)> _ignoredPairs = new();
 
     private NetworkObject _networkObject;
+    private RammerState _state = RammerState.Stalk;
     private float _nextThinkTime;
-    private float _disengageEndsAt;
+    private float _stateEndsAt;
     private float _ejectEndsAt;
-    private bool _isDisengaging;
+    private float _nextChargeReadyAt;
     private bool _isEjecting;
+    private Vector3 _chargeDirection;
+    private Vector3 _chargeStartPosition;
+    private float _chargeTargetDistanceAtStart;
+    private Vector3 _previousFixedUpdatePosition;
 
     private void Awake()
     {
@@ -78,13 +120,22 @@ public class RammerEnemyBrain3D : MonoBehaviour
         obstacleAvoidance ??= GetComponent<EnemyObstacleAvoidance3D>();
         separation ??= GetComponent<EnemySeparation3D>();
         _networkObject = GetComponent<NetworkObject>();
+        _previousFixedUpdatePosition = transform.position;
+    }
+
+    private void OnEnable()
+    {
+        _previousFixedUpdatePosition = transform.position;
+        _state = RammerState.Stalk;
+        _isEjecting = false;
+        _nextChargeReadyAt = Time.time;
     }
 
     private void OnDisable()
     {
         flightController?.ClearFlightIntent();
         EndCollisionExemption();
-        _isDisengaging = false;
+        _state = RammerState.Stalk;
         _isEjecting = false;
     }
 
@@ -109,114 +160,200 @@ public class RammerEnemyBrain3D : MonoBehaviour
     {
         if (!HasBrainAuthority())
         {
-            return;
-        }
-
-        // Contact detection runs every physics tick (independently of the steering think
-        // interval) so a high-closure-rate approach cannot skip past ramDetectionDistance
-        // between think ticks and end up embedded in the player's collider.
-        if (_isDisengaging)
-        {
+            _previousFixedUpdatePosition = transform.position;
             return;
         }
 
         Entity3D target = targetSensor != null ? targetSensor.GetTarget() : null;
-        if (target == null)
+
+        // Contact detection runs every physics tick, independent of the steering think
+        // interval, and uses a swept SphereCast from the previous fixed-update position to
+        // the current one PLUS an OverlapSphere fallback so even high-closure-rate
+        // approaches and off-center colliders cannot skip past the ram trigger. We only
+        // run it in states where a hit is meaningful - WindUp is a stationary telegraph
+        // and Disengage is collision-exempted by design.
+        bool wantsHitCheck = target != null && (_state == RammerState.Stalk || _state == RammerState.Charge);
+        if (wantsHitCheck && RunRamHitCheck(target))
         {
+            _previousFixedUpdatePosition = transform.position;
             return;
         }
 
-        Vector3 toTarget = target.transform.position - transform.position;
-        float distanceToTarget = toTarget.magnitude;
-        if (distanceToTarget <= 0.0001f)
+        switch (_state)
         {
-            return;
+            case RammerState.Stalk:
+                MaybeStartWindUp(target);
+                break;
+            case RammerState.WindUp:
+                if (target == null)
+                {
+                    _state = RammerState.Stalk;
+                    break;
+                }
+                if (Time.time >= _stateEndsAt)
+                {
+                    BeginCharge(target);
+                }
+                break;
+            case RammerState.Charge:
+                if (Time.time >= _stateEndsAt || HasOvershotChargeTarget())
+                {
+                    EndChargeMiss();
+                }
+                break;
+            case RammerState.Disengage:
+                if (Time.time >= _stateEndsAt || HasReachedDisengageDistance(target))
+                {
+                    EndDisengage();
+                }
+                break;
         }
 
-        Vector3 toTargetDirection = toTarget / distanceToTarget;
-
-        if (distanceToTarget <= Mathf.Max(0.01f, ramDetectionDistance))
-        {
-            ApplyRamHit(target, toTargetDirection);
-            return;
-        }
-
-        if (TryAcquireContact(out Entity3D contactEntity))
-        {
-            Vector3 awayDirection = ResolveAwayDirection(contactEntity);
-            ApplyRamHit(contactEntity, -awayDirection);
-        }
+        _previousFixedUpdatePosition = transform.position;
     }
+
+    // ------------ Steering (think tick) ------------
 
     private void ThinkSteering()
     {
         Entity3D target = targetSensor != null ? targetSensor.GetTarget() : null;
+
+        switch (_state)
+        {
+            case RammerState.Stalk:
+                UpdateStalkSteering(target);
+                break;
+            case RammerState.WindUp:
+                UpdateWindUpSteering(target);
+                break;
+            case RammerState.Charge:
+                UpdateChargeSteering();
+                break;
+            case RammerState.Disengage:
+                UpdateDisengageSteering(target);
+                break;
+        }
+    }
+
+    private void UpdateStalkSteering(Entity3D target)
+    {
         if (target == null)
         {
             flightController?.ClearFlightIntent();
-            EndDisengage();
             return;
         }
 
         Vector3 toTarget = target.transform.position - transform.position;
-        float distanceToTarget = toTarget.magnitude;
-        if (distanceToTarget <= 0.0001f)
+        float distance = toTarget.magnitude;
+        if (distance <= 0.0001f)
         {
             flightController?.ClearFlightIntent();
             return;
         }
 
-        Vector3 toTargetDirection = toTarget / distanceToTarget;
+        Vector3 desired = toTarget / distance;
+        Vector3 steered = ResolveSteering(desired);
+        // Close at full speed when far; drift at stalkSpeedScale when within stalkDistance
+        // so the player has visible breathing room between charges.
+        float speedScale = distance > stalkDistance ? 1f : Mathf.Clamp01(stalkSpeedScale);
+        flightController?.SetMoveDirection(steered, speedScale);
+    }
 
-        if (_isDisengaging)
+    private void UpdateWindUpSteering(Entity3D target)
+    {
+        if (target == null)
         {
-            UpdateDisengage(toTargetDirection, distanceToTarget);
+            flightController?.ClearFlightIntent();
             return;
         }
 
-        UpdatePursuit(toTargetDirection);
-    }
-
-    private void UpdatePursuit(Vector3 toTargetDirection)
-    {
-        Vector3 steeringDirection = ResolveSteering(toTargetDirection);
-        flightController?.SetMoveDirection(steeringDirection, 1f);
-    }
-
-    private void UpdateDisengage(Vector3 toTargetDirection, float distanceToTarget)
-    {
-        if (Time.time >= _disengageEndsAt || distanceToTarget >= Mathf.Max(0f, disengageDistance))
+        Vector3 toTarget = target.transform.position - transform.position;
+        if (toTarget.sqrMagnitude <= 0.0001f)
         {
-            EndDisengage();
+            flightController?.ClearFlightIntent();
             return;
         }
 
-        Vector3 awayDirection = -toTargetDirection;
+        // Lock onto the target's current direction without committing to translation yet.
+        // Pass a tiny speedScale so the rammer creeps forward while aiming - looks alive
+        // without closing distance fast enough to make the wind-up window meaningless.
+        Vector3 desired = toTarget.normalized;
+        flightController?.SetFlightIntent(desired, desired, 0.05f, moveBackward: false);
+    }
 
+    private void UpdateChargeSteering()
+    {
+        if (_chargeDirection.sqrMagnitude <= 0.0001f)
+        {
+            flightController?.ClearFlightIntent();
+            return;
+        }
+
+        // CRITICAL: the charge vector is locked at wind-up end. Do NOT re-target the
+        // player here - that would let the rammer track the player mid-charge and remove
+        // the dodge window. Also do NOT route through separation/obstacle avoidance: any
+        // sideways drift would re-open the flight controller's facing-vs-move angle gate
+        // and zero the velocity (the same freeze-bug documented in 3D_BUGS.md).
+        flightController?.SetMoveDirection(_chargeDirection, 1f);
+    }
+
+    private void UpdateDisengageSteering(Entity3D target)
+    {
+        // Eject phase: reverse-thrust away while keeping nose pointed at target. The
+        // controller pulls the rigidbody along -forward at full moveSpeed from frame 1
+        // (no rotation needed -> no velocity-zero freeze).
         if (_isEjecting && Time.time < _ejectEndsAt)
         {
-            // Reverse-thrust phase: keep nose pointed at the target so the ship doesn't
-            // have to rotate (which would zero its velocity in EnemyAIFlightController3D
-            // until it finished turning around). moveBackward=true makes the controller
-            // accelerate the rigidbody along -forward at full moveSpeed from frame 1, so
-            // the rammer immediately retreats from the player's collider rather than
-            // freezing inside it. Skip separation/obstacle drift here on purpose: any
-            // sideways shift to moveDirection would re-open the velocity gate (the
-            // facing-vs-move angle check) and freeze the ship again.
-            flightController?.SetFlightIntent(awayDirection, toTargetDirection, 1f, moveBackward: true);
-            return;
+            Vector3 awayFromTarget;
+            Vector3 facingTowardTarget;
+            if (target != null)
+            {
+                Vector3 toTarget = target.transform.position - transform.position;
+                if (toTarget.sqrMagnitude > 0.0001f)
+                {
+                    facingTowardTarget = toTarget.normalized;
+                    awayFromTarget = -facingTowardTarget;
+                    flightController?.SetFlightIntent(awayFromTarget, facingTowardTarget, 1f, moveBackward: true);
+                    return;
+                }
+            }
+
+            // Target lost mid-eject: fall back to the locked charge direction's reverse.
+            if (_chargeDirection.sqrMagnitude > 0.0001f)
+            {
+                facingTowardTarget = _chargeDirection;
+                awayFromTarget = -_chargeDirection;
+                flightController?.SetFlightIntent(awayFromTarget, facingTowardTarget, 1f, moveBackward: true);
+                return;
+            }
         }
 
-        // Eject window has expired - transition to normal face-and-fly disengage. Now we
-        // are clear of the player's geometry, so separation/obstacle avoidance can drift
-        // the move direction without risking another freeze.
         if (_isEjecting)
         {
             _isEjecting = false;
         }
 
-        Vector3 steeringDirection = ResolveSteering(awayDirection);
-        flightController?.SetMoveDirection(steeringDirection, 1f);
+        // Forward disengage: face away and fly away. Now we are clear of the player's
+        // geometry, so separation/obstacle avoidance can drift the move direction safely.
+        Vector3 awayDirection;
+        if (target != null)
+        {
+            Vector3 toTarget = target.transform.position - transform.position;
+            awayDirection = toTarget.sqrMagnitude > 0.0001f ? -toTarget.normalized : -_chargeDirection;
+        }
+        else
+        {
+            awayDirection = _chargeDirection.sqrMagnitude > 0.0001f ? -_chargeDirection : transform.forward;
+        }
+
+        if (awayDirection.sqrMagnitude <= 0.0001f)
+        {
+            flightController?.ClearFlightIntent();
+            return;
+        }
+
+        Vector3 steered = ResolveSteering(awayDirection);
+        flightController?.SetMoveDirection(steered, 1f);
     }
 
     private Vector3 ResolveSteering(Vector3 desiredDirection)
@@ -236,14 +373,187 @@ public class RammerEnemyBrain3D : MonoBehaviour
         return result;
     }
 
-    private bool TryAcquireContact(out Entity3D contactEntity)
+    // ------------ State transitions ------------
+
+    private void MaybeStartWindUp(Entity3D target)
+    {
+        if (target == null)
+        {
+            return;
+        }
+
+        if (Time.time < _nextChargeReadyAt)
+        {
+            return;
+        }
+
+        Vector3 toTarget = target.transform.position - transform.position;
+        if (toTarget.magnitude > Mathf.Max(0.01f, chargeStartDistance))
+        {
+            return;
+        }
+
+        _state = RammerState.WindUp;
+        _stateEndsAt = Time.time + Mathf.Max(0f, windUpDuration);
+    }
+
+    private void BeginCharge(Entity3D target)
+    {
+        if (target == null)
+        {
+            _state = RammerState.Stalk;
+            return;
+        }
+
+        Vector3 toTarget = target.transform.position - transform.position;
+        if (toTarget.sqrMagnitude <= 0.0001f)
+        {
+            _state = RammerState.Stalk;
+            return;
+        }
+
+        _chargeDirection = toTarget.normalized;
+        _chargeStartPosition = transform.position;
+        _chargeTargetDistanceAtStart = toTarget.magnitude;
+        _state = RammerState.Charge;
+        _stateEndsAt = Time.time + Mathf.Max(0.1f, chargeMaxDuration);
+    }
+
+    private bool HasOvershotChargeTarget()
+    {
+        if (_chargeDirection.sqrMagnitude <= 0.0001f)
+        {
+            return true;
+        }
+
+        // Distance traveled along the locked charge vector since BeginCharge.
+        Vector3 progress = transform.position - _chargeStartPosition;
+        float distanceAlongCharge = Vector3.Dot(progress, _chargeDirection);
+        float overshootThreshold = _chargeTargetDistanceAtStart + Mathf.Max(0f, chargeOvershootDistance);
+        return distanceAlongCharge >= overshootThreshold;
+    }
+
+    private void EndChargeMiss()
+    {
+        // Miss: short forward disengage to swing around for the next pass. No eject (we
+        // never made contact, so there is no entanglement risk) and no collision
+        // exemption (no specific target to exempt against).
+        _state = RammerState.Disengage;
+        _isEjecting = false;
+        _stateEndsAt = Time.time + Mathf.Max(0f, disengageDuration);
+        _nextChargeReadyAt = Time.time + Mathf.Max(0f, chargeCooldown);
+    }
+
+    private void EndDisengage()
+    {
+        _state = RammerState.Stalk;
+        _isEjecting = false;
+        EndCollisionExemption();
+    }
+
+    private bool HasReachedDisengageDistance(Entity3D target)
+    {
+        if (target == null)
+        {
+            return true;
+        }
+
+        return Vector3.Distance(transform.position, target.transform.position) >= Mathf.Max(0f, disengageDistance);
+    }
+
+    // ------------ Hit detection ------------
+
+    private bool RunRamHitCheck(Entity3D target)
+    {
+        Vector3 currentPos = transform.position;
+        float radius = Mathf.Max(0.01f, ramDetectionDistance);
+
+        // 1. Cheap distance check against the resolved target's transform. Catches the
+        //    common case where the player ship's pivot is near the visible center of mass.
+        Vector3 toTarget = target.transform.position - currentPos;
+        float distance = toTarget.magnitude;
+        if (distance <= radius)
+        {
+            Vector3 dir = distance > 0.0001f ? toTarget / distance : transform.forward;
+            ApplyRamHit(target, dir);
+            return true;
+        }
+
+        // 2. OverlapSphere on the contact mask. Catches off-center colliders the
+        //    transform-distance check missed (compound colliders, child collider on the
+        //    ship hull, etc.). LayerMask filtering means the buffer cannot be wasted on
+        //    irrelevant environment colliders.
+        if (TryAcquireContactMasked(out Entity3D contactEntity))
+        {
+            Vector3 contactDir = (contactEntity.transform.position - currentPos);
+            contactDir = contactDir.sqrMagnitude > 0.0001f ? contactDir.normalized : transform.forward;
+            ApplyRamHit(contactEntity, contactDir);
+            return true;
+        }
+
+        // 3. Swept SphereCast from the previous fixed-update position to the current one.
+        //    Catches tunneling: at high closure rates, the rammer may pass the player's
+        //    collider entirely between physics ticks. The cast has the contact radius and
+        //    spans the actual movement this tick, so anything we crossed gets hit.
+        Vector3 movement = currentPos - _previousFixedUpdatePosition;
+        float movedDistance = movement.magnitude;
+        if (movedDistance > 0.0001f)
+        {
+            Vector3 moveDir = movement / movedDistance;
+            int hits = Physics.SphereCastNonAlloc(
+                _previousFixedUpdatePosition,
+                radius,
+                moveDir,
+                _sweepResults,
+                movedDistance,
+                contactDetectionMask,
+                QueryTriggerInteraction.Ignore);
+
+            for (int i = 0; i < hits; i++)
+            {
+                RaycastHit hit = _sweepResults[i];
+                Collider hitCollider = hit.collider;
+                if (hitCollider == null || hitCollider.transform.IsChildOf(transform))
+                {
+                    continue;
+                }
+
+                Entity3D candidate = ResolveEntity(hitCollider);
+                if (!IsTargetEntity(candidate))
+                {
+                    continue;
+                }
+
+                Vector3 contactDir = (candidate.transform.position - currentPos);
+                contactDir = contactDir.sqrMagnitude > 0.0001f ? contactDir.normalized : moveDir;
+                ApplyRamHit(candidate, contactDir);
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private bool TryAcquireContactMasked(out Entity3D contactEntity)
     {
         contactEntity = null;
         float radius = Mathf.Max(0.01f, ramDetectionDistance);
-        int hitCount = Physics.OverlapSphereNonAlloc(transform.position, radius, _overlapResults);
+        int hitCount = Physics.OverlapSphereNonAlloc(
+            transform.position,
+            radius,
+            _overlapResults,
+            contactDetectionMask,
+            QueryTriggerInteraction.Ignore);
+
         for (int i = 0; i < hitCount; i++)
         {
-            Entity3D candidate = ResolveEntity(_overlapResults[i]);
+            Collider c = _overlapResults[i];
+            if (c == null || c.transform.IsChildOf(transform))
+            {
+                continue;
+            }
+
+            Entity3D candidate = ResolveEntity(c);
             if (IsTargetEntity(candidate))
             {
                 contactEntity = candidate;
@@ -261,16 +571,14 @@ public class RammerEnemyBrain3D : MonoBehaviour
             return;
         }
 
-        // ResolveAwayDirection returns the rammer-to-target vector (the direction the
-        // rammer is travelling on impact). The existing knockback math pushes the target
-        // along this vector - i.e. away from the contact point - which is what we want.
-        Vector3 toTargetDirectionResolved = ResolveAwayDirection(target);
-        if (toTargetDirectionResolved.sqrMagnitude <= 0.0001f)
+        Vector3 knockDir = toTargetDirection;
+        if (knockDir.sqrMagnitude <= 0.0001f)
         {
-            toTargetDirectionResolved = toTargetDirection.sqrMagnitude > 0.0001f ? toTargetDirection.normalized : transform.forward;
+            Vector3 fallback = target.transform.position - transform.position;
+            knockDir = fallback.sqrMagnitude > 0.0001f ? fallback.normalized : transform.forward;
         }
 
-        Vector3 knockback = toTargetDirectionResolved * Mathf.Max(0f, knockbackVelocity);
+        Vector3 knockback = knockDir * Mathf.Max(0f, knockbackVelocity);
         if (knockbackUpwardBias > 0f)
         {
             knockback += Vector3.up * knockbackUpwardBias;
@@ -281,28 +589,23 @@ public class RammerEnemyBrain3D : MonoBehaviour
 
         BeginCollisionExemption(target);
 
-        _isDisengaging = true;
-        _disengageEndsAt = Time.time + Mathf.Max(0f, disengageDuration);
+        // Hit-disengage: eject + collision exemption. The eject reverses the rammer at
+        // full moveSpeed for ejectDuration without rotating, so the rammer's geometry
+        // pulls clear of the player even when the controller would otherwise zero
+        // velocity during the disengage rotation.
+        _state = RammerState.Disengage;
         _isEjecting = ejectDuration > 0f;
         _ejectEndsAt = Time.time + Mathf.Max(0f, ejectDuration);
+        _stateEndsAt = Time.time + Mathf.Max(0f, disengageDuration);
+        _nextChargeReadyAt = Time.time + Mathf.Max(0f, chargeCooldown);
 
-        // Drive the reverse-thrust intent immediately so the rigidbody starts retreating
-        // on the next FixedUpdate even if the steering think tick hasn't fired yet.
-        // moveDirection = away from target; facingDirection = toward target (no rotation
-        // needed); moveBackward = true so the controller pulls the rigidbody along
-        // -forward at full moveSpeed.
+        // Drive reverse-thrust intent immediately so the rigidbody starts retreating on
+        // the next FixedUpdate even if the steering think tick hasn't fired yet.
         if (_isEjecting && flightController != null)
         {
-            Vector3 awayFromTarget = -toTargetDirectionResolved;
-            flightController.SetFlightIntent(awayFromTarget, toTargetDirectionResolved, 1f, moveBackward: true);
+            Vector3 awayFromTarget = -knockDir;
+            flightController.SetFlightIntent(awayFromTarget, knockDir, 1f, moveBackward: true);
         }
-    }
-
-    private void EndDisengage()
-    {
-        _isDisengaging = false;
-        _isEjecting = false;
-        EndCollisionExemption();
     }
 
     private void BeginCollisionExemption(Entity3D target)
@@ -360,9 +663,6 @@ public class RammerEnemyBrain3D : MonoBehaviour
         for (int i = 0; i < _ignoredPairs.Count; i++)
         {
             var pair = _ignoredPairs[i];
-            // Either side may have been destroyed (round end, target despawn, rammer
-            // destroyed mid-disengage). Unity's Object lifetime check is null-safe on the
-            // == operator; skip pairs where either collider is gone.
             if (pair.self == null || pair.other == null)
             {
                 continue;
@@ -373,6 +673,8 @@ public class RammerEnemyBrain3D : MonoBehaviour
 
         _ignoredPairs.Clear();
     }
+
+    // ------------ Helpers ------------
 
     private static void ApplyKnockbackToTarget(Entity3D target, Vector3 knockback)
     {
@@ -393,12 +695,6 @@ public class RammerEnemyBrain3D : MonoBehaviour
         {
             rb.linearVelocity += knockback;
         }
-    }
-
-    private Vector3 ResolveAwayDirection(Entity3D target)
-    {
-        Vector3 away = target.transform.position - transform.position;
-        return away.sqrMagnitude > 0.0001f ? away.normalized : transform.forward;
     }
 
     private static bool IsTargetEntity(Entity3D candidate)
@@ -437,10 +733,25 @@ public class RammerEnemyBrain3D : MonoBehaviour
 
     private void OnDrawGizmosSelected()
     {
+        // Red = ram contact radius, Cyan = disengage break-off distance.
         Gizmos.color = Color.red;
         Gizmos.DrawWireSphere(transform.position, ramDetectionDistance);
 
         Gizmos.color = Color.cyan;
         Gizmos.DrawWireSphere(transform.position, disengageDistance);
+
+        // Yellow = charge engagement distance, white = stalk standoff distance.
+        Gizmos.color = Color.yellow;
+        Gizmos.DrawWireSphere(transform.position, chargeStartDistance);
+
+        Gizmos.color = Color.white;
+        Gizmos.DrawWireSphere(transform.position, stalkDistance);
+
+        // Show the locked charge vector while charging, for in-editor sanity.
+        if (Application.isPlaying && _state == RammerState.Charge && _chargeDirection.sqrMagnitude > 0.0001f)
+        {
+            Gizmos.color = Color.magenta;
+            Gizmos.DrawRay(_chargeStartPosition, _chargeDirection * (_chargeTargetDistanceAtStart + chargeOvershootDistance));
+        }
     }
 }
