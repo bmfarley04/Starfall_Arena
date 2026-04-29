@@ -372,12 +372,20 @@ public class ShipFlight3D : MonoBehaviour
         if (isApplyingThrust)
         {
             float accelerationMultiplier = isPrecisionThrottle ? flight.precisionThrottleAccelerationMultiplier : 1f;
-            localVelocity.z += _effectiveThrustInput * flight.thrustAcceleration * accelerationMultiplier * thrustMultiplier * slowMultiplier * Time.fixedDeltaTime;
+            float previousForwardSpeed = localVelocity.z;
+            float nextForwardSpeed = previousForwardSpeed
+                + (_effectiveThrustInput * flight.thrustAcceleration * accelerationMultiplier * thrustMultiplier * slowMultiplier * Time.fixedDeltaTime);
 
             if (isPrecisionThrottle)
             {
                 float precisionMaxSpeed = flight.maxSpeed * flight.precisionThrottleMaxSpeedFraction * slowMultiplier;
-                localVelocity.z = Mathf.Min(localVelocity.z, precisionMaxSpeed);
+                localVelocity.z = previousForwardSpeed < precisionMaxSpeed
+                    ? Mathf.Min(nextForwardSpeed, precisionMaxSpeed)
+                    : previousForwardSpeed;
+            }
+            else
+            {
+                localVelocity.z = nextForwardSpeed;
             }
         }
         else if (brakeInput > 0.05f)
