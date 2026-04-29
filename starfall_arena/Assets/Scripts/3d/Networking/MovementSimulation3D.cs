@@ -86,12 +86,20 @@ public static class MovementSimulation3D
         if (effectiveThrustInput > 0.05f)
         {
             float accelerationMultiplier = isPrecisionThrottle ? flight.precisionThrottleAccelerationMultiplier : 1f;
-            localVelocity.z += effectiveThrustInput * flight.thrustAcceleration * accelerationMultiplier * input.ThrustMultiplier * input.SlowMultiplier * dt;
+            float previousForwardSpeed = localVelocity.z;
+            float nextForwardSpeed = previousForwardSpeed
+                + (effectiveThrustInput * flight.thrustAcceleration * accelerationMultiplier * input.ThrustMultiplier * input.SlowMultiplier * dt);
 
             if (isPrecisionThrottle)
             {
                 float precisionMaxSpeed = flight.maxSpeed * flight.precisionThrottleMaxSpeedFraction * input.SlowMultiplier;
-                localVelocity.z = Mathf.Min(localVelocity.z, precisionMaxSpeed);
+                localVelocity.z = previousForwardSpeed < precisionMaxSpeed
+                    ? Mathf.Min(nextForwardSpeed, precisionMaxSpeed)
+                    : previousForwardSpeed;
+            }
+            else
+            {
+                localVelocity.z = nextForwardSpeed;
             }
         }
         else if (brakeInput > 0.05f)
