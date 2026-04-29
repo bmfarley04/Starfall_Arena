@@ -15,6 +15,7 @@ public class NetEnemyCombat3D : NetworkBehaviour
     private bool _loggedMissingWeapon;
     private bool _loggedMissingProjectile;
     private bool _loggedMissingBeamWeapon;
+    private bool _loggedMissingFlamethrowerWeapon;
 
     private void Awake()
     {
@@ -143,6 +144,25 @@ public class NetEnemyCombat3D : NetworkBehaviour
         return true;
     }
 
+    public bool SetFlamethrowerState(EnemyFlamethrowerWeapon3D sourceWeapon, bool isFiring)
+    {
+        if (!IsServer || !IsSpawned)
+        {
+            return false;
+        }
+
+        if (sourceWeapon == null)
+        {
+            LogWarningOnce(ref _loggedMissingFlamethrowerWeapon, "[NetEnemyCombat3D] Enemy flamethrower update was ignored because no EnemyFlamethrowerWeapon3D source was supplied.");
+            return false;
+        }
+
+        sourceWeapon.ApplyNetworkFlameState(isFiring, authoritativeDamage: true);
+        _enemy?.RecordCombatActivity();
+        BroadcastEnemyFlamethrowerStateClientRpc(isFiring);
+        return true;
+    }
+
     private void SpawnAuthoritativeProjectile(
         IEnemyProjectileWeapon3D sourceWeapon,
         NetProjectileFireRequest3D fireRequest,
@@ -242,6 +262,24 @@ public class NetEnemyCombat3D : NetworkBehaviour
         }
 
         beamWeapon.ApplyNetworkBeamAim(update.AimDirection);
+    }
+
+    [ClientRpc]
+    private void BroadcastEnemyFlamethrowerStateClientRpc(bool isFiring)
+    {
+        if (IsServer)
+        {
+            return;
+        }
+
+        EnemyFlamethrowerWeapon3D flamethrowerWeapon = GetComponent<EnemyFlamethrowerWeapon3D>();
+        if (flamethrowerWeapon == null)
+        {
+            LogWarningOnce(ref _loggedMissingFlamethrowerWeapon, "[NetEnemyCombat3D] Client received an enemy flamethrower RPC, but the enemy proxy could not resolve an EnemyFlamethrowerWeapon3D.");
+            return;
+        }
+
+        flamethrowerWeapon.ApplyNetworkFlameState(isFiring, authoritativeDamage: false);
     }
 
     private void CacheReferences()

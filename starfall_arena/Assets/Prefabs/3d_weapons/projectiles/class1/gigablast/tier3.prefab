@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 400004}
   - component: {fileID: 11400002}
   - component: {fileID: -3855179126554334367}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: tier3
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -84,7 +84,7 @@ GameObject:
   - component: {fileID: 4543353126185424588}
   - component: {fileID: 524615937431441589}
   - component: {fileID: 1577096071363420301}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: capsule
   m_TagString: Untagged
   m_Icon: {fileID: 0}

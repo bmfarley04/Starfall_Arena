@@ -13771,6 +13771,68 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1643426710}
   m_CullTransparentMesh: 1
+--- !u!1001 &1662215707
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 2047387822}
+    m_Modifications:
+    - target: {fileID: 1632332229003008, guid: 3f2cae45a3d451047ae48b7d443e885e, type: 3}
+      propertyPath: m_Name
+      value: ProtonLegacy8
+      objectReference: {fileID: 0}
+    - target: {fileID: 4015057195028942, guid: 3f2cae45a3d451047ae48b7d443e885e, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4015057195028942, guid: 3f2cae45a3d451047ae48b7d443e885e, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4015057195028942, guid: 3f2cae45a3d451047ae48b7d443e885e, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4015057195028942, guid: 3f2cae45a3d451047ae48b7d443e885e, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4015057195028942, guid: 3f2cae45a3d451047ae48b7d443e885e, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4015057195028942, guid: 3f2cae45a3d451047ae48b7d443e885e, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4015057195028942, guid: 3f2cae45a3d451047ae48b7d443e885e, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4015057195028942, guid: 3f2cae45a3d451047ae48b7d443e885e, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4015057195028942, guid: 3f2cae45a3d451047ae48b7d443e885e, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4015057195028942, guid: 3f2cae45a3d451047ae48b7d443e885e, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 3f2cae45a3d451047ae48b7d443e885e, type: 3}
+--- !u!4 &1662215708 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 4015057195028942, guid: 3f2cae45a3d451047ae48b7d443e885e, type: 3}
+  m_PrefabInstance: {fileID: 1662215707}
+  m_PrefabAsset: {fileID: 0}
 --- !u!114 &1670527131
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -20160,7 +20222,40 @@ Transform:
   - {fileID: 5220485689725873758}
   - {fileID: 5928397892467719946}
   - {fileID: 1322447906}
+  - {fileID: 2047387822}
   m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &2047387821
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2047387822}
+  m_Layer: 0
+  m_Name: flamethrowerEnemy
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 0
+--- !u!4 &2047387822
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2047387821}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 10, y: 0, z: 50}
+  m_LocalScale: {x: 0.3, y: 0.3, z: 0.3}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 1662215708}
+  m_Father: {fileID: 2029641327}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &2053156859
 MonoBehaviour:
@@ -20539,6 +20634,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: fortressEnemy (1)
       objectReference: {fileID: 0}
+    - target: {fileID: 5723954577492871350, guid: 67ddc44c4546f394ca0a6767e900c122, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 9212841648702151964, guid: 67ddc44c4546f394ca0a6767e900c122, type: 3}
       propertyPath: GlobalObjectIdHash
       value: 2116893685
@@ -20670,13 +20769,14 @@ GameObject:
   - component: {fileID: 3214170195169824892}
   - component: {fileID: 8535050266425605796}
   - component: {fileID: 8535050266425605795}
+  - component: {fileID: 8535050266425605797}
   m_Layer: 0
   m_Name: duelistEnemy
   m_TagString: Enemy
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!1001 &913643937754368232
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -26743,7 +26843,7 @@ MonoBehaviour:
   selectedWeaponIndex: 0
   abilities: []
   shipFlight: {fileID: 8535050266425605793}
-  shipVisualTilt: {fileID: 0}
+  shipVisualTilt: {fileID: 8535050266425605797}
   shipThrusterVfx: {fileID: 4246944660164554156}
   shipSpeedFx: {fileID: 0}
   deathEffects: {fileID: 6183091795120916858}
@@ -31988,11 +32088,13 @@ MonoBehaviour:
   obstacleAvoidance: {fileID: 0}
   patrol: {fileID: 0}
   thinkInterval: 0.06
-  preferredRangeMin: 100
+  preferredRangeMin: 50
   preferredRangeMax: 500
   perchArrivalDistance: 12
   maxRepositionDuration: 4
   perchRefreshInterval: 3.5
+  perchCommitDuration: 1.2
+  perchStrafeSpeed: 28
   lateralPerchBias: 1
   verticalPerchBias: 0.6
   outwardPerchBias: 0.3
@@ -32001,6 +32103,11 @@ MonoBehaviour:
   strafeRollInterval: 1.2
   orbitStrafeSpeed: 18
   orbitVerticalTiltAmount: 0.75
+  orbitWeaveSpeed: 18
+  orbitWeaveRerollInterval: 1.2
+  perchMovementWeight: 0.7
+  outOfRangeApproachSpeedScale: 1
+  closeRangeRetreatSpeedScale: 0.75
   projectileBand:
     preferredCenter: 100
     halfWidth: 30
@@ -32013,7 +32120,8 @@ MonoBehaviour:
     preferredCenter: 400
     halfWidth: 30
     aimToleranceDegrees: 6
-  vibesChance: 0.3
+  vibesChance: 0.5
+  weaponCommitDuration: 1.25
   minimumBeamRestartEnergy: 20
   threatScanInterval: 0.15
   threatScanRadius: 60
@@ -32041,9 +32149,44 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3bdadbcbaf7867d4180442aeac114aa1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyStrafeMover3D
-  maxStrafeSpeed: 20
+  maxStrafeSpeed: 70
   combineWithFlightThrust: 1
   lockToWorldYPlane: 0
+--- !u!114 &8535050266425605797
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 774219853575420822}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9e8f7219683416a4e967c145de82d06f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShipVisualTilt3D
+  entity: {fileID: 6382349875585262794}
+  shipFlight: {fileID: 8535050266425605793}
+  visualEffects:
+    visualModel: {fileID: 1441906055}
+    maxBankAngle: 75
+    bankSensitivity: 20
+    steeringInputBankSensitivity: 24
+    bankSmoothing: 8
+    bankReturnSmoothing: 5
+    maxPitchLeanAngle: 40
+    pitchLeanSensitivity: 12
+    steeringInputPitchSensitivity: 14
+    pitchLeanSmoothing: 8
+    pitchLeanReturnSmoothing: 5
+    forwardAccelPitchSensitivity: 0.08
+    lateralAccelBankSensitivity: 0.1
+    lateralDriftBankSensitivity: 0.5
+    verticalDriftPitchSensitivity: 0.35
+  barrelRoll:
+    degrees: 360
+    durationMultiplier: 1.1
+    minDuration: 0.18
+    entryBankAngle: 28
 --- !u!1001 &8763065985922954052
 PrefabInstance:
   m_ObjectHideFlags: 0

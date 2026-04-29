@@ -10,7 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 400000}
   - component: {fileID: -8832846132210900181}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: simple_beam
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -49,12 +49,19 @@ MonoBehaviour:
   coreRadius: 0.1
   beamGlow: {fileID: 0}
   glowRadius: 0.1
+  visualDriver: {fileID: 0}
   impactEffectPrefab: {fileID: 100000, guid: c969a6e369693324c8f3ab6cc90bb37a, type: 3}
   muzzleEffectPrefab: {fileID: 100000, guid: dfc3dc0bd496cd24f94ebd3e7c1477f4, type: 3}
   laserHitInterval: 0.2
+  hitscanRadius: 1
   collisionMask:
     serializedVersion: 2
     m_Bits: 4294967295
+  requireForwardAim: 0
+  smoothVisualEndpoint: 1
+  visualEndpointSmoothTime: 0.05
+  visualEndpointDeadzone: 0.35
+  visualEndpointSnapDistance: 10
 --- !u!1 &1640835804567910166
 GameObject:
   m_ObjectHideFlags: 0
@@ -66,7 +73,7 @@ GameObject:
   - component: {fileID: 8976190122232497546}
   - component: {fileID: 372364287006137196}
   - component: {fileID: 7837388133129798524}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: simple_beam
   m_TagString: Untagged
   m_Icon: {fileID: 0}

@@ -127,12 +127,17 @@ The 3D AI path should stay modular. Enemy prefabs should compose small scripts i
   - child role/scale/health are applied before network spawn on the server and synchronized to clients for presentation, while movement, targeting, attacks, networking, and wave death tracking remain on the usual Invasion components
 - `DuelistEnemyBrain3D`
   - mid-tier flanker enemy that hangs in the player's mid-range pocket and juggles three weapons one at a time
-  - kit is `ProjectileWeaponEnemy3D` (close), `MissileWeaponEnemy3D` (mid), and `BeamWeapon3D` (long); the brain picks the highest-scoring weapon for the current range with a small `vibesChance` random pick over the rest of the valid set so the choice is not perfectly deterministic
-  - explicitly does NOT fire multiple weapons in parallel: when the chosen weapon for the current think tick is not the beam, any active beam is stopped first
-  - holds at 100-200m by default and uses a perch loop similar to `GlassCannonInterceptorEnemyBrain3D`, but the perch picker scores candidate directions and applies a `forwardArcAvoidanceWeight` penalty to perches inside the target's forward cone so the duelist drifts toward the player's flanks/rear instead of perching head-on
-  - while engaging, drives `EnemyStrafeMover3D` to slide laterally (with a small vertical tilt) at `orbitStrafeSpeed`; this is real world-space strafe motion that runs while `EnemyAIFlightController3D` keeps the nose locked on the target
+  - kit is `ProjectileWeaponEnemy3D` (close), `MissileWeaponEnemy3D` (mid), and `BeamWeapon3D` (long); the brain picks the highest-scoring weapon for the current range with a small `vibesChance` random pick over the rest of the valid set so the choice is not perfectly deterministic, then commits to that weapon for `weaponCommitDuration` before another valid weapon can replace it
+  - explicitly does NOT fire multiple weapons in parallel: when the committed weapon is not the beam, any active beam is stopped first
+  - holds at 100-200m by default and uses a hybrid flanker loop: the flight controller keeps the nose on the player while `EnemyStrafeMover3D` drives target-relative lateral/vertical movement toward changing flank/rear perches
+  - stores perches as `perchDirectionFromTarget + perchRange` instead of one fixed world point, so the selected flank remains meaningful as the player moves through the arena
+  - the perch picker scores candidate directions and applies a `forwardArcAvoidanceWeight` penalty to perches inside the target's forward cone so the duelist drifts toward the player's flanks/rear instead of perching head-on
+  - preferred-band movement blends direct perch travel with an orbit/weave tangent through `perchMovementWeight`; when it reaches a perch it keeps moving with idle orbit/weave instead of becoming a stationary turret
+  - if the player is detected but outside `preferredRangeMax`, it directly approaches at `outOfRangeApproachSpeedScale`; if the player is inside `preferredRangeMin`, it faces the player while backing away at `closeRangeRetreatSpeedScale`
+  - can fire any currently valid committed weapon while repositioning so target acquisition or perch refresh does not create a several-second no-combat pause
+  - while engaging, drives `EnemyStrafeMover3D` to slide laterally/vertically; this is real world-space strafe motion that runs while `EnemyAIFlightController3D` keeps the nose locked on the target
   - reacts to incoming player fire: every `threatScanInterval` it does a non-alloc `OverlapSphere` against `projectileLayers`, filters for `Projectile3D.TargetFaction == EnemyTeam` (i.e. fired by the player team), keeps only projectiles whose velocity is heading at the duelist (dot >= `threatHeadingDotThreshold`), and rolls `dodgeChancePerThreat` to trigger a perpendicular `EnemyStrafeMover3D` dodge burst at `dodgeSpeed` for `dodgeDuration`
-  - dodges are gated by `dodgeCooldown` so the duelist cannot chain-dodge a stream of fire, and weapon fire is suppressed for the dodge window so the dodge tell stays readable
+  - dodges are gated by `dodgeCooldown` so the duelist cannot chain-dodge a stream of fire, weapon fire is suppressed for the dodge window so the dodge tell stays readable, and normal perch/weave movement resumes as soon as the dodge strafe duration ends
   - beam path mirrors `SplitterEnemyBrain3D` (`GetBeamForwardDirection` + `GetBeamOrigin` for the precise aim check, `NetEnemyCombat3D.SetBeamState` / `UpdateBeamAim` for replication)
   - there is no projectile-warning sensor today; the threat scan is folded into the brain. If a second enemy needs the same behavior, extract the scan into a reusable `IncomingProjectileSensor3D` component then
 - `TriumvirateEnemyBrain3D`
@@ -157,6 +162,34 @@ The 3D AI path should stay modular. Enemy prefabs should compose small scripts i
   - has no weapons, ram, or contact damage; its threat is informational, not direct damage
   - if the linked swarm keeps at least `Required Survivors For Alert` alive near the player for `Alert Warmup Seconds`, it calls `EnemyTargetSensor3D.ReceiveTargetAlert(...)` on enemy sensors near the player so heavier enemies can acquire beyond their normal detection radius for a short duration
   - alerts are server-authoritative in networked Invasion because the brain only runs on the server/host; clients receive movement through `NetEnemyMovement3D`
+
+## Enemy Movement Range Design
+
+Every future enemy brain needs an explicit movement answer for every target range band. Do not only define the range where the enemy attacks; the transitions before and after engagement are where enemies most often look broken.
+
+Default range bands:
+
+- **Outside detection radius, still inside the arena**
+  - The enemy has no active player target from `EnemyTargetSensor3D`.
+  - Default behavior should be procedural search through `EnemyPatrol3D`.
+  - Attach and configure the `EnemyPatrol3D` component on enemies that should keep moving while players are outside detection. In a large arena, for example a `5000 x 5000 x 5000` volume with a `1000m` detection radius, this is the enemy's normal behavior across most of the arena.
+- **Inside detection radius, outside engagement range**
+  - The enemy has detected a valid player-team target, but the target is still beyond that enemy's usable weapon/engagement range.
+  - Default behavior should be direct full-speed approach toward the player.
+  - This approach band should not detour to tactical perches, orbit points, formation flourishes, or idle tells unless the enemy is intentionally a special case. The player has already been detected, so the enemy should visibly commit to closing the gap.
+- **Outer engagement range**
+  - Define whether the enemy starts firing immediately, charges a tell, settles into a formation, begins a beam lane, or continues closing to a more specific preferred range.
+  - Keep weapon range separate from detection range. A large sensor radius is for acquisition; it should not accidentally become infinite attack permission.
+- **Preferred range band**
+  - Define the enemy's identity here: hold position, orbit, strafe, perch, circle, formation-link, anchor, kite, or pressure forward.
+  - If the enemy uses lateral/vertical movement, decide whether that is real `EnemyStrafeMover3D` motion, nose-first flight through `EnemyAIFlightController3D`, or a custom state-machine movement.
+  - Decide whether the enemy can fire while relocating inside this band. If not, document the intentional player-facing pause.
+- **Inner range / too-close band**
+  - Always decide what happens when the player gets inside the lower edge of the preferred range.
+  - Valid answers include backing away while facing the player, sitting still and continuing to fire, switching to a close-range weapon, charging through, dodging sideways, disengaging, or intentionally accepting point-blank pressure.
+  - Do not leave this band to whatever the perch/orbit/chase code happens to do. That creates indecisive movement and can suppress combat unexpectedly.
+
+When implementing a new enemy brain, document the chosen movement behavior for each relevant band in this file under that enemy's component notes. If a band is intentionally unused, say so explicitly.
 
 ## Architecture Rules
 

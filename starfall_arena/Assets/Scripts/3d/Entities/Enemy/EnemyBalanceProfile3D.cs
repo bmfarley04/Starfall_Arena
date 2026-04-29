@@ -36,6 +36,17 @@ public abstract class EnemyBalanceProfile3D : ScriptableObject
     }
 
     [Serializable]
+    public struct FlamethrowerWeaponStats
+    {
+        [Min(0f)] public float damagePerSecond;
+        [Min(0f)] public float range;
+        [Range(0f, 90f)] public float halfAngleDegrees;
+        [Min(0.02f)] public float damageTickInterval;
+        [Min(0.01f)] public float burstDuration;
+        [Min(0f)] public float cooldown;
+    }
+
+    [Serializable]
     public struct BasicShooterBrainStats
     {
         [Min(0.01f)] public float thinkInterval;
@@ -94,6 +105,21 @@ public abstract class EnemyBalanceProfile3D : ScriptableObject
         [Min(0f)] public float weaponStaggerDelay;
         [Min(0f)] public float stopDistance;
         [Min(0f)] public float fullSpeedDistance;
+    }
+
+    [Serializable]
+    public struct FlamethrowerBrainStats
+    {
+        [Min(0.01f)] public float thinkInterval;
+        [Range(0f, 180f)] public float aimToleranceDegrees;
+        [Min(0f)] public float tooCloseRetreatDistance;
+        [Min(0f)] public float preferredRangeMin;
+        [Min(0f)] public float preferredRangeMax;
+        [Min(0f)] public float fullApproachDistance;
+        [Range(0f, 1f)] public float retreatSpeedScale;
+        [Min(0f)] public float flameOrbitStrafeSpeed;
+        [Range(0f, 1f)] public float flameOrbitVerticalBias;
+        [Min(0f)] public float flameOrbitDirectionChangeInterval;
     }
 
     [Serializable]
@@ -157,6 +183,8 @@ public abstract class EnemyBalanceProfile3D : ScriptableObject
         [Min(0.1f)] public float perchArrivalDistance;
         [Min(0.1f)] public float maxRepositionDuration;
         [Min(0.1f)] public float perchRefreshInterval;
+        [Min(0.1f)] public float perchCommitDuration;
+        [Min(0f)] public float perchStrafeSpeed;
         [Min(0f)] public float lateralPerchBias;
         [Min(0f)] public float verticalPerchBias;
         [Min(0f)] public float outwardPerchBias;
@@ -165,10 +193,16 @@ public abstract class EnemyBalanceProfile3D : ScriptableObject
         [Min(0.1f)] public float strafeRollInterval;
         [Min(0f)] public float orbitStrafeSpeed;
         [Range(0f, 1f)] public float orbitVerticalTiltAmount;
+        [Min(0f)] public float orbitWeaveSpeed;
+        [Min(0.1f)] public float orbitWeaveRerollInterval;
+        [Range(0f, 1f)] public float perchMovementWeight;
+        [Range(0f, 1f)] public float outOfRangeApproachSpeedScale;
+        [Range(0f, 1f)] public float closeRangeRetreatSpeedScale;
         public WeaponRangeBandStats projectileBand;
         public WeaponRangeBandStats missileBand;
         public WeaponRangeBandStats beamBand;
         [Range(0f, 1f)] public float vibesChance;
+        [Min(0.1f)] public float weaponCommitDuration;
         [Min(0f)] public float minimumBeamRestartEnergy;
         [Min(0.02f)] public float threatScanInterval;
         [Min(0.1f)] public float threatScanRadius;

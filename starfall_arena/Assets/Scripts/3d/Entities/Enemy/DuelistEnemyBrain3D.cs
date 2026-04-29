@@ -81,11 +81,17 @@ public class DuelistEnemyBrain3D : MonoBehaviour
     [Tooltip("Distance (meters) from the chosen perch that counts as arrived. Higher values make the duelist commit to engaging sooner.")]
     [SerializeField] private float perchArrivalDistance = 12f;
 
-    [Tooltip("Maximum seconds spent flying toward one perch before the duelist commits to engaging anyway. Prevents chasing an unreachable point forever.")]
+    [Tooltip("Maximum seconds spent driving toward one perch before the duelist picks a fresh target-relative flank point.")]
     [SerializeField] private float maxRepositionDuration = 4f;
 
-    [Tooltip("Seconds between perch re-rolls during the Engage state. Each re-roll picks a new perch around the target so the duelist drifts instead of holding one spot.")]
+    [Tooltip("Seconds between perch re-rolls while inside the preferred range band. Each re-roll picks a new target-relative flank point.")]
     [SerializeField] private float perchRefreshInterval = 3.5f;
+
+    [Tooltip("Minimum seconds the duelist commits to moving toward a chosen target-relative perch before it may reroll for a new flank point.")]
+    [SerializeField] private float perchCommitDuration = 1.2f;
+
+    [Tooltip("World-space strafe speed (m/s) used to drive toward the selected perch while the duelist keeps its nose on the player.")]
+    [SerializeField] private float perchStrafeSpeed = 28f;
 
     [Header("Perch Bias")]
     [Tooltip("How strongly the next perch is biased sideways around the target.")]
@@ -115,6 +121,24 @@ public class DuelistEnemyBrain3D : MonoBehaviour
     [Tooltip("How much vertical tilt the orbit strafe direction can pick up (0 = pure horizontal lateral, 1 = full 3D random tilt).")]
     [Range(0f, 1f)]
     [SerializeField] private float orbitVerticalTiltAmount = 0.5f;
+
+    [Tooltip("World-space strafe speed (m/s) for the idle orbit/weave used when the duelist is already near its selected perch.")]
+    [SerializeField] private float orbitWeaveSpeed = 18f;
+
+    [Tooltip("Seconds between idle orbit/weave direction rerolls when the duelist is already near its selected perch.")]
+    [SerializeField] private float orbitWeaveRerollInterval = 1.2f;
+
+    [Tooltip("Blend between moving directly to the selected perch and orbiting around the player while relocating. 1 = direct perch chase, 0 = pure orbit weave.")]
+    [Range(0f, 1f)]
+    [SerializeField] private float perchMovementWeight = 0.7f;
+
+    [Tooltip("Speed scale used when the target is detected but outside the duelist's maximum preferred range. The duelist approaches directly instead of waiting for a perch timeout.")]
+    [Range(0f, 1f)]
+    [SerializeField] private float outOfRangeApproachSpeedScale = 1f;
+
+    [Tooltip("Speed scale used to back away while facing the target when the target is inside the duelist's minimum preferred range.")]
+    [Range(0f, 1f)]
+    [SerializeField] private float closeRangeRetreatSpeedScale = 0.75f;
 
     [Header("Weapon Selection")]
     [Tooltip("Range/aim band for the close-range projectile weapon. Aim tolerance is intentionally generous (default 30) because the player can cross huge angles around the duelist at close range faster than the flight controller can rotate; the actual shot direction is still resolved toward the target, so wide aim tolerance does not become wide miss error.")]
@@ -147,6 +171,9 @@ public class DuelistEnemyBrain3D : MonoBehaviour
     [Tooltip("Probability per think tick that the duelist picks a random valid weapon instead of its highest-scoring one. Adds expressive variety so it doesn't always pick the obvious option.")]
     [Range(0f, 1f)]
     [SerializeField] private float vibesChance = 0.15f;
+
+    [Tooltip("Minimum seconds the duelist must keep using its current weapon choice before it may switch to another valid weapon. Prevents frame-scale projectile/missile/beam flicker.")]
+    [SerializeField] private float weaponCommitDuration = 1.25f;
 
     [Tooltip("Minimum remaining beam energy before this AI starts a new beam burst. Prevents thrashing when the beam is nearly drained.")]
     [SerializeField] private float minimumBeamRestartEnergy = 20f;
@@ -198,18 +225,25 @@ public class DuelistEnemyBrain3D : MonoBehaviour
 
     private DuelistState _state = DuelistState.Reposition;
     private Entity3D _currentTarget;
-    private Vector3 _perchPosition;
+    private Vector3 _perchDirectionFromTarget;
+    private float _perchRange;
+    private Vector3 _orbitWeaveDirection;
+    private float _nextOrbitWeaveRerollAt;
     private float _nextThinkTime;
     private float _stateStartedAt;
     private float _stateEndsAt;
     private float _nextPerchRefreshAt;
-    private float _nextStrafeRollAt;
+    private float _perchCommitEndsAt;
     private float _nextThreatScanAt;
     private float _nextDodgeAllowedAt;
+    private float _dodgeStrafeEndsAt;
     private float _suppressFireUntil;
     private int _perchSequence;
     private bool _beamActive;
-    private DuelistWeaponChoice _activeBeamSlot = DuelistWeaponChoice.None;
+    private DuelistWeaponChoice _committedWeaponChoice = DuelistWeaponChoice.None;
+    private float _weaponCommitEndsAt;
+
+    private const float DefaultWeaponCommitDuration = 1.25f;
 
     private void Awake()
     {
@@ -235,6 +269,8 @@ public class DuelistEnemyBrain3D : MonoBehaviour
         perchArrivalDistance = Mathf.Max(0.1f, stats.perchArrivalDistance);
         maxRepositionDuration = Mathf.Max(0.1f, stats.maxRepositionDuration);
         perchRefreshInterval = Mathf.Max(0.1f, stats.perchRefreshInterval);
+        perchCommitDuration = stats.perchCommitDuration > 0f ? Mathf.Max(0.1f, stats.perchCommitDuration) : 1.2f;
+        perchStrafeSpeed = stats.perchStrafeSpeed > 0f ? Mathf.Max(0f, stats.perchStrafeSpeed) : 28f;
         lateralPerchBias = Mathf.Max(0f, stats.lateralPerchBias);
         verticalPerchBias = Mathf.Max(0f, stats.verticalPerchBias);
         outwardPerchBias = Mathf.Max(0f, stats.outwardPerchBias);
@@ -243,10 +279,16 @@ public class DuelistEnemyBrain3D : MonoBehaviour
         strafeRollInterval = Mathf.Max(0.1f, stats.strafeRollInterval);
         orbitStrafeSpeed = Mathf.Max(0f, stats.orbitStrafeSpeed);
         orbitVerticalTiltAmount = Mathf.Clamp01(stats.orbitVerticalTiltAmount);
+        orbitWeaveSpeed = stats.orbitWeaveSpeed > 0f ? Mathf.Max(0f, stats.orbitWeaveSpeed) : orbitStrafeSpeed;
+        orbitWeaveRerollInterval = stats.orbitWeaveRerollInterval > 0f ? Mathf.Max(0.1f, stats.orbitWeaveRerollInterval) : strafeRollInterval;
+        perchMovementWeight = stats.perchMovementWeight > 0f ? Mathf.Clamp01(stats.perchMovementWeight) : 0.7f;
+        outOfRangeApproachSpeedScale = stats.outOfRangeApproachSpeedScale > 0f ? Mathf.Clamp01(stats.outOfRangeApproachSpeedScale) : 1f;
+        closeRangeRetreatSpeedScale = stats.closeRangeRetreatSpeedScale > 0f ? Mathf.Clamp01(stats.closeRangeRetreatSpeedScale) : 0.75f;
         projectileBand = ToWeaponRangeBand(stats.projectileBand);
         missileBand = ToWeaponRangeBand(stats.missileBand);
         beamBand = ToWeaponRangeBand(stats.beamBand);
         vibesChance = Mathf.Clamp01(stats.vibesChance);
+        weaponCommitDuration = NormalizeWeaponCommitDuration(stats.weaponCommitDuration);
         minimumBeamRestartEnergy = Mathf.Max(0f, stats.minimumBeamRestartEnergy);
         threatScanInterval = Mathf.Max(0.02f, stats.threatScanInterval);
         threatScanRadius = Mathf.Max(0.1f, stats.threatScanRadius);
@@ -277,8 +319,16 @@ public class DuelistEnemyBrain3D : MonoBehaviour
         perchArrivalDistance = Mathf.Max(0.1f, perchArrivalDistance);
         maxRepositionDuration = Mathf.Max(0.1f, maxRepositionDuration);
         perchRefreshInterval = Mathf.Max(0.1f, perchRefreshInterval);
+        perchCommitDuration = Mathf.Max(0.1f, perchCommitDuration);
+        perchStrafeSpeed = Mathf.Max(0f, perchStrafeSpeed);
         strafeRollInterval = Mathf.Max(0.1f, strafeRollInterval);
         orbitStrafeSpeed = Mathf.Max(0f, orbitStrafeSpeed);
+        orbitWeaveSpeed = Mathf.Max(0f, orbitWeaveSpeed);
+        orbitWeaveRerollInterval = Mathf.Max(0.1f, orbitWeaveRerollInterval);
+        perchMovementWeight = Mathf.Clamp01(perchMovementWeight);
+        outOfRangeApproachSpeedScale = Mathf.Clamp01(outOfRangeApproachSpeedScale);
+        closeRangeRetreatSpeedScale = Mathf.Clamp01(closeRangeRetreatSpeedScale);
+        weaponCommitDuration = NormalizeWeaponCommitDuration(weaponCommitDuration);
         threatScanInterval = Mathf.Max(0.02f, threatScanInterval);
         threatScanRadius = Mathf.Max(0.1f, threatScanRadius);
         dodgeCooldown = Mathf.Max(0f, dodgeCooldown);
@@ -295,13 +345,19 @@ public class DuelistEnemyBrain3D : MonoBehaviour
         _stateEndsAt = Time.time;
         _nextThinkTime = 0f;
         _nextPerchRefreshAt = 0f;
-        _nextStrafeRollAt = 0f;
+        _perchCommitEndsAt = 0f;
+        _nextOrbitWeaveRerollAt = 0f;
         _nextThreatScanAt = 0f;
         _nextDodgeAllowedAt = 0f;
+        _dodgeStrafeEndsAt = 0f;
         _suppressFireUntil = 0f;
         _perchSequence = 0;
         _beamActive = false;
-        _activeBeamSlot = DuelistWeaponChoice.None;
+        _committedWeaponChoice = DuelistWeaponChoice.None;
+        _weaponCommitEndsAt = 0f;
+        _perchDirectionFromTarget = transform.forward.sqrMagnitude > 0.0001f ? transform.forward.normalized : Vector3.forward;
+        _perchRange = Mathf.Lerp(preferredRangeMin, preferredRangeMax, 0.5f);
+        _orbitWeaveDirection = Vector3.zero;
         flightController?.ClearFlightIntent();
         strafeMover?.StopStrafe();
     }
@@ -372,6 +428,7 @@ public class DuelistEnemyBrain3D : MonoBehaviour
     private void UpdateReposition(Entity3D target, Vector3 targetDirection, float distanceToTarget)
     {
         bool tooFar = distanceToTarget > preferredRangeMax;
+        bool tooClose = distanceToTarget < preferredRangeMin;
         bool timedOut = Time.time >= _stateEndsAt;
 
         if (timedOut)
@@ -385,42 +442,53 @@ public class DuelistEnemyBrain3D : MonoBehaviour
             // Direct pursuit at full speed. Don't waste time detouring to a perch on the far
             // side of the player when we are simply out of range. The orbit/perch refresh
             // during Engage handles flank seeking once we are back in band.
+            strafeMover?.StopStrafe();
             Vector3 steeredPursuit = ResolveSteering(targetDirection);
-            flightController?.SetFlightIntent(steeredPursuit, targetDirection, 1f, moveBackward: false);
+            flightController?.SetFlightIntent(steeredPursuit, targetDirection, outOfRangeApproachSpeedScale, moveBackward: false);
+            TryFireWhileRepositioning(target, targetDirection, distanceToTarget);
             return;
         }
 
-        // In-band perch fly: drift to the chosen flank position so the duelist does not
-        // sit at one orbit angle for the entire fight.
-        Vector3 toPerch = _perchPosition - transform.position;
-        float toPerchDistance = toPerch.magnitude;
-        bool reachedPerch = toPerchDistance <= Mathf.Max(0.1f, perchArrivalDistance);
-        if (reachedPerch)
+        if (tooClose)
         {
-            BeginEngage(targetDirection, distanceToTarget);
-            return;
-        }
-
-        Vector3 desired = toPerchDistance > 0.0001f ? toPerch / toPerchDistance : targetDirection;
-        Vector3 steered = ResolveSteering(desired);
-        flightController?.SetFlightIntent(steered, targetDirection, 1f, moveBackward: false);
-    }
-
-    private void UpdateEngage(Entity3D target, Vector3 targetDirection, float distanceToTarget)
-    {
-        // Only kick out of engage when too FAR from the band, or when the perch refresh timer
-        // expires. Being closer than preferredRangeMin is fine: keep facing/firing/orbit-strafing
-        // and let the natural drift bring us back out. Otherwise the brain repositions every tick
-        // when the player closes inside us, which silently suppresses all fire.
-        bool tooFar = distanceToTarget > preferredRangeMax;
-        if (tooFar || Time.time >= _nextPerchRefreshAt)
-        {
-            BeginReposition(target);
+            strafeMover?.StopStrafe();
+            Vector3 retreatDirection = ResolveSteering(-targetDirection);
+            flightController?.SetFlightIntent(retreatDirection, targetDirection, closeRangeRetreatSpeedScale, moveBackward: true);
+            TryFireWhileRepositioning(target, targetDirection, distanceToTarget);
             return;
         }
 
         flightController?.SetFacingDirection(targetDirection);
-        UpdateOrbitStrafe(targetDirection);
+        UpdatePreferredBandStrafe(target, targetDirection);
+        TryFireWhileRepositioning(target, targetDirection, distanceToTarget);
+    }
+
+    private void UpdateEngage(Entity3D target, Vector3 targetDirection, float distanceToTarget)
+    {
+        bool tooFar = distanceToTarget > preferredRangeMax;
+        bool tooClose = distanceToTarget < preferredRangeMin;
+        if (tooFar)
+        {
+            strafeMover?.StopStrafe();
+            Vector3 steeredPursuit = ResolveSteering(targetDirection);
+            flightController?.SetFlightIntent(steeredPursuit, targetDirection, outOfRangeApproachSpeedScale, moveBackward: false);
+        }
+        else if (tooClose)
+        {
+            strafeMover?.StopStrafe();
+            Vector3 retreatDirection = ResolveSteering(-targetDirection);
+            flightController?.SetFlightIntent(retreatDirection, targetDirection, closeRangeRetreatSpeedScale, moveBackward: true);
+        }
+        else
+        {
+            if (Time.time >= _nextPerchRefreshAt)
+            {
+                BeginReposition(target);
+            }
+
+            flightController?.SetFacingDirection(targetDirection);
+            UpdatePreferredBandStrafe(target, targetDirection);
+        }
 
         if (Time.time < _suppressFireUntil)
         {
@@ -436,11 +504,12 @@ public class DuelistEnemyBrain3D : MonoBehaviour
         _state = DuelistState.Reposition;
         _stateStartedAt = Time.time;
         _stateEndsAt = Time.time + Mathf.Max(0.1f, maxRepositionDuration);
-        _perchPosition = ChooseNextPerch(target);
-        StopBeam();
+        _perchCommitEndsAt = Time.time + Mathf.Max(0.1f, perchCommitDuration);
+        _nextPerchRefreshAt = Time.time + Mathf.Max(Mathf.Max(0.1f, perchCommitDuration), Mathf.Max(0.1f, perchRefreshInterval));
+        ChooseNextPerch(target);
         if (logDecisions)
         {
-            Debug.Log($"[{nameof(DuelistEnemyBrain3D)}] {name} BeginReposition perch={_perchPosition}", this);
+            Debug.Log($"[{nameof(DuelistEnemyBrain3D)}] {name} BeginReposition perch={ResolveCurrentPerchPosition(target)} range={_perchRange:F1}", this);
         }
     }
 
@@ -448,8 +517,10 @@ public class DuelistEnemyBrain3D : MonoBehaviour
     {
         _state = DuelistState.Engage;
         _stateStartedAt = Time.time;
+        _stateEndsAt = float.PositiveInfinity;
         _nextPerchRefreshAt = Time.time + Mathf.Max(0.1f, perchRefreshInterval);
-        _nextStrafeRollAt = 0f;
+        _perchCommitEndsAt = Time.time;
+        _nextOrbitWeaveRerollAt = 0f;
         flightController?.SetFacingDirection(targetDirection);
         if (logDecisions)
         {
@@ -457,26 +528,75 @@ public class DuelistEnemyBrain3D : MonoBehaviour
         }
     }
 
-    private void UpdateOrbitStrafe(Vector3 targetDirection)
+    private void UpdatePreferredBandStrafe(Entity3D target, Vector3 targetDirection)
     {
-        if (strafeMover == null || orbitStrafeSpeed <= 0f)
+        if (strafeMover == null)
         {
             return;
         }
 
-        // Don't override an active dodge.
-        if (strafeMover.IsStrafing && Time.time < _nextDodgeAllowedAt)
+        if (IsDodgeStrafing())
         {
             return;
         }
 
-        if (Time.time < _nextStrafeRollAt && strafeMover.IsStrafing)
+        Vector3 perchPosition = ResolveCurrentPerchPosition(target);
+        Vector3 toPerch = perchPosition - transform.position;
+        float toPerchDistance = toPerch.magnitude;
+        bool reachedPerch = toPerchDistance <= Mathf.Max(0.1f, perchArrivalDistance);
+        bool mayRerollPerch = Time.time >= _nextPerchRefreshAt || (_state == DuelistState.Reposition && Time.time >= _stateEndsAt);
+        if (reachedPerch && Time.time >= _perchCommitEndsAt)
+        {
+            mayRerollPerch = true;
+        }
+
+        if (mayRerollPerch)
+        {
+            BeginReposition(target);
+            perchPosition = ResolveCurrentPerchPosition(target);
+            toPerch = perchPosition - transform.position;
+            toPerchDistance = toPerch.magnitude;
+        }
+
+        Vector3 perchDirection = toPerchDistance > 0.0001f ? toPerch / toPerchDistance : Vector3.zero;
+        Vector3 orbitDirection = ResolveOrbitWeaveDirection(targetDirection);
+        Vector3 desiredStrafeDirection;
+        float speed;
+
+        if (perchDirection.sqrMagnitude > 0.0001f && toPerchDistance > Mathf.Max(0.1f, perchArrivalDistance))
+        {
+            float weight = Mathf.Clamp01(perchMovementWeight);
+            desiredStrafeDirection = ((perchDirection * weight) + (orbitDirection * (1f - weight))).normalized;
+            speed = Mathf.Max(0f, perchStrafeSpeed);
+        }
+        else
+        {
+            desiredStrafeDirection = orbitDirection;
+            speed = Mathf.Max(0f, orbitWeaveSpeed > 0f ? orbitWeaveSpeed : orbitStrafeSpeed);
+        }
+
+        if (desiredStrafeDirection.sqrMagnitude <= 0.0001f || speed <= 0f)
         {
             return;
         }
 
-        _nextStrafeRollAt = Time.time + Mathf.Max(0.1f, strafeRollInterval);
+        Vector3 steeredStrafeDirection = ResolveSteering(desiredStrafeDirection);
+        if (steeredStrafeDirection.sqrMagnitude <= 0.0001f)
+        {
+            return;
+        }
 
+        strafeMover.BeginStrafe(steeredStrafeDirection.normalized * speed, Mathf.Max(0.1f, thinkInterval * 2f));
+    }
+
+    private Vector3 ResolveOrbitWeaveDirection(Vector3 targetDirection)
+    {
+        if (Time.time < _nextOrbitWeaveRerollAt && _orbitWeaveDirection.sqrMagnitude > 0.0001f)
+        {
+            return _orbitWeaveDirection;
+        }
+
+        _nextOrbitWeaveRerollAt = Time.time + Mathf.Max(0.1f, orbitWeaveRerollInterval > 0f ? orbitWeaveRerollInterval : strafeRollInterval);
         Vector3 horizontalTangent = Vector3.Cross(Vector3.up, targetDirection);
         if (horizontalTangent.sqrMagnitude <= 0.0001f)
         {
@@ -484,7 +604,8 @@ public class DuelistEnemyBrain3D : MonoBehaviour
         }
         if (horizontalTangent.sqrMagnitude <= 0.0001f)
         {
-            return;
+            _orbitWeaveDirection = Vector3.zero;
+            return _orbitWeaveDirection;
         }
 
         horizontalTangent.Normalize();
@@ -497,7 +618,8 @@ public class DuelistEnemyBrain3D : MonoBehaviour
             strafeDir = horizontalTangent * lateralSign;
         }
 
-        strafeMover.BeginStrafe(strafeDir.normalized * orbitStrafeSpeed, Mathf.Max(0.1f, strafeRollInterval));
+        _orbitWeaveDirection = strafeDir.normalized;
+        return _orbitWeaveDirection;
     }
 
     private void PickWeaponAndFire(Entity3D target, Vector3 targetDirection, float distanceToTarget)
@@ -511,11 +633,7 @@ public class DuelistEnemyBrain3D : MonoBehaviour
         DuelistWeaponChoice choice = ResolveWeaponChoice(projectileScore, missileScore, beamScore);
         if (choice == DuelistWeaponChoice.None)
         {
-            // No weapon valid this tick; if a beam was active but it's no longer the pick, stop it.
-            if (_beamActive && _activeBeamSlot == DuelistWeaponChoice.Beam)
-            {
-                StopBeam();
-            }
+            StopBeam();
             return;
         }
 
@@ -541,7 +659,7 @@ public class DuelistEnemyBrain3D : MonoBehaviour
 
         if (logDecisions)
         {
-            Debug.Log($"[{nameof(DuelistEnemyBrain3D)}] {name} pick={choice} dist={distanceToTarget:F1} aim={forwardAimAngle:F1} fired={fired} (P={projectileScore:F2} M={missileScore:F2} B={beamScore:F2})", this);
+            Debug.Log($"[{nameof(DuelistEnemyBrain3D)}] {name} pick={choice} commitUntil={_weaponCommitEndsAt:F2} dist={distanceToTarget:F1} aim={forwardAimAngle:F1} fired={fired} (P={projectileScore:F2} M={missileScore:F2} B={beamScore:F2})", this);
         }
     }
 
@@ -612,6 +730,14 @@ public class DuelistEnemyBrain3D : MonoBehaviour
 
     private DuelistWeaponChoice ResolveWeaponChoice(float projectileScore, float missileScore, float beamScore)
     {
+        bool commitActive = _committedWeaponChoice != DuelistWeaponChoice.None && Time.time < _weaponCommitEndsAt;
+        if (commitActive)
+        {
+            return HasScoreForChoice(_committedWeaponChoice, projectileScore, missileScore, beamScore)
+                ? _committedWeaponChoice
+                : DuelistWeaponChoice.None;
+        }
+
         int validCount = 0;
         if (projectileScore > 0f) validCount++;
         if (missileScore > 0f) validCount++;
@@ -619,6 +745,8 @@ public class DuelistEnemyBrain3D : MonoBehaviour
 
         if (validCount == 0)
         {
+            _committedWeaponChoice = DuelistWeaponChoice.None;
+            _weaponCommitEndsAt = 0f;
             return DuelistWeaponChoice.None;
         }
 
@@ -626,9 +754,9 @@ public class DuelistEnemyBrain3D : MonoBehaviour
         {
             int pick = Random.Range(0, validCount);
             int index = 0;
-            if (projectileScore > 0f) { if (index == pick) return DuelistWeaponChoice.Projectile; index++; }
-            if (missileScore > 0f) { if (index == pick) return DuelistWeaponChoice.Missile; index++; }
-            if (beamScore > 0f) { if (index == pick) return DuelistWeaponChoice.Beam; }
+            if (projectileScore > 0f) { if (index == pick) return CommitWeaponChoice(DuelistWeaponChoice.Projectile); index++; }
+            if (missileScore > 0f) { if (index == pick) return CommitWeaponChoice(DuelistWeaponChoice.Missile); index++; }
+            if (beamScore > 0f) { if (index == pick) return CommitWeaponChoice(DuelistWeaponChoice.Beam); }
         }
 
         DuelistWeaponChoice best = DuelistWeaponChoice.None;
@@ -636,7 +764,32 @@ public class DuelistEnemyBrain3D : MonoBehaviour
         if (projectileScore > bestScore) { bestScore = projectileScore; best = DuelistWeaponChoice.Projectile; }
         if (missileScore > bestScore) { bestScore = missileScore; best = DuelistWeaponChoice.Missile; }
         if (beamScore > bestScore) { bestScore = beamScore; best = DuelistWeaponChoice.Beam; }
-        return best;
+        return CommitWeaponChoice(best);
+    }
+
+    private DuelistWeaponChoice CommitWeaponChoice(DuelistWeaponChoice choice)
+    {
+        if (choice == DuelistWeaponChoice.None)
+        {
+            _committedWeaponChoice = DuelistWeaponChoice.None;
+            _weaponCommitEndsAt = 0f;
+            return DuelistWeaponChoice.None;
+        }
+
+        _committedWeaponChoice = choice;
+        _weaponCommitEndsAt = Time.time + NormalizeWeaponCommitDuration(weaponCommitDuration);
+        return choice;
+    }
+
+    private static bool HasScoreForChoice(DuelistWeaponChoice choice, float projectileScore, float missileScore, float beamScore)
+    {
+        return choice switch
+        {
+            DuelistWeaponChoice.Projectile => projectileScore > 0f,
+            DuelistWeaponChoice.Missile => missileScore > 0f,
+            DuelistWeaponChoice.Beam => beamScore > 0f,
+            _ => false
+        };
     }
 
     private bool TryFireProjectileWeapon(EnemyProjectileWeaponBase3D weapon, Vector3 targetDirection)
@@ -730,7 +883,6 @@ public class DuelistEnemyBrain3D : MonoBehaviour
         }
 
         _beamActive = true;
-        _activeBeamSlot = DuelistWeaponChoice.Beam;
     }
 
     private void StopBeam()
@@ -743,7 +895,6 @@ public class DuelistEnemyBrain3D : MonoBehaviour
         if (beamWeapon == null)
         {
             _beamActive = false;
-            _activeBeamSlot = DuelistWeaponChoice.None;
             return;
         }
 
@@ -757,7 +908,6 @@ public class DuelistEnemyBrain3D : MonoBehaviour
         }
 
         _beamActive = false;
-        _activeBeamSlot = DuelistWeaponChoice.None;
     }
 
     // ---- Threat scan + dodge ----
@@ -865,9 +1015,10 @@ public class DuelistEnemyBrain3D : MonoBehaviour
         }
 
         strafeMover.BeginStrafe(dodgeDir.normalized * dodgeSpeed, Mathf.Max(0.05f, dodgeDuration));
-        _nextDodgeAllowedAt = Time.time + Mathf.Max(0f, dodgeCooldown) + dodgeDuration;
-        _suppressFireUntil = Time.time + dodgeDuration;
-        _nextStrafeRollAt = _nextDodgeAllowedAt;
+        _dodgeStrafeEndsAt = Time.time + Mathf.Max(0.05f, dodgeDuration);
+        _nextDodgeAllowedAt = _dodgeStrafeEndsAt + Mathf.Max(0f, dodgeCooldown);
+        _suppressFireUntil = _dodgeStrafeEndsAt;
+        _nextOrbitWeaveRerollAt = _dodgeStrafeEndsAt;
 
         if (logDecisions)
         {
@@ -877,11 +1028,13 @@ public class DuelistEnemyBrain3D : MonoBehaviour
 
     // ---- Perch picking ----
 
-    private Vector3 ChooseNextPerch(Entity3D target)
+    private void ChooseNextPerch(Entity3D target)
     {
         if (target == null)
         {
-            return transform.position + transform.forward * preferredRangeMin;
+            _perchDirectionFromTarget = transform.forward.sqrMagnitude > 0.0001f ? transform.forward.normalized : Vector3.forward;
+            _perchRange = Mathf.Lerp(preferredRangeMin, preferredRangeMax, 0.5f);
+            return;
         }
 
         Vector3 targetPosition = target.transform.position;
@@ -944,8 +1097,20 @@ public class DuelistEnemyBrain3D : MonoBehaviour
         }
 
         _perchSequence++;
-        float range = Mathf.Lerp(minRange, maxRange, Random.value);
-        return targetPosition + bestDir * range;
+        _perchDirectionFromTarget = bestDir;
+        _perchRange = Mathf.Lerp(minRange, maxRange, Random.value);
+    }
+
+    private Vector3 ResolveCurrentPerchPosition(Entity3D target)
+    {
+        Vector3 direction = _perchDirectionFromTarget.sqrMagnitude > 0.0001f
+            ? _perchDirectionFromTarget.normalized
+            : transform.forward.sqrMagnitude > 0.0001f ? transform.forward.normalized : Vector3.forward;
+        float minRange = Mathf.Max(0f, preferredRangeMin);
+        float maxRange = Mathf.Max(minRange + 0.01f, preferredRangeMax);
+        float range = Mathf.Clamp(_perchRange > 0f ? _perchRange : Mathf.Lerp(minRange, maxRange, 0.5f), minRange, maxRange);
+        Vector3 targetPosition = target != null ? target.transform.position : transform.position;
+        return targetPosition + direction * range;
     }
 
     // ---- Misc helpers ----
@@ -972,6 +1137,27 @@ public class DuelistEnemyBrain3D : MonoBehaviour
         }
 
         flightController?.ClearFlightIntent();
+    }
+
+    private void TryFireWhileRepositioning(Entity3D target, Vector3 targetDirection, float distanceToTarget)
+    {
+        if (Time.time < _suppressFireUntil)
+        {
+            StopBeam();
+            return;
+        }
+
+        PickWeaponAndFire(target, targetDirection, distanceToTarget);
+    }
+
+    private bool IsDodgeStrafing()
+    {
+        return Time.time < _dodgeStrafeEndsAt;
+    }
+
+    private static float NormalizeWeaponCommitDuration(float value)
+    {
+        return value > 0f ? Mathf.Max(0.1f, value) : DefaultWeaponCommitDuration;
     }
 
     private Entity3D ResolveTarget()
@@ -1030,9 +1216,10 @@ public class DuelistEnemyBrain3D : MonoBehaviour
 
         if (Application.isPlaying)
         {
+            Vector3 perchPosition = ResolveCurrentPerchPosition(_currentTarget);
             Gizmos.color = Color.magenta;
-            Gizmos.DrawWireSphere(_perchPosition, perchArrivalDistance);
-            Gizmos.DrawLine(transform.position, _perchPosition);
+            Gizmos.DrawWireSphere(perchPosition, perchArrivalDistance);
+            Gizmos.DrawLine(transform.position, perchPosition);
 
             Gizmos.color = Color.yellow;
             Gizmos.DrawWireSphere(transform.position, threatScanRadius);
