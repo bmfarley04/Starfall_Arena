@@ -13,6 +13,11 @@ public class EnemyBalanceProfileApplier3D : MonoBehaviour
         ApplyProfile();
     }
 
+    private void Start()
+    {
+        ApplyProfile();
+    }
+
     public void ApplyProfile()
     {
         if (profile == null)
@@ -23,6 +28,7 @@ public class EnemyBalanceProfileApplier3D : MonoBehaviour
 
         ApplySharedCore();
         ApplyWeapons();
+        profile.ApplyWeaponStats(gameObject);
         profile.ApplyBrainStats(gameObject);
     }
 

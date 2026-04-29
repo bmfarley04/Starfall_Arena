@@ -10891,6 +10891,10 @@ MonoBehaviour:
   flight:
     thrustAcceleration: 40
     maxSpeed: 60
+    precisionThrottleInputThreshold: 0.5
+    precisionThrottleMaxSpeedFraction: 0.25
+    precisionThrottleAccelerationMultiplier: 0.35
+    precisionBrakeDeceleration: 35
     lookInputResponse: 10
     pitchSpeed: 1
     yawSpeed: 1
@@ -11102,6 +11106,9 @@ MonoBehaviour:
   playerInput: {fileID: 1971979917992463640}
   aimAssist: {fileID: 0}
   mouseLookSensitivity: 0.5
+  leftStickForwardThrustInput: 0.35
+  leftStickBrakeInput: 0.6
+  leftStickThrottleDeadZone: 0.15
   dodgeFlickThreshold: 0.55
   dodgeFlickResetThreshold: 0.35
   dodgeFlickMaxVertical: 0.65

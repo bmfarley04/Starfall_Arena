@@ -1,0 +1,1491 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &3571762344471351850
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 6547272081857901519}
+  - component: {fileID: 4955350368264630231}
+  - component: {fileID: 8668150442235299499}
+  - component: {fileID: 2500647499984960304}
+  - component: {fileID: 6511585693592533134}
+  - component: {fileID: 4432109307632493717}
+  - component: {fileID: 7183041902638584638}
+  - component: {fileID: 4085942524718195484}
+  - component: {fileID: 8043257944792450962}
+  - component: {fileID: 5000182719068113219}
+  - component: {fileID: 5382411200022309227}
+  - component: {fileID: 8670701288625461945}
+  - component: {fileID: 3292359935811209606}
+  - component: {fileID: 2517135278298198213}
+  - component: {fileID: 2987330086573494579}
+  - component: {fileID: 755580613249077826}
+  - component: {fileID: 220747767187672308}
+  - component: {fileID: 5791312176970835958}
+  m_Layer: 0
+  m_Name: flamethrowerEnemy
+  m_TagString: Enemy
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &6547272081857901519
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3571762344471351850}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: -20, y: 1.216, z: 100}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 3528335452260008342}
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!54 &4955350368264630231
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3571762344471351850}
+  serializedVersion: 5
+  m_Mass: 1
+  m_LinearDamping: 0
+  m_AngularDamping: 2
+  m_CenterOfMass: {x: 0, y: 0, z: 0}
+  m_InertiaTensor: {x: 1, y: 1, z: 1}
+  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ImplicitCom: 1
+  m_ImplicitTensor: 1
+  m_UseGravity: 0
+  m_IsKinematic: 0
+  m_Interpolate: 1
+  m_Constraints: 0
+  m_CollisionDetection: 2
+--- !u!114 &8668150442235299499
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3571762344471351850}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 97c06a93dd649d54b9c2050d318c0a49, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::FactionMember3D
+  faction: 2
+--- !u!114 &2500647499984960304
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3571762344471351850}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: faa4afacb200cd84b92359dbc98f0002, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShipFlight3D
+  flight:
+    thrustAcceleration: 20
+    maxSpeed: 50
+    precisionThrottleInputThreshold: 0.5
+    precisionThrottleMaxSpeedFraction: 0.25
+    precisionThrottleAccelerationMultiplier: 0.35
+    precisionBrakeDeceleration: 35
+    lookInputResponse: 8
+    pitchSpeed: 1
+    yawSpeed: 1
+    pitchAcceleration: 12
+    pitchDeceleration: 16
+    yawAcceleration: 12
+    yawDeceleration: 16
+    invertY: 0
+    minRotationMultiplierAtMaxSpeed: 0.1
+  flightAssist:
+    frictionDeceleration: 20
+    activeAngularDamping: 2
+    lateralDriftDamping: 18
+    verticalDriftDamping: 16
+    velocityAlignmentStrength: 3
+  inputSourceBehaviour: {fileID: 0}
+  entity: {fileID: 6511585693592533134}
+  frictionEnabled: 1
+  lockToWorldYPlane: 0
+  captureInitialWorldY: 1
+  lockedWorldY: 0
+--- !u!114 &6511585693592533134
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3571762344471351850}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f74a405f7f52c854eb19ffd022e1a06e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Enemy3D
+  maxHealth: 100
+  maxShield: 100
+  shieldController: {fileID: 1599453938776095346}
+  impulseRecoilPitchSensitivity: 1
+  uprightRecoveryEnabled: 1
+  uprightRecoveryDelay: 2.5
+  uprightRecoveryDegreesPerSecond: 90
+  uprightRecoveryInputDeadZone: 0.05
+  weapons:
+  - {fileID: 0}
+  selectedWeaponIndex: 0
+  abilities: []
+  shipFlight: {fileID: 2500647499984960304}
+  shipVisualTilt: {fileID: 5000182719068113219}
+  shipThrusterVfx: {fileID: 4085942524718195484}
+  shipSpeedFx: {fileID: 0}
+  deathEffects: {fileID: 8043257944792450962}
+  aiFlightController: {fileID: 4432109307632493717}
+  factionMember: {fileID: 8668150442235299499}
+  netEnemyMovement: {fileID: 0}
+  netEnemyCombat: {fileID: 0}
+--- !u!114 &4432109307632493717
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3571762344471351850}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 37572cd229e39c843bb1cdd0c9397344, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyAIFlightController3D
+  moveSpeed: 35
+  rotationDegreesPerSecond: 180
+  moveWhenFacingAngle: 12
+  useGravity: 0
+  lockToWorldYPlane: 0
+  captureInitialWorldY: 1
+  lockedWorldY: 0
+--- !u!114 &7183041902638584638
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3571762344471351850}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e99321fabefad424ab4794ab9a9ecd45, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyTargetSensor3D
+  targetFaction: 1
+  detectionRange: 5000
+  refreshInterval: 0.15
+--- !u!114 &4085942524718195484
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3571762344471351850}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 59972fd2459f248448688b0421727b01, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShipThrusterVfx3D
+  shipFlight: {fileID: 2500647499984960304}
+  enemyFlight: {fileID: 4432109307632493717}
+  thrusterEffects:
+    thrusters:
+    - {fileID: 5527790574981976685}
+    rampTime: 0.1
+    invertColors: 0
+--- !u!114 &8043257944792450962
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3571762344471351850}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7db2445f66bd4ee28f0d35ef2674cf0a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DeathEffects3D
+  explosion:
+    prefab: {fileID: 100014, guid: d96258cdf841f5e4d8af97dce9661d8c, type: 3}
+    scale: 2
+    sound: {fileID: 11400000, guid: 52e8c58e387b89849affa74c78d6d899, type: 2}
+  scatterRoot: {fileID: 3528335452260008342}
+  scatterChance: 1
+--- !u!114 &5000182719068113219
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3571762344471351850}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9e8f7219683416a4e967c145de82d06f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShipVisualTilt3D
+  entity: {fileID: 6511585693592533134}
+  shipFlight: {fileID: 2500647499984960304}
+  visualEffects:
+    visualModel: {fileID: 3528335452260008342}
+    maxBankAngle: 75
+    bankSensitivity: 20
+    steeringInputBankSensitivity: 24
+    bankSmoothing: 8
+    bankReturnSmoothing: 5
+    maxPitchLeanAngle: 40
+    pitchLeanSensitivity: 12
+    steeringInputPitchSensitivity: 14
+    pitchLeanSmoothing: 8
+    pitchLeanReturnSmoothing: 5
+    forwardAccelPitchSensitivity: 0.08
+    lateralAccelBankSensitivity: 0.1
+    lateralDriftBankSensitivity: 0.5
+    verticalDriftPitchSensitivity: 0.35
+  barrelRoll:
+    degrees: 360
+    durationMultiplier: 1.1
+    minDuration: 0.18
+    entryBankAngle: 28
+--- !u!114 &5382411200022309227
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3571762344471351850}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bfab71f04e15488aa75cd8ce1856c6d3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyBalanceProfileApplier3D
+  profile: {fileID: 11400000, guid: e04ba478dec4425a8e5d3f5602801d69, type: 2}
+--- !u!114 &8670701288625461945
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3571762344471351850}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bd24cd61985b47f3ba6857689d78dcfa, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyPatrol3D
+  targetSensor: {fileID: 7183041902638584638}
+  flightController: {fileID: 4432109307632493717}
+  obstacleAvoidance: {fileID: 0}
+  separation: {fileID: 0}
+  fallbackArenaSize: {x: 5000, y: 5000, z: 5000}
+  fallbackArenaCenter: {x: 0, y: 0, z: 0}
+  edgeMargin: 80
+  minLegDistance: 120
+  arrivalDistance: 30
+  waypointTimeout: 12
+  forwardBias: 0.35
+  patrolSpeedScale: 0.8
+  useSeparation: 0
+  useObstacleAvoidance: 0
+  drawGizmos: 1
+--- !u!114 &3292359935811209606
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3571762344471351850}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
+  GlobalObjectIdHash: 1830736271
+  InScenePlacedSourceGlobalObjectIdHash: 0
+  DeferredDespawnTick: 0
+  Ownership: 1
+  AlwaysReplicateAsRoot: 0
+  SynchronizeTransform: 1
+  ActiveSceneSynchronization: 0
+  SceneMigrationSynchronization: 1
+  SpawnWithObservers: 1
+  DontDestroyWithOwner: 0
+  AutoObjectParentSync: 1
+  SyncOwnerTransformWhenParented: 1
+  AllowOwnerToParent: 0
+--- !u!114 &2517135278298198213
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3571762344471351850}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b3a5660c5a7da184e91f5a45aeea7f87, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyFlamethrowerWeapon3D
+  targetFaction: 1
+  targetTag: 
+  damageMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  damagePerSecond: 10
+  range: 32
+  halfAngleDegrees: 10
+  damageTickInterval: 0.15
+  burstDuration: 1.5
+  cooldown: 3
+  alignDamageToVisualDrift: 0
+  driftVelocityScale: 1
+  visualFlameSpeed: 42
+  flameVisualPrefab: {fileID: 100002, guid: d4a9a0cd2414ba84a99585615b2ad426, type: 3}
+  muzzle: {fileID: 2849868683790798276}
+  visualLocalPosition: {x: 0, y: 0, z: 0}
+  visualLocalEulerAngles: {x: 0, y: 0, z: 0}
+  visualLocalScale: {x: 3, y: 3, z: 3}
+  drawConeGizmo: 1
+--- !u!114 &2987330086573494579
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3571762344471351850}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3bdadbcbaf7867d4180442aeac114aa1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyStrafeMover3D
+  maxStrafeSpeed: 50
+  combineWithFlightThrust: 1
+  lockToWorldYPlane: 0
+--- !u!114 &755580613249077826
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3571762344471351850}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9df87058ef51a474ab07e188d64a81b5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::FlamethrowerEnemyBrain3D
+  flamethrowerWeapon: {fileID: 2517135278298198213}
+  chargeAttack: {fileID: 5791312176970835958}
+  flightController: {fileID: 4432109307632493717}
+  targetSensor: {fileID: 7183041902638584638}
+  obstacleAvoidance: {fileID: 0}
+  separation: {fileID: 0}
+  strafeMover: {fileID: 2987330086573494579}
+  patrol: {fileID: 8670701288625461945}
+  netEnemyCombat: {fileID: 0}
+  thinkInterval: 0.05
+  tooCloseRetreatDistance: 14
+  preferredRangeMin: 20
+  preferredRangeMax: 30
+  fullApproachDistance: 55
+  retreatSpeedScale: 0.75
+  flameOrbitStrafeSpeed: 10
+  flameOrbitVerticalBias: 0.12
+  flameOrbitDirectionChangeInterval: 3
+  useSeparation: 0
+  useObstacleAvoidance: 0
+  aimToleranceDegrees: 22
+--- !u!114 &220747767187672308
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3571762344471351850}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0d8da0a5b0344974a15294104d82b791, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectileChargeTelegraph3D
+  chargeRenderers:
+  - {fileID: 442818207563395678}
+  - {fileID: 1098354999868210683}
+  - {fileID: 6256928994839744670}
+  - {fileID: 5672751521317445708}
+  - {fileID: 2583052648467516801}
+  - {fileID: 2808197810357301048}
+  - {fileID: 6167095173411360634}
+  - {fileID: 8052713462546573921}
+  - {fileID: 5662735634425032338}
+  - {fileID: 6805158789820141369}
+  - {fileID: 904447619242208306}
+  - {fileID: 6266745548465044131}
+  - {fileID: 1598256952017268333}
+  - {fileID: 108402457382898657}
+  - {fileID: 2731512642241205192}
+  autoCollectChildRenderers: 1
+  emissionColorProperty: _EmissionColor
+  chargeEmissionColor: {r: 1, g: 0.35, b: 0.08, a: 1}
+  useChargeColorOverride: 0
+  addToSharedMaterialEmission: 0
+  onlyAffectAuthoredEmissionRenderers: 1
+  idleEmissionIntensity: 0.5
+  maxChargeEmissionIntensity: 5
+  chargeIntensityCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  chargeVfxRoot: {fileID: 0}
+  chargeLight: {fileID: 0}
+  chargeLightMaxAddedIntensity: 5
+  fadeOutDuration: 0.12
+--- !u!114 &5791312176970835958
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3571762344471351850}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7841db8f78d140e0b72c059760973beb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyProjectileChargeAttack3D
+  ShowTopMostFoldoutHeaderGroup: 1
+  weaponType: 2
+  projectileWeaponComponent: {fileID: 0}
+  beamWeapon: {fileID: 0}
+  flamethrowerWeapon: {fileID: 2517135278298198213}
+  netEnemyCombat: {fileID: 0}
+  chargeTelegraph: {fileID: 220747767187672308}
+  chargeDuration: 1
+  stopTelegraphOnFire: 1
+--- !u!1 &4023685652884570755
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2849868683790798276}
+  m_Layer: 0
+  m_Name: muzzleTransform
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2849868683790798276
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4023685652884570755}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: -0.508, z: 5.461}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 3528335452260008342}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &8503573965255841390
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 8159206887906247393}
+  - component: {fileID: 750955170008005754}
+  - component: {fileID: 4438972450300063028}
+  - component: {fileID: 1599453938776095346}
+  m_Layer: 0
+  m_Name: Shield
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &8159206887906247393
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8503573965255841390}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 3528335452260008342}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!33 &750955170008005754
+MeshFilter:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8503573965255841390}
+  m_Mesh: {fileID: 6404307931228266362, guid: 36c3ba6f85797f342ba61c81d0fd9f6c, type: 3}
+--- !u!23 &4438972450300063028
+MeshRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8503573965255841390}
+  m_Enabled: 1
+  m_CastShadows: 1
+  m_ReceiveShadows: 1
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: -876546973899608171, guid: 44b22ce060cb642bc9f24b0339cd6723, type: 3}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 3
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_MaskInteraction: 0
+  m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &1599453938776095346
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8503573965255841390}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6c69aa69e566ed9479d0c430c26157d5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShieldController
+  shieldColor: {r: 1, g: 0.29159597, b: 0, a: 1}
+  inflationAmount: 0.1
+  shieldVisibleDuration: 0.6
+  rippleDuration: 0.5
+  regenMaxAlpha: 0.2
+  regenPulseSpeed: 3
+  breakDuration: 0.5
+  autoCalculateSize: 1
+  maxBreakRadius: 1.5
+  alwaysOn: 0
+  alwaysOnAlpha: 0.3
+--- !u!1001 &893665815208762220
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 3528335452260008342}
+    m_Modifications:
+    - target: {fileID: 100000, guid: d4a9a0cd2414ba84a99585615b2ad426, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 100002, guid: d4a9a0cd2414ba84a99585615b2ad426, type: 3}
+      propertyPath: m_Name
+      value: 3d_flamethrower
+      objectReference: {fileID: 0}
+    - target: {fileID: 100002, guid: d4a9a0cd2414ba84a99585615b2ad426, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: d4a9a0cd2414ba84a99585615b2ad426, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400002, guid: d4a9a0cd2414ba84a99585615b2ad426, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 400002, guid: d4a9a0cd2414ba84a99585615b2ad426, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 400002, guid: d4a9a0cd2414ba84a99585615b2ad426, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 400002, guid: d4a9a0cd2414ba84a99585615b2ad426, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400002, guid: d4a9a0cd2414ba84a99585615b2ad426, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400002, guid: d4a9a0cd2414ba84a99585615b2ad426, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400002, guid: d4a9a0cd2414ba84a99585615b2ad426, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 400002, guid: d4a9a0cd2414ba84a99585615b2ad426, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400002, guid: d4a9a0cd2414ba84a99585615b2ad426, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400002, guid: d4a9a0cd2414ba84a99585615b2ad426, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400002, guid: d4a9a0cd2414ba84a99585615b2ad426, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400002, guid: d4a9a0cd2414ba84a99585615b2ad426, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400002, guid: d4a9a0cd2414ba84a99585615b2ad426, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 19800002, guid: d4a9a0cd2414ba84a99585615b2ad426, type: 3}
+      propertyPath: InheritVelocityModule.enabled
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: d4a9a0cd2414ba84a99585615b2ad426, type: 3}
+--- !u!4 &893665815208624622 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 400002, guid: d4a9a0cd2414ba84a99585615b2ad426, type: 3}
+  m_PrefabInstance: {fileID: 893665815208762220}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1001 &910021185356444846
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 3528335452260008342}
+    m_Modifications:
+    - target: {fileID: 1622652801011247812, guid: 433d19638a778ce4eabe1f05ad84a3c1, type: 3}
+      propertyPath: m_Name
+      value: thruster_flames
+      objectReference: {fileID: 0}
+    - target: {fileID: 1622652801011247812, guid: 433d19638a778ce4eabe1f05ad84a3c1, type: 3}
+      propertyPath: m_Layer
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4618339506310719171, guid: 433d19638a778ce4eabe1f05ad84a3c1, type: 3}
+      propertyPath: simulationSpeed
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 4618339506310719171, guid: 433d19638a778ce4eabe1f05ad84a3c1, type: 3}
+      propertyPath: InitialModule.startSize.scalar
+      value: 1.7
+      objectReference: {fileID: 0}
+    - target: {fileID: 4618339506310719171, guid: 433d19638a778ce4eabe1f05ad84a3c1, type: 3}
+      propertyPath: InitialModule.startSpeed.scalar
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 4618339506310719171, guid: 433d19638a778ce4eabe1f05ad84a3c1, type: 3}
+      propertyPath: EmissionModule.rateOverTime.scalar
+      value: 30
+      objectReference: {fileID: 0}
+    - target: {fileID: 4618339506310719171, guid: 433d19638a778ce4eabe1f05ad84a3c1, type: 3}
+      propertyPath: InitialModule.startLifetime.scalar
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 4618339506310719171, guid: 433d19638a778ce4eabe1f05ad84a3c1, type: 3}
+      propertyPath: InitialModule.startColor.maxColor.b
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4618339506310719171, guid: 433d19638a778ce4eabe1f05ad84a3c1, type: 3}
+      propertyPath: InitialModule.startColor.maxColor.g
+      value: 0.14449657
+      objectReference: {fileID: 0}
+    - target: {fileID: 4618339506310719171, guid: 433d19638a778ce4eabe1f05ad84a3c1, type: 3}
+      propertyPath: InitialModule.startColor.maxColor.r
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7597733967398337195, guid: 433d19638a778ce4eabe1f05ad84a3c1, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7597733967398337195, guid: 433d19638a778ce4eabe1f05ad84a3c1, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7597733967398337195, guid: 433d19638a778ce4eabe1f05ad84a3c1, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7597733967398337195, guid: 433d19638a778ce4eabe1f05ad84a3c1, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7597733967398337195, guid: 433d19638a778ce4eabe1f05ad84a3c1, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7597733967398337195, guid: 433d19638a778ce4eabe1f05ad84a3c1, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -0.01
+      objectReference: {fileID: 0}
+    - target: {fileID: 7597733967398337195, guid: 433d19638a778ce4eabe1f05ad84a3c1, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7597733967398337195, guid: 433d19638a778ce4eabe1f05ad84a3c1, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7597733967398337195, guid: 433d19638a778ce4eabe1f05ad84a3c1, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7597733967398337195, guid: 433d19638a778ce4eabe1f05ad84a3c1, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7597733967398337195, guid: 433d19638a778ce4eabe1f05ad84a3c1, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7597733967398337195, guid: 433d19638a778ce4eabe1f05ad84a3c1, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 180
+      objectReference: {fileID: 0}
+    - target: {fileID: 7597733967398337195, guid: 433d19638a778ce4eabe1f05ad84a3c1, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 433d19638a778ce4eabe1f05ad84a3c1, type: 3}
+--- !u!198 &5527790574981976685 stripped
+ParticleSystem:
+  m_CorrespondingSourceObject: {fileID: 4618339506310719171, guid: 433d19638a778ce4eabe1f05ad84a3c1, type: 3}
+  m_PrefabInstance: {fileID: 910021185356444846}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &7336814299151748613 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 7597733967398337195, guid: 433d19638a778ce4eabe1f05ad84a3c1, type: 3}
+  m_PrefabInstance: {fileID: 910021185356444846}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1001 &3528968100294479960
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 6547272081857901519}
+    m_Modifications:
+    - target: {fileID: 1632332229003008, guid: 3f2cae45a3d451047ae48b7d443e885e, type: 3}
+      propertyPath: m_Name
+      value: ProtonLegacy8
+      objectReference: {fileID: 0}
+    - target: {fileID: 4015057195028942, guid: 3f2cae45a3d451047ae48b7d443e885e, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.3
+      objectReference: {fileID: 0}
+    - target: {fileID: 4015057195028942, guid: 3f2cae45a3d451047ae48b7d443e885e, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.3
+      objectReference: {fileID: 0}
+    - target: {fileID: 4015057195028942, guid: 3f2cae45a3d451047ae48b7d443e885e, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.3
+      objectReference: {fileID: 0}
+    - target: {fileID: 4015057195028942, guid: 3f2cae45a3d451047ae48b7d443e885e, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4015057195028942, guid: 3f2cae45a3d451047ae48b7d443e885e, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4015057195028942, guid: 3f2cae45a3d451047ae48b7d443e885e, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4015057195028942, guid: 3f2cae45a3d451047ae48b7d443e885e, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4015057195028942, guid: 3f2cae45a3d451047ae48b7d443e885e, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4015057195028942, guid: 3f2cae45a3d451047ae48b7d443e885e, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4015057195028942, guid: 3f2cae45a3d451047ae48b7d443e885e, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4015057195028942, guid: 3f2cae45a3d451047ae48b7d443e885e, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4015057195028942, guid: 3f2cae45a3d451047ae48b7d443e885e, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4015057195028942, guid: 3f2cae45a3d451047ae48b7d443e885e, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects:
+    - targetCorrespondingSourceObject: {fileID: 4015057195028942, guid: 3f2cae45a3d451047ae48b7d443e885e, type: 3}
+      insertIndex: 0
+      addedObject: {fileID: 893665815208624622}
+    - targetCorrespondingSourceObject: {fileID: 4015057195028942, guid: 3f2cae45a3d451047ae48b7d443e885e, type: 3}
+      insertIndex: 1
+      addedObject: {fileID: 7336814299151748613}
+    - targetCorrespondingSourceObject: {fileID: 4015057195028942, guid: 3f2cae45a3d451047ae48b7d443e885e, type: 3}
+      insertIndex: 2
+      addedObject: {fileID: 2849868683790798276}
+    - targetCorrespondingSourceObject: {fileID: 4015057195028942, guid: 3f2cae45a3d451047ae48b7d443e885e, type: 3}
+      insertIndex: 3
+      addedObject: {fileID: 8159206887906247393}
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 3930542730476155312, guid: 3f2cae45a3d451047ae48b7d443e885e, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1032225151760514556}
+    - targetCorrespondingSourceObject: {fileID: 4581645247985893105, guid: 3f2cae45a3d451047ae48b7d443e885e, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1674937479040131233}
+    - targetCorrespondingSourceObject: {fileID: 7384754840356306464, guid: 3f2cae45a3d451047ae48b7d443e885e, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8340682632125983413}
+    - targetCorrespondingSourceObject: {fileID: 9085820728676552434, guid: 3f2cae45a3d451047ae48b7d443e885e, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 5542423106798590927}
+    - targetCorrespondingSourceObject: {fileID: 1401451588484464997, guid: 3f2cae45a3d451047ae48b7d443e885e, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 270820820085224776}
+    - targetCorrespondingSourceObject: {fileID: 1609015974041698356, guid: 3f2cae45a3d451047ae48b7d443e885e, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8971214962129957396}
+    - targetCorrespondingSourceObject: {fileID: 7294480756524001236, guid: 3f2cae45a3d451047ae48b7d443e885e, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 684734620964333202}
+    - targetCorrespondingSourceObject: {fileID: 6876144882706346107, guid: 3f2cae45a3d451047ae48b7d443e885e, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 198232393511967460}
+    - targetCorrespondingSourceObject: {fileID: 9095601513691444360, guid: 3f2cae45a3d451047ae48b7d443e885e, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 4346149551293375567}
+    - targetCorrespondingSourceObject: {fileID: 7988473906452731171, guid: 3f2cae45a3d451047ae48b7d443e885e, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6205419416149222214}
+    - targetCorrespondingSourceObject: {fileID: 4332809450058282536, guid: 3f2cae45a3d451047ae48b7d443e885e, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6993488979187718892}
+    - targetCorrespondingSourceObject: {fileID: 7375760067347882169, guid: 3f2cae45a3d451047ae48b7d443e885e, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6924757785251628405}
+    - targetCorrespondingSourceObject: {fileID: 2774819175305409655, guid: 3f2cae45a3d451047ae48b7d443e885e, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 4325529856489401965}
+    - targetCorrespondingSourceObject: {fileID: 3542116561401040669, guid: 3f2cae45a3d451047ae48b7d443e885e, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 4274196098346382078}
+    - targetCorrespondingSourceObject: {fileID: 1531636248853518132, guid: 3f2cae45a3d451047ae48b7d443e885e, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8614912751138717673}
+  m_SourcePrefab: {fileID: 100100000, guid: 3f2cae45a3d451047ae48b7d443e885e, type: 3}
+--- !u!23 &108402457382898657 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 3564729671342529465, guid: 3f2cae45a3d451047ae48b7d443e885e, type: 3}
+  m_PrefabInstance: {fileID: 3528968100294479960}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &130967180164112197 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 3542116561401040669, guid: 3f2cae45a3d451047ae48b7d443e885e, type: 3}
+  m_PrefabInstance: {fileID: 3528968100294479960}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &4274196098346382078
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 130967180164112197}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c13462e1caaf4d01a0b9477f3670afd1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShipPartScatter3D
+  minScatterForce: 5
+  maxScatterForce: 10
+  horizontalScatterAngle: 45
+  verticalScatterAngle: 20
+  upwardVelocityBias: 1
+  minAngularVelocity: 90
+  maxAngularVelocity: 360
+  lifetime: 8
+  shrinkStartTime: 0.95
+  mass: 0.5
+  linearDamping: 0.5
+  angularDamping: 0.3
+--- !u!23 &442818207563395678 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 3953136941059858950, guid: 3f2cae45a3d451047ae48b7d443e885e, type: 3}
+  m_PrefabInstance: {fileID: 3528968100294479960}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &465416691631432168 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 3930542730476155312, guid: 3f2cae45a3d451047ae48b7d443e885e, type: 3}
+  m_PrefabInstance: {fileID: 3528968100294479960}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1032225151760514556
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 465416691631432168}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c13462e1caaf4d01a0b9477f3670afd1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShipPartScatter3D
+  minScatterForce: 5
+  maxScatterForce: 10
+  horizontalScatterAngle: 45
+  verticalScatterAngle: 20
+  upwardVelocityBias: 1
+  minAngularVelocity: 90
+  maxAngularVelocity: 360
+  lifetime: 8
+  shrinkStartTime: 0.95
+  mass: 0.5
+  linearDamping: 0.5
+  angularDamping: 0.3
+--- !u!23 &904447619242208306 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 4356203064674090090, guid: 3f2cae45a3d451047ae48b7d443e885e, type: 3}
+  m_PrefabInstance: {fileID: 3528968100294479960}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &925580945033078384 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 4332809450058282536, guid: 3f2cae45a3d451047ae48b7d443e885e, type: 3}
+  m_PrefabInstance: {fileID: 3528968100294479960}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &6993488979187718892
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 925580945033078384}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c13462e1caaf4d01a0b9477f3670afd1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShipPartScatter3D
+  minScatterForce: 5
+  maxScatterForce: 10
+  horizontalScatterAngle: 45
+  verticalScatterAngle: 20
+  upwardVelocityBias: 1
+  minAngularVelocity: 90
+  maxAngularVelocity: 360
+  lifetime: 8
+  shrinkStartTime: 0.95
+  mass: 0.5
+  linearDamping: 0.5
+  angularDamping: 0.3
+--- !u!23 &1098354999868210683 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 4595727464765320611, guid: 3f2cae45a3d451047ae48b7d443e885e, type: 3}
+  m_PrefabInstance: {fileID: 3528968100294479960}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &1111315839332839081 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 4581645247985893105, guid: 3f2cae45a3d451047ae48b7d443e885e, type: 3}
+  m_PrefabInstance: {fileID: 3528968100294479960}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1674937479040131233
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1111315839332839081}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c13462e1caaf4d01a0b9477f3670afd1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShipPartScatter3D
+  minScatterForce: 5
+  maxScatterForce: 10
+  horizontalScatterAngle: 45
+  verticalScatterAngle: 20
+  upwardVelocityBias: 1
+  minAngularVelocity: 90
+  maxAngularVelocity: 360
+  lifetime: 8
+  shrinkStartTime: 0.95
+  mass: 0.5
+  linearDamping: 0.5
+  angularDamping: 0.3
+--- !u!23 &1598256952017268333 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 2798793589494480437, guid: 3f2cae45a3d451047ae48b7d443e885e, type: 3}
+  m_PrefabInstance: {fileID: 3528968100294479960}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &1619970527625585711 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 2774819175305409655, guid: 3f2cae45a3d451047ae48b7d443e885e, type: 3}
+  m_PrefabInstance: {fileID: 3528968100294479960}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &4325529856489401965
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1619970527625585711}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c13462e1caaf4d01a0b9477f3670afd1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShipPartScatter3D
+  minScatterForce: 5
+  maxScatterForce: 10
+  horizontalScatterAngle: 45
+  verticalScatterAngle: 20
+  upwardVelocityBias: 1
+  minAngularVelocity: 90
+  maxAngularVelocity: 360
+  lifetime: 8
+  shrinkStartTime: 0.95
+  mass: 0.5
+  linearDamping: 0.5
+  angularDamping: 0.3
+--- !u!1 &2561313442258145597 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 1401451588484464997, guid: 3f2cae45a3d451047ae48b7d443e885e, type: 3}
+  m_PrefabInstance: {fileID: 3528968100294479960}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &270820820085224776
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2561313442258145597}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c13462e1caaf4d01a0b9477f3670afd1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShipPartScatter3D
+  minScatterForce: 5
+  maxScatterForce: 10
+  horizontalScatterAngle: 45
+  verticalScatterAngle: 20
+  upwardVelocityBias: 1
+  minAngularVelocity: 90
+  maxAngularVelocity: 360
+  lifetime: 8
+  shrinkStartTime: 0.95
+  mass: 0.5
+  linearDamping: 0.5
+  angularDamping: 0.3
+--- !u!23 &2583052648467516801 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 1378578092149513689, guid: 3f2cae45a3d451047ae48b7d443e885e, type: 3}
+  m_PrefabInstance: {fileID: 3528968100294479960}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &2717956217643878252 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 1531636248853518132, guid: 3f2cae45a3d451047ae48b7d443e885e, type: 3}
+  m_PrefabInstance: {fileID: 3528968100294479960}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &8614912751138717673
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2717956217643878252}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c13462e1caaf4d01a0b9477f3670afd1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShipPartScatter3D
+  minScatterForce: 5
+  maxScatterForce: 10
+  horizontalScatterAngle: 45
+  verticalScatterAngle: 20
+  upwardVelocityBias: 1
+  minAngularVelocity: 90
+  maxAngularVelocity: 360
+  lifetime: 8
+  shrinkStartTime: 0.95
+  mass: 0.5
+  linearDamping: 0.5
+  angularDamping: 0.3
+--- !u!23 &2731512642241205192 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 1518031437230130064, guid: 3f2cae45a3d451047ae48b7d443e885e, type: 3}
+  m_PrefabInstance: {fileID: 3528968100294479960}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &2786943439543177324 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 1609015974041698356, guid: 3f2cae45a3d451047ae48b7d443e885e, type: 3}
+  m_PrefabInstance: {fileID: 3528968100294479960}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &8971214962129957396
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2786943439543177324}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c13462e1caaf4d01a0b9477f3670afd1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShipPartScatter3D
+  minScatterForce: 5
+  maxScatterForce: 10
+  horizontalScatterAngle: 45
+  verticalScatterAngle: 20
+  upwardVelocityBias: 1
+  minAngularVelocity: 90
+  maxAngularVelocity: 360
+  lifetime: 8
+  shrinkStartTime: 0.95
+  mass: 0.5
+  linearDamping: 0.5
+  angularDamping: 0.3
+--- !u!23 &2808197810357301048 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 1585778124994166624, guid: 3f2cae45a3d451047ae48b7d443e885e, type: 3}
+  m_PrefabInstance: {fileID: 3528968100294479960}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &3528335452260008342 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 4015057195028942, guid: 3f2cae45a3d451047ae48b7d443e885e, type: 3}
+  m_PrefabInstance: {fileID: 3528968100294479960}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &5662735634425032338 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 9110638854702202570, guid: 3f2cae45a3d451047ae48b7d443e885e, type: 3}
+  m_PrefabInstance: {fileID: 3528968100294479960}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &5672751521317445708 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 9097483151421354004, guid: 3f2cae45a3d451047ae48b7d443e885e, type: 3}
+  m_PrefabInstance: {fileID: 3528968100294479960}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &5675512622186341584 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 9095601513691444360, guid: 3f2cae45a3d451047ae48b7d443e885e, type: 3}
+  m_PrefabInstance: {fileID: 3528968100294479960}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &4346149551293375567
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5675512622186341584}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c13462e1caaf4d01a0b9477f3670afd1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShipPartScatter3D
+  minScatterForce: 5
+  maxScatterForce: 10
+  horizontalScatterAngle: 45
+  verticalScatterAngle: 20
+  upwardVelocityBias: 1
+  minAngularVelocity: 90
+  maxAngularVelocity: 360
+  lifetime: 8
+  shrinkStartTime: 0.95
+  mass: 0.5
+  linearDamping: 0.5
+  angularDamping: 0.3
+--- !u!1 &5687545065213877930 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 9085820728676552434, guid: 3f2cae45a3d451047ae48b7d443e885e, type: 3}
+  m_PrefabInstance: {fileID: 3528968100294479960}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &5542423106798590927
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5687545065213877930}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c13462e1caaf4d01a0b9477f3670afd1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShipPartScatter3D
+  minScatterForce: 5
+  maxScatterForce: 10
+  horizontalScatterAngle: 45
+  verticalScatterAngle: 20
+  upwardVelocityBias: 1
+  minAngularVelocity: 90
+  maxAngularVelocity: 360
+  lifetime: 8
+  shrinkStartTime: 0.95
+  mass: 0.5
+  linearDamping: 0.5
+  angularDamping: 0.3
+--- !u!23 &6167095173411360634 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 7308363254240714530, guid: 3f2cae45a3d451047ae48b7d443e885e, type: 3}
+  m_PrefabInstance: {fileID: 3528968100294479960}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &6179600953653983116 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 7294480756524001236, guid: 3f2cae45a3d451047ae48b7d443e885e, type: 3}
+  m_PrefabInstance: {fileID: 3528968100294479960}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &684734620964333202
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6179600953653983116}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c13462e1caaf4d01a0b9477f3670afd1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShipPartScatter3D
+  minScatterForce: 5
+  maxScatterForce: 10
+  horizontalScatterAngle: 45
+  verticalScatterAngle: 20
+  upwardVelocityBias: 1
+  minAngularVelocity: 90
+  maxAngularVelocity: 360
+  lifetime: 8
+  shrinkStartTime: 0.95
+  mass: 0.5
+  linearDamping: 0.5
+  angularDamping: 0.3
+--- !u!1 &6233688511853391480 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 7384754840356306464, guid: 3f2cae45a3d451047ae48b7d443e885e, type: 3}
+  m_PrefabInstance: {fileID: 3528968100294479960}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &8340682632125983413
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6233688511853391480}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c13462e1caaf4d01a0b9477f3670afd1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShipPartScatter3D
+  minScatterForce: 5
+  maxScatterForce: 10
+  horizontalScatterAngle: 45
+  verticalScatterAngle: 20
+  upwardVelocityBias: 1
+  minAngularVelocity: 90
+  maxAngularVelocity: 360
+  lifetime: 8
+  shrinkStartTime: 0.95
+  mass: 0.5
+  linearDamping: 0.5
+  angularDamping: 0.3
+--- !u!1 &6242727379076444385 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 7375760067347882169, guid: 3f2cae45a3d451047ae48b7d443e885e, type: 3}
+  m_PrefabInstance: {fileID: 3528968100294479960}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &6924757785251628405
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6242727379076444385}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c13462e1caaf4d01a0b9477f3670afd1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShipPartScatter3D
+  minScatterForce: 5
+  maxScatterForce: 10
+  horizontalScatterAngle: 45
+  verticalScatterAngle: 20
+  upwardVelocityBias: 1
+  minAngularVelocity: 90
+  maxAngularVelocity: 360
+  lifetime: 8
+  shrinkStartTime: 0.95
+  mass: 0.5
+  linearDamping: 0.5
+  angularDamping: 0.3
+--- !u!23 &6256928994839744670 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 7362393696022495430, guid: 3f2cae45a3d451047ae48b7d443e885e, type: 3}
+  m_PrefabInstance: {fileID: 3528968100294479960}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &6266745548465044131 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 7353984659005909755, guid: 3f2cae45a3d451047ae48b7d443e885e, type: 3}
+  m_PrefabInstance: {fileID: 3528968100294479960}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &6784016959717197179 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 7988473906452731171, guid: 3f2cae45a3d451047ae48b7d443e885e, type: 3}
+  m_PrefabInstance: {fileID: 3528968100294479960}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &6205419416149222214
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6784016959717197179}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c13462e1caaf4d01a0b9477f3670afd1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShipPartScatter3D
+  minScatterForce: 5
+  maxScatterForce: 10
+  horizontalScatterAngle: 45
+  verticalScatterAngle: 20
+  upwardVelocityBias: 1
+  minAngularVelocity: 90
+  maxAngularVelocity: 360
+  lifetime: 8
+  shrinkStartTime: 0.95
+  mass: 0.5
+  linearDamping: 0.5
+  angularDamping: 0.3
+--- !u!23 &6805158789820141369 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 7965088829971865441, guid: 3f2cae45a3d451047ae48b7d443e885e, type: 3}
+  m_PrefabInstance: {fileID: 3528968100294479960}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &8040491713126998051 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 6876144882706346107, guid: 3f2cae45a3d451047ae48b7d443e885e, type: 3}
+  m_PrefabInstance: {fileID: 3528968100294479960}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &198232393511967460
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8040491713126998051}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c13462e1caaf4d01a0b9477f3670afd1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShipPartScatter3D
+  minScatterForce: 5
+  maxScatterForce: 10
+  horizontalScatterAngle: 45
+  verticalScatterAngle: 20
+  upwardVelocityBias: 1
+  minAngularVelocity: 90
+  maxAngularVelocity: 360
+  lifetime: 8
+  shrinkStartTime: 0.95
+  mass: 0.5
+  linearDamping: 0.5
+  angularDamping: 0.3
+--- !u!23 &8052713462546573921 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 6861680367928408633, guid: 3f2cae45a3d451047ae48b7d443e885e, type: 3}
+  m_PrefabInstance: {fileID: 3528968100294479960}
+  m_PrefabAsset: {fileID: 0}

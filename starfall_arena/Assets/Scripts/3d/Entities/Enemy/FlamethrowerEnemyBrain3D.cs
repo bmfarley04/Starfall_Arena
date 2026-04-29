@@ -13,6 +13,9 @@ public class FlamethrowerEnemyBrain3D : MonoBehaviour
     [Tooltip("Short-range flame weapon controlled by this brain. Auto-assigned from this GameObject if left empty.")]
     [SerializeField] private EnemyFlamethrowerWeapon3D flamethrowerWeapon;
 
+    [Tooltip("Optional generic charge driver. When assigned, the brain starts this telegraphed windup instead of starting the flamethrower burst immediately.")]
+    [SerializeField] private EnemyProjectileChargeAttack3D chargeAttack;
+
     [Tooltip("AI flight motor that drives the Rigidbody. Auto-assigned from this GameObject if left empty.")]
     [SerializeField] private EnemyAIFlightController3D flightController;
 
@@ -82,6 +85,7 @@ public class FlamethrowerEnemyBrain3D : MonoBehaviour
     private void Awake()
     {
         flamethrowerWeapon ??= GetComponent<EnemyFlamethrowerWeapon3D>();
+        chargeAttack ??= GetComponent<EnemyProjectileChargeAttack3D>();
         flightController ??= GetComponent<EnemyAIFlightController3D>();
         targetSensor ??= GetComponent<EnemyTargetSensor3D>();
         obstacleAvoidance ??= GetComponent<EnemyObstacleAvoidance3D>();
@@ -121,6 +125,7 @@ public class FlamethrowerEnemyBrain3D : MonoBehaviour
 
     private void OnDisable()
     {
+        chargeAttack?.CancelCharge(immediate: true);
         StopFlame();
         strafeMover?.StopStrafe();
         flightController?.ClearFlightIntent();
@@ -152,6 +157,7 @@ public class FlamethrowerEnemyBrain3D : MonoBehaviour
         _currentTarget = target;
         if (target == null)
         {
+            chargeAttack?.CancelCharge();
             StopFlame();
             PatrolOrClearFlightIntent();
             return;
@@ -161,6 +167,7 @@ public class FlamethrowerEnemyBrain3D : MonoBehaviour
         float distanceToTarget = toTarget.magnitude;
         if (distanceToTarget <= 0.0001f)
         {
+            chargeAttack?.CancelCharge();
             StopFlame();
             flightController?.ClearFlightIntent();
             return;
@@ -201,11 +208,23 @@ public class FlamethrowerEnemyBrain3D : MonoBehaviour
 
         if (distanceToTarget > preferredRangeMax || distanceToTarget < tooCloseRetreatDistance)
         {
+            chargeAttack?.CancelCharge();
             return;
         }
 
         if (Vector3.Angle(transform.forward, targetDirection) > Mathf.Max(0f, aimToleranceDegrees))
         {
+            chargeAttack?.CancelCharge();
+            return;
+        }
+
+        if (chargeAttack != null)
+        {
+            if (!chargeAttack.IsCharging)
+            {
+                chargeAttack.TryBeginCharge(Faction3D.PlayerTeam, targetDirection);
+            }
+
             return;
         }
 

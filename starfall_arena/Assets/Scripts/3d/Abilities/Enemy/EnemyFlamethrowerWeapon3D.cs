@@ -33,6 +33,16 @@ public class EnemyFlamethrowerWeapon3D : MonoBehaviour
     [Tooltip("Seconds after a burst starts before another burst can begin.")]
     [SerializeField] private float cooldown = 3f;
 
+    [Header("Visual Drift Alignment")]
+    [Tooltip("If enabled, flame damage bends with the muzzle owner's lateral Rigidbody velocity so the hit volume follows particle drift while the enemy strafes.")]
+    [SerializeField] private bool alignDamageToVisualDrift = true;
+
+    [Tooltip("Multiplier applied to lateral Rigidbody velocity when estimating visual flame drift. Raise if particles visibly trail farther sideways than the damage volume.")]
+    [SerializeField] private float driftVelocityScale = 1f;
+
+    [Tooltip("Approximate forward particle speed used to convert distance down the flame into particle age. Match this to the authored flamethrower particle start speed.")]
+    [SerializeField] private float visualFlameSpeed = 42f;
+
     [Header("Flame Visuals")]
     [Tooltip("Authored flamethrower particle prefab spawned under the muzzle. Use 3d_flamethrower.prefab for the current enemy.")]
     [SerializeField] private GameObject flameVisualPrefab;
@@ -56,6 +66,7 @@ public class EnemyFlamethrowerWeapon3D : MonoBehaviour
     private readonly Entity3D[] _damagedThisTick = new Entity3D[16];
 
     private Entity3D _owner;
+    private Rigidbody _ownerRigidbody;
     private GameObject _visualInstance;
     private ParticleSystem[] _visualParticles;
     private Light[] _visualLights;
@@ -66,6 +77,7 @@ public class EnemyFlamethrowerWeapon3D : MonoBehaviour
     private float _burstEndTime = float.NegativeInfinity;
     private float _nextAllowedStartTime;
     private float _nextDamageTickTime;
+    private float _lastDamageTickTime;
 
     public bool IsBurstActive => _isBurstActive;
     public bool IsOnCooldown => Time.time < _nextAllowedStartTime;
@@ -75,6 +87,7 @@ public class EnemyFlamethrowerWeapon3D : MonoBehaviour
     private void Awake()
     {
         _owner = GetComponent<Entity3D>();
+        _ownerRigidbody = GetComponent<Rigidbody>();
         EnsureVisualInstance();
         StopVisuals(clearParticles: true);
     }
@@ -87,6 +100,8 @@ public class EnemyFlamethrowerWeapon3D : MonoBehaviour
         damageTickInterval = Mathf.Max(0.02f, damageTickInterval);
         burstDuration = Mathf.Max(0.01f, burstDuration);
         cooldown = Mathf.Max(0f, cooldown);
+        driftVelocityScale = Mathf.Max(0f, driftVelocityScale);
+        visualFlameSpeed = Mathf.Max(0.01f, visualFlameSpeed);
         if (visualLocalScale == Vector3.zero)
         {
             visualLocalScale = Vector3.one;
@@ -102,13 +117,14 @@ public class EnemyFlamethrowerWeapon3D : MonoBehaviour
 
         if (Time.time >= _burstEndTime)
         {
+            ApplyPendingDamageBeforeStop();
             StopBurst();
             return;
         }
 
         if (_damageAuthoritative && Time.time >= _nextDamageTickTime)
         {
-            ApplyConeDamage();
+            ApplyConeDamage(Time.time);
             _nextDamageTickTime = Time.time + Mathf.Max(0.02f, damageTickInterval);
         }
     }
@@ -126,6 +142,9 @@ public class EnemyFlamethrowerWeapon3D : MonoBehaviour
         damageTickInterval = Mathf.Max(0.02f, stats.damageTickInterval);
         burstDuration = Mathf.Max(0.01f, stats.burstDuration);
         cooldown = Mathf.Max(0f, stats.cooldown);
+        alignDamageToVisualDrift = stats.alignDamageToVisualDrift;
+        driftVelocityScale = Mathf.Max(0f, stats.driftVelocityScale);
+        visualFlameSpeed = Mathf.Max(0.01f, stats.visualFlameSpeed);
     }
 
     public bool CanStartBurst()
@@ -162,7 +181,8 @@ public class EnemyFlamethrowerWeapon3D : MonoBehaviour
         _isBurstActive = true;
         _burstEndTime = Time.time + Mathf.Max(0.01f, burstDuration);
         _nextAllowedStartTime = Time.time + Mathf.Max(cooldown, burstDuration);
-        _nextDamageTickTime = Time.time;
+        _lastDamageTickTime = Time.time;
+        _nextDamageTickTime = Time.time + Mathf.Max(0.02f, damageTickInterval);
         StartVisuals();
     }
 
@@ -178,25 +198,34 @@ public class EnemyFlamethrowerWeapon3D : MonoBehaviour
         StopVisuals(clearParticles: false);
     }
 
-    private void ApplyConeDamage()
+    private void ApplyConeDamage(float damageTime)
     {
         Transform origin = ResolveMuzzle();
         if (origin == null || range <= 0f || damagePerSecond <= 0f)
+        {
+            _lastDamageTickTime = damageTime;
+            return;
+        }
+
+        float damageDeltaTime = Mathf.Max(0f, damageTime - _lastDamageTickTime);
+        _lastDamageTickTime = damageTime;
+        if (damageDeltaTime <= 0f)
         {
             return;
         }
 
         Vector3 flameOrigin = origin.position;
         Vector3 flameForward = ResolveForward(origin);
+        Vector3 lateralDriftVelocity = ResolveLateralDriftVelocity(flameForward);
         int damagedCount = 0;
         int hitCount = Physics.OverlapSphereNonAlloc(
             flameOrigin,
-            range,
+            ResolveDamageQueryRadius(lateralDriftVelocity),
             FlameHits,
             damageMask,
             QueryTriggerInteraction.Ignore);
 
-        float damageThisTick = damagePerSecond * Mathf.Max(0.02f, damageTickInterval);
+        float damageThisTick = damagePerSecond * damageDeltaTime;
         float allowedAngle = Mathf.Max(0f, halfAngleDegrees);
         for (int i = 0; i < hitCount; i++)
         {
@@ -218,13 +247,7 @@ public class EnemyFlamethrowerWeapon3D : MonoBehaviour
             }
 
             Vector3 targetPoint = hit.bounds.center;
-            Vector3 toTarget = targetPoint - flameOrigin;
-            if (toTarget.sqrMagnitude <= 0.0001f || toTarget.magnitude > range)
-            {
-                continue;
-            }
-
-            if (Vector3.Angle(flameForward, toTarget.normalized) > allowedAngle)
+            if (!IsPointInsideFlameVolume(targetPoint, flameOrigin, flameForward, lateralDriftVelocity, allowedAngle))
             {
                 continue;
             }
@@ -263,6 +286,87 @@ public class EnemyFlamethrowerWeapon3D : MonoBehaviour
         }
 
         return false;
+    }
+
+    private bool IsPointInsideFlameVolume(
+        Vector3 targetPoint,
+        Vector3 flameOrigin,
+        Vector3 flameForward,
+        Vector3 lateralDriftVelocity,
+        float allowedAngle)
+    {
+        Vector3 toTarget = targetPoint - flameOrigin;
+        if (toTarget.sqrMagnitude <= 0.0001f)
+        {
+            return false;
+        }
+
+        if (!alignDamageToVisualDrift || lateralDriftVelocity.sqrMagnitude <= 0.0001f)
+        {
+            return toTarget.magnitude <= range
+                && Vector3.Angle(flameForward, toTarget.normalized) <= allowedAngle;
+        }
+
+        float distanceAlongFlame = Vector3.Dot(toTarget, flameForward);
+        if (distanceAlongFlame < 0f || distanceAlongFlame > range)
+        {
+            return false;
+        }
+
+        Vector3 baseCenter = flameOrigin + flameForward * distanceAlongFlame;
+        Vector3 driftedCenter = baseCenter + lateralDriftVelocity * (distanceAlongFlame / Mathf.Max(0.01f, visualFlameSpeed));
+        Vector3 closestCenter = ClosestPointOnSegment(baseCenter, driftedCenter, targetPoint);
+        float radiusAtDistance = Mathf.Tan(allowedAngle * Mathf.Deg2Rad) * distanceAlongFlame;
+        return (targetPoint - closestCenter).sqrMagnitude <= radiusAtDistance * radiusAtDistance;
+    }
+
+    private void ApplyPendingDamageBeforeStop()
+    {
+        if (!_damageAuthoritative)
+        {
+            return;
+        }
+
+        float finalDamageTime = Mathf.Min(Time.time, _burstEndTime);
+        if (finalDamageTime > _lastDamageTickTime)
+        {
+            ApplyConeDamage(finalDamageTime);
+        }
+    }
+
+    private static Vector3 ClosestPointOnSegment(Vector3 segmentStart, Vector3 segmentEnd, Vector3 point)
+    {
+        Vector3 segment = segmentEnd - segmentStart;
+        float lengthSquared = segment.sqrMagnitude;
+        if (lengthSquared <= 0.0001f)
+        {
+            return segmentStart;
+        }
+
+        float t = Vector3.Dot(point - segmentStart, segment) / lengthSquared;
+        return segmentStart + segment * Mathf.Clamp01(t);
+    }
+
+    private Vector3 ResolveLateralDriftVelocity(Vector3 flameForward)
+    {
+        if (!alignDamageToVisualDrift || _ownerRigidbody == null || driftVelocityScale <= 0f)
+        {
+            return Vector3.zero;
+        }
+
+        Vector3 lateralVelocity = Vector3.ProjectOnPlane(_ownerRigidbody.linearVelocity, flameForward);
+        return lateralVelocity * driftVelocityScale;
+    }
+
+    private float ResolveDamageQueryRadius(Vector3 lateralDriftVelocity)
+    {
+        if (!alignDamageToVisualDrift || lateralDriftVelocity.sqrMagnitude <= 0.0001f)
+        {
+            return range;
+        }
+
+        float maxParticleAge = range / Mathf.Max(0.01f, visualFlameSpeed);
+        return range + lateralDriftVelocity.magnitude * maxParticleAge;
     }
 
     private void EnsureVisualInstance()
@@ -378,9 +482,16 @@ public class EnemyFlamethrowerWeapon3D : MonoBehaviour
 
         Vector3 start = origin.position;
         Vector3 forward = ResolveForward(origin);
+        Vector3 lateralDriftVelocity = ResolveLateralDriftVelocity(forward);
+        Vector3 driftedEnd = start + forward * range + lateralDriftVelocity * (range / Mathf.Max(0.01f, visualFlameSpeed));
         Gizmos.color = new Color(1f, 0.35f, 0.05f, 0.9f);
-        Gizmos.DrawWireSphere(start, range);
+        Gizmos.DrawWireSphere(start, ResolveDamageQueryRadius(lateralDriftVelocity));
         Gizmos.DrawRay(start, forward * range);
+        if (alignDamageToVisualDrift && lateralDriftVelocity.sqrMagnitude > 0.0001f)
+        {
+            Gizmos.color = new Color(1f, 0.8f, 0.05f, 0.9f);
+            Gizmos.DrawLine(start, driftedEnd);
+        }
 
         Quaternion left = Quaternion.AngleAxis(-halfAngleDegrees, origin.up);
         Quaternion right = Quaternion.AngleAxis(halfAngleDegrees, origin.up);

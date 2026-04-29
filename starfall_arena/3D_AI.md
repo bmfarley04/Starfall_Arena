@@ -168,6 +168,16 @@ The 3D AI path should stay modular. Enemy prefabs should compose small scripts i
   - has no weapons, ram, or contact damage; its threat is informational, not direct damage
   - if the linked swarm keeps at least `Required Survivors For Alert` alive near the player for `Alert Warmup Seconds`, it calls `EnemyTargetSensor3D.ReceiveTargetAlert(...)` on enemy sensors near the player so heavier enemies can acquire beyond their normal detection radius for a short duration
   - alerts are server-authoritative in networked Invasion because the brain only runs on the server/host; clients receive movement through `NetEnemyMovement3D`
+- `SiegeCarrierBossEnemyBrain3D`
+  - slow/stationary second Invasion boss that acts like a Siege Carrier rather than a normal chaser
+  - keeps one major pattern active at a time: lagging machine-gun rake, predictive split fan, beam fence, or curtain with an escape door
+  - samples recent target positions for the rake so bullets pressure where the player was, rewarding smooth drift and route planning
+  - computes a simple velocity lead for the split fan, then offsets authored weapon lanes around that center direction
+  - fires curtain lanes around the target direction while deliberately skipping a drifting escape-door sector
+  - drives multiple `BeamWeapon3D` hardpoints for the beam fence through indexed `NetEnemyCombat3D` beam replication so remote clients see the same beam sources as the host
+  - uses `EnemyAIFlightController3D` only for slow approach and facing; turret/lane pressure is owned by the boss brain, not independent turret AI
+  - movement bands: no target uses patrol/search; detected but outside `engagementRange` and inside `approachRangeBuffer` creeps forward; inside engagement range faces the player and optionally creeps at a tiny anchor speed; targets beyond the max engagement band stop active patterns instead of firing at arbitrary distance
+  - performance/readability rule: pattern intensity scales by cooldown multipliers across health phases, not by silently raising the per-pattern projectile budget
 
 ## Enemy Movement Range Design
 

@@ -161,12 +161,14 @@ public struct NetBeamState3D : INetworkSerializable
     public int Tick;
     public bool IsFiring;
     public Vector3 AimDirection;
+    public int BeamIndex;
 
     public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
     {
         serializer.SerializeValue(ref Tick);
         serializer.SerializeValue(ref IsFiring);
         serializer.SerializeValue(ref AimDirection);
+        serializer.SerializeValue(ref BeamIndex);
     }
 }
 
@@ -174,11 +176,13 @@ public struct NetAimUpdate3D : INetworkSerializable
 {
     public int Tick;
     public Vector3 AimDirection;
+    public int BeamIndex;
 
     public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
     {
         serializer.SerializeValue(ref Tick);
         serializer.SerializeValue(ref AimDirection);
+        serializer.SerializeValue(ref BeamIndex);
     }
 }
 

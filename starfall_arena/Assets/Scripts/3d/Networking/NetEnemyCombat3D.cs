@@ -12,6 +12,7 @@ public class NetEnemyCombat3D : NetworkBehaviour
     private Enemy3D _enemy;
     private NetEnemyMovement3D _movement;
     private IEnemyProjectileWeapon3D[] _projectileWeapons;
+    private BeamWeapon3D[] _beamWeapons;
     private bool _loggedMissingWeapon;
     private bool _loggedMissingProjectile;
     private bool _loggedMissingBeamWeapon;
@@ -100,6 +101,13 @@ public class NetEnemyCombat3D : NetworkBehaviour
             return false;
         }
 
+        int beamIndex = ResolveBeamWeaponIndex(sourceWeapon);
+        if (beamIndex < 0)
+        {
+            LogWarningOnce(ref _loggedMissingBeamWeapon, "[NetEnemyCombat3D] Enemy beam update was ignored because the supplied BeamWeapon3D is not registered on this enemy.");
+            return false;
+        }
+
         if (isFiring && aimDirection.sqrMagnitude > 0.0001f)
         {
             sourceWeapon.ApplyNetworkBeamAim(aimDirection.normalized);
@@ -111,7 +119,8 @@ public class NetEnemyCombat3D : NetworkBehaviour
         {
             Tick = NetTickUtil.CurrentTick,
             IsFiring = isFiring,
-            AimDirection = aimDirection.sqrMagnitude > 0.0001f ? aimDirection.normalized : Vector3.zero
+            AimDirection = aimDirection.sqrMagnitude > 0.0001f ? aimDirection.normalized : Vector3.zero,
+            BeamIndex = beamIndex
         });
         return true;
     }
@@ -129,6 +138,13 @@ public class NetEnemyCombat3D : NetworkBehaviour
             return false;
         }
 
+        int beamIndex = ResolveBeamWeaponIndex(sourceWeapon);
+        if (beamIndex < 0)
+        {
+            LogWarningOnce(ref _loggedMissingBeamWeapon, "[NetEnemyCombat3D] Enemy beam aim update was ignored because the supplied BeamWeapon3D is not registered on this enemy.");
+            return false;
+        }
+
         if (aimDirection.sqrMagnitude <= 0.0001f)
         {
             return false;
@@ -139,7 +155,8 @@ public class NetEnemyCombat3D : NetworkBehaviour
         BroadcastEnemyBeamAimClientRpc(new NetAimUpdate3D
         {
             Tick = NetTickUtil.CurrentTick,
-            AimDirection = normalizedAim
+            AimDirection = normalizedAim,
+            BeamIndex = beamIndex
         });
         return true;
     }
@@ -233,7 +250,7 @@ public class NetEnemyCombat3D : NetworkBehaviour
             return;
         }
 
-        if (!TryResolveBeamWeapon(out BeamWeapon3D beamWeapon))
+        if (!TryResolveBeamWeapon(state.BeamIndex, out BeamWeapon3D beamWeapon))
         {
             LogWarningOnce(ref _loggedMissingBeamWeapon, "[NetEnemyCombat3D] Client received an enemy beam RPC, but the enemy proxy could not resolve a BeamWeapon3D.");
             return;
@@ -255,7 +272,7 @@ public class NetEnemyCombat3D : NetworkBehaviour
             return;
         }
 
-        if (!TryResolveBeamWeapon(out BeamWeapon3D beamWeapon))
+        if (!TryResolveBeamWeapon(update.BeamIndex, out BeamWeapon3D beamWeapon))
         {
             LogWarningOnce(ref _loggedMissingBeamWeapon, "[NetEnemyCombat3D] Client received an enemy beam aim RPC, but the enemy proxy could not resolve a BeamWeapon3D.");
             return;
@@ -287,11 +304,20 @@ public class NetEnemyCombat3D : NetworkBehaviour
         _enemy ??= GetComponent<Enemy3D>();
         _movement ??= GetComponent<NetEnemyMovement3D>();
         CacheProjectileWeapons();
+        CacheBeamWeapons();
     }
 
-    private bool TryResolveBeamWeapon(out BeamWeapon3D beamWeapon)
+    private bool TryResolveBeamWeapon(int beamIndex, out BeamWeapon3D beamWeapon)
     {
-        beamWeapon = GetComponent<BeamWeapon3D>();
+        CacheBeamWeapons();
+        beamWeapon = null;
+        if (_beamWeapons == null || _beamWeapons.Length == 0)
+        {
+            return false;
+        }
+
+        int resolvedIndex = Mathf.Clamp(beamIndex, 0, _beamWeapons.Length - 1);
+        beamWeapon = _beamWeapons[resolvedIndex];
         return beamWeapon != null;
     }
 
@@ -332,6 +358,35 @@ public class NetEnemyCombat3D : NetworkBehaviour
                 _projectileWeapons[writeIndex++] = projectileWeapon;
             }
         }
+    }
+
+    private void CacheBeamWeapons()
+    {
+        if (_beamWeapons != null && _beamWeapons.Length > 0)
+        {
+            return;
+        }
+
+        _beamWeapons = GetComponents<BeamWeapon3D>();
+    }
+
+    private int ResolveBeamWeaponIndex(BeamWeapon3D sourceWeapon)
+    {
+        CacheBeamWeapons();
+        if (_beamWeapons == null || sourceWeapon == null)
+        {
+            return -1;
+        }
+
+        for (int i = 0; i < _beamWeapons.Length; i++)
+        {
+            if (_beamWeapons[i] == sourceWeapon)
+            {
+                return i;
+            }
+        }
+
+        return -1;
     }
 
     private IEnemyProjectileWeapon3D ResolveProjectileWeapon(NetProjectileVisualType3D visualType)

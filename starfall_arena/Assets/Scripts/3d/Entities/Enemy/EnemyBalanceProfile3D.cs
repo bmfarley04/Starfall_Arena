@@ -44,6 +44,9 @@ public abstract class EnemyBalanceProfile3D : ScriptableObject
         [Min(0.02f)] public float damageTickInterval;
         [Min(0.01f)] public float burstDuration;
         [Min(0f)] public float cooldown;
+        public bool alignDamageToVisualDrift;
+        [Min(0f)] public float driftVelocityScale;
+        [Min(0.01f)] public float visualFlameSpeed;
     }
 
     [Serializable]
@@ -296,6 +299,71 @@ public abstract class EnemyBalanceProfile3D : ScriptableObject
         [Min(0f)] public float alertCooldown;
     }
 
+    [Serializable]
+    public struct SiegeCarrierBossBrainStats
+    {
+        [Tooltip("Seconds between high-level boss target/movement decisions.")]
+        [Min(0.01f)] public float thinkInterval;
+        [Tooltip("Seconds between stored target-position samples used by the lagging rake.")]
+        [Min(0.02f)] public float targetHistorySampleInterval;
+        [Tooltip("How many recent target positions the boss stores for lagging attacks.")]
+        [Range(2, 32)] public int targetHistorySamples;
+        [Tooltip("Distance where the boss can run attack patterns.")]
+        [Min(0f)] public float engagementRange;
+        [Tooltip("Extra distance beyond Engagement Range where the boss slowly approaches instead of attacking.")]
+        [Min(0f)] public float approachRangeBuffer;
+        [Tooltip("Movement speed scale while outside Engagement Range but inside the approach buffer.")]
+        [Range(0f, 1f)] public float approachSpeedScale;
+        [Tooltip("Tiny movement speed scale while in range. Use 0 for a fully stationary carrier.")]
+        [Range(0f, 1f)] public float anchorCreepSpeedScale;
+        [Tooltip("Minimum seconds between major patterns before health-phase multipliers are applied.")]
+        [Min(0f)] public float minimumPatternCooldown;
+        [Tooltip("Hard cap on projectile shots per pattern activation.")]
+        [Range(1, 128)] public int maxShotsPerPattern;
+        [Tooltip("Health percentage where phase two cadence begins.")]
+        [Range(0.01f, 1f)] public float phaseTwoHealthPercent;
+        [Tooltip("Health percentage where phase three cadence begins.")]
+        [Range(0.01f, 1f)] public float phaseThreeHealthPercent;
+        [Tooltip("Pattern cooldown multiplier at or below Phase Two Health Percent.")]
+        [Range(0.1f, 1f)] public float phaseTwoCooldownMultiplier;
+        [Tooltip("Pattern cooldown multiplier at or below Phase Three Health Percent.")]
+        [Range(0.1f, 1f)] public float phaseThreeCooldownMultiplier;
+        [Tooltip("Maximum lagging-rake shots in one activation, also limited by Max Shots Per Pattern.")]
+        [Min(1)] public int rakeShotCount;
+        [Tooltip("Seconds between lagging-rake shots.")]
+        [Min(0.01f)] public float rakeShotInterval;
+        [Tooltip("Seconds behind the target's current position that the rake aims.")]
+        [Min(0f)] public float rakeHistorySeconds;
+        [Tooltip("Number of predictive fan lanes attempted, also limited by configured fan weapons.")]
+        [Range(1, 31)] public int fanLaneCount;
+        [Tooltip("Total predictive fan spread in degrees.")]
+        [Range(0f, 180f)] public float fanTotalSpreadDegrees;
+        [Tooltip("Seconds between predictive fan lane shots.")]
+        [Min(0.01f)] public float fanLaneInterval;
+        [Tooltip("If true, centers the fan on a simple target-velocity lead point.")]
+        public bool fanUseLeadAim;
+        [Tooltip("Projectile speed used for fan lead calculation. 0 uses the first fan weapon's configured speed.")]
+        [Min(0f)] public float fanLeadProjectileSpeed;
+        [Tooltip("Number of curtain lanes attempted across the arc, including lanes skipped by the escape door.")]
+        [Range(1, 31)] public int curtainLaneCount;
+        [Tooltip("Total curtain arc in degrees centered on the target direction.")]
+        [Range(0f, 270f)] public float curtainArcDegrees;
+        [Tooltip("Width in degrees of the intentionally empty escape sector.")]
+        [Range(0f, 180f)] public float curtainEscapeDoorDegrees;
+        [Tooltip("Degrees the escape door shifts after each curtain activation.")]
+        [Min(0f)] public float curtainDoorDriftDegrees;
+        [Tooltip("Seconds between curtain lane shots.")]
+        [Min(0.01f)] public float curtainLaneInterval;
+        [Tooltip("Seconds of beam-fence warning before damaging beams activate.")]
+        [Min(0f)] public float beamFenceTelegraphDuration;
+        [Tooltip("Seconds the damaging beam fence remains active.")]
+        [Min(0.01f)] public float beamFenceActiveDuration;
+        [Tooltip("Maximum beam hardpoints used in one beam-fence activation.")]
+        [Range(1, 16)] public int beamFenceMaxBeams;
+        [Tooltip("Seconds between beam-fence aim refreshes while active.")]
+        [Min(0.01f)] public float beamFenceAimRefreshInterval;
+    }
+
     [Header("Shared Core")]
     [Tooltip("Health, shield, movement, and target-acquisition numbers shared by every Enemy3D component under the profiled prefab.")]
     public CoreStats core = new CoreStats
@@ -313,6 +381,10 @@ public abstract class EnemyBalanceProfile3D : ScriptableObject
 
     [Tooltip("Beam weapon stats, applied by component order to BeamWeapon3D components under the prefab. This intentionally excludes beam prefab, muzzle, target faction, offsets, recoil, impact force, and audio setup.")]
     public BeamWeaponStats[] beamWeapons = Array.Empty<BeamWeaponStats>();
+
+    public virtual void ApplyWeaponStats(GameObject prefabRoot)
+    {
+    }
 
     public abstract void ApplyBrainStats(GameObject prefabRoot);
 

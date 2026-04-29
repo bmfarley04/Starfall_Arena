@@ -85,6 +85,11 @@ Base input rule:
   - consumes the inherited weapon cooldown once to start a rack sequence, then fires one configured muzzle at a time using `turretStaggerInterval` until the sequence finishes
   - can either walk the configured muzzles sequentially or pick a random turret for each staggered shot
   - uses `EnemySecondaryProjectile` as its network visual type so client cosmetic replay can distinguish small turret bolts from the fortress's heavy cannon projectile
+- `SiegeCarrierBossEnemyBrain3D`
+  - boss-level enemy pattern sequencer that reuses enemy projectile weapons instead of spawning bullets from a custom standalone spawner
+  - owns the four first-slice patterns: lagging rake, predictive fan, beam fence, and escape-door curtain
+  - keeps a serialized `maxShotsPerPattern` cap so bullet-hell pressure stays readable and performance-bound
+  - expects fan/curtain lanes to be authored as weapon component arrays; the brain supplies lane directions while the weapon components still own projectile prefabs, muzzle FX, cooldown gates, pooling, and network request building
 - `MissileWeaponEnemy3D`
   - stripped-down enemy-only missile launcher that reuses the same minimal volley/cooldown path as `ProjectileWeaponEnemy3D`
   - expects a projectile prefab with `MissileProjectile3D` and supports multi-muzzle launches for enemy salvos
@@ -94,8 +99,10 @@ Base input rule:
   - replaces the artillery-named telegraph script for new work, while `ArtilleryFortressChargeTelegraph3D` remains as a compatibility wrapper for existing prefab components
   - presentation only: it does not know which weapon to fire and must be driven by a brain or attack driver
 - `EnemyProjectileChargeAttack3D`
-  - generic enemy windup/firing driver for any `IEnemyProjectileWeapon3D`, including normal enemy projectiles, staggered projectile racks, missiles, and staggered missile racks
+  - generic enemy windup/firing driver for configured projectile, beam, or flamethrower attacks
+  - for projectile mode, supports any `IEnemyProjectileWeapon3D`, including normal enemy projectiles, staggered projectile racks, missiles, and staggered missile racks
   - locks the supplied fire direction at windup start, plays `ProjectileChargeTelegraph3D`, then fires through `NetEnemyCombat3D` in networked sessions or directly through the assigned weapon offline
+  - beam mode starts `BeamWeapon3D` after the windup using the locked aim direction; flamethrower mode starts `EnemyFlamethrowerWeapon3D` after the windup while that weapon owns its normal burst duration and damage rules
   - `BasicShooterEnemyBrain3D` can use this optional driver to turn its immediate projectile shot into a telegraphed delayed shot without changing the normal instant-fire path when the driver is absent
 - `StaggeredMissileWeaponEnemy3D`
   - enemy-only guided missile launcher variant for racks with several authored launcher transforms
@@ -105,6 +112,7 @@ Base input rule:
 - `EnemyFlamethrowerWeapon3D`
   - enemy-only short-range cone DPS weapon for Invasion flamethrower enemies
   - treats `3d_flamethrower.prefab` as an authored particle/light visual attached to a muzzle; gameplay damage is a separate non-alloc cone query owned by the weapon script
+  - can bend the damage volume with the owner's lateral Rigidbody velocity so the server-authoritative hit area tracks flamethrower particle drift while the enemy strafes/orbits
   - targets `Faction3D.PlayerTeam` by default and should keep legacy target tag empty for new PvE prefabs
   - in networked Invasion, only the server applies cone damage; `NetEnemyCombat3D` replicates flame visual start/stop so clients never run flame hit checks
 - `StupidTurret3D`
@@ -227,6 +235,7 @@ Current networked 3D combat uses server authority with owner-side cosmetic predi
 - remote projectile cosmetics should use the local proxy's weapon/prefab bindings and log a one-shot warning if a binding is missing, rather than silently dropping the RPC
 - fast projectile validation uses normal 3D spherecasts first, then a short defender-favored rewind against server movement history
 - networked 3D beam state must resolve through a shared beam-network contract instead of assuming only `BeamWeapon3D` can receive RPC state
+- networked enemy beam state now carries a beam component index so multi-beam enemies such as the Siege Carrier beam fence can replay the correct hardpoint on clients instead of always resolving the first `BeamWeapon3D`
 - ability-driven burst accuracy, Class 4 empower state, guided-missile visual type, and movement-affecting actions must stay inside the appropriate authoritative broker so owner prediction does not diverge from server truth
 - dodge movement belongs to `NetMovement3D` input prediction, not `NetCombat3D`; remote dodge audio/VFX should be presentation-only while remote motion comes from interpolated movement snapshots
 

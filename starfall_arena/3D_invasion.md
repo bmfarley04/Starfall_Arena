@@ -24,6 +24,7 @@ Implemented foundation:
 - `SplitterEnemyBrain3D` owns the Splitter enemy identity: the parent hybrid chooses between projectile and beam pressure based on range plus a random overlap band, then on death asks `InvasionWaveManager3D` to spawn the same prefab twice as smaller role-locked children
 - `TriumvirateEnemyBrain3D` owns the Triumvirate enemy identity: small linked beam ships form a triangle, reveal cosmetic lightning links, and then fire a survivor-scaled lightning beam where the full three-ship version is the only slow-applying version
 - `SwarmScoutEnemyBrain3D` owns the Swarm Scout enemy identity: fragile fast flyers move in linked formations, default to a pentagon-style flyby through/past the player, can fall back to orbit behavior through a movement-pattern dropdown, and only alert nearby enemy sensors if the required survivor count remains alive near the player through the warmup
+- `SiegeCarrierBossEnemyBrain3D` owns the second Invasion boss identity: a slow/stationary Siege Carrier that sequences one major bullet-hell-style pattern at a time, mixes targeted projectile pressure with spatial beam geometry, keeps a hard per-pattern projectile budget, and leaves authored escape lanes instead of flooding the whole arena
 - `NetEnemyMovement3D` makes enemies server-simulated in network sessions
 - `NetEnemyCombat3D` makes enemy projectile damage server-authoritative and broadcasts client cosmetics
 - enemy beam prefabs may now use an optional `BeamVisualDriver3D` such as `ForgeBeamVisualDriver3D` for presentation, but enemy beam gameplay still stays inside `LaserBeam3D` / `NetEnemyCombat3D`
@@ -91,7 +92,7 @@ For the first basic shooter enemy prefab:
 - add `EnemyObstacleAvoidance3D` and set `Obstacle Mask` to asteroids/world-geometry layers
 - add `BasicShooterEnemyBrain3D`
 - add `ProjectileWeaponEnemy3D`; the brain's aim tolerance gates when shots are allowed, and the brain supplies the target direction when firing so the projectile does not inherit the allowed facing error at long range
-- optional: add `ProjectileChargeTelegraph3D` plus `EnemyProjectileChargeAttack3D` when this basic enemy should visibly wind up before firing. Assign `Projectile Weapon Component` on the charge driver to the projectile or missile weapon, assign `Charge Telegraph`, and tune `Charge Duration`; the brain will use the driver automatically when it is present.
+- optional: add `ProjectileChargeTelegraph3D` plus `EnemyProjectileChargeAttack3D` when this basic enemy should visibly wind up before firing. Keep the charge driver's `Weapon Type` set to `Projectile`, assign `Projectile Weapon Component` to the projectile or missile weapon, assign `Charge Telegraph`, and tune `Charge Duration`; the brain will use the driver automatically when it is present.
 - optional `ShipThrusterVfx3D` can stay on enemies; it reads `EnemyAIFlightController3D.IsMovingForward` when present
 - add `NetEnemyMovement3D` and `NetEnemyCombat3D` for networked enemies
 - create an `EnemyBalanceProfile3D` asset, initialize it from the prefab's current health, movement, detection, weapon, and brain tuning, then add `EnemyBalanceProfileApplier3D` on the prefab root and assign the profile before adding the prefab to waves
@@ -181,6 +182,7 @@ For a flamethrower enemy prefab:
 - optionally add `EnemySeparation3D` so multiple flamethrowers do not stack in the same pocket
 - optionally add `EnemyObstacleAvoidance3D` if the enemy should route around asteroids while closing distance
 - add `EnemyFlamethrowerWeapon3D`; assign `Assets/Prefabs/3d_weapons/projectiles/enemies/3d_flamethrower.prefab` as the flame visual prefab, assign a muzzle whose local forward points down the intended flame lane, set `Target Faction = PlayerTeam`, and keep `Target Tag` empty
+- optional: add `ProjectileChargeTelegraph3D` plus `EnemyProjectileChargeAttack3D` when the flamethrower should visibly wind up before a burst. Set the charge driver's `Weapon Type` to `Flamethrower`, assign `Flamethrower Weapon` to `EnemyFlamethrowerWeapon3D`, assign `Charge Telegraph`, and tune `Charge Duration`; `FlamethrowerEnemyBrain3D` will use the driver automatically when it is present.
 - add `FlamethrowerEnemyBrain3D`; start with `Preferred Range Min = 20`, `Preferred Range Max = 30`, `Too Close Retreat Distance = 14`, `Full Approach Distance = 55`, `Aim Tolerance Degrees = 22`, `Flame Orbit Strafe Speed = 10`, and `Flame Orbit Direction Change Interval = 3`
 - add `NetEnemyMovement3D` and `NetEnemyCombat3D` for networked movement plus replicated flame visual state; only the server applies cone damage
 - create a `FlamethrowerEnemyBalanceProfile3D` asset, assign it through `EnemyBalanceProfileApplier3D`, and keep prefab-only wiring such as the flame prefab, muzzle, masks, visuals, audio, collision, and network references on the prefab
@@ -306,6 +308,23 @@ For a Swarm Scout enemy prefab:
 - create a `SwarmScoutEnemyBalanceProfile3D` asset, assign it through `EnemyBalanceProfileApplier3D`, and keep prefab-only wiring such as visuals, audio, collision, network references, and death effects on the prefab
 - set the root tag to `Enemy` for compatibility, but keep target/damage filtering faction-driven
 - add Swarm Scout entries to waves in clustered counts of five with little or no spawn delay so the linked movement and full-survivor alert gate read correctly
+
+For a Siege Carrier boss prefab:
+
+- add `NetworkObject` if it will spawn in networked Invasion
+- add `FactionMember3D` and set faction to `EnemyTeam`
+- add `Enemy3D`
+- add `Rigidbody` with gravity off
+- add `EnemyAIFlightController3D`; start with `moveSpeed` around `15` and a slow-to-moderate turn rate so the boss reads as a heavy carrier, not a chase enemy
+- add `EnemyTargetSensor3D`; set detection range at least to `engagementRange + approachRangeBuffer`
+- add `EnemyPatrol3D` for no-target search behavior, with low patrol speed if the boss should only drift between sightings
+- add `NetEnemyMovement3D` and `NetEnemyCombat3D` for networked movement plus replicated projectile/beam presentation
+- add `SiegeCarrierBossEnemyBrain3D`; wire separate projectile weapon component arrays for lagging rake, predictive fan lanes, and curtain lanes, and wire `BeamWeapon3D` components for the beam fence
+- add optional `ProjectileChargeTelegraph3D` components paired to the beam fence weapons if the model has warning lights or beam emitters that should glow during the fence telegraph
+- create a `SiegeCarrierBossBalanceProfile3D` asset, assign it through `EnemyBalanceProfileApplier3D`, and tune the boss health, slow movement, detection range, pattern cooldowns, shot budget, lane counts, beam telegraph, and active durations there
+- configure all boss projectile and beam weapons with `targetFaction = PlayerTeam` and empty `targetTag`
+- keep the root tag as `Enemy` for compatibility until every player weapon path is fully faction-authored
+- register the boss prefab in NGO network prefabs before adding it to a boss/elite wave entry
 
 For player prefabs used in Invasion:
 

@@ -1,6 +1,6 @@
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "FlamethrowerEnemyBalanceProfile3D", menuName = "Starfall/3D/Enemies/Flamethrower Balance Profile")]
+[CreateAssetMenu(fileName = "FlamethrowerEnemyBalanceProfile3D", menuName = "Starfall Arena/3D/Enemy Profiles/Flamethrower", order = 31)]
 public class FlamethrowerEnemyBalanceProfile3D : EnemyBalanceProfile3D
 {
     [Header("Flamethrower Weapon")]
@@ -12,7 +12,10 @@ public class FlamethrowerEnemyBalanceProfile3D : EnemyBalanceProfile3D
         halfAngleDegrees = 24f,
         damageTickInterval = 0.15f,
         burstDuration = 1.5f,
-        cooldown = 3f
+        cooldown = 3f,
+        alignDamageToVisualDrift = true,
+        driftVelocityScale = 1f,
+        visualFlameSpeed = 42f
     };
 
     [Header("Flamethrower Brain")]
@@ -31,9 +34,13 @@ public class FlamethrowerEnemyBalanceProfile3D : EnemyBalanceProfile3D
         flameOrbitDirectionChangeInterval = 3f
     };
 
-    public override void ApplyBrainStats(GameObject prefabRoot)
+    public override void ApplyWeaponStats(GameObject prefabRoot)
     {
         ApplyBrainStats<EnemyFlamethrowerWeapon3D>(prefabRoot, weapon => weapon.ApplyProfile(flamethrowerWeapon));
+    }
+
+    public override void ApplyBrainStats(GameObject prefabRoot)
+    {
         ApplyBrainStats<FlamethrowerEnemyBrain3D>(prefabRoot, flamethrowerBrain => flamethrowerBrain.ApplyProfile(brain));
     }
 }

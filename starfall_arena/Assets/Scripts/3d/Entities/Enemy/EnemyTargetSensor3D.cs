@@ -4,8 +4,13 @@ using UnityEngine;
 public class EnemyTargetSensor3D : MonoBehaviour
 {
     [Header("Targeting")]
+    [Tooltip("Faction this enemy should acquire. In Invasion enemies should normally target PlayerTeam.")]
     [SerializeField] private Faction3D targetFaction = Faction3D.PlayerTeam;
+
+    [Tooltip("Maximum distance at which this sensor can acquire or keep a target. Balance profiles overwrite this at runtime.")]
     [SerializeField] private float detectionRange = 800f;
+
+    [Tooltip("Seconds between target scans. Lower values acquire targets sooner but call FindObjectsByType more often.")]
     [SerializeField] private float refreshInterval = 0.15f;
 
     private Entity3D _currentTarget;
@@ -14,6 +19,11 @@ public class EnemyTargetSensor3D : MonoBehaviour
     private float _nextRefreshTime;
 
     public Entity3D CurrentTarget => ResolveCurrentTarget();
+
+    private void OnEnable()
+    {
+        _nextRefreshTime = 0f;
+    }
 
     private void OnDisable()
     {
