@@ -34,6 +34,17 @@ public struct ShipFlightConfig3D
     [Header("Engine Parameters")]
     public float thrustAcceleration;
     public float maxSpeed;
+    [Tooltip("Positive thrust input at or below this value is treated as precision throttle instead of full thrust.")]
+    [Range(0f, 1f)]
+    public float precisionThrottleInputThreshold;
+    [Tooltip("Maximum forward speed fraction allowed while using precision throttle.")]
+    [Range(0f, 1f)]
+    public float precisionThrottleMaxSpeedFraction;
+    [Tooltip("Acceleration multiplier used for precision throttle so left-stick forward input drifts instead of launching.")]
+    [Range(0f, 1f)]
+    public float precisionThrottleAccelerationMultiplier;
+    [Tooltip("Deceleration applied when negative thrust input requests braking toward a stop.")]
+    public float precisionBrakeDeceleration;
 
     [Header("Input Response")]
     [Tooltip("How quickly raw look input converges toward the assisted steering intent.")]

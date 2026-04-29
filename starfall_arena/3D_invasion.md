@@ -168,6 +168,24 @@ For a tank enemy prefab:
 - set the root tag to `Enemy` for compatibility, but keep target/damage filtering faction-driven
 - set a high `maxHealth` on `Entity3D` to lean into the tank identity
 
+For a flamethrower enemy prefab:
+
+- add `NetworkObject` if it will spawn in networked Invasion
+- add `FactionMember3D` and set faction to `EnemyTeam`
+- add `Enemy3D`
+- add `Rigidbody` with gravity off
+- add `EnemyAIFlightController3D`; start with moderate `moveSpeed` and a strong `rotationDegreesPerSecond` so the enemy can keep the flame lane on the player without feeling impossible to shake
+- add `EnemyTargetSensor3D`; start with detection range around `180-250`
+- add `EnemyPatrol3D` for no-target arena search behavior
+- add `EnemyStrafeMover3D`; this is required for the active-flame orbit because the enemy must face the player while sliding laterally
+- optionally add `EnemySeparation3D` so multiple flamethrowers do not stack in the same pocket
+- optionally add `EnemyObstacleAvoidance3D` if the enemy should route around asteroids while closing distance
+- add `EnemyFlamethrowerWeapon3D`; assign `Assets/Prefabs/3d_weapons/projectiles/enemies/3d_flamethrower.prefab` as the flame visual prefab, assign a muzzle whose local forward points down the intended flame lane, set `Target Faction = PlayerTeam`, and keep `Target Tag` empty
+- add `FlamethrowerEnemyBrain3D`; start with `Preferred Range Min = 20`, `Preferred Range Max = 30`, `Too Close Retreat Distance = 14`, `Full Approach Distance = 55`, `Aim Tolerance Degrees = 22`, `Flame Orbit Strafe Speed = 10`, and `Flame Orbit Direction Change Interval = 3`
+- add `NetEnemyMovement3D` and `NetEnemyCombat3D` for networked movement plus replicated flame visual state; only the server applies cone damage
+- create a `FlamethrowerEnemyBalanceProfile3D` asset, assign it through `EnemyBalanceProfileApplier3D`, and keep prefab-only wiring such as the flame prefab, muzzle, masks, visuals, audio, collision, and network references on the prefab
+- set the root tag to `Enemy` for compatibility, but keep target/damage filtering faction-driven
+
 For a glass cannon interceptor enemy prefab:
 
 - add `NetworkObject` if it will spawn in networked Invasion

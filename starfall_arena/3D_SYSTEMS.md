@@ -61,6 +61,7 @@ These classes should stay narrow and mostly coordinate dedicated 3D systems.
   - shared rigidbody flight
   - assisted pitch/yaw steering driven by filtered input and acceleration-limited turn rates
   - full 3D forward thrust, local drift damping, velocity alignment assist, and max-speed clamping
+  - supports a precision throttle/brake path: low positive thrust input is capped to a slower forward drift speed with reduced acceleration, while negative thrust input brakes local forward speed toward zero
   - optional world-Y plane lock remains only as a fallback/debug path, not the active player-flight default
   - reusable by local player, AI, or future network drivers
 - `ShipVisualTilt3D`
@@ -89,6 +90,7 @@ These classes should stay narrow and mostly coordinate dedicated 3D systems.
 - `PlayerInput3D`
   - local input adapter
   - feeds movement and weapon systems instead of movement reading raw input directly
+  - maps left-stick Y from the look command into precision forward drift / braking while keeping left trigger as the primary full-thrust control
   - when the active `PlayerInput` control scheme is `key+mouse`, free-look is sourced from locked mouse delta instead of an unlocked pointer position
 - `PlayerCameraRig3D`
   - Cinemachine follow-offset, damping, and FOV behavior

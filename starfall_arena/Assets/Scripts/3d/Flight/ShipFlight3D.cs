@@ -10,6 +10,10 @@ public class ShipFlight3D : MonoBehaviour
     {
         thrustAcceleration = 50f,
         maxSpeed = 100f,
+        precisionThrottleInputThreshold = 0.5f,
+        precisionThrottleMaxSpeedFraction = 0.25f,
+        precisionThrottleAccelerationMultiplier = 0.35f,
+        precisionBrakeDeceleration = 35f,
         lookInputResponse = 8f,
         pitchSpeed = 2.5f,
         yawSpeed = 2.5f,
@@ -358,6 +362,8 @@ public class ShipFlight3D : MonoBehaviour
         float thrustMultiplier = entity != null ? entity.GetCombinedThrustMultiplier() : 1f;
         float slowMultiplier = entity != null ? entity.GetSlowMultiplier() : 1f;
         _effectiveThrustInput = thrustMultiplier > 0f ? Mathf.Max(0f, _thrustInput) : 0f;
+        bool isPrecisionThrottle = IsPrecisionThrottleInput(_effectiveThrustInput);
+        float brakeInput = Mathf.Clamp01(-_thrustInput);
         bool passiveLinearAssistEnabled = frictionEnabled && flightAssist.frictionDeceleration > 0f;
         bool isApplyingThrust = _effectiveThrustInput > 0.05f;
 
@@ -365,7 +371,18 @@ public class ShipFlight3D : MonoBehaviour
 
         if (isApplyingThrust)
         {
-            localVelocity.z += _effectiveThrustInput * flight.thrustAcceleration * thrustMultiplier * slowMultiplier * Time.fixedDeltaTime;
+            float accelerationMultiplier = isPrecisionThrottle ? flight.precisionThrottleAccelerationMultiplier : 1f;
+            localVelocity.z += _effectiveThrustInput * flight.thrustAcceleration * accelerationMultiplier * thrustMultiplier * slowMultiplier * Time.fixedDeltaTime;
+
+            if (isPrecisionThrottle)
+            {
+                float precisionMaxSpeed = flight.maxSpeed * flight.precisionThrottleMaxSpeedFraction * slowMultiplier;
+                localVelocity.z = Mathf.Min(localVelocity.z, precisionMaxSpeed);
+            }
+        }
+        else if (brakeInput > 0.05f)
+        {
+            localVelocity.z = Mathf.MoveTowards(localVelocity.z, 0f, flight.precisionBrakeDeceleration * brakeInput * slowMultiplier * Time.fixedDeltaTime);
         }
         else if (passiveLinearAssistEnabled)
         {
@@ -480,6 +497,30 @@ public class ShipFlight3D : MonoBehaviour
             flight.maxSpeed = 100f;
         }
 
+        if (flight.precisionThrottleInputThreshold <= 0f)
+        {
+            flight.precisionThrottleInputThreshold = 0.5f;
+        }
+
+        if (flight.precisionThrottleMaxSpeedFraction <= 0f)
+        {
+            flight.precisionThrottleMaxSpeedFraction = 0.25f;
+        }
+
+        if (flight.precisionThrottleAccelerationMultiplier <= 0f)
+        {
+            flight.precisionThrottleAccelerationMultiplier = 0.35f;
+        }
+
+        if (flight.precisionBrakeDeceleration <= 0f)
+        {
+            flight.precisionBrakeDeceleration = 35f;
+        }
+
+        flight.precisionThrottleInputThreshold = Mathf.Clamp01(flight.precisionThrottleInputThreshold);
+        flight.precisionThrottleMaxSpeedFraction = Mathf.Clamp01(flight.precisionThrottleMaxSpeedFraction);
+        flight.precisionThrottleAccelerationMultiplier = Mathf.Clamp01(flight.precisionThrottleAccelerationMultiplier);
+
         if (flight.lookInputResponse <= 0f)
         {
             flight.lookInputResponse = 8f;
@@ -541,5 +582,12 @@ public class ShipFlight3D : MonoBehaviour
         {
             flightAssist.velocityAlignmentStrength = 0f;
         }
+    }
+
+    private bool IsPrecisionThrottleInput(float effectiveThrustInput)
+    {
+        return effectiveThrustInput > 0.05f
+            && flight.precisionThrottleInputThreshold > 0f
+            && effectiveThrustInput <= flight.precisionThrottleInputThreshold;
     }
 }

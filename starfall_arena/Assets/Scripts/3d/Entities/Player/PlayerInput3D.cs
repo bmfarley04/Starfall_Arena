@@ -9,6 +9,16 @@ public class PlayerInput3D : MonoBehaviour, IShipFlightInputSource
     [SerializeField] private AimAssist3D aimAssist;
     [Tooltip("Sensitivity multiplier for mouse delta when keyboard/mouse is the active control scheme.")]
     [SerializeField] private float mouseLookSensitivity = 0.02f;
+    [Header("Left Stick Precision Throttle")]
+    [Tooltip("How much full forward left-stick input contributes to thrust. Keep below 1 so normal trigger thrust remains the main acceleration input.")]
+    [Range(0f, 1f)]
+    [SerializeField] private float leftStickForwardThrustInput = 0.35f;
+    [Tooltip("How much full backward left-stick input contributes to braking. This is negative thrust consumed by ShipFlight3D as a slow-stop command.")]
+    [Range(0f, 1f)]
+    [SerializeField] private float leftStickBrakeInput = 0.6f;
+    [Tooltip("Dead zone on the left stick Y axis before precision throttle or braking is applied.")]
+    [Range(0f, 0.5f)]
+    [SerializeField] private float leftStickThrottleDeadZone = 0.15f;
     [Header("Dodge Flick")]
     [Tooltip("Horizontal left-stick magnitude that commits a dodge attempt. Keep this generous so intentional left/right inputs reach the dodge cooldown gate.")]
     [SerializeField] private float dodgeFlickThreshold = 0.45f;
@@ -36,7 +46,7 @@ public class PlayerInput3D : MonoBehaviour, IShipFlightInputSource
 
     public Vector2 LookInput => _lookInput;
     public Vector2 MoveInput => _moveInput;
-    public float ThrustInput => _thrustInput;
+    public float ThrustInput => ResolveCombinedThrustInput();
     public bool IsFireHeld => _fireHeld;
     public bool IsCombatInputSuppressed => _combatInputSuppressed;
 
@@ -58,6 +68,7 @@ public class PlayerInput3D : MonoBehaviour, IShipFlightInputSource
     private void OnValidate()
     {
         ValidateDodgeFlickConfig();
+        ValidatePrecisionThrottleConfig();
     }
 
     private void Update()
@@ -268,6 +279,42 @@ public class PlayerInput3D : MonoBehaviour, IShipFlightInputSource
         dodgeFlickThreshold = Mathf.Clamp01(dodgeFlickThreshold);
         dodgeFlickResetThreshold = Mathf.Clamp(dodgeFlickResetThreshold, 0f, dodgeFlickThreshold);
         dodgeFlickMaxVertical = Mathf.Clamp01(dodgeFlickMaxVertical);
+    }
+
+    private void ValidatePrecisionThrottleConfig()
+    {
+        leftStickForwardThrustInput = Mathf.Clamp01(leftStickForwardThrustInput);
+        leftStickBrakeInput = Mathf.Clamp01(leftStickBrakeInput);
+        leftStickThrottleDeadZone = Mathf.Clamp(leftStickThrottleDeadZone, 0f, 0.5f);
+    }
+
+    private float ResolveCombinedThrustInput()
+    {
+        float triggerThrust = Mathf.Clamp01(_thrustInput);
+        float stickY = ApplySignedDeadZone(_moveInput.y, leftStickThrottleDeadZone);
+        if (stickY > 0f)
+        {
+            return Mathf.Max(triggerThrust, stickY * leftStickForwardThrustInput);
+        }
+
+        if (triggerThrust > 0f)
+        {
+            return triggerThrust;
+        }
+
+        return stickY * leftStickBrakeInput;
+    }
+
+    private static float ApplySignedDeadZone(float value, float deadZone)
+    {
+        float absValue = Mathf.Abs(value);
+        if (absValue <= deadZone)
+        {
+            return 0f;
+        }
+
+        float normalized = Mathf.InverseLerp(deadZone, 1f, absValue);
+        return Mathf.Sign(value) * normalized;
     }
 
     private void UpdateCursorLockState()

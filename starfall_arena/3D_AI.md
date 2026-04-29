@@ -89,6 +89,12 @@ The 3D AI path should stay modular. Enemy prefabs should compose small scripts i
   - aim tolerances gate when each weapon may fire; the projectile/missile launch direction is still resolved toward the target instead of using the remaining muzzle-forward offset
   - each weapon's own cooldown still gates fire rate, but the brain also applies a small cross-weapon stagger delay after a successful shot so the cannon and missile launcher do not both dump on the same frame when both are ready
   - intentionally cheaper than the artillery brain: no line-of-sight raycast, no per-frame aim refresh, no beam state machine
+- `FlamethrowerEnemyBrain3D`
+  - short-range pressure enemy that closes directly until it reaches its flame pocket, then keeps its nose on the target while using `EnemyFlamethrowerWeapon3D`
+  - movement bands: no target uses `EnemyPatrol3D`; detected-but-far approaches; `20-30m` preferred range faces the player and can fire; inside the lower band backs away while still facing the player; cooldown continues the same range management without firing
+  - while a flame burst is active, it layers a slow orbit through `EnemyStrafeMover3D` so the enemy can slide around the player without giving up its forward flame lane
+  - optional `EnemySeparation3D` can bias approach/retreat away from allies, and optional `EnemyObstacleAvoidance3D` can route approach steering around asteroids/world geometry
+  - `EnemyFlamethrowerWeapon3D` owns the authored particle visual and the server-authoritative cone DPS; clients only receive replicated visual state through `NetEnemyCombat3D`
 - `GlassCannonInterceptorEnemyBrain3D`
   - fragile, high-pressure ranged enemy whose identity is a readable loop: `Reposition` -> `Settle` -> `Burst` -> `Recover`
   - chooses a new world-space perch around the current player target at roughly 40-50m, using lateral plus vertical bias so it relocates through the full 3D flight volume without becoming a noisy continuous orbit

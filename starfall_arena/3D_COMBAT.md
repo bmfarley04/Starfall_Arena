@@ -102,6 +102,11 @@ Base input rule:
   - consumes the inherited weapon cooldown once to start a rack sequence, then fires one configured muzzle at a time using `launcherStaggerInterval` until the sequence finishes
   - can either walk the configured launchers sequentially or pick a random launcher for each staggered missile
   - uses the same enemy projectile/network contract as `MissileWeaponEnemy3D`; gameplay fire stays server-authoritative through `NetEnemyCombat3D`, while clients receive the normal cosmetic projectile RPC
+- `EnemyFlamethrowerWeapon3D`
+  - enemy-only short-range cone DPS weapon for Invasion flamethrower enemies
+  - treats `3d_flamethrower.prefab` as an authored particle/light visual attached to a muzzle; gameplay damage is a separate non-alloc cone query owned by the weapon script
+  - targets `Faction3D.PlayerTeam` by default and should keep legacy target tag empty for new PvE prefabs
+  - in networked Invasion, only the server applies cone damage; `NetEnemyCombat3D` replicates flame visual start/stop so clients never run flame hit checks
 - `StupidTurret3D`
   - scene-test firing driver for stationary or non-piloted 3D ships
   - should be paired with `ProjectileWeapon3D` aim set to `MuzzleForward` when the goal is "fire where the ship is facing"
@@ -214,7 +219,7 @@ Base input rule:
 
 Current networked 3D combat uses server authority with owner-side cosmetic prediction:
 
-- projectile and beam damage applies only on the server
+- projectile, beam, and enemy flamethrower cone damage applies only on the server
 - health, shield, hit feedback, slow state, and death presentation replicate from `NetCombat3D`
 - recoil, impact force, tractor pull, and teleport warps must update `NetMovement3D` combat helpers so movement reconciliation keeps the combat impulse
 - owner combat input is enabled only when the networked prefab has `NetCombat3D`; without it, `NetMovement3D` suppresses combat to avoid false local-only firing

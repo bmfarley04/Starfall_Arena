@@ -77,13 +77,26 @@ public static class MovementSimulation3D
         float dt)
     {
         float effectiveThrustInput = input.ThrustMultiplier > 0f ? Mathf.Max(0f, input.ThrustInput) : 0f;
+        bool isPrecisionThrottle = IsPrecisionThrottleInput(effectiveThrustInput, flight);
+        float brakeInput = Mathf.Clamp01(-input.ThrustInput);
         bool passiveLinearAssistEnabled = input.FrictionEnabled && assist.frictionDeceleration > 0f;
         Quaternion inverseRotation = Quaternion.Inverse(state.Rotation);
         Vector3 localVelocity = inverseRotation * state.Velocity;
 
         if (effectiveThrustInput > 0.05f)
         {
-            localVelocity.z += effectiveThrustInput * flight.thrustAcceleration * input.ThrustMultiplier * input.SlowMultiplier * dt;
+            float accelerationMultiplier = isPrecisionThrottle ? flight.precisionThrottleAccelerationMultiplier : 1f;
+            localVelocity.z += effectiveThrustInput * flight.thrustAcceleration * accelerationMultiplier * input.ThrustMultiplier * input.SlowMultiplier * dt;
+
+            if (isPrecisionThrottle)
+            {
+                float precisionMaxSpeed = flight.maxSpeed * flight.precisionThrottleMaxSpeedFraction * input.SlowMultiplier;
+                localVelocity.z = Mathf.Min(localVelocity.z, precisionMaxSpeed);
+            }
+        }
+        else if (brakeInput > 0.05f)
+        {
+            localVelocity.z = Mathf.MoveTowards(localVelocity.z, 0f, flight.precisionBrakeDeceleration * brakeInput * input.SlowMultiplier * dt);
         }
         else if (passiveLinearAssistEnabled)
         {
@@ -201,5 +214,12 @@ public static class MovementSimulation3D
         }
 
         return Mathf.Clamp(turnRate / maxTurnRate, -1f, 1f);
+    }
+
+    private static bool IsPrecisionThrottleInput(float effectiveThrustInput, in ShipFlightConfig3D flight)
+    {
+        return effectiveThrustInput > 0.05f
+            && flight.precisionThrottleInputThreshold > 0f
+            && effectiveThrustInput <= flight.precisionThrottleInputThreshold;
     }
 }
