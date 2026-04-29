@@ -51,6 +51,7 @@ The 3D AI path should stay modular. Enemy prefabs should compose small scripts i
   - directly pursues the nearest player
   - slows/stops near the target instead of overshooting into long orbit loops
   - fires its projectile weapon when aimed and off cooldown; its aim tolerance controls when the enemy is allowed to shoot, while the actual projectile direction is the current target direction
+  - can optionally route that shot through `EnemyProjectileChargeAttack3D` so basic projectile or missile enemies get a reusable pre-fire telegraph; without that component it keeps the original immediate-fire behavior
   - should use `ProjectileWeaponEnemy3D` for direct-fire guns so the AI path avoids player-only weapon overhead while still letting the brain supply the actual shot direction
 - `ArtilleryBeamEnemyBrain3D`
   - long-range beam enemy behavior translated from the old artillery concept
@@ -75,7 +76,7 @@ The 3D AI path should stay modular. Enemy prefabs should compose small scripts i
   - missile rack hardpoints can use `MissileLauncherYawTracker3D` to visually yaw child launcher transforms toward the current target; this is presentation/initial-hardpoint alignment only, not a firing-decision brain
   - can also drive one or more `StaggeredProjectileWeaponEnemy3D` close-range turret weapons for laser-bolt chip pressure; these turrets fire independently while the cannon acquires or charges, as long as the target is inside `maxTurretRange`
   - turret hardpoints can use `ProjectileTurretYawTracker3D` to track the current target without becoming another AI decision owner; use `Turret Bindings` for two-part turrets where the base rotates local Y and the child turret/barrel rotates local X for elevation
-  - charge readability is presentation-only through `ArtilleryFortressChargeTelegraph3D`; the server replicates start/stop visual state to clients, but clients still do not run AI or firing decisions
+  - charge readability is presentation-only through `ProjectileChargeTelegraph3D`; the server replicates start/stop visual state to clients, but clients still do not run AI or firing decisions
 - `SuicideDroneEnemyBrain3D`
   - dedicated detonation behavior for kamikaze enemies
   - always commits to the nearest player at full speed instead of using range management
@@ -139,7 +140,7 @@ The 3D AI path should stay modular. Enemy prefabs should compose small scripts i
   - the lowest-instance surviving member acts as the server-authoritative coordinator and directly assigns formation/facing intents to the surviving squad
   - each member can declare a fixed `Formation Slot Preference` (`Top`, `LowerLeft`, or `LowerRight`); `Auto` members are assigned a stable open slot by the coordinator so the triangle does not reshuffle while the ships are moving
   - the squad first moves into a small triangle formation around its current group center, holds briefly, then reveals cosmetic lightning links in order: member `0 -> 1`, `1 -> 2`, `2 -> 0`
-  - each member can bind an `ArtilleryFortressChargeTelegraph3D` as `Charge Telegraph`; the coordinator plays it across the link sequence and final charge delay so all surviving ships brighten while preparing the converged beam, then restores their authored idle emission/light baseline when charging ends
+  - each member can bind a `ProjectileChargeTelegraph3D` as `Charge Telegraph`; the coordinator plays it across the link sequence and final charge delay so all surviving ships brighten while preparing the converged beam, then restores their authored idle emission/light baseline when charging ends
   - when using auto-collected renderers for this telegraph, keep `Only Affect Authored Emission Renderers` enabled or explicitly assign only the glow-capable hull renderers so shield/transparent effect materials are not touched
   - formation approach faces each member toward its assigned slot until it arrives, then turns toward the player; this matches `EnemyAIFlightController3D`'s forward-move contract and prevents local test scenes from freezing after target acquisition
   - uses a compact vertical two-low / one-high triangle by default; tune `Vertical Triangle Width` and `Vertical Triangle Height` for the intended read, and leave `Anchor Formation Near Current Squad` enabled unless the squad should intentionally relocate to a fixed target distance before linking

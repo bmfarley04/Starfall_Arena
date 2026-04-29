@@ -992,7 +992,6 @@ MonoBehaviour:
   dodgeFlickThreshold: 0.55
   dodgeFlickResetThreshold: 0.35
   dodgeFlickMaxVertical: 0.65
-  dodgeFlickMaxTime: 0.18
   logDodgeFlickDebug: 1
 --- !u!114 &3760524061682020281
 MonoBehaviour:
@@ -1027,6 +1026,7 @@ MonoBehaviour:
     aimDampingAtRest: 0.1
     aimDampingDuringTurn: 0.25
   dodgeLagExtraDuration: 0.12
+  dodgeLagBlendOutDuration: 0.16
   dodgePositionDamping: 0.85
   dodgeRotationDamping: 0.45
   dodgeAimDamping: 0.35

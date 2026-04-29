@@ -83,8 +83,8 @@ public class TriumvirateEnemyBrain3D : NetworkBehaviour
     [SerializeField] private BeamWeapon3D finalBeamWeapon;
     [Tooltip("Network combat helper used to replicate the final beam visual.")]
     [SerializeField] private NetEnemyCombat3D netEnemyCombat;
-    [Tooltip("Optional charge glow telegraph on this member. Reuses the artillery fortress telegraph behavior for renderer emission, VFX, and light buildup.")]
-    [SerializeField] private ArtilleryFortressChargeTelegraph3D chargeTelegraph;
+    [Tooltip("Optional charge glow telegraph on this member. Reuses the generic projectile charge telegraph behavior for renderer emission, VFX, and light buildup.")]
+    [SerializeField] private ProjectileChargeTelegraph3D chargeTelegraph;
     [Tooltip("Maximum final beam damage range.")]
     [SerializeField] private float finalBeamRange = 70f;
     [Tooltip("Spherecast radius used by the final beam damage check.")]
@@ -151,7 +151,7 @@ public class TriumvirateEnemyBrain3D : NetworkBehaviour
         _networkObject = GetComponent<NetworkObject>();
         finalBeamWeapon ??= GetComponent<BeamWeapon3D>();
         netEnemyCombat ??= GetComponent<NetEnemyCombat3D>();
-        chargeTelegraph ??= GetComponentInChildren<ArtilleryFortressChargeTelegraph3D>(true);
+        chargeTelegraph ??= GetComponentInChildren<ProjectileChargeTelegraph3D>(true);
     }
 
     public void ApplyProfile(EnemyBalanceProfile3D.TriumvirateBrainStats stats)

@@ -11,6 +11,9 @@ public class BasicShooterEnemyBrain3D : MonoBehaviour
     [Tooltip("Enemy-only direct-fire projectile weapon. The brain gates firing by nose tolerance, then supplies the target direction so long-range shots are aimed at the player instead of inheriting the remaining tolerance error.")]
     [SerializeField] private ProjectileWeaponEnemy3D primaryWeapon;
 
+    [Tooltip("Optional generic charge driver for this enemy's projectile or missile weapon. When assigned, the brain starts this telegraphed windup instead of firing Primary Weapon immediately.")]
+    [SerializeField] private EnemyProjectileChargeAttack3D chargeAttack;
+
     [Tooltip("AI flight motor that drives the Rigidbody. Auto-assigned from this GameObject if left empty.")]
     [SerializeField] private EnemyAIFlightController3D flightController;
 
@@ -47,6 +50,7 @@ public class BasicShooterEnemyBrain3D : MonoBehaviour
     private void Awake()
     {
         primaryWeapon ??= GetComponent<ProjectileWeaponEnemy3D>();
+        chargeAttack ??= GetComponent<EnemyProjectileChargeAttack3D>();
         flightController ??= GetComponent<EnemyAIFlightController3D>();
         targetSensor ??= GetComponent<EnemyTargetSensor3D>();
         obstacleAvoidance ??= GetComponent<EnemyObstacleAvoidance3D>();
@@ -65,6 +69,7 @@ public class BasicShooterEnemyBrain3D : MonoBehaviour
 
     private void OnDisable()
     {
+        chargeAttack?.CancelCharge(immediate: true);
         flightController?.ClearFlightIntent();
     }
 
@@ -90,6 +95,7 @@ public class BasicShooterEnemyBrain3D : MonoBehaviour
         Entity3D target = targetSensor != null ? targetSensor.GetTarget() : null;
         if (target == null)
         {
+            chargeAttack?.CancelCharge();
             PatrolOrClearFlightIntent();
             return;
         }
@@ -97,6 +103,7 @@ public class BasicShooterEnemyBrain3D : MonoBehaviour
         Vector3 toTarget = target.transform.position - transform.position;
         if (toTarget.sqrMagnitude <= 0.0001f)
         {
+            chargeAttack?.CancelCharge();
             flightController?.ClearFlightIntent();
             return;
         }
@@ -107,7 +114,22 @@ public class BasicShooterEnemyBrain3D : MonoBehaviour
 
         flightController?.SetMoveDirection(steeringDirection, ResolveDistanceSpeedScale(toTarget.magnitude));
 
-        if (primaryWeapon == null || !IsAimedAtTarget(toTarget))
+        if (!IsAimedAtTarget(toTarget))
+        {
+            return;
+        }
+
+        if (chargeAttack != null)
+        {
+            if (!chargeAttack.IsCharging)
+            {
+                chargeAttack.TryBeginCharge(Faction3D.PlayerTeam, toTarget.normalized);
+            }
+
+            return;
+        }
+
+        if (primaryWeapon == null)
         {
             return;
         }

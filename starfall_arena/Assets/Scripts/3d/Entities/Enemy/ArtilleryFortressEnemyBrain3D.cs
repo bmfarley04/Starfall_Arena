@@ -37,7 +37,7 @@ public class ArtilleryFortressEnemyBrain3D : NetworkBehaviour
     [SerializeField] private NetEnemyCombat3D netEnemyCombat;
 
     [Tooltip("Optional local presentation helper for the fortress charge tell. Auto-assigned from this GameObject or children if left empty. Gameplay does not depend on this component.")]
-    [SerializeField] private ArtilleryFortressChargeTelegraph3D chargeTelegraph;
+    [SerializeField] private ProjectileChargeTelegraph3D chargeTelegraph;
 
     [Header("Think Loop")]
     [Tooltip("Seconds between AI decision ticks. Lower is more responsive but costs more CPU.")]
@@ -97,6 +97,7 @@ public class ArtilleryFortressEnemyBrain3D : NetworkBehaviour
     private float _chargeDuration;
     private float _cannonBlockedUntilTime;
     private Vector3 _lockedFireDirection;
+    private Vector3 _lockedFirePoint;
     private Entity3D _currentTarget;
 
     private void Awake()
@@ -113,7 +114,7 @@ public class ArtilleryFortressEnemyBrain3D : NetworkBehaviour
         targetSensor ??= GetComponent<EnemyTargetSensor3D>();
         patrol ??= GetComponent<EnemyPatrol3D>() ?? gameObject.AddComponent<EnemyPatrol3D>();
         netEnemyCombat ??= GetComponent<NetEnemyCombat3D>();
-        chargeTelegraph ??= GetComponentInChildren<ArtilleryFortressChargeTelegraph3D>(true);
+        chargeTelegraph ??= GetComponentInChildren<ProjectileChargeTelegraph3D>(true);
         _networkObject = GetComponent<NetworkObject>();
     }
 
@@ -212,7 +213,8 @@ public class ArtilleryFortressEnemyBrain3D : NetworkBehaviour
 
     private void TickAcquiring(Entity3D target)
     {
-        Vector3 aimDirection = ResolveAimDirection(target);
+        Vector3 aimPoint = ResolveAimPoint(target);
+        Vector3 aimDirection = ResolveDirectionFromRoot(aimPoint);
         if (aimDirection.sqrMagnitude <= 0.0001f)
         {
             flightController?.ClearFlightIntent();
@@ -243,6 +245,7 @@ public class ArtilleryFortressEnemyBrain3D : NetworkBehaviour
         }
 
         _lockedFireDirection = aimDirection;
+        _lockedFirePoint = aimPoint;
         _chargeDuration = Mathf.Max(0f, chargeWindUpDuration);
         _chargeEndsAt = Time.time + _chargeDuration;
         _state = FortressState.Charging;
@@ -260,7 +263,8 @@ public class ArtilleryFortressEnemyBrain3D : NetworkBehaviour
         if (!IsTargetInsideFiringRange(target))
         {
             CancelChargeAndAcquire(clearFlightIntent: false);
-            Vector3 aimDirection = ResolveAimDirection(target);
+            Vector3 aimPoint = ResolveAimPoint(target);
+            Vector3 aimDirection = ResolveDirectionFromRoot(aimPoint);
             if (aimDirection.sqrMagnitude > 0.0001f)
             {
                 TryHandleOutOfFiringRange(target, aimDirection);
@@ -289,25 +293,24 @@ public class ArtilleryFortressEnemyBrain3D : NetworkBehaviour
 
         if (NetTickUtil.IsActive && netEnemyCombat != null && netEnemyCombat.IsSpawned)
         {
-            netEnemyCombat.TryFireProjectilePattern(cannonWeapon, Faction3D.PlayerTeam, _lockedFireDirection);
+            netEnemyCombat.TryFireProjectilePatternConverged(cannonWeapon, Faction3D.PlayerTeam, _lockedFirePoint);
             return;
         }
 
-        cannonWeapon.TryFireAtFaction(Faction3D.PlayerTeam, _lockedFireDirection);
+        cannonWeapon.TryFireAtFactionConverged(Faction3D.PlayerTeam, _lockedFirePoint);
     }
 
-    private Vector3 ResolveAimDirection(Entity3D target)
+    private Vector3 ResolveAimPoint(Entity3D target)
     {
-        Vector3 toTarget = target.transform.position - transform.position;
         if (!useLeadAim)
         {
-            return toTarget.sqrMagnitude > 0.0001f ? toTarget.normalized : Vector3.zero;
+            return target.transform.position;
         }
 
         float projectileSpeed = cannonWeapon != null ? Mathf.Max(0f, cannonWeapon.WeaponConfig.speed) : 0f;
         if (projectileSpeed <= 0.0001f)
         {
-            return toTarget.sqrMagnitude > 0.0001f ? toTarget.normalized : Vector3.zero;
+            return target.transform.position;
         }
 
         Vector3 targetVelocity = ResolveTargetVelocity(target);
@@ -320,8 +323,13 @@ public class ArtilleryFortressEnemyBrain3D : NetworkBehaviour
             leadPoint = target.transform.position + (targetVelocity * flightTime);
         }
 
-        Vector3 toLead = leadPoint - transform.position;
-        return toLead.sqrMagnitude > 0.0001f ? toLead.normalized : Vector3.zero;
+        return leadPoint;
+    }
+
+    private Vector3 ResolveDirectionFromRoot(Vector3 aimPoint)
+    {
+        Vector3 toAimPoint = aimPoint - transform.position;
+        return toAimPoint.sqrMagnitude > 0.0001f ? toAimPoint.normalized : Vector3.zero;
     }
 
     private Vector3 ResolveTargetVelocity(Entity3D target)
@@ -504,6 +512,7 @@ public class ArtilleryFortressEnemyBrain3D : NetworkBehaviour
 
         _state = FortressState.Acquiring;
         _lockedFireDirection = Vector3.zero;
+        _lockedFirePoint = Vector3.zero;
     }
 
     private void PatrolOrClearFlightIntent()

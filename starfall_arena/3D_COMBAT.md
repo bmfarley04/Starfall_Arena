@@ -77,6 +77,7 @@ Base input rule:
   - stripped-down enemy-only direct-fire projectile weapon
   - keeps only cooldown, muzzle, projectile, recoil, muzzle-FX data, and an optional brain-supplied fire direction
   - when an enemy brain supplies a fire direction, aim tolerance is only a permission gate; the projectile launches along the requested target/lead direction instead of inheriting the remaining muzzle-facing error
+  - for large or offset cannon muzzles, prefer the convergence-point path when the brain has a locked target/lead point; a root-resolved direction can still produce a parallel muzzle shot that misses a stationary target
   - when no fire direction is supplied, falls back to muzzle-forward firing for simple turret/test cases
   - should be preferred for AI projectile weapons that do not need player slot selection, screen-center aiming, or resource/HUD behavior
 - `StaggeredProjectileWeaponEnemy3D`
@@ -88,6 +89,14 @@ Base input rule:
   - stripped-down enemy-only missile launcher that reuses the same minimal volley/cooldown path as `ProjectileWeaponEnemy3D`
   - expects a projectile prefab with `MissileProjectile3D` and supports multi-muzzle launches for enemy salvos
   - suppresses inherited muzzle-FX spawning because missile prefabs should carry their own exhaust/trail/launch presentation instead of using generic gun muzzle flashes
+- `ProjectileChargeTelegraph3D`
+  - generic visual charge tell for projectile-style attacks; it owns renderer emission ramps, optional VFX roots, and optional charge lights
+  - replaces the artillery-named telegraph script for new work, while `ArtilleryFortressChargeTelegraph3D` remains as a compatibility wrapper for existing prefab components
+  - presentation only: it does not know which weapon to fire and must be driven by a brain or attack driver
+- `EnemyProjectileChargeAttack3D`
+  - generic enemy windup/firing driver for any `IEnemyProjectileWeapon3D`, including normal enemy projectiles, staggered projectile racks, missiles, and staggered missile racks
+  - locks the supplied fire direction at windup start, plays `ProjectileChargeTelegraph3D`, then fires through `NetEnemyCombat3D` in networked sessions or directly through the assigned weapon offline
+  - `BasicShooterEnemyBrain3D` can use this optional driver to turn its immediate projectile shot into a telegraphed delayed shot without changing the normal instant-fire path when the driver is absent
 - `StaggeredMissileWeaponEnemy3D`
   - enemy-only guided missile launcher variant for racks with several authored launcher transforms
   - consumes the inherited weapon cooldown once to start a rack sequence, then fires one configured muzzle at a time using `launcherStaggerInterval` until the sequence finishes

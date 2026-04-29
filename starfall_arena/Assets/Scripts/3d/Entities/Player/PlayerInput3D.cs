@@ -10,14 +10,12 @@ public class PlayerInput3D : MonoBehaviour, IShipFlightInputSource
     [Tooltip("Sensitivity multiplier for mouse delta when keyboard/mouse is the active control scheme.")]
     [SerializeField] private float mouseLookSensitivity = 0.02f;
     [Header("Dodge Flick")]
-    [Tooltip("Horizontal left-stick magnitude that commits a dodge flick.")]
-    [SerializeField] private float dodgeFlickThreshold = 0.55f;
-    [Tooltip("Stick must return below this horizontal magnitude before another flick can be detected.")]
-    [SerializeField] private float dodgeFlickResetThreshold = 0.35f;
-    [Tooltip("Maximum vertical left-stick magnitude allowed for a left/right dodge flick.")]
-    [SerializeField] private float dodgeFlickMaxVertical = 0.75f;
-    [Tooltip("Maximum seconds allowed for the stick to travel from reset to flick threshold.")]
-    [SerializeField] private float dodgeFlickMaxTime = 0.28f;
+    [Tooltip("Horizontal left-stick magnitude that commits a dodge attempt. Keep this generous so intentional left/right inputs reach the dodge cooldown gate.")]
+    [SerializeField] private float dodgeFlickThreshold = 0.45f;
+    [Tooltip("Horizontal left-stick magnitude that clears the held-direction latch so the same direction can be attempted again.")]
+    [SerializeField] private float dodgeFlickResetThreshold = 0.25f;
+    [Tooltip("Maximum vertical left-stick magnitude allowed for a left/right dodge attempt.")]
+    [SerializeField] private float dodgeFlickMaxVertical = 0.9f;
     [Tooltip("Logs left-stick flick dodge detection and rejection reasons.")]
     [SerializeField] private bool logDodgeFlickDebug = true;
 
@@ -25,14 +23,13 @@ public class PlayerInput3D : MonoBehaviour, IShipFlightInputSource
     private Vector2 _gamepadLookInput;
     private Vector2 _moveInput;
     private float _thrustInput;
-    private float _lastMoveInputSampleTime;
     private bool _toggleFrictionPressed;
     private bool _fireHeld;
     private bool _isCursorLocked;
     private bool _appliedFireHeld;
     private Weapon3D _activeWeaponForFire;
     private bool _combatInputSuppressed;
-    private bool _dodgeFlickReady = true;
+    private int _lastDodgeFlickAttemptDirection;
     private Player3D _player;
 
     private const string KeyboardMouseScheme = "key+mouse";
@@ -51,7 +48,6 @@ public class PlayerInput3D : MonoBehaviour, IShipFlightInputSource
         playerInput ??= GetComponent<PlayerInput>();
         aimAssist ??= GetComponent<AimAssist3D>();
         _player = entity as Player3D;
-        _lastMoveInputSampleTime = Time.unscaledTime;
 
         if (shipFlight != null)
         {
@@ -120,7 +116,6 @@ public class PlayerInput3D : MonoBehaviour, IShipFlightInputSource
         Vector2 nextMoveInput = value.Get<Vector2>();
         TryHandleDodgeFlick(nextMoveInput);
         _moveInput = nextMoveInput;
-        _lastMoveInputSampleTime = Time.unscaledTime;
     }
 
     public void OnThrust(InputValue value)
@@ -195,25 +190,27 @@ public class PlayerInput3D : MonoBehaviour, IShipFlightInputSource
     private void TryHandleDodgeFlick(Vector2 nextMoveInput)
     {
         float absX = Mathf.Abs(nextMoveInput.x);
-        if (absX <= Mathf.Clamp01(dodgeFlickResetThreshold))
+        float resetThreshold = Mathf.Clamp01(dodgeFlickResetThreshold);
+        if (absX <= resetThreshold)
         {
-            if (!_dodgeFlickReady && logDodgeFlickDebug)
+            if (_lastDodgeFlickAttemptDirection != 0 && logDodgeFlickDebug)
             {
-                Debug.Log($"[DodgeInput3D] {name} flick detector reset. input={nextMoveInput}", this);
+                Debug.Log($"[DodgeInput3D] {name} dodge direction latch reset. input={nextMoveInput}", this);
             }
 
-            _dodgeFlickReady = true;
-        }
-
-        if (!_dodgeFlickReady)
-        {
-            LogDodgeFlickRejected("waiting for stick to return below reset threshold", nextMoveInput);
+            _lastDodgeFlickAttemptDirection = 0;
             return;
         }
 
         if (_player == null)
         {
             LogDodgeFlickRejected("missing Player3D reference", nextMoveInput);
+            return;
+        }
+
+        int direction = nextMoveInput.x >= 0f ? 1 : -1;
+        if (_lastDodgeFlickAttemptDirection == direction)
+        {
             return;
         }
 
@@ -234,29 +231,14 @@ public class PlayerInput3D : MonoBehaviour, IShipFlightInputSource
             return;
         }
 
-        float previousAbsX = Mathf.Abs(_moveInput.x);
-        if (previousAbsX > Mathf.Clamp01(dodgeFlickResetThreshold))
-        {
-            LogDodgeFlickRejected($"previous x not reset previousAbsX={previousAbsX:0.00} reset={dodgeFlickResetThreshold:0.00}", nextMoveInput);
-            return;
-        }
-
-        float elapsed = Time.unscaledTime - _lastMoveInputSampleTime;
-        if (elapsed > Mathf.Max(0.01f, dodgeFlickMaxTime))
-        {
-            LogDodgeFlickRejected($"too slow elapsed={elapsed:0.000}s max={dodgeFlickMaxTime:0.000}s", nextMoveInput);
-            return;
-        }
-
-        int direction = nextMoveInput.x >= 0f ? 1 : -1;
+        _lastDodgeFlickAttemptDirection = direction;
         if (logDodgeFlickDebug)
         {
-            Debug.Log($"[DodgeInput3D] {name} flick accepted by input detector. direction={(direction > 0 ? "right" : "left")} input={nextMoveInput} previous={_moveInput} elapsed={elapsed:0.000}s", this);
+            Debug.Log($"[DodgeInput3D] {name} dodge input accepted by detector. direction={(direction > 0 ? "right" : "left")} input={nextMoveInput} previous={_moveInput}", this);
         }
 
         if (_player.TryDodge(direction))
         {
-            _dodgeFlickReady = false;
             return;
         }
 
@@ -286,7 +268,6 @@ public class PlayerInput3D : MonoBehaviour, IShipFlightInputSource
         dodgeFlickThreshold = Mathf.Clamp01(dodgeFlickThreshold);
         dodgeFlickResetThreshold = Mathf.Clamp(dodgeFlickResetThreshold, 0f, dodgeFlickThreshold);
         dodgeFlickMaxVertical = Mathf.Clamp01(dodgeFlickMaxVertical);
-        dodgeFlickMaxTime = Mathf.Max(0.01f, dodgeFlickMaxTime);
     }
 
     private void UpdateCursorLockState()
