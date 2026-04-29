@@ -24,7 +24,7 @@ Implemented foundation:
 - `SplitterEnemyBrain3D` owns the Splitter enemy identity: the parent hybrid chooses between projectile and beam pressure based on range plus a random overlap band, then on death asks `InvasionWaveManager3D` to spawn the same prefab twice as smaller role-locked children
 - `TriumvirateEnemyBrain3D` owns the Triumvirate enemy identity: small linked beam ships form a triangle, reveal cosmetic lightning links, and then fire a survivor-scaled lightning beam where the full three-ship version is the only slow-applying version
 - `SwarmScoutEnemyBrain3D` owns the Swarm Scout enemy identity: fragile fast flyers move in linked formations, default to a pentagon-style flyby through/past the player, can fall back to orbit behavior through a movement-pattern dropdown, and only alert nearby enemy sensors if the required survivor count remains alive near the player through the warmup
-- `SiegeCarrierBossEnemyBrain3D` owns the second Invasion boss identity: a slow/stationary Siege Carrier that sequences one major bullet-hell-style pattern at a time, mixes targeted projectile pressure with spatial beam geometry, keeps a hard per-pattern projectile budget, and leaves authored escape lanes instead of flooding the whole arena
+- `SiegeCarrierBossEnemyBrain3D` owns the second Invasion boss identity: a slow/stationary Siege Carrier that maintains a preferred range band without constantly rotating its hull toward the player, sequences one major bullet-hell-style pattern at a time, mixes targeted projectile pressure with spatial beam geometry, keeps a hard per-pattern projectile budget, and leaves authored escape lanes instead of flooding the whole arena
 - `NetEnemyMovement3D` makes enemies server-simulated in network sessions
 - `NetEnemyCombat3D` makes enemy projectile damage server-authoritative and broadcasts client cosmetics
 - enemy beam prefabs may now use an optional `BeamVisualDriver3D` such as `ForgeBeamVisualDriver3D` for presentation, but enemy beam gameplay still stays inside `LaserBeam3D` / `NetEnemyCombat3D`
@@ -315,13 +315,13 @@ For a Siege Carrier boss prefab:
 - add `FactionMember3D` and set faction to `EnemyTeam`
 - add `Enemy3D`
 - add `Rigidbody` with gravity off
-- add `EnemyAIFlightController3D`; start with `moveSpeed` around `15` and a slow-to-moderate turn rate so the boss reads as a heavy carrier, not a chase enemy
-- add `EnemyTargetSensor3D`; set detection range at least to `engagementRange + approachRangeBuffer`
+- add `EnemyAIFlightController3D`; start with `moveSpeed` around `15` and a slow-to-moderate turn rate so the boss reads as a heavy carrier when it relocates, not a chase enemy
+- add `EnemyTargetSensor3D`; set detection range at least to `max(preferredRangeMax, engagementRange) + approachRangeBuffer`
 - add `EnemyPatrol3D` for no-target search behavior, with low patrol speed if the boss should only drift between sightings
 - add `NetEnemyMovement3D` and `NetEnemyCombat3D` for networked movement plus replicated projectile/beam presentation
 - add `SiegeCarrierBossEnemyBrain3D`; wire separate projectile weapon component arrays for lagging rake, predictive fan lanes, and curtain lanes, and wire `BeamWeapon3D` components for the beam fence
 - add optional `ProjectileChargeTelegraph3D` components paired to the beam fence weapons if the model has warning lights or beam emitters that should glow during the fence telegraph
-- create a `SiegeCarrierBossBalanceProfile3D` asset, assign it through `EnemyBalanceProfileApplier3D`, and tune the boss health, slow movement, detection range, pattern cooldowns, shot budget, lane counts, beam telegraph, and active durations there
+- create a `SiegeCarrierBossBalanceProfile3D` asset, assign it through `EnemyBalanceProfileApplier3D`, and tune the boss health, slow movement, preferred range min/max, plane bias, detection range, pattern cooldowns, shot budget, lane counts, beam telegraph, and active durations there
 - configure all boss projectile and beam weapons with `targetFaction = PlayerTeam` and empty `targetTag`
 - keep the root tag as `Enemy` for compatibility until every player weapon path is fully faction-authored
 - register the boss prefab in NGO network prefabs before adding it to a boss/elite wave entry

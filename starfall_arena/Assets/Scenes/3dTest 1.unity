@@ -9245,7 +9245,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 3373177167
+  GlobalObjectIdHash: 3694670653
   InScenePlacedSourceGlobalObjectIdHash: 0
   DeferredDespawnTick: 0
   Ownership: 1
@@ -12428,6 +12428,71 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 4921488969581594012, guid: c09f383b827ea58459fb098ba4147315, type: 3}
   m_PrefabInstance: {fileID: 1197451297}
   m_PrefabAsset: {fileID: 0}
+--- !u!1001 &1203921495
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 3482945709097191609, guid: dcd0d058af7406e4b869c55e797967e0, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 18.2
+      objectReference: {fileID: 0}
+    - target: {fileID: 3482945709097191609, guid: dcd0d058af7406e4b869c55e797967e0, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 1.99265
+      objectReference: {fileID: 0}
+    - target: {fileID: 3482945709097191609, guid: dcd0d058af7406e4b869c55e797967e0, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -9.4
+      objectReference: {fileID: 0}
+    - target: {fileID: 3482945709097191609, guid: dcd0d058af7406e4b869c55e797967e0, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3482945709097191609, guid: dcd0d058af7406e4b869c55e797967e0, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3482945709097191609, guid: dcd0d058af7406e4b869c55e797967e0, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3482945709097191609, guid: dcd0d058af7406e4b869c55e797967e0, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3482945709097191609, guid: dcd0d058af7406e4b869c55e797967e0, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3482945709097191609, guid: dcd0d058af7406e4b869c55e797967e0, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3482945709097191609, guid: dcd0d058af7406e4b869c55e797967e0, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6386536840028923439, guid: dcd0d058af7406e4b869c55e797967e0, type: 3}
+      propertyPath: GlobalObjectIdHash
+      value: 619033166
+      objectReference: {fileID: 0}
+    - target: {fileID: 6962877402401494773, guid: dcd0d058af7406e4b869c55e797967e0, type: 3}
+      propertyPath: m_Name
+      value: 3d_class4_player (1)
+      objectReference: {fileID: 0}
+    - target: {fileID: 6962877402401494773, guid: dcd0d058af7406e4b869c55e797967e0, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: dcd0d058af7406e4b869c55e797967e0, type: 3}
 --- !u!1 &1205584238 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 7627125172306030103, guid: ebd5405180dff4d4d8cd9eaac946341b, type: 3}
@@ -30053,6 +30118,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: 3d_class4_player
       objectReference: {fileID: 0}
+    - target: {fileID: 6962877402401494773, guid: dcd0d058af7406e4b869c55e797967e0, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 7630498745670694516, guid: dcd0d058af7406e4b869c55e797967e0, type: 3}
       propertyPath: m_Material
       value: 
@@ -36855,7 +36924,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 3293253196
+  GlobalObjectIdHash: 3742786370
   InScenePlacedSourceGlobalObjectIdHash: 0
   DeferredDespawnTick: 0
   Ownership: 1
@@ -36981,3 +37050,4 @@ SceneRoots:
   - {fileID: 1872632152}
   - {fileID: 2029641327}
   - {fileID: 82234950}
+  - {fileID: 1203921495}

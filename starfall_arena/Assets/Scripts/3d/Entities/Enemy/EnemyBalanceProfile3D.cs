@@ -308,14 +308,22 @@ public abstract class EnemyBalanceProfile3D : ScriptableObject
         [Min(0.02f)] public float targetHistorySampleInterval;
         [Tooltip("How many recent target positions the boss stores for lagging attacks.")]
         [Range(2, 32)] public int targetHistorySamples;
-        [Tooltip("Distance where the boss can run attack patterns.")]
+        [Tooltip("Inner edge of the carrier's preferred range band. Inside this distance it backs away without trying to face the player.")]
+        [Min(0f)] public float preferredRangeMin;
+        [Tooltip("Outer edge of the carrier's preferred range band. Beyond this distance it approaches without trying to face the player.")]
+        [Min(0f)] public float preferredRangeMax;
+        [Tooltip("Maximum distance where the boss can run attack patterns.")]
         [Min(0f)] public float engagementRange;
         [Tooltip("Extra distance beyond Engagement Range where the boss slowly approaches instead of attacking.")]
         [Min(0f)] public float approachRangeBuffer;
-        [Tooltip("Movement speed scale while outside Engagement Range but inside the approach buffer.")]
+        [Tooltip("Movement speed scale while outside Preferred Range Max but inside the approach buffer.")]
         [Range(0f, 1f)] public float approachSpeedScale;
-        [Tooltip("Tiny movement speed scale while in range. Use 0 for a fully stationary carrier.")]
-        [Range(0f, 1f)] public float anchorCreepSpeedScale;
+        [Tooltip("Movement speed scale used when the player gets inside Preferred Range Min.")]
+        [Range(0f, 1f)] public float retreatSpeedScale;
+        [Tooltip("How strongly movement follows target height. 0 preserves the carrier's starting horizontal plane, 1 fully follows target height.")]
+        [Range(0f, 1f)] public float targetVerticalFollowWeight;
+        [Tooltip("How strongly movement corrects back toward the carrier's starting plane after vertical drift.")]
+        [Range(0f, 1f)] public float planeReturnWeight;
         [Tooltip("Minimum seconds between major patterns before health-phase multipliers are applied.")]
         [Min(0f)] public float minimumPatternCooldown;
         [Tooltip("Hard cap on projectile shots per pattern activation.")]

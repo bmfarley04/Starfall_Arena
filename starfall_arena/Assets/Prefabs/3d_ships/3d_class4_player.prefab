@@ -5549,6 +5549,10 @@ MonoBehaviour:
   flight:
     thrustAcceleration: 60
     maxSpeed: 60
+    precisionThrottleInputThreshold: 0.5
+    precisionThrottleMaxSpeedFraction: 0.25
+    precisionThrottleAccelerationMultiplier: 0.35
+    precisionBrakeDeceleration: 35
     lookInputResponse: 10
     pitchSpeed: 1
     yawSpeed: 1
@@ -5759,10 +5763,12 @@ MonoBehaviour:
   playerInput: {fileID: 3034305952669885816}
   aimAssist: {fileID: 4307210007083528062}
   mouseLookSensitivity: 0.5
+  leftStickForwardThrustInput: 0.35
+  leftStickBrakeInput: 0.6
+  leftStickThrottleDeadZone: 0.15
   dodgeFlickThreshold: 0.3
   dodgeFlickResetThreshold: 0.3
   dodgeFlickMaxVertical: 0.3
-  dodgeFlickMaxTime: 0.18
   logDodgeFlickDebug: 1
 --- !u!114 &8218329567873975671
 MonoBehaviour:
@@ -5797,6 +5803,7 @@ MonoBehaviour:
     aimDampingAtRest: 0.1
     aimDampingDuringTurn: 0.25
   dodgeLagExtraDuration: 0.12
+  dodgeLagBlendOutDuration: 0.16
   dodgePositionDamping: 0.85
   dodgeRotationDamping: 0.45
   dodgeAimDamping: 0.35

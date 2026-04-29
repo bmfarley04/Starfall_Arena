@@ -175,8 +175,9 @@ The 3D AI path should stay modular. Enemy prefabs should compose small scripts i
   - computes a simple velocity lead for the split fan, then offsets authored weapon lanes around that center direction
   - fires curtain lanes around the target direction while deliberately skipping a drifting escape-door sector
   - drives multiple `BeamWeapon3D` hardpoints for the beam fence through indexed `NetEnemyCombat3D` beam replication so remote clients see the same beam sources as the host
-  - uses `EnemyAIFlightController3D` only for slow approach and facing; turret/lane pressure is owned by the boss brain, not independent turret AI
-  - movement bands: no target uses patrol/search; detected but outside `engagementRange` and inside `approachRangeBuffer` creeps forward; inside engagement range faces the player and optionally creeps at a tiny anchor speed; targets beyond the max engagement band stop active patterns instead of firing at arbitrary distance
+  - uses `EnemyAIFlightController3D` only for range maintenance; turret/lane pressure is owned by the boss brain, not independent turret AI
+  - movement bands: no target uses patrol/search; detected but beyond `preferredRangeMax` approaches; inside `preferredRangeMin` backs away; inside the preferred range band clears flight intent and does not continually rotate the hull to face the player
+  - movement is plane-biased: the boss mostly preserves its starting horizontal plane and only follows target height by the serialized vertical-follow weight, while projectile and beam patterns still aim at the target's real world position
   - performance/readability rule: pattern intensity scales by cooldown multipliers across health phases, not by silently raising the per-pattern projectile budget
 
 ## Enemy Movement Range Design

@@ -58,19 +58,33 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
     [SerializeField] private int targetHistorySamples = 16;
 
     [Header("Movement Bands")]
-    [Tooltip("Distance where the Siege Carrier is allowed to run attack patterns.")]
+    [Tooltip("Inner edge of the Siege Carrier's preferred range band. Inside this distance it backs away without trying to face the player.")]
+    [SerializeField] private float preferredRangeMin = 180f;
+
+    [Tooltip("Outer edge of the Siege Carrier's preferred range band. Beyond this distance it approaches without trying to face the player.")]
+    [SerializeField] private float preferredRangeMax = 260f;
+
+    [Tooltip("Maximum distance where the Siege Carrier is allowed to run attack patterns.")]
     [SerializeField] private float engagementRange = 260f;
 
     [Tooltip("Extra distance beyond Engagement Range where the boss slowly approaches instead of idling.")]
     [SerializeField] private float approachRangeBuffer = 180f;
 
-    [Tooltip("Speed scale used while the boss is outside Engagement Range but inside the approach buffer.")]
+    [Tooltip("Speed scale used while the boss is outside Preferred Range Max but inside the approach buffer.")]
     [Range(0f, 1f)]
     [SerializeField] private float approachSpeedScale = 0.25f;
 
-    [Tooltip("Tiny speed scale used while in range so the carrier can creep forward without becoming a chaser. Set to 0 for a fully stationary boss.")]
+    [Tooltip("Speed scale used when the player gets inside Preferred Range Min. The carrier backs away along its movement plane instead of rotating to face the player.")]
     [Range(0f, 1f)]
-    [SerializeField] private float anchorCreepSpeedScale = 0.05f;
+    [SerializeField] private float retreatSpeedScale = 0.18f;
+
+    [Tooltip("How strongly movement preserves the carrier's starting horizontal plane. 0 ignores target height for movement, 1 fully follows target height.")]
+    [Range(0f, 1f)]
+    [SerializeField] private float targetVerticalFollowWeight = 0.1f;
+
+    [Tooltip("When the carrier has drifted above/below its starting plane, this adds correction back toward that plane while moving. 0 disables plane correction.")]
+    [Range(0f, 1f)]
+    [SerializeField] private float planeReturnWeight = 0.35f;
 
     [Header("Sequencer")]
     [Tooltip("Minimum seconds between major attack patterns before phase multipliers are applied.")]
@@ -169,6 +183,7 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
     private float _patternEndsAt;
     private float _nextBeamAimRefreshTime;
     private float _curtainDoorOffset;
+    private float _preferredPlaneY;
     private int _patternCursor;
     private int _patternShotsFired;
     private int _patternStepIndex;
@@ -184,6 +199,7 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
         targetSensor ??= GetComponent<EnemyTargetSensor3D>();
         patrol ??= GetComponent<EnemyPatrol3D>() ?? gameObject.AddComponent<EnemyPatrol3D>();
         netEnemyCombat ??= GetComponent<NetEnemyCombat3D>();
+        _preferredPlaneY = transform.position.y;
         EnsureTargetHistoryBuffer();
     }
 
@@ -192,10 +208,14 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
         thinkInterval = Mathf.Max(0.01f, thinkInterval);
         targetHistorySampleInterval = Mathf.Max(0.02f, targetHistorySampleInterval);
         targetHistorySamples = Mathf.Clamp(targetHistorySamples, 2, 32);
+        preferredRangeMin = Mathf.Max(0f, preferredRangeMin);
+        preferredRangeMax = Mathf.Max(preferredRangeMin, preferredRangeMax);
         engagementRange = Mathf.Max(0f, engagementRange);
         approachRangeBuffer = Mathf.Max(0f, approachRangeBuffer);
         approachSpeedScale = Mathf.Clamp01(approachSpeedScale);
-        anchorCreepSpeedScale = Mathf.Clamp01(anchorCreepSpeedScale);
+        retreatSpeedScale = Mathf.Clamp01(retreatSpeedScale);
+        targetVerticalFollowWeight = Mathf.Clamp01(targetVerticalFollowWeight);
+        planeReturnWeight = Mathf.Clamp01(planeReturnWeight);
         minimumPatternCooldown = Mathf.Max(0f, minimumPatternCooldown);
         maxShotsPerPattern = Mathf.Clamp(maxShotsPerPattern, 1, 128);
         phaseTwoHealthPercent = Mathf.Clamp(phaseTwoHealthPercent, 0.01f, 1f);
@@ -267,10 +287,14 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
         thinkInterval = Mathf.Max(0.01f, stats.thinkInterval);
         targetHistorySampleInterval = Mathf.Max(0.02f, stats.targetHistorySampleInterval);
         targetHistorySamples = Mathf.Clamp(stats.targetHistorySamples, 2, 32);
+        preferredRangeMin = Mathf.Max(0f, stats.preferredRangeMin);
+        preferredRangeMax = Mathf.Max(preferredRangeMin, stats.preferredRangeMax);
         engagementRange = Mathf.Max(0f, stats.engagementRange);
         approachRangeBuffer = Mathf.Max(0f, stats.approachRangeBuffer);
         approachSpeedScale = Mathf.Clamp01(stats.approachSpeedScale);
-        anchorCreepSpeedScale = Mathf.Clamp01(stats.anchorCreepSpeedScale);
+        retreatSpeedScale = Mathf.Clamp01(stats.retreatSpeedScale);
+        targetVerticalFollowWeight = Mathf.Clamp01(stats.targetVerticalFollowWeight);
+        planeReturnWeight = Mathf.Clamp01(stats.planeReturnWeight);
         minimumPatternCooldown = Mathf.Max(0f, stats.minimumPatternCooldown);
         maxShotsPerPattern = Mathf.Clamp(stats.maxShotsPerPattern, 1, 128);
         phaseTwoHealthPercent = Mathf.Clamp(stats.phaseTwoHealthPercent, 0.01f, 1f);
@@ -317,21 +341,22 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
             return;
         }
 
-        Vector3 targetDirection = toTarget.normalized;
-        if (IsInsideEngagementRange(target))
+        Vector3 planarDirectionToTarget = ResolvePlaneBiasedDirectionToTarget(target);
+        float distance = toTarget.magnitude;
+        if (distance > preferredRangeMax)
         {
-            if (anchorCreepSpeedScale > 0f)
-            {
-                flightController?.SetFlightIntent(targetDirection, targetDirection, anchorCreepSpeedScale, moveBackward: false);
-            }
-            else
-            {
-                flightController?.SetFacingDirection(targetDirection);
-            }
+            flightController?.SetFlightIntent(planarDirectionToTarget, planarDirectionToTarget, approachSpeedScale, moveBackward: false);
             return;
         }
 
-        flightController?.SetFlightIntent(targetDirection, targetDirection, approachSpeedScale, moveBackward: false);
+        if (distance < preferredRangeMin)
+        {
+            Vector3 retreatDirection = -planarDirectionToTarget;
+            flightController?.SetFlightIntent(retreatDirection, retreatDirection, retreatSpeedScale, moveBackward: false);
+            return;
+        }
+
+        flightController?.ClearFlightIntent();
     }
 
     private void TickActivePattern(Entity3D target)
@@ -886,8 +911,34 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
             return false;
         }
 
-        float maxRange = engagementRange + approachRangeBuffer;
+        float maxRange = Mathf.Max(engagementRange, preferredRangeMax) + approachRangeBuffer;
         return maxRange <= 0f || (target.transform.position - transform.position).sqrMagnitude <= maxRange * maxRange;
+    }
+
+    private Vector3 ResolvePlaneBiasedDirectionToTarget(Entity3D target)
+    {
+        Vector3 offset = target.transform.position - transform.position;
+        offset.y *= targetVerticalFollowWeight;
+
+        if (planeReturnWeight > 0f)
+        {
+            float planeDelta = _preferredPlaneY - transform.position.y;
+            offset.y += planeDelta * planeReturnWeight;
+        }
+
+        if (offset.sqrMagnitude <= 0.0001f)
+        {
+            Vector3 fallback = target.transform.position - transform.position;
+            fallback.y = 0f;
+            if (fallback.sqrMagnitude <= 0.0001f)
+            {
+                return transform.forward.sqrMagnitude > 0.0001f ? transform.forward.normalized : Vector3.forward;
+            }
+
+            return fallback.normalized;
+        }
+
+        return offset.normalized;
     }
 
     private static bool HasAnyWeapon(EnemyProjectileWeaponBase3D[] weapons)
