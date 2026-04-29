@@ -4976,6 +4976,7 @@ GameObject:
   - component: {fileID: 3394221799534837996}
   - component: {fileID: 8593575025823692486}
   - component: {fileID: 9100000000000000006}
+  - component: {fileID: 8638785466743754426}
   m_Layer: 0
   m_Name: fortressEnemy
   m_TagString: Enemy
@@ -5518,6 +5519,33 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyBalanceProfileApplier3D
   profile: {fileID: 11400000, guid: fee9f571fae94d948ac76e02e7931932, type: 2}
+--- !u!114 &8638785466743754426
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5723954577492871350}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bd24cd61985b47f3ba6857689d78dcfa, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyPatrol3D
+  targetSensor: {fileID: 0}
+  flightController: {fileID: 0}
+  obstacleAvoidance: {fileID: 0}
+  separation: {fileID: 0}
+  fallbackArenaSize: {x: 5000, y: 5000, z: 5000}
+  fallbackArenaCenter: {x: 0, y: 0, z: 0}
+  edgeMargin: 80
+  minLegDistance: 120
+  arrivalDistance: 30
+  waypointTimeout: 12
+  forwardBias: 0.35
+  patrolSpeedScale: 0.65
+  useSeparation: 1
+  useObstacleAvoidance: 1
+  drawGizmos: 1
 --- !u!1 &6236320655394904132
 GameObject:
   m_ObjectHideFlags: 0

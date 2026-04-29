@@ -166,13 +166,14 @@ GameObject:
   - component: {fileID: 8102121692020982188}
   - component: {fileID: 8263784457327884822}
   - component: {fileID: 9100000000000000001}
+  - component: {fileID: -8486591521155105576}
   m_Layer: 0
   m_Name: basicEnemy
   m_TagString: Enemy
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &8495706933887049310
 Transform:
   m_ObjectHideFlags: 0
@@ -435,6 +436,11 @@ MonoBehaviour:
     lateralAccelBankSensitivity: 0.1
     lateralDriftBankSensitivity: 0.5
     verticalDriftPitchSensitivity: 0.35
+  barrelRoll:
+    degrees: 360
+    durationMultiplier: 1.1
+    minDuration: 0.18
+    entryBankAngle: 28
 --- !u!114 &8263784457327884822
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -471,6 +477,33 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyBalanceProfileApplier3D
   profile: {fileID: 11400000, guid: 330b1cd852c744a78b97e69654671cb0, type: 2}
+--- !u!114 &-8486591521155105576
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7279590565626816591}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bd24cd61985b47f3ba6857689d78dcfa, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyPatrol3D
+  targetSensor: {fileID: 0}
+  flightController: {fileID: 0}
+  obstacleAvoidance: {fileID: 0}
+  separation: {fileID: 0}
+  fallbackArenaSize: {x: 5000, y: 5000, z: 5000}
+  fallbackArenaCenter: {x: 0, y: 0, z: 0}
+  edgeMargin: 80
+  minLegDistance: 120
+  arrivalDistance: 30
+  waypointTimeout: 12
+  forwardBias: 0.35
+  patrolSpeedScale: 0.65
+  useSeparation: 1
+  useObstacleAvoidance: 1
+  drawGizmos: 1
 --- !u!1001 &225114612700398349
 PrefabInstance:
   m_ObjectHideFlags: 0

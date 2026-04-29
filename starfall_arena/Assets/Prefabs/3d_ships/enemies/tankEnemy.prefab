@@ -14674,13 +14674,14 @@ GameObject:
   - component: {fileID: 3512165761194535520}
   - component: {fileID: 1147188122427946202}
   - component: {fileID: 9100000000000000007}
+  - component: {fileID: 2292903963402738620}
   m_Layer: 0
   m_Name: tankEnemy
   m_TagString: Enemy
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &3148166424418964692
 Transform:
   m_ObjectHideFlags: 0
@@ -14990,6 +14991,33 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyBalanceProfileApplier3D
   profile: {fileID: 11400000, guid: 8ac3605a4bb745f38954630305ba5695, type: 2}
+--- !u!114 &2292903963402738620
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6067267420352304793}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bd24cd61985b47f3ba6857689d78dcfa, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyPatrol3D
+  targetSensor: {fileID: 0}
+  flightController: {fileID: 0}
+  obstacleAvoidance: {fileID: 0}
+  separation: {fileID: 0}
+  fallbackArenaSize: {x: 5000, y: 5000, z: 5000}
+  fallbackArenaCenter: {x: 0, y: 0, z: 0}
+  edgeMargin: 80
+  minLegDistance: 120
+  arrivalDistance: 30
+  waypointTimeout: 12
+  forwardBias: 0.35
+  patrolSpeedScale: 0.65
+  useSeparation: 1
+  useObstacleAvoidance: 1
+  drawGizmos: 1
 --- !u!1 &6236253945820780736
 GameObject:
   m_ObjectHideFlags: 0

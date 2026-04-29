@@ -84,6 +84,7 @@ GameObject:
   - component: {fileID: 3214170193667618129}
   - component: {fileID: 2974834052610611501}
   - component: {fileID: 9100000000000000005}
+  - component: {fileID: -3436631760667480809}
   m_Layer: 0
   m_Name: splitterEnemy
   m_TagString: Enemy
@@ -465,6 +466,33 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyBalanceProfileApplier3D
   profile: {fileID: 11400000, guid: 6c39028569484239bc29de2045941299, type: 2}
+--- !u!114 &-3436631760667480809
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 774219852358409915}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bd24cd61985b47f3ba6857689d78dcfa, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyPatrol3D
+  targetSensor: {fileID: 0}
+  flightController: {fileID: 0}
+  obstacleAvoidance: {fileID: 0}
+  separation: {fileID: 0}
+  fallbackArenaSize: {x: 5000, y: 5000, z: 5000}
+  fallbackArenaCenter: {x: 0, y: 0, z: 0}
+  edgeMargin: 80
+  minLegDistance: 120
+  arrivalDistance: 30
+  waypointTimeout: 12
+  forwardBias: 0.35
+  patrolSpeedScale: 0.65
+  useSeparation: 1
+  useObstacleAvoidance: 1
+  drawGizmos: 1
 --- !u!1 &3217946512421453950
 GameObject:
   m_ObjectHideFlags: 0
