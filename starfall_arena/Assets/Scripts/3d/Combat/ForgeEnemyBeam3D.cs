@@ -3,7 +3,7 @@ using UnityEngine;
 
 [DisallowMultipleComponent]
 [RequireComponent(typeof(LineRenderer))]
-public class ForgeEnemyBeam3D : MonoBehaviour, IBeamRuntime3D, IBeamDirectionSource3D
+public class ForgeEnemyBeam3D : MonoBehaviour, IBeamRuntime3D, IBeamDirectionSource3D, IBeamAimConstraint3D
 {
     private static readonly RaycastHit[] BeamHits = new RaycastHit[16];
 
@@ -12,6 +12,12 @@ public class ForgeEnemyBeam3D : MonoBehaviour, IBeamRuntime3D, IBeamDirectionSou
     [SerializeField] private LineRenderer lineRenderer;
     [Tooltip("Extra line renderers that must follow the same gameplay ray. Use this for lightning prefabs with child or overlay line renderers.")]
     [SerializeField] private LineRenderer[] additionalLineRenderers = new LineRenderer[0];
+    [Tooltip("If true, every child LineRenderer not under the impact or muzzle anchors is driven by this runtime. This prevents lightning prefabs from leaving secondary strands on stale local-forward data.")]
+    [SerializeField] private bool autoRegisterChildLineRenderers = true;
+    [Tooltip("If true, disables stock Forge F3DLightning components so they cannot run their own ray/line updates beside the 3D combat beam runtime.")]
+    [SerializeField] private bool disableStockForgeLightning = true;
+    [Tooltip("If true, controlled beam line renderers receive world-space points. This is safest for Forge lightning prefabs with child line-renderer transforms that are not guaranteed to match the beam root.")]
+    [SerializeField] private bool driveLineRenderersInWorldSpace = true;
     [SerializeField] private Transform impactAnchor;
     [SerializeField] private Transform muzzleAnchor;
     [SerializeField] private float muzzleForwardOffset = 0.1f;
@@ -68,6 +74,7 @@ public class ForgeEnemyBeam3D : MonoBehaviour, IBeamRuntime3D, IBeamDirectionSou
     private NetCombat3D _networkAuthority;
     private bool _hasNetworkAim;
     private Vector3 _networkAimDirection;
+    private bool _allowExplicitAimBehindForward;
     private int _accuracyAttackId = PlayerCombatStats3D.InvalidAttackId;
     private float _anchorOffset;
     private float _verticalOffset;
@@ -86,6 +93,7 @@ public class ForgeEnemyBeam3D : MonoBehaviour, IBeamRuntime3D, IBeamDirectionSou
     private void Awake()
     {
         lineRenderer ??= GetComponent<LineRenderer>();
+        DisableStockForgeLightningComponents();
         CacheControlledLineRenderers();
 
         _impactParticleSystems = impactAnchor != null ? impactAnchor.GetComponentsInChildren<ParticleSystem>(true) : null;
@@ -119,6 +127,11 @@ public class ForgeEnemyBeam3D : MonoBehaviour, IBeamRuntime3D, IBeamDirectionSou
     public void SetBeamDirectionSource(Transform directionSource)
     {
         _directionSource = directionSource != null ? directionSource : _positionAnchor;
+    }
+
+    public void SetAllowExplicitAimBehindForward(bool allowExplicitAimBehindForward)
+    {
+        _allowExplicitAimBehindForward = allowExplicitAimBehindForward;
     }
 
     public void SetCosmeticOnly(bool isCosmeticOnly)
@@ -308,7 +321,7 @@ public class ForgeEnemyBeam3D : MonoBehaviour, IBeamRuntime3D, IBeamDirectionSou
         transform.position = origin;
         transform.rotation = Quaternion.LookRotation(visualDirection, ResolveUpVector(visualDirection));
 
-        UpdateLineRendererPoints(beamLength);
+        UpdateLineRendererPoints(origin, visualDirection, beamLength);
         UpdateTextureScale(beamLength);
         UpdateTextureOffset();
 
@@ -354,13 +367,14 @@ public class ForgeEnemyBeam3D : MonoBehaviour, IBeamRuntime3D, IBeamDirectionSou
         }
     }
 
-    private void UpdateLineRendererPoints(float beamLength)
+    private void UpdateLineRendererPoints(Vector3 origin, Vector3 visualDirection, float beamLength)
     {
         if (_controlledLineRenderers.Count == 0)
         {
             return;
         }
 
+        Vector3 normalizedDirection = visualDirection.sqrMagnitude > 0.0001f ? visualDirection.normalized : transform.forward;
         if (!useLightningJitter || lightningPointCount <= 2 || lightningAmplitude <= 0f)
         {
             for (int i = 0; i < _controlledLineRenderers.Count; i++)
@@ -372,8 +386,16 @@ public class ForgeEnemyBeam3D : MonoBehaviour, IBeamRuntime3D, IBeamDirectionSou
                 }
 
                 renderer.positionCount = 2;
-                renderer.SetPosition(0, Vector3.zero);
-                renderer.SetPosition(1, new Vector3(0f, 0f, beamLength));
+                if (driveLineRenderersInWorldSpace)
+                {
+                    renderer.SetPosition(0, origin);
+                    renderer.SetPosition(1, origin + normalizedDirection * beamLength);
+                }
+                else
+                {
+                    renderer.SetPosition(0, Vector3.zero);
+                    renderer.SetPosition(1, new Vector3(0f, 0f, beamLength));
+                }
             }
             return;
         }
@@ -394,6 +416,13 @@ public class ForgeEnemyBeam3D : MonoBehaviour, IBeamRuntime3D, IBeamDirectionSou
         _lightningPoints[0] = Vector3.zero;
         _lightningPoints[pointCount - 1] = new Vector3(0f, 0f, beamLength);
         float lastPointIndex = Mathf.Max(1f, pointCount - 1f);
+        Vector3 beamRight = Vector3.Cross(ResolveUpVector(normalizedDirection), normalizedDirection).normalized;
+        if (beamRight.sqrMagnitude <= 0.0001f)
+        {
+            beamRight = transform.right.sqrMagnitude > 0.0001f ? transform.right.normalized : Vector3.right;
+        }
+
+        Vector3 beamUp = Vector3.Cross(normalizedDirection, beamRight).normalized;
         if (shouldRandomize)
         {
             for (int i = 1; i < pointCount - 1; i++)
@@ -421,7 +450,23 @@ public class ForgeEnemyBeam3D : MonoBehaviour, IBeamRuntime3D, IBeamDirectionSou
             }
 
             renderer.positionCount = pointCount;
-            renderer.SetPositions(_lightningPoints);
+            if (driveLineRenderersInWorldSpace)
+            {
+                for (int pointIndex = 0; pointIndex < pointCount; pointIndex++)
+                {
+                    Vector3 localPoint = _lightningPoints[pointIndex];
+                    renderer.SetPosition(
+                        pointIndex,
+                        origin
+                            + normalizedDirection * localPoint.z
+                            + beamRight * localPoint.x
+                            + beamUp * localPoint.y);
+                }
+            }
+            else
+            {
+                renderer.SetPositions(_lightningPoints);
+            }
         }
     }
 
@@ -433,11 +478,6 @@ public class ForgeEnemyBeam3D : MonoBehaviour, IBeamRuntime3D, IBeamDirectionSou
         }
 
         _animateUvTime += Time.deltaTime;
-        if (_animateUvTime > 1f)
-        {
-            _animateUvTime = 0f;
-        }
-
         float offset = (_animateUvTime * uvTime) + _initialUvOffset;
         for (int i = 0; i < _controlledLineRenderers.Count; i++)
         {
@@ -541,7 +581,9 @@ public class ForgeEnemyBeam3D : MonoBehaviour, IBeamRuntime3D, IBeamDirectionSou
     {
         if (_hasNetworkAim)
         {
-            return ResolveForwardConstrainedDirection(_networkAimDirection);
+            return _allowExplicitAimBehindForward
+                ? _networkAimDirection.normalized
+                : ResolveForwardConstrainedDirection(_networkAimDirection);
         }
 
         Vector3 resolvedDirection = Vector3.zero;
@@ -842,14 +884,36 @@ public class ForgeEnemyBeam3D : MonoBehaviour, IBeamRuntime3D, IBeamDirectionSou
             }
         }
 
+        if (autoRegisterChildLineRenderers)
+        {
+            LineRenderer[] childLineRenderers = GetComponentsInChildren<LineRenderer>(true);
+            for (int i = 0; i < childLineRenderers.Length; i++)
+            {
+                LineRenderer childRenderer = childLineRenderers[i];
+                if (childRenderer == null || IsEffectAnchorRenderer(childRenderer.transform))
+                {
+                    continue;
+                }
+
+                AddControlledLineRenderer(childRenderer);
+            }
+        }
+
         for (int i = 0; i < _controlledLineRenderers.Count; i++)
         {
             LineRenderer renderer = _controlledLineRenderers[i];
             if (renderer != null)
             {
-                renderer.useWorldSpace = false;
+                renderer.useWorldSpace = driveLineRenderersInWorldSpace;
             }
         }
+    }
+
+    private bool IsEffectAnchorRenderer(Transform candidate)
+    {
+        return candidate != null
+            && ((impactAnchor != null && candidate.IsChildOf(impactAnchor))
+                || (muzzleAnchor != null && candidate.IsChildOf(muzzleAnchor)));
     }
 
     private void AddControlledLineRenderer(LineRenderer renderer)
@@ -860,5 +924,22 @@ public class ForgeEnemyBeam3D : MonoBehaviour, IBeamRuntime3D, IBeamDirectionSou
         }
 
         _controlledLineRenderers.Add(renderer);
+    }
+
+    private void DisableStockForgeLightningComponents()
+    {
+        if (!disableStockForgeLightning)
+        {
+            return;
+        }
+
+        FORGE3D.F3DLightning[] forgeLightnings = GetComponentsInChildren<FORGE3D.F3DLightning>(true);
+        for (int i = 0; i < forgeLightnings.Length; i++)
+        {
+            if (forgeLightnings[i] != null)
+            {
+                forgeLightnings[i].enabled = false;
+            }
+        }
     }
 }

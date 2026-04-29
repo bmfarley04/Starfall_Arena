@@ -87,7 +87,7 @@ LineRenderer:
   - {x: 0, y: 0, z: 10}
   m_Parameters:
     serializedVersion: 3
-    widthMultiplier: 2.4999764
+    widthMultiplier: 1.728161
     widthCurve:
       serializedVersion: 2
       m_Curve:
@@ -279,7 +279,7 @@ LineRenderer:
   - {x: 0, y: 0, z: 10}
   m_Parameters:
     serializedVersion: 3
-    widthMultiplier: 2.4996197
+    widthMultiplier: 1.7439973
     widthCurve:
       serializedVersion: 2
       m_Curve:
@@ -359,6 +359,8 @@ MonoBehaviour:
   lineRenderer: {fileID: 12000002}
   additionalLineRenderers:
   - {fileID: 12000000}
+  autoRegisterChildLineRenderers: 1
+  disableStockForgeLightning: 1
   impactAnchor: {fileID: 400010}
   muzzleAnchor: {fileID: 400012}
   muzzleForwardOffset: 0.1

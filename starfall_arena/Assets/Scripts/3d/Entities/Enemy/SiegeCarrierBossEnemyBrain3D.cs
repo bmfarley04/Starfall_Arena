@@ -14,7 +14,9 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
         LaggingMachineGunRake,
         PredictiveSplitFan,
         BeamFence,
-        CurtainWithEscapeDoor
+        CurtainWithEscapeDoor,
+        FormationMissileSalvo,
+        LightningSlowBeam
     }
 
     [Header("Pattern Weapons")]
@@ -27,11 +29,20 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
     [Tooltip("Projectile weapons used by the escape-door curtain. More authored weapons allow more simultaneous or staggered lanes, but the boss still obeys Max Shots Per Pattern.")]
     [SerializeField] private EnemyProjectileWeaponBase3D[] curtainWeapons;
 
-    [Tooltip("Beam weapons used by the beam fence. NetEnemyCombat3D now replays these by component index, so keep the same BeamWeapon3D component order on host and client prefabs.")]
+    [Tooltip("Formation missile salvo weapons. Each configured weapon should be a FormationMissileSalvoWeaponEnemy3D that launches a full missile bloom in one activation.")]
+    [SerializeField] private EnemyProjectileWeaponBase3D[] formationMissileSalvoWeapons;
+
+    [Tooltip("Beam weapons used by the lagging beam convergence pattern. NetEnemyCombat3D replays these by component index, so keep the same BeamWeapon3D component order on host and client prefabs.")]
     [SerializeField] private BeamWeapon3D[] beamFenceWeapons;
 
-    [Tooltip("Optional charge/telegraph visuals paired by index with Beam Fence Weapons. These are presentation-only; beam damage still comes from BeamWeapon3D.")]
+    [Tooltip("Optional charge/telegraph visuals paired by index with Beam Weapons. These are presentation-only; beam damage still comes from BeamWeapon3D.")]
     [SerializeField] private ProjectileChargeTelegraph3D[] beamFenceTelegraphs;
+
+    [Tooltip("Two lightning beam weapons used by the accurate slow-beam pattern. Configure these BeamWeapon3D components with a lightning beam prefab, PlayerTeam target faction, and moderate damage per second.")]
+    [SerializeField] private BeamWeapon3D[] lightningSlowBeamWeapons;
+
+    [Tooltip("Optional charge/telegraph visuals paired by index with Lightning Slow Beam Weapons.")]
+    [SerializeField] private ProjectileChargeTelegraph3D[] lightningSlowBeamTelegraphs;
 
     [Header("References")]
     [Tooltip("AI flight motor that lets the boss slowly approach outside range and face the current player while anchored.")]
@@ -50,8 +61,8 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
     [Tooltip("Seconds between high-level boss decisions. Pattern aim refresh may still run more often during active beams.")]
     [SerializeField] private float thinkInterval = 0.05f;
 
-    [Tooltip("Seconds between target-position history samples used by the lagging rake.")]
-    [SerializeField] private float targetHistorySampleInterval = 0.12f;
+    [Tooltip("Seconds between target-position history samples used only when Rake History Blend is above 0.")]
+    [SerializeField] private float targetHistorySampleInterval = 0.05f;
 
     [Tooltip("Number of recent target positions retained for lagging attacks. Higher values allow older rake targets but use a little more memory.")]
     [Range(2, 32)]
@@ -117,8 +128,28 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
     [Tooltip("Seconds between rake shots.")]
     [SerializeField] private float rakeShotInterval = 0.12f;
 
-    [Tooltip("How far behind the target's current position the rake aims, in seconds. This rewards clean drift paths.")]
-    [SerializeField] private float rakeHistorySeconds = 0.6f;
+    [Tooltip("How far behind the target's current position the optional history target sits, in seconds. Only affects aim when Rake History Blend is above 0.")]
+    [SerializeField] private float rakeHistorySeconds = 0f;
+
+    [Tooltip("How much the rake blends from precise current/lead aim toward historical target positions. 0 is precise follow-fire, 1 is pure lagging trail fire.")]
+    [Range(0f, 1f)]
+    [SerializeField] private float rakeHistoryBlend = 0f;
+
+    [Tooltip("If true, each rake shot predicts the target's current velocity at fire time instead of using only current position.")]
+    [SerializeField] private bool rakeUseLeadAim = true;
+
+    [Tooltip("Projectile speed used for rake lead calculation. If 0, the current rake weapon's configured speed is used.")]
+    [SerializeField] private float rakeLeadProjectileSpeed = 0f;
+
+    [Tooltip("Multiplier applied to the calculated projectile travel time when leading rake shots. Lower than 1 aims closer to the target; higher than 1 leads farther ahead.")]
+    [Range(0f, 2f)]
+    [SerializeField] private float rakeLeadTimeScale = 1f;
+
+    [Tooltip("Extra seconds of target-velocity lead added to every rake shot after projectile travel-time lead is calculated.")]
+    [SerializeField] private float rakeAdditionalLeadSeconds = 0.03f;
+
+    [Tooltip("Maximum total seconds of target-velocity lead allowed for a rake shot so fast targets do not produce absurd far-ahead aim points.")]
+    [SerializeField] private float rakeMaxLeadSeconds = 1.25f;
 
     [Header("Predictive Split Fan")]
     [Tooltip("Number of fan lanes attempted. The actual count is also limited by the number of configured Predictive Fan Weapons and Max Shots Per Pattern.")]
@@ -157,19 +188,76 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
     [Tooltip("Seconds between curtain lanes.")]
     [SerializeField] private float curtainLaneInterval = 0.05f;
 
-    [Header("Beam Fence")]
-    [Tooltip("Seconds of warning before beam fence damage begins.")]
+    [Header("Formation Missile Salvo")]
+    [Tooltip("Projectile-budget cost charged when one formation missile salvo launches. Set this to the salvo missile count so boss pattern budgets stay honest.")]
+    [Range(1, 32)]
+    [SerializeField] private int formationMissileSalvoBudgetCost = 8;
+
+    [Header("Lagging Beam Convergence")]
+    [Tooltip("Seconds of warning before converging beam damage begins.")]
     [SerializeField] private float beamFenceTelegraphDuration = 0.75f;
 
-    [Tooltip("Seconds the damaging beam fence remains active.")]
+    [Tooltip("Seconds the damaging converging beams remain active.")]
     [SerializeField] private float beamFenceActiveDuration = 1.2f;
 
-    [Tooltip("Maximum beam hardpoints used in one fence activation.")]
+    [Tooltip("Maximum beam hardpoints used in one convergence activation.")]
     [Range(1, 16)]
     [SerializeField] private int beamFenceMaxBeams = 4;
 
-    [Tooltip("Seconds between beam aim refreshes while the fence is active. Lower is smoother but sends more network updates.")]
-    [SerializeField] private float beamFenceAimRefreshInterval = 0.05f;
+    [Tooltip("Seconds between beam aim refreshes while the convergence is active. Lower is smoother but sends more network updates.")]
+    [SerializeField] private float beamFenceAimRefreshInterval = 0.03f;
+
+    [Tooltip("Seconds behind the target used as the shared convergence point for all active beam hardpoints.")]
+    [SerializeField] private float beamConvergenceLagSeconds = 0.25f;
+
+    [Tooltip("Blend from the target's current position toward the lagged convergence point. 0 tracks current position; 1 uses the full lagged point.")]
+    [Range(0f, 1f)]
+    [SerializeField] private float beamConvergenceLagBlend = 0.75f;
+
+    [Tooltip("Small smoothing time for beam aim directions. This reduces visible long-range beam jitter without changing the lagged convergence point.")]
+    [SerializeField] private float beamConvergenceAimSmoothTime = 0.08f;
+
+    [Tooltip("Allows explicit boss convergence aim to point behind a beam hardpoint's Direction Reference. Keep enabled for wide/side muzzles that should still converge on the same target point instead of clamping straight ahead outside their forward arc.")]
+    [SerializeField] private bool beamConvergenceAllowBehindHardpointAim = true;
+
+    [Header("Lightning Slow Beam")]
+    [Tooltip("Seconds of warning before the two accurate lightning slow beams activate.")]
+    [SerializeField] private float lightningSlowBeamTelegraphDuration = 0.45f;
+
+    [Tooltip("Seconds the two accurate lightning slow beams remain active.")]
+    [SerializeField] private float lightningSlowBeamActiveDuration = 1.35f;
+
+    [Tooltip("Seconds between lightning beam aim refreshes while active. Lower values make the beams track more accurately but send more network aim updates.")]
+    [SerializeField] private float lightningSlowBeamAimRefreshInterval = 0.02f;
+
+    [Tooltip("How many lightning beams are allowed to fire in this pattern. Keep at 2 for the intended boss ability.")]
+    [Range(1, 2)]
+    [SerializeField] private int lightningSlowBeamCount = 2;
+
+    [Tooltip("Seconds of target-velocity lead added to the lightning beams. This makes them more accurate against fast lateral movement.")]
+    [SerializeField] private float lightningSlowBeamLeadSeconds = 0.12f;
+
+    [Tooltip("Small smoothing time for lightning aim. Keep low so the slow beams stay threatening and accurate.")]
+    [SerializeField] private float lightningSlowBeamAimSmoothTime = 0.025f;
+
+    [Tooltip("Allows explicit lightning slow-beam aim to point behind a beam hardpoint's Direction Reference. Keep enabled when the boss attack should track the player from broadside or offset lightning muzzles.")]
+    [SerializeField] private bool lightningSlowBeamAllowBehindHardpointAim = true;
+
+    [Tooltip("Radius used by the boss brain's slow check along each lightning beam. Match or slightly exceed the lightning beam prefab's gameplay hitscan radius.")]
+    [SerializeField] private float lightningSlowBeamSlowRadius = 1.25f;
+
+    [Tooltip("Layers considered by the boss brain when checking whether a lightning beam has line-of-sight to the player for slow application.")]
+    [SerializeField] private LayerMask lightningSlowBeamCollisionMask = ~0;
+
+    [Tooltip("Movement multiplier applied while the lightning slow beam is hitting the player. 0.45 means the player moves at 45% speed.")]
+    [Range(0f, 1f)]
+    [SerializeField] private float lightningSlowBeamSlowMultiplier = 0.45f;
+
+    [Tooltip("Duration of each refreshed slow pulse. This should be slightly longer than Slow Tick Interval so the slow does not flicker between beam ticks.")]
+    [SerializeField] private float lightningSlowBeamSlowDuration = 0.18f;
+
+    [Tooltip("Seconds between server-authoritative slow checks while the lightning beams are active.")]
+    [SerializeField] private float lightningSlowBeamSlowTickInterval = 0.08f;
 
     private NetworkObject _networkObject;
     private Enemy3D _enemy;
@@ -184,10 +272,17 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
     private float _nextBeamAimRefreshTime;
     private float _curtainDoorOffset;
     private float _preferredPlaneY;
+    private Vector3[] _beamConvergenceSmoothedDirections;
+    private bool[] _beamConvergenceHasSmoothedDirections;
+    private Vector3[] _lightningSmoothedDirections;
+    private bool[] _lightningHasSmoothedDirections;
+    private readonly RaycastHit[] _lightningSlowHits = new RaycastHit[8];
     private int _patternCursor;
     private int _patternShotsFired;
     private int _patternStepIndex;
     private int _activeBeamCount;
+    private int _activeLightningBeamCount;
+    private float _nextLightningSlowTickTime;
     private BossPattern _activePattern;
     private Entity3D _currentTarget;
 
@@ -201,6 +296,8 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
         netEnemyCombat ??= GetComponent<NetEnemyCombat3D>();
         _preferredPlaneY = transform.position.y;
         EnsureTargetHistoryBuffer();
+        EnsureBeamConvergenceBuffers();
+        EnsureLightningSlowBeamBuffers();
     }
 
     private void OnValidate()
@@ -225,6 +322,11 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
         rakeShotCount = Mathf.Max(1, rakeShotCount);
         rakeShotInterval = Mathf.Max(0.01f, rakeShotInterval);
         rakeHistorySeconds = Mathf.Max(0f, rakeHistorySeconds);
+        rakeHistoryBlend = Mathf.Clamp01(rakeHistoryBlend);
+        rakeLeadProjectileSpeed = Mathf.Max(0f, rakeLeadProjectileSpeed);
+        rakeLeadTimeScale = Mathf.Clamp(rakeLeadTimeScale, 0f, 2f);
+        rakeAdditionalLeadSeconds = Mathf.Max(0f, rakeAdditionalLeadSeconds);
+        rakeMaxLeadSeconds = Mathf.Max(0f, rakeMaxLeadSeconds);
         fanLaneCount = Mathf.Clamp(fanLaneCount, 1, 31);
         fanTotalSpreadDegrees = Mathf.Clamp(fanTotalSpreadDegrees, 0f, 180f);
         fanLaneInterval = Mathf.Max(0.01f, fanLaneInterval);
@@ -233,16 +335,32 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
         curtainArcDegrees = Mathf.Clamp(curtainArcDegrees, 0f, 270f);
         curtainEscapeDoorDegrees = Mathf.Clamp(curtainEscapeDoorDegrees, 0f, 180f);
         curtainLaneInterval = Mathf.Max(0.01f, curtainLaneInterval);
+        formationMissileSalvoBudgetCost = Mathf.Clamp(formationMissileSalvoBudgetCost, 1, 32);
         beamFenceTelegraphDuration = Mathf.Max(0f, beamFenceTelegraphDuration);
         beamFenceActiveDuration = Mathf.Max(0.01f, beamFenceActiveDuration);
         beamFenceMaxBeams = Mathf.Clamp(beamFenceMaxBeams, 1, 16);
         beamFenceAimRefreshInterval = Mathf.Max(0.01f, beamFenceAimRefreshInterval);
+        beamConvergenceLagSeconds = Mathf.Max(0f, beamConvergenceLagSeconds);
+        beamConvergenceLagBlend = Mathf.Clamp01(beamConvergenceLagBlend);
+        beamConvergenceAimSmoothTime = Mathf.Max(0f, beamConvergenceAimSmoothTime);
+        lightningSlowBeamTelegraphDuration = Mathf.Max(0f, lightningSlowBeamTelegraphDuration);
+        lightningSlowBeamActiveDuration = Mathf.Max(0.01f, lightningSlowBeamActiveDuration);
+        lightningSlowBeamAimRefreshInterval = Mathf.Max(0.01f, lightningSlowBeamAimRefreshInterval);
+        lightningSlowBeamCount = Mathf.Clamp(lightningSlowBeamCount, 1, 2);
+        lightningSlowBeamLeadSeconds = Mathf.Max(0f, lightningSlowBeamLeadSeconds);
+        lightningSlowBeamAimSmoothTime = Mathf.Max(0f, lightningSlowBeamAimSmoothTime);
+        lightningSlowBeamSlowRadius = Mathf.Max(0f, lightningSlowBeamSlowRadius);
+        lightningSlowBeamSlowMultiplier = Mathf.Clamp01(lightningSlowBeamSlowMultiplier);
+        lightningSlowBeamSlowDuration = Mathf.Max(0f, lightningSlowBeamSlowDuration);
+        lightningSlowBeamSlowTickInterval = Mathf.Max(0.01f, lightningSlowBeamSlowTickInterval);
     }
 
     private void OnDisable()
     {
         StopActiveBeams();
+        StopLightningSlowBeams();
         StopBeamTelegraphs(immediate: true);
+        StopLightningSlowBeamTelegraphs(immediate: true);
         _activePattern = BossPattern.None;
         _currentTarget = null;
         flightController?.ClearFlightIntent();
@@ -304,6 +422,12 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
         rakeShotCount = Mathf.Max(1, stats.rakeShotCount);
         rakeShotInterval = Mathf.Max(0.01f, stats.rakeShotInterval);
         rakeHistorySeconds = Mathf.Max(0f, stats.rakeHistorySeconds);
+        rakeHistoryBlend = Mathf.Clamp01(stats.rakeHistoryBlend);
+        rakeUseLeadAim = stats.rakeUseLeadAim;
+        rakeLeadProjectileSpeed = Mathf.Max(0f, stats.rakeLeadProjectileSpeed);
+        rakeLeadTimeScale = Mathf.Clamp(stats.rakeLeadTimeScale, 0f, 2f);
+        rakeAdditionalLeadSeconds = Mathf.Max(0f, stats.rakeAdditionalLeadSeconds);
+        rakeMaxLeadSeconds = Mathf.Max(0f, stats.rakeMaxLeadSeconds);
         fanLaneCount = Mathf.Clamp(stats.fanLaneCount, 1, 31);
         fanTotalSpreadDegrees = Mathf.Clamp(stats.fanTotalSpreadDegrees, 0f, 180f);
         fanLaneInterval = Mathf.Max(0.01f, stats.fanLaneInterval);
@@ -314,11 +438,27 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
         curtainEscapeDoorDegrees = Mathf.Clamp(stats.curtainEscapeDoorDegrees, 0f, 180f);
         curtainDoorDriftDegrees = stats.curtainDoorDriftDegrees;
         curtainLaneInterval = Mathf.Max(0.01f, stats.curtainLaneInterval);
+        formationMissileSalvoBudgetCost = Mathf.Clamp(stats.formationMissileSalvoBudgetCost, 1, 32);
         beamFenceTelegraphDuration = Mathf.Max(0f, stats.beamFenceTelegraphDuration);
         beamFenceActiveDuration = Mathf.Max(0.01f, stats.beamFenceActiveDuration);
         beamFenceMaxBeams = Mathf.Clamp(stats.beamFenceMaxBeams, 1, 16);
         beamFenceAimRefreshInterval = Mathf.Max(0.01f, stats.beamFenceAimRefreshInterval);
+        beamConvergenceLagSeconds = Mathf.Max(0f, stats.beamConvergenceLagSeconds);
+        beamConvergenceLagBlend = Mathf.Clamp01(stats.beamConvergenceLagBlend);
+        beamConvergenceAimSmoothTime = Mathf.Max(0f, stats.beamConvergenceAimSmoothTime);
+        lightningSlowBeamTelegraphDuration = Mathf.Max(0f, stats.lightningSlowBeamTelegraphDuration);
+        lightningSlowBeamActiveDuration = Mathf.Max(0.01f, stats.lightningSlowBeamActiveDuration);
+        lightningSlowBeamAimRefreshInterval = Mathf.Max(0.01f, stats.lightningSlowBeamAimRefreshInterval);
+        lightningSlowBeamCount = Mathf.Clamp(stats.lightningSlowBeamCount, 1, 2);
+        lightningSlowBeamLeadSeconds = Mathf.Max(0f, stats.lightningSlowBeamLeadSeconds);
+        lightningSlowBeamAimSmoothTime = Mathf.Max(0f, stats.lightningSlowBeamAimSmoothTime);
+        lightningSlowBeamSlowRadius = Mathf.Max(0f, stats.lightningSlowBeamSlowRadius);
+        lightningSlowBeamSlowMultiplier = Mathf.Clamp01(stats.lightningSlowBeamSlowMultiplier);
+        lightningSlowBeamSlowDuration = Mathf.Max(0f, stats.lightningSlowBeamSlowDuration);
+        lightningSlowBeamSlowTickInterval = Mathf.Max(0.01f, stats.lightningSlowBeamSlowTickInterval);
         EnsureTargetHistoryBuffer();
+        EnsureBeamConvergenceBuffers();
+        EnsureLightningSlowBeamBuffers();
     }
 
     private Entity3D ResolveTarget()
@@ -364,7 +504,7 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
         switch (_activePattern)
         {
             case BossPattern.LaggingMachineGunRake:
-                TickLaggingRake();
+                TickLaggingRake(target);
                 break;
             case BossPattern.PredictiveSplitFan:
                 TickPredictiveFan(target);
@@ -375,14 +515,21 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
             case BossPattern.CurtainWithEscapeDoor:
                 TickCurtain(target);
                 break;
+            case BossPattern.FormationMissileSalvo:
+                TickFormationMissileSalvo(target);
+                break;
+            case BossPattern.LightningSlowBeam:
+                TickLightningSlowBeam(target);
+                break;
         }
     }
 
     private void StartNextPattern(Entity3D target)
     {
-        for (int attempt = 0; attempt < 4; attempt++)
+        int patternCount = System.Enum.GetValues(typeof(BossPattern)).Length - 1;
+        for (int attempt = 0; attempt < patternCount; attempt++)
         {
-            BossPattern next = (BossPattern)((_patternCursor % 4) + 1);
+            BossPattern next = (BossPattern)((_patternCursor % patternCount) + 1);
             _patternCursor++;
             if (!CanRunPattern(next))
             {
@@ -407,7 +554,17 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
         {
             _activeBeamCount = Mathf.Min(beamFenceWeapons != null ? beamFenceWeapons.Length : 0, beamFenceMaxBeams);
             _patternEndsAt = Time.time + beamFenceTelegraphDuration + beamFenceActiveDuration;
+            ResetBeamConvergenceSmoothing();
             StartBeamTelegraphs();
+            return;
+        }
+
+        if (pattern == BossPattern.LightningSlowBeam)
+        {
+            _activeLightningBeamCount = Mathf.Min(lightningSlowBeamWeapons != null ? lightningSlowBeamWeapons.Length : 0, lightningSlowBeamCount);
+            _patternEndsAt = Time.time + lightningSlowBeamTelegraphDuration + lightningSlowBeamActiveDuration;
+            ResetLightningSlowBeamSmoothing();
+            StartLightningSlowBeamTelegraphs();
             return;
         }
 
@@ -417,7 +574,7 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
         }
     }
 
-    private void TickLaggingRake()
+    private void TickLaggingRake(Entity3D target)
     {
         int shotLimit = Mathf.Min(rakeShotCount, maxShotsPerPattern);
         if (_patternStepIndex >= shotLimit || _patternShotsFired >= maxShotsPerPattern)
@@ -432,7 +589,7 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
         }
 
         EnemyProjectileWeaponBase3D weapon = ResolveWeapon(laggingRakeWeapons, _patternStepIndex);
-        Vector3 aimPoint = ResolveHistoricalTargetPoint();
+        Vector3 aimPoint = ResolveRakeAimPoint(target, weapon);
         if (weapon != null && FireProjectileConverged(weapon, aimPoint))
         {
             _patternShotsFired++;
@@ -517,7 +674,7 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
                 StopBeamTelegraphs(immediate: false);
                 SetBeamFenceState(target, isFiring: true);
                 _patternStepIndex = 1;
-                _nextBeamAimRefreshTime = Time.time;
+                _nextBeamAimRefreshTime = Time.time + beamFenceAimRefreshInterval;
             }
 
             if (Time.time >= _nextBeamAimRefreshTime)
@@ -535,10 +692,73 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
         }
     }
 
+    private void TickFormationMissileSalvo(Entity3D target)
+    {
+        if (_patternStepIndex > 0 || _patternShotsFired + formationMissileSalvoBudgetCost > maxShotsPerPattern)
+        {
+            FinishPattern();
+            return;
+        }
+
+        EnemyProjectileWeaponBase3D weapon = ResolveWeapon(formationMissileSalvoWeapons, _patternCursor);
+        if (weapon != null && FireProjectileDirection(weapon, ResolveDirectionToTarget(target)))
+        {
+            _patternShotsFired += formationMissileSalvoBudgetCost;
+        }
+
+        _patternStepIndex++;
+        FinishPattern();
+    }
+
+    private void TickLightningSlowBeam(Entity3D target)
+    {
+        if (_activeLightningBeamCount <= 0)
+        {
+            FinishPattern();
+            return;
+        }
+
+        float activeStartTime = _patternEndsAt - lightningSlowBeamActiveDuration;
+        if (Time.time >= activeStartTime && Time.time < _patternEndsAt)
+        {
+            if (_patternStepIndex == 0)
+            {
+                StopLightningSlowBeamTelegraphs(immediate: false);
+                SetLightningSlowBeamState(target, isFiring: true);
+                _patternStepIndex = 1;
+                _nextBeamAimRefreshTime = Time.time + lightningSlowBeamAimRefreshInterval;
+                _nextLightningSlowTickTime = Time.time;
+            }
+
+            if (Time.time >= _nextBeamAimRefreshTime)
+            {
+                RefreshLightningSlowBeamAim(target);
+                _nextBeamAimRefreshTime = Time.time + lightningSlowBeamAimRefreshInterval;
+            }
+
+            if (Time.time >= _nextLightningSlowTickTime)
+            {
+                ApplyLightningSlowBeamSlow(target);
+                _nextLightningSlowTickTime = Time.time + lightningSlowBeamSlowTickInterval;
+            }
+            return;
+        }
+
+        if (Time.time >= _patternEndsAt)
+        {
+            StopLightningSlowBeams();
+            FinishPattern();
+        }
+    }
+
     private void FinishPattern()
     {
         StopBeamTelegraphs(immediate: false);
         StopActiveBeams();
+        StopLightningSlowBeamTelegraphs(immediate: false);
+        StopLightningSlowBeams();
+        ResetBeamConvergenceSmoothing();
+        ResetLightningSlowBeamSmoothing();
         _activePattern = BossPattern.None;
         _nextPatternAllowedTime = Time.time + ResolvePatternCooldown();
     }
@@ -552,6 +772,10 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
 
         StopBeamTelegraphs(immediate: true);
         StopActiveBeams();
+        StopLightningSlowBeamTelegraphs(immediate: true);
+        StopLightningSlowBeams();
+        ResetBeamConvergenceSmoothing();
+        ResetLightningSlowBeamSmoothing();
         _activePattern = BossPattern.None;
         _nextPatternAllowedTime = Time.time + ResolvePatternCooldown();
     }
@@ -568,6 +792,10 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
                 return beamFenceWeapons != null && beamFenceWeapons.Length > 0;
             case BossPattern.CurtainWithEscapeDoor:
                 return HasAnyWeapon(curtainWeapons);
+            case BossPattern.FormationMissileSalvo:
+                return HasAnyWeapon(formationMissileSalvoWeapons);
+            case BossPattern.LightningSlowBeam:
+                return lightningSlowBeamWeapons != null && lightningSlowBeamWeapons.Length > 0;
             default:
                 return false;
         }
@@ -599,7 +827,7 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
 
     private void SetBeamFenceState(Entity3D target, bool isFiring)
     {
-        Vector3 aimDirection = ResolveDirectionToTarget(target);
+        Vector3 convergencePoint = ResolveBeamConvergencePoint(target);
         for (int i = 0; i < _activeBeamCount; i++)
         {
             BeamWeapon3D beamWeapon = beamFenceWeapons[i];
@@ -608,7 +836,8 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
                 continue;
             }
 
-            Vector3 beamDirection = ResolveBeamFenceDirection(beamWeapon, aimDirection, i, _activeBeamCount);
+            ConfigureBossBeamAimConstraint(beamWeapon, beamConvergenceAllowBehindHardpointAim);
+            Vector3 beamDirection = ResolveBeamConvergenceDirection(beamWeapon, convergencePoint, i);
             if (NetTickUtil.IsActive && netEnemyCombat != null && netEnemyCombat.IsSpawned)
             {
                 netEnemyCombat.SetBeamState(beamWeapon, isFiring, beamDirection);
@@ -627,7 +856,7 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
 
     private void RefreshBeamFenceAim(Entity3D target)
     {
-        Vector3 aimDirection = ResolveDirectionToTarget(target);
+        Vector3 convergencePoint = ResolveBeamConvergencePoint(target);
         for (int i = 0; i < _activeBeamCount; i++)
         {
             BeamWeapon3D beamWeapon = beamFenceWeapons[i];
@@ -636,7 +865,8 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
                 continue;
             }
 
-            Vector3 beamDirection = ResolveBeamFenceDirection(beamWeapon, aimDirection, i, _activeBeamCount);
+            ConfigureBossBeamAimConstraint(beamWeapon, beamConvergenceAllowBehindHardpointAim);
+            Vector3 beamDirection = ResolveBeamConvergenceDirection(beamWeapon, convergencePoint, i);
             if (NetTickUtil.IsActive && netEnemyCombat != null && netEnemyCombat.IsSpawned)
             {
                 netEnemyCombat.UpdateBeamAim(beamWeapon, beamDirection);
@@ -761,6 +991,34 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
         StopBeamTelegraphsLocal(immediate: false);
     }
 
+    [ClientRpc]
+    private void StartLightningSlowBeamTelegraphClientRpc(float duration, double serverStartTime)
+    {
+        if (IsServer)
+        {
+            return;
+        }
+
+        float elapsed = 0f;
+        if (NetworkManager.Singleton != null && serverStartTime > 0d)
+        {
+            elapsed = Mathf.Max(0f, (float)(NetworkManager.Singleton.ServerTime.Time - serverStartTime));
+        }
+
+        StartLightningSlowBeamTelegraphsLocal(duration, elapsed);
+    }
+
+    [ClientRpc]
+    private void StopLightningSlowBeamTelegraphClientRpc()
+    {
+        if (IsServer)
+        {
+            return;
+        }
+
+        StopLightningSlowBeamTelegraphsLocal(immediate: false);
+    }
+
     private void SampleTargetHistory(Entity3D target)
     {
         if (!IsTargetValid(target) || Time.time < _nextHistorySampleTime)
@@ -777,12 +1035,209 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
 
     private Vector3 ResolveHistoricalTargetPoint()
     {
+        return ResolveHistoricalTargetPoint(rakeHistorySeconds);
+    }
+
+    private void SetLightningSlowBeamState(Entity3D target, bool isFiring)
+    {
+        for (int i = 0; i < _activeLightningBeamCount; i++)
+        {
+            BeamWeapon3D beamWeapon = lightningSlowBeamWeapons[i];
+            if (beamWeapon == null)
+            {
+                continue;
+            }
+
+            ConfigureBossBeamAimConstraint(beamWeapon, lightningSlowBeamAllowBehindHardpointAim);
+            Vector3 beamDirection = ResolveLightningSlowBeamDirection(beamWeapon, target, i);
+            if (NetTickUtil.IsActive && netEnemyCombat != null && netEnemyCombat.IsSpawned)
+            {
+                netEnemyCombat.SetBeamState(beamWeapon, isFiring, beamDirection);
+            }
+            else
+            {
+                if (isFiring)
+                {
+                    beamWeapon.ApplyNetworkBeamAim(beamDirection);
+                }
+
+                beamWeapon.ApplyNetworkBeamState(isFiring, authoritative: true, PlayerCombatStats3D.InvalidAttackId);
+            }
+        }
+    }
+
+    private void RefreshLightningSlowBeamAim(Entity3D target)
+    {
+        for (int i = 0; i < _activeLightningBeamCount; i++)
+        {
+            BeamWeapon3D beamWeapon = lightningSlowBeamWeapons[i];
+            if (beamWeapon == null)
+            {
+                continue;
+            }
+
+            ConfigureBossBeamAimConstraint(beamWeapon, lightningSlowBeamAllowBehindHardpointAim);
+            Vector3 beamDirection = ResolveLightningSlowBeamDirection(beamWeapon, target, i);
+            if (NetTickUtil.IsActive && netEnemyCombat != null && netEnemyCombat.IsSpawned)
+            {
+                netEnemyCombat.UpdateBeamAim(beamWeapon, beamDirection);
+            }
+            else
+            {
+                beamWeapon.ApplyNetworkBeamAim(beamDirection);
+            }
+        }
+    }
+
+    private void StopLightningSlowBeams()
+    {
+        if (lightningSlowBeamWeapons == null)
+        {
+            return;
+        }
+
+        int count = _activeLightningBeamCount > 0 ? Mathf.Min(_activeLightningBeamCount, lightningSlowBeamWeapons.Length) : lightningSlowBeamWeapons.Length;
+        for (int i = 0; i < count; i++)
+        {
+            BeamWeapon3D beamWeapon = lightningSlowBeamWeapons[i];
+            if (beamWeapon == null)
+            {
+                continue;
+            }
+
+            if (NetTickUtil.IsActive && netEnemyCombat != null && netEnemyCombat.IsSpawned)
+            {
+                netEnemyCombat.SetBeamState(beamWeapon, false, transform.forward);
+            }
+            else
+            {
+                beamWeapon.ApplyNetworkBeamState(false, authoritative: true, PlayerCombatStats3D.InvalidAttackId);
+            }
+        }
+    }
+
+    private void ApplyLightningSlowBeamSlow(Entity3D target)
+    {
+        if (!IsTargetValid(target) || lightningSlowBeamSlowDuration <= 0f || lightningSlowBeamSlowMultiplier >= 1f)
+        {
+            return;
+        }
+
+        for (int i = 0; i < _activeLightningBeamCount; i++)
+        {
+            BeamWeapon3D beamWeapon = lightningSlowBeamWeapons[i];
+            if (beamWeapon == null)
+            {
+                continue;
+            }
+
+            Vector3 direction = ResolveLightningSlowBeamDirection(beamWeapon, target, i);
+            Vector3 origin = beamWeapon.GetBeamOrigin(direction);
+            if (DoesLightningBeamReachTarget(origin, direction, target))
+            {
+                target.ApplySlow(lightningSlowBeamSlowMultiplier, lightningSlowBeamSlowDuration);
+                target.ThrusterVfx?.ApplyTemporaryEmissionRateScale(lightningSlowBeamSlowMultiplier, lightningSlowBeamSlowDuration);
+                return;
+            }
+        }
+    }
+
+    private bool DoesLightningBeamReachTarget(Vector3 origin, Vector3 direction, Entity3D target)
+    {
+        if (direction.sqrMagnitude <= 0.0001f || !IsTargetValid(target))
+        {
+            return false;
+        }
+
+        float maxDistance = Mathf.Max(0f, engagementRange);
+        int hitCount = Physics.SphereCastNonAlloc(
+                origin,
+                Mathf.Max(0f, lightningSlowBeamSlowRadius),
+                direction.normalized,
+                _lightningSlowHits,
+                maxDistance,
+                lightningSlowBeamCollisionMask,
+                QueryTriggerInteraction.Ignore);
+        if (hitCount <= 0)
+        {
+            return false;
+        }
+
+        float closestDistance = float.PositiveInfinity;
+        Entity3D closestEntity = null;
+        int clampedHitCount = Mathf.Min(hitCount, _lightningSlowHits.Length);
+        for (int i = 0; i < clampedHitCount; i++)
+        {
+            RaycastHit hit = _lightningSlowHits[i];
+            Entity3D hitEntity = ResolveHitEntity(hit.collider);
+            if (hitEntity == _enemy)
+            {
+                continue;
+            }
+
+            if (hit.distance < closestDistance)
+            {
+                closestDistance = hit.distance;
+                closestEntity = hitEntity;
+            }
+        }
+
+        return closestEntity == target;
+    }
+
+    private void StartLightningSlowBeamTelegraphs()
+    {
+        StartLightningSlowBeamTelegraphsLocal(lightningSlowBeamTelegraphDuration, elapsed: 0f);
+        if (ShouldReplicateTelegraph())
+        {
+            StartLightningSlowBeamTelegraphClientRpc(lightningSlowBeamTelegraphDuration, ResolveNetworkServerTime());
+        }
+    }
+
+    private void StartLightningSlowBeamTelegraphsLocal(float duration, float elapsed)
+    {
+        if (lightningSlowBeamTelegraphs == null)
+        {
+            return;
+        }
+
+        int count = Mathf.Min(_activeLightningBeamCount, lightningSlowBeamTelegraphs.Length);
+        for (int i = 0; i < count; i++)
+        {
+            lightningSlowBeamTelegraphs[i]?.PlayCharge(duration, elapsed);
+        }
+    }
+
+    private void StopLightningSlowBeamTelegraphs(bool immediate)
+    {
+        StopLightningSlowBeamTelegraphsLocal(immediate);
+        if (!immediate && ShouldReplicateTelegraph())
+        {
+            StopLightningSlowBeamTelegraphClientRpc();
+        }
+    }
+
+    private void StopLightningSlowBeamTelegraphsLocal(bool immediate)
+    {
+        if (lightningSlowBeamTelegraphs == null)
+        {
+            return;
+        }
+
+        for (int i = 0; i < lightningSlowBeamTelegraphs.Length; i++)
+        {
+            lightningSlowBeamTelegraphs[i]?.StopCharge(immediate);
+        }
+    }
+
+    private Vector3 ResolveHistoricalTargetPoint(float secondsBehind)
+    {
         if (_historyCount <= 0 || _targetHistory == null || _targetHistory.Length == 0)
         {
             return IsTargetValid(_currentTarget) ? _currentTarget.transform.position : transform.position + transform.forward * 20f;
         }
 
-        int samplesBehind = Mathf.Clamp(Mathf.RoundToInt(rakeHistorySeconds / Mathf.Max(0.02f, targetHistorySampleInterval)), 0, _historyCount - 1);
+        int samplesBehind = Mathf.Clamp(Mathf.RoundToInt(secondsBehind / Mathf.Max(0.02f, targetHistorySampleInterval)), 0, _historyCount - 1);
         int index = _historyWriteIndex - 1 - samplesBehind;
         while (index < 0)
         {
@@ -790,6 +1245,64 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
         }
 
         return _targetHistory[index % _targetHistory.Length];
+    }
+
+    private Vector3 ResolveBeamConvergencePoint(Entity3D target)
+    {
+        if (!IsTargetValid(target))
+        {
+            return ResolveHistoricalTargetPoint(beamConvergenceLagSeconds);
+        }
+
+        Vector3 currentPoint = target.transform.position;
+        Vector3 laggedPoint = _historyCount > 0
+            ? ResolveHistoricalTargetPoint(beamConvergenceLagSeconds)
+            : currentPoint - ResolveTargetVelocity(target) * beamConvergenceLagSeconds;
+
+        return Vector3.Lerp(currentPoint, laggedPoint, beamConvergenceLagBlend);
+    }
+
+    private static void ConfigureBossBeamAimConstraint(BeamWeapon3D beamWeapon, bool allowBehindHardpointAim)
+    {
+        if (beamWeapon == null)
+        {
+            return;
+        }
+
+        beamWeapon.SetAllowExplicitAimBehindForward(allowBehindHardpointAim);
+    }
+
+    private Vector3 ResolveRakeAimPoint(Entity3D target, EnemyProjectileWeaponBase3D weapon)
+    {
+        if (!IsTargetValid(target))
+        {
+            return ResolveHistoricalTargetPoint();
+        }
+
+        Vector3 currentAimPoint = target.transform.position;
+        if (rakeUseLeadAim)
+        {
+            Vector3 targetVelocity = ResolveTargetVelocity(target);
+            float projectileSpeed = rakeLeadProjectileSpeed;
+            if (projectileSpeed <= 0f && weapon != null)
+            {
+                projectileSpeed = weapon.WeaponConfig.speed;
+            }
+
+            if (projectileSpeed > 0.0001f && targetVelocity.sqrMagnitude > 0.0001f)
+            {
+                float travelTime = Vector3.Distance(transform.position, target.transform.position) / projectileSpeed;
+                float leadSeconds = Mathf.Clamp((travelTime * rakeLeadTimeScale) + rakeAdditionalLeadSeconds, 0f, rakeMaxLeadSeconds);
+                currentAimPoint += targetVelocity * leadSeconds;
+            }
+        }
+
+        if (rakeHistoryBlend <= 0f)
+        {
+            return currentAimPoint;
+        }
+
+        return Vector3.Lerp(currentAimPoint, ResolveHistoricalTargetPoint(), rakeHistoryBlend);
     }
 
     private void EnsureTargetHistoryBuffer()
@@ -803,6 +1316,58 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
         _targetHistory = new Vector3[size];
         _historyWriteIndex = 0;
         _historyCount = 0;
+    }
+
+    private void EnsureBeamConvergenceBuffers()
+    {
+        int size = Mathf.Max(0, beamFenceWeapons != null ? beamFenceWeapons.Length : 0);
+        if (_beamConvergenceSmoothedDirections != null && _beamConvergenceSmoothedDirections.Length == size)
+        {
+            return;
+        }
+
+        _beamConvergenceSmoothedDirections = new Vector3[size];
+        _beamConvergenceHasSmoothedDirections = new bool[size];
+    }
+
+    private void EnsureLightningSlowBeamBuffers()
+    {
+        int size = Mathf.Max(0, lightningSlowBeamWeapons != null ? lightningSlowBeamWeapons.Length : 0);
+        if (_lightningSmoothedDirections != null && _lightningSmoothedDirections.Length == size)
+        {
+            return;
+        }
+
+        _lightningSmoothedDirections = new Vector3[size];
+        _lightningHasSmoothedDirections = new bool[size];
+    }
+
+    private void ResetBeamConvergenceSmoothing()
+    {
+        EnsureBeamConvergenceBuffers();
+        if (_beamConvergenceHasSmoothedDirections == null)
+        {
+            return;
+        }
+
+        for (int i = 0; i < _beamConvergenceHasSmoothedDirections.Length; i++)
+        {
+            _beamConvergenceHasSmoothedDirections[i] = false;
+        }
+    }
+
+    private void ResetLightningSlowBeamSmoothing()
+    {
+        EnsureLightningSlowBeamBuffers();
+        if (_lightningHasSmoothedDirections == null)
+        {
+            return;
+        }
+
+        for (int i = 0; i < _lightningHasSmoothedDirections.Length; i++)
+        {
+            _lightningHasSmoothedDirections[i] = false;
+        }
     }
 
     private Vector3 ResolveFanCenterDirection(Entity3D target)
@@ -829,16 +1394,118 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
         return direction.sqrMagnitude > 0.0001f ? direction.normalized : transform.forward;
     }
 
-    private Vector3 ResolveBeamFenceDirection(BeamWeapon3D beamWeapon, Vector3 centerDirection, int index, int count)
+    private Vector3 ResolveBeamConvergenceDirection(BeamWeapon3D beamWeapon, Vector3 convergencePoint, int index)
     {
         if (beamWeapon == null)
         {
-            return centerDirection;
+            return ResolveDirectionToTarget(_currentTarget);
         }
 
-        float spread = Mathf.Min(40f, Mathf.Max(12f, count * 10f));
-        float angle = ResolveLaneAngle(index, Mathf.Max(1, count), spread);
-        return RotateDirectionAroundBossUp(centerDirection, angle);
+        Vector3 provisionalDirection = convergencePoint - transform.position;
+        if (provisionalDirection.sqrMagnitude <= 0.0001f)
+        {
+            provisionalDirection = ResolveDirectionToTarget(_currentTarget);
+        }
+
+        Vector3 origin = beamWeapon.GetBeamOrigin(provisionalDirection.normalized);
+        Vector3 rawDirection = convergencePoint - origin;
+        rawDirection = rawDirection.sqrMagnitude > 0.0001f ? rawDirection.normalized : provisionalDirection.normalized;
+
+        if (beamConvergenceAimSmoothTime <= 0f)
+        {
+            return rawDirection;
+        }
+
+        EnsureBeamConvergenceBuffers();
+        if (_beamConvergenceSmoothedDirections == null
+            || _beamConvergenceHasSmoothedDirections == null
+            || index < 0
+            || index >= _beamConvergenceSmoothedDirections.Length)
+        {
+            return rawDirection;
+        }
+
+        if (!_beamConvergenceHasSmoothedDirections[index])
+        {
+            _beamConvergenceSmoothedDirections[index] = rawDirection;
+            _beamConvergenceHasSmoothedDirections[index] = true;
+            return rawDirection;
+        }
+
+        float blend = 1f - Mathf.Exp(-Time.deltaTime / Mathf.Max(0.001f, beamConvergenceAimSmoothTime));
+        Vector3 smoothedDirection = Vector3.Slerp(_beamConvergenceSmoothedDirections[index], rawDirection, blend);
+        _beamConvergenceSmoothedDirections[index] = smoothedDirection.sqrMagnitude > 0.0001f ? smoothedDirection.normalized : rawDirection;
+        return _beamConvergenceSmoothedDirections[index];
+    }
+
+    private Vector3 ResolveLightningSlowBeamDirection(BeamWeapon3D beamWeapon, Entity3D target, int index)
+    {
+        if (beamWeapon == null || !IsTargetValid(target))
+        {
+            return ResolveDirectionToTarget(target);
+        }
+
+        Vector3 targetPoint = target.transform.position + ResolveTargetVelocity(target) * lightningSlowBeamLeadSeconds;
+        Vector3 provisionalDirection = targetPoint - transform.position;
+        if (provisionalDirection.sqrMagnitude <= 0.0001f)
+        {
+            provisionalDirection = ResolveDirectionToTarget(target);
+        }
+
+        Vector3 origin = beamWeapon.GetBeamOrigin(provisionalDirection.normalized);
+        Vector3 rawDirection = targetPoint - origin;
+        rawDirection = rawDirection.sqrMagnitude > 0.0001f ? rawDirection.normalized : provisionalDirection.normalized;
+
+        if (lightningSlowBeamAimSmoothTime <= 0f)
+        {
+            return rawDirection;
+        }
+
+        EnsureLightningSlowBeamBuffers();
+        if (_lightningSmoothedDirections == null
+            || _lightningHasSmoothedDirections == null
+            || index < 0
+            || index >= _lightningSmoothedDirections.Length)
+        {
+            return rawDirection;
+        }
+
+        if (!_lightningHasSmoothedDirections[index])
+        {
+            _lightningSmoothedDirections[index] = rawDirection;
+            _lightningHasSmoothedDirections[index] = true;
+            return rawDirection;
+        }
+
+        float blend = 1f - Mathf.Exp(-Time.deltaTime / Mathf.Max(0.001f, lightningSlowBeamAimSmoothTime));
+        Vector3 smoothedDirection = Vector3.Slerp(_lightningSmoothedDirections[index], rawDirection, blend);
+        _lightningSmoothedDirections[index] = smoothedDirection.sqrMagnitude > 0.0001f ? smoothedDirection.normalized : rawDirection;
+        return _lightningSmoothedDirections[index];
+    }
+
+    private Entity3D ResolveHitEntity(Collider hitCollider)
+    {
+        if (hitCollider == null)
+        {
+            return null;
+        }
+
+        Entity3D entity = hitCollider.GetComponent<Entity3D>();
+        if (entity != null)
+        {
+            return entity;
+        }
+
+        if (hitCollider.attachedRigidbody != null)
+        {
+            entity = hitCollider.attachedRigidbody.GetComponent<Entity3D>();
+            if (entity != null)
+            {
+                return entity;
+            }
+        }
+
+        return hitCollider.GetComponentInParent<Entity3D>();
     }
 
     private Vector3 ResolveDirectionToTarget(Entity3D target)

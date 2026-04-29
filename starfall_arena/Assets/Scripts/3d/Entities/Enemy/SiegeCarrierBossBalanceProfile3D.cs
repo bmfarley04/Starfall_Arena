@@ -8,7 +8,7 @@ public class SiegeCarrierBossBalanceProfile3D : EnemyBalanceProfile3D
     public SiegeCarrierBossBrainStats brain = new SiegeCarrierBossBrainStats
     {
         thinkInterval = 0.05f,
-        targetHistorySampleInterval = 0.12f,
+        targetHistorySampleInterval = 0.05f,
         targetHistorySamples = 16,
         preferredRangeMin = 180f,
         preferredRangeMax = 260f,
@@ -26,7 +26,13 @@ public class SiegeCarrierBossBalanceProfile3D : EnemyBalanceProfile3D
         phaseThreeCooldownMultiplier = 0.7f,
         rakeShotCount = 14,
         rakeShotInterval = 0.12f,
-        rakeHistorySeconds = 0.6f,
+        rakeHistorySeconds = 0f,
+        rakeHistoryBlend = 0f,
+        rakeUseLeadAim = true,
+        rakeLeadProjectileSpeed = 0f,
+        rakeLeadTimeScale = 1f,
+        rakeAdditionalLeadSeconds = 0.03f,
+        rakeMaxLeadSeconds = 1.25f,
         fanLaneCount = 5,
         fanTotalSpreadDegrees = 34f,
         fanLaneInterval = 0.04f,
@@ -37,10 +43,24 @@ public class SiegeCarrierBossBalanceProfile3D : EnemyBalanceProfile3D
         curtainEscapeDoorDegrees = 26f,
         curtainDoorDriftDegrees = 18f,
         curtainLaneInterval = 0.05f,
+        formationMissileSalvoBudgetCost = 8,
         beamFenceTelegraphDuration = 0.75f,
         beamFenceActiveDuration = 1.2f,
         beamFenceMaxBeams = 4,
-        beamFenceAimRefreshInterval = 0.05f
+        beamFenceAimRefreshInterval = 0.03f,
+        beamConvergenceLagSeconds = 0.25f,
+        beamConvergenceLagBlend = 0.75f,
+        beamConvergenceAimSmoothTime = 0.08f,
+        lightningSlowBeamTelegraphDuration = 0.45f,
+        lightningSlowBeamActiveDuration = 1.35f,
+        lightningSlowBeamAimRefreshInterval = 0.02f,
+        lightningSlowBeamCount = 2,
+        lightningSlowBeamLeadSeconds = 0.12f,
+        lightningSlowBeamAimSmoothTime = 0.025f,
+        lightningSlowBeamSlowRadius = 1.25f,
+        lightningSlowBeamSlowMultiplier = 0.45f,
+        lightningSlowBeamSlowDuration = 0.18f,
+        lightningSlowBeamSlowTickInterval = 0.08f
     };
 
     public override void ApplyBrainStats(GameObject prefabRoot)

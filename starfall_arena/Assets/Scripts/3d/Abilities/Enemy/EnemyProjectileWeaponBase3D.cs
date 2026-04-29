@@ -178,6 +178,10 @@ public abstract class EnemyProjectileWeaponBase3D : MonoBehaviour, IEnemyProject
                 VisualType = NetworkVisualType,
                 AccuracyAttackId = PlayerCombatStats3D.InvalidAttackId
             });
+
+            NetProjectileFireRequest3D request = output[output.Count - 1];
+            ConfigureFireRequest(ref request, i, muzzles.Length, spawnMuzzle, fireDirection);
+            output[output.Count - 1] = request;
         }
 
         OnNetworkVolleyBuilt(output.Count - requestsBefore);
@@ -262,6 +266,7 @@ public abstract class EnemyProjectileWeaponBase3D : MonoBehaviour, IEnemyProject
                 ProjectileScaleMultiplier = 1f,
                 AccuracyAttackId = PlayerCombatStats3D.InvalidAttackId
             };
+            ConfigureFireRequest(ref fire, i, muzzles.Length, spawnMuzzle, fireDirection);
 
             if (SpawnProjectileInstance(projectilePrefab, fire, string.Empty, targetFaction, cosmeticOnly: false, serverAuthoritativeGameplay: false))
             {
@@ -320,6 +325,7 @@ public abstract class EnemyProjectileWeaponBase3D : MonoBehaviour, IEnemyProject
             fire.ImpactForce,
             owner,
             fire.AccuracyAttackId);
+        ConfigureSpawnedProjectile(projectile, fire);
 
         return true;
     }
@@ -361,6 +367,14 @@ public abstract class EnemyProjectileWeaponBase3D : MonoBehaviour, IEnemyProject
     }
 
     protected virtual void OnNetworkVolleyBuilt(int requestCount)
+    {
+    }
+
+    protected virtual void ConfigureFireRequest(ref NetProjectileFireRequest3D fire, int muzzleIndex, int muzzleCount, Transform muzzle, Vector3 fireDirection)
+    {
+    }
+
+    protected virtual void ConfigureSpawnedProjectile(Projectile3D projectile, NetProjectileFireRequest3D fire)
     {
     }
 

@@ -88,6 +88,7 @@ public enum NetProjectileVisualType3D : byte
     EnemyProjectile = 9,
     EnemyMissile = 10,
     EnemySecondaryProjectile = 11,
+    EnemyFormationMissile = 12,
 }
 
 public struct NetProjectileFireRequest3D : INetworkSerializable
@@ -115,6 +116,15 @@ public struct NetProjectileFireRequest3D : INetworkSerializable
     public Faction3D TargetFaction;
     public NetProjectileVisualType3D VisualType;
     public int AccuracyAttackId;
+    public bool UsesFormation;
+    public int FormationSlotIndex;
+    public int FormationSlotCount;
+    public float FormationFanArcDegrees;
+    public float FormationFanOutDuration;
+    public float FormationHoldDuration;
+    public float FormationConvergeDuration;
+    public float FormationConvergenceRadius;
+    public float FormationMaxSpeedMultiplier;
 
     public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
     {
@@ -141,6 +151,15 @@ public struct NetProjectileFireRequest3D : INetworkSerializable
         serializer.SerializeValue(ref TargetFaction);
         serializer.SerializeValue(ref VisualType);
         serializer.SerializeValue(ref AccuracyAttackId);
+        serializer.SerializeValue(ref UsesFormation);
+        serializer.SerializeValue(ref FormationSlotIndex);
+        serializer.SerializeValue(ref FormationSlotCount);
+        serializer.SerializeValue(ref FormationFanArcDegrees);
+        serializer.SerializeValue(ref FormationFanOutDuration);
+        serializer.SerializeValue(ref FormationHoldDuration);
+        serializer.SerializeValue(ref FormationConvergeDuration);
+        serializer.SerializeValue(ref FormationConvergenceRadius);
+        serializer.SerializeValue(ref FormationMaxSpeedMultiplier);
     }
 }
 

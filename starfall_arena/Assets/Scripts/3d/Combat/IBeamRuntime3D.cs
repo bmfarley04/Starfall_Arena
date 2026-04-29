@@ -19,3 +19,8 @@ public interface IBeamDirectionSource3D
 {
     void SetBeamDirectionSource(Transform directionSource);
 }
+
+public interface IBeamAimConstraint3D
+{
+    void SetAllowExplicitAimBehindForward(bool allowExplicitAimBehindForward);
+}

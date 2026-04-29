@@ -88,11 +88,24 @@ public class MissileProjectile3D : Projectile3D
     private Transform _target;
     private Vector3 _inheritedVelocity;
     private Vector3 _currentDirection;
+    private Vector3 _formationForward;
+    private Vector3 _formationRight;
+    private Vector3 _formationUp;
+    private Vector3 _formationRadialDirection;
     private float _cruiseSpeed;
     private float _spawnTime;
+    private float _formationFanArcDegrees;
+    private float _formationFanOutDuration;
+    private float _formationHoldDuration;
+    private float _formationConvergeDuration;
+    private float _formationConvergenceRadius;
+    private float _formationMaxSpeedMultiplier;
+    private int _formationSlotIndex;
+    private int _formationSlotCount;
     private bool _isImpacted;
     private bool _impactVisualSpawned;
     private bool _endOfLifeTriggered;
+    private bool _usesFormationGuidance;
     private Renderer[] _visibleRenderers;
     private ParticleSystem[] _particles;
     private TrailRenderer[] _trails;
@@ -106,11 +119,24 @@ public class MissileProjectile3D : Projectile3D
         _target = null;
         _inheritedVelocity = Vector3.zero;
         _currentDirection = transform.forward.sqrMagnitude > 0.0001f ? transform.forward.normalized : Vector3.forward;
+        _formationForward = _currentDirection;
+        _formationRight = transform.right.sqrMagnitude > 0.0001f ? transform.right.normalized : Vector3.right;
+        _formationUp = transform.up.sqrMagnitude > 0.0001f ? transform.up.normalized : Vector3.up;
+        _formationRadialDirection = _formationRight;
         _cruiseSpeed = 0f;
         _spawnTime = Time.time;
+        _formationSlotIndex = 0;
+        _formationSlotCount = 0;
+        _formationFanArcDegrees = 0f;
+        _formationFanOutDuration = 0f;
+        _formationHoldDuration = 0f;
+        _formationConvergeDuration = 0f;
+        _formationConvergenceRadius = 0f;
+        _formationMaxSpeedMultiplier = 1f;
         _isImpacted = false;
         _impactVisualSpawned = false;
         _endOfLifeTriggered = false;
+        _usesFormationGuidance = false;
 
         CacheVisualComponentsIfNeeded();
         ResetVisualState();
@@ -139,6 +165,51 @@ public class MissileProjectile3D : Projectile3D
         _spawnTime = Time.time;
         _target = UsesGuidance ? AcquireTarget() : null;
         UpdateMissileRotation();
+    }
+
+    public void ConfigureFormationGuidance(
+        int slotIndex,
+        int slotCount,
+        float fanArcDegrees,
+        float fanOutDuration,
+        float holdDuration,
+        float convergeDuration,
+        float convergenceRadius,
+        float maxSpeedMultiplier,
+        Vector3 formationForward,
+        Vector3 formationUp)
+    {
+        _formationSlotIndex = Mathf.Max(0, slotIndex);
+        _formationSlotCount = Mathf.Max(1, slotCount);
+        _formationFanArcDegrees = Mathf.Max(0f, fanArcDegrees);
+        _formationFanOutDuration = Mathf.Max(0f, fanOutDuration);
+        _formationHoldDuration = Mathf.Max(0f, holdDuration);
+        _formationConvergeDuration = Mathf.Max(0.01f, convergeDuration);
+        _formationConvergenceRadius = Mathf.Max(0f, convergenceRadius);
+        _formationMaxSpeedMultiplier = Mathf.Max(1f, maxSpeedMultiplier);
+        _formationForward = formationForward.sqrMagnitude > 0.0001f ? formationForward.normalized : _currentDirection;
+        _formationUp = formationUp.sqrMagnitude > 0.0001f ? formationUp.normalized : Vector3.up;
+        if (Mathf.Abs(Vector3.Dot(_formationForward, _formationUp)) > 0.98f)
+        {
+            _formationUp = Vector3.up;
+        }
+
+        _formationRight = Vector3.Cross(_formationUp, _formationForward);
+        if (_formationRight.sqrMagnitude <= 0.0001f)
+        {
+            _formationRight = transform.right.sqrMagnitude > 0.0001f ? transform.right.normalized : Vector3.right;
+        }
+        else
+        {
+            _formationRight.Normalize();
+        }
+
+        _formationRadialDirection = ResolveFormationRadialDirection();
+        _usesFormationGuidance = _formationSlotCount > 1;
+        if (_usesFormationGuidance && UsesGuidance && _target == null)
+        {
+            _target = AcquireTarget();
+        }
     }
 
     public void SetGuidanceEnabled(bool enabled)
@@ -180,6 +251,11 @@ public class MissileProjectile3D : Projectile3D
 
         UpdateGuidance();
         float speed = GetCurrentSpeed();
+        if (_usesFormationGuidance)
+        {
+            speed = ResolveFormationSpeed(speed);
+        }
+
         _direction = _currentDirection;
         _velocity = (_currentDirection * speed) + _inheritedVelocity;
         UpdateMissileRotation();
@@ -270,15 +346,96 @@ public class MissileProjectile3D : Projectile3D
             return;
         }
 
-        Vector3 toTarget = _target.position - transform.position;
-        if (toTarget.sqrMagnitude <= 0.0001f)
+        Vector3 desiredDirection = _usesFormationGuidance
+            ? ResolveFormationDesiredDirection()
+            : (_target.position - transform.position).normalized;
+        if (desiredDirection.sqrMagnitude <= 0.0001f)
         {
             return;
         }
 
-        Vector3 desiredDirection = toTarget.normalized;
         float turnStepRadians = Mathf.Max(0f, guidance.turnRateDegPerSecond) * Mathf.Deg2Rad * Time.deltaTime;
         _currentDirection = Vector3.RotateTowards(_currentDirection, desiredDirection, turnStepRadians, 0f).normalized;
+    }
+
+    private Vector3 ResolveFormationDesiredDirection()
+    {
+        float elapsed = Mathf.Max(0f, Time.time - _spawnTime - Mathf.Max(0f, guidance.guidanceStartDelay));
+        Vector3 fanDirection = ResolveFormationFanDirection();
+        float fanOutDuration = Mathf.Max(0.01f, _formationFanOutDuration);
+        if (elapsed < fanOutDuration)
+        {
+            float t = Mathf.Clamp01(elapsed / fanOutDuration);
+            return Vector3.Slerp(_formationForward, fanDirection, t).normalized;
+        }
+
+        if (elapsed < fanOutDuration + _formationHoldDuration)
+        {
+            return fanDirection;
+        }
+
+        if (_target == null)
+        {
+            return fanDirection;
+        }
+
+        float convergeElapsed = elapsed - fanOutDuration - _formationHoldDuration;
+        float convergeT = Mathf.Clamp01(convergeElapsed / Mathf.Max(0.01f, _formationConvergeDuration));
+        Vector3 aimPoint = ResolveFormationAimPoint(convergeT);
+        Vector3 toAimPoint = aimPoint - transform.position;
+        return toAimPoint.sqrMagnitude > 0.0001f ? toAimPoint.normalized : fanDirection;
+    }
+
+    private Vector3 ResolveFormationFanDirection()
+    {
+        float coneRadians = Mathf.Clamp(_formationFanArcDegrees, 0f, 179f) * Mathf.Deg2Rad;
+        Vector3 direction = (_formationForward * Mathf.Cos(coneRadians)) + (_formationRadialDirection * Mathf.Sin(coneRadians));
+        return direction.sqrMagnitude > 0.0001f ? direction.normalized : _formationForward;
+    }
+
+    private Vector3 ResolveFormationRadialDirection()
+    {
+        if (_formationSlotCount <= 1)
+        {
+            return _formationRight;
+        }
+
+        float angle = (_formationSlotIndex / (float)_formationSlotCount) * Mathf.PI * 2f;
+        Vector3 radial = (_formationRight * Mathf.Cos(angle)) + (_formationUp * Mathf.Sin(angle));
+        return radial.sqrMagnitude > 0.0001f ? radial.normalized : _formationRight;
+    }
+
+    private Vector3 ResolveFormationAimPoint(float convergeT)
+    {
+        if (_target == null)
+        {
+            return transform.position + _currentDirection;
+        }
+
+        float offset = _formationConvergenceRadius * (1f - Mathf.Clamp01(convergeT));
+        return _target.position + (_formationRadialDirection * offset);
+    }
+
+    private float ResolveFormationSpeed(float baseSpeed)
+    {
+        if (_target == null)
+        {
+            return baseSpeed;
+        }
+
+        float elapsed = Mathf.Max(0f, Time.time - _spawnTime - Mathf.Max(0f, guidance.guidanceStartDelay));
+        float convergeStart = Mathf.Max(0.01f, _formationFanOutDuration) + _formationHoldDuration;
+        if (elapsed < convergeStart)
+        {
+            return baseSpeed;
+        }
+
+        float remaining = Mathf.Max(0.02f, _formationConvergeDuration - (elapsed - convergeStart));
+        Vector3 finalTargetPoint = _target.position;
+        float distanceToFinalTarget = Vector3.Distance(transform.position, finalTargetPoint);
+        float synchronizedSpeed = distanceToFinalTarget / remaining;
+        float maxSpeed = Mathf.Max(baseSpeed, _cruiseSpeed * _formationMaxSpeedMultiplier);
+        return Mathf.Clamp(synchronizedSpeed, baseSpeed * 0.25f, maxSpeed);
     }
 
     private float GetCurrentSpeed()

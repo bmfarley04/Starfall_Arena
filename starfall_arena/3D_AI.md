@@ -31,7 +31,7 @@ The 3D AI path should stay modular. Enemy prefabs should compose small scripts i
   - shared inter-agent separation steering helper that mirrors the `EnemyObstacleAvoidance3D` API (`ResolveSteeringDirection(Vector3 desired)`)
   - non-alloc `OverlapSphere` against an `agentMask` LayerMask; pushes the desired direction away from same-faction allies inside `allyRadius` and biases laterally away from non-ally entities (e.g. the player) inside the smaller `playerProximityRadius`
   - intended chaining: `desired -> separation -> obstacleAvoidance -> flight controller`
-  - currently consumed by `RammerEnemyBrain3D` (gated behind a `useSeparation` brain toggle); other enemy brains can opt in by adding the component to their prefab and calling its API the same way
+  - currently optional for future enemy brains; `RammerEnemyBrain3D` deliberately does not consume it because rammer charges should stay simple locked vectors
 - `EnemyPatrol3D`
   - reusable no-target fallback for Invasion enemies so they search the arena instead of freezing when players are outside detection range
   - generates patrol waypoints at runtime; designers do not author scene waypoint lists
@@ -103,22 +103,14 @@ The 3D AI path should stay modular. Enemy prefabs should compose small scripts i
   - keeps movement simple and learnable by cycling perch direction deterministically instead of dodging individual player shots
   - should be tuned as a glass cannon on the prefab: very low `Entity3D` health, high `EnemyAIFlightController3D.moveSpeed`, fast turn rate, and a fast high-damage bolt weapon
 - `RammerEnemyBrain3D`
-  - CURRENTLY DEPRECATED DUE TO COLLIDER BUGS
-  - fast strike enemy whose identity is committed straight-line charges with strong knockback, not constant pursuit
-  - state machine: `Stalk` -> `WindUp` -> `Charge` -> `Disengage` -> `Stalk`. Every transition is server-authoritative
-    - **Stalk**: closes at full speed when farther than `stalkDistance`, then drifts at `stalkSpeedScale` once inside that band. The rammer hangs near the player while waiting for the next charge to be ready, so the player can read the breathing room
-    - **WindUp**: triggered when the rammer is within `chargeStartDistance` AND past the post-disengage `chargeCooldown`. The rammer faces the target and creeps forward (very low speed scale) for `windUpDuration`, telegraphing the attack
-    - **Charge**: at the end of WindUp, the brain LOCKS a charge vector (`target.position - self.position` normalized). For the entire charge state the rammer flies along that locked vector at full speed - it does NOT re-target the player. This gives the player a real dodge window because the rammer cannot track sideways juke. The charge ends when (a) hit detection fires, (b) `chargeMaxDuration` elapses, or (c) the rammer flies past the locked predicted contact point by `chargeOvershootDistance`
-    - **Disengage**: triggered by hit OR miss. Hits run the eject + collision exemption path; misses skip both and just steer back to stalk distance. Either way, `chargeCooldown` starts at disengage entry so the rammer cannot immediately re-charge
-  - hit detection runs every `FixedUpdate` (only during Stalk and Charge - WindUp is stationary, Disengage is collision-exempted by design). The check has three layers:
-    1. distance check between the rammer's transform and the resolved target's transform
-    2. layer-masked `OverlapSphereNonAlloc` on `contactDetectionMask` that catches off-center compound colliders the transform-distance check misses
-    3. swept `SphereCastNonAlloc` from the previous fixed-update position along the actual movement vector - catches tunneling at high closure rates where the rammer would otherwise pass cleanly through the player between physics ticks
-  - on a successful ram hit (in any state), applies `ramDamage` chip damage and `NetMovement3D.ApplyCombatVelocityDelta(knockDir * knockbackVelocity)` to the player so the impulse replicates correctly across the network. `knockbackVelocity` defaults higher than other contact enemies so the hit reads as "sent reeling"
-  - on hit, enters a layered disengage: a short reverse-thrust eject window (`ejectDuration`, default 0.35s) where the rammer keeps its nose pointed at the target but is physically pulled backward at full `moveSpeed` via `EnemyAIFlightController3D.SetFlightIntent(awayDirection, toTargetDirection, 1f, moveBackward: true)`, followed by face-away forward disengage for the remainder of `disengageDuration`. The eject prevents the rammer from freezing in place inside the player's collider while rotating around (see `3D_BUGS.md`)
-  - while disengaging from a hit, every collider on the rammer is paired with every collider on the rammed entity through `Physics.IgnoreCollision(..., true)` and reverted on disengage end, `OnDisable`, or target loss. Guarantees no physical entanglement after impact. Gated behind `useCollisionExemption` for designer override
-  - separation steering (`EnemySeparation3D`) is wired into Stalk and post-eject Disengage. It is intentionally NOT applied during the locked Charge or during the reverse-thrust Eject - any sideways drift would re-open the flight controller's facing-vs-move angle gate and zero the velocity (the freeze documented in `3D_BUGS.md`)
-  - `ramDetectionDistance` should be tuned to at least `(rammer collider radius + target collider radius + ~0.5m safety)` so the hit fires before geometric overlap. `contactDetectionMask` should be set to the layer(s) used by player ship colliders for reliable detection in cluttered scenes
+  - fast strike enemy whose identity is committed straight-line charges with strong velocity knockback, not collision-avoidance steering
+  - state machine: `Approach` -> `WindUp` -> `Charge` -> `Recover` -> `Approach`. Every transition is server-authoritative
+    - **Approach**: directly flies toward the detected player at full speed; no obstacle avoidance, separation, or standoff drift is layered into the rammer brain
+    - **WindUp**: triggered when inside `chargeStartDistance` and past `chargeCooldown`; the rammer only faces the live target for `windUpDuration`
+    - **Charge**: locks one normalized direction from rammer to target at the end of wind-up, then flies that vector until collision, `chargeMaxDuration`, or passing the locked target point plus `chargeOvershootDistance`
+    - **Recover**: keeps flying along the same locked charge vector briefly after hit or miss so the ship reads as a high-speed flyby, then returns to approach
+  - hit detection is plain Unity collision/trigger contact during `Charge`; the old workaround stack of distance probes, overlap buffers, swept spherecasts, collision exemptions, and reverse-eject disengage has been removed now that the collider issue is fixed
+  - on a successful ram hit, applies `ramDamage` and `NetMovement3D.ApplyCombatVelocityDelta(lockedChargeDirection * hitVelocity)` to the player when a network movement component exists; offline fallback adds the same velocity delta to the target Rigidbody
   - survives the impact - this is not a kamikaze. Knockback is the entire identity; damage is secondary.
 - `SplitterEnemyBrain3D`
   - medium enemy that carries both `ProjectileWeaponEnemy3D` and `BeamWeapon3D`
@@ -170,11 +162,13 @@ The 3D AI path should stay modular. Enemy prefabs should compose small scripts i
   - alerts are server-authoritative in networked Invasion because the brain only runs on the server/host; clients receive movement through `NetEnemyMovement3D`
 - `SiegeCarrierBossEnemyBrain3D`
   - slow/stationary second Invasion boss that acts like a Siege Carrier rather than a normal chaser
-  - keeps one major pattern active at a time: lagging machine-gun rake, predictive split fan, beam fence, or curtain with an escape door
-  - samples recent target positions for the rake so bullets pressure where the player was, rewarding smooth drift and route planning
+  - keeps one major pattern active at a time: lagging machine-gun rake, predictive split fan, lagging beam convergence, curtain with an escape door, formation missile salvo, or a two-beam lightning slow attack
+  - resolves lagging-rake aim independently per shot; the default is precise current/velocity lead fire, with optional history blending only when designers intentionally want a trailing-fire look
   - computes a simple velocity lead for the split fan, then offsets authored weapon lanes around that center direction
   - fires curtain lanes around the target direction while deliberately skipping a drifting escape-door sector
-  - drives multiple `BeamWeapon3D` hardpoints for the beam fence through indexed `NetEnemyCombat3D` beam replication so remote clients see the same beam sources as the host
+  - drives multiple `BeamWeapon3D` hardpoints for lagging beam convergence through indexed `NetEnemyCombat3D` beam replication; every active hardpoint aims from its own muzzle origin toward one slightly delayed target point
+  - drives two assigned `BeamWeapon3D` hardpoints for the lightning slow attack; this pattern uses low-lag velocity lead and fast aim refresh so it is intentionally accurate, while the brain applies a short refreshed movement slow only when its own line-of-sight spherecast confirms a beam lane reaches the player
+  - can drive `FormationMissileSalvoWeaponEnemy3D` as a single major pattern; budget cost should match the salvo missile count so simultaneous missile blooms stay performance-accountable
   - uses `EnemyAIFlightController3D` only for range maintenance; turret/lane pressure is owned by the boss brain, not independent turret AI
   - movement bands: no target uses patrol/search; detected but beyond `preferredRangeMax` approaches; inside `preferredRangeMin` backs away; inside the preferred range band clears flight intent and does not continually rotate the hull to face the player
   - movement is plane-biased: the boss mostly preserves its starting horizontal plane and only follows target height by the serialized vertical-follow weight, while projectile and beam patterns still aim at the target's real world position
@@ -245,7 +239,7 @@ Planned later pathing layers may include:
 - tactical orbit/kite positions
 - flow-field or waypoint goals for large waves
 
-Local separation between enemies is now implemented as `EnemySeparation3D` (currently consumed by `RammerEnemyBrain3D`); other brains can opt in by adding the component to their prefab and routing their desired steering vector through it the same way they route through `EnemyObstacleAvoidance3D`.
+Local separation between enemies is implemented as `EnemySeparation3D`; brains can opt in by adding the component to their prefab and routing their desired steering vector through it the same way they route through `EnemyObstacleAvoidance3D`. Do not add it to simple committed-charge enemies unless the behavior explicitly needs steering drift.
 
 ## Old Stellar Onslaught Inspiration
 

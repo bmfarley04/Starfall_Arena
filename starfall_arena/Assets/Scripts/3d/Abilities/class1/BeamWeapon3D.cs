@@ -50,6 +50,7 @@ public class BeamWeapon3D : Weapon3D, IBeamWeaponNetwork3D
     private bool _activeBeamAuthoritative = true;
     private Vector3 _pendingNetworkAim;
     private bool _hasPendingNetworkAim;
+    private bool _allowExplicitAimBehindForward;
     private int _activeBeamAttackId = PlayerCombatStats3D.InvalidAttackId;
     private float _rotationPenaltyUntilTime = float.NegativeInfinity;
 
@@ -295,6 +296,16 @@ public class BeamWeapon3D : Weapon3D, IBeamWeaponNetwork3D
         }
     }
 
+    public void SetAllowExplicitAimBehindForward(bool allowExplicitAimBehindForward)
+    {
+        _allowExplicitAimBehindForward = allowExplicitAimBehindForward;
+
+        if (_activeBeam is IBeamAimConstraint3D aimConstraint)
+        {
+            aimConstraint.SetAllowExplicitAimBehindForward(allowExplicitAimBehindForward);
+        }
+    }
+
     public void ApplyNetworkBeamState(bool isFiring, bool authoritative, int accuracyAttackId)
     {
         if (isFiring)
@@ -374,6 +385,10 @@ public class BeamWeapon3D : Weapon3D, IBeamWeaponNetwork3D
         if (_activeBeam is IBeamDirectionSource3D directionSourceConsumer)
         {
             directionSourceConsumer.SetBeamDirectionSource(ResolveBeamDirectionSource());
+        }
+        if (_activeBeam is IBeamAimConstraint3D aimConstraint)
+        {
+            aimConstraint.SetAllowExplicitAimBehindForward(_allowExplicitAimBehindForward);
         }
 
         _activeBeamAuthoritative = authoritative;

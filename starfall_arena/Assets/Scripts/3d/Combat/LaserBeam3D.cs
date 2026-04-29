@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class LaserBeam3D : MonoBehaviour, IBeamRuntime3D, IBeamDirectionSource3D
+public class LaserBeam3D : MonoBehaviour, IBeamRuntime3D, IBeamDirectionSource3D, IBeamAimConstraint3D
 {
     [Header("Beam Visual - Core")]
     [Tooltip("Inner beam mesh (capsule). Bright core of the beam.")]
@@ -52,6 +52,7 @@ public class LaserBeam3D : MonoBehaviour, IBeamRuntime3D, IBeamDirectionSource3D
     private NetCombat3D _networkAuthority;
     private bool _hasNetworkAim;
     private Vector3 _networkAimDirection;
+    private bool _allowExplicitAimBehindForward;
     private int _accuracyAttackId = PlayerCombatStats3D.InvalidAttackId;
     private float _anchorOffset;
     private float _verticalOffset;
@@ -99,6 +100,11 @@ public class LaserBeam3D : MonoBehaviour, IBeamRuntime3D, IBeamDirectionSource3D
     public void SetBeamDirectionSource(Transform directionSource)
     {
         _directionSource = directionSource != null ? directionSource : _positionAnchor;
+    }
+
+    public void SetAllowExplicitAimBehindForward(bool allowExplicitAimBehindForward)
+    {
+        _allowExplicitAimBehindForward = allowExplicitAimBehindForward;
     }
 
     public void SetCosmeticOnly(bool isCosmeticOnly)
@@ -436,7 +442,9 @@ public class LaserBeam3D : MonoBehaviour, IBeamRuntime3D, IBeamDirectionSource3D
 
         if (_hasNetworkAim)
         {
-            resolvedDirection = _networkAimDirection;
+            return _allowExplicitAimBehindForward
+                ? _networkAimDirection.normalized
+                : ResolveForwardConstrainedDirection(_networkAimDirection);
         }
         else if (_aimCamera != null)
         {

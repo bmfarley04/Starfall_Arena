@@ -22,7 +22,7 @@ MonoBehaviour:
   beamWeapons: []
   brain:
     thinkInterval: 0.05
-    targetHistorySampleInterval: 0.12
+    targetHistorySampleInterval: 0.05
     targetHistorySamples: 16
     preferredRangeMin: 180
     preferredRangeMax: 260
@@ -40,7 +40,13 @@ MonoBehaviour:
     phaseThreeCooldownMultiplier: 0.7
     rakeShotCount: 14
     rakeShotInterval: 0.12
-    rakeHistorySeconds: 0.6
+    rakeHistorySeconds: 0
+    rakeHistoryBlend: 0
+    rakeUseLeadAim: 1
+    rakeLeadProjectileSpeed: 0
+    rakeLeadTimeScale: 1
+    rakeAdditionalLeadSeconds: 0.03
+    rakeMaxLeadSeconds: 1.25
     fanLaneCount: 5
     fanTotalSpreadDegrees: 34
     fanLaneInterval: 0.04
@@ -51,7 +57,11 @@ MonoBehaviour:
     curtainEscapeDoorDegrees: 26
     curtainDoorDriftDegrees: 18
     curtainLaneInterval: 0.05
+    formationMissileSalvoBudgetCost: 8
     beamFenceTelegraphDuration: 0.75
     beamFenceActiveDuration: 1.2
     beamFenceMaxBeams: 4
-    beamFenceAimRefreshInterval: 0.05
+    beamFenceAimRefreshInterval: 0.03
+    beamConvergenceLagSeconds: 0.25
+    beamConvergenceLagBlend: 0.75
+    beamConvergenceAimSmoothTime: 0.08

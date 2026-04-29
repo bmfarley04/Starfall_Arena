@@ -304,9 +304,9 @@ public abstract class EnemyBalanceProfile3D : ScriptableObject
     {
         [Tooltip("Seconds between high-level boss target/movement decisions.")]
         [Min(0.01f)] public float thinkInterval;
-        [Tooltip("Seconds between stored target-position samples used by the lagging rake.")]
+        [Tooltip("Seconds between stored target-position samples used only when Rake History Blend is above 0.")]
         [Min(0.02f)] public float targetHistorySampleInterval;
-        [Tooltip("How many recent target positions the boss stores for lagging attacks.")]
+        [Tooltip("How many recent target positions the boss stores when history-blended rake aim is enabled.")]
         [Range(2, 32)] public int targetHistorySamples;
         [Tooltip("Inner edge of the carrier's preferred range band. Inside this distance it backs away without trying to face the player.")]
         [Min(0f)] public float preferredRangeMin;
@@ -340,8 +340,20 @@ public abstract class EnemyBalanceProfile3D : ScriptableObject
         [Min(1)] public int rakeShotCount;
         [Tooltip("Seconds between lagging-rake shots.")]
         [Min(0.01f)] public float rakeShotInterval;
-        [Tooltip("Seconds behind the target's current position that the rake aims.")]
+        [Tooltip("Seconds behind the target's current position used by optional history-blended rake aim.")]
         [Min(0f)] public float rakeHistorySeconds;
+        [Tooltip("Blend from precise current/lead rake aim toward stored historical target positions. 0 is precise follow-fire, 1 is pure lagging trail fire.")]
+        [Range(0f, 1f)] public float rakeHistoryBlend;
+        [Tooltip("If true, each rake shot predicts the target's current velocity at fire time.")]
+        public bool rakeUseLeadAim;
+        [Tooltip("Projectile speed used for rake lead calculation. 0 uses the active rake weapon's configured speed.")]
+        [Min(0f)] public float rakeLeadProjectileSpeed;
+        [Tooltip("Multiplier applied to calculated projectile travel time when leading rake shots.")]
+        [Range(0f, 2f)] public float rakeLeadTimeScale;
+        [Tooltip("Extra seconds of target-velocity lead added to each rake shot.")]
+        [Min(0f)] public float rakeAdditionalLeadSeconds;
+        [Tooltip("Maximum total seconds of target-velocity lead allowed for one rake shot.")]
+        [Min(0f)] public float rakeMaxLeadSeconds;
         [Tooltip("Number of predictive fan lanes attempted, also limited by configured fan weapons.")]
         [Range(1, 31)] public int fanLaneCount;
         [Tooltip("Total predictive fan spread in degrees.")]
@@ -362,14 +374,42 @@ public abstract class EnemyBalanceProfile3D : ScriptableObject
         [Min(0f)] public float curtainDoorDriftDegrees;
         [Tooltip("Seconds between curtain lane shots.")]
         [Min(0.01f)] public float curtainLaneInterval;
-        [Tooltip("Seconds of beam-fence warning before damaging beams activate.")]
+        [Tooltip("Projectile-budget cost charged when one formation missile salvo launches. Match this to the salvo missile count.")]
+        [Range(1, 32)] public int formationMissileSalvoBudgetCost;
+        [Tooltip("Seconds of warning before damaging converging beams activate.")]
         [Min(0f)] public float beamFenceTelegraphDuration;
-        [Tooltip("Seconds the damaging beam fence remains active.")]
+        [Tooltip("Seconds the damaging converging beams remain active.")]
         [Min(0.01f)] public float beamFenceActiveDuration;
-        [Tooltip("Maximum beam hardpoints used in one beam-fence activation.")]
+        [Tooltip("Maximum beam hardpoints used in one beam convergence activation.")]
         [Range(1, 16)] public int beamFenceMaxBeams;
-        [Tooltip("Seconds between beam-fence aim refreshes while active.")]
+        [Tooltip("Seconds between beam convergence aim refreshes while active.")]
         [Min(0.01f)] public float beamFenceAimRefreshInterval;
+        [Tooltip("Seconds behind the target used as the shared convergence point for all active beam hardpoints.")]
+        [Min(0f)] public float beamConvergenceLagSeconds;
+        [Tooltip("Blend from current target position toward the lagged convergence point. 0 tracks current position; 1 uses full positional lag.")]
+        [Range(0f, 1f)] public float beamConvergenceLagBlend;
+        [Tooltip("Small smoothing time for beam aim directions. This reduces visual jitter from network/refresh cadence without changing damage ownership.")]
+        [Min(0f)] public float beamConvergenceAimSmoothTime;
+        [Tooltip("Seconds of warning before the two accurate lightning slow beams activate.")]
+        [Min(0f)] public float lightningSlowBeamTelegraphDuration;
+        [Tooltip("Seconds the two accurate lightning slow beams remain active.")]
+        [Min(0.01f)] public float lightningSlowBeamActiveDuration;
+        [Tooltip("Seconds between lightning beam aim refreshes while active.")]
+        [Min(0.01f)] public float lightningSlowBeamAimRefreshInterval;
+        [Tooltip("How many lightning beams are allowed to fire in this pattern. Keep at 2 for the intended boss ability.")]
+        [Range(1, 2)] public int lightningSlowBeamCount;
+        [Tooltip("Seconds of target-velocity lead added to the lightning beams.")]
+        [Min(0f)] public float lightningSlowBeamLeadSeconds;
+        [Tooltip("Small smoothing time for lightning aim. Keep low so the beams stay accurate.")]
+        [Min(0f)] public float lightningSlowBeamAimSmoothTime;
+        [Tooltip("Radius used by the boss brain's slow check along each lightning beam.")]
+        [Min(0f)] public float lightningSlowBeamSlowRadius;
+        [Tooltip("Movement multiplier applied while the lightning slow beam is hitting the player.")]
+        [Range(0f, 1f)] public float lightningSlowBeamSlowMultiplier;
+        [Tooltip("Duration of each refreshed slow pulse.")]
+        [Min(0f)] public float lightningSlowBeamSlowDuration;
+        [Tooltip("Seconds between server-authoritative slow checks while the lightning beams are active.")]
+        [Min(0.01f)] public float lightningSlowBeamSlowTickInterval;
     }
 
     [Header("Shared Core")]

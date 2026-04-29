@@ -87,9 +87,11 @@ Base input rule:
   - uses `EnemySecondaryProjectile` as its network visual type so client cosmetic replay can distinguish small turret bolts from the fortress's heavy cannon projectile
 - `SiegeCarrierBossEnemyBrain3D`
   - boss-level enemy pattern sequencer that reuses enemy projectile weapons instead of spawning bullets from a custom standalone spawner
-  - owns the four first-slice patterns: lagging rake, predictive fan, beam fence, and escape-door curtain
-  - keeps a serialized `maxShotsPerPattern` cap so bullet-hell pressure stays readable and performance-bound
-  - expects fan/curtain lanes to be authored as weapon component arrays; the brain supplies lane directions while the weapon components still own projectile prefabs, muzzle FX, cooldown gates, pooling, and network request building
+  - owns the current major patterns: lagging rake, predictive fan, lagging beam convergence, escape-door curtain, formation missile salvo, and a two-hardpoint lightning slow beam
+    - keeps a serialized `maxShotsPerPattern` cap so bullet-hell pressure stays readable and performance-bound
+    - expects fan/curtain lanes to be authored as weapon component arrays; the brain supplies lane directions while the weapon components still own projectile prefabs, muzzle FX, cooldown gates, pooling, and network request building
+    - the lightning slow-beam pattern uses two assigned `BeamWeapon3D` components for visual/damage authority, then applies the slow from the boss brain with a separate line-of-sight spherecast so only this boss attack gains slow without changing every beam prefab in the project
+    - convergence and lightning slow-beam patterns can enable explicit behind-hardpoint aim on their assigned `BeamWeapon3D` components so wide carrier muzzles still aim at the shared boss-selected target point instead of snapping back to hardpoint-forward when the target leaves that muzzle's forward hemisphere
 - `MissileWeaponEnemy3D`
   - stripped-down enemy-only missile launcher that reuses the same minimal volley/cooldown path as `ProjectileWeaponEnemy3D`
   - expects a projectile prefab with `MissileProjectile3D` and supports multi-muzzle launches for enemy salvos
@@ -109,6 +111,14 @@ Base input rule:
   - consumes the inherited weapon cooldown once to start a rack sequence, then fires one configured muzzle at a time using `launcherStaggerInterval` until the sequence finishes
   - can either walk the configured launchers sequentially or pick a random launcher for each staggered missile
   - uses the same enemy projectile/network contract as `MissileWeaponEnemy3D`; gameplay fire stays server-authoritative through `NetEnemyCombat3D`, while clients receive the normal cosmetic projectile RPC
+- `FormationMissileSalvoWeaponEnemy3D`
+  - enemy-only simultaneous missile bloom for boss/elite attacks
+  - launches a configured missile count at once, cycling through authored muzzle transforms when there are fewer muzzles than missiles
+  - each spawned `MissileProjectile3D` receives a radial formation slot, opens into a ring around the target direction, briefly holds formation, then collapses its radial offset toward the player so the salvo converges as one dodge check
+  - compresses fan/hold/convergence timings at close range so the pattern still resolves near the boss instead of spending the same full flourish it uses at long range
+  - formation missiles adjust speed during the collapse phase toward the same arrival window; this keeps different ring slots from landing one after another because their curved paths differ in length
+  - uses its own `EnemyFormationMissile` network visual type so remote clients do not confuse this burst with normal enemy missiles
+  - should be budgeted by missile count when driven by a boss brain; one activation may be one weapon call, but it is still several live guided projectiles
 - `EnemyFlamethrowerWeapon3D`
   - enemy-only short-range cone DPS weapon for Invasion flamethrower enemies
   - treats `3d_flamethrower.prefab` as an authored particle/light visual attached to a muzzle; gameplay damage is a separate non-alloc cone query owned by the weapon script
@@ -129,8 +139,9 @@ Base input rule:
   - separates cosmetic-only beam display from server-authoritative beam damage during network sessions
   - now supports explicit `targetFaction` filtering in addition to the older `targetTag` fallback, which is required for Invasion enemies because the 3D project does not use a generic `"Player"` tag
   - can optionally delegate beam presentation to a `BeamVisualDriver3D` component, so enemy-only beams can use alternate looks such as Forge3D line-renderer visuals without changing gameplay authority or the default player beam path
-  - can optionally require forward-only aim, which clamps any backward-facing resolved aim back onto the beam's forward reference; use this on enemy hardpoint beams when camera-style aim data should never let the beam fire behind the muzzle
-  - beam visuals may use a lightly smoothed visual endpoint while gameplay damage stays exact; in perspective, long beams exaggerate tiny aim changes at their far tip, so presentation smoothing is preferred over making the gameplay ray less accurate
+    - can optionally require forward-only aim, which clamps any backward-facing resolved aim back onto the beam's forward reference; use this on enemy hardpoint beams when camera-style aim data should never let the beam fire behind the muzzle
+    - beam visuals may use a lightly smoothed visual endpoint while gameplay damage stays exact; in perspective, long beams exaggerate tiny aim changes at their far tip, so presentation smoothing is preferred over making the gameplay ray less accurate
+    - explicit AI/network aim can opt out of the forward-only clamp through `IBeamAimConstraint3D`; use this only for authored attacks where side/back hardpoints are intentionally allowed to converge on one world point
 - `ForgeEnemyBeam3D`
   - enemy-only unified Forge beam runtime
   - owns the authoritative hit ray, damage, line length, and impact placement in one script so the visual endpoint and gameplay endpoint cannot drift apart
@@ -138,9 +149,10 @@ Base input rule:
   - if gameplay forgiveness is needed for readability, tune the beam's own `hitscanRadius` here rather than on `BeamWeapon3D`; the runtime that owns the cast should also own the forgiveness width
   - like the shared beam runtime, it should smooth its rendered endpoint/direction rather than showing every tiny long-range endpoint hop literally; keep damage exact and make only the presentation slightly forgiving
   - can render optional jittered lightning segments directly through the unified runtime; keep stock Forge raycast scripts such as `F3DLightning` disabled on gameplay beam prefabs so they do not fight the 3D beam authority
-  - lightning-style prefabs with several authored `LineRenderer` components should register every gameplay beam line on `additionalLineRenderers` so all visible strands are driven by the same resolved aim and hit ray
-  - explicit AI/network aim is resolved before the hardpoint-forward fallback, which lets coordinated enemies such as the Triumvirate converge several anchored beams on one target while still using the Forge beam hit/runtime path
-  - should be used for the artillery enemy Forge beam path instead of layering Forge visuals on top of `LaserBeam3D`
+  - lightning-style prefabs with several authored `LineRenderer` components should register every gameplay beam line on `additionalLineRenderers` so all visible strands are driven by the same resolved aim and hit ray; the runtime now also auto-registers child line renderers outside the muzzle/impact effect anchors as a prefab-wiring safeguard and can drive line points in world space so child renderer transforms do not collapse the visible span
+    - explicit AI/network aim is resolved before the hardpoint-forward fallback, which lets coordinated enemies such as the Triumvirate converge several anchored beams on one target while still using the Forge beam hit/runtime path
+    - explicit AI/network aim can be allowed behind the hardpoint forward reference for boss convergence patterns; keep the normal forward-only clamp for beams that should never fire backward from their muzzle
+    - should be used for the artillery enemy Forge beam path instead of layering Forge visuals on top of `LaserBeam3D`
 - `TriumvirateLightningLinkVisual3D`
   - cosmetic-only ship-to-ship lightning link driver for Triumvirate-style enemy tells
   - can reuse the `enemy_lightning_beam` visual prefab by disabling stock Forge `F3DLightning` scripts and starting `ForgeEnemyBeam3D` in fixed-endpoint cosmetic link mode between two enemy anchors
@@ -151,9 +163,11 @@ Base input rule:
   - beam weapons can also keep their rotation penalty alive for a short post-fire linger window, which is useful for AI beam enemies that would otherwise stop firing, instantly pivot at full speed, and then re-fire
   - beam origin and beam direction can be authored separately: `Muzzle` controls where the beam starts, while `Direction Reference` can supply the +Z/forward axis used by AI aim checks and runtime casts when a visual muzzle's local forward is rotated for art placement
   - use that threshold on AI beam enemies so they do not spam start requests every frame while nearly empty
-- `IBeamDirectionSource3D`
-  - optional runtime extension for beam prefabs that need a separate transform for aim/cast direction
-  - `ForgeEnemyBeam3D` and `LaserBeam3D` consume it so authored beam visuals can keep their muzzle anchor while aiming from a clean forward reference
+  - `IBeamDirectionSource3D`
+    - optional runtime extension for beam prefabs that need a separate transform for aim/cast direction
+    - `ForgeEnemyBeam3D` and `LaserBeam3D` consume it so authored beam visuals can keep their muzzle anchor while aiming from a clean forward reference
+  - `IBeamAimConstraint3D`
+    - optional runtime extension for beam prefabs that need explicit AI/network aim to bypass forward-only clamping while preserving the normal clamp for camera or hardpoint-forward fallback aim
 - `Reflector3D`
   - Class 1 reflect ability for the 3D path
   - owns cooldown, active window, projectile reflection rules, and reflected-projectile audio
@@ -235,7 +249,7 @@ Current networked 3D combat uses server authority with owner-side cosmetic predi
 - remote projectile cosmetics should use the local proxy's weapon/prefab bindings and log a one-shot warning if a binding is missing, rather than silently dropping the RPC
 - fast projectile validation uses normal 3D spherecasts first, then a short defender-favored rewind against server movement history
 - networked 3D beam state must resolve through a shared beam-network contract instead of assuming only `BeamWeapon3D` can receive RPC state
-- networked enemy beam state now carries a beam component index so multi-beam enemies such as the Siege Carrier beam fence can replay the correct hardpoint on clients instead of always resolving the first `BeamWeapon3D`
+- networked enemy beam state now carries a beam component index so multi-beam enemies such as the Siege Carrier beam convergence pattern can replay the correct hardpoint on clients instead of always resolving the first `BeamWeapon3D`
 - ability-driven burst accuracy, Class 4 empower state, guided-missile visual type, and movement-affecting actions must stay inside the appropriate authoritative broker so owner prediction does not diverge from server truth
 - dodge movement belongs to `NetMovement3D` input prediction, not `NetCombat3D`; remote dodge audio/VFX should be presentation-only while remote motion comes from interpolated movement snapshots
 

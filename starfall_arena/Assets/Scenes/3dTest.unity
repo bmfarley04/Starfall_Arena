@@ -3198,6 +3198,11 @@ MonoBehaviour:
   mass: 0.5
   linearDamping: 0.5
   angularDamping: 0.3
+--- !u!4 &328488616 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 461429664903913336, guid: ebd5405180dff4d4d8cd9eaac946341b, type: 3}
+  m_PrefabInstance: {fileID: 2032469243}
+  m_PrefabAsset: {fileID: 0}
 --- !u!23 &337466360 stripped
 MeshRenderer:
   m_CorrespondingSourceObject: {fileID: 5039896960748700323, guid: 82a69e3d51aa5024dba97824bdf3c1f9, type: 3}
@@ -8860,6 +8865,11 @@ MonoBehaviour:
   mass: 0.5
   linearDamping: 0.5
   angularDamping: 0.3
+--- !u!4 &519346249 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 2280897085481268880, guid: ebd5405180dff4d4d8cd9eaac946341b, type: 3}
+  m_PrefabInstance: {fileID: 2032469243}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &555887732
 GameObject:
   m_ObjectHideFlags: 0
@@ -12486,6 +12496,11 @@ MonoBehaviour:
   mass: 0.5
   linearDamping: 0.5
   angularDamping: 0.3
+--- !u!4 &1206948665 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 3143901747220654262, guid: ebd5405180dff4d4d8cd9eaac946341b, type: 3}
+  m_PrefabInstance: {fileID: 2032469243}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1228864212
 GameObject:
   m_ObjectHideFlags: 0
@@ -12903,6 +12918,11 @@ MonoBehaviour:
   mass: 0.5
   linearDamping: 0.5
   angularDamping: 0.3
+--- !u!4 &1297589257 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 1350857921196272010, guid: ebd5405180dff4d4d8cd9eaac946341b, type: 3}
+  m_PrefabInstance: {fileID: 2032469243}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1313322276
 GameObject:
   m_ObjectHideFlags: 0
@@ -14077,6 +14097,11 @@ MonoBehaviour:
   mass: 0.5
   linearDamping: 0.5
   angularDamping: 0.3
+--- !u!4 &1543874179 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 3597116063327035118, guid: ebd5405180dff4d4d8cd9eaac946341b, type: 3}
+  m_PrefabInstance: {fileID: 2032469243}
+  m_PrefabAsset: {fileID: 0}
 --- !u!23 &1546915741 stripped
 MeshRenderer:
   m_CorrespondingSourceObject: {fileID: 7956384920853883460, guid: 82a69e3d51aa5024dba97824bdf3c1f9, type: 3}
@@ -19426,6 +19451,11 @@ MonoBehaviour:
   mass: 0.5
   linearDamping: 0.5
   angularDamping: 0.3
+--- !u!4 &1719694232 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 3318681109330134929, guid: ebd5405180dff4d4d8cd9eaac946341b, type: 3}
+  m_PrefabInstance: {fileID: 2032469243}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1724062436 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 7583581147315443021, guid: ebd5405180dff4d4d8cd9eaac946341b, type: 3}
@@ -19525,6 +19555,11 @@ MonoBehaviour:
   mass: 0.5
   linearDamping: 0.5
   angularDamping: 0.3
+--- !u!4 &1758635353 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 4890003919850385769, guid: ebd5405180dff4d4d8cd9eaac946341b, type: 3}
+  m_PrefabInstance: {fileID: 2032469243}
+  m_PrefabAsset: {fileID: 0}
 --- !u!23 &1766784694 stripped
 MeshRenderer:
   m_CorrespondingSourceObject: {fileID: 5056614530598953432, guid: 82a69e3d51aa5024dba97824bdf3c1f9, type: 3}
@@ -22698,6 +22733,11 @@ MonoBehaviour:
   mass: 0.5
   linearDamping: 0.5
   angularDamping: 0.3
+--- !u!4 &2048487910 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 8237910586526179333, guid: ebd5405180dff4d4d8cd9eaac946341b, type: 3}
+  m_PrefabInstance: {fileID: 2032469243}
+  m_PrefabAsset: {fileID: 0}
 --- !u!114 &2072745734
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -23934,7 +23974,7 @@ Transform:
   m_GameObject: {fileID: 2865276718495989341}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: 1, z: -0, w: 0}
-  m_LocalPosition: {x: 43.1, y: 1.8, z: 82.26328}
+  m_LocalPosition: {x: 43.1, y: 1.8, z: 167.1}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -24100,16 +24140,20 @@ MonoBehaviour:
   weaponConfig:
     projectilePrefab: {fileID: 100004, guid: 10bd1b989a094b9478ab5747169dd1e1, type: 3}
     muzzles:
-    - {fileID: 0}
-    - {fileID: 0}
-    - {fileID: 0}
-    - {fileID: 0}
+    - {fileID: 1719694232}
+    - {fileID: 1758635353}
+    - {fileID: 328488616}
+    - {fileID: 1297589257}
+    - {fileID: 1543874179}
+    - {fileID: 2048487910}
+    - {fileID: 519346249}
+    - {fileID: 1206948665}
     targetTag: 
     targetFaction: 1
-    cooldown: 5
-    speed: 250
-    damage: 10
-    lifetime: 5
+    cooldown: 0
+    speed: 500
+    damage: 5
+    lifetime: 3
     impactForce: 0
     recoilForce: 0
     energyCost: 0
@@ -24128,7 +24172,7 @@ MonoBehaviour:
   loopTurretSequence: 1
   randomizeTurretSelection: 1
   startingTurretIndex: 0
-  turretStaggerInterval: 0.4
+  turretStaggerInterval: 0
 --- !u!1001 &3514329506769413327
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -29870,7 +29914,7 @@ Rigidbody:
   m_IsKinematic: 0
   m_Interpolate: 0
   m_Constraints: 0
-  m_CollisionDetection: 1
+  m_CollisionDetection: 2
 --- !u!114 &4542328715223209199
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -29977,6 +30021,42 @@ PrefabInstance:
       propertyPath: m_Material
       value: 
       objectReference: {fileID: 13400000, guid: 191f9ddb9decb91488fd7a40d9a2f2d1, type: 2}
+    - target: {fileID: 211889619630583438, guid: dcd0d058af7406e4b869c55e797967e0, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: cab07e4a8f19ba246b45a8a004aa8424, type: 2}
+    - target: {fileID: 211889621467509328, guid: dcd0d058af7406e4b869c55e797967e0, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: cab07e4a8f19ba246b45a8a004aa8424, type: 2}
+    - target: {fileID: 211961350008248812, guid: dcd0d058af7406e4b869c55e797967e0, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: cab07e4a8f19ba246b45a8a004aa8424, type: 2}
+    - target: {fileID: 212196244087539917, guid: dcd0d058af7406e4b869c55e797967e0, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: cab07e4a8f19ba246b45a8a004aa8424, type: 2}
+    - target: {fileID: 212196245135014284, guid: dcd0d058af7406e4b869c55e797967e0, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: cab07e4a8f19ba246b45a8a004aa8424, type: 2}
+    - target: {fileID: 212203149605658865, guid: dcd0d058af7406e4b869c55e797967e0, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: cab07e4a8f19ba246b45a8a004aa8424, type: 2}
+    - target: {fileID: 213448727494992885, guid: dcd0d058af7406e4b869c55e797967e0, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: cab07e4a8f19ba246b45a8a004aa8424, type: 2}
+    - target: {fileID: 213481497574298300, guid: dcd0d058af7406e4b869c55e797967e0, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: cab07e4a8f19ba246b45a8a004aa8424, type: 2}
+    - target: {fileID: 213768630641030576, guid: dcd0d058af7406e4b869c55e797967e0, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: cab07e4a8f19ba246b45a8a004aa8424, type: 2}
     - target: {fileID: 1968699605977071728, guid: dcd0d058af7406e4b869c55e797967e0, type: 3}
       propertyPath: m_Material
       value: 
@@ -29985,6 +30065,10 @@ PrefabInstance:
       propertyPath: m_Material
       value: 
       objectReference: {fileID: 13400000, guid: 191f9ddb9decb91488fd7a40d9a2f2d1, type: 2}
+    - target: {fileID: 2011072558988453936, guid: dcd0d058af7406e4b869c55e797967e0, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: cab07e4a8f19ba246b45a8a004aa8424, type: 2}
     - target: {fileID: 2405419149928654638, guid: dcd0d058af7406e4b869c55e797967e0, type: 3}
       propertyPath: chromaticConfig.volume
       value: 
@@ -30053,6 +30137,14 @@ PrefabInstance:
       propertyPath: m_Name
       value: 3d_class4_player
       objectReference: {fileID: 0}
+    - target: {fileID: 7591318698920435554, guid: dcd0d058af7406e4b869c55e797967e0, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: cab07e4a8f19ba246b45a8a004aa8424, type: 2}
+    - target: {fileID: 7591318699544834813, guid: dcd0d058af7406e4b869c55e797967e0, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: cab07e4a8f19ba246b45a8a004aa8424, type: 2}
     - target: {fileID: 7630498745670694516, guid: dcd0d058af7406e4b869c55e797967e0, type: 3}
       propertyPath: m_Material
       value: 
@@ -30097,14 +30189,19 @@ GameObject:
   - component: {fileID: 787491761090602804}
   - component: {fileID: 5850985856387064599}
   - component: {fileID: 9212841647205079350}
-  - component: {fileID: 8069542891290080682}
-  - component: {fileID: 6718276908294743040}
   - component: {fileID: 3394221798851396806}
   - component: {fileID: 8593575027346387692}
   - component: {fileID: 9099999999651709996}
   - component: {fileID: 8638785468274838160}
   - component: {fileID: 9212841647205079351}
+  - component: {fileID: 9212841647205079353}
+  - component: {fileID: 9212841647205079356}
+  - component: {fileID: 9212841647205079355}
+  - component: {fileID: 9212841647205079354}
   - component: {fileID: 9212841647205079352}
+  - component: {fileID: 9212841647205079357}
+  - component: {fileID: 9212841647205079358}
+  - component: {fileID: 9212841647205079359}
   m_Layer: 0
   m_Name: boss2Enemy
   m_TagString: Enemy
@@ -35625,31 +35722,6 @@ MonoBehaviour:
   lockToWorldYPlane: 0
   captureInitialWorldY: 1
   lockedWorldY: 0
---- !u!114 &6718276908294743040
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5723954579249990812}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5590813c77d626f4f9901df94d5165fd, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::MissileLauncherYawTracker3D
-  targetSensor: {fileID: 109184915732954851}
-  missileWeapon: {fileID: 8069542891290080682}
-  launcherPivots:
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  yawOnly: 1
-  yawDegreesPerSecond: 180
-  localYawOffsetDegrees: 0
-  maxYawFromRestDegrees: 0
-  targetRefreshInterval: 0.1
-  returnToRestWhenIdle: 1
 --- !u!199 &6944450251414060881
 ParticleSystemRenderer:
   serializedVersion: 7
@@ -35959,50 +36031,6 @@ MonoBehaviour:
   maxBreakRadius: 1.5
   alwaysOn: 0
   alwaysOnAlpha: 0.3
---- !u!114 &8069542891290080682
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5723954579249990812}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7f98704ce77e4ca1bf266ea88a739b48, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::StaggeredMissileWeaponEnemy3D
-  weaponConfig:
-    projectilePrefab: {fileID: 152452, guid: 1c9b1a31f9a4cc24b8f9799470f3f17f, type: 3}
-    muzzles:
-    - {fileID: 0}
-    - {fileID: 0}
-    - {fileID: 0}
-    - {fileID: 0}
-    targetTag: 
-    targetFaction: 1
-    cooldown: 8
-    speed: 120
-    damage: 20
-    lifetime: 5
-    impactForce: 0
-    recoilForce: 0
-    energyCost: 0
-  owner: {fileID: 787491761090602804}
-  shipFlight: {fileID: 3868431508863577447}
-  firingBody: {fileID: 6550973204315510746}
-  fireSound: {fileID: 11400000, guid: 873f5f679d305474fba8afb9a88cf822, type: 2}
-  muzzleEffectPrefab: {fileID: 0}
-  muzzleEffectLifetime: 2
-  parentMuzzleEffectToMuzzle: 1
-  projectileSpawnLocalOffset: {x: 0, y: 0, z: 2}
-  muzzleEffectLocalOffset: {x: 0, y: 0, z: 1.5}
-  projectilePrewarmCount: 12
-  muzzleEffectPrewarmCount: 4
-  fireOneLauncherPerShot: 1
-  loopLauncherSequence: 1
-  randomizeLauncherSelection: 0
-  startingLauncherIndex: 0
-  launcherStaggerInterval: 0.75
 --- !u!114 &8223872953827212619
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -36109,30 +36137,17 @@ MonoBehaviour:
   enemy: {fileID: 5988061463180451875}
   flightController: {fileID: 6563768459028780574}
   targetSensor: {fileID: 8489083175166800548}
-  obstacleAvoidance: {fileID: 0}
-  separation: {fileID: 8489083175166800550}
   patrol: {fileID: 0}
   thinkInterval: 0.05
-  stalkDistance: 30
-  stalkSpeedScale: 0.55
-  chargeStartDistance: 22
+  chargeStartDistance: 100
   windUpDuration: 0.4
   chargeMaxDuration: 1.5
   chargeOvershootDistance: 8
-  chargeCooldown: 1.5
-  contactDetectionMask:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  ramDetectionDistance: 2.5
+  chargeCooldown: 4
   ramDamage: 15
-  knockbackVelocity: 60
-  knockbackUpwardBias: 0
-  disengageDuration: 1.25
-  disengageDistance: 30
-  ejectDuration: 0.35
-  useCollisionExemption: 1
-  useObstacleAvoidance: 0
-  useSeparation: 0
+  hitVelocity: 70
+  hitUpwardVelocity: 0
+  recoverDuration: 0.75
 --- !u!114 &8489083175166800550
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -36170,7 +36185,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5723954579249990812}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f7de8f699f2375b41a692a9b48fd1e60, type: 3}
   m_Name: 
@@ -36916,11 +36931,22 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SiegeCarrierBossEnemyBrain3D
   ShowTopMostFoldoutHeaderGroup: 1
-  laggingRakeWeapons: []
+  laggingRakeWeapons:
+  - {fileID: 3394221798851396806}
   predictiveFanWeapons: []
   curtainWeapons: []
-  beamFenceWeapons: []
+  formationMissileSalvoWeapons:
+  - {fileID: 9212841647205079357}
+  beamFenceWeapons:
+  - {fileID: 9212841647205079353}
+  - {fileID: 9212841647205079356}
+  - {fileID: 9212841647205079355}
+  - {fileID: 9212841647205079354}
   beamFenceTelegraphs: []
+  lightningSlowBeamWeapons:
+  - {fileID: 9212841647205079358}
+  - {fileID: 9212841647205079359}
+  lightningSlowBeamTelegraphs: []
   flightController: {fileID: 4036106997595289145}
   targetSensor: {fileID: 109184915732954851}
   patrol: {fileID: 8638785468274838160}
@@ -36936,15 +36962,21 @@ MonoBehaviour:
   retreatSpeedScale: 0.18
   targetVerticalFollowWeight: 0.1
   planeReturnWeight: 0.35
-  minimumPatternCooldown: 1.6
-  maxShotsPerPattern: 32
+  minimumPatternCooldown: 2
+  maxShotsPerPattern: 128
   phaseTwoHealthPercent: 0.66
   phaseThreeHealthPercent: 0.33
   phaseTwoCooldownMultiplier: 0.85
   phaseThreeCooldownMultiplier: 0.7
-  rakeShotCount: 14
-  rakeShotInterval: 0.12
-  rakeHistorySeconds: 0.6
+  rakeShotCount: 40
+  rakeShotInterval: 0.05
+  rakeHistorySeconds: 0
+  rakeHistoryBlend: 0
+  rakeUseLeadAim: 1
+  rakeLeadProjectileSpeed: 0
+  rakeLeadTimeScale: 1
+  rakeAdditionalLeadSeconds: 0
+  rakeMaxLeadSeconds: 1.25
   fanLaneCount: 5
   fanTotalSpreadDegrees: 34
   fanLaneInterval: 0.04
@@ -36955,10 +36987,413 @@ MonoBehaviour:
   curtainEscapeDoorDegrees: 26
   curtainDoorDriftDegrees: 18
   curtainLaneInterval: 0.05
+  formationMissileSalvoBudgetCost: 8
   beamFenceTelegraphDuration: 0.75
-  beamFenceActiveDuration: 1.2
+  beamFenceActiveDuration: 4
   beamFenceMaxBeams: 4
-  beamFenceAimRefreshInterval: 0.05
+  beamFenceAimRefreshInterval: 0.02
+  beamConvergenceLagSeconds: 0
+  beamConvergenceLagBlend: 0.75
+  beamConvergenceAimSmoothTime: 0.08
+  beamConvergenceAllowBehindHardpointAim: 1
+  lightningSlowBeamTelegraphDuration: 0.45
+  lightningSlowBeamActiveDuration: 1.5
+  lightningSlowBeamAimRefreshInterval: 0.02
+  lightningSlowBeamCount: 2
+  lightningSlowBeamLeadSeconds: 0.12
+  lightningSlowBeamAimSmoothTime: 0.025
+  lightningSlowBeamAllowBehindHardpointAim: 1
+  lightningSlowBeamSlowRadius: 1.25
+  lightningSlowBeamCollisionMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  lightningSlowBeamSlowMultiplier: 0.5
+  lightningSlowBeamSlowDuration: 0.18
+  lightningSlowBeamSlowTickInterval: 0.08
+--- !u!114 &9212841647205079353
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5723954579249990812}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0bcc1084633ada24b99d28f0b4f4506d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BeamWeapon3D
+  availabilityMode: 0
+  reticleFillColor: {r: 1, g: 1, b: 1, a: 1}
+  owner: {fileID: 787491761090602804}
+  shipFlight: {fileID: 3868431508863577447}
+  resource:
+    capacity: 10000
+    recoveryPerSecond: 30
+  aimMode: 1
+  aimCamera: {fileID: 0}
+  aimAssist: {fileID: 0}
+  aimCollisionMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  maxAimDistance: 1000
+  screenCenterConvergenceDistance: 150
+  screenCenterDirectionBlend: 0.35
+  muzzleEffectPrefab: {fileID: 0}
+  muzzleEffectLifetime: 2
+  parentMuzzleEffectToMuzzle: 1
+  projectileSpawnLocalOffset: {x: 0, y: 0, z: 2}
+  muzzleEffectLocalOffset: {x: 0, y: 0, z: 1.5}
+  projectilePrewarmCount: 12
+  muzzleEffectPrewarmCount: 4
+  beam:
+    beamPrefab: {fileID: 100000, guid: 0fc1871648864ff7ab44290afddbde74, type: 3}
+    targetTag: 
+    targetFaction: 1
+    damagePerSecond: 10
+    maxDistance: 1000
+    recoilForcePerSecond: 0
+    impactForce: 0
+    offsetDistance: 0
+    verticalOffset: 0
+    muzzle: {fileID: 328488616}
+    directionReference: {fileID: 0}
+    rotationMultiplier: 0
+    postFireRotationPenaltyDuration: 0
+    capacity: 10
+    drainRate: 0
+    regenRate: 0
+    minimumStartEnergy: 0
+    fireLoopSound: {fileID: 11400000, guid: 2e4ef6af0cbd6bf4091e3bcdb76e99fd, type: 2}
+  beamLoopAudioSource: {fileID: 0}
+--- !u!114 &9212841647205079354
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5723954579249990812}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0bcc1084633ada24b99d28f0b4f4506d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BeamWeapon3D
+  availabilityMode: 0
+  reticleFillColor: {r: 1, g: 1, b: 1, a: 1}
+  owner: {fileID: 787491761090602804}
+  shipFlight: {fileID: 3868431508863577447}
+  resource:
+    capacity: 10000
+    recoveryPerSecond: 30
+  aimMode: 1
+  aimCamera: {fileID: 0}
+  aimAssist: {fileID: 0}
+  aimCollisionMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  maxAimDistance: 1000
+  screenCenterConvergenceDistance: 150
+  screenCenterDirectionBlend: 0.35
+  muzzleEffectPrefab: {fileID: 0}
+  muzzleEffectLifetime: 2
+  parentMuzzleEffectToMuzzle: 1
+  projectileSpawnLocalOffset: {x: 0, y: 0, z: 2}
+  muzzleEffectLocalOffset: {x: 0, y: 0, z: 1.5}
+  projectilePrewarmCount: 12
+  muzzleEffectPrewarmCount: 4
+  beam:
+    beamPrefab: {fileID: 100000, guid: 0fc1871648864ff7ab44290afddbde74, type: 3}
+    targetTag: 
+    targetFaction: 1
+    damagePerSecond: 10
+    maxDistance: 1000
+    recoilForcePerSecond: 0
+    impactForce: 0
+    offsetDistance: 0
+    verticalOffset: 0
+    muzzle: {fileID: 2048487910}
+    directionReference: {fileID: 0}
+    rotationMultiplier: 0
+    postFireRotationPenaltyDuration: 0
+    capacity: 10
+    drainRate: 0
+    regenRate: 0
+    minimumStartEnergy: 0
+    fireLoopSound: {fileID: 11400000, guid: 2e4ef6af0cbd6bf4091e3bcdb76e99fd, type: 2}
+  beamLoopAudioSource: {fileID: 0}
+--- !u!114 &9212841647205079355
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5723954579249990812}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0bcc1084633ada24b99d28f0b4f4506d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BeamWeapon3D
+  availabilityMode: 0
+  reticleFillColor: {r: 1, g: 1, b: 1, a: 1}
+  owner: {fileID: 787491761090602804}
+  shipFlight: {fileID: 3868431508863577447}
+  resource:
+    capacity: 10000
+    recoveryPerSecond: 30
+  aimMode: 1
+  aimCamera: {fileID: 0}
+  aimAssist: {fileID: 0}
+  aimCollisionMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  maxAimDistance: 1000
+  screenCenterConvergenceDistance: 150
+  screenCenterDirectionBlend: 0.35
+  muzzleEffectPrefab: {fileID: 0}
+  muzzleEffectLifetime: 2
+  parentMuzzleEffectToMuzzle: 1
+  projectileSpawnLocalOffset: {x: 0, y: 0, z: 2}
+  muzzleEffectLocalOffset: {x: 0, y: 0, z: 1.5}
+  projectilePrewarmCount: 12
+  muzzleEffectPrewarmCount: 4
+  beam:
+    beamPrefab: {fileID: 100000, guid: 0fc1871648864ff7ab44290afddbde74, type: 3}
+    targetTag: 
+    targetFaction: 1
+    damagePerSecond: 10
+    maxDistance: 1000
+    recoilForcePerSecond: 0
+    impactForce: 0
+    offsetDistance: 0
+    verticalOffset: 0
+    muzzle: {fileID: 1543874179}
+    directionReference: {fileID: 0}
+    rotationMultiplier: 0
+    postFireRotationPenaltyDuration: 0
+    capacity: 10
+    drainRate: 0
+    regenRate: 0
+    minimumStartEnergy: 0
+    fireLoopSound: {fileID: 11400000, guid: 2e4ef6af0cbd6bf4091e3bcdb76e99fd, type: 2}
+  beamLoopAudioSource: {fileID: 0}
+--- !u!114 &9212841647205079356
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5723954579249990812}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0bcc1084633ada24b99d28f0b4f4506d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BeamWeapon3D
+  availabilityMode: 0
+  reticleFillColor: {r: 1, g: 1, b: 1, a: 1}
+  owner: {fileID: 787491761090602804}
+  shipFlight: {fileID: 3868431508863577447}
+  resource:
+    capacity: 10000
+    recoveryPerSecond: 30
+  aimMode: 1
+  aimCamera: {fileID: 0}
+  aimAssist: {fileID: 0}
+  aimCollisionMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  maxAimDistance: 1000
+  screenCenterConvergenceDistance: 150
+  screenCenterDirectionBlend: 0.35
+  muzzleEffectPrefab: {fileID: 0}
+  muzzleEffectLifetime: 2
+  parentMuzzleEffectToMuzzle: 1
+  projectileSpawnLocalOffset: {x: 0, y: 0, z: 2}
+  muzzleEffectLocalOffset: {x: 0, y: 0, z: 1.5}
+  projectilePrewarmCount: 12
+  muzzleEffectPrewarmCount: 4
+  beam:
+    beamPrefab: {fileID: 100000, guid: 0fc1871648864ff7ab44290afddbde74, type: 3}
+    targetTag: 
+    targetFaction: 1
+    damagePerSecond: 10
+    maxDistance: 1000
+    recoilForcePerSecond: 0
+    impactForce: 0
+    offsetDistance: 0
+    verticalOffset: 0
+    muzzle: {fileID: 1297589257}
+    directionReference: {fileID: 0}
+    rotationMultiplier: 0
+    postFireRotationPenaltyDuration: 0
+    capacity: 10
+    drainRate: 0
+    regenRate: 0
+    minimumStartEnergy: 0
+    fireLoopSound: {fileID: 11400000, guid: 2e4ef6af0cbd6bf4091e3bcdb76e99fd, type: 2}
+  beamLoopAudioSource: {fileID: 0}
+--- !u!114 &9212841647205079357
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5723954579249990812}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d1b48afa821244f5ab627ea773477b20, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::FormationMissileSalvoWeaponEnemy3D
+  weaponConfig:
+    projectilePrefab: {fileID: 152452, guid: fead97c49b535274398daada504fb082, type: 3}
+    muzzles:
+    - {fileID: 1719694232}
+    - {fileID: 1758635353}
+    - {fileID: 328488616}
+    - {fileID: 1297589257}
+    - {fileID: 1543874179}
+    - {fileID: 2048487910}
+    - {fileID: 519346249}
+    - {fileID: 1206948665}
+    targetTag: 
+    targetFaction: 1
+    cooldown: 0.25
+    speed: 120
+    damage: 10
+    lifetime: 5
+    impactForce: 0
+    recoilForce: 0
+    energyCost: 0
+  owner: {fileID: 787491761090602804}
+  shipFlight: {fileID: 3868431508863577447}
+  firingBody: {fileID: 6550973204315510746}
+  fireSound: {fileID: 11400000, guid: 873f5f679d305474fba8afb9a88cf822, type: 2}
+  muzzleEffectPrefab: {fileID: 0}
+  muzzleEffectLifetime: 2
+  parentMuzzleEffectToMuzzle: 1
+  projectileSpawnLocalOffset: {x: 0, y: 0, z: 2}
+  muzzleEffectLocalOffset: {x: 0, y: 0, z: 1.5}
+  projectilePrewarmCount: 12
+  muzzleEffectPrewarmCount: 4
+  missileCount: 8
+  fanArcDegrees: 50
+  fanOutDuration: 0.45
+  formationHoldDuration: 0.2
+  convergenceDuration: 1.1
+  convergenceRadius: 42
+  fullPatternDistance: 180
+  closeRangeDistance: 55
+  closeRangeTimingScale: 0.45
+  maxConvergenceSpeedMultiplier: 2.5
+  formationReference: {fileID: 0}
+--- !u!114 &9212841647205079358
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5723954579249990812}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0bcc1084633ada24b99d28f0b4f4506d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BeamWeapon3D
+  availabilityMode: 0
+  reticleFillColor: {r: 1, g: 1, b: 1, a: 1}
+  owner: {fileID: 0}
+  shipFlight: {fileID: 0}
+  resource:
+    capacity: 100
+    recoveryPerSecond: 30
+  aimMode: 1
+  aimCamera: {fileID: 0}
+  aimAssist: {fileID: 0}
+  aimCollisionMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  maxAimDistance: 1000
+  screenCenterConvergenceDistance: 150
+  screenCenterDirectionBlend: 0.35
+  muzzleEffectPrefab: {fileID: 0}
+  muzzleEffectLifetime: 2
+  parentMuzzleEffectToMuzzle: 1
+  projectileSpawnLocalOffset: {x: 0, y: 0, z: 2}
+  muzzleEffectLocalOffset: {x: 0, y: 0, z: 1.5}
+  projectilePrewarmCount: 12
+  muzzleEffectPrewarmCount: 4
+  beam:
+    beamPrefab: {fileID: 100002, guid: 0091e1147861cb94c941accc92a75113, type: 3}
+    targetTag: 
+    targetFaction: 1
+    damagePerSecond: 10
+    maxDistance: 1000
+    recoilForcePerSecond: 0
+    impactForce: 0
+    offsetDistance: 0
+    verticalOffset: 0
+    muzzle: {fileID: 1719694232}
+    directionReference: {fileID: 0}
+    rotationMultiplier: 0
+    postFireRotationPenaltyDuration: 0
+    capacity: 10
+    drainRate: 0
+    regenRate: 0
+    minimumStartEnergy: 0
+    fireLoopSound: {fileID: 0}
+  beamLoopAudioSource: {fileID: 0}
+--- !u!114 &9212841647205079359
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5723954579249990812}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0bcc1084633ada24b99d28f0b4f4506d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BeamWeapon3D
+  availabilityMode: 0
+  reticleFillColor: {r: 1, g: 1, b: 1, a: 1}
+  owner: {fileID: 0}
+  shipFlight: {fileID: 0}
+  resource:
+    capacity: 100
+    recoveryPerSecond: 30
+  aimMode: 1
+  aimCamera: {fileID: 0}
+  aimAssist: {fileID: 0}
+  aimCollisionMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  maxAimDistance: 1000
+  screenCenterConvergenceDistance: 150
+  screenCenterDirectionBlend: 0.35
+  muzzleEffectPrefab: {fileID: 0}
+  muzzleEffectLifetime: 2
+  parentMuzzleEffectToMuzzle: 1
+  projectileSpawnLocalOffset: {x: 0, y: 0, z: 2}
+  muzzleEffectLocalOffset: {x: 0, y: 0, z: 1.5}
+  projectilePrewarmCount: 12
+  muzzleEffectPrewarmCount: 4
+  beam:
+    beamPrefab: {fileID: 100002, guid: 0091e1147861cb94c941accc92a75113, type: 3}
+    targetTag: 
+    targetFaction: 1
+    damagePerSecond: 10
+    maxDistance: 1000
+    recoilForcePerSecond: 0
+    impactForce: 0
+    offsetDistance: 0
+    verticalOffset: 0
+    muzzle: {fileID: 1758635353}
+    directionReference: {fileID: 0}
+    rotationMultiplier: 0
+    postFireRotationPenaltyDuration: 0
+    capacity: 10
+    drainRate: 0
+    regenRate: 0
+    minimumStartEnergy: 0
+    fireLoopSound: {fileID: 0}
+  beamLoopAudioSource: {fileID: 0}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
