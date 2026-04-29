@@ -62,6 +62,6 @@ MonoBehaviour:
     beamFenceActiveDuration: 1.2
     beamFenceMaxBeams: 4
     beamFenceAimRefreshInterval: 0.03
-    beamConvergenceLagSeconds: 0.25
-    beamConvergenceLagBlend: 0.75
-    beamConvergenceAimSmoothTime: 0.08
+    beamConvergenceLagSeconds: 0
+    beamConvergenceLagBlend: 0
+    beamConvergenceAimSmoothTime: 0.025

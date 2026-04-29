@@ -92,6 +92,7 @@ Base input rule:
     - expects fan/curtain lanes to be authored as weapon component arrays; the brain supplies lane directions while the weapon components still own projectile prefabs, muzzle FX, cooldown gates, pooling, and network request building
     - the lightning slow-beam pattern uses two assigned `BeamWeapon3D` components for visual/damage authority, then applies the slow from the boss brain with a separate line-of-sight spherecast so only this boss attack gains slow without changing every beam prefab in the project
     - convergence and lightning slow-beam patterns can enable explicit behind-hardpoint aim on their assigned `BeamWeapon3D` components so wide carrier muzzles still aim at the shared boss-selected target point instead of snapping back to hardpoint-forward when the target leaves that muzzle's forward hemisphere
+    - active Siege Carrier prefabs that use `EnemyBalanceProfileApplier3D` receive beam convergence lag/smoothing from `SiegeCarrierBossBalanceProfile3D`; tune the profile asset for runtime behavior, because it overwrites the brain component values during scene startup
 - `MissileWeaponEnemy3D`
   - stripped-down enemy-only missile launcher that reuses the same minimal volley/cooldown path as `ProjectileWeaponEnemy3D`
   - expects a projectile prefab with `MissileProjectile3D` and supports multi-muzzle launches for enemy salvos

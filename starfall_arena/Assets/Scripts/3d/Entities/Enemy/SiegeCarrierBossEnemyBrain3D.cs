@@ -207,15 +207,15 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
     [Tooltip("Seconds between beam aim refreshes while the convergence is active. Lower is smoother but sends more network updates.")]
     [SerializeField] private float beamFenceAimRefreshInterval = 0.03f;
 
-    [Tooltip("Seconds behind the target used as the shared convergence point for all active beam hardpoints.")]
-    [SerializeField] private float beamConvergenceLagSeconds = 0.25f;
+    [Tooltip("Seconds behind the target used as the shared convergence point for all active beam hardpoints. Set this to 0 for tight live tracking. If this brain uses a Siege Carrier balance profile, tune the profile asset because it overrides this component at runtime.")]
+    [SerializeField] private float beamConvergenceLagSeconds = 0f;
 
-    [Tooltip("Blend from the target's current position toward the lagged convergence point. 0 tracks current position; 1 uses the full lagged point.")]
+    [Tooltip("Blend from the target's current position toward the lagged convergence point. 0 tracks current position; 1 uses the full lagged point. If this brain uses a Siege Carrier balance profile, tune the profile asset because it overrides this component at runtime.")]
     [Range(0f, 1f)]
-    [SerializeField] private float beamConvergenceLagBlend = 0.75f;
+    [SerializeField] private float beamConvergenceLagBlend = 0f;
 
-    [Tooltip("Small smoothing time for beam aim directions. This reduces visible long-range beam jitter without changing the lagged convergence point.")]
-    [SerializeField] private float beamConvergenceAimSmoothTime = 0.08f;
+    [Tooltip("Small smoothing time for beam aim directions. Lower values track more tightly; higher values reduce long-range jitter. If this brain uses a Siege Carrier balance profile, tune the profile asset because it overrides this component at runtime.")]
+    [SerializeField] private float beamConvergenceAimSmoothTime = 0.025f;
 
     [Tooltip("Allows explicit boss convergence aim to point behind a beam hardpoint's Direction Reference. Keep enabled for wide/side muzzles that should still converge on the same target point instead of clamping straight ahead outside their forward arc.")]
     [SerializeField] private bool beamConvergenceAllowBehindHardpointAim = true;
@@ -273,8 +273,10 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
     private float _curtainDoorOffset;
     private float _preferredPlaneY;
     private Vector3[] _beamConvergenceSmoothedDirections;
+    private float[] _beamConvergenceLastSmoothTimes;
     private bool[] _beamConvergenceHasSmoothedDirections;
     private Vector3[] _lightningSmoothedDirections;
+    private float[] _lightningLastSmoothTimes;
     private bool[] _lightningHasSmoothedDirections;
     private readonly RaycastHit[] _lightningSlowHits = new RaycastHit[8];
     private int _patternCursor;
@@ -1321,24 +1323,36 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
     private void EnsureBeamConvergenceBuffers()
     {
         int size = Mathf.Max(0, beamFenceWeapons != null ? beamFenceWeapons.Length : 0);
-        if (_beamConvergenceSmoothedDirections != null && _beamConvergenceSmoothedDirections.Length == size)
+        if (_beamConvergenceSmoothedDirections != null
+            && _beamConvergenceLastSmoothTimes != null
+            && _beamConvergenceHasSmoothedDirections != null
+            && _beamConvergenceSmoothedDirections.Length == size
+            && _beamConvergenceLastSmoothTimes.Length == size
+            && _beamConvergenceHasSmoothedDirections.Length == size)
         {
             return;
         }
 
         _beamConvergenceSmoothedDirections = new Vector3[size];
+        _beamConvergenceLastSmoothTimes = new float[size];
         _beamConvergenceHasSmoothedDirections = new bool[size];
     }
 
     private void EnsureLightningSlowBeamBuffers()
     {
         int size = Mathf.Max(0, lightningSlowBeamWeapons != null ? lightningSlowBeamWeapons.Length : 0);
-        if (_lightningSmoothedDirections != null && _lightningSmoothedDirections.Length == size)
+        if (_lightningSmoothedDirections != null
+            && _lightningLastSmoothTimes != null
+            && _lightningHasSmoothedDirections != null
+            && _lightningSmoothedDirections.Length == size
+            && _lightningLastSmoothTimes.Length == size
+            && _lightningHasSmoothedDirections.Length == size)
         {
             return;
         }
 
         _lightningSmoothedDirections = new Vector3[size];
+        _lightningLastSmoothTimes = new float[size];
         _lightningHasSmoothedDirections = new bool[size];
     }
 
@@ -1418,9 +1432,11 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
 
         EnsureBeamConvergenceBuffers();
         if (_beamConvergenceSmoothedDirections == null
+            || _beamConvergenceLastSmoothTimes == null
             || _beamConvergenceHasSmoothedDirections == null
             || index < 0
-            || index >= _beamConvergenceSmoothedDirections.Length)
+            || index >= _beamConvergenceSmoothedDirections.Length
+            || index >= _beamConvergenceLastSmoothTimes.Length)
         {
             return rawDirection;
         }
@@ -1428,13 +1444,16 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
         if (!_beamConvergenceHasSmoothedDirections[index])
         {
             _beamConvergenceSmoothedDirections[index] = rawDirection;
+            _beamConvergenceLastSmoothTimes[index] = Time.time;
             _beamConvergenceHasSmoothedDirections[index] = true;
             return rawDirection;
         }
 
-        float blend = 1f - Mathf.Exp(-Time.deltaTime / Mathf.Max(0.001f, beamConvergenceAimSmoothTime));
+        float elapsed = Mathf.Max(Time.deltaTime, Time.time - _beamConvergenceLastSmoothTimes[index]);
+        float blend = 1f - Mathf.Exp(-elapsed / Mathf.Max(0.001f, beamConvergenceAimSmoothTime));
         Vector3 smoothedDirection = Vector3.Slerp(_beamConvergenceSmoothedDirections[index], rawDirection, blend);
         _beamConvergenceSmoothedDirections[index] = smoothedDirection.sqrMagnitude > 0.0001f ? smoothedDirection.normalized : rawDirection;
+        _beamConvergenceLastSmoothTimes[index] = Time.time;
         return _beamConvergenceSmoothedDirections[index];
     }
 
@@ -1463,9 +1482,11 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
 
         EnsureLightningSlowBeamBuffers();
         if (_lightningSmoothedDirections == null
+            || _lightningLastSmoothTimes == null
             || _lightningHasSmoothedDirections == null
             || index < 0
-            || index >= _lightningSmoothedDirections.Length)
+            || index >= _lightningSmoothedDirections.Length
+            || index >= _lightningLastSmoothTimes.Length)
         {
             return rawDirection;
         }
@@ -1473,13 +1494,16 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
         if (!_lightningHasSmoothedDirections[index])
         {
             _lightningSmoothedDirections[index] = rawDirection;
+            _lightningLastSmoothTimes[index] = Time.time;
             _lightningHasSmoothedDirections[index] = true;
             return rawDirection;
         }
 
-        float blend = 1f - Mathf.Exp(-Time.deltaTime / Mathf.Max(0.001f, lightningSlowBeamAimSmoothTime));
+        float elapsed = Mathf.Max(Time.deltaTime, Time.time - _lightningLastSmoothTimes[index]);
+        float blend = 1f - Mathf.Exp(-elapsed / Mathf.Max(0.001f, lightningSlowBeamAimSmoothTime));
         Vector3 smoothedDirection = Vector3.Slerp(_lightningSmoothedDirections[index], rawDirection, blend);
         _lightningSmoothedDirections[index] = smoothedDirection.sqrMagnitude > 0.0001f ? smoothedDirection.normalized : rawDirection;
+        _lightningLastSmoothTimes[index] = Time.time;
         return _lightningSmoothedDirections[index];
     }
 

@@ -384,11 +384,11 @@ public abstract class EnemyBalanceProfile3D : ScriptableObject
         [Range(1, 16)] public int beamFenceMaxBeams;
         [Tooltip("Seconds between beam convergence aim refreshes while active.")]
         [Min(0.01f)] public float beamFenceAimRefreshInterval;
-        [Tooltip("Seconds behind the target used as the shared convergence point for all active beam hardpoints.")]
+        [Tooltip("Seconds behind the target used as the shared convergence point for all active beam hardpoints. Set this to 0 for tight live tracking.")]
         [Min(0f)] public float beamConvergenceLagSeconds;
         [Tooltip("Blend from current target position toward the lagged convergence point. 0 tracks current position; 1 uses full positional lag.")]
         [Range(0f, 1f)] public float beamConvergenceLagBlend;
-        [Tooltip("Small smoothing time for beam aim directions. This reduces visual jitter from network/refresh cadence without changing damage ownership.")]
+        [Tooltip("Small smoothing time for beam aim directions. Lower values track more tightly; higher values reduce jitter from network/refresh cadence.")]
         [Min(0f)] public float beamConvergenceAimSmoothTime;
         [Tooltip("Seconds of warning before the two accurate lightning slow beams activate.")]
         [Min(0f)] public float lightningSlowBeamTelegraphDuration;
