@@ -2497,7 +2497,7 @@ MonoBehaviour:
   waves:
   - waveName: WAVE 1
     enemies:
-    - enemyPrefab: {fileID: 7279590565626816591, guid: 45b170708adafd343bd4e110edf859cc, type: 3}
+    - enemyPrefab: {fileID: 8311721449157583992, guid: 3abe469261929d94fb24a7cd0c243bfb, type: 3}
       count: 1
       spawnDelay: 0
   spawnPoints: []
