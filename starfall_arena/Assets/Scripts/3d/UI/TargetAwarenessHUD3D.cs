@@ -146,6 +146,7 @@ public class TargetAwarenessHUD3D : PlayerHUDBindingTarget3D
     private readonly List<TargetAwarenessWidget3D> _widgetPool = new();
     private readonly RaycastHit[] _occlusionHits = new RaycastHit[16];
     private float _nextDiscoveryTime;
+    private bool _allowDuelOpponentFallback;
     private bool _loggedMissingTemplate;
     private bool _loggedMissingCanvas;
     private bool _loggedTemplateContainerFallback;
@@ -217,6 +218,7 @@ public class TargetAwarenessHUD3D : PlayerHUDBindingTarget3D
     private void RefreshTargets()
     {
         _nextDiscoveryTime = Time.unscaledTime + Mathf.Max(0.02f, discovery.refreshInterval);
+        _allowDuelOpponentFallback = !IsInvasionScene();
 
         if (BoundPlayer == null)
         {
@@ -611,13 +613,22 @@ public class TargetAwarenessHUD3D : PlayerHUDBindingTarget3D
 
     private bool IsDuelOpponent(Entity3D entity)
     {
-        if (entity == null || BoundPlayer == null || entity is not Player3D)
+        if (!_allowDuelOpponentFallback || entity == null || BoundPlayer == null || entity is not Player3D)
         {
             return false;
         }
 
         return TryResolveOpponentPlayerTag(BoundPlayer, out string opponentTag)
             && entity.CompareTag(opponentTag);
+    }
+
+    private static bool IsInvasionScene()
+    {
+#if UNITY_2023_1_OR_NEWER
+        return Object.FindFirstObjectByType<InvasionSceneManager3D>() != null;
+#else
+        return Object.FindObjectOfType<InvasionSceneManager3D>() != null;
+#endif
     }
 
     private static bool TryResolveOpponentPlayerTag(Entity3D entity, out string opponentTag)

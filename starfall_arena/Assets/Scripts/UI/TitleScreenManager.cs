@@ -11,6 +11,12 @@ using TMPro;
 /// </summary>
 public class TitleScreenManager : MonoBehaviour
 {
+    public enum Test3DFlowDefaultRole
+    {
+        Host = 0,
+        Client = 1
+    }
+
     [System.Serializable]
     public struct SceneFadeConfig
     {
@@ -146,6 +152,10 @@ public class TitleScreenManager : MonoBehaviour
     [SerializeField] private string test3DGameplaySceneName = "3d_invasion";
     [Tooltip("Direct-connect address used by the client-side 3D test shortcut.")]
     [SerializeField] private string test3DClientAddress = "10.33.102.140";
+    [Tooltip("If enabled, the title scene skips the normal intro and immediately starts the configured 3D invasion test flow on scene load.")]
+    [SerializeField] private bool autoStart3DTestFlowOnSceneStart;
+    [Tooltip("Which side the auto-start 3D test flow should use when the scene opens.")]
+    [SerializeField] private Test3DFlowDefaultRole autoStart3DTestRole = Test3DFlowDefaultRole.Host;
     [Tooltip("Optional override for the host's auto-selected 3D test ship. Falls back to 3d_class1 by ship ID.")]
     [SerializeField] private ShipData test3DHostShip;
     [Tooltip("Optional override for the client's auto-selected 3D test ship. Falls back to 3d_class2 by ship ID.")]
@@ -251,6 +261,13 @@ public class TitleScreenManager : MonoBehaviour
         SetCanvasHidden(hostModeSelectCanvas);
         SetCanvasHidden(host3DModeSelectCanvas);
         SetHostModePreviewModelsActive(false);
+
+        if (autoStart3DTestFlowOnSceneStart)
+        {
+            PrepareImmediateTestFlowStart();
+            StartConfigured3DTestFlow();
+            yield break;
+        }
 
         // Phase 1: Scene fades from black
         yield return new WaitForSecondsRealtime(sceneFade.delay);
@@ -452,55 +469,17 @@ public class TitleScreenManager : MonoBehaviour
 
     public void start3dhostflow()
     {
-        Reset3DTestFlowState();
-        _isRunning3DTestFlow = true;
-        _is3DTestHostFlow = true;
-        _pendingHostModeLabel = host3DInvasionStatusLabel;
-
-        if (!Prepare3DTestShipSelections())
-        {
-            return;
-        }
-
-        StartHostingForScene(test3DGameplaySceneName);
+        Start3DTestFlowAsRole(Test3DFlowDefaultRole.Host);
     }
 
     public void start3dclientflow()
     {
-        Reset3DTestFlowState();
-        _isRunning3DTestFlow = true;
-        _is3DTestHostFlow = false;
+        Start3DTestFlowAsRole(Test3DFlowDefaultRole.Client);
+    }
 
-        if (!Prepare3DTestShipSelections())
-        {
-            return;
-        }
-
-        if (ipAddressInputField != null)
-        {
-            ipAddressInputField.text = test3DClientAddress;
-        }
-
-        _netMgr = NetMgr.Instance;
-        _sessionData = NetworkSessionData.Instance;
-        bool started = _netMgr != null && _netMgr.StartClientForMenu(test3DClientAddress);
-        if (!started)
-        {
-            Reset3DTestFlowState();
-            return;
-        }
-
-        HandleStatusMessageChanged("Connecting to 3D invasion test host...");
-
-        if (joinGameCanvas != null && _activeTransition == null)
-        {
-            CanvasGroup source = _activeCanvas ?? mainMenuCanvas;
-            if (source != joinGameCanvas)
-            {
-                _activeTransition = StartCoroutine(
-                    RunTransition(source, joinGameCanvas, joinGameFirstSelected));
-            }
-        }
+    public void StartConfigured3DTestFlow()
+    {
+        Start3DTestFlowAsRole(autoStart3DTestRole);
     }
 
     public void TransitionToOnlineMenuFromHostMode()
@@ -1460,6 +1439,21 @@ public class TitleScreenManager : MonoBehaviour
         GameDataManager.Instance.SetShipRosterForGameplayScene(sceneName);
     }
 
+    private void PrepareImmediateTestFlowStart()
+    {
+        _overlayAlpha = 0f;
+
+        if (mainMenuCanvas != null)
+        {
+            mainMenuCanvas.gameObject.SetActive(true);
+            mainMenuCanvas.alpha = 1f;
+            mainMenuCanvas.interactable = false;
+            mainMenuCanvas.blocksRaycasts = false;
+            SetButtonsEnabled(mainMenuCanvas, false);
+            _activeCanvas = mainMenuCanvas;
+        }
+    }
+
     private void SetHostModePreviewModelsActive(bool active)
     {
         if (hostModePreviewModels == null)
@@ -1491,6 +1485,76 @@ public class TitleScreenManager : MonoBehaviour
         ApplyShipRosterForGameplayScene(test3DGameplaySceneName);
         GameDataManager.Instance?.SetSelectedShips(hostShip, clientShip);
         return true;
+    }
+
+    private void Start3DTestFlowAsRole(Test3DFlowDefaultRole role)
+    {
+        Reset3DTestFlowState();
+        _isRunning3DTestFlow = true;
+        _is3DTestHostFlow = role == Test3DFlowDefaultRole.Host;
+
+        if (!Prepare3DTestShipSelections())
+        {
+            return;
+        }
+
+        if (_is3DTestHostFlow)
+        {
+            _pendingHostModeLabel = Resolve3DTestHostModeLabel();
+            StartHostingForScene(test3DGameplaySceneName, network3DGameplaySceneName);
+            return;
+        }
+
+        Start3DTestClientFlow();
+    }
+
+    private void Start3DTestClientFlow()
+    {
+        if (ipAddressInputField != null)
+        {
+            ipAddressInputField.text = test3DClientAddress;
+        }
+
+        _netMgr = NetMgr.Instance;
+        _sessionData = NetworkSessionData.Instance;
+        bool started = _netMgr != null && _netMgr.StartClientForMenu(test3DClientAddress);
+        if (!started)
+        {
+            Reset3DTestFlowState();
+            return;
+        }
+
+        HandleStatusMessageChanged(Resolve3DTestClientConnectStatus());
+
+        if (joinGameCanvas != null && _activeTransition == null)
+        {
+            CanvasGroup source = _activeCanvas ?? mainMenuCanvas;
+            if (source != joinGameCanvas)
+            {
+                _activeTransition = StartCoroutine(
+                    RunTransition(source, joinGameCanvas, joinGameFirstSelected));
+            }
+        }
+    }
+
+    private string Resolve3DTestHostModeLabel()
+    {
+        return Is3DInvasionSceneName(test3DGameplaySceneName) ? host3DInvasionStatusLabel : host3DStatusLabel;
+    }
+
+    private string Resolve3DTestClientConnectStatus()
+    {
+        return Is3DInvasionSceneName(test3DGameplaySceneName)
+            ? "Connecting to 3D invasion test host..."
+            : "Connecting to 3D test host...";
+    }
+
+    private bool Is3DInvasionSceneName(string sceneName)
+    {
+        return string.Equals(
+            sceneName?.Trim(),
+            network3DInvasionGameplaySceneName?.Trim(),
+            System.StringComparison.OrdinalIgnoreCase);
     }
 
     private ShipData Resolve3DTestShip(bool hostShip)

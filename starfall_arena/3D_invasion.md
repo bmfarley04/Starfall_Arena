@@ -61,6 +61,7 @@ Implemented foundation:
 - the duel branch still loads `3d`, while the invasion branch loads `3d_invasion`
 - invasion still uses the 3D ship roster; the title flow should not fall back to the 2D roster just because the scene token differs from the duel scene
 - test-only title shortcuts may also target `3d_invasion`, but they should still wait for the normal network `ShipSelect` state before auto-locking their fixed test ships; skipping that visible state makes the join flow look frozen even when the session is progressing correctly
+- the title scene can now optionally auto-start that same 3D invasion test flow on scene load and pick host or client from a serialized default role, so repeated local invasion/network setup does not require manual menu navigation every run
 
 ## Mode Ownership
 
