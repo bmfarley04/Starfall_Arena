@@ -5917,7 +5917,7 @@ MonoBehaviour:
   convergeBeam:
     beamPrefab: {fileID: 100000, guid: 7767d0d49caff014ba0e057220a05183, type: 3}
     targetTag: Enemy
-    targetFaction: 0
+    targetFaction: 2
     damagePerSecond: 25
     maxDistance: 1000
     recoilForcePerSecond: 0
@@ -5986,7 +5986,7 @@ MonoBehaviour:
       projectilePrefab: {fileID: 152452, guid: a8f09a644404f9c4b907b62b3bb2d207, type: 3}
       muzzles: []
       targetTag: Enemy
-      targetFaction: 0
+      targetFaction: 2
       cooldown: 5
       speed: 180
       damage: 30

@@ -9773,6 +9773,7 @@ GameObject:
   - component: {fileID: 8638785466743754426}
   - component: {fileID: -2783508877796770153}
   - component: {fileID: -6552096286405165903}
+  - component: {fileID: 7123456789012345678}
   m_Layer: 0
   m_Name: fortressEnemy
   m_TagString: Enemy
@@ -10387,6 +10388,25 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::NetEnemyMovement3D
   ShowTopMostFoldoutHeaderGroup: 1
   interpolationBufferTicks: 2
+--- !u!114 &7123456789012345678
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5723954577492871350}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2a94c91b57b04f1cb44e5b4f11a0d231, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PortalBossSpawn3D
+  portalPrefab: {fileID: 1000000000000010001, guid: 976f41ceec924e399424163b5c1e34c6, type: 3}
+  portalUniformScale: 1.7
+  emergeDistance: 90
+  emergeDuration: 3.5
+  visualRenderers: []
+  additionalBehavioursToDisable: []
+  collidersToDisable: []
 --- !u!1 &5784332197128543873
 GameObject:
   m_ObjectHideFlags: 0

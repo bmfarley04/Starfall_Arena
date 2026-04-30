@@ -5047,6 +5047,7 @@ GameObject:
   - component: {fileID: 2344328356629289739}
   - component: {fileID: 9205410871108664787}
   - component: {fileID: 6364644879097331353}
+  - component: {fileID: 7123456789012345679}
   m_Layer: 0
   m_Name: boss2Enemy
   m_TagString: Enemy
@@ -6112,6 +6113,25 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::NetEnemyMovement3D
   ShowTopMostFoldoutHeaderGroup: 1
   interpolationBufferTicks: 2
+--- !u!114 &7123456789012345679
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8311721449157583992}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2a94c91b57b04f1cb44e5b4f11a0d231, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PortalBossSpawn3D
+  portalPrefab: {fileID: 1000000000000010001, guid: 976f41ceec924e399424163b5c1e34c6, type: 3}
+  portalUniformScale: 4.5
+  emergeDistance: 220
+  emergeDuration: 6
+  visualRenderers: []
+  additionalBehavioursToDisable: []
+  collidersToDisable: []
 --- !u!1001 &4012592746645055106
 PrefabInstance:
   m_ObjectHideFlags: 0

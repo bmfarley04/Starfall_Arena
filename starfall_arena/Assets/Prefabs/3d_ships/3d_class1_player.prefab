@@ -722,7 +722,7 @@ MonoBehaviour:
   impulseRecoilPitchSensitivity: 10
   uprightRecoveryEnabled: 1
   uprightRecoveryDelay: 5
-  uprightRecoveryDegreesPerSecond: 30
+  uprightRecoveryDegreesPerSecond: 45
   uprightRecoveryInputDeadZone: 0.05
   weapons:
   - {fileID: 6928815812079169362}
@@ -1097,7 +1097,7 @@ MonoBehaviour:
     - {fileID: 785862098326601373}
     - {fileID: 8559890948586039968}
     targetTag: Enemy
-    targetFaction: 0
+    targetFaction: 1
     cooldown: 0.25
     speed: 250
     damage: 5
@@ -1144,7 +1144,7 @@ MonoBehaviour:
   beam:
     beamPrefab: {fileID: 100000, guid: 7767d0d49caff014ba0e057220a05183, type: 3}
     targetTag: Enemy
-    targetFaction: 0
+    targetFaction: 2
     damagePerSecond: 50
     maxDistance: 1000
     recoilForcePerSecond: 0
