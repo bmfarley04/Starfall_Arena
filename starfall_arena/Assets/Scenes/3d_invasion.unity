@@ -2501,7 +2501,7 @@ MonoBehaviour:
       count: 1
       spawnDelay: 0
   spawnPoints: []
-  startOnEnable: 1
+  startOnEnable: 0
   timeBetweenWaves: 3
 --- !u!4 &224109832
 Transform:
