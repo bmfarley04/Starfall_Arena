@@ -466,6 +466,7 @@ MonoBehaviour:
     NetworkTopology: 0
     UseCMBService: 0
     AutoSpawnPlayerPrefabClientSide: 1
+    NetworkMessageMetrics: 1
     NetworkProfilingMetrics: 1
     OldPrefabList: []
   RunInBackground: 1
@@ -569,8 +570,15 @@ MonoBehaviour:
   player2HUDCanvas: {fileID: 0}
   player1AbilityCanvas: {fileID: 0}
   player2AbilityCanvas: {fileID: 0}
+  fpsText: {fileID: 0}
+  pingText: {fileID: 0}
+  performanceDisplayRefreshInterval: 0.25
+  fpsRollingSampleCount: 30
+  pingRollingSampleCount: 12
   player1WinTracker: {fileID: 0}
   player2WinTracker: {fileID: 0}
+  player1AugmentTracker: {fileID: 0}
+  player2AugmentTracker: {fileID: 0}
   debugStartAtRound: 0
 --- !u!4 &1497365221
 Transform:
