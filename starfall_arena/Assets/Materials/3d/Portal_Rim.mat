@@ -30,18 +30,15 @@ Material:
     - _FresnelStrength: 1.35
     - _InnerBrightness: 0.75
     - _InnerEdgeSoftness: 0.2
+    - _InnerGradientPower: 2.2
     - _InnerRadius: 0.82
     - _LayerMode: 1
-    - _NoiseScale: 6.5
     - _Opacity: 1
-    - _RimBrightness: 5.4
+    - _RimBrightness: 15.65
     - _RimSoftness: 0.085
-    - _RimWidth: 0.11
-    - _SwirlSpeed: 0.045
-    - _SwirlStrength: 0.65
+    - _RimWidth: 0.022
     m_Colors:
     - _InnerColor: {r: 0.55, g: 0.1, b: 1.1, a: 1}
-    - _InnerHotColor: {r: 2.2, g: 0.7, b: 4, a: 1}
     - _RimColor: {r: 6.2, g: 3.25, b: 9.4, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

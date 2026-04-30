@@ -25,23 +25,20 @@ Material:
     m_TexEnvs: []
     m_Ints: []
     m_Floats:
-    - _CenterDarkness: 0.58
-    - _FresnelPower: 3
+    - _CenterDarkness: 1
+    - _FresnelPower: 3.35
     - _FresnelStrength: 1.15
-    - _InnerBrightness: 0.78
-    - _InnerEdgeSoftness: 0.22
-    - _InnerRadius: 0.83
+    - _InnerBrightness: 0.36
+    - _InnerEdgeSoftness: 0.001
+    - _InnerGradientPower: 2.65
+    - _InnerRadius: 1
     - _LayerMode: 0
-    - _NoiseScale: 6.1
-    - _Opacity: 0.86
+    - _Opacity: 0.92
     - _RimBrightness: 4.4
     - _RimSoftness: 0.09
     - _RimWidth: 0.105
-    - _SwirlSpeed: 0.038
-    - _SwirlStrength: 0.55
     m_Colors:
-    - _InnerColor: {r: 0.34, g: 0.05, b: 0.78, a: 1}
-    - _InnerHotColor: {r: 1.45, g: 0.38, b: 2.65, a: 1}
+    - _InnerColor: {r: 0.16, g: 0.015, b: 0.34, a: 1}
     - _RimColor: {r: 5.8, g: 2.7, b: 8.5, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

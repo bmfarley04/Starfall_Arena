@@ -15,14 +15,11 @@ Shader "Starfall/3D/PortalDisk"
 
         [Header(Inner Surface)]
         [HDR]_InnerColor("Inner HDR Color", Color) = (0.55, 0.1, 1.1, 1.0)
-        [HDR]_InnerHotColor("Inner Hot Streak HDR Color", Color) = (2.2, 0.7, 4.0, 1.0)
         _InnerBrightness("Inner Brightness", Range(0.0, 10.0)) = 0.75
         _CenterDarkness("Center Darkness", Range(0.0, 1.0)) = 0.48
         _InnerRadius("Inner Visible Radius", Range(0.0, 1.0)) = 0.82
         _InnerEdgeSoftness("Inner Edge Softness", Range(0.001, 0.5)) = 0.2
-        _SwirlSpeed("Swirl Speed", Float) = 0.045
-        _SwirlStrength("Swirl Strength", Range(0.0, 4.0)) = 0.65
-        _NoiseScale("Noise Scale", Range(0.5, 32.0)) = 6.5
+        _InnerGradientPower("Inner Gradient Power", Range(0.25, 8.0)) = 2.2
         _Opacity("Opacity", Range(0.0, 2.0)) = 0.82
     }
 
@@ -51,8 +48,6 @@ Shader "Starfall/3D/PortalDisk"
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 
-            #define STARFALL_TWO_PI 6.28318530718
-
             struct Attributes
             {
                 float4 positionOS : POSITION;
@@ -79,54 +74,13 @@ Shader "Starfall/3D/PortalDisk"
                 half _FresnelPower;
 
                 half4 _InnerColor;
-                half4 _InnerHotColor;
                 half _InnerBrightness;
                 half _CenterDarkness;
                 half _InnerRadius;
                 half _InnerEdgeSoftness;
-                half _SwirlSpeed;
-                half _SwirlStrength;
-                half _NoiseScale;
+                half _InnerGradientPower;
                 half _Opacity;
             CBUFFER_END
-
-            float hash21(float2 p)
-            {
-                p = frac(p * float2(123.34, 456.21));
-                p += dot(p, p + 45.32);
-                return frac(p.x * p.y);
-            }
-
-            float noise2d(float2 p)
-            {
-                float2 i = floor(p);
-                float2 f = frac(p);
-                float2 u = f * f * (3.0 - 2.0 * f);
-
-                float a = hash21(i);
-                float b = hash21(i + float2(1.0, 0.0));
-                float c = hash21(i + float2(0.0, 1.0));
-                float d = hash21(i + float2(1.0, 1.0));
-
-                return lerp(lerp(a, b, u.x), lerp(c, d, u.x), u.y);
-            }
-
-            float fbm(float2 p)
-            {
-                float value = 0.0;
-                float amplitude = 0.5;
-
-                value += noise2d(p) * amplitude;
-                p *= 2.03;
-                amplitude *= 0.5;
-
-                value += noise2d(p) * amplitude;
-                p *= 2.01;
-                amplitude *= 0.5;
-
-                value += noise2d(p) * amplitude;
-                return value;
-            }
 
             Varyings vert(Attributes input)
             {
@@ -145,9 +99,6 @@ Shader "Starfall/3D/PortalDisk"
             {
                 float2 centeredUv = input.uv * 2.0 - 1.0;
                 float radius = length(centeredUv);
-                float angle = atan2(centeredUv.y, centeredUv.x);
-                float angular01 = frac(angle / STARFALL_TWO_PI + 0.5);
-                float time = _Time.y;
 
                 float diskMask = 1.0 - smoothstep(0.985, 1.0, radius);
 
@@ -172,21 +123,12 @@ Shader "Starfall/3D/PortalDisk"
                 innerMask *= diskMask;
 
                 float radial01 = saturate(radius / max(_InnerRadius, 0.001));
-                float swirlCoord = angular01 + radial01 * _SwirlStrength - time * _SwirlSpeed;
-                float radialFlow = radial01 - time * _SwirlSpeed * 0.45;
-                float broadNoise = fbm(float2(swirlCoord * _NoiseScale, radialFlow * _NoiseScale * 0.65));
-                float fineNoise = fbm(float2(swirlCoord * _NoiseScale * 2.0 + 19.0, radialFlow * _NoiseScale * 1.45));
-                float noiseValue = saturate(broadNoise * 0.72 + fineNoise * 0.35);
+                half edgeGradient = pow(saturate(radial01), _InnerGradientPower);
+                half centerDim = saturate(1.0h - _CenterDarkness);
+                half surfaceEnergy = lerp(centerDim, 1.0h, edgeGradient);
+                half3 color = _InnerColor.rgb * _InnerBrightness * surfaceEnergy;
 
-                float spiralBand = 0.5 + 0.5 * sin((swirlCoord * 2.0 + radial01 * 3.5 + noiseValue * 0.8) * STARFALL_TWO_PI);
-                spiralBand = pow(saturate(spiralBand), 3.2);
-
-                float centerDim = lerp(1.0 - _CenterDarkness, 1.0, smoothstep(0.0, 0.7, radial01));
-                half surfaceEnergy = saturate(0.18h + noiseValue * 0.38h + spiralBand * 0.42h) * centerDim;
-                half3 color = lerp(_InnerColor.rgb, _InnerHotColor.rgb, saturate(spiralBand * 0.55h + noiseValue * 0.25h));
-                color *= _InnerBrightness * surfaceEnergy;
-
-                half alpha = saturate(innerMask * _Opacity * (0.24h + surfaceEnergy));
+                half alpha = saturate(innerMask * _Opacity * lerp(0.42h, 1.0h, edgeGradient));
                 return half4(color, alpha);
             }
             ENDHLSL

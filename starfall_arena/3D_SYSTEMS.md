@@ -301,8 +301,8 @@ When adding a new 3D script, place it under the subsystem it serves first. Do no
 ## Portal Effect Authoring
 
 - the reusable 3D portal effect is a visual-only prefab at `Assets/Prefabs/3d_effects/Portal3D.prefab`; it does not own teleport logic, triggers, damage, networking, audio, or scene flow
-- the prefab uses two thin quad layers with `Starfall/3D/PortalDisk`: `InnerSurface` for the darker subtle radial swirl and `OuterRim` for the bright purple-white HDR edge glow
-- portal motion is shader-time driven through `_Time`, so the prefab should not need a runtime controller script or per-frame C# work for the basic persistent effect
+- the prefab uses two thin quad layers with `Starfall/3D/PortalDisk`: `InnerSurface` for a near-black center that gradients to dark purple near the edge, and `OuterRim` for the bright purple-white HDR edge glow
+- the base portal intentionally has no inner swirl/noise animation; keep the center calm so the effect reads like a dark portal surface instead of a cartoon vortex
 - scale and rotate the prefab transform for placement; keep the disk fixed in world space unless a future task explicitly asks for billboarding or gameplay-facing behavior
 - bloom is not owned by the prefab; tune the HDR material brightness together with the active camera and scene/global Bloom settings
 - avoid adding particles, screen-space distortion, opaque-texture sampling, or gameplay trigger behavior to the base portal prefab unless the effect is intentionally expanded by a later task
