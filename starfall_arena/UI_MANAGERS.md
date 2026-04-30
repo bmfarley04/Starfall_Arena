@@ -179,6 +179,12 @@ Health and shield HUDs are currently represented with:
 
 These provide the core combat-state display for each dueling player.
 
+3D/network HUD ownership note:
+
+- in the 3D path, scene managers such as `InvasionSceneManager3D` own top-level HUD root activation and deterministic canvas camera/sorting setup
+- actual player-data binding is separate and happens through `PlayerHUDManager3D` plus `PlayerHUDBindingTarget3D` listeners on the HUD objects
+- ship-specific weapon/ability HUD content is not always a preauthored static child in the scene; `PlayerWeaponAbilityHUDSpawner3D` can instantiate the correct ship HUD prefab at runtime after local-player binding succeeds
+
 ### Ability HUD
 
 Ability HUDs are structured around:
@@ -312,6 +318,7 @@ This makes `ShipData` a bridge between:
 - Bug note: round-intro movement locking in network gameplay must stay active for the full replicated intro window. Do not rely only on a transient spawn-time lock call, or clients can move before the countdown finishes.
 - Bug note: round-end freeze must explicitly clear latched player input and stop active abilities, not just zero velocity. Otherwise held thrust or other hold-style actions can keep simulating into the round-end window until the player object is destroyed.
 - Bug note: the network gameplay HUD and runtime ability HUDs must be forced into a deterministic camera/sorting configuration on each client. Leaving them as `Screen Space - Camera` canvases with implicit camera assignment or default sorting can make asteroid/map visuals render over client HUD elements even when the host looks correct.
+- Bug note: once a gameplay scene manager assigns a dedicated UI camera to screen-space HUD canvases, child HUD scripts must not immediately overwrite those canvases back to `Camera.main`. Keep UI-camera ownership centralized or the HUD will behave differently between host, client, and scene setups.
 - Bug note: top-right win indicators in network gameplay need explicit replicated win-count updates. Host-local `UpdateWinTrackers()` calls do not automatically refresh client visuals unless the counts are broadcast through the session layer.
 - Bug note: the client-side network HUD rebinding loop must stop re-showing gameplay HUD/ability UI during non-combat presentation states such as augment selection. If polling only checks "local player exists", the client can resurrect the gameplay ability HUD underneath whole-screen UI even though the scene manager already hid it for the phase.
 - Bug note: the network gameplay HUD on clients must treat a local-player respawn as a full rebind, not as "same owner, keep existing HUD." The losing client has a brief no-owner gap after death; if the old HUD/ability panel survives that gap, the next round can stay stuck on the dead ship's last health/shield values and a hidden ability panel because the new player belongs to the same client but is a different `NetworkObject`.

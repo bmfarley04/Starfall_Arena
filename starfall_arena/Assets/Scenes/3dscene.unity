@@ -619,6 +619,12 @@ MonoBehaviour:
   minY: -500
   maxY: 500
   wallThickness: 3
+  drawBoundaryGizmos: 1
+  drawBoundaryGizmosOnlyWhenSelected: 1
+  drawBoundaryLabels: 1
+  startBoundsGizmoColor: {r: 0.2, g: 0.9, b: 1, a: 0.45}
+  currentBoundsGizmoColor: {r: 1, g: 0.35, b: 0.1, a: 0.85}
+  blockerGizmoColor: {r: 1, g: 0.9, b: 0.15, a: 0.35}
   startActiveOnEnable: 0
   autoStart: 0
   waves:
@@ -8692,6 +8698,7 @@ MonoBehaviour:
   gameplayCameraOverride: {fileID: 0}
   widgetTemplate: {fileID: 1791662941}
   widgetContainer: {fileID: 72753235}
+  enemyFaction: 2
   discovery:
     refreshInterval: 0.25
     targetMask:
@@ -8699,6 +8706,7 @@ MonoBehaviour:
       m_Bits: 4294967295
     ignoreInactiveTargets: 0
   distance:
+    awarenessRange: 900
     closeHideDistance: 70
     bracketMaxDistance: 500
     thresholdHysteresis: 8

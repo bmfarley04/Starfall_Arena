@@ -810,16 +810,7 @@ public class TargetAwarenessHUD3D : PlayerHUDBindingTarget3D
 
     private void BindRenderCamera()
     {
-        if (targetCanvas == null)
-        {
-            return;
-        }
-
-        Camera camera = ResolveGameplayCamera();
-        if (camera != null && targetCanvas.renderMode != RenderMode.ScreenSpaceOverlay)
-        {
-            targetCanvas.worldCamera = camera;
-        }
+        HUDCanvasCameraResolver3D.BindCanvasToBestCamera(targetCanvas);
     }
 
     private void ResolveTemplateAuthoringConflicts()

@@ -53,6 +53,7 @@ Implemented foundation:
 - `SpawnArrivalEffect3D` is an optional prefab-local one-shot spawn presentation component for Invasion enemies. It can spawn an authored arrival VFX prefab, scale it per ship, hide renderers until reveal, and temporarily disable assigned colliders/brains/weapons so enemies do not act before they visually arrive.
 - `InvasionWaveManager3D` is a minimal finite-wave spawner for configured enemy prefabs
 - `InvasionSceneManager3D` is the dedicated beginning-flow manager for networked Invasion. It owns player spawning, gameplay HUD activation, wave text presentation, optional enemy counter presentation, optional heart/life counter presentation, UI canvas camera/sorting setup, and arena boundary startup.
+- `InvasionSceneManager3D` only owns top-level HUD visibility and canvas camera/sorting setup. Actual player HUD data binding still happens through `PlayerHUDManager3D` on the HUD objects themselves, and the ship-specific weapon/ability HUD is runtime-instantiated by `PlayerWeaponAbilityHUDSpawner3D` after a player bind succeeds.
 - `TargetAwarenessHUD3D` should be wired to `EnemyTeam` in Invasion and tuned with a finite awareness range so the enemy tracker only reacts to nearby hostile ships instead of every alive entity in the scene.
 
 ## Title Screen Entry
@@ -381,6 +382,7 @@ For `3d_invasion`:
 - optionally enable `Use Life Counter`, assign the heart/life counter canvas group, assign its TMP text, set the starting player lives, and tune the counter text format. This is currently display-only until life loss, respawn, and wipe rules are implemented.
 - assign gameplay HUD roots for health, vignette, crosshair, weapon container, ability container, FPS/ping, enemy tracker, and the enemy counter canvas if it should activate with the rest of gameplay HUD. The life counter is controlled through its canvas group instead of a root active toggle.
 - assign UI canvases and optional UI camera so network HUD sorting is deterministic
+- do not let child HUD scripts silently reassign those canvases back to `Camera.main`; the scene-level UI camera should remain the single source of truth for screen-space HUD canvas camera binding
 - assign `ArenaBoundary3D` so the scene manager can reset/start it once when gameplay begins
 - do not wire versus, countdown, win tracker, round-end, or game-end UI into this manager
 - add `InvasionWaveManager3D`
