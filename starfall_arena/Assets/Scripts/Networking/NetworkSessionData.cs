@@ -228,6 +228,7 @@ public class NetworkSessionData : NetworkBehaviour
     private int _augmentTier = -1;
     private int _roundStartSequenceId = 0;
     private int _waveStartSequenceId = 0;
+    private NetworkWaveStartStatePayload _lastWaveStartPresentation;
 
     public NetworkMatchState CurrentState => _currentState;
     public float SelectionTimeRemaining => _selectionTimeRemaining;
@@ -246,6 +247,12 @@ public class NetworkSessionData : NetworkBehaviour
     public ulong HostClientId => NetworkManager.Singleton != null ? NetworkManager.ServerClientId : ulong.MaxValue;
     public NetworkShipSelectionState Player1Selection => _shipSelections[0];
     public NetworkShipSelectionState Player2Selection => _shipSelections[1];
+
+    public bool TryGetLastWaveStartPresentation(out NetworkWaveStartStatePayload payload)
+    {
+        payload = _lastWaveStartPresentation;
+        return payload.SequenceId > 0;
+    }
 
     private void Awake()
     {
@@ -649,6 +656,7 @@ public class NetworkSessionData : NetworkBehaviour
             WaveNumber = waveNumber
         };
 
+        _lastWaveStartPresentation = payload;
         SetServerState(NetworkMatchState.RoundTransition, $"Wave {waveNumber} starting.");
         OnWaveStartPresentationChanged?.Invoke(payload);
 

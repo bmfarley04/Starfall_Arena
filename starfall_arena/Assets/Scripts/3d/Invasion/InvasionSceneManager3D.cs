@@ -540,11 +540,13 @@ public class InvasionSceneManager3D : MonoBehaviour
         if (_useNetworkSession && NetworkSessionData.Instance != null)
         {
             NetworkSessionData.Instance.BroadcastWaveStartServer(waveNumber);
-            yield return new WaitForSecondsRealtime(GetWaveIntroDuration());
+            SetGameplayHudActive(true);
+            yield return ShowWaveText(waveNumber);
             NetworkSessionData.Instance.MarkMatchStarted();
             yield break;
         }
 
+        SetGameplayHudActive(true);
         yield return ShowWaveText(waveNumber);
     }
 
@@ -662,6 +664,15 @@ public class InvasionSceneManager3D : MonoBehaviour
         session.OnWaveStartPresentationChanged += HandleWaveStartPresentationChanged;
         session.OnInvasionEnemyCountChanged += HandleInvasionEnemyCountChanged;
         HandleNetworkSessionStateChanged(session.CurrentState);
+
+        // Late-joining scene managers can miss the first wave-start presentation
+        // RPC if the host already broadcast it while this scene was still loading.
+        // Recover the current intro while the session is still in RoundTransition.
+        if (session.CurrentState == NetworkMatchState.RoundTransition
+            && session.TryGetLastWaveStartPresentation(out NetworkWaveStartStatePayload wavePayload))
+        {
+            HandleWaveStartPresentationChanged(wavePayload);
+        }
     }
 
     private void UnsubscribeNetworkSessionEvents()
@@ -702,6 +713,15 @@ public class InvasionSceneManager3D : MonoBehaviour
         RefreshNetworkMode();
         if (!_useNetworkSession || payload.SequenceId <= _lastWaveIntroSequenceId)
         {
+            return;
+        }
+
+        // The host now plays the wave intro directly in PlayWaveIntroAuthoritative().
+        // Ignore the echoed local presentation event here so the host does not run the
+        // same intro a second time through the replicated client-facing path.
+        if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsServer)
+        {
+            _lastWaveIntroSequenceId = payload.SequenceId;
             return;
         }
 
