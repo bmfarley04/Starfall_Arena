@@ -130,6 +130,11 @@ The active network gameplay scene now assumes:
 - game-end presentation must also be broadcast explicitly and remapped to local-player perspective on each client
 - local result presentation should be derived from `payload.WinningPlayer` versus the local slot, while the actual game-end canvas selection can still stay slot-based (`player1` on host, `player2` on remote client)
 
+Enemy combat-state note:
+
+- player `Entity3D` combat replication currently routes through `NetCombat3D`, but networked enemies need an equivalent health/shield/death broadcast path through `NetEnemyCombat3D`
+- replicating only enemy spawn/despawn or attack cosmetics is not sufficient for remote HUD/UI, because clients also need intermediate `NetCombatState3D` updates when the server changes enemy health, shield, shield-break state, or slow state
+
 ### NetMovement
 
 `NetMovement` is the main implemented networked gameplay system right now.

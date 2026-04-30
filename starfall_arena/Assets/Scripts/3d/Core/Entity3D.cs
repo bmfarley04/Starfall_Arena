@@ -51,6 +51,7 @@ public abstract class Entity3D : MonoBehaviour
     protected float currentSlowMultiplier = 1f;
     protected float slowEndTime;
     protected NetCombat3D netCombat3D;
+    protected NetEnemyCombat3D netEnemyCombat3D;
 
     private bool _isDead;
     private float _uprightRecoverySuppressedUntil;
@@ -233,6 +234,7 @@ public abstract class Entity3D : MonoBehaviour
         shipSpeedFx ??= GetComponent<ShipSpeedFx3D>();
         deathEffects ??= GetComponent<DeathEffects3D>();
         netCombat3D ??= GetComponent<NetCombat3D>();
+        netEnemyCombat3D ??= GetComponent<NetEnemyCombat3D>();
         shieldController ??= GetComponentInChildren<ShieldController>(true);
         CacheCombatSlotsIfNeeded();
         selectedWeaponIndex = Mathf.Clamp(selectedWeaponIndex, 0, Mathf.Max(0, weapons.Length - 1));
@@ -446,6 +448,7 @@ public abstract class Entity3D : MonoBehaviour
         if (NetTickUtil.IsActive && TryGetComponent(out NetworkObject networkObject) && networkObject.IsSpawned)
         {
             netCombat3D?.BroadcastDeath(transform.position, transform.rotation, lastDamageDirection);
+            netEnemyCombat3D?.BroadcastDeath(transform.position, transform.rotation, lastDamageDirection);
             if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsServer)
             {
                 networkObject.Despawn(true);
@@ -644,13 +647,13 @@ public abstract class Entity3D : MonoBehaviour
 
     private void BroadcastNetworkCombatState(Vector3 hitPoint, DamageSource3D source, float previousShield)
     {
-        if (!NetTickUtil.IsActive || netCombat3D == null || !netCombat3D.IsServer)
+        if (!NetTickUtil.IsActive)
         {
             return;
         }
 
         bool isSlowed = IsSlowed;
-        netCombat3D.BroadcastCombatState(new NetCombatState3D
+        NetCombatState3D state = new NetCombatState3D
         {
             Health = currentHealth,
             Shield = currentShield,
@@ -660,6 +663,16 @@ public abstract class Entity3D : MonoBehaviour
             ShieldBreak = previousShield > 0f && currentShield <= 0f,
             SlowMultiplier = isSlowed ? GetSlowMultiplier() : 1f,
             SlowRemainingTime = isSlowed ? Mathf.Max(0f, slowEndTime - Time.time) : 0f
-        });
+        };
+
+        if (netCombat3D != null && netCombat3D.IsServer)
+        {
+            netCombat3D.BroadcastCombatState(state);
+        }
+
+        if (netEnemyCombat3D != null && netEnemyCombat3D.IsServer)
+        {
+            netEnemyCombat3D.BroadcastCombatState(state);
+        }
     }
 }

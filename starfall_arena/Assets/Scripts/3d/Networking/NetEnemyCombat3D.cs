@@ -180,6 +180,26 @@ public class NetEnemyCombat3D : NetworkBehaviour
         return true;
     }
 
+    public void BroadcastCombatState(NetCombatState3D state)
+    {
+        if (!IsServer || !IsSpawned)
+        {
+            return;
+        }
+
+        BroadcastCombatStateClientRpc(state);
+    }
+
+    public void BroadcastDeath(Vector3 position, Quaternion rotation, Vector3 lastDamageDirection)
+    {
+        if (!IsServer || !IsSpawned)
+        {
+            return;
+        }
+
+        BroadcastDeathClientRpc(position, rotation, lastDamageDirection);
+    }
+
     private void SpawnAuthoritativeProjectile(
         IEnemyProjectileWeapon3D sourceWeapon,
         NetProjectileFireRequest3D fireRequest,
@@ -203,6 +223,30 @@ public class NetEnemyCombat3D : NetworkBehaviour
             Fire = fireRequest,
             ServerSpawnTime = NetworkManager.Singleton != null ? NetworkManager.Singleton.ServerTime.Time : 0d
         });
+    }
+
+    [ClientRpc]
+    private void BroadcastCombatStateClientRpc(NetCombatState3D state)
+    {
+        if (IsServer)
+        {
+            return;
+        }
+
+        CacheReferences();
+        _enemy?.ApplyNetworkCombatState(state);
+    }
+
+    [ClientRpc]
+    private void BroadcastDeathClientRpc(Vector3 position, Quaternion rotation, Vector3 lastDamageDirection)
+    {
+        if (IsServer)
+        {
+            return;
+        }
+
+        CacheReferences();
+        _enemy?.PlayNetworkDeath(position, rotation, lastDamageDirection);
     }
 
     [ClientRpc]
