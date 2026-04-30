@@ -53,6 +53,7 @@ Implemented foundation:
 - `SpawnArrivalEffect3D` is an optional prefab-local one-shot spawn presentation component for Invasion enemies. It can spawn an authored arrival VFX prefab, scale it per ship, hide renderers until reveal, and temporarily disable assigned colliders/brains/weapons so enemies do not act before they visually arrive.
 - `InvasionWaveManager3D` is a minimal finite-wave spawner for configured enemy prefabs
 - `InvasionSceneManager3D` is the dedicated beginning-flow manager for networked Invasion. It owns player spawning, gameplay HUD activation, wave text presentation, optional enemy counter presentation, optional heart/life counter presentation, UI canvas camera/sorting setup, and arena boundary startup.
+- `TargetAwarenessHUD3D` should be wired to `EnemyTeam` in Invasion and tuned with a finite awareness range so the enemy tracker only reacts to nearby hostile ships instead of every alive entity in the scene.
 
 ## Title Screen Entry
 

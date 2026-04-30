@@ -4,6 +4,8 @@ using UnityEngine.Serialization;
 
 public class TargetAwarenessHUD3D : PlayerHUDBindingTarget3D
 {
+    private const float DefaultAwarenessRange = 900f;
+
     private struct TargetRuntime3D
     {
         public Entity3D Target;
@@ -28,6 +30,8 @@ public class TargetAwarenessHUD3D : PlayerHUDBindingTarget3D
     [System.Serializable]
     private struct DistanceConfig3D
     {
+        [Tooltip("Maximum world-space distance at which targets are tracked at all. Targets outside this range are ignored until they come back in range.")]
+        public float awarenessRange;
         [Tooltip("Target UI is hidden when the target is closer than this distance.")]
         public float closeHideDistance;
         [Tooltip("Visible, unoccluded targets use brackets from closeHideDistance up to this distance.")]
@@ -89,6 +93,8 @@ public class TargetAwarenessHUD3D : PlayerHUDBindingTarget3D
     [SerializeField] private RectTransform widgetContainer;
 
     [Header("Target Discovery")]
+    [Tooltip("Faction this HUD should treat as hostile targets. In Invasion this should usually stay on EnemyTeam.")]
+    [SerializeField] private Faction3D enemyFaction = Faction3D.EnemyTeam;
     [SerializeField] private TargetDiscoveryConfig3D discovery = new TargetDiscoveryConfig3D
     {
         refreshInterval = 0.25f,
@@ -99,6 +105,7 @@ public class TargetAwarenessHUD3D : PlayerHUDBindingTarget3D
     [Header("Distance")]
     [SerializeField] private DistanceConfig3D distance = new DistanceConfig3D
     {
+        awarenessRange = 900f,
         closeHideDistance = 45f,
         bracketMaxDistance = 240f,
         thresholdHysteresis = 8f
@@ -546,12 +553,45 @@ public class TargetAwarenessHUD3D : PlayerHUDBindingTarget3D
             return false;
         }
 
+        if (!IsWithinAwarenessRange(entity))
+        {
+            return false;
+        }
+
+        if (!MatchesEnemyFaction(entity) && !IsDuelOpponent(entity))
+        {
+            return false;
+        }
+
         if (ShouldSuppressSameFactionTarget(entity))
         {
             return false;
         }
 
         return entity.CurrentHealth > 0f;
+    }
+
+    private bool IsWithinAwarenessRange(Entity3D entity)
+    {
+        float awarenessRange = ResolveAwarenessRange();
+
+        float sqrDistance = (entity.transform.position - BoundPlayer.transform.position).sqrMagnitude;
+        return sqrDistance <= awarenessRange * awarenessRange;
+    }
+
+    private bool MatchesEnemyFaction(Entity3D entity)
+    {
+        return FactionMember3D.ResolveFaction(entity) == ResolveEnemyFaction();
+    }
+
+    private float ResolveAwarenessRange()
+    {
+        return distance.awarenessRange > 0f ? distance.awarenessRange : DefaultAwarenessRange;
+    }
+
+    private Faction3D ResolveEnemyFaction()
+    {
+        return enemyFaction != Faction3D.Neutral ? enemyFaction : Faction3D.EnemyTeam;
     }
 
     private bool ShouldSuppressSameFactionTarget(Entity3D entity)
