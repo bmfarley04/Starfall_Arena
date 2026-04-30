@@ -69,33 +69,6 @@ Load the smallest relevant set of docs for the task. If it is noted that we are 
   - Read `3D.md` first if the task is part of the 3D transition
   - Otherwise read `GAME_SYSTEMS.md` and `UI_MANAGERS.md` first, then `NETWORK.md` if multiplayer is involved
 
-## Unity MCP Workflow
-
-Unity MCP is available for this repo and should be treated as the default way to inspect and modify Unity Editor state.
-
-Use Unity MCP before direct Unity YAML/prefab/scene file edits whenever the task involves:
-
-- active scene inspection or scene object changes
-- prefab inspection, prefab contents, prefab references, or prefab overrides
-- GameObject/component add, remove, or property changes
-- material, shader, texture, camera, lighting, physics, UI, animation, or VFX setup
-- package, build setting, layer, tag, or editor state checks
-- console, compilation, test, screenshot, or visual verification
-
-Preferred workflow:
-
-1. Read editor state first with `mcpforunity://editor/state` or the closest relevant MCP resource.
-2. Inspect real Unity objects through MCP tools/resources instead of assuming serialized file contents are current.
-3. Make scene, prefab, component, material, VFX, and camera changes through Unity MCP tools when possible.
-4. Edit C# scripts and documentation in the filesystem as usual.
-5. After script edits, wait for Unity compilation readiness and read console errors through MCP.
-6. After editor-facing changes, verify through MCP using console checks, object/component inspection, screenshots, tests, or scene/prefab resources as appropriate.
-7. Save changed scenes/prefabs/assets through Unity APIs when MCP made editor-side changes.
-
-Direct prefab, scene, or asset YAML edits should be a fallback, not the first approach. Use direct serialized-file edits only when MCP cannot express the required change cleanly, Unity cannot load the asset, or a controlled bulk mechanical change is safer in text form. If direct YAML editing is used, explain why MCP was not the safer path and verify Unity can still load/import the result.
-
-When a bug is caused by incorrect editor wiring, prefab references, component state, scene setup, package availability, or Unity serialization behavior, document the finding in the relevant project doc so future work starts from the Unity-facing cause instead of only the C# symptom.
-
 ## Documentation Maintenance Rules
 
 AI contributors must update relevant documentation whenever a notable change is made.
@@ -141,6 +114,7 @@ When writing or changing code in this repo:
 
 - MAKE SURE TO ADD TOOLTIPS TO ANY PARAMETERS WHICH MIGHT BE UNCLEAR
 - FOCUS ON CLEAR NAMING CONVENTIONS FOR SERIALZIED PARAMETERS
+- you tend to vastly over-engineer things and complicate solutions - be aggressive with making sure we are preferring the simplest implementation to get the desired goal. Challenge me and ask me questions about how I want to implement a system so that it's easy for me to edit as the game developer. 
 - prefer the simplest solution that fully solves the stated task
 - when a task is explicitly scoped to the 3D implementation path, do not edit non-3D gameplay scripts without first getting the user's permission
 - prioritize readability and maintainability over cleverness

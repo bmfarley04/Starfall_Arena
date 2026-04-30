@@ -27,32 +27,32 @@ Material:
     m_Floats:
     - _Brightness: 1
     - _CoreFill: 0.78
-    - _CrackleScale: 22.5
-    - _CrackleSharpness: 4
-    - _CrackleSpeed: 6.5
-    - _CrackleStrength: 1.2
-    - _CrackleThreshold: 0.58
-    - _DarkGapSoftness: 0.18
-    - _DarkGapStrength: 0.35
-    - _DarkGapThreshold: 0.52
-    - _FresnelPower: 2.1
+    - _CrackleScale: 82.9
+    - _CrackleSharpness: 2.81
+    - _CrackleSpeed: 15
+    - _CrackleStrength: 6
+    - _CrackleThreshold: 0.647
+    - _DarkGapSoftness: 0.154
+    - _DarkGapStrength: 0.288
+    - _DarkGapThreshold: 0.286
+    - _FresnelPower: 3.05
     - _FresnelStrength: 1.35
     - _HaloFill: 0.08
     - _LayerIntensity: 1.25
     - _LayerMode: 0
-    - _NoiseContrast: 2.2
-    - _NoiseScale: 8.5
-    - _NoiseSpeed: 1.4
+    - _NoiseContrast: 2.05
+    - _NoiseScale: 5.7
+    - _NoiseSpeed: 10
     - _Opacity: 1
-    - _PulseSpeed: 2.1
-    - _PulseStrength: 0.13
+    - _PulseSpeed: 1
+    - _PulseStrength: 0.087
     - _Reveal: 1
     - _ShellFill: 0.18
-    - _VerticalBandScale: 0.22
-    - _VerticalBandStrength: 0.12
+    - _VerticalBandScale: 0.01
+    - _VerticalBandStrength: 0
     m_Colors:
-    - _CoreColor: {r: 8.5, g: 8.1, b: 7.45, a: 1}
-    - _CrackleColor: {r: 13, g: 1.1, b: 0.7, a: 1}
-    - _EdgeColor: {r: 5.5, g: 0.16, b: 0.06, a: 1}
+    - _CoreColor: {r: 5.9921575, g: 0, b: 0.21960793, a: 1}
+    - _CrackleColor: {r: 1.4980394, g: 1.4980394, b: 1.4980394, a: 1}
+    - _EdgeColor: {r: 1.4980391, g: 0.03405209, b: 0, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

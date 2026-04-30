@@ -324,19 +324,11 @@ public abstract class EnemyBalanceProfile3D : ScriptableObject
         [Range(0f, 1f)] public float targetVerticalFollowWeight;
         [Tooltip("How strongly movement corrects back toward the carrier's starting plane after vertical drift.")]
         [Range(0f, 1f)] public float planeReturnWeight;
-        [Tooltip("Minimum seconds between major patterns before health-phase multipliers are applied.")]
+        [Tooltip("Minimum seconds between major patterns.")]
         [Min(0f)] public float minimumPatternCooldown;
-        [Tooltip("Hard cap on projectile shots per pattern activation.")]
-        [Range(1, 128)] public int maxShotsPerPattern;
-        [Tooltip("Health percentage where phase two cadence begins.")]
+        [Tooltip("Health percentage where phase two begins and the persistent orbital pillars spawn.")]
         [Range(0.01f, 1f)] public float phaseTwoHealthPercent;
-        [Tooltip("Health percentage where phase three cadence begins.")]
-        [Range(0.01f, 1f)] public float phaseThreeHealthPercent;
-        [Tooltip("Pattern cooldown multiplier at or below Phase Two Health Percent.")]
-        [Range(0.1f, 1f)] public float phaseTwoCooldownMultiplier;
-        [Tooltip("Pattern cooldown multiplier at or below Phase Three Health Percent.")]
-        [Range(0.1f, 1f)] public float phaseThreeCooldownMultiplier;
-        [Tooltip("Maximum lagging-rake shots in one activation, also limited by Max Shots Per Pattern.")]
+        [Tooltip("Maximum lagging-rake shots in one activation.")]
         [Min(1)] public int rakeShotCount;
         [Tooltip("Seconds between lagging-rake shots.")]
         [Min(0.01f)] public float rakeShotInterval;
@@ -354,30 +346,6 @@ public abstract class EnemyBalanceProfile3D : ScriptableObject
         [Min(0f)] public float rakeAdditionalLeadSeconds;
         [Tooltip("Maximum total seconds of target-velocity lead allowed for one rake shot.")]
         [Min(0f)] public float rakeMaxLeadSeconds;
-        [Tooltip("Number of predictive fan lanes attempted, also limited by configured fan weapons.")]
-        [Range(1, 31)] public int fanLaneCount;
-        [Tooltip("Total predictive fan spread in degrees.")]
-        [Range(0f, 180f)] public float fanTotalSpreadDegrees;
-        [Tooltip("Seconds between predictive fan lane shots.")]
-        [Min(0.01f)] public float fanLaneInterval;
-        [Tooltip("If true, centers the fan on a simple target-velocity lead point.")]
-        public bool fanUseLeadAim;
-        [Tooltip("Projectile speed used for fan lead calculation. 0 uses the first fan weapon's configured speed.")]
-        [Min(0f)] public float fanLeadProjectileSpeed;
-        [Tooltip("Number of curtain lanes attempted across the arc, including lanes skipped by the escape door.")]
-        [Range(1, 31)] public int curtainLaneCount;
-        [Tooltip("Total curtain arc in degrees centered on the target direction.")]
-        [Range(0f, 270f)] public float curtainArcDegrees;
-        [Tooltip("Width in degrees of the intentionally empty escape sector.")]
-        [Range(0f, 180f)] public float curtainEscapeDoorDegrees;
-        [Tooltip("Degrees the escape door shifts after each curtain activation.")]
-        [Min(0f)] public float curtainDoorDriftDegrees;
-        [Tooltip("Seconds between curtain lane shots.")]
-        [Min(0.01f)] public float curtainLaneInterval;
-        [Tooltip("Projectile-budget cost charged when one formation missile salvo launches. Match this to the salvo missile count.")]
-        [Range(1, 32)] public int formationMissileSalvoBudgetCost;
-        [Tooltip("Seconds of warning before damaging converging beams activate.")]
-        [Min(0f)] public float beamFenceTelegraphDuration;
         [Tooltip("Seconds the damaging converging beams remain active.")]
         [Min(0.01f)] public float beamFenceActiveDuration;
         [Tooltip("Maximum beam hardpoints used in one beam convergence activation.")]
@@ -390,8 +358,6 @@ public abstract class EnemyBalanceProfile3D : ScriptableObject
         [Range(0f, 1f)] public float beamConvergenceLagBlend;
         [Tooltip("Small smoothing time for beam aim directions. Lower values track more tightly; higher values reduce jitter from network/refresh cadence.")]
         [Min(0f)] public float beamConvergenceAimSmoothTime;
-        [Tooltip("Seconds of warning before the two accurate lightning slow beams activate.")]
-        [Min(0f)] public float lightningSlowBeamTelegraphDuration;
         [Tooltip("Seconds the two accurate lightning slow beams remain active.")]
         [Min(0.01f)] public float lightningSlowBeamActiveDuration;
         [Tooltip("Seconds between lightning beam aim refreshes while active.")]
@@ -418,14 +384,10 @@ public abstract class EnemyBalanceProfile3D : ScriptableObject
         [Range(0f, 330f)] public float orbitalPillarGapDegrees;
         [Tooltip("Seconds the launched orbs take to drift from the carrier face into ring positions.")]
         [Min(0.01f)] public float orbitalPillarSphereTravelDuration;
-        [Tooltip("Seconds the carrier links to the orbs before the pillars expand.")]
-        [Min(0f)] public float orbitalPillarLinkDuration;
         [Tooltip("Seconds the cylinders take to expand from orb size to full damage radius.")]
         [Min(0.01f)] public float orbitalPillarExpandDuration;
-        [Tooltip("Seconds the fully expanded pillars remain damaging before fading.")]
-        [Min(0.01f)] public float orbitalPillarActiveDuration;
-        [Tooltip("Seconds the pillar visuals fade after damage ends.")]
-        [Min(0f)] public float orbitalPillarFadeDuration;
+        [Tooltip("Degrees per second that the persistent phase-two pillars orbit around the Siege Carrier.")]
+        public float orbitalPillarOrbitDegreesPerSecond;
         [Tooltip("Gameplay radius of each vertical energy pillar.")]
         [Min(0.01f)] public float orbitalPillarDamageRadius;
         [Tooltip("Half-height used for bounded server damage checks while the visual reads as endless.")]

@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: SiegeCarrierBossBalanceProfile3D
   m_EditorClassIdentifier: Assembly-CSharp::SiegeCarrierBossBalanceProfile3D
   core:
-    maxHealth: 1000
+    maxHealth: 2000
     maxShield: 5000
     moveSpeed: 20
     rotationDegreesPerSecond: 20
@@ -33,11 +33,7 @@ MonoBehaviour:
     targetVerticalFollowWeight: 0.1
     planeReturnWeight: 0.35
     minimumPatternCooldown: 1.6
-    maxShotsPerPattern: 32
     phaseTwoHealthPercent: 0.66
-    phaseThreeHealthPercent: 0.33
-    phaseTwoCooldownMultiplier: 0.85
-    phaseThreeCooldownMultiplier: 0.7
     rakeShotCount: 14
     rakeShotInterval: 0.12
     rakeHistorySeconds: 0
@@ -47,25 +43,12 @@ MonoBehaviour:
     rakeLeadTimeScale: 1
     rakeAdditionalLeadSeconds: 0.03
     rakeMaxLeadSeconds: 1.25
-    fanLaneCount: 5
-    fanTotalSpreadDegrees: 34
-    fanLaneInterval: 0.04
-    fanUseLeadAim: 1
-    fanLeadProjectileSpeed: 140
-    curtainLaneCount: 13
-    curtainArcDegrees: 140
-    curtainEscapeDoorDegrees: 26
-    curtainDoorDriftDegrees: 18
-    curtainLaneInterval: 0.05
-    formationMissileSalvoBudgetCost: 8
-    beamFenceTelegraphDuration: 0.75
     beamFenceActiveDuration: 1.2
     beamFenceMaxBeams: 4
     beamFenceAimRefreshInterval: 0.03
     beamConvergenceLagSeconds: 0
     beamConvergenceLagBlend: 0
     beamConvergenceAimSmoothTime: 0.025
-    lightningSlowBeamTelegraphDuration: 0.45
     lightningSlowBeamActiveDuration: 1.35
     lightningSlowBeamAimRefreshInterval: 0.02
     lightningSlowBeamCount: 2
@@ -78,11 +61,9 @@ MonoBehaviour:
     orbitalPillarCount: 6
     orbitalPillarRingRadius: 115
     orbitalPillarGapDegrees: 70
-    orbitalPillarSphereTravelDuration: 0.85
-    orbitalPillarLinkDuration: 0.55
+    orbitalPillarSphereTravelDuration: 3
     orbitalPillarExpandDuration: 0.3
-    orbitalPillarActiveDuration: 1.35
-    orbitalPillarFadeDuration: 0.35
+    orbitalPillarOrbitDegreesPerSecond: 12
     orbitalPillarDamageRadius: 16
     orbitalPillarDamageHalfHeight: 3000
     orbitalPillarDamagePerSecond: 35

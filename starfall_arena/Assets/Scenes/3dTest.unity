@@ -12366,75 +12366,6 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 3143901747220654262, guid: ebd5405180dff4d4d8cd9eaac946341b, type: 3}
   m_PrefabInstance: {fileID: 2032469243}
   m_PrefabAsset: {fileID: 0}
---- !u!1001 &1224087849
-PrefabInstance:
-  m_ObjectHideFlags: 0
-  serializedVersion: 2
-  m_Modification:
-    serializedVersion: 3
-    m_TransformParent: {fileID: 0}
-    m_Modifications:
-    - target: {fileID: 1000000000000000001, guid: 9ad0f4308bd441139065d52374b3f4ec, type: 3}
-      propertyPath: m_Name
-      value: SiegeCarrierBluePlasmaPillarBody3D
-      objectReference: {fileID: 0}
-    - target: {fileID: 1000000000000000001, guid: 9ad0f4308bd441139065d52374b3f4ec, type: 3}
-      propertyPath: m_IsActive
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 1000000000000000003, guid: 9ad0f4308bd441139065d52374b3f4ec, type: 3}
-      propertyPath: m_IsActive
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 1000000000000000004, guid: 9ad0f4308bd441139065d52374b3f4ec, type: 3}
-      propertyPath: m_IsActive
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4000000000000000001, guid: 9ad0f4308bd441139065d52374b3f4ec, type: 3}
-      propertyPath: m_LocalPosition.x
-      value: 13.4826565
-      objectReference: {fileID: 0}
-    - target: {fileID: 4000000000000000001, guid: 9ad0f4308bd441139065d52374b3f4ec, type: 3}
-      propertyPath: m_LocalPosition.y
-      value: 40
-      objectReference: {fileID: 0}
-    - target: {fileID: 4000000000000000001, guid: 9ad0f4308bd441139065d52374b3f4ec, type: 3}
-      propertyPath: m_LocalPosition.z
-      value: 46.44629
-      objectReference: {fileID: 0}
-    - target: {fileID: 4000000000000000001, guid: 9ad0f4308bd441139065d52374b3f4ec, type: 3}
-      propertyPath: m_LocalRotation.w
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 4000000000000000001, guid: 9ad0f4308bd441139065d52374b3f4ec, type: 3}
-      propertyPath: m_LocalRotation.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4000000000000000001, guid: 9ad0f4308bd441139065d52374b3f4ec, type: 3}
-      propertyPath: m_LocalRotation.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4000000000000000001, guid: 9ad0f4308bd441139065d52374b3f4ec, type: 3}
-      propertyPath: m_LocalRotation.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4000000000000000001, guid: 9ad0f4308bd441139065d52374b3f4ec, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4000000000000000001, guid: 9ad0f4308bd441139065d52374b3f4ec, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4000000000000000001, guid: 9ad0f4308bd441139065d52374b3f4ec, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: 0
-      objectReference: {fileID: 0}
-    m_RemovedComponents: []
-    m_RemovedGameObjects: []
-    m_AddedGameObjects: []
-    m_AddedComponents: []
-  m_SourcePrefab: {fileID: 100100000, guid: 9ad0f4308bd441139065d52374b3f4ec, type: 3}
 --- !u!1 &1228864212
 GameObject:
   m_ObjectHideFlags: 0
@@ -22522,71 +22453,6 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 8237910586526179333, guid: ebd5405180dff4d4d8cd9eaac946341b, type: 3}
   m_PrefabInstance: {fileID: 2032469243}
   m_PrefabAsset: {fileID: 0}
---- !u!1001 &2052685799
-PrefabInstance:
-  m_ObjectHideFlags: 0
-  serializedVersion: 2
-  m_Modification:
-    serializedVersion: 3
-    m_TransformParent: {fileID: 0}
-    m_Modifications:
-    - target: {fileID: 1000000000000000001, guid: 0694b121df9a1ff4d89937d9c15ec447, type: 3}
-      propertyPath: m_Name
-      value: dwar_orb
-      objectReference: {fileID: 0}
-    - target: {fileID: 1000000000000000001, guid: 0694b121df9a1ff4d89937d9c15ec447, type: 3}
-      propertyPath: m_IsActive
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 1140000000000000001, guid: 0694b121df9a1ff4d89937d9c15ec447, type: 3}
-      propertyPath: lensingRenderer
-      value: 
-      objectReference: {fileID: 0}
-    - target: {fileID: 4000000000000000001, guid: 0694b121df9a1ff4d89937d9c15ec447, type: 3}
-      propertyPath: m_LocalPosition.x
-      value: 0.8
-      objectReference: {fileID: 0}
-    - target: {fileID: 4000000000000000001, guid: 0694b121df9a1ff4d89937d9c15ec447, type: 3}
-      propertyPath: m_LocalPosition.y
-      value: 3.5
-      objectReference: {fileID: 0}
-    - target: {fileID: 4000000000000000001, guid: 0694b121df9a1ff4d89937d9c15ec447, type: 3}
-      propertyPath: m_LocalPosition.z
-      value: 28.1
-      objectReference: {fileID: 0}
-    - target: {fileID: 4000000000000000001, guid: 0694b121df9a1ff4d89937d9c15ec447, type: 3}
-      propertyPath: m_LocalRotation.w
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 4000000000000000001, guid: 0694b121df9a1ff4d89937d9c15ec447, type: 3}
-      propertyPath: m_LocalRotation.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4000000000000000001, guid: 0694b121df9a1ff4d89937d9c15ec447, type: 3}
-      propertyPath: m_LocalRotation.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4000000000000000001, guid: 0694b121df9a1ff4d89937d9c15ec447, type: 3}
-      propertyPath: m_LocalRotation.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4000000000000000001, guid: 0694b121df9a1ff4d89937d9c15ec447, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4000000000000000001, guid: 0694b121df9a1ff4d89937d9c15ec447, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4000000000000000001, guid: 0694b121df9a1ff4d89937d9c15ec447, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: 0
-      objectReference: {fileID: 0}
-    m_RemovedComponents: []
-    m_RemovedGameObjects: []
-    m_AddedGameObjects: []
-    m_AddedComponents: []
-  m_SourcePrefab: {fileID: 100100000, guid: 0694b121df9a1ff4d89937d9c15ec447, type: 3}
 --- !u!114 &2072745734
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -23371,7 +23237,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f74a405f7f52c854eb19ffd022e1a06e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Enemy3D
-  maxHealth: 500
+  maxHealth: 1000
   maxShield: 1000
   shieldController: {fileID: 7503436167731908983}
   impulseRecoilPitchSensitivity: 1
@@ -23730,67 +23596,6 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 5220485688475306867, guid: 2ec7415a3a3c0c446811e23e1de03acf, type: 3}
   m_PrefabInstance: {fileID: 7256491318302601454}
   m_PrefabAsset: {fileID: 0}
---- !u!1001 &2449277359288022792
-PrefabInstance:
-  m_ObjectHideFlags: 0
-  serializedVersion: 2
-  m_Modification:
-    serializedVersion: 3
-    m_TransformParent: {fileID: 0}
-    m_Modifications:
-    - target: {fileID: 5938876997777027291, guid: e6e36a5a79f5c9644a39e0a0ac1b114c, type: 3}
-      propertyPath: m_LocalPosition.x
-      value: 3.0428
-      objectReference: {fileID: 0}
-    - target: {fileID: 5938876997777027291, guid: e6e36a5a79f5c9644a39e0a0ac1b114c, type: 3}
-      propertyPath: m_LocalPosition.y
-      value: 1.47112
-      objectReference: {fileID: 0}
-    - target: {fileID: 5938876997777027291, guid: e6e36a5a79f5c9644a39e0a0ac1b114c, type: 3}
-      propertyPath: m_LocalPosition.z
-      value: 20.90951
-      objectReference: {fileID: 0}
-    - target: {fileID: 5938876997777027291, guid: e6e36a5a79f5c9644a39e0a0ac1b114c, type: 3}
-      propertyPath: m_LocalRotation.w
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 5938876997777027291, guid: e6e36a5a79f5c9644a39e0a0ac1b114c, type: 3}
-      propertyPath: m_LocalRotation.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5938876997777027291, guid: e6e36a5a79f5c9644a39e0a0ac1b114c, type: 3}
-      propertyPath: m_LocalRotation.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5938876997777027291, guid: e6e36a5a79f5c9644a39e0a0ac1b114c, type: 3}
-      propertyPath: m_LocalRotation.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5938876997777027291, guid: e6e36a5a79f5c9644a39e0a0ac1b114c, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5938876997777027291, guid: e6e36a5a79f5c9644a39e0a0ac1b114c, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5938876997777027291, guid: e6e36a5a79f5c9644a39e0a0ac1b114c, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 6935636777801461194, guid: e6e36a5a79f5c9644a39e0a0ac1b114c, type: 3}
-      propertyPath: m_Name
-      value: black hole
-      objectReference: {fileID: 0}
-    - target: {fileID: 6935636777801461194, guid: e6e36a5a79f5c9644a39e0a0ac1b114c, type: 3}
-      propertyPath: m_IsActive
-      value: 0
-      objectReference: {fileID: 0}
-    m_RemovedComponents: []
-    m_RemovedGameObjects: []
-    m_AddedGameObjects: []
-    m_AddedComponents: []
-  m_SourcePrefab: {fileID: 100100000, guid: e6e36a5a79f5c9644a39e0a0ac1b114c, type: 3}
 --- !u!33 &2760215488895515141
 MeshFilter:
   m_ObjectHideFlags: 0
@@ -23985,7 +23790,7 @@ MonoBehaviour:
     targetTag: 
     targetFaction: 1
     cooldown: 0
-    speed: 500
+    speed: 400
     damage: 5
     lifetime: 3
     impactForce: 0
@@ -29853,7 +29658,6 @@ GameObject:
   - component: {fileID: 9212841647205079350}
   - component: {fileID: 3394221798851396806}
   - component: {fileID: 8593575027346387692}
-  - component: {fileID: 9099999999651709996}
   - component: {fileID: 8638785468274838160}
   - component: {fileID: 9212841647205079351}
   - component: {fileID: 9212841647205079353}
@@ -29864,13 +29668,14 @@ GameObject:
   - component: {fileID: 9212841647205079357}
   - component: {fileID: 9212841647205079358}
   - component: {fileID: 9212841647205079359}
+  - component: {fileID: 9212841647205079360}
   m_Layer: 0
   m_Name: boss2Enemy
   m_TagString: Enemy
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &5826207767523546764
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -35501,19 +35306,6 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: c826b1c48a0a1ae4c9e10e7580cc2944, type: 3}
---- !u!114 &9099999999651709996
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5723954579249990812}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: bfab71f04e15488aa75cd8ce1856c6d3, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::EnemyBalanceProfileApplier3D
-  profile: {fileID: 11400000, guid: fee9f571fae94d948ac76e02e7931932, type: 2}
 --- !u!1001 &9204493822286627582
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -35648,31 +35440,140 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SiegeCarrierBossEnemyBrain3D
   ShowTopMostFoldoutHeaderGroup: 1
-  laggingRakeWeapons:
-  - {fileID: 3394221798851396806}
-  predictiveFanWeapons: []
-  curtainWeapons: []
-  formationMissileSalvoWeapons:
-  - {fileID: 9212841647205079357}
-  beamFenceWeapons:
-  - {fileID: 9212841647205079353}
-  - {fileID: 9212841647205079356}
-  - {fileID: 9212841647205079355}
-  - {fileID: 9212841647205079354}
-  beamFenceTelegraphs: []
-  lightningSlowBeamWeapons:
-  - {fileID: 9212841647205079358}
-  - {fileID: 9212841647205079359}
-  lightningSlowBeamTelegraphs: []
-  orbitalEnergyPillarVisual: {fileID: 0}
+  weapons:
+    laggingRakeWeapons:
+    - {fileID: 3394221798851396806}
+    formationMissileSalvoWeapons:
+    - {fileID: 9212841647205079357}
+    beamFenceWeapons:
+    - {fileID: 9212841647205079353}
+    - {fileID: 9212841647205079356}
+    - {fileID: 9212841647205079355}
+    - {fileID: 9212841647205079354}
+    lightningSlowBeamWeapons:
+    - {fileID: 9212841647205079358}
+    - {fileID: 9212841647205079359}
+  movement:
+    preferredRangeMin: 0
+    preferredRangeMax: 1000
+    engagementRange: 1500
+    approachRangeBuffer: 200
+    approachSpeedScale: 1
+    retreatSpeedScale: 1
+    targetVerticalFollowWeight: 0.1
+    planeReturnWeight: 0.35
+  sequencer:
+    thinkInterval: 0.05
+    targetHistorySampleInterval: 0.05
+    targetHistorySamples: 16
+    minimumPatternCooldown: 1.6
+    phaseTwoHealthPercent: 0.6
+    forcedPatternForTesting: 0
+  rake:
+    shotCount: 70
+    shotInterval: 0.01
+    historySeconds: 0.05
+    historyBlend: 0.1
+    useLeadAim: 0
+    leadProjectileSpeed: 0
+    leadTimeScale: 1
+    additionalLeadSeconds: 0
+    maxLeadSeconds: 1.25
+  beamFence:
+    activeDuration: 1.2
+    maxBeams: 4
+    aimRefreshInterval: 0.03
+    convergenceLagSeconds: 0
+    convergenceLagBlend: 0
+    convergenceAimSmoothTime: 0.025
+    allowBehindHardpointAim: 1
+  lightningSlowBeam:
+    activeDuration: 1.35
+    aimRefreshInterval: 0.02
+    beamCount: 2
+    leadSeconds: 0.12
+    aimSmoothTime: 0.025
+    allowBehindHardpointAim: 1
+    slowRadius: 1.25
+    collisionMask:
+      serializedVersion: 2
+      m_Bits: 4294967295
+    slowMultiplier: 0.8
+    slowDuration: 0.18
+    slowTickInterval: 0.08
+  orbitalPillars:
+    count: 6
+    ringRadius: 200
+    gapDegrees: 70
+    sphereTravelDuration: 5
+    expandDuration: 1
+    orbitDegreesPerSecond: 12
+    damageRadius: 30
+    damageHalfHeight: 3000
+    damagePerSecond: 35
+    damageTickInterval: 0.1
+    damageMask:
+      serializedVersion: 2
+      m_Bits: 4294967295
+  orbitalPillarVisuals:
+    launchSpearPrefab: {fileID: 1000000000000000001, guid: 0694b121df9a1ff4d89937d9c15ec447, type: 3}
+    bluePillarPrefab: {fileID: 1931074356468388117, guid: 813a10686f9a4b745b6d664bd8a29320, type: 3}
+    launchScale: 0.6
+    launchOffset: 100
+    initialGrowthHeight: 24
+  migratedLegacyInspectorSettings: 1
+  laggingRakeWeapons: []
+  formationMissileSalvoWeapons: []
+  beamFenceWeapons: []
+  lightningSlowBeamWeapons: []
+  thinkInterval: 0.05
+  targetHistorySampleInterval: 0.05
+  targetHistorySamples: 16
+  preferredRangeMin: 180
+  preferredRangeMax: 260
+  engagementRange: 260
+  approachRangeBuffer: 180
+  approachSpeedScale: 0.25
+  retreatSpeedScale: 0.18
+  targetVerticalFollowWeight: 0.1
+  planeReturnWeight: 0.35
+  minimumPatternCooldown: 1.6
+  phaseTwoHealthPercent: 0.66
+  forcedPatternForTesting: 0
+  rakeShotCount: 14
+  rakeShotInterval: 0.12
+  rakeHistorySeconds: 0
+  rakeHistoryBlend: 0
+  rakeUseLeadAim: 1
+  rakeLeadProjectileSpeed: 0
+  rakeLeadTimeScale: 1
+  rakeAdditionalLeadSeconds: 0.03
+  rakeMaxLeadSeconds: 1.25
+  beamFenceActiveDuration: 1.2
+  beamFenceMaxBeams: 4
+  beamFenceAimRefreshInterval: 0.03
+  beamConvergenceLagSeconds: 0
+  beamConvergenceLagBlend: 0
+  beamConvergenceAimSmoothTime: 0.025
+  beamConvergenceAllowBehindHardpointAim: 1
+  lightningSlowBeamActiveDuration: 1.35
+  lightningSlowBeamAimRefreshInterval: 0.02
+  lightningSlowBeamCount: 2
+  lightningSlowBeamLeadSeconds: 0.12
+  lightningSlowBeamAimSmoothTime: 0.025
+  lightningSlowBeamAllowBehindHardpointAim: 1
+  lightningSlowBeamSlowRadius: 1.25
+  lightningSlowBeamCollisionMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  lightningSlowBeamSlowMultiplier: 0.45
+  lightningSlowBeamSlowDuration: 0.18
+  lightningSlowBeamSlowTickInterval: 0.08
   orbitalPillarCount: 6
   orbitalPillarRingRadius: 115
   orbitalPillarGapDegrees: 70
   orbitalPillarSphereTravelDuration: 0.85
-  orbitalPillarLinkDuration: 0.55
   orbitalPillarExpandDuration: 0.3
-  orbitalPillarActiveDuration: 1.35
-  orbitalPillarFadeDuration: 0.35
   orbitalPillarDamageRadius: 16
   orbitalPillarDamageHalfHeight: 3000
   orbitalPillarDamagePerSecond: 35
@@ -35684,65 +35585,6 @@ MonoBehaviour:
   targetSensor: {fileID: 109184915732954851}
   patrol: {fileID: 8638785468274838160}
   netEnemyCombat: {fileID: 0}
-  thinkInterval: 0.05
-  targetHistorySampleInterval: 0.12
-  targetHistorySamples: 16
-  preferredRangeMin: 0
-  preferredRangeMax: 1500
-  engagementRange: 1500
-  approachRangeBuffer: 500
-  approachSpeedScale: 1
-  retreatSpeedScale: 0.18
-  targetVerticalFollowWeight: 0.1
-  planeReturnWeight: 0.35
-  minimumPatternCooldown: 2
-  maxShotsPerPattern: 128
-  phaseTwoHealthPercent: 0.66
-  phaseThreeHealthPercent: 0.33
-  phaseTwoCooldownMultiplier: 0.85
-  phaseThreeCooldownMultiplier: 0.7
-  rakeShotCount: 40
-  rakeShotInterval: 0.05
-  rakeHistorySeconds: 0
-  rakeHistoryBlend: 0
-  rakeUseLeadAim: 1
-  rakeLeadProjectileSpeed: 0
-  rakeLeadTimeScale: 1
-  rakeAdditionalLeadSeconds: 0
-  rakeMaxLeadSeconds: 1.25
-  fanLaneCount: 5
-  fanTotalSpreadDegrees: 34
-  fanLaneInterval: 0.04
-  fanUseLeadAim: 1
-  fanLeadProjectileSpeed: 140
-  curtainLaneCount: 13
-  curtainArcDegrees: 140
-  curtainEscapeDoorDegrees: 26
-  curtainDoorDriftDegrees: 18
-  curtainLaneInterval: 0.05
-  formationMissileSalvoBudgetCost: 8
-  beamFenceTelegraphDuration: 0.75
-  beamFenceActiveDuration: 4
-  beamFenceMaxBeams: 4
-  beamFenceAimRefreshInterval: 0.02
-  beamConvergenceLagSeconds: 0
-  beamConvergenceLagBlend: 0.75
-  beamConvergenceAimSmoothTime: 0.08
-  beamConvergenceAllowBehindHardpointAim: 1
-  lightningSlowBeamTelegraphDuration: 0.45
-  lightningSlowBeamActiveDuration: 1.5
-  lightningSlowBeamAimRefreshInterval: 0.02
-  lightningSlowBeamCount: 2
-  lightningSlowBeamLeadSeconds: 0.12
-  lightningSlowBeamAimSmoothTime: 0.025
-  lightningSlowBeamAllowBehindHardpointAim: 1
-  lightningSlowBeamSlowRadius: 1.25
-  lightningSlowBeamCollisionMask:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  lightningSlowBeamSlowMultiplier: 0.8
-  lightningSlowBeamSlowDuration: 0.18
-  lightningSlowBeamSlowTickInterval: 0.08
 --- !u!114 &9212841647205079353
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -36127,6 +35969,26 @@ MonoBehaviour:
     minimumStartEnergy: 0
     fireLoopSound: {fileID: 0}
   beamLoopAudioSource: {fileID: 0}
+--- !u!114 &9212841647205079360
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5723954579249990812}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8209c425887a0f64caf6ac298b753993, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemySpawnerWeapon3D
+  enemyPrefab: {fileID: 0}
+  spawnCount: 1
+  spawnPoint: {fileID: 0}
+  delayBetweenSpawns: 0.5
+  useSpawnPointRotation: 1
+  spawnOnEnable: 0
+  waveManager: {fileID: 0}
+  logSetupWarnings: 1
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
@@ -36142,12 +36004,9 @@ SceneRoots:
   - {fileID: 783863772}
   - {fileID: 992413977}
   - {fileID: 1828845803}
-  - {fileID: 2449277359288022792}
   - {fileID: 1374472819}
   - {fileID: 661275840}
   - {fileID: 5685476699797554300}
   - {fileID: 1872632152}
   - {fileID: 2029641327}
   - {fileID: 82234950}
-  - {fileID: 2052685799}
-  - {fileID: 1224087849}

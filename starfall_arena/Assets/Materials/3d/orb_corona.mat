@@ -25,8 +25,8 @@ Material:
     m_TexEnvs: []
     m_Ints: []
     m_Floats:
-    - _Brightness: 20
-    - _ExternalPulseIntensity: 1.0002841
+    - _Brightness: 6.75
+    - _ExternalPulseIntensity: 1.0491625
     - _FresnelPower: 4.52
     - _InnerFill: 0.536
     - _NoiseScale: 36.4
@@ -35,7 +35,7 @@ Material:
     - _ShimmerSpeed: 0.18
     - _ShimmerStrength: 0.445
     m_Colors:
-    - _CoronaColor: {r: 0, g: 2.748691, b: 9.345549, a: 1}
-    - _WhiteHotColor: {r: 0, g: 3.0620677, b: 11.610341, a: 1}
+    - _CoronaColor: {r: 12.47704, g: 0, b: 0.79064316, a: 1}
+    - _WhiteHotColor: {r: 15.500716, g: 0.5650817, b: 0, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

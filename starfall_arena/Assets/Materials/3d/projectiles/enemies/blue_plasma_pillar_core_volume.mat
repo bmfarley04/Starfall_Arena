@@ -26,21 +26,21 @@ Material:
     m_Ints: []
     m_Floats:
     - _Brightness: 0.7
-    - _CloudContrast: 3.15
-    - _CloudScale: 10.5
-    - _CloudSpeed: 0.42
-    - _DarkPocketStrength: 0.42
-    - _DarkPocketThreshold: 0.54
-    - _FresnelPower: 2.2
-    - _FresnelStrength: 1.25
+    - _CloudContrast: 2.02
+    - _CloudScale: 16.1
+    - _CloudSpeed: 2
+    - _DarkPocketStrength: 1
+    - _DarkPocketThreshold: 1
+    - _FresnelPower: 3.33
+    - _FresnelStrength: 3.11
     - _LayerIntensity: 0.72
     - _LayerMode: 0
-    - _Opacity: 0.92
+    - _Opacity: 0.17
     - _PulseSpeed: 0.85
     - _PulseStrength: 0.08
     - _Reveal: 1
-    - _TwistStrength: 0.55
-    - _VerticalScale: 0.16
+    - _TwistStrength: 2.65
+    - _VerticalScale: 0.62
     m_Colors:
     - _CoreColor: {r: 7.8, g: 8.9, b: 10.5, a: 1}
     - _RimColor: {r: 5.2, g: 8, b: 11, a: 1}

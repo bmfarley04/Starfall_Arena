@@ -27,18 +27,18 @@ Material:
     m_Floats:
     - _Brightness: 0.2
     - _CellSharpness: 16
-    - _ExternalPulseIntensity: 1.0002841
+    - _ExternalPulseIntensity: 1.0491625
     - _FlowSpeed: 0.12
     - _LimbDarkening: 0.24
-    - _NoiseScale: 9.3
+    - _NoiseScale: 5.2
     - _PulseSpeed: 1
     - _PulseStrength: 0.381
     - _RimPower: 3.1
     - _RimStrength: 1.65
     - _RotationSpeed: 0.035
     m_Colors:
-    - _BlueRimColor: {r: 1.1, g: 3.9, b: 8.4, a: 1}
-    - _CoreColor: {r: 0, g: 2.739479, b: 5.7408385, a: 1}
-    - _HotCellColor: {r: 1.7999796, g: 3.8806627, b: 11.681516, a: 1}
+    - _BlueRimColor: {r: 11.21466, g: 0, b: 1.1504701, a: 1}
+    - _CoreColor: {r: 5.740838, g: 0.17490338, b: 0, a: 1}
+    - _HotCellColor: {r: 11.681516, g: 1.8347931, b: 2.6165674, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

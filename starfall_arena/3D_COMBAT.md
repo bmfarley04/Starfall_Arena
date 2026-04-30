@@ -87,11 +87,12 @@ Base input rule:
   - uses `EnemySecondaryProjectile` as its network visual type so client cosmetic replay can distinguish small turret bolts from the fortress's heavy cannon projectile
 - `SiegeCarrierBossEnemyBrain3D`
   - boss-level enemy pattern sequencer that reuses enemy projectile weapons instead of spawning bullets from a custom standalone spawner
-  - owns the current major patterns: lagging rake, predictive fan, lagging beam convergence, orbital energy pillars, escape-door curtain, formation missile salvo, and a two-hardpoint lightning slow beam
+  - owns the current major patterns: lagging rake, lagging beam convergence, orbital energy pillars, formation missile salvo, a two-hardpoint lightning slow beam, and an optional enemy spawn wave
     - keeps a serialized `maxShotsPerPattern` cap so bullet-hell pressure stays readable and performance-bound
-    - expects fan/curtain lanes to be authored as weapon component arrays; the brain supplies lane directions while the weapon components still own projectile prefabs, muzzle FX, cooldown gates, pooling, and network request building
+    - keeps boss weapon references in a foldout section while weapon components still own projectile prefabs, muzzle FX, cooldown gates, pooling, and network request building
     - the lightning slow-beam pattern uses two assigned `BeamWeapon3D` components for visual/damage authority, then applies the slow from the boss brain with a separate line-of-sight spherecast so only this boss attack gains slow without changing every beam prefab in the project
     - convergence and lightning slow-beam patterns can enable explicit behind-hardpoint aim on their assigned `BeamWeapon3D` components so wide carrier muzzles still aim at the shared boss-selected target point instead of snapping back to hardpoint-forward when the target leaves that muzzle's forward hemisphere
+    - the enemy spawn-wave pattern starts every assigned `EnemySpawnerWeapon3D` once, then waits until those spawner sequences finish before advancing to the next boss pattern
     - active Siege Carrier prefabs that use `EnemyBalanceProfileApplier3D` receive beam convergence lag/smoothing from `SiegeCarrierBossBalanceProfile3D`; tune the profile asset for runtime behavior, because it overwrites the brain component values during scene startup
 - `MissileWeaponEnemy3D`
   - stripped-down enemy-only missile launcher that reuses the same minimal volley/cooldown path as `ProjectileWeaponEnemy3D`
@@ -120,16 +121,23 @@ Base input rule:
   - formation missiles adjust speed during the collapse phase toward the same arrival window; this keeps different ring slots from landing one after another because their curved paths differ in length
   - uses its own `EnemyFormationMissile` network visual type so remote clients do not confuse this burst with normal enemy missiles
   - should be budgeted by missile count when driven by a boss brain; one activation may be one weapon call, but it is still several live guided projectiles
+- `EnemySpawnerWeapon3D`
+  - enemy-side Invasion spawning weapon for carrier/boss-style enemies that release other enemy prefabs
+  - exposes one enemy prefab, one spawn point, spawn count, and delay between spawns so a designer can stack multiple components for different enemy types or hardpoints
+  - does not use `DisallowMultipleComponent`; multiple spawner weapons on the same GameObject are expected
+  - delegates to `InvasionWaveManager3D.SpawnEnemyAt(...)` so spawned enemies are network-spawned by the server and tracked by the wave manager instead of becoming untracked raw scene instances
+  - can be started automatically with `Spawn On Enable` for quick tests, but authored combat patterns should usually call `BeginSpawning()` from a brain, animation event, or phase controller
 - `OrbitalEnergyPillarVisual3D`
   - Siege Carrier presentation driver for the orbital pillar boss pattern
-  - owns pooled orb, straight carrier-to-orb link-line, layered pillar cylinder, and wraparound arc-bolt mesh visuals while `SiegeCarrierBossEnemyBrain3D` owns all timing, damage, networking, and profile-applied behavior values
+  - owns pooled launched sphere prefabs, straight carrier-to-sphere link-line, layered pillar cylinder, and wraparound arc-bolt mesh visuals while `SiegeCarrierBossEnemyBrain3D` owns all timing, damage, networking, and profile-applied behavior values
+  - launched spheres travel from the carrier face to the target ring positions, then become the center point that the pillar grows out from; during the expand phase the visual cylinder stretches up and down in world Y from that sphere instead of appearing at full height immediately
   - renders pillars as separate white core, turbulent red/white shell, soft halo, and visual-only jagged arc ribbons; the arc meshes are pooled billboard strips that crawl around the cylinder and leap outward, not gameplay line traces
   - pillar damage is a server-only, bounded vertical capsule check; the visual cylinder is intentionally much taller than gameplay space so it appears endless without requiring infinite physics queries
 - `OrbitalEnergyPillarBluePlasmaVisual3D`
   - V2 Siege Carrier pillar presentation that subclasses the existing visual driver contract so the boss can still use the same `OrbitalEnergyPillarVisual3D` assignment slot
   - preserves the red/white V1 assets and adds a separate blue/white plasma path: editable `CoreVolume`, `CloudShell`, and `RimGlow` body layers, generated internal major lightning ribbons, smaller branch ribbons, and pooled spark/glint billboards
   - treats shader crackle/clouds as depth texture only; the readable lightning comes from deterministic pooled mesh geometry seeded per pillar/arc, so clients can replay matching broad motion from the replicated pattern timing without networking every bolt
-  - carrier-to-orb links remain simple `LineRenderer` telegraphs, while dangerous pillar lightning is visual-only mesh geometry inside the cylinder volume; server-only bounded pillar damage is unchanged
+  - carrier-to-sphere links remain simple `LineRenderer` telegraphs, while dangerous pillar lightning is visual-only mesh geometry inside the cylinder volume; server-only bounded pillar damage is unchanged
 - `EnemyFlamethrowerWeapon3D`
   - enemy-only short-range cone DPS weapon for Invasion flamethrower enemies
   - treats `3d_flamethrower.prefab` as an authored particle/light visual attached to a muzzle; gameplay damage is a separate non-alloc cone query owned by the weapon script

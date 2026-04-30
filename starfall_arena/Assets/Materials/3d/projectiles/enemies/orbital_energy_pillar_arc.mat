@@ -30,7 +30,7 @@ Material:
     - _BranchChance: 0.75
     - _BranchIntensity: 1.1
     - _CoreIntensity: 4.5
-    - _CoreThickness: 0.018
+    - _CoreThickness: 0.0086
     - _EndFadeWidth: 0.055
     - _ExternalIntensity: 1
     - _Flicker: 0.22

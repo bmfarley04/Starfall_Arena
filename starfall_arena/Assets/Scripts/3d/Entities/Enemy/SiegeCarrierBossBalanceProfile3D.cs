@@ -4,7 +4,7 @@ using UnityEngine;
 public class SiegeCarrierBossBalanceProfile3D : EnemyBalanceProfile3D
 {
     [Header("Brain")]
-    [Tooltip("Pattern sequencing, movement bands, projectile budget, and boss phase cadence. Used only by prefabs with SiegeCarrierBossEnemyBrain3D.")]
+    [Tooltip("Pattern sequencing, movement bands, and boss phase settings. Used only by prefabs with SiegeCarrierBossEnemyBrain3D.")]
     public SiegeCarrierBossBrainStats brain = new SiegeCarrierBossBrainStats
     {
         thinkInterval = 0.05f,
@@ -19,11 +19,7 @@ public class SiegeCarrierBossBalanceProfile3D : EnemyBalanceProfile3D
         targetVerticalFollowWeight = 0.1f,
         planeReturnWeight = 0.35f,
         minimumPatternCooldown = 1.6f,
-        maxShotsPerPattern = 32,
         phaseTwoHealthPercent = 0.66f,
-        phaseThreeHealthPercent = 0.33f,
-        phaseTwoCooldownMultiplier = 0.85f,
-        phaseThreeCooldownMultiplier = 0.7f,
         rakeShotCount = 14,
         rakeShotInterval = 0.12f,
         rakeHistorySeconds = 0f,
@@ -33,25 +29,12 @@ public class SiegeCarrierBossBalanceProfile3D : EnemyBalanceProfile3D
         rakeLeadTimeScale = 1f,
         rakeAdditionalLeadSeconds = 0.03f,
         rakeMaxLeadSeconds = 1.25f,
-        fanLaneCount = 5,
-        fanTotalSpreadDegrees = 34f,
-        fanLaneInterval = 0.04f,
-        fanUseLeadAim = true,
-        fanLeadProjectileSpeed = 140f,
-        curtainLaneCount = 13,
-        curtainArcDegrees = 140f,
-        curtainEscapeDoorDegrees = 26f,
-        curtainDoorDriftDegrees = 18f,
-        curtainLaneInterval = 0.05f,
-        formationMissileSalvoBudgetCost = 8,
-        beamFenceTelegraphDuration = 0.75f,
         beamFenceActiveDuration = 1.2f,
         beamFenceMaxBeams = 4,
         beamFenceAimRefreshInterval = 0.03f,
         beamConvergenceLagSeconds = 0f,
         beamConvergenceLagBlend = 0f,
         beamConvergenceAimSmoothTime = 0.025f,
-        lightningSlowBeamTelegraphDuration = 0.45f,
         lightningSlowBeamActiveDuration = 1.35f,
         lightningSlowBeamAimRefreshInterval = 0.02f,
         lightningSlowBeamCount = 2,
@@ -65,10 +48,8 @@ public class SiegeCarrierBossBalanceProfile3D : EnemyBalanceProfile3D
         orbitalPillarRingRadius = 115f,
         orbitalPillarGapDegrees = 70f,
         orbitalPillarSphereTravelDuration = 0.85f,
-        orbitalPillarLinkDuration = 0.55f,
         orbitalPillarExpandDuration = 0.3f,
-        orbitalPillarActiveDuration = 1.35f,
-        orbitalPillarFadeDuration = 0.35f,
+        orbitalPillarOrbitDegreesPerSecond = 12f,
         orbitalPillarDamageRadius = 16f,
         orbitalPillarDamageHalfHeight = 3000f,
         orbitalPillarDamagePerSecond = 35f,

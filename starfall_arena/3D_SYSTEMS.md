@@ -163,6 +163,10 @@ These classes should stay narrow and mostly coordinate dedicated 3D systems.
 - `BasicShooterEnemyBrain3D`
   - first Invasion enemy brain
   - directly pursues the nearest visible player and fires at `PlayerTeam` when aimed and off cooldown
+- `SiegeCarrierBossEnemyBrain3D`
+  - boss-pattern coordinator for rakes, beam convergence, missile salvos, lightning slow beams, and orbital energy pillars
+  - owns the orbital pillar presentation directly by pooling a launch spear prefab and blue pillar prefab; the old separate pillar visual component and its spark/link/lightning runtime meshes are removed
+  - treats orbital pillars as a persistent phase-two transition layer: pillars keep a fixed ring radius around the carrier, slowly orbit the boss, and do not use active/fade duration tuning
 - `NetEnemyMovement3D`
   - server Rigidbody-state replication for networked Invasion enemies
 - `NetEnemyCombat3D`
