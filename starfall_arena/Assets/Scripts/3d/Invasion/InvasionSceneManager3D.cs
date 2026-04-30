@@ -100,13 +100,13 @@ public class InvasionSceneManager3D : MonoBehaviour
             waveManager = FindFirstObjectByType<InvasionWaveManager3D>();
         }
 
-        SubscribeWaveManagerEvents();
-        SubscribeNetworkSessionEvents();
-        _networkSessionSubscriptionCoroutine = StartCoroutine(EnsureNetworkSessionSubscription());
-
         ResolveShipData();
         ConfigureNetworkUiCanvases();
         SetInitialUiState();
+
+        SubscribeWaveManagerEvents();
+        SubscribeNetworkSessionEvents();
+        _networkSessionSubscriptionCoroutine = StartCoroutine(EnsureNetworkSessionSubscription());
 
         if (_isAuthoritativeController)
         {

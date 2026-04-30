@@ -35,11 +35,11 @@ Material:
     - _LayerMode: 1
     - _Opacity: 1
     - _RimBrightness: 20
-    - _RimSegmentContrast: 0.42
-    - _RimSegmentFrequency: 22
-    - _RimSegmentSharpness: 3.1
-    - _RimSpinSpeed: 0.22
+    - _RimSegmentContrast: 0.177
+    - _RimSegmentFrequency: 2.9
+    - _RimSegmentSharpness: 2.66
     - _RimSoftness: 0.015
+    - _RimSpinSpeed: 0.2
     - _RimWidth: 0.01
     m_Colors:
     - _InnerColor: {r: 0.55, g: 0.1, b: 1.1, a: 1}

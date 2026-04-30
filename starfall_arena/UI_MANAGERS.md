@@ -184,6 +184,8 @@ These provide the core combat-state display for each dueling player.
 - in the 3D path, scene managers such as `InvasionSceneManager3D` own top-level HUD root activation and deterministic canvas camera/sorting setup
 - actual player-data binding is separate and happens through `PlayerHUDManager3D` plus `PlayerHUDBindingTarget3D` listeners on the HUD objects
 - ship-specific weapon/ability HUD content is not always a preauthored static child in the scene; `PlayerWeaponAbilityHUDSpawner3D` can instantiate the correct ship HUD prefab at runtime after local-player binding succeeds
+- bug note: if a network client appears to have "no HUD" but manual reactivation of `player-hud` immediately restores it, check scene-manager activation order before investigating bind targets. A scene manager can accidentally hide correctly bound HUD by running its initial inactive-state pass after replicated session-state callbacks already re-enabled gameplay UI.
+- bug note: active HUD objects that remain invisible can be a scene-authoring issue rather than a UI-manager issue. In the 3D Invasion scene, zero-scale root `RectTransform`s on `heartCanvas` / `enemyCounterCanvas` made those HUDs look unbound even though the manager references and update logic were fine.
 
 ### Ability HUD
 
