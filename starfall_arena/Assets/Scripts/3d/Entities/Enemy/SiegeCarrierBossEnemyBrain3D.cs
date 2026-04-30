@@ -139,7 +139,7 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
         [Range(2, 32)] public int targetHistorySamples;
         [Tooltip("Minimum seconds between major attack patterns.")]
         [Min(0f)] public float minimumPatternCooldown;
-        [Tooltip("Health percentage where phase two begins and the persistent orbital pillars spawn.")]
+        [Tooltip("Total durability percentage (current shield + current health divided by max shield + max health) where phase two begins and the persistent orbital pillars spawn.")]
         [Range(0.01f, 1f)] public float phaseTwoHealthPercent;
         [Tooltip("Testing override for the next attack pattern. Orbital pillars are intentionally excluded because they are a phase-transition effect, not a rotating attack.")]
         public SelectableBossPattern forcedPatternForTesting;
@@ -1665,7 +1665,7 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
         if (logPhaseTransitionDebug)
         {
             Debug.Log(
-                $"[{nameof(SiegeCarrierBossEnemyBrain3D)}] Phase-two orbital pillars started on {name}. health={ResolveHealthPercentForDebug():P1}, threshold={sequencer.phaseTwoHealthPercent:P1}, count={_activeOrbitalPillarCount}, target={(target != null ? target.name : "none")}.",
+                $"[{nameof(SiegeCarrierBossEnemyBrain3D)}] Phase-two orbital pillars started on {name}. durability={ResolvePhaseTransitionDurabilityPercentForDebug():P1}, threshold={sequencer.phaseTwoHealthPercent:P1}, count={_activeOrbitalPillarCount}, target={(target != null ? target.name : "none")}.",
                 this);
         }
     }
@@ -2392,12 +2392,20 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
 
     private bool IsInPhaseTwoOrLower()
     {
-        if (_enemy == null || _enemy.MaxHealth <= 0f)
+        if (_enemy == null)
         {
             return false;
         }
 
-        return (_enemy.CurrentHealth / _enemy.MaxHealth) <= sequencer.phaseTwoHealthPercent;
+        float maxDurability = Mathf.Max(0f, _enemy.MaxHealth + _enemy.MaxShield);
+        if (maxDurability <= 0f)
+        {
+            return false;
+        }
+
+        float currentDurability = Mathf.Clamp(_enemy.CurrentHealth, 0f, _enemy.MaxHealth)
+            + Mathf.Clamp(_enemy.CurrentShield, 0f, _enemy.MaxShield);
+        return (currentDurability / maxDurability) <= sequencer.phaseTwoHealthPercent;
     }
 
     private void LogPhaseTransitionDebug(bool isInPhaseTwo)
@@ -2408,11 +2416,11 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
         }
 
         _nextPhaseDebugLogTime = Time.time + 0.5f;
-        string healthSummary = _enemy != null
-            ? $"{_enemy.CurrentHealth:0.##}/{_enemy.MaxHealth:0.##} ({ResolveHealthPercentForDebug():P1})"
+        string durabilitySummary = _enemy != null
+            ? $"{Mathf.Clamp(_enemy.CurrentShield, 0f, _enemy.MaxShield):0.##}+{Mathf.Clamp(_enemy.CurrentHealth, 0f, _enemy.MaxHealth):0.##}/{Mathf.Max(0f, _enemy.MaxShield):0.##}+{Mathf.Max(0f, _enemy.MaxHealth):0.##} ({ResolvePhaseTransitionDurabilityPercentForDebug():P1})"
             : "missing Enemy3D";
         Debug.Log(
-            $"[{nameof(SiegeCarrierBossEnemyBrain3D)}] Phase check on {name}: health={healthSummary}, threshold={sequencer.phaseTwoHealthPercent:P1}, inPhaseTwo={isInPhaseTwo}, pillarsActive={_isPhaseTwoOrbitalPillarsActive}, count={orbitalPillars.count}, activePatterns={ResolveActivePatternSummary()}.",
+            $"[{nameof(SiegeCarrierBossEnemyBrain3D)}] Phase check on {name}: durability={durabilitySummary}, threshold={sequencer.phaseTwoHealthPercent:P1}, inPhaseTwo={isInPhaseTwo}, pillarsActive={_isPhaseTwoOrbitalPillarsActive}, count={orbitalPillars.count}, activePatterns={ResolveActivePatternSummary()}.",
             this);
     }
 
@@ -2429,14 +2437,22 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
             this);
     }
 
-    private float ResolveHealthPercentForDebug()
+    private float ResolvePhaseTransitionDurabilityPercentForDebug()
     {
-        if (_enemy == null || _enemy.MaxHealth <= 0f)
+        if (_enemy == null)
         {
             return 0f;
         }
 
-        return _enemy.CurrentHealth / _enemy.MaxHealth;
+        float maxDurability = Mathf.Max(0f, _enemy.MaxHealth + _enemy.MaxShield);
+        if (maxDurability <= 0f)
+        {
+            return 0f;
+        }
+
+        float currentDurability = Mathf.Clamp(_enemy.CurrentHealth, 0f, _enemy.MaxHealth)
+            + Mathf.Clamp(_enemy.CurrentShield, 0f, _enemy.MaxShield);
+        return currentDurability / maxDurability;
     }
 
     private string ResolveActivePatternSummary()

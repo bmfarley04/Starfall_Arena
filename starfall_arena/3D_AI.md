@@ -175,7 +175,8 @@ The 3D AI path should stay modular. Enemy prefabs should compose small scripts i
   - uses `EnemyAIFlightController3D` only for range maintenance; turret/lane pressure is owned by the boss brain, not independent turret AI
   - movement bands: no target uses patrol/search; detected but beyond `preferredRangeMax` approaches; inside `preferredRangeMin` backs away; inside the preferred range band slowly drifts toward the selected player so the boss stays dynamic even when it starts already inside engagement distance
   - movement is plane-biased: the boss mostly preserves its starting horizontal plane and only follows target height by the serialized vertical-follow weight, while projectile and beam patterns still aim at the target's real world position
-  - performance/readability rule: pattern intensity scales by cooldown multipliers across health phases, not by silently raising the per-pattern projectile budget
+  - phase transitions use total durability, not hull alone: `phaseTwoHealthPercent` compares `(currentShield + currentHealth) / (maxShield + maxHealth)`, so shield-heavy carriers do not enter phase two early just because hull is already low
+  - performance/readability rule: pattern intensity scales by cooldown multipliers across durability phases, not by silently raising the per-pattern projectile budget
   - exposes `Forced Pattern For Testing` on the brain component; leave it as `None` for normal random selection, or select one rotating attack while testing its prefab wiring, visuals, damage, and avoidance readability. Orbital pillars are intentionally excluded because they are a phase-transition layer, not a selectable attack. In two-player tests, a forced pattern only starts on a lane when the other lane is not already running that same pattern.
 
 ## Enemy Movement Range Design
