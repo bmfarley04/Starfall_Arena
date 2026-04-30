@@ -55,6 +55,7 @@ Implemented foundation:
 - `InvasionSceneManager3D` is the dedicated beginning-flow manager for networked Invasion. It owns player spawning, gameplay HUD activation, wave text presentation, optional enemy counter presentation, optional heart/life counter presentation, UI canvas camera/sorting setup, and arena boundary startup.
 - `InvasionSceneManager3D` only owns top-level HUD visibility and canvas camera/sorting setup. Actual player HUD data binding still happens through `PlayerHUDManager3D` on the HUD objects themselves, and the ship-specific weapon/ability HUD is runtime-instantiated by `PlayerWeaponAbilityHUDSpawner3D` after a player bind succeeds.
 - `TargetAwarenessHUD3D` should be wired to `EnemyTeam` in Invasion and tuned with a finite awareness range so the enemy tracker only reacts to nearby hostile ships instead of every alive entity in the scene.
+- Bug note: network Invasion clients must not rely only on the one-shot wave-start presentation event to enable gameplay HUD. If the scene manager subscribes after that event/RPC fires, the client can look like HUD binding failed even though the real problem is that every gameplay HUD root stayed inactive. Recover HUD visibility from replicated session state (`RoundTransition` / `InMatch`) as well.
 
 ## Title Screen Entry
 

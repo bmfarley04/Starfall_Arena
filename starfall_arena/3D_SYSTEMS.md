@@ -298,6 +298,15 @@ When adding a new 3D script, place it under the subsystem it serves first. Do no
 - this prefab is currently visual plus trigger-volume authoring; any actual damage, networking authority, or scoring behavior should be owned by a separate gameplay system before it is treated as a match hazard
 - bloom is not owned by the shader; the materials output HDR values, but the active camera must render post-processing and the scene/global volume must have Bloom intensity above zero
 
+## Portal Effect Authoring
+
+- the reusable 3D portal effect is a visual-only prefab at `Assets/Prefabs/3d_effects/Portal3D.prefab`; it does not own teleport logic, triggers, damage, networking, audio, or scene flow
+- the prefab uses two thin quad layers with `Starfall/3D/PortalDisk`: `InnerSurface` for the darker subtle radial swirl and `OuterRim` for the bright purple-white HDR edge glow
+- portal motion is shader-time driven through `_Time`, so the prefab should not need a runtime controller script or per-frame C# work for the basic persistent effect
+- scale and rotate the prefab transform for placement; keep the disk fixed in world space unless a future task explicitly asks for billboarding or gameplay-facing behavior
+- bloom is not owned by the prefab; tune the HDR material brightness together with the active camera and scene/global Bloom settings
+- avoid adding particles, screen-space distortion, opaque-texture sampling, or gameplay trigger behavior to the base portal prefab unless the effect is intentionally expanded by a later task
+
 ## Change Classification Rule
 
 3D work should explicitly call out whether it is:

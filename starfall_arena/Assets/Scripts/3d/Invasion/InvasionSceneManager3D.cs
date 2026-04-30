@@ -643,8 +643,10 @@ public class InvasionSceneManager3D : MonoBehaviour
 
         UnsubscribeNetworkSessionEvents();
         _networkSession = session;
+        session.OnSessionStateChanged += HandleNetworkSessionStateChanged;
         session.OnWaveStartPresentationChanged += HandleWaveStartPresentationChanged;
         session.OnInvasionEnemyCountChanged += HandleInvasionEnemyCountChanged;
+        HandleNetworkSessionStateChanged(session.CurrentState);
     }
 
     private void UnsubscribeNetworkSessionEvents()
@@ -655,9 +657,29 @@ public class InvasionSceneManager3D : MonoBehaviour
             return;
         }
 
+        session.OnSessionStateChanged -= HandleNetworkSessionStateChanged;
         session.OnWaveStartPresentationChanged -= HandleWaveStartPresentationChanged;
         session.OnInvasionEnemyCountChanged -= HandleInvasionEnemyCountChanged;
         _networkSession = null;
+    }
+
+    private void HandleNetworkSessionStateChanged(NetworkMatchState state)
+    {
+        RefreshNetworkMode();
+        if (!_useNetworkSession)
+        {
+            return;
+        }
+
+        // Invasion clients previously relied on the one-shot wave-start presentation
+        // event to enable gameplay HUD. If that event fired before the scene manager
+        // subscribed, the client could stay stuck with every gameplay HUD root hidden.
+        // Recover from the replicated session state as well so late subscribers still
+        // show HUD once the match has entered its live gameplay phases.
+        if (state == NetworkMatchState.RoundTransition || state == NetworkMatchState.InMatch)
+        {
+            SetGameplayHudActive(true);
+        }
     }
 
     private void HandleWaveStartPresentationChanged(NetworkWaveStartStatePayload payload)
