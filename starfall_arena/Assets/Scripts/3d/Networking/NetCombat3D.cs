@@ -833,18 +833,72 @@ public class NetCombat3D : NetworkBehaviour
 
     private void ApplyProjectileTargeting(ref ProjectileFireRequest3D request)
     {
-        if (request.targetFaction != Faction3D.Neutral)
+        ResolvePlayerTargeting(request.targetFaction, request.targetTag, out Faction3D resolvedTargetFaction, out string resolvedTargetTag);
+        request.targetFaction = resolvedTargetFaction;
+        request.targetTag = resolvedTargetTag;
+    }
+
+    public void ResolvePlayerTargeting(Faction3D configuredTargetFaction, string configuredTargetTag, out Faction3D resolvedTargetFaction, out string resolvedTargetTag)
+    {
+        resolvedTargetFaction = configuredTargetFaction;
+        resolvedTargetTag = configuredTargetTag;
+
+        if (configuredTargetFaction == Faction3D.EnemyTeam)
         {
-            request.targetTag = ResolveProjectileTargetTag(request.targetFaction);
+            resolvedTargetTag = "Enemy";
             return;
         }
 
-        request.targetTag = ResolveEnemyTag();
+        if (configuredTargetFaction != Faction3D.Neutral)
+        {
+            resolvedTargetTag = ResolveEnemyTag();
+            return;
+        }
+
+        bool usesGenericEnemyTag = string.IsNullOrEmpty(configuredTargetTag) || configuredTargetTag == "Enemy";
+        if (!usesGenericEnemyTag)
+        {
+            return;
+        }
+
+        if (SceneHasFactionTargets(Faction3D.EnemyTeam))
+        {
+            resolvedTargetFaction = Faction3D.EnemyTeam;
+            resolvedTargetTag = "Enemy";
+            return;
+        }
+
+        resolvedTargetTag = ResolveEnemyTag();
     }
 
     private string ResolveProjectileTargetTag(Faction3D targetFaction)
     {
         return targetFaction == Faction3D.EnemyTeam ? "Enemy" : ResolveEnemyTag();
+    }
+
+    private static bool SceneHasFactionTargets(Faction3D targetFaction)
+    {
+        if (targetFaction == Faction3D.Neutral)
+        {
+            return false;
+        }
+
+        Entity3D[] entities = FindObjectsByType<Entity3D>(FindObjectsSortMode.None);
+        for (int i = 0; i < entities.Length; i++)
+        {
+            Entity3D entity = entities[i];
+            if (entity == null || !entity.gameObject.activeInHierarchy)
+            {
+                continue;
+            }
+
+            if (FactionMember3D.ResolveFaction(entity) == targetFaction)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private void CacheReferences()

@@ -721,8 +721,8 @@ MonoBehaviour:
   shieldController: {fileID: 5034837498720385779}
   impulseRecoilPitchSensitivity: 10
   uprightRecoveryEnabled: 1
-  uprightRecoveryDelay: 2.5
-  uprightRecoveryDegreesPerSecond: 90
+  uprightRecoveryDelay: 5
+  uprightRecoveryDegreesPerSecond: 30
   uprightRecoveryInputDeadZone: 0.05
   weapons:
   - {fileID: 6928815812079169362}

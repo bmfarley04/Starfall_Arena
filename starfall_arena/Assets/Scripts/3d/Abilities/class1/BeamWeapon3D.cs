@@ -358,21 +358,15 @@ public class BeamWeapon3D : Weapon3D, IBeamWeaponNetwork3D
 
         Transform muzzle = beam.muzzle != null ? beam.muzzle : Owner != null ? Owner.transform : transform;
         string resolvedTargetTag = beam.targetTag;
-        if (authoritative
-            && beam.targetFaction == Faction3D.Neutral
-            && NetTickUtil.IsActive
-            && _netCombat != null
-            && _netCombat.IsSpawned)
+        Faction3D resolvedTargetFaction = beam.targetFaction;
+        if (NetTickUtil.IsActive && _netCombat != null && _netCombat.IsSpawned)
         {
-            string enemyTag = _netCombat.GetEnemyTag();
-            if (!string.IsNullOrEmpty(enemyTag))
-            {
-                resolvedTargetTag = enemyTag;
-            }
+            _netCombat.ResolvePlayerTargeting(beam.targetFaction, beam.targetTag, out resolvedTargetFaction, out resolvedTargetTag);
         }
+
         _activeBeam.Initialize(
             resolvedTargetTag,
-            beam.targetFaction,
+            resolvedTargetFaction,
             beam.damagePerSecond,
             beam.maxDistance,
             beam.recoilForcePerSecond,

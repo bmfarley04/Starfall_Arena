@@ -305,17 +305,10 @@ public class ConvergeBeamWeapon3D : Weapon3D, IBeamWeaponNetwork3D
 
         _activeBeams = new LaserBeam3D[_activeHardpoints.Length];
         string resolvedTargetTag = convergeBeam.targetTag;
-        if (_activeBeamAuthoritative
-            && convergeBeam.targetFaction == Faction3D.Neutral
-            && NetTickUtil.IsActive
-            && _netCombat != null
-            && _netCombat.IsSpawned)
+        Faction3D resolvedTargetFaction = convergeBeam.targetFaction;
+        if (NetTickUtil.IsActive && _netCombat != null && _netCombat.IsSpawned)
         {
-            string enemyTag = _netCombat.GetEnemyTag();
-            if (!string.IsNullOrEmpty(enemyTag))
-            {
-                resolvedTargetTag = enemyTag;
-            }
+            _netCombat.ResolvePlayerTargeting(convergeBeam.targetFaction, convergeBeam.targetTag, out resolvedTargetFaction, out resolvedTargetTag);
         }
 
         for (int i = 0; i < _activeHardpoints.Length; i++)
@@ -336,7 +329,7 @@ public class ConvergeBeamWeapon3D : Weapon3D, IBeamWeaponNetwork3D
 
             beam.Initialize(
                 resolvedTargetTag,
-                convergeBeam.targetFaction,
+                resolvedTargetFaction,
                 convergeBeam.damagePerSecond,
                 convergeBeam.maxDistance,
                 convergeBeam.recoilForcePerSecond,

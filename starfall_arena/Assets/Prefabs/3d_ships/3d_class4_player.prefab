@@ -5493,7 +5493,7 @@ MonoBehaviour:
   impulseRecoilPitchSensitivity: 10
   uprightRecoveryEnabled: 1
   uprightRecoveryDelay: 5
-  uprightRecoveryDegreesPerSecond: 45
+  uprightRecoveryDegreesPerSecond: 30
   uprightRecoveryInputDeadZone: 0.05
   weapons:
   - {fileID: 111100000000000101}
