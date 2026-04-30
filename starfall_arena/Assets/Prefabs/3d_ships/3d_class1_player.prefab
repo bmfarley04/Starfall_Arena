@@ -467,7 +467,6 @@ GameObject:
   - component: {fileID: 6369695681249732700}
   - component: {fileID: 472506789794357844}
   - component: {fileID: 5104438160426859549}
-  - component: {fileID: 8188930441586883119}
   - component: {fileID: 7902338216098012005}
   - component: {fileID: 6016429355266790633}
   - component: {fileID: 1524455165470484394}
@@ -750,10 +749,10 @@ MonoBehaviour:
     thrustMultiplier: 0.3
   dodgeConfig:
     enabled: 1
-    cooldown: 0.85
-    dodgeDistance: 14
+    cooldown: 1
+    dodgeDistance: 4
     slideDuration: 0.18
-    invulnerabilityDuration: 0.24
+    invulnerabilityDuration: 0.3
   logDodgeDebug: 1
   audioConfig:
     shieldDamageSound: {fileID: 11400000, guid: fd2754dd24955964c99c8be0471fb1d2, type: 2}
@@ -837,7 +836,7 @@ MonoBehaviour:
   barrelRoll:
     degrees: 360
     durationMultiplier: 1.1
-    minDuration: 0.18
+    minDuration: 0.518
     entryBankAngle: 28
 --- !u!114 &3538944680820626273
 MonoBehaviour:
@@ -1371,40 +1370,6 @@ MonoBehaviour:
   pulseWhileCharging: 1
   pulseAmplitude: 0.1
   pulseSpeed: 4
---- !u!114 &8188930441586883119
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2568558604607578100}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e5828761141746b9864bfcc66af4039d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ShipSplitOffsetRig3D
-  offsetGroups:
-  - offset: {x: 1.5, y: 0, z: 0}
-    pieces:
-    - {fileID: 8847836581182714331}
-    - {fileID: 7852917423574271251}
-    - {fileID: 1731811727607058467}
-    - {fileID: 1459893933869562842}
-    - {fileID: 8226611592555908524}
-  - offset: {x: -1.5, y: 0, z: 0}
-    pieces:
-    - {fileID: 6627956742091551901}
-    - {fileID: 785862098326601373}
-    - {fileID: 8559890948586039968}
-    - {fileID: 296115639785396530}
-    - {fileID: 2778794627222672462}
-  - offset: {x: 1, y: 0, z: 0}
-    pieces:
-    - {fileID: 2154160195120135421}
-  - offset: {x: -1, y: 0, z: 0}
-    pieces:
-    - {fileID: 1493440020577353942}
-  activateOnStart: 0
 --- !u!114 &7902338216098012005
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7425,11 +7390,6 @@ MonoBehaviour:
   mass: 0.5
   linearDamping: 0.5
   angularDamping: 0.3
---- !u!4 &296115639785396530 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 1909440984850389696, guid: bf0bc7146f022ca4ca750c6bc6606af6, type: 3}
-  m_PrefabInstance: {fileID: 2189789481812149234}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1 &296115639785817362 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 1909440984850351840, guid: bf0bc7146f022ca4ca750c6bc6606af6, type: 3}
@@ -7493,11 +7453,6 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 1478377516207963503, guid: bf0bc7146f022ca4ca750c6bc6606af6, type: 3}
   m_PrefabInstance: {fileID: 2189789481812149234}
   m_PrefabAsset: {fileID: 0}
---- !u!4 &1459893933869562842 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 729904346518927400, guid: bf0bc7146f022ca4ca750c6bc6606af6, type: 3}
-  m_PrefabInstance: {fileID: 2189789481812149234}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1459893933869721594 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 729904346518627336, guid: bf0bc7146f022ca4ca750c6bc6606af6, type: 3}
@@ -7556,11 +7511,6 @@ MonoBehaviour:
   mass: 0.5
   linearDamping: 0.5
   angularDamping: 0.3
---- !u!4 &1493440020577353942 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 782063000278352676, guid: bf0bc7146f022ca4ca750c6bc6606af6, type: 3}
-  m_PrefabInstance: {fileID: 2189789481812149234}
-  m_PrefabAsset: {fileID: 0}
 --- !u!4 &1731811727607058467 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 462481501793227729, guid: bf0bc7146f022ca4ca750c6bc6606af6, type: 3}
@@ -7745,11 +7695,6 @@ MonoBehaviour:
   mass: 0.5
   linearDamping: 0.5
   angularDamping: 0.3
---- !u!4 &2778794627222672462 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 4103890949050193852, guid: bf0bc7146f022ca4ca750c6bc6606af6, type: 3}
-  m_PrefabInstance: {fileID: 2189789481812149234}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1 &3074059719685606080 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 3804117721713363250, guid: bf0bc7146f022ca4ca750c6bc6606af6, type: 3}
@@ -7939,11 +7884,6 @@ MonoBehaviour:
   mass: 0.5
   linearDamping: 0.5
   angularDamping: 0.3
---- !u!4 &8226611592555908524 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 7802902273334120030, guid: bf0bc7146f022ca4ca750c6bc6606af6, type: 3}
-  m_PrefabInstance: {fileID: 2189789481812149234}
-  m_PrefabAsset: {fileID: 0}
 --- !u!4 &8559890948586039968 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 7541671861256563026, guid: bf0bc7146f022ca4ca750c6bc6606af6, type: 3}

@@ -307,8 +307,8 @@ MonoBehaviour:
   deathEffects: {fileID: 8521091187178700546}
   aiFlightController: {fileID: 8333524130418560552}
   factionMember: {fileID: 695693369330019818}
-  netEnemyMovement: {fileID: 0}
-  netEnemyCombat: {fileID: 0}
+  netEnemyMovement: {fileID: -7216519775544358760}
+  netEnemyCombat: {fileID: -1402132322610921366}
 --- !u!114 &8333524130418560552
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -463,13 +463,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a4b93c27db532be499e7ead4f62c59dd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BasicShooterEnemyBrain3D
-  primaryWeapon: {fileID: 0}
-  chargeAttack: {fileID: 0}
+  primaryWeapon: {fileID: 6839147771054517269}
+  chargeAttack: {fileID: 1726012634611810949}
   flightController: {fileID: 8333524130418560552}
   targetSensor: {fileID: 754838546632477888}
   obstacleAvoidance: {fileID: 0}
-  patrol: {fileID: 0}
-  netEnemyCombat: {fileID: 0}
+  patrol: {fileID: 7722546587470475911}
+  netEnemyCombat: {fileID: -1402132322610921366}
   thinkInterval: 0.05
   aimToleranceDegrees: 10
   stopDistance: 18

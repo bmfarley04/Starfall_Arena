@@ -5521,9 +5521,9 @@ MonoBehaviour:
   dodgeConfig:
     enabled: 1
     cooldown: 1
-    dodgeDistance: 6
+    dodgeDistance: 4
     slideDuration: 0.18
-    invulnerabilityDuration: 0.24
+    invulnerabilityDuration: 0.3
   logDodgeDebug: 1
   audioConfig:
     shieldDamageSound: {fileID: 11400000, guid: 87784f1904ec9074c86e30516fb1e37e, type: 2}
