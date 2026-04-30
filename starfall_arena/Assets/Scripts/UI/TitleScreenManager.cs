@@ -142,8 +142,8 @@ public class TitleScreenManager : MonoBehaviour
     [SerializeField] private GameObject[] hostModePreviewModels;
 
     [Header("3D Test Flow")]
-    [Tooltip("3D gameplay scene used by the test-only title shortcuts.")]
-    [SerializeField] private string test3DGameplaySceneName = "3dscene";
+    [Tooltip("Gameplay scene used by the test-only title shortcuts. Set this to 3d_invasion for the co-op invasion test flow.")]
+    [SerializeField] private string test3DGameplaySceneName = "3d_invasion";
     [Tooltip("Direct-connect address used by the client-side 3D test shortcut.")]
     [SerializeField] private string test3DClientAddress = "10.33.102.140";
     [Tooltip("Optional override for the host's auto-selected 3D test ship. Falls back to 3d_class1 by ship ID.")]
@@ -455,7 +455,7 @@ public class TitleScreenManager : MonoBehaviour
         Reset3DTestFlowState();
         _isRunning3DTestFlow = true;
         _is3DTestHostFlow = true;
-        _pendingHostModeLabel = host3DStatusLabel;
+        _pendingHostModeLabel = host3DInvasionStatusLabel;
 
         if (!Prepare3DTestShipSelections())
         {
@@ -490,7 +490,7 @@ public class TitleScreenManager : MonoBehaviour
             return;
         }
 
-        HandleStatusMessageChanged("Connecting to 3D test host...");
+        HandleStatusMessageChanged("Connecting to 3D invasion test host...");
 
         if (joinGameCanvas != null && _activeTransition == null)
         {
@@ -848,6 +848,8 @@ public class TitleScreenManager : MonoBehaviour
                 ApplyShipRosterForGameplayScene(_sessionData.GameplaySceneName);
                 if (_isRunning3DTestFlow)
                 {
+                    TransitionToShipSelectFromCurrent();
+                    HandleStatusMessageChanged("Connected. Auto-selecting 3D test ships...");
                     Begin3DTestAutoLock();
                     return;
                 }
@@ -857,7 +859,7 @@ public class TitleScreenManager : MonoBehaviour
             case NetworkMatchState.LoadingGameplay:
                 if (_isRunning3DTestFlow)
                 {
-                    HandleStatusMessageChanged("Loading 3D test duel...");
+                    HandleStatusMessageChanged("Loading 3D test gameplay...");
                 }
                 break;
             case NetworkMatchState.Disconnected:
@@ -1535,7 +1537,7 @@ public class TitleScreenManager : MonoBehaviour
                 Prepare3DTestShipSelections();
                 _sessionData.RequestShipSelection(selectedShip.ShipId, true);
                 _hasSubmitted3DTestShipSelection = true;
-                HandleStatusMessageChanged("3D test ship locked. Waiting for duel load...");
+                HandleStatusMessageChanged("3D test ship locked. Waiting for scene load...");
                 _autoLock3DTestShipCoroutine = null;
                 yield break;
             }

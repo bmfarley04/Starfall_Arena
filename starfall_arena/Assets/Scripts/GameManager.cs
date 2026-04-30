@@ -21,7 +21,10 @@ public class GameDataManager : MonoBehaviour
 
     [Header("Ship Registry Mode")]
     [SerializeField] private ShipRosterMode defaultShipRosterMode = ShipRosterMode.Duel2D;
+    [Tooltip("Primary 3D gameplay scene name used to decide when the 3D ship roster should be active.")]
     [SerializeField] private string threeDGameplaySceneName = "3d";
+    [Tooltip("Additional gameplay scene names that should still use the 3D ship roster, such as 3D invasion or dedicated 3D test scenes.")]
+    [SerializeField] private string[] additional3DGameplaySceneNames = { "3d_invasion", "3dscene" };
 
     [Header("Augment Registry")]
     [SerializeField] private Augment[] knownAugments;
@@ -133,12 +136,39 @@ public class GameDataManager : MonoBehaviour
             return;
         }
 
-        bool is3DScene = string.Equals(
-            gameplaySceneName.Trim(),
-            threeDGameplaySceneName,
-            StringComparison.OrdinalIgnoreCase);
+        bool is3DScene = Is3DGameplayScene(gameplaySceneName);
 
         SetShipRosterMode(is3DScene ? ShipRosterMode.Duel3D : ShipRosterMode.Duel2D);
+    }
+
+    private bool Is3DGameplayScene(string gameplaySceneName)
+    {
+        string trimmedSceneName = gameplaySceneName.Trim();
+        if (string.Equals(trimmedSceneName, threeDGameplaySceneName, StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        if (additional3DGameplaySceneNames == null)
+        {
+            return false;
+        }
+
+        for (int i = 0; i < additional3DGameplaySceneNames.Length; i++)
+        {
+            string configuredSceneName = additional3DGameplaySceneNames[i];
+            if (string.IsNullOrWhiteSpace(configuredSceneName))
+            {
+                continue;
+            }
+
+            if (string.Equals(trimmedSceneName, configuredSceneName.Trim(), StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private void RebuildLookups()

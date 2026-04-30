@@ -56081,7 +56081,7 @@ MonoBehaviour:
   hostModeSelectFirstSelected: {fileID: 177883868}
   host3DModeSelectCanvas: {fileID: 430264991}
   host3DModeSelectFirstSelected: {fileID: 1205392637}
-  show3DInvasionModeInMenu: 0
+  show3DInvasionModeInMenu: 1
   ipAddressInputField: {fileID: 408235832}
   networkStatusText: {fileID: 2112216138}
   hostModeStatusText: {fileID: 1564625040}

@@ -9771,6 +9771,8 @@ GameObject:
   - component: {fileID: 8593575025823692486}
   - component: {fileID: 9100000000000000006}
   - component: {fileID: 8638785466743754426}
+  - component: {fileID: -2783508877796770153}
+  - component: {fileID: -6552096286405165903}
   m_Layer: 0
   m_Name: fortressEnemy
   m_TagString: Enemy
@@ -10358,6 +10360,33 @@ MonoBehaviour:
   useSeparation: 1
   useObstacleAvoidance: 1
   drawGizmos: 1
+--- !u!114 &-2783508877796770153
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5723954577492871350}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3fff23e26f95d0342b3757987b605e6e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NetEnemyCombat3D
+  ShowTopMostFoldoutHeaderGroup: 1
+--- !u!114 &-6552096286405165903
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5723954577492871350}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0664e633e74fb6c46b63d4c8c3d1147f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NetEnemyMovement3D
+  ShowTopMostFoldoutHeaderGroup: 1
+  interpolationBufferTicks: 2
 --- !u!1 &5784332197128543873
 GameObject:
   m_ObjectHideFlags: 0

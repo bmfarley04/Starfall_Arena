@@ -59,6 +59,7 @@ Implemented foundation:
 - the title-screen 3D host flow now branches through a dedicated 3D sub-select canvas before matchmaking starts
 - the duel branch still loads `3d`, while the invasion branch loads `3d_invasion`
 - invasion still uses the 3D ship roster; the title flow should not fall back to the 2D roster just because the scene token differs from the duel scene
+- test-only title shortcuts may also target `3d_invasion`, but they should still wait for the normal network `ShipSelect` state before auto-locking their fixed test ships; skipping that visible state makes the join flow look frozen even when the session is progressing correctly
 
 ## Mode Ownership
 
