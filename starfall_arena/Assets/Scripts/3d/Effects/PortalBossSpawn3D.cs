@@ -53,6 +53,7 @@ public class PortalBossSpawn3D : NetworkBehaviour
     private double _sequenceStartTime;
     private Vector3 _finalPosition;
     private Quaternion _finalRotation;
+    private Vector3 _portalPosition;
     private Vector3 _startPosition;
     private GameObject _portalInstance;
     private Coroutine _portalShrinkRoutine;
@@ -205,12 +206,16 @@ public class PortalBossSpawn3D : NetworkBehaviour
         _sequencePrepared = true;
         _finalPosition = transform.position;
         _finalRotation = transform.rotation;
-        _startPosition = _finalPosition - (_finalRotation * Vector3.forward * emergeDistance);
         _resolvedVisualRenderers = ResolveVisualRenderers();
         if (_resolvedVisualRenderers.Length == 0)
         {
             Debug.LogWarning($"[{nameof(PortalBossSpawn3D)}] {name} could not find any child renderers for the boss portal intro. The motion will still run, but validate the prefab visuals.", this);
         }
+
+        Vector3 forward = _finalRotation * Vector3.forward;
+        float rearClearDistance = ResolveRearClearDistance(forward);
+        _portalPosition = _finalPosition - (forward * rearClearDistance);
+        _startPosition = _portalPosition - (forward * emergeDistance);
 
         ResolveControlledBehaviours();
         ResolveControlledColliders();
@@ -436,8 +441,70 @@ public class PortalBossSpawn3D : NetworkBehaviour
             return;
         }
 
-        _portalInstance = Instantiate(portalPrefab, _finalPosition, _finalRotation);
+        _portalInstance = Instantiate(portalPrefab, _portalPosition, _finalRotation);
         _portalInstance.transform.localScale = Vector3.one * Mathf.Max(0.01f, portalUniformScale);
+    }
+
+    private float ResolveRearClearDistance(Vector3 forward)
+    {
+        if (_resolvedVisualRenderers == null || _resolvedVisualRenderers.Length == 0)
+        {
+            return 0f;
+        }
+
+        forward = forward.sqrMagnitude > 0.0001f ? forward.normalized : Vector3.forward;
+        bool hasBounds = false;
+        Bounds combinedBounds = default;
+
+        for (int i = 0; i < _resolvedVisualRenderers.Length; i++)
+        {
+            Renderer renderer = _resolvedVisualRenderers[i];
+            if (renderer == null)
+            {
+                continue;
+            }
+
+            if (!hasBounds)
+            {
+                combinedBounds = renderer.bounds;
+                hasBounds = true;
+            }
+            else
+            {
+                combinedBounds.Encapsulate(renderer.bounds);
+            }
+        }
+
+        if (!hasBounds)
+        {
+            return 0f;
+        }
+
+        Vector3 relativeMin = combinedBounds.min - _finalPosition;
+        Vector3 relativeMax = combinedBounds.max - _finalPosition;
+        Vector3[] corners =
+        {
+            new Vector3(relativeMin.x, relativeMin.y, relativeMin.z),
+            new Vector3(relativeMin.x, relativeMin.y, relativeMax.z),
+            new Vector3(relativeMin.x, relativeMax.y, relativeMin.z),
+            new Vector3(relativeMin.x, relativeMax.y, relativeMax.z),
+            new Vector3(relativeMax.x, relativeMin.y, relativeMin.z),
+            new Vector3(relativeMax.x, relativeMin.y, relativeMax.z),
+            new Vector3(relativeMax.x, relativeMax.y, relativeMin.z),
+            new Vector3(relativeMax.x, relativeMax.y, relativeMax.z)
+        };
+
+        float farthestBehind = 0f;
+        for (int i = 0; i < corners.Length; i++)
+        {
+            float behindDistance = Vector3.Dot(-forward, corners[i]);
+            if (behindDistance > farthestBehind)
+            {
+                farthestBehind = behindDistance;
+            }
+        }
+
+        return Mathf.Max(0f, farthestBehind);
     }
 
     private void StartPortalShrink()

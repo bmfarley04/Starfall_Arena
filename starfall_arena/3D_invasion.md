@@ -53,6 +53,7 @@ Implemented foundation:
 - `SpawnArrivalEffect3D` is an optional prefab-local one-shot spawn presentation component for Invasion enemies. It can spawn an authored arrival VFX prefab, scale it per ship, hide renderers until reveal, and temporarily disable assigned colliders/brains/weapons so enemies do not act before they visually arrive.
 - `PortalBossSpawn3D` is a prefab-local boss entrance component for large Invasion enemies that should emerge from `Portal3D`. It moves the real boss root from behind the portal to the authored spawn point, disables gameplay during the entrance, and expects the portal prefab to include its own depth-mask disk so only the portion inside the portal silhouette is hidden while the boss exits.
 - `InvasionWaveManager3D` is a minimal finite-wave spawner for configured enemy prefabs
+- `InvasionWaveManager3D` now separates wave timing into two authored delays: an end delay after a wave is fully cleared before the next intro is requested, and a start delay after `WAVE N` presentation before enemy spawning begins. The same start delay applies to wave 1 as well, so the first wave does not bypass spawn timing just because there was no prior clear.
 - `InvasionSceneManager3D` is the dedicated beginning-flow manager for networked Invasion. It owns player spawning, gameplay HUD activation, wave text presentation, optional enemy counter presentation, optional heart/life counter presentation, UI canvas camera/sorting setup, and arena boundary startup.
 - `InvasionSceneManager3D` only owns top-level HUD visibility and canvas camera/sorting setup. Actual player HUD data binding still happens through `PlayerHUDManager3D` on the HUD objects themselves, and the ship-specific weapon/ability HUD is runtime-instantiated by `PlayerWeaponAbilityHUDSpawner3D` after a player bind succeeds.
 - `TargetAwarenessHUD3D` should be wired to `EnemyTeam` in Invasion and tuned with a finite awareness range so the enemy tracker only reacts to nearby hostile ships instead of every alive entity in the scene.
@@ -111,6 +112,7 @@ The first wave manager supports finite configured waves. Later additions should 
 
 - wave entries should spawn enemy prefab counts from authored spawn points
 - `InvasionWaveManager3D` owns wave order, enemy spawning, alive-enemy tracking, wave-clear detection, and inter-wave delay
+- `InvasionWaveManager3D` owns both wave timing beats: the delay from a cleared wave to the next wave intro, and the delay from wave-intro text to actual spawning
 - `InvasionSceneManager3D` owns the synchronized `WAVE N` text beat before each wave, using `NetworkSessionData.BroadcastWaveStartServer(...)` in network sessions
 - the optional enemy counter should read `InvasionWaveManager3D`'s tracked alive-enemy count through `InvasionSceneManager3D`; do not make enemies or individual AI brains update HUD directly
 - boss or elite waves should be represented as wave entries, not a separate scene-flow fork

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System;
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 [DisallowMultipleComponent]
 public class InvasionWaveManager3D : MonoBehaviour
@@ -43,7 +44,12 @@ public class InvasionWaveManager3D : MonoBehaviour
     [Tooltip("If enabled, this manager starts waves as soon as it is enabled. Networked Invasion scenes should usually leave this off so InvasionSceneManager3D can spawn players and show WAVE text first.")]
     [SerializeField] private bool startOnEnable = true;
     [Tooltip("Seconds to wait after a wave is fully cleared before requesting the next wave intro.")]
-    [SerializeField] private float timeBetweenWaves = 3f;
+    [FormerlySerializedAs("timeBetweenWaves")]
+    [Min(0f)]
+    [SerializeField] private float waveEndDelaySeconds = 3f;
+    [Tooltip("Seconds to wait after the WAVE text/intro finishes before this wave starts spawning. This also applies to the first wave.")]
+    [Min(0f)]
+    [SerializeField] private float waveStartDelaySeconds = 0f;
 
     private readonly List<Enemy3D> _aliveEnemies = new List<Enemy3D>();
     private Coroutine _waveRoutine;
@@ -94,14 +100,19 @@ public class InvasionWaveManager3D : MonoBehaviour
         {
             int waveNumber = waveIndex + 1;
             yield return RunWaveIntro(waveNumber);
+            if (waveStartDelaySeconds > 0f)
+            {
+                yield return new WaitForSeconds(waveStartDelaySeconds);
+            }
+
             WaveStarted?.Invoke(waveNumber);
             yield return SpawnWave(waves[waveIndex]);
             yield return new WaitUntil(() => _aliveEnemies.Count == 0);
             WaveCleared?.Invoke(waveNumber);
 
-            if (waveIndex < waves.Length - 1 && timeBetweenWaves > 0f)
+            if (waveIndex < waves.Length - 1 && waveEndDelaySeconds > 0f)
             {
-                yield return new WaitForSeconds(timeBetweenWaves);
+                yield return new WaitForSeconds(waveEndDelaySeconds);
             }
         }
 

@@ -2502,7 +2502,8 @@ MonoBehaviour:
       spawnDelay: 0
   spawnPoints: []
   startOnEnable: 0
-  timeBetweenWaves: 3
+  waveEndDelaySeconds: 6
+  waveStartDelaySeconds: 3
 --- !u!4 &224109832
 Transform:
   m_ObjectHideFlags: 0

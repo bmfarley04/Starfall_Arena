@@ -4900,7 +4900,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!135 &1017665603
 SphereCollider:
   m_ObjectHideFlags: 0
@@ -7038,6 +7038,10 @@ PrefabInstance:
     - target: {fileID: 1000000000000010001, guid: 976f41ceec924e399424163b5c1e34c6, type: 3}
       propertyPath: m_Name
       value: Portal3D
+      objectReference: {fileID: 0}
+    - target: {fileID: 1000000000000010001, guid: 976f41ceec924e399424163b5c1e34c6, type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4000000000000010001, guid: 976f41ceec924e399424163b5c1e34c6, type: 3}
       propertyPath: m_LocalPosition.x
@@ -11236,7 +11240,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5686474993044454713, guid: 3abe469261929d94fb24a7cd0c243bfb, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 20
+      value: 21.36143
       objectReference: {fileID: 0}
     - target: {fileID: 5686474993044454713, guid: 3abe469261929d94fb24a7cd0c243bfb, type: 3}
       propertyPath: m_LocalPosition.y
@@ -11244,23 +11248,23 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5686474993044454713, guid: 3abe469261929d94fb24a7cd0c243bfb, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 100
+      value: 271.4
       objectReference: {fileID: 0}
     - target: {fileID: 5686474993044454713, guid: 3abe469261929d94fb24a7cd0c243bfb, type: 3}
       propertyPath: m_LocalRotation.w
-      value: 1
+      value: 0.0702461
       objectReference: {fileID: 0}
     - target: {fileID: 5686474993044454713, guid: 3abe469261929d94fb24a7cd0c243bfb, type: 3}
       propertyPath: m_LocalRotation.x
-      value: 0
+      value: -0
       objectReference: {fileID: 0}
     - target: {fileID: 5686474993044454713, guid: 3abe469261929d94fb24a7cd0c243bfb, type: 3}
       propertyPath: m_LocalRotation.y
-      value: 0
+      value: -0.99752975
       objectReference: {fileID: 0}
     - target: {fileID: 5686474993044454713, guid: 3abe469261929d94fb24a7cd0c243bfb, type: 3}
       propertyPath: m_LocalRotation.z
-      value: 0
+      value: -0
       objectReference: {fileID: 0}
     - target: {fileID: 5686474993044454713, guid: 3abe469261929d94fb24a7cd0c243bfb, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
@@ -11268,11 +11272,23 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5686474993044454713, guid: 3abe469261929d94fb24a7cd0c243bfb, type: 3}
       propertyPath: m_LocalEulerAnglesHint.y
-      value: 0
+      value: -171.944
       objectReference: {fileID: 0}
     - target: {fileID: 5686474993044454713, guid: 3abe469261929d94fb24a7cd0c243bfb, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7123456789012345679, guid: 3abe469261929d94fb24a7cd0c243bfb, type: 3}
+      propertyPath: emergeDistance
+      value: 30
+      objectReference: {fileID: 0}
+    - target: {fileID: 7123456789012345679, guid: 3abe469261929d94fb24a7cd0c243bfb, type: 3}
+      propertyPath: emergeDuration
+      value: 6
+      objectReference: {fileID: 0}
+    - target: {fileID: 7123456789012345679, guid: 3abe469261929d94fb24a7cd0c243bfb, type: 3}
+      propertyPath: portalUniformScale
+      value: 12
       objectReference: {fileID: 0}
     - target: {fileID: 8311721449157583992, guid: 3abe469261929d94fb24a7cd0c243bfb, type: 3}
       propertyPath: m_Name
