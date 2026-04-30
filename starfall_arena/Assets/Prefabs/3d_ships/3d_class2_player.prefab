@@ -10829,8 +10829,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 472a711a0b2023940b16aa210d0274a3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: '::'
-  maxHealth: 100
-  maxShield: 100
+  maxHealth: 2000
+  maxShield: 2000
   shieldController: {fileID: 3132001650250044452}
   impulseRecoilPitchSensitivity: 10
   uprightRecoveryEnabled: 1

@@ -10252,7 +10252,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::StaggeredProjectileWeaponEnemy3D
   weaponConfig:
-    projectilePrefab: {fileID: 100004, guid: 10bd1b989a094b9478ab5747169dd1e1, type: 3}
+    projectilePrefab: {fileID: 100004, guid: 0d0402ab9140d25448a74516210d933c, type: 3}
     muzzles:
     - {fileID: 7698207287120706346}
     - {fileID: 6449782633983531932}

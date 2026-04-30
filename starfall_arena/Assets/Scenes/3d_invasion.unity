@@ -627,19 +627,7 @@ MonoBehaviour:
   blockerGizmoColor: {r: 1, g: 0.9, b: 0.15, a: 0.35}
   startActiveOnEnable: 0
   autoStart: 0
-  waves:
-  - duration: 5
-    timeUntilNextWave: 30
-    targetSizePercent: 100
-  - duration: 5
-    timeUntilNextWave: 30
-    targetSizePercent: 75
-  - duration: 5
-    timeUntilNextWave: 30
-    targetSizePercent: 50
-  - duration: 1e+9
-    timeUntilNextWave: 30
-    targetSizePercent: 25
+  waves: []
   visuals:
     boundaryMaterial: {fileID: 2100000, guid: 47fd5b78b8584ba428cc48870b1f7dfa, type: 2}
     hexMask: {fileID: 2800000, guid: 8b9619189c7d21f4eb9f86f6159837f3, type: 3}
@@ -8148,6 +8136,7 @@ MonoBehaviour:
   gameplayCameraOverride: {fileID: 0}
   widgetTemplate: {fileID: 1791662941}
   widgetContainer: {fileID: 72753235}
+  enemyFaction: 2
   discovery:
     refreshInterval: 0.25
     targetMask:
@@ -8155,7 +8144,8 @@ MonoBehaviour:
       m_Bits: 4294967295
     ignoreInactiveTargets: 0
   distance:
-    closeHideDistance: 70
+    awarenessRange: 900
+    closeHideDistance: 50
     bracketMaxDistance: 500
     thresholdHysteresis: 8
   screenClamp:
