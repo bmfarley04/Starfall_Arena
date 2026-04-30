@@ -36,14 +36,28 @@ public class InvasionWaveManager3D : MonoBehaviour
     }
 
     [Header("Waves")]
+    [Tooltip("Finite Invasion waves. Each wave spawns its entries in order, then waits until every tracked enemy from that wave and any tracked child spawns are dead before advancing.")]
     [SerializeField] private WaveConfig3D[] waves = new WaveConfig3D[0];
+    [Tooltip("Authored enemy spawn points used in round-robin order. If empty, enemies spawn at this manager's transform.")]
     [SerializeField] private Transform[] spawnPoints = new Transform[0];
+    [Tooltip("If enabled, this manager starts waves as soon as it is enabled. Networked Invasion scenes should usually leave this off so InvasionSceneManager3D can spawn players and show WAVE text first.")]
     [SerializeField] private bool startOnEnable = true;
+    [Tooltip("Seconds to wait after a wave is fully cleared before requesting the next wave intro.")]
     [SerializeField] private float timeBetweenWaves = 3f;
 
     private readonly List<Enemy3D> _aliveEnemies = new List<Enemy3D>();
     private Coroutine _waveRoutine;
     private int _spawnPointIndex;
+
+    public event Func<int, IEnumerator> WaveIntroRequested;
+    public event Action<int> WaveStarted;
+    public event Action<int> WaveCleared;
+    public event Action AllWavesCleared;
+    public event Action<int> AliveEnemyCountChanged;
+
+    public int AliveEnemyCount => _aliveEnemies.Count;
+    public int WaveCount => waves != null ? waves.Length : 0;
+    public bool IsRunning => _waveRoutine != null;
 
     private void OnEnable()
     {
@@ -78,8 +92,12 @@ public class InvasionWaveManager3D : MonoBehaviour
     {
         for (int waveIndex = 0; waveIndex < waves.Length; waveIndex++)
         {
+            int waveNumber = waveIndex + 1;
+            yield return RunWaveIntro(waveNumber);
+            WaveStarted?.Invoke(waveNumber);
             yield return SpawnWave(waves[waveIndex]);
             yield return new WaitUntil(() => _aliveEnemies.Count == 0);
+            WaveCleared?.Invoke(waveNumber);
 
             if (waveIndex < waves.Length - 1 && timeBetweenWaves > 0f)
             {
@@ -88,6 +106,25 @@ public class InvasionWaveManager3D : MonoBehaviour
         }
 
         _waveRoutine = null;
+        AllWavesCleared?.Invoke();
+    }
+
+    private IEnumerator RunWaveIntro(int waveNumber)
+    {
+        Func<int, IEnumerator> introHandler = WaveIntroRequested;
+        if (introHandler == null)
+        {
+            yield break;
+        }
+
+        Delegate[] handlers = introHandler.GetInvocationList();
+        for (int i = 0; i < handlers.Length; i++)
+        {
+            if (handlers[i] is Func<int, IEnumerator> handler)
+            {
+                yield return handler(waveNumber);
+            }
+        }
     }
 
     private IEnumerator SpawnWave(WaveConfig3D wave)
@@ -187,6 +224,7 @@ public class InvasionWaveManager3D : MonoBehaviour
 
         _aliveEnemies.Add(enemy);
         enemy.Died += HandleEnemyDied;
+        AliveEnemyCountChanged?.Invoke(_aliveEnemies.Count);
     }
 
     private void HandleEnemyDied(Entity3D entity)
@@ -199,6 +237,7 @@ public class InvasionWaveManager3D : MonoBehaviour
 
         enemy.Died -= HandleEnemyDied;
         _aliveEnemies.Remove(enemy);
+        AliveEnemyCountChanged?.Invoke(_aliveEnemies.Count);
     }
 
     private void ClearTrackedEnemies()
@@ -212,6 +251,7 @@ public class InvasionWaveManager3D : MonoBehaviour
         }
 
         _aliveEnemies.Clear();
+        AliveEnemyCountChanged?.Invoke(_aliveEnemies.Count);
     }
 
     private bool HasSpawnAuthority()

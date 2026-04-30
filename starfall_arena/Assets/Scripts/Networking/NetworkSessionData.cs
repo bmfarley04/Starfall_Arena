@@ -70,6 +70,28 @@ public struct NetworkRoundStartStatePayload : INetworkSerializable
     }
 }
 
+public struct NetworkWaveStartStatePayload : INetworkSerializable
+{
+    public int SequenceId;
+    public int WaveNumber;
+
+    public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
+    {
+        serializer.SerializeValue(ref SequenceId);
+        serializer.SerializeValue(ref WaveNumber);
+    }
+}
+
+public struct NetworkInvasionEnemyCountStatePayload : INetworkSerializable
+{
+    public int AliveEnemyCount;
+
+    public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
+    {
+        serializer.SerializeValue(ref AliveEnemyCount);
+    }
+}
+
 public struct NetworkWinStatePayload : INetworkSerializable
 {
     public int Player1Wins;
@@ -180,6 +202,8 @@ public class NetworkSessionData : NetworkBehaviour
     public event Action<string> OnStatusMessageChanged;
     public event Action<int> OnSelectedMapIndexChanged;
     public event Action<NetworkRoundStartStatePayload> OnRoundStartPresentationChanged;
+    public event Action<NetworkWaveStartStatePayload> OnWaveStartPresentationChanged;
+    public event Action<NetworkInvasionEnemyCountStatePayload> OnInvasionEnemyCountChanged;
     public event Action<NetworkRoundEndStatePayload> OnRoundEndPresentationChanged;
     public event Action<NetworkWinStatePayload> OnWinStateChanged;
     public event Action<NetworkAugmentSelectionStatePayload> OnAugmentSelectionPresentationChanged;
@@ -203,6 +227,7 @@ public class NetworkSessionData : NetworkBehaviour
     private bool _augmentPhaseActive;
     private int _augmentTier = -1;
     private int _roundStartSequenceId = 0;
+    private int _waveStartSequenceId = 0;
 
     public NetworkMatchState CurrentState => _currentState;
     public float SelectionTimeRemaining => _selectionTimeRemaining;
@@ -608,6 +633,48 @@ public class NetworkSessionData : NetworkBehaviour
         if (CanSendSessionRpcs())
         {
             BroadcastRoundStartClientRpc(payload);
+        }
+    }
+
+    public void BroadcastWaveStartServer(int waveNumber)
+    {
+        if (!IsServer)
+        {
+            return;
+        }
+
+        NetworkWaveStartStatePayload payload = new NetworkWaveStartStatePayload
+        {
+            SequenceId = ++_waveStartSequenceId,
+            WaveNumber = waveNumber
+        };
+
+        SetServerState(NetworkMatchState.RoundTransition, $"Wave {waveNumber} starting.");
+        OnWaveStartPresentationChanged?.Invoke(payload);
+
+        if (CanSendSessionRpcs())
+        {
+            BroadcastWaveStartClientRpc(payload);
+        }
+    }
+
+    public void BroadcastInvasionEnemyCountServer(int aliveEnemyCount)
+    {
+        if (!IsServer)
+        {
+            return;
+        }
+
+        NetworkInvasionEnemyCountStatePayload payload = new NetworkInvasionEnemyCountStatePayload
+        {
+            AliveEnemyCount = Mathf.Max(0, aliveEnemyCount)
+        };
+
+        OnInvasionEnemyCountChanged?.Invoke(payload);
+
+        if (CanSendSessionRpcs())
+        {
+            BroadcastInvasionEnemyCountClientRpc(payload);
         }
     }
 
@@ -1195,6 +1262,28 @@ public class NetworkSessionData : NetworkBehaviour
         }
 
         OnRoundStartPresentationChanged?.Invoke(payload);
+    }
+
+    [ClientRpc]
+    private void BroadcastWaveStartClientRpc(NetworkWaveStartStatePayload payload)
+    {
+        if (IsServer)
+        {
+            return;
+        }
+
+        OnWaveStartPresentationChanged?.Invoke(payload);
+    }
+
+    [ClientRpc]
+    private void BroadcastInvasionEnemyCountClientRpc(NetworkInvasionEnemyCountStatePayload payload)
+    {
+        if (IsServer)
+        {
+            return;
+        }
+
+        OnInvasionEnemyCountChanged?.Invoke(payload);
     }
 
     [ClientRpc]

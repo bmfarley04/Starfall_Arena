@@ -4,6 +4,27 @@ This document owns the 3D Invasion mode notes.
 
 Invasion is a 3D PvE mode where two player ships fight finite waves of alien enemies. It is separate from the current 3D duel flow and should live in the `3d_invasion` scene path unless a task explicitly says otherwise.
 
+## Mode Flow
+
+Networked 3D Invasion is planned as a two-player cooperative PvE mode with roughly five finite waves for the current target. The enemy roster comes from the enemies documented in `3D_AI.md`; wave composition is authored on `InvasionWaveManager3D`.
+
+Current implemented beginning flow:
+
+- players enter from the normal title-screen network flow, complete 3D ship select, and load into `3d_invasion`
+- `InvasionSceneManager3D` spawns the two selected player ships once, binds the gameplay HUD, resets/starts `ArenaBoundary3D`, and starts the wave manager
+- there is no versus/collaboration intro canvas in this slice
+- the existing round text canvas is reused only for `WAVE 1`, `WAVE 2`, etc.
+- countdown UI is not used
+- player HUD elements stay active during gameplay: health, vignette, crosshair, weapon container, ability container, FPS/ping, enemy tracker, optional enemy counter, and optional heart/life counter
+- win trackers, round-end screens, game-end screens, and end-of-wave stat summaries are not used
+- players are not repositioned, despawned between waves, or movement-locked by the Invasion scene manager
+- game-end, wipe, revive, score, reward, and completion presentation are planned later; when the final configured wave is cleared, the current slice leaves gameplay active
+
+Important scene-manager pitfall:
+
+- `SceneManager3D` is PvP duel-shaped: it waits on the versus screen, locks movement for countdown, ends rounds on player death, stops combat, hides HUD for round-end/game-end screens, applies win tracking, and despawns/repositions players between rounds.
+- Do not reuse `SceneManager3D` directly for Invasion. Doing so would drag PvP round cleanup into a wave-owned PvE mode and fight `InvasionWaveManager3D`, which must remain the owner of wave progression and alive-enemy tracking.
+
 ## Current First Slice
 
 Implemented foundation:
@@ -31,6 +52,7 @@ Implemented foundation:
 - `EnemySpawnerWeapon3D` is a prefab-local enemy spawning weapon for Invasion enemies. It spawns one configured enemy prefab at a configured spawn point, repeats for the configured count, and spaces the sequence by `Delay Between Spawns`. It delegates spawning to `InvasionWaveManager3D.SpawnEnemyAt(...)` so network spawning and alive-enemy wave tracking stay centralized. Multiple `EnemySpawnerWeapon3D` components may live on the same enemy or carrier prefab.
 - `SpawnArrivalEffect3D` is an optional prefab-local one-shot spawn presentation component for Invasion enemies. It can spawn an authored arrival VFX prefab, scale it per ship, hide renderers until reveal, and temporarily disable assigned colliders/brains/weapons so enemies do not act before they visually arrive.
 - `InvasionWaveManager3D` is a minimal finite-wave spawner for configured enemy prefabs
+- `InvasionSceneManager3D` is the dedicated beginning-flow manager for networked Invasion. It owns player spawning, gameplay HUD activation, wave text presentation, optional enemy counter presentation, optional heart/life counter presentation, UI canvas camera/sorting setup, and arena boundary startup.
 
 ## Title Screen Entry
 
@@ -74,6 +96,9 @@ Important tag pitfall:
 The first wave manager supports finite configured waves. Later additions should build on that shape:
 
 - wave entries should spawn enemy prefab counts from authored spawn points
+- `InvasionWaveManager3D` owns wave order, enemy spawning, alive-enemy tracking, wave-clear detection, and inter-wave delay
+- `InvasionSceneManager3D` owns the synchronized `WAVE N` text beat before each wave, using `NetworkSessionData.BroadcastWaveStartServer(...)` in network sessions
+- the optional enemy counter should read `InvasionWaveManager3D`'s tracked alive-enemy count through `InvasionSceneManager3D`; do not make enemies or individual AI brains update HUD directly
 - boss or elite waves should be represented as wave entries, not a separate scene-flow fork
 - scoring, rewards, difficulty scaling, revive rules, and objective variants are planned work
 
@@ -342,7 +367,19 @@ For player prefabs used in Invasion:
 
 For `3d_invasion`:
 
+- add `InvasionSceneManager3D`
+- assign player 1 and player 2 spawn points
+- assign the two fallback 3D `ShipData` assets
+- assign `InvasionWaveManager3D`
+- assign the reused round canvas group/text as the Wave UI references
+- optionally enable `Use Enemy Counter`, assign the enemy counter canvas/root, assign its TMP text, and tune the counter text format
+- optionally enable `Use Life Counter`, assign the heart/life counter canvas group, assign its TMP text, set the starting player lives, and tune the counter text format. This is currently display-only until life loss, respawn, and wipe rules are implemented.
+- assign gameplay HUD roots for health, vignette, crosshair, weapon container, ability container, FPS/ping, enemy tracker, and the enemy counter canvas if it should activate with the rest of gameplay HUD. The life counter is controlled through its canvas group instead of a root active toggle.
+- assign UI canvases and optional UI camera so network HUD sorting is deterministic
+- assign `ArenaBoundary3D` so the scene manager can reset/start it once when gameplay begins
+- do not wire versus, countdown, win tracker, round-end, or game-end UI into this manager
 - add `InvasionWaveManager3D`
+- leave `Start On Enable` off when `InvasionSceneManager3D` owns the scene flow; otherwise waves can begin before players are spawned and before `WAVE N` presentation is subscribed
 - assign spawn points
-- add at least one wave entry using the basic shooter enemy prefab
+- add roughly five finite wave entries for the current target, starting with at least one basic shooter test wave
 - ensure networked enemy prefabs are registered with NGO before network spawning
