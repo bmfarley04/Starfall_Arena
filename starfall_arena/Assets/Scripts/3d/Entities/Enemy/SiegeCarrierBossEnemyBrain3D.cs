@@ -14,6 +14,7 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
         LaggingMachineGunRake,
         PredictiveSplitFan,
         BeamFence,
+        OrbitalEnergyPillars,
         CurtainWithEscapeDoor,
         FormationMissileSalvo,
         LightningSlowBeam
@@ -43,6 +44,51 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
 
     [Tooltip("Optional charge/telegraph visuals paired by index with Lightning Slow Beam Weapons.")]
     [SerializeField] private ProjectileChargeTelegraph3D[] lightningSlowBeamTelegraphs;
+
+    [Header("Orbital Energy Pillars")]
+    [Tooltip("Visual driver that launches white-dwarf-like orbs, draws carrier links, and expands them into vertical energy pillars. Auto-assigned from this GameObject or children when empty.")]
+    [SerializeField] private OrbitalEnergyPillarVisual3D orbitalEnergyPillarVisual;
+
+    [Tooltip("Number of vertical energy pillars placed around the carrier during this pattern.")]
+    [Range(1, 16)]
+    [SerializeField] private int orbitalPillarCount = 6;
+
+    [Tooltip("World-space radius of the ring where the launched orbs settle before becoming pillars.")]
+    [SerializeField] private float orbitalPillarRingRadius = 115f;
+
+    [Tooltip("Empty arc centered on the player direction at pattern start. This creates an intentional escape gap in the boss-centered pillar ring.")]
+    [Range(0f, 330f)]
+    [SerializeField] private float orbitalPillarGapDegrees = 70f;
+
+    [Tooltip("Seconds the launched orbs take to drift from the carrier face into their ring positions.")]
+    [SerializeField] private float orbitalPillarSphereTravelDuration = 0.85f;
+
+    [Tooltip("Seconds the carrier links to the orbs before the pillars expand.")]
+    [SerializeField] private float orbitalPillarLinkDuration = 0.55f;
+
+    [Tooltip("Seconds the cylinders take to expand from the orbs to full damage radius.")]
+    [SerializeField] private float orbitalPillarExpandDuration = 0.3f;
+
+    [Tooltip("Seconds the fully expanded pillars remain damaging before fading.")]
+    [SerializeField] private float orbitalPillarActiveDuration = 1.35f;
+
+    [Tooltip("Seconds the pillar visuals fade after damage ends.")]
+    [SerializeField] private float orbitalPillarFadeDuration = 0.35f;
+
+    [Tooltip("Gameplay radius of each vertical energy pillar.")]
+    [SerializeField] private float orbitalPillarDamageRadius = 16f;
+
+    [Tooltip("Half-height used for server-authoritative damage checks. Keep this taller than the arena so gameplay feels endless without using an actually infinite query.")]
+    [SerializeField] private float orbitalPillarDamageHalfHeight = 3000f;
+
+    [Tooltip("Damage per second applied to player-team entities inside an active pillar.")]
+    [SerializeField] private float orbitalPillarDamagePerSecond = 35f;
+
+    [Tooltip("Seconds between server-authoritative pillar damage ticks.")]
+    [SerializeField] private float orbitalPillarDamageTickInterval = 0.1f;
+
+    [Tooltip("Layers considered by the boss pillar damage check. Set this to the player hitbox/body layers on the prefab.")]
+    [SerializeField] private LayerMask orbitalPillarDamageMask = ~0;
 
     [Header("References")]
     [Tooltip("AI flight motor that lets the boss slowly approach outside range and face the current player while anchored.")]
@@ -279,12 +325,17 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
     private float[] _lightningLastSmoothTimes;
     private bool[] _lightningHasSmoothedDirections;
     private readonly RaycastHit[] _lightningSlowHits = new RaycastHit[8];
+    private readonly Collider[] _orbitalPillarHits = new Collider[64];
+    private readonly Entity3D[] _orbitalPillarDamagedThisTick = new Entity3D[16];
+    private Vector3[] _orbitalPillarCenters;
     private int _patternCursor;
     private int _patternShotsFired;
     private int _patternStepIndex;
     private int _activeBeamCount;
     private int _activeLightningBeamCount;
+    private int _activeOrbitalPillarCount;
     private float _nextLightningSlowTickTime;
+    private float _nextOrbitalPillarDamageTickTime;
     private BossPattern _activePattern;
     private Entity3D _currentTarget;
 
@@ -296,10 +347,12 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
         targetSensor ??= GetComponent<EnemyTargetSensor3D>();
         patrol ??= GetComponent<EnemyPatrol3D>() ?? gameObject.AddComponent<EnemyPatrol3D>();
         netEnemyCombat ??= GetComponent<NetEnemyCombat3D>();
+        orbitalEnergyPillarVisual ??= GetComponentInChildren<OrbitalEnergyPillarVisual3D>(true);
         _preferredPlaneY = transform.position.y;
         EnsureTargetHistoryBuffer();
         EnsureBeamConvergenceBuffers();
         EnsureLightningSlowBeamBuffers();
+        EnsureOrbitalPillarBuffers();
     }
 
     private void OnValidate()
@@ -355,6 +408,18 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
         lightningSlowBeamSlowMultiplier = Mathf.Clamp01(lightningSlowBeamSlowMultiplier);
         lightningSlowBeamSlowDuration = Mathf.Max(0f, lightningSlowBeamSlowDuration);
         lightningSlowBeamSlowTickInterval = Mathf.Max(0.01f, lightningSlowBeamSlowTickInterval);
+        orbitalPillarCount = Mathf.Clamp(orbitalPillarCount, 1, 16);
+        orbitalPillarRingRadius = Mathf.Max(0f, orbitalPillarRingRadius);
+        orbitalPillarGapDegrees = Mathf.Clamp(orbitalPillarGapDegrees, 0f, 330f);
+        orbitalPillarSphereTravelDuration = Mathf.Max(0.01f, orbitalPillarSphereTravelDuration);
+        orbitalPillarLinkDuration = Mathf.Max(0f, orbitalPillarLinkDuration);
+        orbitalPillarExpandDuration = Mathf.Max(0.01f, orbitalPillarExpandDuration);
+        orbitalPillarActiveDuration = Mathf.Max(0.01f, orbitalPillarActiveDuration);
+        orbitalPillarFadeDuration = Mathf.Max(0f, orbitalPillarFadeDuration);
+        orbitalPillarDamageRadius = Mathf.Max(0.01f, orbitalPillarDamageRadius);
+        orbitalPillarDamageHalfHeight = Mathf.Max(orbitalPillarDamageRadius, orbitalPillarDamageHalfHeight);
+        orbitalPillarDamagePerSecond = Mathf.Max(0f, orbitalPillarDamagePerSecond);
+        orbitalPillarDamageTickInterval = Mathf.Max(0.01f, orbitalPillarDamageTickInterval);
     }
 
     private void OnDisable()
@@ -363,6 +428,7 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
         StopLightningSlowBeams();
         StopBeamTelegraphs(immediate: true);
         StopLightningSlowBeamTelegraphs(immediate: true);
+        StopOrbitalEnergyPillars(immediate: true);
         _activePattern = BossPattern.None;
         _currentTarget = null;
         flightController?.ClearFlightIntent();
@@ -458,9 +524,22 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
         lightningSlowBeamSlowMultiplier = Mathf.Clamp01(stats.lightningSlowBeamSlowMultiplier);
         lightningSlowBeamSlowDuration = Mathf.Max(0f, stats.lightningSlowBeamSlowDuration);
         lightningSlowBeamSlowTickInterval = Mathf.Max(0.01f, stats.lightningSlowBeamSlowTickInterval);
+        orbitalPillarCount = Mathf.Clamp(stats.orbitalPillarCount, 1, 16);
+        orbitalPillarRingRadius = Mathf.Max(0f, stats.orbitalPillarRingRadius);
+        orbitalPillarGapDegrees = Mathf.Clamp(stats.orbitalPillarGapDegrees, 0f, 330f);
+        orbitalPillarSphereTravelDuration = Mathf.Max(0.01f, stats.orbitalPillarSphereTravelDuration);
+        orbitalPillarLinkDuration = Mathf.Max(0f, stats.orbitalPillarLinkDuration);
+        orbitalPillarExpandDuration = Mathf.Max(0.01f, stats.orbitalPillarExpandDuration);
+        orbitalPillarActiveDuration = Mathf.Max(0.01f, stats.orbitalPillarActiveDuration);
+        orbitalPillarFadeDuration = Mathf.Max(0f, stats.orbitalPillarFadeDuration);
+        orbitalPillarDamageRadius = Mathf.Max(0.01f, stats.orbitalPillarDamageRadius);
+        orbitalPillarDamageHalfHeight = Mathf.Max(orbitalPillarDamageRadius, stats.orbitalPillarDamageHalfHeight);
+        orbitalPillarDamagePerSecond = Mathf.Max(0f, stats.orbitalPillarDamagePerSecond);
+        orbitalPillarDamageTickInterval = Mathf.Max(0.01f, stats.orbitalPillarDamageTickInterval);
         EnsureTargetHistoryBuffer();
         EnsureBeamConvergenceBuffers();
         EnsureLightningSlowBeamBuffers();
+        EnsureOrbitalPillarBuffers();
     }
 
     private Entity3D ResolveTarget()
@@ -513,6 +592,9 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
                 break;
             case BossPattern.BeamFence:
                 TickBeamFence(target);
+                break;
+            case BossPattern.OrbitalEnergyPillars:
+                TickOrbitalEnergyPillars();
                 break;
             case BossPattern.CurtainWithEscapeDoor:
                 TickCurtain(target);
@@ -567,6 +649,21 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
             _patternEndsAt = Time.time + lightningSlowBeamTelegraphDuration + lightningSlowBeamActiveDuration;
             ResetLightningSlowBeamSmoothing();
             StartLightningSlowBeamTelegraphs();
+            return;
+        }
+
+        if (pattern == BossPattern.OrbitalEnergyPillars)
+        {
+            _activeOrbitalPillarCount = Mathf.Clamp(orbitalPillarCount, 1, 16);
+            _patternEndsAt = Time.time
+                + orbitalPillarSphereTravelDuration
+                + orbitalPillarLinkDuration
+                + orbitalPillarExpandDuration
+                + orbitalPillarActiveDuration
+                + orbitalPillarFadeDuration;
+            BuildOrbitalPillarCenters(target);
+            _nextOrbitalPillarDamageTickTime = Time.time + orbitalPillarSphereTravelDuration + orbitalPillarLinkDuration + orbitalPillarExpandDuration;
+            StartOrbitalEnergyPillars(target);
             return;
         }
 
@@ -753,12 +850,39 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
         }
     }
 
+    private void TickOrbitalEnergyPillars()
+    {
+        if (_activeOrbitalPillarCount <= 0)
+        {
+            FinishPattern();
+            return;
+        }
+
+        float activeStartTime = _patternEndsAt - orbitalPillarFadeDuration - orbitalPillarActiveDuration;
+        float activeEndTime = _patternEndsAt - orbitalPillarFadeDuration;
+        if (Time.time >= activeStartTime && Time.time < activeEndTime)
+        {
+            if (Time.time >= _nextOrbitalPillarDamageTickTime)
+            {
+                ApplyOrbitalPillarDamage();
+                _nextOrbitalPillarDamageTickTime = Time.time + orbitalPillarDamageTickInterval;
+            }
+            return;
+        }
+
+        if (Time.time >= _patternEndsAt)
+        {
+            FinishPattern();
+        }
+    }
+
     private void FinishPattern()
     {
         StopBeamTelegraphs(immediate: false);
         StopActiveBeams();
         StopLightningSlowBeamTelegraphs(immediate: false);
         StopLightningSlowBeams();
+        StopOrbitalEnergyPillars(immediate: false);
         ResetBeamConvergenceSmoothing();
         ResetLightningSlowBeamSmoothing();
         _activePattern = BossPattern.None;
@@ -776,6 +900,7 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
         StopActiveBeams();
         StopLightningSlowBeamTelegraphs(immediate: true);
         StopLightningSlowBeams();
+        StopOrbitalEnergyPillars(immediate: true);
         ResetBeamConvergenceSmoothing();
         ResetLightningSlowBeamSmoothing();
         _activePattern = BossPattern.None;
@@ -792,6 +917,8 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
                 return HasAnyWeapon(predictiveFanWeapons);
             case BossPattern.BeamFence:
                 return beamFenceWeapons != null && beamFenceWeapons.Length > 0;
+            case BossPattern.OrbitalEnergyPillars:
+                return orbitalEnergyPillarVisual != null && orbitalPillarCount > 0;
             case BossPattern.CurtainWithEscapeDoor:
                 return HasAnyWeapon(curtainWeapons);
             case BossPattern.FormationMissileSalvo:
@@ -1232,6 +1359,199 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
         }
     }
 
+    private void StartOrbitalEnergyPillars(Entity3D target)
+    {
+        Vector3 origin = transform.position;
+        Vector3 faceForward = ResolvePlanarDirection(transform.forward, Vector3.forward);
+        Vector3 gapDirection = ResolveOrbitalPillarGapDirection(target);
+        PlayOrbitalEnergyPillarsLocal(origin, faceForward, gapDirection, elapsed: 0f);
+
+        if (ShouldReplicateTelegraph())
+        {
+            StartOrbitalEnergyPillarClientRpc(
+                origin,
+                faceForward,
+                gapDirection,
+                _activeOrbitalPillarCount,
+                orbitalPillarRingRadius,
+                orbitalPillarGapDegrees,
+                orbitalPillarDamageRadius,
+                orbitalPillarSphereTravelDuration,
+                orbitalPillarLinkDuration,
+                orbitalPillarExpandDuration,
+                orbitalPillarActiveDuration,
+                orbitalPillarFadeDuration,
+                ResolveNetworkServerTime());
+        }
+    }
+
+    private void PlayOrbitalEnergyPillarsLocal(Vector3 origin, Vector3 faceForward, Vector3 gapDirection, float elapsed)
+    {
+        if (orbitalEnergyPillarVisual == null)
+        {
+            return;
+        }
+
+        orbitalEnergyPillarVisual.Play(
+            origin,
+            faceForward,
+            gapDirection,
+            _activeOrbitalPillarCount,
+            orbitalPillarRingRadius,
+            orbitalPillarGapDegrees,
+            orbitalPillarDamageRadius,
+            orbitalPillarSphereTravelDuration,
+            orbitalPillarLinkDuration,
+            orbitalPillarExpandDuration,
+            orbitalPillarActiveDuration,
+            orbitalPillarFadeDuration,
+            elapsed);
+    }
+
+    private void StopOrbitalEnergyPillars(bool immediate)
+    {
+        if (immediate)
+        {
+            orbitalEnergyPillarVisual?.StopImmediate();
+        }
+
+        if (ShouldReplicateTelegraph())
+        {
+            StopOrbitalEnergyPillarClientRpc();
+        }
+    }
+
+    [ClientRpc]
+    private void StartOrbitalEnergyPillarClientRpc(
+        Vector3 origin,
+        Vector3 faceForward,
+        Vector3 gapDirection,
+        int pillarCount,
+        float ringRadius,
+        float gapDegrees,
+        float pillarRadius,
+        float travelDuration,
+        float linkDuration,
+        float expandDuration,
+        float activeDuration,
+        float fadeDuration,
+        double serverStartTime)
+    {
+        if (IsServer)
+        {
+            return;
+        }
+
+        _activeOrbitalPillarCount = Mathf.Clamp(pillarCount, 1, 16);
+        orbitalPillarRingRadius = Mathf.Max(0f, ringRadius);
+        orbitalPillarGapDegrees = Mathf.Clamp(gapDegrees, 0f, 330f);
+        orbitalPillarDamageRadius = Mathf.Max(0.01f, pillarRadius);
+        orbitalPillarSphereTravelDuration = Mathf.Max(0.01f, travelDuration);
+        orbitalPillarLinkDuration = Mathf.Max(0f, linkDuration);
+        orbitalPillarExpandDuration = Mathf.Max(0.01f, expandDuration);
+        orbitalPillarActiveDuration = Mathf.Max(0.01f, activeDuration);
+        orbitalPillarFadeDuration = Mathf.Max(0f, fadeDuration);
+
+        float elapsed = 0f;
+        if (NetworkManager.Singleton != null && serverStartTime > 0d)
+        {
+            elapsed = Mathf.Max(0f, (float)(NetworkManager.Singleton.ServerTime.Time - serverStartTime));
+        }
+
+        PlayOrbitalEnergyPillarsLocal(origin, faceForward, gapDirection, elapsed);
+    }
+
+    [ClientRpc]
+    private void StopOrbitalEnergyPillarClientRpc()
+    {
+        if (IsServer)
+        {
+            return;
+        }
+
+        orbitalEnergyPillarVisual?.StopImmediate();
+    }
+
+    private void ApplyOrbitalPillarDamage()
+    {
+        if (_orbitalPillarCenters == null || _activeOrbitalPillarCount <= 0 || orbitalPillarDamagePerSecond <= 0f)
+        {
+            return;
+        }
+
+        float damageThisTick = orbitalPillarDamagePerSecond * orbitalPillarDamageTickInterval;
+        float radiusSqr = orbitalPillarDamageRadius * orbitalPillarDamageRadius;
+        int damagedCount = 0;
+
+        for (int pillarIndex = 0; pillarIndex < _activeOrbitalPillarCount; pillarIndex++)
+        {
+            Vector3 center = _orbitalPillarCenters[pillarIndex];
+            Vector3 bottom = center - Vector3.up * orbitalPillarDamageHalfHeight;
+            Vector3 top = center + Vector3.up * orbitalPillarDamageHalfHeight;
+            int hitCount = Physics.OverlapCapsuleNonAlloc(
+                bottom,
+                top,
+                orbitalPillarDamageRadius,
+                _orbitalPillarHits,
+                orbitalPillarDamageMask,
+                QueryTriggerInteraction.Ignore);
+
+            for (int hitIndex = 0; hitIndex < hitCount; hitIndex++)
+            {
+                Collider hit = _orbitalPillarHits[hitIndex];
+                if (hit == null || hit.transform.IsChildOf(transform))
+                {
+                    continue;
+                }
+
+                Entity3D target = ResolveHitEntity(hit);
+                if (target == null
+                    || target == _enemy
+                    || target.CurrentHealth <= 0f
+                    || FactionMember3D.ResolveFaction(target) != Faction3D.PlayerTeam)
+                {
+                    continue;
+                }
+
+                if (WasAlreadyDamagedByPillar(target, damagedCount))
+                {
+                    continue;
+                }
+
+                Vector3 targetPoint = hit.bounds.center;
+                Vector2 planarOffset = new Vector2(targetPoint.x - center.x, targetPoint.z - center.z);
+                if (planarOffset.sqrMagnitude > radiusSqr || Mathf.Abs(targetPoint.y - center.y) > orbitalPillarDamageHalfHeight)
+                {
+                    continue;
+                }
+
+                target.TakeDamage(damageThisTick, targetPoint, _enemy, DamageSource3D.Beam, PlayerCombatStats3D.InvalidAttackId);
+                if (damagedCount < _orbitalPillarDamagedThisTick.Length)
+                {
+                    _orbitalPillarDamagedThisTick[damagedCount++] = target;
+                }
+            }
+        }
+
+        for (int i = 0; i < damagedCount; i++)
+        {
+            _orbitalPillarDamagedThisTick[i] = null;
+        }
+    }
+
+    private bool WasAlreadyDamagedByPillar(Entity3D target, int damagedCount)
+    {
+        for (int i = 0; i < damagedCount; i++)
+        {
+            if (_orbitalPillarDamagedThisTick[i] == target)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private Vector3 ResolveHistoricalTargetPoint(float secondsBehind)
     {
         if (_historyCount <= 0 || _targetHistory == null || _targetHistory.Length == 0)
@@ -1354,6 +1674,60 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
         _lightningSmoothedDirections = new Vector3[size];
         _lightningLastSmoothTimes = new float[size];
         _lightningHasSmoothedDirections = new bool[size];
+    }
+
+    private void EnsureOrbitalPillarBuffers()
+    {
+        int size = Mathf.Clamp(orbitalPillarCount, 1, 16);
+        if (_orbitalPillarCenters != null && _orbitalPillarCenters.Length == size)
+        {
+            return;
+        }
+
+        _orbitalPillarCenters = new Vector3[size];
+    }
+
+    private void BuildOrbitalPillarCenters(Entity3D target)
+    {
+        _activeOrbitalPillarCount = Mathf.Clamp(_activeOrbitalPillarCount, 1, 16);
+        if (_orbitalPillarCenters == null || _orbitalPillarCenters.Length < _activeOrbitalPillarCount)
+        {
+            _orbitalPillarCenters = new Vector3[_activeOrbitalPillarCount];
+        }
+
+        Vector3 gapDirection = ResolveOrbitalPillarGapDirection(target);
+        float coveredArc = Mathf.Max(0f, 360f - orbitalPillarGapDegrees);
+        for (int i = 0; i < _activeOrbitalPillarCount; i++)
+        {
+            float angle;
+            if (_activeOrbitalPillarCount <= 1)
+            {
+                angle = 180f;
+            }
+            else if (orbitalPillarGapDegrees <= 0.01f)
+            {
+                angle = i * (360f / _activeOrbitalPillarCount);
+            }
+            else
+            {
+                float t = i / (float)(_activeOrbitalPillarCount - 1);
+                angle = (orbitalPillarGapDegrees * 0.5f) + t * coveredArc;
+            }
+
+            Vector3 direction = Quaternion.AngleAxis(angle, Vector3.up) * gapDirection;
+            _orbitalPillarCenters[i] = transform.position + direction.normalized * orbitalPillarRingRadius;
+        }
+    }
+
+    private Vector3 ResolveOrbitalPillarGapDirection(Entity3D target)
+    {
+        if (IsTargetValid(target))
+        {
+            Vector3 toTarget = target.transform.position - transform.position;
+            return ResolvePlanarDirection(toTarget, transform.forward);
+        }
+
+        return ResolvePlanarDirection(transform.forward, Vector3.forward);
     }
 
     private void ResetBeamConvergenceSmoothing()
@@ -1689,6 +2063,18 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
         }
 
         return angle;
+    }
+
+    private static Vector3 ResolvePlanarDirection(Vector3 direction, Vector3 fallback)
+    {
+        direction.y = 0f;
+        if (direction.sqrMagnitude > 0.0001f)
+        {
+            return direction.normalized;
+        }
+
+        fallback.y = 0f;
+        return fallback.sqrMagnitude > 0.0001f ? fallback.normalized : Vector3.forward;
     }
 
     private void PatrolOrClearFlightIntent()

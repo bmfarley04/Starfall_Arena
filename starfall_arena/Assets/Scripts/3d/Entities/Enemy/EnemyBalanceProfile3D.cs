@@ -410,6 +410,30 @@ public abstract class EnemyBalanceProfile3D : ScriptableObject
         [Min(0f)] public float lightningSlowBeamSlowDuration;
         [Tooltip("Seconds between server-authoritative slow checks while the lightning beams are active.")]
         [Min(0.01f)] public float lightningSlowBeamSlowTickInterval;
+        [Tooltip("Number of vertical energy pillars placed around the carrier during the orbital pillar pattern.")]
+        [Range(1, 16)] public int orbitalPillarCount;
+        [Tooltip("World-space radius of the ring where launched orbs settle before becoming pillars.")]
+        [Min(0f)] public float orbitalPillarRingRadius;
+        [Tooltip("Empty arc centered on the player direction at pattern start, creating an intentional escape gap.")]
+        [Range(0f, 330f)] public float orbitalPillarGapDegrees;
+        [Tooltip("Seconds the launched orbs take to drift from the carrier face into ring positions.")]
+        [Min(0.01f)] public float orbitalPillarSphereTravelDuration;
+        [Tooltip("Seconds the carrier links to the orbs before the pillars expand.")]
+        [Min(0f)] public float orbitalPillarLinkDuration;
+        [Tooltip("Seconds the cylinders take to expand from orb size to full damage radius.")]
+        [Min(0.01f)] public float orbitalPillarExpandDuration;
+        [Tooltip("Seconds the fully expanded pillars remain damaging before fading.")]
+        [Min(0.01f)] public float orbitalPillarActiveDuration;
+        [Tooltip("Seconds the pillar visuals fade after damage ends.")]
+        [Min(0f)] public float orbitalPillarFadeDuration;
+        [Tooltip("Gameplay radius of each vertical energy pillar.")]
+        [Min(0.01f)] public float orbitalPillarDamageRadius;
+        [Tooltip("Half-height used for bounded server damage checks while the visual reads as endless.")]
+        [Min(0.01f)] public float orbitalPillarDamageHalfHeight;
+        [Tooltip("Damage per second applied to player-team entities inside an active pillar.")]
+        [Min(0f)] public float orbitalPillarDamagePerSecond;
+        [Tooltip("Seconds between server-authoritative pillar damage ticks.")]
+        [Min(0.01f)] public float orbitalPillarDamageTickInterval;
     }
 
     [Header("Shared Core")]

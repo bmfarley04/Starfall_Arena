@@ -1,0 +1,80 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &1000000000000000001
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4000000000000000001}
+  - component: {fileID: 1140000000000000001}
+  m_Layer: 0
+  m_Name: SiegeCarrierOrbitalEnergyPillarVisual3D
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &4000000000000000001
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1000000000000000001}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1140000000000000001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1000000000000000001}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2ab70a245dc04766b1bd9552683de7a2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  orbPrefab: {fileID: 1000000000000000001, guid: 5c0b7883fe5844d4a49939e8b45b4d1f, type: 3}
+  fallbackOrbMaterial: {fileID: 0}
+  orbScale: 10
+  launchOffset: 18
+  linkMaterial: {fileID: 0}
+  linkWidth: 1.4
+  linkColor: {r: 6, g: 0.25, b: 0.12, a: 1}
+  pillarVisualPrefab: {fileID: 1000000000000000001, guid: e8bfa6a6936f47c7a6b7f3f4a981fb10, type: 3}
+  pillarMaterial: {fileID: 2100000, guid: 423ce7b2e64a4f68846507278ef894a9, type: 2}
+  pillarVisualHeight: 6000
+  pillarOpacity: 1
+  coreRadiusScale: 0.42
+  coreLayerIntensity: 1.25
+  shellRadiusScale: 1
+  shellLayerIntensity: 1
+  haloRadiusScale: 1.45
+  haloLayerIntensity: 0.38
+  arcMaterial: {fileID: 2100000, guid: 3ab5b4de0c3440e1b69183ecaf3df916, type: 2}
+  arcCountPerPillar: 9
+  arcSegmentCount: 7
+  arcWidth: 5.5
+  arcOutwardRadiusMin: 1.03
+  arcOutwardRadiusMax: 1.85
+  arcVerticalSpanMin: 90
+  arcVerticalSpanMax: 340
+  arcVerticalCenterRange: 460
+  arcVerticalDriftSpeed: 55
+  arcWrapAngleMin: 35
+  arcWrapAngleMax: 155
+  arcRetargetInterval: 0.18
+  arcFadeFraction: 0.16
+  arcIntensity: 2.35
+  arcBranchChance: 0.75
+  arcBranchIntensity: 1.1

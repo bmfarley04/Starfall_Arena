@@ -65,3 +65,25 @@ MonoBehaviour:
     beamConvergenceLagSeconds: 0
     beamConvergenceLagBlend: 0
     beamConvergenceAimSmoothTime: 0.025
+    lightningSlowBeamTelegraphDuration: 0.45
+    lightningSlowBeamActiveDuration: 1.35
+    lightningSlowBeamAimRefreshInterval: 0.02
+    lightningSlowBeamCount: 2
+    lightningSlowBeamLeadSeconds: 0.12
+    lightningSlowBeamAimSmoothTime: 0.025
+    lightningSlowBeamSlowRadius: 1.25
+    lightningSlowBeamSlowMultiplier: 0.45
+    lightningSlowBeamSlowDuration: 0.18
+    lightningSlowBeamSlowTickInterval: 0.08
+    orbitalPillarCount: 6
+    orbitalPillarRingRadius: 115
+    orbitalPillarGapDegrees: 70
+    orbitalPillarSphereTravelDuration: 0.85
+    orbitalPillarLinkDuration: 0.55
+    orbitalPillarExpandDuration: 0.3
+    orbitalPillarActiveDuration: 1.35
+    orbitalPillarFadeDuration: 0.35
+    orbitalPillarDamageRadius: 16
+    orbitalPillarDamageHalfHeight: 3000
+    orbitalPillarDamagePerSecond: 35
+    orbitalPillarDamageTickInterval: 0.1

@@ -1,0 +1,44 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: orb_core
+  m_Shader: {fileID: 4800000, guid: 19f8c8b2b2a64d19b8e9d2a9a21d0b43, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs: []
+    m_Ints: []
+    m_Floats:
+    - _Brightness: 0.2
+    - _CellSharpness: 16
+    - _ExternalPulseIntensity: 1.0002841
+    - _FlowSpeed: 0.12
+    - _LimbDarkening: 0.24
+    - _NoiseScale: 9.3
+    - _PulseSpeed: 1
+    - _PulseStrength: 0.381
+    - _RimPower: 3.1
+    - _RimStrength: 1.65
+    - _RotationSpeed: 0.035
+    m_Colors:
+    - _BlueRimColor: {r: 1.1, g: 3.9, b: 8.4, a: 1}
+    - _CoreColor: {r: 0, g: 2.739479, b: 5.7408385, a: 1}
+    - _HotCellColor: {r: 1.7999796, g: 3.8806627, b: 11.681516, a: 1}
+  m_BuildTextureStacks: []
+  m_AllowLocking: 1

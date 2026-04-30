@@ -60,7 +60,19 @@ public class SiegeCarrierBossBalanceProfile3D : EnemyBalanceProfile3D
         lightningSlowBeamSlowRadius = 1.25f,
         lightningSlowBeamSlowMultiplier = 0.45f,
         lightningSlowBeamSlowDuration = 0.18f,
-        lightningSlowBeamSlowTickInterval = 0.08f
+        lightningSlowBeamSlowTickInterval = 0.08f,
+        orbitalPillarCount = 6,
+        orbitalPillarRingRadius = 115f,
+        orbitalPillarGapDegrees = 70f,
+        orbitalPillarSphereTravelDuration = 0.85f,
+        orbitalPillarLinkDuration = 0.55f,
+        orbitalPillarExpandDuration = 0.3f,
+        orbitalPillarActiveDuration = 1.35f,
+        orbitalPillarFadeDuration = 0.35f,
+        orbitalPillarDamageRadius = 16f,
+        orbitalPillarDamageHalfHeight = 3000f,
+        orbitalPillarDamagePerSecond = 35f,
+        orbitalPillarDamageTickInterval = 0.1f
     };
 
     public override void ApplyBrainStats(GameObject prefabRoot)

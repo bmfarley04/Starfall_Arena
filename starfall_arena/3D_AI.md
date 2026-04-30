@@ -162,13 +162,15 @@ The 3D AI path should stay modular. Enemy prefabs should compose small scripts i
   - alerts are server-authoritative in networked Invasion because the brain only runs on the server/host; clients receive movement through `NetEnemyMovement3D`
 - `SiegeCarrierBossEnemyBrain3D`
   - slow/stationary second Invasion boss that acts like a Siege Carrier rather than a normal chaser
-  - keeps one major pattern active at a time: lagging machine-gun rake, predictive split fan, lagging beam convergence, curtain with an escape door, formation missile salvo, or a two-beam lightning slow attack
+  - keeps one major pattern active at a time: lagging machine-gun rake, predictive split fan, lagging beam convergence, boss-centered orbital energy pillars, curtain with an escape door, formation missile salvo, or a two-beam lightning slow attack
   - resolves lagging-rake aim independently per shot; the default is precise current/velocity lead fire, with optional history blending only when designers intentionally want a trailing-fire look
   - computes a simple velocity lead for the split fan, then offsets authored weapon lanes around that center direction
   - fires curtain lanes around the target direction while deliberately skipping a drifting escape-door sector
   - drives multiple `BeamWeapon3D` hardpoints for lagging beam convergence through indexed `NetEnemyCombat3D` beam replication; every active hardpoint aims from its own muzzle origin toward one slightly delayed target point
   - drives two assigned `BeamWeapon3D` hardpoints for the lightning slow attack; this pattern uses low-lag velocity lead and fast aim refresh so it is intentionally accurate, while the brain applies a short refreshed movement slow only when its own line-of-sight spherecast confirms a beam lane reaches the player
   - can drive `FormationMissileSalvoWeaponEnemy3D` as a single major pattern; budget cost should match the salvo missile count so simultaneous missile blooms stay performance-accountable
+  - can drive an orbital energy-pillar pattern: white-dwarf-like orbs launch from the carrier face, settle into a horizontal ring around the boss with a target-facing escape gap, link back to the carrier, then expand into tall world-Y cylinders that damage player-team entities only on the server
+  - supports either the preserved red/white V1 pillar visual or the blue/white V2 plasma visual; V2 prioritizes internal storm texture with generated fractal lightning channels, branch ribbons, and spark/glint billboards while leaving gameplay timing and server-authoritative damage on the boss brain/profile
   - uses `EnemyAIFlightController3D` only for range maintenance; turret/lane pressure is owned by the boss brain, not independent turret AI
   - movement bands: no target uses patrol/search; detected but beyond `preferredRangeMax` approaches; inside `preferredRangeMin` backs away; inside the preferred range band clears flight intent and does not continually rotate the hull to face the player
   - movement is plane-biased: the boss mostly preserves its starting horizontal plane and only follows target height by the serialized vertical-follow weight, while projectile and beam patterns still aim at the target's real world position

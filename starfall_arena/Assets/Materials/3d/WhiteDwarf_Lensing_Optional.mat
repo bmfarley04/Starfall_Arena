@@ -29,7 +29,7 @@ Material:
     - _BendFalloff: 2.2
     - _BendStrength: 0.35
     - _ChromaticAberration: 0.0093
-    - _ExternalPulseIntensity: 0.19
+    - _ExternalPulseIntensity: 1.0002841
     - _LensGlowIntensity: 3.29
     - _LensGlowPower: 3.1
     - _LensOpacity: 0.277
