@@ -165,18 +165,27 @@ Shader "Starfall/3D/InvasionAbilityWarningSphere"
                 noiseCoord += float3(time * _NoiseSpeed, -time * _NoiseSpeed * 0.73, time * _NoiseSpeed * 0.41);
                 float broadNoise = fbm3d(noiseCoord);
                 float fineNoise = fbm3d(noiseCoord * 2.37 + float3(8.1, 19.4, -3.7));
-                float turbulent = saturate((broadNoise * 0.7 + fineNoise * 0.3) * _NoiseContrast);
 
-                float breakupThreshold = lerp(0.06, 0.62, _EdgeBreakup);
-                float breakup = smoothstep(breakupThreshold, min(1.0, breakupThreshold + 0.28), turbulent);
-                float preservedEdge = lerp(1.0, max(0.18, breakup), _EdgeBreakup);
+                // Keep contrast centered around 0.5. Multiplying then saturating flattens
+                // most sphere samples to white, which hides the intended flame breakup.
+                float rawNoise = saturate(broadNoise * 0.64 + fineNoise * 0.36);
+                float turbulent = saturate((rawNoise - 0.5) * _NoiseContrast + 0.5);
+                float ridgeNoise = 1.0 - abs(turbulent * 2.0 - 1.0);
 
-                float hotMask = pow(saturate(turbulent * ringMask), 3.0);
-                float shellMask = saturate(fresnel * preservedEdge + _InnerFill * 0.35);
+                float breakupThreshold = lerp(0.18, 0.48, 1.0 - _EdgeBreakup);
+                float flameBreakup = smoothstep(breakupThreshold, min(1.0, breakupThreshold + 0.32), ridgeNoise);
+                float darkPocket = smoothstep(0.18, 0.82, turbulent);
+                float breakupMask = lerp(1.0, lerp(0.18, 1.2, flameBreakup), _EdgeBreakup);
+                float darkGapMask = lerp(1.0, lerp(0.22, 1.0, darkPocket), _EdgeBreakup);
+
+                float hotMask = pow(saturate(flameBreakup * ringMask), 2.2);
+                float innerNoise = lerp(0.2, 1.0, turbulent);
+                float shellMask = saturate((fresnel * breakupMask + _InnerFill * innerNoise) * darkGapMask);
                 float pulse = 1.0 + sin(time * _PulseSpeed * 6.28318530718) * _PulseStrength;
 
                 half3 color = lerp(_CoreColor.rgb, _RimColor.rgb, saturate(fresnel));
                 color = lerp(color, _HotColor.rgb, saturate(hotMask * 1.35));
+                color *= lerp(0.45, 1.25, turbulent);
                 color *= shellMask * pulse * _ExternalIntensity * _Reveal;
 
                 half alpha = saturate(shellMask * _Opacity * _Reveal);

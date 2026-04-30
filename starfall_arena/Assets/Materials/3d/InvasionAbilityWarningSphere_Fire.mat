@@ -25,22 +25,22 @@ Material:
     m_TexEnvs: []
     m_Ints: []
     m_Floats:
-    - _EdgeBreakup: 0.431
-    - _ExternalIntensity: 2.16
-    - _FresnelPower: 0.25
-    - _FresnelStrength: 0.39
-    - _InnerFill: 0.181
-    - _NoiseContrast: 3.49
-    - _NoiseScale: 44
+    - _EdgeBreakup: 0.78
+    - _ExternalIntensity: 1.35
+    - _FresnelPower: 1.15
+    - _FresnelStrength: 2.8
+    - _InnerFill: 0.065
+    - _NoiseContrast: 2.55
+    - _NoiseScale: 18
     - _NoiseSpeed: 0.55
     - _Opacity: 1
     - _PulseSpeed: 1.6
     - _PulseStrength: 0.18
     - _Reveal: 1
-    - _RingThickness: 0.489
+    - _RingThickness: 0.56
     m_Colors:
     - _CoreColor: {r: 1.85, g: 0.18, b: 0.02, a: 1}
-    - _HotColor: {r: 8.999999, g: 1.1780105, b: 1.4081513, a: 1}
+    - _HotColor: {r: 9, g: 5.2, b: 1.15, a: 1}
     - _RimColor: {r: 6, g: 0.42, b: 0.04, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1
