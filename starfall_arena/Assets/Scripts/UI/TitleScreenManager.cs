@@ -266,6 +266,7 @@ public class TitleScreenManager : MonoBehaviour
         if (autoStart3DTestFlowOnSceneStart)
         {
             PrepareImmediateTestFlowStart();
+            yield return WaitForAutoStart3DTestFlowReadiness();
             StartConfigured3DTestFlow();
             yield break;
         }
@@ -1506,6 +1507,30 @@ public class TitleScreenManager : MonoBehaviour
             SetButtonsEnabled(mainMenuCanvas, false);
             _activeCanvas = mainMenuCanvas;
         }
+    }
+
+    private IEnumerator WaitForAutoStart3DTestFlowReadiness()
+    {
+        const float readinessTimeoutSeconds = 1f;
+        float elapsed = 0f;
+
+        while (elapsed < readinessTimeoutSeconds)
+        {
+            if (NetMgr.Instance != null &&
+                NetworkSessionData.Instance != null &&
+                Unity.Netcode.NetworkManager.Singleton != null)
+            {
+                _netMgr = NetMgr.Instance;
+                _sessionData = NetworkSessionData.Instance;
+                yield break;
+            }
+
+            elapsed += Time.unscaledDeltaTime;
+            yield return null;
+        }
+
+        _netMgr = NetMgr.Instance;
+        _sessionData = NetworkSessionData.Instance;
     }
 
     private void SetHostModePreviewModelsActive(bool active)

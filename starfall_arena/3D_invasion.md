@@ -63,6 +63,7 @@ Implemented foundation:
 - test-only title shortcuts may also target `3d_invasion`, but they should still wait for the normal network `ShipSelect` state before auto-locking their fixed test ships; skipping that visible state makes the join flow look frozen even when the session is progressing correctly
 - the title scene can now optionally auto-start that same 3D invasion test flow on scene load and pick host or client from a serialized default role, so repeated local invasion/network setup does not require manual menu navigation every run
 - when that auto-start path runs as a client, the title flow must keep retrying the move out of the join/IP canvas if the network session reaches `ShipSelect` before the join transition animation finishes; otherwise the client appears stuck on the join UI even though the invasion test flow is already live underneath it
+- the auto-start invasion test helper should wait for the menu/network singletons to finish scene startup before launching the client path; calling the same helper too early from title-scene `Start()` is not reliably equivalent to pressing the test-client button after the scene is already idle
 
 ## Mode Ownership
 
