@@ -12,6 +12,10 @@ Shader "Starfall/3D/PortalDisk"
         _RimSoftness("Rim Softness", Range(0.001, 0.5)) = 0.09
         _FresnelStrength("Fresnel Strength", Range(0.0, 8.0)) = 1.15
         _FresnelPower("Fresnel Power", Range(0.25, 12.0)) = 3.0
+        _RimSpinSpeed("Rim Spin Speed", Float) = 0.35
+        _RimSegmentFrequency("Rim Segment Frequency", Range(1.0, 64.0)) = 18.0
+        _RimSegmentContrast("Rim Segment Contrast", Range(0.0, 1.0)) = 0.35
+        _RimSegmentSharpness("Rim Segment Sharpness", Range(0.25, 8.0)) = 2.4
 
         [Header(Inner Surface)]
         [HDR]_InnerColor("Inner HDR Color", Color) = (0.55, 0.1, 1.1, 1.0)
@@ -48,6 +52,8 @@ Shader "Starfall/3D/PortalDisk"
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 
+            #define STARFALL_TWO_PI 6.28318530718
+
             struct Attributes
             {
                 float4 positionOS : POSITION;
@@ -72,6 +78,10 @@ Shader "Starfall/3D/PortalDisk"
                 half _RimSoftness;
                 half _FresnelStrength;
                 half _FresnelPower;
+                half _RimSpinSpeed;
+                half _RimSegmentFrequency;
+                half _RimSegmentContrast;
+                half _RimSegmentSharpness;
 
                 half4 _InnerColor;
                 half _InnerBrightness;
@@ -99,6 +109,8 @@ Shader "Starfall/3D/PortalDisk"
             {
                 float2 centeredUv = input.uv * 2.0 - 1.0;
                 float radius = length(centeredUv);
+                float angle = atan2(centeredUv.y, centeredUv.x);
+                float angular01 = frac(angle / STARFALL_TWO_PI + 0.5);
 
                 float diskMask = 1.0 - smoothstep(0.985, 1.0, radius);
 
@@ -112,7 +124,11 @@ Shader "Starfall/3D/PortalDisk"
                     float3 normalWS = normalize(input.normalWS);
                     float3 viewDirectionWS = SafeNormalize(GetWorldSpaceViewDir(input.positionWS));
                     half fresnel = pow(saturate(1.0h - abs(dot(normalWS, viewDirectionWS))), _FresnelPower);
-                    half rimEnergy = saturate(rimMask * (1.0h + fresnel * _FresnelStrength));
+                    float movingAngle = frac(angular01 + _Time.y * _RimSpinSpeed);
+                    half rimSegments = 0.5h + 0.5h * sin(movingAngle * _RimSegmentFrequency * STARFALL_TWO_PI);
+                    rimSegments = pow(saturate(rimSegments), _RimSegmentSharpness);
+                    half spinModulation = lerp(1.0h - _RimSegmentContrast, 1.0h + _RimSegmentContrast, rimSegments);
+                    half rimEnergy = saturate(rimMask * (1.0h + fresnel * _FresnelStrength) * spinModulation);
 
                     half alpha = saturate(rimEnergy);
                     half3 color = _RimColor.rgb * _RimBrightness * rimEnergy;
