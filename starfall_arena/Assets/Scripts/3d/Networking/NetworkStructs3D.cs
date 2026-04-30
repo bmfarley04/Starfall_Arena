@@ -89,6 +89,7 @@ public enum NetProjectileVisualType3D : byte
     EnemyMissile = 10,
     EnemySecondaryProjectile = 11,
     EnemyFormationMissile = 12,
+    EnemyHelixProjectile = 13,
 }
 
 public struct NetProjectileFireRequest3D : INetworkSerializable

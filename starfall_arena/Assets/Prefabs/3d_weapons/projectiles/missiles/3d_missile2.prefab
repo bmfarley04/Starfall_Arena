@@ -4864,6 +4864,15 @@ MonoBehaviour:
     explosionPrefab: {fileID: 100014, guid: d96258cdf841f5e4d8af97dce9661d8c, type: 3}
     explosionScale: 2
     impactSound: {fileID: 11400000, guid: 52e8c58e387b89849affa74c78d6d899, type: 2}
+  areaDamage:
+    enabled: 1
+    explosionRadius: 6
+    explosionDamage: 0
+    explosionImpactForce: 0
+    collisionMask:
+      serializedVersion: 2
+      m_Bits: 4294967295
+    maxOverlapColliders: 16
 --- !u!1 &152454
 GameObject:
   m_ObjectHideFlags: 0

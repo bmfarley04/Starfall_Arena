@@ -85,11 +85,18 @@ Base input rule:
   - consumes the inherited weapon cooldown once to start a rack sequence, then fires one configured muzzle at a time using `turretStaggerInterval` until the sequence finishes
   - can either walk the configured muzzles sequentially or pick a random turret for each staggered shot
   - uses `EnemySecondaryProjectile` as its network visual type so client cosmetic replay can distinguish small turret bolts from the fortress's heavy cannon projectile
+- `HelixSpiralProjectileWeaponEnemy3D`
+  - enemy-only Siege Carrier projectile component for corkscrew/drill-style barrages
+  - owns the helix tuning directly: shot count, shot interval, spiral cone angle, degrees per shot, target lead, alternating spin direction, and whether one muzzle or all muzzles fire per shot
+  - can walk a single component across several configured muzzles one shot at a time, avoiding a pile of separate projectile weapon components for one boss pattern
+  - uses its own `EnemyHelixProjectile` network visual type so remote clients resolve the helix projectile prefab from the helix component instead of another enemy secondary projectile weapon
+  - resolves the final corkscrew direction per muzzle/spawn point, not from the carrier root, so wide hardpoints do not fire parallel lines that miss a stationary target until the boss body happens to face the player
 - `SiegeCarrierBossEnemyBrain3D`
   - boss-level enemy pattern sequencer that reuses enemy projectile weapons instead of spawning bullets from a custom standalone spawner
-  - owns the current major patterns: lagging rake, lagging beam convergence, orbital energy pillars, formation missile salvo, a two-hardpoint lightning slow beam, and an optional enemy spawn wave
+  - owns the current major patterns: lagging rake, helix spiral barrage, lagging beam convergence, orbital energy pillars, formation missile salvo, a two-hardpoint lightning slow beam, and an optional enemy spawn wave
     - keeps a serialized `maxShotsPerPattern` cap so bullet-hell pressure stays readable and performance-bound
     - keeps boss weapon references in a foldout section while weapon components still own projectile prefabs, muzzle FX, cooldown gates, pooling, and network request building
+    - the helix spiral barrage delegates spiral math and muzzle sequencing to one assigned `HelixSpiralProjectileWeaponEnemy3D`, while the brain only starts/ticks the boss pattern
     - the lightning slow-beam pattern uses two assigned `BeamWeapon3D` components for visual/damage authority, then applies the slow from the boss brain with a separate line-of-sight spherecast so only this boss attack gains slow without changing every beam prefab in the project
     - convergence and lightning slow-beam patterns can enable explicit behind-hardpoint aim on their assigned `BeamWeapon3D` components so wide carrier muzzles still aim at the shared boss-selected target point instead of snapping back to hardpoint-forward when the target leaves that muzzle's forward hemisphere
     - the enemy spawn-wave pattern starts every assigned `EnemySpawnerWeapon3D` once, then waits until those spawner sequences finish before advancing to the next boss pattern

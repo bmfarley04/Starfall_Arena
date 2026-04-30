@@ -162,7 +162,8 @@ The 3D AI path should stay modular. Enemy prefabs should compose small scripts i
   - alerts are server-authoritative in networked Invasion because the brain only runs on the server/host; clients receive movement through `NetEnemyMovement3D`
 - `SiegeCarrierBossEnemyBrain3D`
   - slow/stationary second Invasion boss that acts like a Siege Carrier rather than a normal chaser
-  - keeps one major rotating attack pattern active at a time: lagging machine-gun rake, lagging beam convergence, formation missile salvo, a two-beam lightning slow attack, or an enemy spawn wave
+  - runs one random major attack pattern lane for the nearest active player-team target and only starts a second simultaneous lane while a second distinct active player target is detected
+  - each lane can run lagging machine-gun rake, lagging beam convergence, formation missile salvo, helix spiral barrage, a two-beam lightning slow attack, or an enemy spawn wave; the two lanes must not choose the same pattern at the same time
   - groups Inspector tuning into serialized foldout sections for weapons, movement, sequencing, rake, beam convergence, lightning slow beam, and orbital pillars; removed fan/curtain and beam telegraph management so the boss prefab has fewer inactive fields to maintain
   - resolves lagging-rake aim independently per shot; the default is precise current/velocity lead fire, with optional history blending only when designers intentionally want a trailing-fire look
   - drives multiple `BeamWeapon3D` hardpoints for lagging beam convergence through indexed `NetEnemyCombat3D` beam replication; every active hardpoint aims from its own muzzle origin toward one slightly delayed target point
@@ -172,10 +173,10 @@ The 3D AI path should stay modular. Enemy prefabs should compose small scripts i
   - starts orbital energy pillars once when phase two begins: authored sphere prefabs launch from the carrier face, settle into a horizontal ring around the boss with a target-facing escape gap, then transform into tall world-Y cylinders that grow upward and downward from each sphere while damaging player-team entities only on the server until the boss dies or despawns
   - supports either the preserved red/white V1 pillar visual or the blue/white V2 plasma visual; V2 prioritizes internal storm texture with generated fractal lightning channels, branch ribbons, and spark/glint billboards while leaving gameplay timing and server-authoritative damage on the boss brain/profile
   - uses `EnemyAIFlightController3D` only for range maintenance; turret/lane pressure is owned by the boss brain, not independent turret AI
-  - movement bands: no target uses patrol/search; detected but beyond `preferredRangeMax` approaches; inside `preferredRangeMin` backs away; inside the preferred range band clears flight intent and does not continually rotate the hull to face the player
+  - movement bands: no target uses patrol/search; detected but beyond `preferredRangeMax` approaches; inside `preferredRangeMin` backs away; inside the preferred range band slowly drifts toward the selected player so the boss stays dynamic even when it starts already inside engagement distance
   - movement is plane-biased: the boss mostly preserves its starting horizontal plane and only follows target height by the serialized vertical-follow weight, while projectile and beam patterns still aim at the target's real world position
   - performance/readability rule: pattern intensity scales by cooldown multipliers across health phases, not by silently raising the per-pattern projectile budget
-  - exposes `Forced Pattern For Testing` on the brain component; leave it as `None` for normal rotation, or select one rotating attack while testing its prefab wiring, visuals, damage, and avoidance readability. Orbital pillars are intentionally excluded because they are a phase-transition layer, not a selectable attack.
+  - exposes `Forced Pattern For Testing` on the brain component; leave it as `None` for normal random selection, or select one rotating attack while testing its prefab wiring, visuals, damage, and avoidance readability. Orbital pillars are intentionally excluded because they are a phase-transition layer, not a selectable attack. In two-player tests, a forced pattern only starts on a lane when the other lane is not already running that same pattern.
 
 ## Enemy Movement Range Design
 

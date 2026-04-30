@@ -16,7 +16,8 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
         LegacyOrbitalEnergyPillars = 3,
         FormationMissileSalvo = 4,
         LightningSlowBeam = 5,
-        EnemySpawnWave = 6
+        EnemySpawnWave = 6,
+        HelixSpiralBarrage = 7
     }
 
     private enum SelectableBossPattern
@@ -26,7 +27,8 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
         BeamFence,
         FormationMissileSalvo,
         LightningSlowBeam,
-        EnemySpawnWave
+        EnemySpawnWave,
+        HelixSpiralBarrage
     }
 
     private static readonly BossPattern[] RotatingPatterns =
@@ -34,9 +36,32 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
         BossPattern.LaggingMachineGunRake,
         BossPattern.BeamFence,
         BossPattern.FormationMissileSalvo,
+        BossPattern.HelixSpiralBarrage,
         BossPattern.LightningSlowBeam,
         BossPattern.EnemySpawnWave
     };
+
+    private sealed class PatternLaneState
+    {
+        public readonly int LaneIndex;
+        public Entity3D Target;
+        public BossPattern ActivePattern;
+        public BossPattern LastPattern;
+        public float NextPatternAllowedTime;
+        public float NextPatternStepTime;
+        public float PatternEndsAt;
+        public float NextBeamAimRefreshTime;
+        public float NextLightningSlowTickTime;
+        public int PatternStepIndex;
+        public int ActiveBeamCount;
+        public int ActiveLightningBeamCount;
+        public int HelixActivationIndex;
+
+        public PatternLaneState(int laneIndex)
+        {
+            LaneIndex = laneIndex;
+        }
+    }
 
     [System.Serializable]
     private struct WeaponReferences
@@ -45,6 +70,8 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
 
         [Tooltip("Projectile weapons used by the lagging machine-gun rake. Wire staggered turret weapons here for the best readable hardpoint sequence.")]
         public EnemyProjectileWeaponBase3D[] laggingRakeWeapons;
+        [Tooltip("Single helix spiral projectile weapon. This component owns the spiral tuning and optional one-muzzle-at-a-time hardpoint sequence.")]
+        public HelixSpiralProjectileWeaponEnemy3D helixSpiralWeapon;
         [Tooltip("Formation missile salvo weapons. Each configured weapon should be a FormationMissileSalvoWeaponEnemy3D that launches a full missile bloom in one activation.")]
         public EnemyProjectileWeaponBase3D[] formationMissileSalvoWeapons;
         [Tooltip("Beam weapons used by the lagging beam convergence pattern. NetEnemyCombat3D replays these by component index, so keep the same BeamWeapon3D component order on host and client prefabs.")]
@@ -66,6 +93,7 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
             approachRangeBuffer = 180f,
             approachSpeedScale = 0.25f,
             retreatSpeedScale = 0.18f,
+            preferredBandDriftSpeedScale = 0.12f,
             targetVerticalFollowWeight = 0.1f,
             planeReturnWeight = 0.35f
         };
@@ -82,6 +110,8 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
         [Range(0f, 1f)] public float approachSpeedScale;
         [Tooltip("Speed scale used when the player gets inside Preferred Range Min.")]
         [Range(0f, 1f)] public float retreatSpeedScale;
+        [Tooltip("Speed scale used while the carrier is already inside its preferred range band. Keeps the boss drifting toward its selected player instead of idling in place.")]
+        [Range(0f, 1f)] public float preferredBandDriftSpeedScale;
         [Tooltip("How strongly movement preserves the carrier's starting horizontal plane. 0 ignores target height, 1 fully follows target height.")]
         [Range(0f, 1f)] public float targetVerticalFollowWeight;
         [Tooltip("When the carrier has drifted above/below its starting plane, this adds correction back toward that plane. 0 disables plane correction.")]
@@ -297,6 +327,10 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
     [SerializeField] private OrbitalPillarSettings orbitalPillars = OrbitalPillarSettings.Default;
     [SerializeField] private OrbitalPillarVisualSettings orbitalPillarVisuals = OrbitalPillarVisualSettings.Default;
 
+    [Header("Debug")]
+    [Tooltip("Logs the Siege Carrier phase-two health check and orbital-pillar startup result. Enable only while debugging the boss phase transition.")]
+    [SerializeField] private bool logPhaseTransitionDebug;
+
     [Header("Legacy Migration")]
     [SerializeField, HideInInspector] private bool migratedLegacyInspectorSettings;
     [SerializeField, HideInInspector] private EnemyProjectileWeaponBase3D[] laggingRakeWeapons;
@@ -313,6 +347,7 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
     [SerializeField, HideInInspector] private float approachRangeBuffer = 180f;
     [SerializeField, HideInInspector] private float approachSpeedScale = 0.25f;
     [SerializeField, HideInInspector] private float retreatSpeedScale = 0.18f;
+    [SerializeField, HideInInspector] private float preferredBandDriftSpeedScale = 0.12f;
     [SerializeField, HideInInspector] private float targetVerticalFollowWeight = 0.1f;
     [SerializeField, HideInInspector] private float planeReturnWeight = 0.35f;
     [SerializeField, HideInInspector] private float minimumPatternCooldown = 1.6f;
@@ -327,6 +362,7 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
     [SerializeField, HideInInspector] private float rakeLeadTimeScale = 1f;
     [SerializeField, HideInInspector] private float rakeAdditionalLeadSeconds = 0.03f;
     [SerializeField, HideInInspector] private float rakeMaxLeadSeconds = 1.25f;
+    [SerializeField, HideInInspector] private HelixSpiralProjectileWeaponEnemy3D helixSpiralWeapon;
     [SerializeField, HideInInspector] private float beamFenceActiveDuration = 1.2f;
     [SerializeField, HideInInspector] private int beamFenceMaxBeams = 4;
     [SerializeField, HideInInspector] private float beamFenceAimRefreshInterval = 0.03f;
@@ -376,10 +412,6 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
     private int _historyCount;
     private float _nextHistorySampleTime;
     private float _nextThinkTime;
-    private float _nextPatternAllowedTime;
-    private float _nextPatternStepTime;
-    private float _patternEndsAt;
-    private float _nextBeamAimRefreshTime;
     private float _preferredPlaneY;
     private Vector3[] _beamConvergenceSmoothedDirections;
     private float[] _beamConvergenceLastSmoothTimes;
@@ -401,20 +433,28 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
     private float _orbitalPillarVisualStartTime;
     private float _orbitalPillarOrbitStartTime;
     private bool _isOrbitalPillarVisualPlaying;
-    private int _patternCursor;
-    private int _patternStepIndex;
-    private int _activeBeamCount;
-    private int _activeLightningBeamCount;
     private int _activeOrbitalPillarCount;
     private bool _isPhaseTwoOrbitalPillarsActive;
-    private float _nextLightningSlowTickTime;
+    private bool _warnedMissingOrbitalPillarVisuals;
+    private bool _loggedPhaseDebugNoAuthority;
+    private float _nextPhaseDebugLogTime;
     private float _nextOrbitalPillarDamageTickTime;
-    private BossPattern _activePattern;
+    private readonly PatternLaneState[] _patternLanes =
+    {
+        new PatternLaneState(0),
+        new PatternLaneState(1)
+    };
+    private readonly BossPattern[] _patternSelectionBuffer = new BossPattern[RotatingPatterns.Length];
     private Entity3D _currentTarget;
 
     private void Awake()
     {
         MigrateLegacyInspectorSettingsIfNeeded();
+        if (movement.preferredBandDriftSpeedScale <= 0f)
+        {
+            movement.preferredBandDriftSpeedScale = MovementSettings.Default.preferredBandDriftSpeedScale;
+        }
+
         _networkObject = GetComponent<NetworkObject>();
         _enemy = GetComponent<Enemy3D>();
         flightController ??= GetComponent<EnemyAIFlightController3D>();
@@ -440,6 +480,9 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
         movement.approachRangeBuffer = Mathf.Max(0f, movement.approachRangeBuffer);
         movement.approachSpeedScale = Mathf.Clamp01(movement.approachSpeedScale);
         movement.retreatSpeedScale = Mathf.Clamp01(movement.retreatSpeedScale);
+        movement.preferredBandDriftSpeedScale = movement.preferredBandDriftSpeedScale > 0f
+            ? Mathf.Clamp01(movement.preferredBandDriftSpeedScale)
+            : MovementSettings.Default.preferredBandDriftSpeedScale;
         movement.targetVerticalFollowWeight = Mathf.Clamp01(movement.targetVerticalFollowWeight);
         movement.planeReturnWeight = Mathf.Clamp01(movement.planeReturnWeight);
         sequencer.minimumPatternCooldown = Mathf.Max(0f, sequencer.minimumPatternCooldown);
@@ -489,6 +532,7 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
         }
 
         weapons.laggingRakeWeapons = laggingRakeWeapons;
+        weapons.helixSpiralWeapon = helixSpiralWeapon;
         weapons.formationMissileSalvoWeapons = formationMissileSalvoWeapons;
         weapons.beamFenceWeapons = beamFenceWeapons;
         weapons.lightningSlowBeamWeapons = lightningSlowBeamWeapons;
@@ -507,6 +551,7 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
         movement.approachRangeBuffer = approachRangeBuffer;
         movement.approachSpeedScale = approachSpeedScale;
         movement.retreatSpeedScale = retreatSpeedScale;
+        movement.preferredBandDriftSpeedScale = preferredBandDriftSpeedScale;
         movement.targetVerticalFollowWeight = targetVerticalFollowWeight;
         movement.planeReturnWeight = planeReturnWeight;
 
@@ -556,12 +601,10 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
 
     private void OnDisable()
     {
-        StopActiveBeams();
-        StopLightningSlowBeams();
+        CancelAllPatternLanes();
         StopEnemySpawnWave();
         StopOrbitalEnergyPillars(immediate: true);
         _isPhaseTwoOrbitalPillarsActive = false;
-        _activePattern = BossPattern.None;
         _currentTarget = null;
         flightController?.ClearFlightIntent();
     }
@@ -572,21 +615,23 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
 
         if (!HasBrainAuthority())
         {
+            LogPhaseTransitionDebugNoAuthority();
             flightController?.ClearFlightIntent();
-            _activePattern = BossPattern.None;
+            ClearAllPatternLaneState();
             _currentTarget = null;
             return;
         }
 
-        Entity3D target = ResolveTarget();
+        Entity3D target = ResolveTargets();
         SampleTargetHistory(target);
+        TickPhaseTransitionEffects(target);
 
         if (!IsTargetValid(target))
         {
             TickPersistentOrbitalEnergyPillars();
             if (!_isPhaseTwoOrbitalPillarsActive)
             {
-                CancelActivePattern();
+                CancelAllPatternLanes();
             }
             PatrolOrClearFlightIntent();
             return;
@@ -598,15 +643,14 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
         {
             if (!_isPhaseTwoOrbitalPillarsActive)
             {
-                CancelActivePattern();
+                CancelAllPatternLanes();
             }
             return;
         }
 
-        TickActivePattern(target);
-        if (_activePattern == BossPattern.None && Time.time >= _nextPatternAllowedTime)
+        for (int i = 0; i < _patternLanes.Length; i++)
         {
-            StartNextPattern(target);
+            TickPatternLane(_patternLanes[i]);
         }
     }
 
@@ -621,6 +665,9 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
         movement.approachRangeBuffer = Mathf.Max(0f, stats.approachRangeBuffer);
         movement.approachSpeedScale = Mathf.Clamp01(stats.approachSpeedScale);
         movement.retreatSpeedScale = Mathf.Clamp01(stats.retreatSpeedScale);
+        movement.preferredBandDriftSpeedScale = stats.preferredBandDriftSpeedScale > 0f
+            ? Mathf.Clamp01(stats.preferredBandDriftSpeedScale)
+            : MovementSettings.Default.preferredBandDriftSpeedScale;
         movement.targetVerticalFollowWeight = Mathf.Clamp01(stats.targetVerticalFollowWeight);
         movement.planeReturnWeight = Mathf.Clamp01(stats.planeReturnWeight);
         sequencer.minimumPatternCooldown = Mathf.Max(0f, stats.minimumPatternCooldown);
@@ -665,15 +712,80 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
         EnsureOrbitalPillarBuffers();
     }
 
-    private Entity3D ResolveTarget()
+    private Entity3D ResolveTargets()
     {
         if (Time.time >= _nextThinkTime || !IsTargetValid(_currentTarget))
         {
             _nextThinkTime = Time.time + Mathf.Max(0.01f, sequencer.thinkInterval);
-            _currentTarget = targetSensor != null ? targetSensor.GetTarget() : null;
+            RefreshPatternLaneTargets();
         }
 
         return _currentTarget;
+    }
+
+    private void RefreshPatternLaneTargets()
+    {
+        Entity3D primaryTarget = null;
+        Entity3D secondaryTarget = null;
+        float primaryDistanceSqr = float.PositiveInfinity;
+        float secondaryDistanceSqr = float.PositiveInfinity;
+
+        Entity3D[] entities = FindObjectsByType<Entity3D>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+        for (int i = 0; i < entities.Length; i++)
+        {
+            Entity3D candidate = entities[i];
+            if (!IsActivePlayerTarget(candidate) || !IsInsideMaxEngagement(candidate))
+            {
+                continue;
+            }
+
+            float distanceSqr = (candidate.transform.position - transform.position).sqrMagnitude;
+            if (distanceSqr < primaryDistanceSqr)
+            {
+                secondaryTarget = primaryTarget;
+                secondaryDistanceSqr = primaryDistanceSqr;
+                primaryTarget = candidate;
+                primaryDistanceSqr = distanceSqr;
+            }
+            else if (distanceSqr < secondaryDistanceSqr)
+            {
+                secondaryTarget = candidate;
+                secondaryDistanceSqr = distanceSqr;
+            }
+        }
+
+        if (primaryTarget == null && targetSensor != null)
+        {
+            Entity3D sensorTarget = targetSensor.GetTarget();
+            if (IsActivePlayerTarget(sensorTarget) && IsInsideMaxEngagement(sensorTarget))
+            {
+                primaryTarget = sensorTarget;
+            }
+        }
+
+        AssignLaneTarget(_patternLanes[0], primaryTarget);
+        AssignLaneTarget(_patternLanes[1], secondaryTarget);
+        _currentTarget = primaryTarget;
+    }
+
+    private void AssignLaneTarget(PatternLaneState lane, Entity3D target)
+    {
+        if (lane == null)
+        {
+            return;
+        }
+
+        if (!IsTargetValid(target))
+        {
+            lane.Target = null;
+            CancelPatternLane(lane);
+            return;
+        }
+
+        if (lane.Target != target)
+        {
+            lane.Target = target;
+        }
     }
 
     private void UpdateMovement(Entity3D target)
@@ -700,247 +812,327 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
             return;
         }
 
-        flightController?.ClearFlightIntent();
+        flightController?.SetFlightIntent(planarDirectionToTarget, planarDirectionToTarget, movement.preferredBandDriftSpeedScale, moveBackward: false);
     }
 
-    private void TickActivePattern(Entity3D target)
+    private void TickPatternLane(PatternLaneState lane)
     {
-        switch (_activePattern)
+        if (lane == null || !IsTargetValid(lane.Target) || !IsInsideMaxEngagement(lane.Target))
+        {
+            CancelPatternLane(lane);
+            return;
+        }
+
+        switch (lane.ActivePattern)
         {
             case BossPattern.LaggingMachineGunRake:
-                TickLaggingRake(target);
+                TickLaggingRake(lane);
                 break;
             case BossPattern.BeamFence:
-                TickBeamFence(target);
+                TickBeamFence(lane);
                 break;
             case BossPattern.FormationMissileSalvo:
-                TickFormationMissileSalvo(target);
+                TickFormationMissileSalvo(lane);
+                break;
+            case BossPattern.HelixSpiralBarrage:
+                TickHelixSpiralBarrage(lane);
                 break;
             case BossPattern.LightningSlowBeam:
-                TickLightningSlowBeam(target);
+                TickLightningSlowBeam(lane);
                 break;
             case BossPattern.EnemySpawnWave:
-                TickEnemySpawnWave();
+                TickEnemySpawnWave(lane);
                 break;
+        }
+
+        if (lane.ActivePattern == BossPattern.None && Time.time >= lane.NextPatternAllowedTime)
+        {
+            StartNextPattern(lane);
         }
     }
 
-    private void StartNextPattern(Entity3D target)
+    private void StartNextPattern(PatternLaneState lane)
     {
+        if (lane == null || !IsTargetValid(lane.Target))
+        {
+            return;
+        }
+
+        BossPattern blockedPattern = ResolveOtherLaneActivePattern(lane);
         if (sequencer.forcedPatternForTesting != SelectableBossPattern.None)
         {
             BossPattern forcedPattern = ToBossPattern(sequencer.forcedPatternForTesting);
-            if (CanRunPattern(forcedPattern))
+            if (CanRunPattern(forcedPattern) && forcedPattern != blockedPattern)
             {
-                BeginPattern(forcedPattern, target);
+                BeginPattern(lane, forcedPattern);
             }
             else
             {
-                _nextPatternAllowedTime = Time.time + ResolvePatternCooldown();
+                lane.NextPatternAllowedTime = Time.time + ResolvePatternCooldown();
             }
 
             return;
         }
 
-        if (IsInPhaseTwoOrLower() && !_isPhaseTwoOrbitalPillarsActive)
+        int candidateCount = 0;
+        for (int i = 0; i < RotatingPatterns.Length; i++)
         {
-            StartPersistentOrbitalEnergyPillars(target);
-        }
-
-        for (int attempt = 0; attempt < RotatingPatterns.Length; attempt++)
-        {
-            BossPattern next = RotatingPatterns[_patternCursor % RotatingPatterns.Length];
-            _patternCursor++;
-            if (!CanRunPattern(next))
+            BossPattern candidate = RotatingPatterns[i];
+            if (candidate == blockedPattern || !CanRunPattern(candidate))
             {
                 continue;
             }
 
-            BeginPattern(next, target);
+            _patternSelectionBuffer[candidateCount] = candidate;
+            candidateCount++;
+        }
+
+        if (candidateCount <= 0)
+        {
+            lane.NextPatternAllowedTime = Time.time + ResolvePatternCooldown();
             return;
         }
 
-        _nextPatternAllowedTime = Time.time + ResolvePatternCooldown();
+        int eligibleCount = candidateCount;
+        if (candidateCount > 1 && lane.LastPattern != BossPattern.None)
+        {
+            eligibleCount = 0;
+            for (int i = 0; i < candidateCount; i++)
+            {
+                BossPattern candidate = _patternSelectionBuffer[i];
+                if (candidate == lane.LastPattern)
+                {
+                    continue;
+                }
+
+                _patternSelectionBuffer[eligibleCount] = candidate;
+                eligibleCount++;
+            }
+
+            if (eligibleCount <= 0)
+            {
+                eligibleCount = candidateCount;
+            }
+        }
+
+        BeginPattern(lane, _patternSelectionBuffer[Random.Range(0, eligibleCount)]);
     }
 
-    private void BeginPattern(BossPattern pattern, Entity3D target)
+    private void TickPhaseTransitionEffects(Entity3D target)
     {
-        _activePattern = pattern;
-        _patternStepIndex = 0;
-        _nextPatternStepTime = Time.time;
+        bool isInPhaseTwo = IsInPhaseTwoOrLower();
+        LogPhaseTransitionDebug(isInPhaseTwo);
+        if (isInPhaseTwo)
+        {
+            StartPersistentOrbitalEnergyPillars(target);
+        }
+    }
+
+    private void BeginPattern(PatternLaneState lane, BossPattern pattern)
+    {
+        lane.ActivePattern = pattern;
+        lane.PatternStepIndex = 0;
+        lane.NextPatternStepTime = Time.time;
+
+        if (pattern == BossPattern.HelixSpiralBarrage)
+        {
+            lane.HelixActivationIndex++;
+            weapons.helixSpiralWeapon.ResetMuzzleSequence();
+            return;
+        }
 
         if (pattern == BossPattern.BeamFence)
         {
-            _activeBeamCount = Mathf.Min(weapons.beamFenceWeapons != null ? weapons.beamFenceWeapons.Length : 0, beamFence.maxBeams);
-            _patternEndsAt = Time.time + beamFence.activeDuration;
+            lane.ActiveBeamCount = Mathf.Min(weapons.beamFenceWeapons != null ? weapons.beamFenceWeapons.Length : 0, beamFence.maxBeams);
+            lane.PatternEndsAt = Time.time + beamFence.activeDuration;
             ResetBeamConvergenceSmoothing();
             return;
         }
 
         if (pattern == BossPattern.LightningSlowBeam)
         {
-            _activeLightningBeamCount = Mathf.Min(weapons.lightningSlowBeamWeapons != null ? weapons.lightningSlowBeamWeapons.Length : 0, lightningSlowBeam.beamCount);
-            _patternEndsAt = Time.time + lightningSlowBeam.activeDuration;
+            lane.ActiveLightningBeamCount = Mathf.Min(weapons.lightningSlowBeamWeapons != null ? weapons.lightningSlowBeamWeapons.Length : 0, lightningSlowBeam.beamCount);
+            lane.PatternEndsAt = Time.time + lightningSlowBeam.activeDuration;
             ResetLightningSlowBeamSmoothing();
             return;
         }
     }
 
-    private void TickLaggingRake(Entity3D target)
+    private void TickLaggingRake(PatternLaneState lane)
     {
-        if (_patternStepIndex >= rake.shotCount)
+        if (lane.PatternStepIndex >= rake.shotCount)
         {
-            FinishPattern();
+            FinishPattern(lane);
             return;
         }
 
-        if (Time.time < _nextPatternStepTime)
+        if (Time.time < lane.NextPatternStepTime)
         {
             return;
         }
 
-        EnemyProjectileWeaponBase3D weapon = ResolveWeapon(weapons.laggingRakeWeapons, _patternStepIndex);
-        Vector3 aimPoint = ResolveRakeAimPoint(target, weapon);
+        EnemyProjectileWeaponBase3D weapon = ResolveWeapon(weapons.laggingRakeWeapons, lane.PatternStepIndex);
+        Vector3 aimPoint = ResolveRakeAimPoint(lane.Target, weapon);
         FireProjectileConverged(weapon, aimPoint);
 
-        _patternStepIndex++;
-        _nextPatternStepTime = Time.time + rake.shotInterval;
+        lane.PatternStepIndex++;
+        lane.NextPatternStepTime = Time.time + rake.shotInterval;
     }
 
-    private void TickBeamFence(Entity3D target)
+    private void TickBeamFence(PatternLaneState lane)
     {
-        if (_activeBeamCount <= 0)
+        if (lane.ActiveBeamCount <= 0)
         {
-            FinishPattern();
+            FinishPattern(lane);
             return;
         }
 
-        float activeStartTime = _patternEndsAt - beamFence.activeDuration;
-        if (Time.time >= activeStartTime && Time.time < _patternEndsAt)
+        float activeStartTime = lane.PatternEndsAt - beamFence.activeDuration;
+        if (Time.time >= activeStartTime && Time.time < lane.PatternEndsAt)
         {
-            if (_patternStepIndex == 0)
+            if (lane.PatternStepIndex == 0)
             {
-                SetBeamFenceState(target, isFiring: true);
-                _patternStepIndex = 1;
-                _nextBeamAimRefreshTime = Time.time + beamFence.aimRefreshInterval;
+                SetBeamFenceState(lane, isFiring: true);
+                lane.PatternStepIndex = 1;
+                lane.NextBeamAimRefreshTime = Time.time + beamFence.aimRefreshInterval;
             }
 
-            if (Time.time >= _nextBeamAimRefreshTime)
+            if (Time.time >= lane.NextBeamAimRefreshTime)
             {
-                RefreshBeamFenceAim(target);
-                _nextBeamAimRefreshTime = Time.time + beamFence.aimRefreshInterval;
-            }
-            return;
-        }
-
-        if (Time.time >= _patternEndsAt)
-        {
-            StopActiveBeams();
-            FinishPattern();
-        }
-    }
-
-    private void TickFormationMissileSalvo(Entity3D target)
-    {
-        if (_patternStepIndex > 0)
-        {
-            FinishPattern();
-            return;
-        }
-
-        EnemyProjectileWeaponBase3D weapon = ResolveWeapon(weapons.formationMissileSalvoWeapons, _patternCursor);
-        FireProjectileDirection(weapon, ResolveDirectionToTarget(target));
-
-        _patternStepIndex++;
-        FinishPattern();
-    }
-
-    private void TickLightningSlowBeam(Entity3D target)
-    {
-        if (_activeLightningBeamCount <= 0)
-        {
-            FinishPattern();
-            return;
-        }
-
-        float activeStartTime = _patternEndsAt - lightningSlowBeam.activeDuration;
-        if (Time.time >= activeStartTime && Time.time < _patternEndsAt)
-        {
-            if (_patternStepIndex == 0)
-            {
-                SetLightningSlowBeamState(target, isFiring: true);
-                _patternStepIndex = 1;
-                _nextBeamAimRefreshTime = Time.time + lightningSlowBeam.aimRefreshInterval;
-                _nextLightningSlowTickTime = Time.time;
-            }
-
-            if (Time.time >= _nextBeamAimRefreshTime)
-            {
-                RefreshLightningSlowBeamAim(target);
-                _nextBeamAimRefreshTime = Time.time + lightningSlowBeam.aimRefreshInterval;
-            }
-
-            if (Time.time >= _nextLightningSlowTickTime)
-            {
-                ApplyLightningSlowBeamSlow(target);
-                _nextLightningSlowTickTime = Time.time + lightningSlowBeam.slowTickInterval;
+                RefreshBeamFenceAim(lane);
+                lane.NextBeamAimRefreshTime = Time.time + beamFence.aimRefreshInterval;
             }
             return;
         }
 
-        if (Time.time >= _patternEndsAt)
+        if (Time.time >= lane.PatternEndsAt)
         {
-            StopLightningSlowBeams();
-            FinishPattern();
+            StopActiveBeams(lane);
+            FinishPattern(lane);
         }
     }
 
-    private void TickEnemySpawnWave()
+    private void TickFormationMissileSalvo(PatternLaneState lane)
     {
-        if (_patternStepIndex == 0)
+        if (lane.PatternStepIndex > 0)
+        {
+            FinishPattern(lane);
+            return;
+        }
+
+        EnemyProjectileWeaponBase3D weapon = ResolveWeapon(weapons.formationMissileSalvoWeapons, lane.LaneIndex);
+        FireProjectileDirection(weapon, ResolveDirectionToTarget(lane.Target));
+
+        lane.PatternStepIndex++;
+        FinishPattern(lane);
+    }
+
+    private void TickHelixSpiralBarrage(PatternLaneState lane)
+    {
+        HelixSpiralProjectileWeaponEnemy3D weapon = weapons.helixSpiralWeapon;
+        if (weapon == null)
+        {
+            FinishPattern(lane);
+            return;
+        }
+
+        if (lane.PatternStepIndex >= weapon.ShotCount)
+        {
+            FinishPattern(lane);
+            return;
+        }
+
+        if (Time.time < lane.NextPatternStepTime)
+        {
+            return;
+        }
+
+        weapon.PrepareHelixShot(lane.Target, lane.PatternStepIndex, lane.HelixActivationIndex);
+        FireProjectileDirection(weapon, ResolveDirectionToTarget(lane.Target));
+
+        lane.PatternStepIndex++;
+        lane.NextPatternStepTime = Time.time + weapon.ShotInterval;
+    }
+
+    private void TickLightningSlowBeam(PatternLaneState lane)
+    {
+        if (lane.ActiveLightningBeamCount <= 0)
+        {
+            FinishPattern(lane);
+            return;
+        }
+
+        float activeStartTime = lane.PatternEndsAt - lightningSlowBeam.activeDuration;
+        if (Time.time >= activeStartTime && Time.time < lane.PatternEndsAt)
+        {
+            if (lane.PatternStepIndex == 0)
+            {
+                SetLightningSlowBeamState(lane, isFiring: true);
+                lane.PatternStepIndex = 1;
+                lane.NextBeamAimRefreshTime = Time.time + lightningSlowBeam.aimRefreshInterval;
+                lane.NextLightningSlowTickTime = Time.time;
+            }
+
+            if (Time.time >= lane.NextBeamAimRefreshTime)
+            {
+                RefreshLightningSlowBeamAim(lane);
+                lane.NextBeamAimRefreshTime = Time.time + lightningSlowBeam.aimRefreshInterval;
+            }
+
+            if (Time.time >= lane.NextLightningSlowTickTime)
+            {
+                ApplyLightningSlowBeamSlow(lane);
+                lane.NextLightningSlowTickTime = Time.time + lightningSlowBeam.slowTickInterval;
+            }
+            return;
+        }
+
+        if (Time.time >= lane.PatternEndsAt)
+        {
+            StopLightningSlowBeams(lane);
+            FinishPattern(lane);
+        }
+    }
+
+    private void TickEnemySpawnWave(PatternLaneState lane)
+    {
+        if (lane.PatternStepIndex == 0)
         {
             int startedCount = BeginEnemySpawnWave();
             if (startedCount <= 0)
             {
-                FinishPattern();
+                FinishPattern(lane);
                 return;
             }
 
-            _patternStepIndex = 1;
+            lane.PatternStepIndex = 1;
             return;
         }
 
         if (!HasActiveEnemySpawnWave())
         {
-            FinishPattern();
+            FinishPattern(lane);
         }
     }
 
-    private void FinishPattern()
+    private void FinishPattern(PatternLaneState lane)
     {
-        StopActiveBeams();
-        StopLightningSlowBeams();
-        StopEnemySpawnWave();
-        ResetBeamConvergenceSmoothing();
-        ResetLightningSlowBeamSmoothing();
-        _activePattern = BossPattern.None;
-        _nextPatternAllowedTime = Time.time + ResolvePatternCooldown();
+        StopPatternEffects(lane);
+        lane.LastPattern = lane.ActivePattern;
+        ClearPatternLaneRuntime(lane);
+        lane.NextPatternAllowedTime = Time.time + ResolvePatternCooldown();
     }
 
-    private void CancelActivePattern()
+    private void CancelPatternLane(PatternLaneState lane)
     {
-        if (_activePattern == BossPattern.None)
+        if (lane == null || lane.ActivePattern == BossPattern.None)
         {
             return;
         }
 
-        StopActiveBeams();
-        StopLightningSlowBeams();
-        StopEnemySpawnWave();
-        ResetBeamConvergenceSmoothing();
-        ResetLightningSlowBeamSmoothing();
-        _activePattern = BossPattern.None;
-        _nextPatternAllowedTime = Time.time + ResolvePatternCooldown();
+        StopPatternEffects(lane);
+        ClearPatternLaneRuntime(lane);
+        lane.NextPatternAllowedTime = Time.time + ResolvePatternCooldown();
     }
 
     private bool CanRunPattern(BossPattern pattern)
@@ -953,12 +1145,86 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
                 return weapons.beamFenceWeapons != null && weapons.beamFenceWeapons.Length > 0;
             case BossPattern.FormationMissileSalvo:
                 return HasAnyWeapon(weapons.formationMissileSalvoWeapons);
+            case BossPattern.HelixSpiralBarrage:
+                return weapons.helixSpiralWeapon != null;
             case BossPattern.LightningSlowBeam:
                 return weapons.lightningSlowBeamWeapons != null && weapons.lightningSlowBeamWeapons.Length > 0;
             case BossPattern.EnemySpawnWave:
                 return HasAnySpawnerWeapon(weapons.enemySpawnWaveWeapons);
             default:
                 return false;
+        }
+    }
+
+    private BossPattern ResolveOtherLaneActivePattern(PatternLaneState lane)
+    {
+        for (int i = 0; i < _patternLanes.Length; i++)
+        {
+            PatternLaneState otherLane = _patternLanes[i];
+            if (otherLane != null && otherLane != lane && otherLane.ActivePattern != BossPattern.None)
+            {
+                return otherLane.ActivePattern;
+            }
+        }
+
+        return BossPattern.None;
+    }
+
+    private void StopPatternEffects(PatternLaneState lane)
+    {
+        if (lane == null)
+        {
+            return;
+        }
+
+        switch (lane.ActivePattern)
+        {
+            case BossPattern.BeamFence:
+                StopActiveBeams(lane);
+                ResetBeamConvergenceSmoothing();
+                break;
+            case BossPattern.LightningSlowBeam:
+                StopLightningSlowBeams(lane);
+                ResetLightningSlowBeamSmoothing();
+                break;
+            case BossPattern.EnemySpawnWave:
+                StopEnemySpawnWave();
+                break;
+        }
+    }
+
+    private void ClearPatternLaneRuntime(PatternLaneState lane)
+    {
+        if (lane == null)
+        {
+            return;
+        }
+
+        lane.ActivePattern = BossPattern.None;
+        lane.PatternStepIndex = 0;
+        lane.NextPatternStepTime = 0f;
+        lane.PatternEndsAt = 0f;
+        lane.NextBeamAimRefreshTime = 0f;
+        lane.NextLightningSlowTickTime = 0f;
+        lane.ActiveBeamCount = 0;
+        lane.ActiveLightningBeamCount = 0;
+    }
+
+    private void CancelAllPatternLanes()
+    {
+        for (int i = 0; i < _patternLanes.Length; i++)
+        {
+            CancelPatternLane(_patternLanes[i]);
+        }
+    }
+
+    private void ClearAllPatternLaneState()
+    {
+        for (int i = 0; i < _patternLanes.Length; i++)
+        {
+            PatternLaneState lane = _patternLanes[i];
+            lane.Target = null;
+            ClearPatternLaneRuntime(lane);
         }
     }
 
@@ -972,6 +1238,8 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
                 return BossPattern.BeamFence;
             case SelectableBossPattern.FormationMissileSalvo:
                 return BossPattern.FormationMissileSalvo;
+            case SelectableBossPattern.HelixSpiralBarrage:
+                return BossPattern.HelixSpiralBarrage;
             case SelectableBossPattern.LightningSlowBeam:
                 return BossPattern.LightningSlowBeam;
             case SelectableBossPattern.EnemySpawnWave:
@@ -991,6 +1259,8 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
                 return SelectableBossPattern.BeamFence;
             case BossPattern.FormationMissileSalvo:
                 return SelectableBossPattern.FormationMissileSalvo;
+            case BossPattern.HelixSpiralBarrage:
+                return SelectableBossPattern.HelixSpiralBarrage;
             case BossPattern.LightningSlowBeam:
                 return SelectableBossPattern.LightningSlowBeam;
             case BossPattern.EnemySpawnWave:
@@ -1081,10 +1351,10 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
             : weapon.TryFireAtFactionConverged(Faction3D.PlayerTeam, convergencePoint);
     }
 
-    private void SetBeamFenceState(Entity3D target, bool isFiring)
+    private void SetBeamFenceState(PatternLaneState lane, bool isFiring)
     {
-        Vector3 convergencePoint = ResolveBeamConvergencePoint(target);
-        for (int i = 0; i < _activeBeamCount; i++)
+        Vector3 convergencePoint = ResolveBeamConvergencePoint(lane.Target);
+        for (int i = 0; i < lane.ActiveBeamCount; i++)
         {
             BeamWeapon3D beamWeapon = weapons.beamFenceWeapons[i];
             if (beamWeapon == null)
@@ -1110,10 +1380,10 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
         }
     }
 
-    private void RefreshBeamFenceAim(Entity3D target)
+    private void RefreshBeamFenceAim(PatternLaneState lane)
     {
-        Vector3 convergencePoint = ResolveBeamConvergencePoint(target);
-        for (int i = 0; i < _activeBeamCount; i++)
+        Vector3 convergencePoint = ResolveBeamConvergencePoint(lane.Target);
+        for (int i = 0; i < lane.ActiveBeamCount; i++)
         {
             BeamWeapon3D beamWeapon = weapons.beamFenceWeapons[i];
             if (beamWeapon == null)
@@ -1134,14 +1404,14 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
         }
     }
 
-    private void StopActiveBeams()
+    private void StopActiveBeams(PatternLaneState lane)
     {
         if (weapons.beamFenceWeapons == null)
         {
             return;
         }
 
-        int count = _activeBeamCount > 0 ? Mathf.Min(_activeBeamCount, weapons.beamFenceWeapons.Length) : weapons.beamFenceWeapons.Length;
+        int count = lane != null && lane.ActiveBeamCount > 0 ? Mathf.Min(lane.ActiveBeamCount, weapons.beamFenceWeapons.Length) : weapons.beamFenceWeapons.Length;
         for (int i = 0; i < count; i++)
         {
             BeamWeapon3D beamWeapon = weapons.beamFenceWeapons[i];
@@ -1193,9 +1463,9 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
         return ResolveHistoricalTargetPoint(rake.historySeconds);
     }
 
-    private void SetLightningSlowBeamState(Entity3D target, bool isFiring)
+    private void SetLightningSlowBeamState(PatternLaneState lane, bool isFiring)
     {
-        for (int i = 0; i < _activeLightningBeamCount; i++)
+        for (int i = 0; i < lane.ActiveLightningBeamCount; i++)
         {
             BeamWeapon3D beamWeapon = weapons.lightningSlowBeamWeapons[i];
             if (beamWeapon == null)
@@ -1204,7 +1474,7 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
             }
 
             ConfigureBossBeamAimConstraint(beamWeapon, lightningSlowBeam.allowBehindHardpointAim);
-            Vector3 beamDirection = ResolveLightningSlowBeamDirection(beamWeapon, target, i);
+            Vector3 beamDirection = ResolveLightningSlowBeamDirection(beamWeapon, lane.Target, i);
             if (NetTickUtil.IsActive && netEnemyCombat != null && netEnemyCombat.IsSpawned)
             {
                 netEnemyCombat.SetBeamState(beamWeapon, isFiring, beamDirection);
@@ -1221,9 +1491,9 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
         }
     }
 
-    private void RefreshLightningSlowBeamAim(Entity3D target)
+    private void RefreshLightningSlowBeamAim(PatternLaneState lane)
     {
-        for (int i = 0; i < _activeLightningBeamCount; i++)
+        for (int i = 0; i < lane.ActiveLightningBeamCount; i++)
         {
             BeamWeapon3D beamWeapon = weapons.lightningSlowBeamWeapons[i];
             if (beamWeapon == null)
@@ -1232,7 +1502,7 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
             }
 
             ConfigureBossBeamAimConstraint(beamWeapon, lightningSlowBeam.allowBehindHardpointAim);
-            Vector3 beamDirection = ResolveLightningSlowBeamDirection(beamWeapon, target, i);
+            Vector3 beamDirection = ResolveLightningSlowBeamDirection(beamWeapon, lane.Target, i);
             if (NetTickUtil.IsActive && netEnemyCombat != null && netEnemyCombat.IsSpawned)
             {
                 netEnemyCombat.UpdateBeamAim(beamWeapon, beamDirection);
@@ -1244,14 +1514,14 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
         }
     }
 
-    private void StopLightningSlowBeams()
+    private void StopLightningSlowBeams(PatternLaneState lane)
     {
         if (weapons.lightningSlowBeamWeapons == null)
         {
             return;
         }
 
-        int count = _activeLightningBeamCount > 0 ? Mathf.Min(_activeLightningBeamCount, weapons.lightningSlowBeamWeapons.Length) : weapons.lightningSlowBeamWeapons.Length;
+        int count = lane != null && lane.ActiveLightningBeamCount > 0 ? Mathf.Min(lane.ActiveLightningBeamCount, weapons.lightningSlowBeamWeapons.Length) : weapons.lightningSlowBeamWeapons.Length;
         for (int i = 0; i < count; i++)
         {
             BeamWeapon3D beamWeapon = weapons.lightningSlowBeamWeapons[i];
@@ -1271,14 +1541,15 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
         }
     }
 
-    private void ApplyLightningSlowBeamSlow(Entity3D target)
+    private void ApplyLightningSlowBeamSlow(PatternLaneState lane)
     {
+        Entity3D target = lane.Target;
         if (!IsTargetValid(target) || lightningSlowBeam.slowDuration <= 0f || lightningSlowBeam.slowMultiplier >= 1f)
         {
             return;
         }
 
-        for (int i = 0; i < _activeLightningBeamCount; i++)
+        for (int i = 0; i < lane.ActiveLightningBeamCount; i++)
         {
             BeamWeapon3D beamWeapon = weapons.lightningSlowBeamWeapons[i];
             if (beamWeapon == null)
@@ -1366,8 +1637,20 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
 
     private void StartPersistentOrbitalEnergyPillars(Entity3D target)
     {
-        if (_isPhaseTwoOrbitalPillarsActive || !CanStartOrbitalEnergyPillars())
+        if (_isPhaseTwoOrbitalPillarsActive)
         {
+            return;
+        }
+
+        if (!CanStartOrbitalEnergyPillars())
+        {
+            if (logPhaseTransitionDebug)
+            {
+                Debug.LogWarning(
+                    $"[{nameof(SiegeCarrierBossEnemyBrain3D)}] Phase-two orbital pillars were blocked on {name}: count={orbitalPillars.count}.",
+                    this);
+            }
+
             return;
         }
 
@@ -1378,13 +1661,18 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
         EnsureOrbitalPillarBuffers();
         StartOrbitalEnergyPillars(target);
         UpdateOrbitalPillarCenters();
+
+        if (logPhaseTransitionDebug)
+        {
+            Debug.Log(
+                $"[{nameof(SiegeCarrierBossEnemyBrain3D)}] Phase-two orbital pillars started on {name}. health={ResolveHealthPercentForDebug():P1}, threshold={sequencer.phaseTwoHealthPercent:P1}, count={_activeOrbitalPillarCount}, target={(target != null ? target.name : "none")}.",
+                this);
+        }
     }
 
     private bool CanStartOrbitalEnergyPillars()
     {
-        return orbitalPillars.count > 0
-            && orbitalPillarVisuals.launchSpearPrefab != null
-            && orbitalPillarVisuals.bluePillarPrefab != null;
+        return orbitalPillars.count > 0;
     }
 
     private void TickPersistentOrbitalEnergyPillars()
@@ -1406,6 +1694,14 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
     {
         if (orbitalPillarVisuals.launchSpearPrefab == null || orbitalPillarVisuals.bluePillarPrefab == null)
         {
+            if (!_warnedMissingOrbitalPillarVisuals)
+            {
+                Debug.LogWarning(
+                    $"[{nameof(SiegeCarrierBossEnemyBrain3D)}] Phase-two orbital pillars started on {name}, but pillar visuals are missing. Assign Launch Spear Prefab and Blue Pillar Prefab on the boss brain to show the effect.",
+                    this);
+                _warnedMissingOrbitalPillarVisuals = true;
+            }
+
             return;
         }
 
@@ -2104,6 +2400,50 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
         return (_enemy.CurrentHealth / _enemy.MaxHealth) <= sequencer.phaseTwoHealthPercent;
     }
 
+    private void LogPhaseTransitionDebug(bool isInPhaseTwo)
+    {
+        if (!logPhaseTransitionDebug || Time.time < _nextPhaseDebugLogTime)
+        {
+            return;
+        }
+
+        _nextPhaseDebugLogTime = Time.time + 0.5f;
+        string healthSummary = _enemy != null
+            ? $"{_enemy.CurrentHealth:0.##}/{_enemy.MaxHealth:0.##} ({ResolveHealthPercentForDebug():P1})"
+            : "missing Enemy3D";
+        Debug.Log(
+            $"[{nameof(SiegeCarrierBossEnemyBrain3D)}] Phase check on {name}: health={healthSummary}, threshold={sequencer.phaseTwoHealthPercent:P1}, inPhaseTwo={isInPhaseTwo}, pillarsActive={_isPhaseTwoOrbitalPillarsActive}, count={orbitalPillars.count}, activePatterns={ResolveActivePatternSummary()}.",
+            this);
+    }
+
+    private void LogPhaseTransitionDebugNoAuthority()
+    {
+        if (!logPhaseTransitionDebug || _loggedPhaseDebugNoAuthority)
+        {
+            return;
+        }
+
+        _loggedPhaseDebugNoAuthority = true;
+        Debug.LogWarning(
+            $"[{nameof(SiegeCarrierBossEnemyBrain3D)}] Phase check is not running on {name} because this brain does not have authority. NetTickUtil.IsActive={NetTickUtil.IsActive}, NetworkManagerPresent={NetworkManager.Singleton != null}, IsServer={(NetworkManager.Singleton != null && NetworkManager.Singleton.IsServer)}, IsSpawned={(_networkObject != null && _networkObject.IsSpawned)}.",
+            this);
+    }
+
+    private float ResolveHealthPercentForDebug()
+    {
+        if (_enemy == null || _enemy.MaxHealth <= 0f)
+        {
+            return 0f;
+        }
+
+        return _enemy.CurrentHealth / _enemy.MaxHealth;
+    }
+
+    private string ResolveActivePatternSummary()
+    {
+        return $"lane0={_patternLanes[0].ActivePattern}, lane1={_patternLanes[1].ActivePattern}";
+    }
+
     private bool IsInsideEngagementRange(Entity3D target)
     {
         if (!IsTargetValid(target))
@@ -2211,6 +2551,13 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
         return target != null
             && target.CurrentHealth > 0f
             && target.gameObject.activeInHierarchy;
+    }
+
+    private bool IsActivePlayerTarget(Entity3D target)
+    {
+        return IsTargetValid(target)
+            && !target.transform.IsChildOf(transform)
+            && FactionMember3D.ResolveFaction(target) == Faction3D.PlayerTeam;
     }
 
     private static Vector3 ResolvePlanarDirection(Vector3 direction, Vector3 fallback)

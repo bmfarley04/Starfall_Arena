@@ -248,7 +248,6 @@ public abstract class EnemyProjectileWeaponBase3D : MonoBehaviour, IEnemyProject
             Transform spawnMuzzle = muzzles[i] != null ? muzzles[i] : transform;
             Vector3 spawnPosition = ResolveProjectileSpawnPosition(spawnMuzzle);
             Vector3 fireDirection = ResolveFireDirection(spawnMuzzle, fireDirectionOverride, useConvergencePoint, convergencePoint, spawnPosition);
-            SpawnMuzzleEffect(spawnMuzzle, fireDirection);
 
             NetProjectileFireRequest3D fire = new NetProjectileFireRequest3D
             {
@@ -267,6 +266,7 @@ public abstract class EnemyProjectileWeaponBase3D : MonoBehaviour, IEnemyProject
                 AccuracyAttackId = PlayerCombatStats3D.InvalidAttackId
             };
             ConfigureFireRequest(ref fire, i, muzzles.Length, spawnMuzzle, fireDirection);
+            SpawnMuzzleEffect(spawnMuzzle, fire.Direction);
 
             if (SpawnProjectileInstance(projectilePrefab, fire, string.Empty, targetFaction, cosmeticOnly: false, serverAuthoritativeGameplay: false))
             {

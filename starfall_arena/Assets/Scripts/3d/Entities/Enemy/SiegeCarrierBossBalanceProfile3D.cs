@@ -16,6 +16,7 @@ public class SiegeCarrierBossBalanceProfile3D : EnemyBalanceProfile3D
         approachRangeBuffer = 180f,
         approachSpeedScale = 0.25f,
         retreatSpeedScale = 0.18f,
+        preferredBandDriftSpeedScale = 0.12f,
         targetVerticalFollowWeight = 0.1f,
         planeReturnWeight = 0.35f,
         minimumPatternCooldown = 1.6f,

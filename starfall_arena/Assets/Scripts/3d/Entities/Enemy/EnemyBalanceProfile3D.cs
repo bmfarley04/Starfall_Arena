@@ -320,6 +320,8 @@ public abstract class EnemyBalanceProfile3D : ScriptableObject
         [Range(0f, 1f)] public float approachSpeedScale;
         [Tooltip("Movement speed scale used when the player gets inside Preferred Range Min.")]
         [Range(0f, 1f)] public float retreatSpeedScale;
+        [Tooltip("Movement speed scale while the carrier is already inside its preferred range band. Keeps the boss drifting toward its selected player instead of idling.")]
+        [Range(0f, 1f)] public float preferredBandDriftSpeedScale;
         [Tooltip("How strongly movement follows target height. 0 preserves the carrier's starting horizontal plane, 1 fully follows target height.")]
         [Range(0f, 1f)] public float targetVerticalFollowWeight;
         [Tooltip("How strongly movement corrects back toward the carrier's starting plane after vertical drift.")]
