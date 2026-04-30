@@ -27,18 +27,18 @@ Material:
     m_Floats:
     - _CenterDarkness: 0.48
     - _FresnelPower: 3
-    - _FresnelStrength: 1.35
+    - _FresnelStrength: 1.65
     - _InnerBrightness: 0.75
     - _InnerEdgeSoftness: 0.2
     - _InnerGradientPower: 2.2
     - _InnerRadius: 0.82
     - _LayerMode: 1
     - _Opacity: 1
-    - _RimBrightness: 15.65
-    - _RimSoftness: 0.085
-    - _RimWidth: 0.022
+    - _RimBrightness: 20
+    - _RimSoftness: 0.015
+    - _RimWidth: 0.01
     m_Colors:
     - _InnerColor: {r: 0.55, g: 0.1, b: 1.1, a: 1}
-    - _RimColor: {r: 6.2, g: 3.25, b: 9.4, a: 1}
+    - _RimColor: {r: 3.952274, g: 2.0717566, b: 5.9921575, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

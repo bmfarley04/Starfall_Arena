@@ -37,7 +37,7 @@ Shader "Starfall/3D/PortalDisk"
             Name "PortalDisk"
             Tags { "LightMode" = "UniversalForward" }
 
-            Blend SrcAlpha One
+            Blend SrcAlpha OneMinusSrcAlpha
             ZWrite Off
             Cull Off
 
@@ -128,7 +128,7 @@ Shader "Starfall/3D/PortalDisk"
                 half surfaceEnergy = lerp(centerDim, 1.0h, edgeGradient);
                 half3 color = _InnerColor.rgb * _InnerBrightness * surfaceEnergy;
 
-                half alpha = saturate(innerMask * _Opacity * lerp(0.42h, 1.0h, edgeGradient));
+                half alpha = saturate(innerMask * _Opacity);
                 return half4(color, alpha);
             }
             ENDHLSL
