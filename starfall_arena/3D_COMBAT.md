@@ -245,6 +245,9 @@ Base input rule:
   - reacquires targets from the explicit projectile faction first so the same prefab works in duel and Invasion flows; specific duel player tags remain a compatibility fallback
   - exposes an inspector dropdown so the same 3D missile prefab can be authored as either a guided missile or a straight-flying physical missile
   - owns delayed despawn behavior for missile-body renderers, exhaust particles, trail fade-out, impact explosion prefab spawn, and missile impact audio so real 3D missile prefabs do not have to behave like laser bolts
+  - can apply configurable area damage at the missile impact point through `AreaDamageConfig3D`, using a bounded non-alloc overlap query and the same faction/tag target filtering as direct projectile hits
+    - missile splash uses `DamageSource3D.Projectile` because the 3D damage-source enum does not currently define a separate explosion source
+    - splash applies radial combat velocity and the missile slow effect to every valid target caught in the radius
   - does not use the base projectile hit effect path; missile impact presentation should come from the authored explosion setup instead
 - `Dodge3D`
   - Class 4 mobility ability on the `Ability3D` path

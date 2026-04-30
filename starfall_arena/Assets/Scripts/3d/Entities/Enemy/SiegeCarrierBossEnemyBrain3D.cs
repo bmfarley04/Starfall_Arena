@@ -10,14 +10,33 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
 {
     private enum BossPattern
     {
+        None = 0,
+        LaggingMachineGunRake = 1,
+        BeamFence = 2,
+        LegacyOrbitalEnergyPillars = 3,
+        FormationMissileSalvo = 4,
+        LightningSlowBeam = 5,
+        EnemySpawnWave = 6
+    }
+
+    private enum SelectableBossPattern
+    {
         None,
         LaggingMachineGunRake,
         BeamFence,
-        OrbitalEnergyPillars,
         FormationMissileSalvo,
         LightningSlowBeam,
         EnemySpawnWave
     }
+
+    private static readonly BossPattern[] RotatingPatterns =
+    {
+        BossPattern.LaggingMachineGunRake,
+        BossPattern.BeamFence,
+        BossPattern.FormationMissileSalvo,
+        BossPattern.LightningSlowBeam,
+        BossPattern.EnemySpawnWave
+    };
 
     [System.Serializable]
     private struct WeaponReferences
@@ -79,7 +98,7 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
             targetHistorySamples = 16,
             minimumPatternCooldown = 1.6f,
             phaseTwoHealthPercent = 0.66f,
-            forcedPatternForTesting = BossPattern.None
+            forcedPatternForTesting = SelectableBossPattern.None
         };
 
         [Tooltip("Seconds between high-level boss target/movement decisions. Pattern aim refresh may still run more often during active beams.")]
@@ -92,8 +111,8 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
         [Min(0f)] public float minimumPatternCooldown;
         [Tooltip("Health percentage where phase two begins and the persistent orbital pillars spawn.")]
         [Range(0.01f, 1f)] public float phaseTwoHealthPercent;
-        [Tooltip("Testing override for the next attack pattern. Leave as None for the normal rotating pattern sequence.")]
-        public BossPattern forcedPatternForTesting;
+        [Tooltip("Testing override for the next attack pattern. Orbital pillars are intentionally excluded because they are a phase-transition effect, not a rotating attack.")]
+        public SelectableBossPattern forcedPatternForTesting;
     }
 
     [System.Serializable]
@@ -222,11 +241,11 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
             damageMask = ~0
         };
 
-        [Tooltip("Number of vertical energy pillars placed around the carrier during this pattern.")]
+        [Tooltip("Number of vertical energy pillars placed around the carrier when phase two begins.")]
         [Range(1, 16)] public int count;
         [Tooltip("World-space radius of the ring where the launched orbs settle before becoming pillars. Runtime clamps this above the damage radius so multiple pillars cannot collapse into the same visual target.")]
         [Min(0f)] public float ringRadius;
-        [Tooltip("Empty arc centered on the player direction at pattern start. This creates an intentional escape gap in the boss-centered pillar ring.")]
+        [Tooltip("Empty arc centered on the player direction when the phase transition starts. This creates an intentional escape gap in the boss-centered pillar ring.")]
         [Range(0f, 330f)] public float gapDegrees;
         [Tooltip("Seconds the launched orbs take to drift from the carrier face into their ring positions.")]
         [Min(0.01f)] public float sphereTravelDuration;
@@ -480,7 +499,7 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
         sequencer.targetHistorySamples = targetHistorySamples;
         sequencer.minimumPatternCooldown = minimumPatternCooldown;
         sequencer.phaseTwoHealthPercent = phaseTwoHealthPercent;
-        sequencer.forcedPatternForTesting = forcedPatternForTesting;
+        sequencer.forcedPatternForTesting = ToSelectableBossPattern(forcedPatternForTesting);
 
         movement.preferredRangeMin = preferredRangeMin;
         movement.preferredRangeMax = preferredRangeMax;
@@ -694,9 +713,6 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
             case BossPattern.BeamFence:
                 TickBeamFence(target);
                 break;
-            case BossPattern.OrbitalEnergyPillars:
-                TickOrbitalEnergyPillars();
-                break;
             case BossPattern.FormationMissileSalvo:
                 TickFormationMissileSalvo(target);
                 break;
@@ -711,11 +727,12 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
 
     private void StartNextPattern(Entity3D target)
     {
-        if (sequencer.forcedPatternForTesting != BossPattern.None)
+        if (sequencer.forcedPatternForTesting != SelectableBossPattern.None)
         {
-            if (CanRunPattern(sequencer.forcedPatternForTesting))
+            BossPattern forcedPattern = ToBossPattern(sequencer.forcedPatternForTesting);
+            if (CanRunPattern(forcedPattern))
             {
-                BeginPattern(sequencer.forcedPatternForTesting, target);
+                BeginPattern(forcedPattern, target);
             }
             else
             {
@@ -730,10 +747,9 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
             StartPersistentOrbitalEnergyPillars(target);
         }
 
-        int patternCount = System.Enum.GetValues(typeof(BossPattern)).Length - 1;
-        for (int attempt = 0; attempt < patternCount; attempt++)
+        for (int attempt = 0; attempt < RotatingPatterns.Length; attempt++)
         {
-            BossPattern next = (BossPattern)((_patternCursor % patternCount) + 1);
+            BossPattern next = RotatingPatterns[_patternCursor % RotatingPatterns.Length];
             _patternCursor++;
             if (!CanRunPattern(next))
             {
@@ -766,14 +782,6 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
             _activeLightningBeamCount = Mathf.Min(weapons.lightningSlowBeamWeapons != null ? weapons.lightningSlowBeamWeapons.Length : 0, lightningSlowBeam.beamCount);
             _patternEndsAt = Time.time + lightningSlowBeam.activeDuration;
             ResetLightningSlowBeamSmoothing();
-            return;
-        }
-
-        if (pattern == BossPattern.OrbitalEnergyPillars)
-        {
-            StartPersistentOrbitalEnergyPillars(target);
-            _activePattern = BossPattern.None;
-            _nextPatternAllowedTime = Time.time + ResolvePatternCooldown();
             return;
         }
     }
@@ -908,29 +916,6 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
         }
     }
 
-    private void TickOrbitalEnergyPillars()
-    {
-        if (_activeOrbitalPillarCount <= 0)
-        {
-            FinishPattern();
-            return;
-        }
-
-        if (_isPhaseTwoOrbitalPillarsActive)
-        {
-            UpdateOrbitalPillarCenters();
-            if (Time.time >= _nextOrbitalPillarDamageTickTime)
-            {
-                ApplyOrbitalPillarDamage();
-                _nextOrbitalPillarDamageTickTime = Time.time + orbitalPillars.damageTickInterval;
-            }
-
-            return;
-        }
-
-        FinishPattern();
-    }
-
     private void FinishPattern()
     {
         StopActiveBeams();
@@ -966,10 +951,6 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
                 return HasAnyWeapon(weapons.laggingRakeWeapons);
             case BossPattern.BeamFence:
                 return weapons.beamFenceWeapons != null && weapons.beamFenceWeapons.Length > 0;
-            case BossPattern.OrbitalEnergyPillars:
-                return orbitalPillars.count > 0
-                    && orbitalPillarVisuals.launchSpearPrefab != null
-                    && orbitalPillarVisuals.bluePillarPrefab != null;
             case BossPattern.FormationMissileSalvo:
                 return HasAnyWeapon(weapons.formationMissileSalvoWeapons);
             case BossPattern.LightningSlowBeam:
@@ -978,6 +959,44 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
                 return HasAnySpawnerWeapon(weapons.enemySpawnWaveWeapons);
             default:
                 return false;
+        }
+    }
+
+    private static BossPattern ToBossPattern(SelectableBossPattern pattern)
+    {
+        switch (pattern)
+        {
+            case SelectableBossPattern.LaggingMachineGunRake:
+                return BossPattern.LaggingMachineGunRake;
+            case SelectableBossPattern.BeamFence:
+                return BossPattern.BeamFence;
+            case SelectableBossPattern.FormationMissileSalvo:
+                return BossPattern.FormationMissileSalvo;
+            case SelectableBossPattern.LightningSlowBeam:
+                return BossPattern.LightningSlowBeam;
+            case SelectableBossPattern.EnemySpawnWave:
+                return BossPattern.EnemySpawnWave;
+            default:
+                return BossPattern.None;
+        }
+    }
+
+    private static SelectableBossPattern ToSelectableBossPattern(BossPattern pattern)
+    {
+        switch (pattern)
+        {
+            case BossPattern.LaggingMachineGunRake:
+                return SelectableBossPattern.LaggingMachineGunRake;
+            case BossPattern.BeamFence:
+                return SelectableBossPattern.BeamFence;
+            case BossPattern.FormationMissileSalvo:
+                return SelectableBossPattern.FormationMissileSalvo;
+            case BossPattern.LightningSlowBeam:
+                return SelectableBossPattern.LightningSlowBeam;
+            case BossPattern.EnemySpawnWave:
+                return SelectableBossPattern.EnemySpawnWave;
+            default:
+                return SelectableBossPattern.None;
         }
     }
 
@@ -1347,7 +1366,7 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
 
     private void StartPersistentOrbitalEnergyPillars(Entity3D target)
     {
-        if (_isPhaseTwoOrbitalPillarsActive || !CanRunPattern(BossPattern.OrbitalEnergyPillars))
+        if (_isPhaseTwoOrbitalPillarsActive || !CanStartOrbitalEnergyPillars())
         {
             return;
         }
@@ -1359,6 +1378,13 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
         EnsureOrbitalPillarBuffers();
         StartOrbitalEnergyPillars(target);
         UpdateOrbitalPillarCenters();
+    }
+
+    private bool CanStartOrbitalEnergyPillars()
+    {
+        return orbitalPillars.count > 0
+            && orbitalPillarVisuals.launchSpearPrefab != null
+            && orbitalPillarVisuals.bluePillarPrefab != null;
     }
 
     private void TickPersistentOrbitalEnergyPillars()

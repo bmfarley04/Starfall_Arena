@@ -13058,6 +13058,54 @@ MonoBehaviour:
   healthText: {fileID: 180105798}
   shieldBar: {fileID: 180105797}
   shieldText: {fileID: 180105796}
+--- !u!1 &1344907450
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1344907452}
+  - component: {fileID: 1344907451}
+  m_Layer: 0
+  m_Name: wavemanager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1344907451
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1344907450}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0a8a6f8e0d9652e439bdd5aa9f661bb3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::InvasionWaveManager3D
+  waves: []
+  spawnPoints: []
+  startOnEnable: 1
+  timeBetweenWaves: 3
+--- !u!4 &1344907452
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1344907450}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 29.1989, y: -3.35233, z: 101.99203}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1373630066
 GameObject:
   m_ObjectHideFlags: 0
@@ -21213,6 +21261,37 @@ MonoBehaviour:
   mass: 0.5
   linearDamping: 0.5
   angularDamping: 0.3
+--- !u!1 &1999470256
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1999470257}
+  m_Layer: 0
+  m_Name: spawnPoint
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1999470257
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1999470256}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: 0.9998688, z: -0, w: -0.016199974}
+  m_LocalPosition: {x: 0, y: 0, z: -50}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2032469244}
+  m_LocalEulerAnglesHint: {x: 0, y: 181.856, z: 0}
 --- !u!1 &2005739199
 GameObject:
   m_ObjectHideFlags: 0
@@ -22247,6 +22326,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 4284132639526872, guid: ebd5405180dff4d4d8cd9eaac946341b, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1646790183438367356}
+    - targetCorrespondingSourceObject: {fileID: 4284132639526872, guid: ebd5405180dff4d4d8cd9eaac946341b, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1999470257}
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 2568636585723135279, guid: ebd5405180dff4d4d8cd9eaac946341b, type: 3}
       insertIndex: -1
@@ -35453,6 +35535,8 @@ MonoBehaviour:
     lightningSlowBeamWeapons:
     - {fileID: 9212841647205079358}
     - {fileID: 9212841647205079359}
+    enemySpawnWaveWeapons:
+    - {fileID: 9212841647205079360}
   movement:
     preferredRangeMin: 0
     preferredRangeMax: 1000
@@ -35468,7 +35552,7 @@ MonoBehaviour:
     targetHistorySamples: 16
     minimumPatternCooldown: 1.6
     phaseTwoHealthPercent: 0.6
-    forcedPatternForTesting: 0
+    forcedPatternForTesting: 6
   rake:
     shotCount: 70
     shotInterval: 0.01
@@ -35480,15 +35564,15 @@ MonoBehaviour:
     additionalLeadSeconds: 0
     maxLeadSeconds: 1.25
   beamFence:
-    activeDuration: 1.2
+    activeDuration: 3
     maxBeams: 4
     aimRefreshInterval: 0.03
-    convergenceLagSeconds: 0
+    convergenceLagSeconds: 0.1
     convergenceLagBlend: 0
     convergenceAimSmoothTime: 0.025
     allowBehindHardpointAim: 1
   lightningSlowBeam:
-    activeDuration: 1.35
+    activeDuration: 3
     aimRefreshInterval: 0.02
     beamCount: 2
     leadSeconds: 0.12
@@ -35526,6 +35610,7 @@ MonoBehaviour:
   formationMissileSalvoWeapons: []
   beamFenceWeapons: []
   lightningSlowBeamWeapons: []
+  enemySpawnWaveWeapons: []
   thinkInterval: 0.05
   targetHistorySampleInterval: 0.05
   targetHistorySamples: 16
@@ -35981,10 +36066,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8209c425887a0f64caf6ac298b753993, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemySpawnerWeapon3D
-  enemyPrefab: {fileID: 0}
-  spawnCount: 1
-  spawnPoint: {fileID: 0}
-  delayBetweenSpawns: 0.5
+  enemyPrefab: {fileID: 2865276719882564100, guid: ddfa3804871a7d14586bd9c1807cf24f, type: 3}
+  spawnCount: 6
+  spawnPoint: {fileID: 1999470257}
+  delayBetweenSpawns: 1
   useSpawnPointRotation: 1
   spawnOnEnable: 0
   waveManager: {fileID: 0}
@@ -36010,3 +36095,4 @@ SceneRoots:
   - {fileID: 1872632152}
   - {fileID: 2029641327}
   - {fileID: 82234950}
+  - {fileID: 1344907452}

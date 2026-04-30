@@ -4855,8 +4855,6 @@ GameObject:
   - component: {fileID: 6201011263396867847}
   - component: {fileID: 6130407770603137240}
   - component: {fileID: 9100000000000000003}
-  - component: {fileID: -502402379776659934}
-  - component: {fileID: 7319930878242164968}
   m_Layer: 0
   m_Name: spawnedSuicideEnemy
   m_TagString: Enemy
@@ -5100,62 +5098,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyBalanceProfileApplier3D
   profile: {fileID: 0}
---- !u!114 &-502402379776659934
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2865276719882564100}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: bd24cd61985b47f3ba6857689d78dcfa, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::EnemyPatrol3D
-  targetSensor: {fileID: 0}
-  flightController: {fileID: 0}
-  obstacleAvoidance: {fileID: 0}
-  separation: {fileID: 0}
-  fallbackArenaSize: {x: 5000, y: 5000, z: 5000}
-  fallbackArenaCenter: {x: 0, y: 0, z: 0}
-  edgeMargin: 80
-  minLegDistance: 120
-  arrivalDistance: 30
-  waypointTimeout: 12
-  forwardBias: 0.35
-  patrolSpeedScale: 0.65
-  useSeparation: 1
-  useObstacleAvoidance: 1
-  drawGizmos: 1
---- !u!114 &7319930878242164968
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2865276719882564100}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d1c2214c65e80b24a8d2d0d28f3f16ea, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::SpawnArrivalEffect3D
-  arrivalEffect:
-    effectPrefab: {fileID: 130808, guid: 3b5908090b51ae34fa2da7acef3a8f26, type: 3}
-    effectAnchor: {fileID: 0}
-    localPositionOffset: {x: 0, y: 0, z: 0}
-    localEulerOffset: {x: 0, y: 0, z: 0}
-    effectScaleMultiplier: 1
-    multiplyByShipScale: 1
-    autoCleanupEffect: 1
-    forceParticleHierarchyScaling: 1
-  reveal:
-    revealDelaySeconds: 3
-    hideVisualsUntilReveal: 1
-    visualRenderers: []
-    disableAssignedCollidersUntilReveal: 1
-    colliders: []
-    behaviours:
-    - {fileID: 6130407770603137240}
 --- !u!1 &5533556178301806259
 GameObject:
   m_ObjectHideFlags: 0
