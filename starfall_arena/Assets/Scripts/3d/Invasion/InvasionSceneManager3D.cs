@@ -598,6 +598,7 @@ public class InvasionSceneManager3D : MonoBehaviour
         waveManager.AllWavesCleared += HandleAllWavesCleared;
         waveManager.AliveEnemyCountChanged -= HandleAliveEnemyCountChanged;
         waveManager.AliveEnemyCountChanged += HandleAliveEnemyCountChanged;
+        SyncAliveEnemyCountFromWaveManager();
     }
 
     private void UnsubscribeWaveManagerEvents()
@@ -631,6 +632,20 @@ public class InvasionSceneManager3D : MonoBehaviour
         }
 
         UpdateEnemyCounter(aliveEnemyCount);
+    }
+
+    private void SyncAliveEnemyCountFromWaveManager()
+    {
+        if (waveManager == null)
+        {
+            return;
+        }
+
+        // If the wave manager already spawned enemies before this scene manager
+        // finished subscribing, the first AliveEnemyCountChanged events were missed.
+        // Pull the current tracked total now so initial wave spawns, single enemies,
+        // and already-active bosses immediately correct the HUD/session count.
+        HandleAliveEnemyCountChanged(waveManager.AliveEnemyCount);
     }
 
     private void SubscribeNetworkSessionEvents()
