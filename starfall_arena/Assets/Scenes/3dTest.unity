@@ -6732,7 +6732,8 @@ MonoBehaviour:
   waves: []
   spawnPoints: []
   startOnEnable: 1
-  timeBetweenWaves: 3
+  waveEndDelaySeconds: 3
+  waveStartDelaySeconds: 0
 --- !u!4 &1344907452
 Transform:
   m_ObjectHideFlags: 0
@@ -11289,6 +11290,10 @@ PrefabInstance:
     - target: {fileID: 7123456789012345679, guid: 3abe469261929d94fb24a7cd0c243bfb, type: 3}
       propertyPath: portalUniformScale
       value: 12
+      objectReference: {fileID: 0}
+    - target: {fileID: 7123456789012345679, guid: 3abe469261929d94fb24a7cd0c243bfb, type: 3}
+      propertyPath: portalShrinkDuration
+      value: 0.75
       objectReference: {fileID: 0}
     - target: {fileID: 8311721449157583992, guid: 3abe469261929d94fb24a7cd0c243bfb, type: 3}
       propertyPath: m_Name

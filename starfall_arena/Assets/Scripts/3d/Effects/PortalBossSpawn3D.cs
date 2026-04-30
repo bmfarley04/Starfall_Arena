@@ -10,8 +10,6 @@ using UnityEngine;
 [RequireComponent(typeof(Rigidbody))]
 public class PortalBossSpawn3D : NetworkBehaviour
 {
-    private const float PortalShrinkDuration = 0.18f;
-
     [Header("Portal Spawn")]
     [Tooltip("Portal visual prefab spawned at the boss's authored final spawn point. This should usually be Assets/Prefabs/3d_effects/Portal3D.prefab.")]
     [SerializeField] private GameObject portalPrefab;
@@ -27,6 +25,10 @@ public class PortalBossSpawn3D : NetworkBehaviour
     [Tooltip("Seconds the boss spends moving from its hidden start position to its authored final spawn point.")]
     [Min(0.01f)]
     [SerializeField] private float emergeDuration = 3f;
+
+    [Tooltip("Seconds the portal spends shrinking away after the boss has fully cleared it.")]
+    [Min(0.01f)]
+    [SerializeField] private float portalShrinkDuration = 0.75f;
 
     [Header("Optional Overrides")]
     [Tooltip("Optional renderer override used only for validation/debugging. Leave empty to auto-collect child renderers under this boss.")]
@@ -529,7 +531,7 @@ public class PortalBossSpawn3D : NetworkBehaviour
             yield break;
         }
 
-        float duration = PortalShrinkDuration;
+        float duration = Mathf.Max(0.01f, portalShrinkDuration);
         float elapsed = 0f;
         Transform portalTransform = _portalInstance.transform;
         Vector3 initialScale = portalTransform.localScale;
