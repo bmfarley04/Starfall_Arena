@@ -39,6 +39,6 @@ Material:
     - _RimWidth: 0.01
     m_Colors:
     - _InnerColor: {r: 0.55, g: 0.1, b: 1.1, a: 1}
-    - _RimColor: {r: 3.952274, g: 2.0717566, b: 5.9921575, a: 1}
+    - _RimColor: {r: 4, g: 0, b: 0.10107994, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1
