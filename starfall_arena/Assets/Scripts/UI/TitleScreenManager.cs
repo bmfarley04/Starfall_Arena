@@ -202,6 +202,7 @@ public class TitleScreenManager : MonoBehaviour
     private bool _isRunning3DTestFlow;
     private bool _is3DTestHostFlow;
     private bool _hasSubmitted3DTestShipSelection;
+    private bool _pendingShipSelectTransition;
     private Coroutine _autoLock3DTestShipCoroutine;
 
     private const string Default3DTestHostShipId = "9219fbe4c7a848e095b199627d5ab9f4";
@@ -660,6 +661,7 @@ public class TitleScreenManager : MonoBehaviour
         RefreshSelection(selectAfter);
         PrimeControlsSchemeNavigationLatch();
         _activeTransition = null;
+        TryRunPendingShipSelectTransition();
     }
 
     private void Update()
@@ -669,6 +671,9 @@ public class TitleScreenManager : MonoBehaviour
             ResetHoldVisuals();
             return;
         }
+
+        TryRunPendingShipSelectTransition();
+        Ensure3DTestFlowAdvancesPastJoinScreen();
 
         if (_activeCanvas == null || _activeCanvas == shipSelectCanvas)
         {
@@ -827,13 +832,13 @@ public class TitleScreenManager : MonoBehaviour
                 ApplyShipRosterForGameplayScene(_sessionData.GameplaySceneName);
                 if (_isRunning3DTestFlow)
                 {
-                    TransitionToShipSelectFromCurrent();
+                    QueueShipSelectTransitionFromCurrent();
                     HandleStatusMessageChanged("Connected. Auto-selecting 3D test ships...");
                     Begin3DTestAutoLock();
                     return;
                 }
 
-                TransitionToShipSelectFromCurrent();
+                QueueShipSelectTransitionFromCurrent();
                 break;
             case NetworkMatchState.LoadingGameplay:
                 if (_isRunning3DTestFlow)
@@ -885,6 +890,55 @@ public class TitleScreenManager : MonoBehaviour
 
         _activeTransition = StartCoroutine(
             RunTransition(source, shipSelectCanvas, shipSelectFirstSelected));
+    }
+
+    private void QueueShipSelectTransitionFromCurrent()
+    {
+        _pendingShipSelectTransition = true;
+        TryRunPendingShipSelectTransition();
+    }
+
+    private void TryRunPendingShipSelectTransition()
+    {
+        if (!_pendingShipSelectTransition)
+        {
+            return;
+        }
+
+        if (_activeTransition != null || shipSelectCanvas == null)
+        {
+            return;
+        }
+
+        CanvasGroup source = _activeCanvas ?? mainMenuCanvas;
+        if (source == shipSelectCanvas)
+        {
+            _pendingShipSelectTransition = false;
+            return;
+        }
+
+        _pendingShipSelectTransition = false;
+        _activeTransition = StartCoroutine(
+            RunTransition(source, shipSelectCanvas, shipSelectFirstSelected));
+    }
+
+    private void Ensure3DTestFlowAdvancesPastJoinScreen()
+    {
+        if (!_isRunning3DTestFlow || _is3DTestHostFlow || _sessionData == null)
+        {
+            return;
+        }
+
+        if (_sessionData.CurrentState != NetworkMatchState.ShipSelect &&
+            _sessionData.CurrentState != NetworkMatchState.LoadingGameplay)
+        {
+            return;
+        }
+
+        if (_activeCanvas == joinGameCanvas || _activeCanvas == hostWaitingCanvas || _activeCanvas == mainMenuCanvas)
+        {
+            QueueShipSelectTransitionFromCurrent();
+        }
     }
 
     private void TransitionCanvas(CanvasGroup from, CanvasGroup to, GameObject firstSelected)
@@ -1617,6 +1671,7 @@ public class TitleScreenManager : MonoBehaviour
         _isRunning3DTestFlow = false;
         _is3DTestHostFlow = false;
         _hasSubmitted3DTestShipSelection = false;
+        _pendingShipSelectTransition = false;
 
         if (_autoLock3DTestShipCoroutine != null)
         {
