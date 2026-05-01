@@ -9447,7 +9447,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &1791662940
 RectTransform:
   m_ObjectHideFlags: 0
@@ -9498,7 +9498,11 @@ MonoBehaviour:
     fillImage: {fileID: 1700731468}
     segmentedBar: {fileID: 0}
     autoConfigureFillImage: 0
-  attackFlashBracketImages: []
+  attackFlashBracketImages:
+  - {fileID: 1387260518}
+  - {fileID: 2085344692}
+  - {fileID: 784560391}
+  - {fileID: 1916671567}
   attackFlashBaseAlpha: 0.07058824
   attackFlashPeakAlpha: 1
   positionSmoothing: 18
