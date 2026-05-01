@@ -96,6 +96,10 @@ These classes should stay narrow and mostly coordinate dedicated 3D systems.
   - Cinemachine follow-offset, damping, and FOV behavior
   - intentionally allows turn-driven off-center framing so hard maneuvers can push the ship across the screen before the camera recenters
   - only belongs on the local player path
+- `PlayerScreenShake3D`
+  - local-player Cinemachine impulse feedback controller for high-speed flight pulses and confirmed incoming damage
+  - reads speed from `ShipFlight3D` and receives hit-shake requests from `Player3D` after real shield/hull damage has been applied
+  - gates impulses to the local network owner so remote player proxies do not shake the viewer's camera
 - `Player3D`
   - owns local-player-only 3D coordination, victim-side hit audio, and the dedicated `OnAnchor` input state
   - Anchor is a hold input that suppresses thrust while applying a configurable rotation multiplier for fast facing changes
@@ -244,7 +248,7 @@ Current folder contract:
   - examples: `Ability3D`, `Weapon3D`, `ProjectileWeapon3D`, `Teleport3D`, `TractorBeam3D`
 - `Effects`
   - shared ship presentation and combat/VFX support scripts
-  - examples: `ShipVisualTilt3D`, `ShipThrusterVfx3D`, `ShipSpeedFx3D`, `DeathEffects3D`, `ShipPartScatter3D`, `TimedEffectCleanup3D`
+  - examples: `ShipVisualTilt3D`, `ShipThrusterVfx3D`, `ShipSpeedFx3D`, `PlayerScreenShake3D`, `DeathEffects3D`, `ShipPartScatter3D`, `TimedEffectCleanup3D`
 - `Effects/ShaderControllers`
   - shader-driven 3D effect controllers
   - examples: `LightningBolt3D`, `SplitStateLightningRig3D`

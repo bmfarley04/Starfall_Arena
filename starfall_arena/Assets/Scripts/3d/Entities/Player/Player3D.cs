@@ -59,6 +59,7 @@ public class Player3D : Entity3D
     [Header("Player-Only 3D Systems")]
     [SerializeField] protected PlayerInput3D playerInput3D;
     [SerializeField] protected PlayerCameraRig3D playerCameraRig3D;
+    [SerializeField] private PlayerScreenShake3D playerScreenShake3D;
     [SerializeField] private AimAssist3D aimAssist3D;
     [SerializeField] private PlayerHUDManager3D hudManager3D;
     [Header("Split State")]
@@ -137,6 +138,12 @@ public class Player3D : Entity3D
         base.Awake();
         playerInput3D ??= GetComponent<PlayerInput3D>();
         playerCameraRig3D ??= GetComponent<PlayerCameraRig3D>();
+        playerScreenShake3D ??= GetComponent<PlayerScreenShake3D>();
+        if (playerScreenShake3D == null)
+        {
+            playerScreenShake3D = gameObject.AddComponent<PlayerScreenShake3D>();
+        }
+
         aimAssist3D ??= GetComponent<AimAssist3D>();
         _chromaticAberrationFx = GetComponent<PlayerChromaticAberration3D>();
         _netMovement3D = GetComponent<NetMovement3D>();
@@ -342,6 +349,7 @@ public class Player3D : Entity3D
         }
 
         _chromaticAberrationFx?.TriggerDamageFeedback(totalDamageTaken, source);
+        playerScreenShake3D?.TriggerHitShake(totalDamageTaken, hullDamageTaken, source);
 
         if (currentHealth <= 0f)
         {
@@ -480,7 +488,18 @@ public class Player3D : Entity3D
         }
 
         _lastShieldHitTime = Time.time;
+        float previousShield = currentShield;
+        float previousHealth = currentHealth;
+
         base.TakeDirectDamage(damage, hitPoint, attacker, accuracyAttackId);
+
+        float shieldDamageTaken = Mathf.Max(0f, previousShield - currentShield);
+        float hullDamageTaken = Mathf.Max(0f, previousHealth - currentHealth);
+        float totalDamageTaken = shieldDamageTaken + hullDamageTaken;
+        if (totalDamageTaken > 0f)
+        {
+            playerScreenShake3D?.TriggerHitShake(totalDamageTaken, hullDamageTaken, DamageSource3D.Direct);
+        }
     }
 
     public void UnbindHUD(PlayerHUDManager3D hud)
@@ -525,6 +544,7 @@ public class Player3D : Entity3D
 
         DamageSource3D source = (DamageSource3D)state.DamageSource;
         _chromaticAberrationFx?.TriggerDamageFeedback(totalDamageTaken, source);
+        playerScreenShake3D?.TriggerHitShake(totalDamageTaken, hullDamageTaken, source);
 
         if (source == DamageSource3D.Beam)
         {

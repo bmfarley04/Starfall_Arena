@@ -4997,6 +4997,10 @@ MonoBehaviour:
   lifeCounterText: {fileID: 1048572212}
   startingPlayerLives: 3
   lifeCounterFormat: '{0}'
+  respawn:
+    respawnDelaySeconds: 3
+    invulnerabilitySeconds: 3
+    shieldFlashIntervalSeconds: 0.12
   gameplayHudRoots:
   - {fileID: 1779300722}
   - {fileID: 605203551}
