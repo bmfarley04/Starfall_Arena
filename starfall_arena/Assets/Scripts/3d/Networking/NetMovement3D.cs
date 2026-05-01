@@ -347,7 +347,7 @@ public class NetMovement3D : NetworkBehaviour
         _lastCombatVelocityDelta = velocityDelta;
         _lastCombatVelocityDeltaTick = NetTickUtil.CurrentTick;
 
-        if (_rb != null)
+        if (_rb != null && !_rb.isKinematic)
         {
             _rb.linearVelocity += velocityDelta;
         }
@@ -411,7 +411,10 @@ public class NetMovement3D : NetworkBehaviour
         if (_rb != null)
         {
             _rb.position = correctedPosition;
-            _rb.linearVelocity = correctedVelocity;
+            if (!_rb.isKinematic)
+            {
+                _rb.linearVelocity = correctedVelocity;
+            }
         }
 
         transform.position = correctedPosition;
@@ -863,7 +866,10 @@ public class NetMovement3D : NetworkBehaviour
             _rb.MoveRotation(state.Rotation);
         }
 
-        _rb.linearVelocity = GetEffectiveVelocity(state);
+        if (!_rb.isKinematic)
+        {
+            _rb.linearVelocity = GetEffectiveVelocity(state);
+        }
     }
 
     private void ApplyFlightTelemetry(
