@@ -10,6 +10,10 @@ public class TargetAwarenessHUD3D : PlayerHUDBindingTarget3D
     {
         public Entity3D Target;
         public TargetAwarenessWidget3D Widget;
+        public TargetAwarenessBounds3D BoundsOverride;
+        public TargetAwarenessAttackReporter3D AttackReporter;
+        public MeshRenderer[] MeshRenderers;
+        public SkinnedMeshRenderer[] SkinnedMeshRenderers;
         public TargetAwarenessVisibility3D CurrentState;
         public float LastStateChangeTime;
         public Vector2 LastIndicatorDirection;
@@ -79,10 +83,27 @@ public class TargetAwarenessHUD3D : PlayerHUDBindingTarget3D
     [System.Serializable]
     private struct ScaleConfig3D
     {
+        [Tooltip("Distance range used only for floating/offscreen indicator arrow scale. Bracket and bar size are driven from projected target bounds.")]
         public Vector2 distanceRange;
+        [Tooltip("Scale range for floating/offscreen indicators over Distance Range.")]
         public Vector2 indicatorScaleRange;
+        [Tooltip("Legacy bracket scale range. Bracket visual size is now driven from projected target bounds, so leave this at 1 unless old prefab art needs a global multiplier.")]
         public Vector2 bracketScaleRange;
+        [Tooltip("Legacy bar scale range. Bars now attach to the computed bracket edge, so leave this at 1 unless old prefab art needs a global multiplier.")]
         public Vector2 barScaleRange;
+    }
+
+    [System.Serializable]
+    private struct BracketBoundsConfig3D
+    {
+        [Tooltip("Canvas-space padding added around the target's projected mesh bounds before sizing the visible bracket.")]
+        public Vector2 bracketPadding;
+        [Tooltip("Minimum bracket size in canvas pixels after projected bounds and padding are applied.")]
+        public Vector2 minBracketSize;
+        [Tooltip("Maximum bracket size in canvas pixels after projected bounds and padding are applied.")]
+        public Vector2 maxBracketSize;
+        [Tooltip("Fallback bracket size used when the target has no mesh/skinned renderers and no TargetAwarenessBounds3D override.")]
+        public Vector2 fallbackBracketSize;
     }
 
     [Header("References")]
@@ -138,13 +159,23 @@ public class TargetAwarenessHUD3D : PlayerHUDBindingTarget3D
     {
         distanceRange = new Vector2(45f, 900f),
         indicatorScaleRange = new Vector2(1.15f, 0.72f),
-        bracketScaleRange = new Vector2(1.2f, 0.82f),
-        barScaleRange = new Vector2(1f, 0.72f)
+        bracketScaleRange = Vector2.one,
+        barScaleRange = Vector2.one
+    };
+
+    [Header("Projected Bracket Bounds")]
+    [SerializeField] private BracketBoundsConfig3D bracketBounds = new BracketBoundsConfig3D
+    {
+        bracketPadding = new Vector2(36f, 28f),
+        minBracketSize = new Vector2(72f, 48f),
+        maxBracketSize = new Vector2(420f, 280f),
+        fallbackBracketSize = new Vector2(120f, 80f)
     };
 
     private readonly List<TargetRuntime3D> _targets = new();
     private readonly List<TargetAwarenessWidget3D> _widgetPool = new();
     private readonly RaycastHit[] _occlusionHits = new RaycastHit[16];
+    private readonly Vector3[] _boundsWorldCorners = new Vector3[8];
     private float _nextDiscoveryTime;
     private bool _allowDuelOpponentFallback;
     private bool _loggedMissingTemplate;
@@ -302,6 +333,7 @@ public class TargetAwarenessHUD3D : PlayerHUDBindingTarget3D
             IndicatorScale = EvaluateScale(scale.indicatorScaleRange, targetDistance),
             BracketScale = EvaluateScale(scale.bracketScaleRange, targetDistance),
             BarScale = EvaluateScale(scale.barScaleRange, targetDistance),
+            BracketSize = ResolveFallbackBracketSize(),
             SnapPosition = !runtime.HasPresented
         };
 
@@ -351,6 +383,7 @@ public class TargetAwarenessHUD3D : PlayerHUDBindingTarget3D
             presentation.IndicatorDirection = direction;
             presentation.RotateIndicator = true;
             presentation.CanvasPosition = ClampToEdgeEllipse(direction);
+            presentation.AttackPulse01 = ResolveAttackPulse(ref runtime, presentation.State);
             return presentation;
         }
 
@@ -365,6 +398,7 @@ public class TargetAwarenessHUD3D : PlayerHUDBindingTarget3D
             presentation.IndicatorDirection = direction;
             presentation.RotateIndicator = true;
             presentation.CanvasPosition = ClampToEdgeEllipse(direction);
+            presentation.AttackPulse01 = ResolveAttackPulse(ref runtime, presentation.State);
             return presentation;
         }
 
@@ -379,7 +413,177 @@ public class TargetAwarenessHUD3D : PlayerHUDBindingTarget3D
         presentation.CanvasPosition = presentation.State == TargetAwarenessVisibility3D.FloatingIndicator
             ? ClampToFloatingSafeRect(localPosition)
             : localPosition;
+        if (presentation.State == TargetAwarenessVisibility3D.Bracket)
+        {
+            presentation.BracketSize = ResolveProjectedBracketSize(ref runtime, gameplayCamera);
+        }
+
+        presentation.AttackPulse01 = ResolveAttackPulse(ref runtime, presentation.State);
         return presentation;
+    }
+
+    private float ResolveAttackPulse(ref TargetRuntime3D runtime, TargetAwarenessVisibility3D state)
+    {
+        if (state != TargetAwarenessVisibility3D.EdgeIndicator || runtime.AttackReporter == null)
+        {
+            return 0f;
+        }
+
+        return runtime.AttackReporter.GetAttackPulse01(BoundPlayer);
+    }
+
+    private Vector2 ResolveProjectedBracketSize(ref TargetRuntime3D runtime, Camera gameplayCamera)
+    {
+        if (TryProjectTargetBounds(ref runtime, gameplayCamera, out Vector2 min, out Vector2 max))
+        {
+            Vector2 size = max - min + bracketBounds.bracketPadding;
+            return ClampBracketSize(size);
+        }
+
+        return ResolveFallbackBracketSize();
+    }
+
+    private bool TryProjectTargetBounds(ref TargetRuntime3D runtime, Camera gameplayCamera, out Vector2 min, out Vector2 max)
+    {
+        min = Vector2.zero;
+        max = Vector2.zero;
+        if (runtime.Target == null || gameplayCamera == null)
+        {
+            return false;
+        }
+
+        if (runtime.BoundsOverride != null)
+        {
+            runtime.BoundsOverride.GetWorldCorners(_boundsWorldCorners);
+            return TryProjectWorldCorners(gameplayCamera, _boundsWorldCorners, out min, out max);
+        }
+
+        if (!TryResolveRendererBounds(ref runtime, out Bounds worldBounds))
+        {
+            return false;
+        }
+
+        FillWorldBoundsCorners(worldBounds, _boundsWorldCorners);
+        return TryProjectWorldCorners(gameplayCamera, _boundsWorldCorners, out min, out max);
+    }
+
+    private bool TryResolveRendererBounds(ref TargetRuntime3D runtime, out Bounds bounds)
+    {
+        bounds = default;
+        bool hasBounds = false;
+
+        if (runtime.MeshRenderers != null)
+        {
+            for (int i = 0; i < runtime.MeshRenderers.Length; i++)
+            {
+                MeshRenderer renderer = runtime.MeshRenderers[i];
+                if (!IsUsableVisualRenderer(renderer))
+                {
+                    continue;
+                }
+
+                if (!hasBounds)
+                {
+                    bounds = renderer.bounds;
+                    hasBounds = true;
+                }
+                else
+                {
+                    bounds.Encapsulate(renderer.bounds);
+                }
+            }
+        }
+
+        if (runtime.SkinnedMeshRenderers != null)
+        {
+            for (int i = 0; i < runtime.SkinnedMeshRenderers.Length; i++)
+            {
+                SkinnedMeshRenderer renderer = runtime.SkinnedMeshRenderers[i];
+                if (!IsUsableVisualRenderer(renderer))
+                {
+                    continue;
+                }
+
+                if (!hasBounds)
+                {
+                    bounds = renderer.bounds;
+                    hasBounds = true;
+                }
+                else
+                {
+                    bounds.Encapsulate(renderer.bounds);
+                }
+            }
+        }
+
+        return hasBounds;
+    }
+
+    private bool TryProjectWorldCorners(Camera gameplayCamera, Vector3[] corners, out Vector2 min, out Vector2 max)
+    {
+        min = new Vector2(float.PositiveInfinity, float.PositiveInfinity);
+        max = new Vector2(float.NegativeInfinity, float.NegativeInfinity);
+        bool hasProjectedCorner = false;
+
+        for (int i = 0; i < 8; i++)
+        {
+            if (!TryWorldToCanvasPoint(gameplayCamera, corners[i], out Vector2 localPoint))
+            {
+                continue;
+            }
+
+            min = Vector2.Min(min, localPoint);
+            max = Vector2.Max(max, localPoint);
+            hasProjectedCorner = true;
+        }
+
+        return hasProjectedCorner;
+    }
+
+    private static void FillWorldBoundsCorners(Bounds bounds, Vector3[] corners)
+    {
+        if (corners == null || corners.Length < 8)
+        {
+            return;
+        }
+
+        Vector3 min = bounds.min;
+        Vector3 max = bounds.max;
+        corners[0] = new Vector3(min.x, min.y, min.z);
+        corners[1] = new Vector3(min.x, min.y, max.z);
+        corners[2] = new Vector3(min.x, max.y, min.z);
+        corners[3] = new Vector3(min.x, max.y, max.z);
+        corners[4] = new Vector3(max.x, min.y, min.z);
+        corners[5] = new Vector3(max.x, min.y, max.z);
+        corners[6] = new Vector3(max.x, max.y, min.z);
+        corners[7] = new Vector3(max.x, max.y, max.z);
+    }
+
+    private Vector2 ClampBracketSize(Vector2 size)
+    {
+        Vector2 minSize = new Vector2(Mathf.Max(1f, bracketBounds.minBracketSize.x), Mathf.Max(1f, bracketBounds.minBracketSize.y));
+        Vector2 maxSize = new Vector2(
+            Mathf.Max(minSize.x, bracketBounds.maxBracketSize.x),
+            Mathf.Max(minSize.y, bracketBounds.maxBracketSize.y));
+
+        return new Vector2(
+            Mathf.Clamp(size.x, minSize.x, maxSize.x),
+            Mathf.Clamp(size.y, minSize.y, maxSize.y));
+    }
+
+    private Vector2 ResolveFallbackBracketSize()
+    {
+        return ClampBracketSize(new Vector2(
+            Mathf.Max(1f, bracketBounds.fallbackBracketSize.x),
+            Mathf.Max(1f, bracketBounds.fallbackBracketSize.y)));
+    }
+
+    private static bool IsUsableVisualRenderer(Renderer renderer)
+    {
+        return renderer != null
+            && renderer.enabled
+            && renderer.gameObject.activeInHierarchy
+            && renderer.bounds.size.sqrMagnitude > 0.0001f;
     }
 
     private TargetAwarenessVisibility3D ResolveHeldState(ref TargetRuntime3D runtime, TargetAwarenessVisibility3D desiredState)
@@ -684,6 +888,7 @@ public class TargetAwarenessHUD3D : PlayerHUDBindingTarget3D
             }
 
             existing.Target = target;
+            CacheTargetPresentationReferences(ref existing);
             _targets[i] = existing;
             return;
         }
@@ -694,14 +899,33 @@ public class TargetAwarenessHUD3D : PlayerHUDBindingTarget3D
             return;
         }
 
-        _targets.Add(new TargetRuntime3D
+        TargetRuntime3D runtime = new TargetRuntime3D
         {
             Target = target,
             Widget = widget,
             CurrentState = TargetAwarenessVisibility3D.Hidden,
             LastIndicatorDirection = Vector2.up,
             LastStateChangeTime = Time.unscaledTime
-        });
+        };
+        CacheTargetPresentationReferences(ref runtime);
+        _targets.Add(runtime);
+    }
+
+    private static void CacheTargetPresentationReferences(ref TargetRuntime3D runtime)
+    {
+        if (runtime.Target == null)
+        {
+            runtime.BoundsOverride = null;
+            runtime.AttackReporter = null;
+            runtime.MeshRenderers = null;
+            runtime.SkinnedMeshRenderers = null;
+            return;
+        }
+
+        runtime.BoundsOverride = runtime.Target.GetComponent<TargetAwarenessBounds3D>();
+        runtime.AttackReporter = runtime.Target.GetComponent<TargetAwarenessAttackReporter3D>();
+        runtime.MeshRenderers = runtime.Target.GetComponentsInChildren<MeshRenderer>(true);
+        runtime.SkinnedMeshRenderers = runtime.Target.GetComponentsInChildren<SkinnedMeshRenderer>(true);
     }
 
     private TargetAwarenessWidget3D GetWidget()

@@ -29,6 +29,9 @@ public class TankEnemyBrain3D : MonoBehaviour
     [Tooltip("Network combat helper for replicated firing. Auto-assigned from this GameObject if left empty. Required for multiplayer projectile/missile fire.")]
     [SerializeField] private NetEnemyCombat3D netEnemyCombat;
 
+    [Tooltip("Presentation-only attack reporter used by TargetAwarenessHUD3D. Auto-assigned from this GameObject if left empty.")]
+    [SerializeField] private TargetAwarenessAttackReporter3D attackReporter;
+
     [Header("Think Loop")]
     [Tooltip("Seconds between AI decision ticks. Lower is more responsive but costs more CPU.")]
     [SerializeField] private float thinkInterval = 0.05f;
@@ -69,6 +72,7 @@ public class TankEnemyBrain3D : MonoBehaviour
         obstacleAvoidance ??= GetComponent<EnemyObstacleAvoidance3D>();
         patrol ??= GetComponent<EnemyPatrol3D>() ?? gameObject.AddComponent<EnemyPatrol3D>();
         netEnemyCombat ??= GetComponent<NetEnemyCombat3D>();
+        attackReporter ??= GetComponent<TargetAwarenessAttackReporter3D>() ?? gameObject.AddComponent<TargetAwarenessAttackReporter3D>();
         _networkObject = GetComponent<NetworkObject>();
     }
 
@@ -134,14 +138,14 @@ public class TankEnemyBrain3D : MonoBehaviour
         flightController?.SetMoveDirection(steeringDirection, ResolveDistanceSpeedScale(toTarget.magnitude));
 
         Vector3 toTargetNormalized = toTarget.normalized;
-        bool firedCannon = TryFireWeapon(cannonWeapon, toTargetNormalized, cannonAimToleranceDegrees, _cannonBlockedUntilTime);
+        bool firedCannon = TryFireWeapon(cannonWeapon, toTargetNormalized, cannonAimToleranceDegrees, _cannonBlockedUntilTime, target);
         if (firedCannon)
         {
             _missileBlockedUntilTime = Time.time + Mathf.Max(0f, weaponStaggerDelay);
             return;
         }
 
-        if (TryFireWeapon(missileWeapon, toTargetNormalized, missileAimToleranceDegrees, _missileBlockedUntilTime))
+        if (TryFireWeapon(missileWeapon, toTargetNormalized, missileAimToleranceDegrees, _missileBlockedUntilTime, target))
         {
             _cannonBlockedUntilTime = Time.time + Mathf.Max(0f, weaponStaggerDelay);
         }
@@ -179,7 +183,8 @@ public class TankEnemyBrain3D : MonoBehaviour
         IEnemyProjectileWeapon3D weapon,
         Vector3 toTargetNormalized,
         float aimToleranceDegrees,
-        float blockedUntilTime)
+        float blockedUntilTime,
+        Entity3D target)
     {
         if (weapon == null)
         {
@@ -198,10 +203,16 @@ public class TankEnemyBrain3D : MonoBehaviour
 
         if (NetTickUtil.IsActive && netEnemyCombat != null && netEnemyCombat.IsSpawned)
         {
-            return netEnemyCombat.TryFireProjectilePattern(weapon, Faction3D.PlayerTeam, toTargetNormalized);
+            return netEnemyCombat.TryFireProjectilePattern(weapon, Faction3D.PlayerTeam, toTargetNormalized, target);
         }
 
-        return weapon.TryFireAtFaction(Faction3D.PlayerTeam, toTargetNormalized);
+        bool fired = weapon.TryFireAtFaction(Faction3D.PlayerTeam, toTargetNormalized);
+        if (fired)
+        {
+            attackReporter?.ReportAttack(target);
+        }
+
+        return fired;
     }
 
     private float ResolveDistanceSpeedScale(float distanceToTarget)

@@ -37,6 +37,9 @@ public class GlassCannonInterceptorEnemyBrain3D : MonoBehaviour
     [Tooltip("Network combat helper for replicated enemy projectile fire. Auto-assigned from this GameObject if left empty.")]
     [SerializeField] private NetEnemyCombat3D netEnemyCombat;
 
+    [Tooltip("Presentation-only attack reporter used by TargetAwarenessHUD3D. Auto-assigned from this GameObject if left empty.")]
+    [SerializeField] private TargetAwarenessAttackReporter3D attackReporter;
+
     [Header("Think Loop")]
     [Tooltip("Seconds between AI steering decisions. Lower is more responsive but costs more CPU.")]
     [SerializeField] private float thinkInterval = 0.05f;
@@ -112,6 +115,7 @@ public class GlassCannonInterceptorEnemyBrain3D : MonoBehaviour
         patrol ??= GetComponent<EnemyPatrol3D>() ?? gameObject.AddComponent<EnemyPatrol3D>();
         separation ??= GetComponent<EnemySeparation3D>();
         netEnemyCombat ??= GetComponent<NetEnemyCombat3D>();
+        attackReporter ??= GetComponent<TargetAwarenessAttackReporter3D>() ?? gameObject.AddComponent<TargetAwarenessAttackReporter3D>();
         _networkObject = GetComponent<NetworkObject>();
     }
 
@@ -268,7 +272,7 @@ public class GlassCannonInterceptorEnemyBrain3D : MonoBehaviour
             return;
         }
 
-        if (TryFireBurstShot(DirectionToTarget(target)))
+        if (TryFireBurstShot(DirectionToTarget(target), target))
         {
             _shotsFiredInBurst++;
             _nextShotTime = Time.time + Mathf.Max(0.01f, burstShotInterval);
@@ -410,7 +414,7 @@ public class GlassCannonInterceptorEnemyBrain3D : MonoBehaviour
         flightController?.SetFacingDirection(toTarget);
     }
 
-    private bool TryFireBurstShot(Vector3 fireDirection)
+    private bool TryFireBurstShot(Vector3 fireDirection, Entity3D target)
     {
         if (burstWeapon == null)
         {
@@ -419,10 +423,16 @@ public class GlassCannonInterceptorEnemyBrain3D : MonoBehaviour
 
         if (NetTickUtil.IsActive && netEnemyCombat != null && netEnemyCombat.IsSpawned)
         {
-            return netEnemyCombat.TryFireProjectilePattern(burstWeapon, Faction3D.PlayerTeam, fireDirection);
+            return netEnemyCombat.TryFireProjectilePattern(burstWeapon, Faction3D.PlayerTeam, fireDirection, target);
         }
 
-        return burstWeapon.TryFireAtFaction(Faction3D.PlayerTeam, fireDirection);
+        bool fired = burstWeapon.TryFireAtFaction(Faction3D.PlayerTeam, fireDirection);
+        if (fired)
+        {
+            attackReporter?.ReportAttack(target);
+        }
+
+        return fired;
     }
 
     private bool IsAimedAtTarget(Entity3D target)

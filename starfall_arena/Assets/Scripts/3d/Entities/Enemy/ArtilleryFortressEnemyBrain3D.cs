@@ -39,6 +39,9 @@ public class ArtilleryFortressEnemyBrain3D : NetworkBehaviour
     [Tooltip("Optional local presentation helper for the fortress charge tell. Auto-assigned from this GameObject or children if left empty. Gameplay does not depend on this component.")]
     [SerializeField] private ProjectileChargeTelegraph3D chargeTelegraph;
 
+    [Tooltip("Presentation-only attack reporter used by TargetAwarenessHUD3D. Auto-assigned from this GameObject if left empty.")]
+    [SerializeField] private TargetAwarenessAttackReporter3D attackReporter;
+
     [Header("Think Loop")]
     [Tooltip("Seconds between AI decision ticks. Lower is more responsive but costs more CPU.")]
     [SerializeField] private float thinkInterval = 0.05f;
@@ -115,6 +118,7 @@ public class ArtilleryFortressEnemyBrain3D : NetworkBehaviour
         patrol ??= GetComponent<EnemyPatrol3D>() ?? gameObject.AddComponent<EnemyPatrol3D>();
         netEnemyCombat ??= GetComponent<NetEnemyCombat3D>();
         chargeTelegraph ??= GetComponentInChildren<ProjectileChargeTelegraph3D>(true);
+        attackReporter ??= GetComponent<TargetAwarenessAttackReporter3D>() ?? gameObject.AddComponent<TargetAwarenessAttackReporter3D>();
         _networkObject = GetComponent<NetworkObject>();
     }
 
@@ -293,11 +297,14 @@ public class ArtilleryFortressEnemyBrain3D : NetworkBehaviour
 
         if (NetTickUtil.IsActive && netEnemyCombat != null && netEnemyCombat.IsSpawned)
         {
-            netEnemyCombat.TryFireProjectilePatternConverged(cannonWeapon, Faction3D.PlayerTeam, _lockedFirePoint);
+            netEnemyCombat.TryFireProjectilePatternConverged(cannonWeapon, Faction3D.PlayerTeam, _lockedFirePoint, _currentTarget);
             return;
         }
 
-        cannonWeapon.TryFireAtFactionConverged(Faction3D.PlayerTeam, _lockedFirePoint);
+        if (cannonWeapon.TryFireAtFactionConverged(Faction3D.PlayerTeam, _lockedFirePoint))
+        {
+            attackReporter?.ReportAttack(_currentTarget);
+        }
     }
 
     private Vector3 ResolveAimPoint(Entity3D target)
@@ -358,10 +365,16 @@ public class ArtilleryFortressEnemyBrain3D : NetworkBehaviour
 
         if (NetTickUtil.IsActive && netEnemyCombat != null && netEnemyCombat.IsSpawned)
         {
-            return netEnemyCombat.TryFireProjectilePattern(missileWeapon, Faction3D.PlayerTeam, toTarget.normalized);
+            return netEnemyCombat.TryFireProjectilePattern(missileWeapon, Faction3D.PlayerTeam, toTarget.normalized, target);
         }
 
-        return missileWeapon.TryFireAtFaction(Faction3D.PlayerTeam, toTarget.normalized);
+        bool fired = missileWeapon.TryFireAtFaction(Faction3D.PlayerTeam, toTarget.normalized);
+        if (fired)
+        {
+            attackReporter?.ReportAttack(target);
+        }
+
+        return fired;
     }
 
     private bool TryFireCloseRangeTurret(Entity3D target)
@@ -388,8 +401,13 @@ public class ArtilleryFortressEnemyBrain3D : NetworkBehaviour
             }
 
             bool fired = NetTickUtil.IsActive && netEnemyCombat != null && netEnemyCombat.IsSpawned
-                ? netEnemyCombat.TryFireProjectilePattern(turretWeapon, Faction3D.PlayerTeam, fireDirection)
+                ? netEnemyCombat.TryFireProjectilePattern(turretWeapon, Faction3D.PlayerTeam, fireDirection, target)
                 : turretWeapon.TryFireAtFaction(Faction3D.PlayerTeam, fireDirection);
+
+            if (fired && (!NetTickUtil.IsActive || netEnemyCombat == null || !netEnemyCombat.IsSpawned))
+            {
+                attackReporter?.ReportAttack(target);
+            }
 
             firedAny |= fired;
         }

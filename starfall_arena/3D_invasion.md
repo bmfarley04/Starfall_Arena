@@ -12,13 +12,15 @@ Current implemented beginning flow:
 
 - players enter from the normal title-screen network flow, complete 3D ship select, and load into `3d_invasion`
 - `InvasionSceneManager3D` spawns the two selected player ships once, binds the gameplay HUD, resets/starts `ArenaBoundary3D`, and starts the wave manager
+- `InvasionSceneManager3D` owns player lives and respawns for this mode: each player starts with the configured life count, loses one life on death, respawns at the death position while lives remain, and stays dead once the death leaves that player at zero lives
+- respawned players receive temporary invulnerability through the existing `Player3D.BeginDodgeInvulnerability(...)` damage gate, and the manager pulses the child `ShieldController.OnHit(...)` during that window so the shield stays visibly high-alpha/flashing without changing the shared shield script
 - there is no versus/collaboration intro canvas in this slice
 - the existing round text canvas is reused only for `WAVE 1`, `WAVE 2`, etc.
 - countdown UI is not used
 - player HUD elements stay active during gameplay: health, vignette, crosshair, weapon container, ability container, FPS/ping, enemy tracker, optional enemy counter, and optional heart/life counter
 - win trackers, round-end screens, game-end screens, and end-of-wave stat summaries are not used
 - players are not repositioned, despawned between waves, or movement-locked by the Invasion scene manager
-- game-end, wipe, revive, score, reward, and completion presentation are planned later; when the final configured wave is cleared, the current slice leaves gameplay active
+- game-end, full-team wipe, score, reward, and completion presentation are planned later; when the final configured wave is cleared, the current slice leaves gameplay active
 
 Important scene-manager pitfall:
 
@@ -54,7 +56,7 @@ Implemented foundation:
 - `PortalBossSpawn3D` is a prefab-local boss entrance component for large Invasion enemies that should emerge from `Portal3D`. It moves the real boss root from behind the portal to the authored spawn point, disables gameplay during the entrance, and expects the portal prefab to include its own depth-mask disk so only the portion inside the portal silhouette is hidden while the boss exits.
 - `InvasionWaveManager3D` is a minimal finite-wave spawner for configured enemy prefabs
 - `InvasionWaveManager3D` now separates wave timing into two authored delays: an end delay after a wave is fully cleared before the next intro is requested, and a start delay after `WAVE N` presentation before enemy spawning begins. The same start delay applies to wave 1 as well, so the first wave does not bypass spawn timing just because there was no prior clear.
-- `InvasionSceneManager3D` is the dedicated beginning-flow manager for networked Invasion. It owns player spawning, gameplay HUD activation, wave text presentation, optional enemy counter presentation, optional heart/life counter presentation, UI canvas camera/sorting setup, and arena boundary startup.
+- `InvasionSceneManager3D` is the dedicated beginning-flow manager for networked Invasion. It owns player spawning, per-player life counts, death-position respawns, respawn invulnerability presentation, gameplay HUD activation, wave text presentation, optional enemy counter presentation, optional heart/life counter presentation, UI canvas camera/sorting setup, and arena boundary startup.
 - `InvasionSceneManager3D` only owns top-level HUD visibility and canvas camera/sorting setup. Actual player HUD data binding still happens through `PlayerHUDManager3D` on the HUD objects themselves, and the ship-specific weapon/ability HUD is runtime-instantiated by `PlayerWeaponAbilityHUDSpawner3D` after a player bind succeeds.
 - `TargetAwarenessHUD3D` should be wired to `EnemyTeam` in Invasion and tuned with a finite awareness range so the enemy tracker only reacts to nearby hostile ships instead of every alive entity in the scene.
 - Bug note: network Invasion clients must not rely only on the one-shot wave-start presentation event to enable gameplay HUD. If the scene manager subscribes after that event/RPC fires, the client can look like HUD binding failed even though the real problem is that every gameplay HUD root stayed inactive. Recover HUD visibility from replicated session state (`RoundTransition` / `InMatch`) as well.
@@ -391,7 +393,8 @@ For `3d_invasion`:
 - assign `InvasionWaveManager3D`
 - assign the reused round canvas group/text as the Wave UI references
 - optionally enable `Use Enemy Counter`, assign the enemy counter canvas/root, assign its TMP text, and tune the counter text format
-- optionally enable `Use Life Counter`, assign the heart/life counter canvas group, assign its TMP text, set the starting player lives, and tune the counter text format. This is currently display-only until life loss, respawn, and wipe rules are implemented.
+- optionally enable `Use Life Counter`, assign the heart/life counter canvas group, assign its TMP text, set `Starting Player Lives`, and tune the counter text format. `{0}` displays the local player's lives in network sessions or the lowest remaining player lives in non-network sessions; `{1}` and `{2}` display player 1 and player 2 lives respectively.
+- tune `Respawn Rules` on `InvasionSceneManager3D`: `Respawn Delay Seconds` controls how long the death presentation is allowed to breathe before the replacement ship appears, `Invulnerability Seconds` controls the temporary post-respawn damage immunity, and `Shield Flash Interval Seconds` controls how aggressively the manager pulses `ShieldController.OnHit(...)` for the visible high-alpha shield flash.
 - assign gameplay HUD roots for health, vignette, crosshair, weapon container, ability container, FPS/ping, enemy tracker, and the enemy counter canvas if it should activate with the rest of gameplay HUD. The life counter is controlled through its canvas group instead of a root active toggle.
 - assign UI canvases and optional UI camera so network HUD sorting is deterministic
 - do not let child HUD scripts silently reassign those canvases back to `Camera.main`; the scene-level UI camera should remain the single source of truth for screen-space HUD canvas camera binding

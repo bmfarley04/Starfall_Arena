@@ -40,6 +40,9 @@ public class SplitterEnemyBrain3D : NetworkBehaviour
     [Tooltip("Network combat helper for replicated enemy projectile and beam fire. Auto-assigned from this GameObject if left empty.")]
     [SerializeField] private NetEnemyCombat3D netEnemyCombat;
 
+    [Tooltip("Presentation-only attack reporter used by TargetAwarenessHUD3D. Auto-assigned from this GameObject if left empty.")]
+    [SerializeField] private TargetAwarenessAttackReporter3D attackReporter;
+
     [Header("Movement")]
     [Tooltip("Seconds between heavier AI decisions such as weapon-choice rolls. Steering/facing still refresh every frame.")]
     [SerializeField] private float thinkInterval = 0.08f;
@@ -136,6 +139,7 @@ public class SplitterEnemyBrain3D : NetworkBehaviour
         obstacleAvoidance ??= GetComponent<EnemyObstacleAvoidance3D>();
         patrol ??= GetComponent<EnemyPatrol3D>() ?? gameObject.AddComponent<EnemyPatrol3D>();
         netEnemyCombat ??= GetComponent<NetEnemyCombat3D>();
+        attackReporter ??= GetComponent<TargetAwarenessAttackReporter3D>() ?? gameObject.AddComponent<TargetAwarenessAttackReporter3D>();
         ApplyRoleWeaponState();
     }
 
@@ -269,7 +273,7 @@ public class SplitterEnemyBrain3D : NetworkBehaviour
         }
 
         StopBeam();
-        bool firedProjectile = TryFireProjectile(targetDirection);
+        bool firedProjectile = TryFireProjectile(targetDirection, target);
         LogWeaponChoice("Projectile", distanceToTarget, firedProjectile ? "fired" : "blocked");
     }
 
@@ -327,7 +331,7 @@ public class SplitterEnemyBrain3D : NetworkBehaviour
         flightController?.SetFlightIntent(steeringDirection, targetDirection, speedScale, moveBackward: false);
     }
 
-    private bool TryFireProjectile(Vector3 targetDirection)
+    private bool TryFireProjectile(Vector3 targetDirection, Entity3D target)
     {
         if (projectileWeapon == null || !projectileWeapon.enabled || !IsAimedAtTarget(targetDirection, projectileAimToleranceDegrees))
         {
@@ -337,10 +341,16 @@ public class SplitterEnemyBrain3D : NetworkBehaviour
         Vector3 convergencePoint = transform.position + (targetDirection.normalized * Mathf.Max(1f, projectileConvergenceDistance));
         if (NetTickUtil.IsActive && netEnemyCombat != null && netEnemyCombat.IsSpawned)
         {
-            return netEnemyCombat.TryFireProjectilePatternConverged(projectileWeapon, Faction3D.PlayerTeam, convergencePoint);
+            return netEnemyCombat.TryFireProjectilePatternConverged(projectileWeapon, Faction3D.PlayerTeam, convergencePoint, target);
         }
 
-        return projectileWeapon.TryFireAtFactionConverged(Faction3D.PlayerTeam, convergencePoint);
+        bool fired = projectileWeapon.TryFireAtFactionConverged(Faction3D.PlayerTeam, convergencePoint);
+        if (fired)
+        {
+            attackReporter?.ReportAttack(target);
+        }
+
+        return fired;
     }
 
     private bool TryUseBeam(Entity3D target, out string blockReason)
@@ -377,7 +387,7 @@ public class SplitterEnemyBrain3D : NetworkBehaviour
             return false;
         }
 
-        StartOrUpdateBeam(fireDirection);
+        StartOrUpdateBeam(fireDirection, target);
         blockReason = $"started/updated: beam aim {beamAimAngle:F1}deg <= {allowedAimAngle:F1}deg";
         return true;
     }
@@ -440,16 +450,17 @@ public class SplitterEnemyBrain3D : NetworkBehaviour
         _beamActive = true;
     }
 
-    private void StartOrUpdateBeam(Vector3 aimDirection)
+    private void StartOrUpdateBeam(Vector3 aimDirection, Entity3D target)
     {
         if (NetTickUtil.IsActive && netEnemyCombat != null && netEnemyCombat.IsSpawned)
         {
-            netEnemyCombat.SetBeamState(beamWeapon, true, aimDirection);
+            netEnemyCombat.SetBeamState(beamWeapon, true, aimDirection, target);
         }
         else
         {
             beamWeapon.ApplyNetworkBeamAim(aimDirection);
             beamWeapon.ApplyNetworkBeamState(true, authoritative: true, PlayerCombatStats3D.InvalidAttackId);
+            attackReporter?.ReportSustainedAttack(target, Mathf.Max(thinkInterval * 2f, 0.25f));
         }
 
         _beamActive = true;
@@ -475,6 +486,7 @@ public class SplitterEnemyBrain3D : NetworkBehaviour
         else
         {
             beamWeapon.ApplyNetworkBeamState(false, authoritative: true, PlayerCombatStats3D.InvalidAttackId);
+            attackReporter?.StopSustainedAttack(null);
         }
 
         _beamActive = false;

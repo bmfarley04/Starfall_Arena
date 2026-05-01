@@ -27,6 +27,9 @@ public class EnemyProjectileChargeAttack3D : NetworkBehaviour
     [Tooltip("Network combat helper used to spawn server-authoritative attacks in networked Invasion. Auto-assigned from this GameObject when left empty.")]
     [SerializeField] private NetEnemyCombat3D netEnemyCombat;
 
+    [Tooltip("Presentation-only attack reporter used by TargetAwarenessHUD3D. Auto-assigned from this GameObject if left empty.")]
+    [SerializeField] private TargetAwarenessAttackReporter3D attackReporter;
+
     [Header("Telegraph")]
     [Tooltip("Visual charge tell played during the windup. Auto-assigned from this GameObject or children when left empty.")]
     [SerializeField] private ProjectileChargeTelegraph3D chargeTelegraph;
@@ -42,6 +45,7 @@ public class EnemyProjectileChargeAttack3D : NetworkBehaviour
     private float _fireAtTime;
     private Vector3 _lockedFireDirection;
     private Faction3D _targetFaction = Faction3D.PlayerTeam;
+    private Entity3D _intendedTarget;
 
     public bool IsCharging => _isCharging;
     public bool IsFireGateReady => !_isCharging && IsSelectedWeaponReady();
@@ -85,6 +89,11 @@ public class EnemyProjectileChargeAttack3D : NetworkBehaviour
 
     public bool TryBeginCharge(Faction3D targetFaction, Vector3 fireDirection)
     {
+        return TryBeginCharge(targetFaction, fireDirection, null);
+    }
+
+    public bool TryBeginCharge(Faction3D targetFaction, Vector3 fireDirection, Entity3D intendedTarget)
+    {
         CacheReferences();
 
         if (_isCharging || !IsSelectedWeaponReady())
@@ -99,6 +108,7 @@ public class EnemyProjectileChargeAttack3D : NetworkBehaviour
 
         _targetFaction = targetFaction;
         _lockedFireDirection = fireDirection.normalized;
+        _intendedTarget = intendedTarget;
 
         if (chargeDuration <= 0.0001f)
         {
@@ -121,6 +131,7 @@ public class EnemyProjectileChargeAttack3D : NetworkBehaviour
 
         _isCharging = false;
         _lockedFireDirection = Vector3.zero;
+        _intendedTarget = null;
         StopChargeTelegraph(immediate);
     }
 
@@ -135,6 +146,7 @@ public class EnemyProjectileChargeAttack3D : NetworkBehaviour
 
         _isCharging = false;
         _lockedFireDirection = Vector3.zero;
+        _intendedTarget = null;
 
         if (stopTelegraphOnFire || !fired)
         {
@@ -153,10 +165,16 @@ public class EnemyProjectileChargeAttack3D : NetworkBehaviour
         Vector3 fireDirection = ResolveLockedFireDirection();
         if (NetTickUtil.IsActive && netEnemyCombat != null && netEnemyCombat.IsSpawned)
         {
-            return netEnemyCombat.TryFireProjectilePattern(_projectileWeapon, _targetFaction, fireDirection);
+            return netEnemyCombat.TryFireProjectilePattern(_projectileWeapon, _targetFaction, fireDirection, _intendedTarget);
         }
 
-        return _projectileWeapon.TryFireAtFaction(_targetFaction, fireDirection);
+        bool fired = _projectileWeapon.TryFireAtFaction(_targetFaction, fireDirection);
+        if (fired)
+        {
+            attackReporter?.ReportAttack(_intendedTarget);
+        }
+
+        return fired;
     }
 
     private bool FireBeam()
@@ -170,11 +188,12 @@ public class EnemyProjectileChargeAttack3D : NetworkBehaviour
         Vector3 aimDirection = ResolveLockedFireDirection();
         if (NetTickUtil.IsActive && netEnemyCombat != null && netEnemyCombat.IsSpawned)
         {
-            return netEnemyCombat.SetBeamState(beamWeapon, true, aimDirection);
+            return netEnemyCombat.SetBeamState(beamWeapon, true, aimDirection, _intendedTarget);
         }
 
         beamWeapon.ApplyNetworkBeamAim(aimDirection);
         beamWeapon.ApplyNetworkBeamState(true, authoritative: true, PlayerCombatStats3D.InvalidAttackId);
+        attackReporter?.ReportSustainedAttack(_intendedTarget, 0.25f);
         return true;
     }
 
@@ -188,10 +207,16 @@ public class EnemyProjectileChargeAttack3D : NetworkBehaviour
 
         if (NetTickUtil.IsActive && netEnemyCombat != null && netEnemyCombat.IsSpawned)
         {
-            return netEnemyCombat.SetFlamethrowerState(flamethrowerWeapon, true);
+            return netEnemyCombat.SetFlamethrowerState(flamethrowerWeapon, true, _intendedTarget);
         }
 
-        return flamethrowerWeapon.TryStartBurst(authoritativeDamage: true);
+        bool fired = flamethrowerWeapon.TryStartBurst(authoritativeDamage: true);
+        if (fired)
+        {
+            attackReporter?.ReportSustainedAttack(_intendedTarget, flamethrowerWeapon.BurstDuration);
+        }
+
+        return fired;
     }
 
     private Vector3 ResolveLockedFireDirection()
@@ -204,6 +229,7 @@ public class EnemyProjectileChargeAttack3D : NetworkBehaviour
     private void CacheReferences()
     {
         netEnemyCombat ??= GetComponent<NetEnemyCombat3D>();
+        attackReporter ??= GetComponent<TargetAwarenessAttackReporter3D>() ?? gameObject.AddComponent<TargetAwarenessAttackReporter3D>();
         chargeTelegraph ??= GetComponentInChildren<ProjectileChargeTelegraph3D>(true);
         beamWeapon ??= GetComponent<BeamWeapon3D>();
         flamethrowerWeapon ??= GetComponent<EnemyFlamethrowerWeapon3D>();

@@ -168,11 +168,13 @@ public struct NetProjectileSpawnData3D : INetworkSerializable
 {
     public NetProjectileFireRequest3D Fire;
     public double ServerSpawnTime;
+    public ulong IntendedTargetNetworkObjectId;
 
     public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
     {
         serializer.SerializeValue(ref Fire);
         serializer.SerializeValue(ref ServerSpawnTime);
+        serializer.SerializeValue(ref IntendedTargetNetworkObjectId);
     }
 }
 
@@ -182,6 +184,7 @@ public struct NetBeamState3D : INetworkSerializable
     public bool IsFiring;
     public Vector3 AimDirection;
     public int BeamIndex;
+    public ulong IntendedTargetNetworkObjectId;
 
     public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
     {
@@ -189,6 +192,7 @@ public struct NetBeamState3D : INetworkSerializable
         serializer.SerializeValue(ref IsFiring);
         serializer.SerializeValue(ref AimDirection);
         serializer.SerializeValue(ref BeamIndex);
+        serializer.SerializeValue(ref IntendedTargetNetworkObjectId);
     }
 }
 

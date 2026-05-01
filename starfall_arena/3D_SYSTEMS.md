@@ -135,6 +135,8 @@ These classes should stay narrow and mostly coordinate dedicated 3D systems.
   - binds through `PlayerHUDManager3D`, pools one canvas widget per active target, and reads replicated proxy transform/health/shield state without sending network messages
   - transitions between edge indicator, floating far/occluded indicator, close visible hidden state, and mid-range visible bracket states
   - uses screen-space ellipse clamping with independently tunable top/bottom padding for offscreen indicators and occlusion checks to avoid showing brackets/bars through world geometry
+  - sizes visible brackets from projected active `MeshRenderer`/`SkinnedMeshRenderer` bounds, or from an optional `TargetAwarenessBounds3D` local-box override on unusual enemy prefabs
+  - reads `TargetAwarenessAttackReporter3D` locally so offscreen attack brackets can pulse only for enemies that recently or actively attacked the bound local player
 - `GigablastChargeEdgeGlow3D`
   - local-player fullscreen Gigablast edge-glow controller
   - reads the charged-shot progress and drives shader globals for the 3D charge-screen effect

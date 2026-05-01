@@ -17,6 +17,8 @@ public class ArtilleryBeamEnemyBrain3D : MonoBehaviour
     [SerializeField] private EnemyPatrol3D patrol;
     [SerializeField] private BeamWeapon3D beamWeapon;
     [SerializeField] private NetEnemyCombat3D netEnemyCombat;
+    [Tooltip("Presentation-only attack reporter used by TargetAwarenessHUD3D. Auto-assigned from this GameObject if left empty.")]
+    [SerializeField] private TargetAwarenessAttackReporter3D attackReporter;
     [SerializeField] private float thinkInterval = 0.05f;
     [SerializeField] private float aimToleranceDegrees = 8f;
     [SerializeField] private float keepAwayDistance = 20f;
@@ -41,6 +43,7 @@ public class ArtilleryBeamEnemyBrain3D : MonoBehaviour
         patrol ??= GetComponent<EnemyPatrol3D>() ?? gameObject.AddComponent<EnemyPatrol3D>();
         beamWeapon ??= GetComponent<BeamWeapon3D>();
         netEnemyCombat ??= GetComponent<NetEnemyCombat3D>();
+        attackReporter ??= GetComponent<TargetAwarenessAttackReporter3D>() ?? gameObject.AddComponent<TargetAwarenessAttackReporter3D>();
         _networkObject = GetComponent<NetworkObject>();
     }
 
@@ -171,7 +174,7 @@ public class ArtilleryBeamEnemyBrain3D : MonoBehaviour
             return;
         }
 
-        StartOrUpdateBeam(fireDirection);
+        StartOrUpdateBeam(fireDirection, target);
     }
 
     private bool CanStartOrSustainBeam()
@@ -224,16 +227,17 @@ public class ArtilleryBeamEnemyBrain3D : MonoBehaviour
         }
     }
 
-    private void StartOrUpdateBeam(Vector3 aimDirection)
+    private void StartOrUpdateBeam(Vector3 aimDirection, Entity3D target)
     {
         if (NetTickUtil.IsActive && netEnemyCombat != null && netEnemyCombat.IsSpawned)
         {
-            netEnemyCombat.SetBeamState(beamWeapon, true, aimDirection);
+            netEnemyCombat.SetBeamState(beamWeapon, true, aimDirection, target);
         }
         else
         {
             beamWeapon.ApplyNetworkBeamAim(aimDirection);
             beamWeapon.ApplyNetworkBeamState(true, authoritative: true, PlayerCombatStats3D.InvalidAttackId);
+            attackReporter?.ReportSustainedAttack(target, Mathf.Max(thinkInterval * 2f, 0.25f));
         }
 
         _beamActive = true;

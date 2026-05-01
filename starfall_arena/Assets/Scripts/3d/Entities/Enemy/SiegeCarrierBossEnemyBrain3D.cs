@@ -405,6 +405,9 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
     [Tooltip("Enemy combat broker used for server-authoritative projectile and beam replication.")]
     [SerializeField] private NetEnemyCombat3D netEnemyCombat;
 
+    [Tooltip("Presentation-only attack reporter used by TargetAwarenessHUD3D. Auto-assigned from this GameObject if left empty.")]
+    [SerializeField] private TargetAwarenessAttackReporter3D attackReporter;
+
     private NetworkObject _networkObject;
     private Enemy3D _enemy;
     private Vector3[] _targetHistory;
@@ -461,6 +464,7 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
         targetSensor ??= GetComponent<EnemyTargetSensor3D>();
         patrol ??= GetComponent<EnemyPatrol3D>() ?? gameObject.AddComponent<EnemyPatrol3D>();
         netEnemyCombat ??= GetComponent<NetEnemyCombat3D>();
+        attackReporter ??= GetComponent<TargetAwarenessAttackReporter3D>() ?? gameObject.AddComponent<TargetAwarenessAttackReporter3D>();
         _preferredPlaneY = transform.position.y;
         EnsureTargetHistoryBuffer();
         EnsureBeamConvergenceBuffers();
@@ -973,7 +977,7 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
 
         EnemyProjectileWeaponBase3D weapon = ResolveWeapon(weapons.laggingRakeWeapons, lane.PatternStepIndex);
         Vector3 aimPoint = ResolveRakeAimPoint(lane.Target, weapon);
-        FireProjectileConverged(weapon, aimPoint);
+        FireProjectileConverged(weapon, aimPoint, lane.Target);
 
         lane.PatternStepIndex++;
         lane.NextPatternStepTime = Time.time + rake.shotInterval;
@@ -1021,7 +1025,7 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
         }
 
         EnemyProjectileWeaponBase3D weapon = ResolveWeapon(weapons.formationMissileSalvoWeapons, lane.LaneIndex);
-        FireProjectileDirection(weapon, ResolveDirectionToTarget(lane.Target));
+        FireProjectileDirection(weapon, ResolveDirectionToTarget(lane.Target), lane.Target);
 
         lane.PatternStepIndex++;
         FinishPattern(lane);
@@ -1048,7 +1052,7 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
         }
 
         weapon.PrepareHelixShot(lane.Target, lane.PatternStepIndex, lane.HelixActivationIndex);
-        FireProjectileDirection(weapon, ResolveDirectionToTarget(lane.Target));
+        FireProjectileDirection(weapon, ResolveDirectionToTarget(lane.Target), lane.Target);
 
         lane.PatternStepIndex++;
         lane.NextPatternStepTime = Time.time + weapon.ShotInterval;
@@ -1327,28 +1331,46 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
         }
     }
 
-    private bool FireProjectileDirection(EnemyProjectileWeaponBase3D weapon, Vector3 fireDirection)
+    private bool FireProjectileDirection(EnemyProjectileWeaponBase3D weapon, Vector3 fireDirection, Entity3D target)
     {
         if (weapon == null || fireDirection.sqrMagnitude <= 0.0001f)
         {
             return false;
         }
 
-        return NetTickUtil.IsActive && netEnemyCombat != null && netEnemyCombat.IsSpawned
-            ? netEnemyCombat.TryFireProjectilePattern(weapon, Faction3D.PlayerTeam, fireDirection.normalized)
-            : weapon.TryFireAtFaction(Faction3D.PlayerTeam, fireDirection.normalized);
+        if (NetTickUtil.IsActive && netEnemyCombat != null && netEnemyCombat.IsSpawned)
+        {
+            return netEnemyCombat.TryFireProjectilePattern(weapon, Faction3D.PlayerTeam, fireDirection.normalized, target);
+        }
+
+        bool fired = weapon.TryFireAtFaction(Faction3D.PlayerTeam, fireDirection.normalized);
+        if (fired)
+        {
+            attackReporter?.ReportAttack(target);
+        }
+
+        return fired;
     }
 
-    private bool FireProjectileConverged(EnemyProjectileWeaponBase3D weapon, Vector3 convergencePoint)
+    private bool FireProjectileConverged(EnemyProjectileWeaponBase3D weapon, Vector3 convergencePoint, Entity3D target)
     {
         if (weapon == null)
         {
             return false;
         }
 
-        return NetTickUtil.IsActive && netEnemyCombat != null && netEnemyCombat.IsSpawned
-            ? netEnemyCombat.TryFireProjectilePatternConverged(weapon, Faction3D.PlayerTeam, convergencePoint)
-            : weapon.TryFireAtFactionConverged(Faction3D.PlayerTeam, convergencePoint);
+        if (NetTickUtil.IsActive && netEnemyCombat != null && netEnemyCombat.IsSpawned)
+        {
+            return netEnemyCombat.TryFireProjectilePatternConverged(weapon, Faction3D.PlayerTeam, convergencePoint, target);
+        }
+
+        bool fired = weapon.TryFireAtFactionConverged(Faction3D.PlayerTeam, convergencePoint);
+        if (fired)
+        {
+            attackReporter?.ReportAttack(target);
+        }
+
+        return fired;
     }
 
     private void SetBeamFenceState(PatternLaneState lane, bool isFiring)
@@ -1366,7 +1388,7 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
             Vector3 beamDirection = ResolveBeamConvergenceDirection(beamWeapon, convergencePoint, i);
             if (NetTickUtil.IsActive && netEnemyCombat != null && netEnemyCombat.IsSpawned)
             {
-                netEnemyCombat.SetBeamState(beamWeapon, isFiring, beamDirection);
+                netEnemyCombat.SetBeamState(beamWeapon, isFiring, beamDirection, lane.Target);
             }
             else
             {
@@ -1376,6 +1398,7 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
                 }
 
                 beamWeapon.ApplyNetworkBeamState(isFiring, authoritative: true, PlayerCombatStats3D.InvalidAttackId);
+                ReportSustainedAttack(isFiring, lane.Target);
             }
         }
     }
@@ -1439,6 +1462,18 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
             && IsSpawned;
     }
 
+    private void ReportSustainedAttack(bool isFiring, Entity3D target)
+    {
+        if (isFiring)
+        {
+            attackReporter?.ReportSustainedAttack(target, 0.25f);
+        }
+        else
+        {
+            attackReporter?.StopSustainedAttack(target);
+        }
+    }
+
     private double ResolveNetworkServerTime()
     {
         return NetworkManager.Singleton != null ? NetworkManager.Singleton.ServerTime.Time : 0d;
@@ -1477,7 +1512,7 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
             Vector3 beamDirection = ResolveLightningSlowBeamDirection(beamWeapon, lane.Target, i);
             if (NetTickUtil.IsActive && netEnemyCombat != null && netEnemyCombat.IsSpawned)
             {
-                netEnemyCombat.SetBeamState(beamWeapon, isFiring, beamDirection);
+                netEnemyCombat.SetBeamState(beamWeapon, isFiring, beamDirection, lane.Target);
             }
             else
             {
@@ -1487,6 +1522,7 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
                 }
 
                 beamWeapon.ApplyNetworkBeamState(isFiring, authoritative: true, PlayerCombatStats3D.InvalidAttackId);
+                ReportSustainedAttack(isFiring, lane.Target);
             }
         }
     }

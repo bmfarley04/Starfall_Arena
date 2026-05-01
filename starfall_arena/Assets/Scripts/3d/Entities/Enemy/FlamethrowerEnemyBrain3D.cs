@@ -37,6 +37,9 @@ public class FlamethrowerEnemyBrain3D : MonoBehaviour
     [Tooltip("Network combat helper used to replicate flame visuals. Auto-assigned from this GameObject if left empty.")]
     [SerializeField] private NetEnemyCombat3D netEnemyCombat;
 
+    [Tooltip("Presentation-only attack reporter used by TargetAwarenessHUD3D. Auto-assigned from this GameObject if left empty.")]
+    [SerializeField] private TargetAwarenessAttackReporter3D attackReporter;
+
     [Header("Think Loop")]
     [Tooltip("Seconds between AI decision ticks. Lower is more responsive but costs more CPU.")]
     [SerializeField] private float thinkInterval = 0.05f;
@@ -93,6 +96,7 @@ public class FlamethrowerEnemyBrain3D : MonoBehaviour
         strafeMover ??= GetComponent<EnemyStrafeMover3D>();
         patrol ??= GetComponent<EnemyPatrol3D>() ?? gameObject.AddComponent<EnemyPatrol3D>();
         netEnemyCombat ??= GetComponent<NetEnemyCombat3D>();
+        attackReporter ??= GetComponent<TargetAwarenessAttackReporter3D>() ?? gameObject.AddComponent<TargetAwarenessAttackReporter3D>();
         _networkObject = GetComponent<NetworkObject>();
         _orbitSign = GetInstanceID() % 2 == 0 ? 1 : -1;
     }
@@ -222,7 +226,7 @@ public class FlamethrowerEnemyBrain3D : MonoBehaviour
         {
             if (!chargeAttack.IsCharging)
             {
-                chargeAttack.TryBeginCharge(Faction3D.PlayerTeam, targetDirection);
+                chargeAttack.TryBeginCharge(Faction3D.PlayerTeam, targetDirection, _currentTarget);
             }
 
             return;
@@ -233,7 +237,7 @@ public class FlamethrowerEnemyBrain3D : MonoBehaviour
             return;
         }
 
-        StartFlame();
+        StartFlame(_currentTarget);
     }
 
     private void UpdateFlameOrbit(Vector3 targetDirection)
@@ -271,7 +275,7 @@ public class FlamethrowerEnemyBrain3D : MonoBehaviour
         strafeMover.BeginStrafe(orbitDirection * flameOrbitStrafeSpeed, strafeDuration);
     }
 
-    private void StartFlame()
+    private void StartFlame(Entity3D target)
     {
         if (flamethrowerWeapon == null)
         {
@@ -280,11 +284,14 @@ public class FlamethrowerEnemyBrain3D : MonoBehaviour
 
         if (NetTickUtil.IsActive && netEnemyCombat != null && netEnemyCombat.IsSpawned)
         {
-            netEnemyCombat.SetFlamethrowerState(flamethrowerWeapon, true);
+            netEnemyCombat.SetFlamethrowerState(flamethrowerWeapon, true, target);
             return;
         }
 
-        flamethrowerWeapon.TryStartBurst(authoritativeDamage: true);
+        if (flamethrowerWeapon.TryStartBurst(authoritativeDamage: true))
+        {
+            attackReporter?.ReportSustainedAttack(target, flamethrowerWeapon.BurstDuration);
+        }
     }
 
     private void StopFlame()
@@ -301,6 +308,7 @@ public class FlamethrowerEnemyBrain3D : MonoBehaviour
         }
 
         flamethrowerWeapon.StopBurst();
+        attackReporter?.StopSustainedAttack(null);
     }
 
     private Vector3 ResolveSteeringDirection(Vector3 desiredDirection, bool allowObstacleAvoidance)

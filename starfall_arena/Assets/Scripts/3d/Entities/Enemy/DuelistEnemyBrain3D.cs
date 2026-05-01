@@ -58,6 +58,9 @@ public class DuelistEnemyBrain3D : MonoBehaviour
     [Tooltip("Network combat helper for replicated enemy projectile and beam fire. Auto-assigned from this GameObject if left empty.")]
     [SerializeField] private NetEnemyCombat3D netEnemyCombat;
 
+    [Tooltip("Presentation-only attack reporter used by TargetAwarenessHUD3D. Auto-assigned from this GameObject if left empty.")]
+    [SerializeField] private TargetAwarenessAttackReporter3D attackReporter;
+
     [Tooltip("Optional inter-agent separation steering. Useful when multiple duelists are active so they do not stack on the same perch.")]
     [SerializeField] private EnemySeparation3D separation;
 
@@ -254,6 +257,7 @@ public class DuelistEnemyBrain3D : MonoBehaviour
         strafeMover ??= GetComponent<EnemyStrafeMover3D>();
         targetSensor ??= GetComponent<EnemyTargetSensor3D>();
         netEnemyCombat ??= GetComponent<NetEnemyCombat3D>();
+        attackReporter ??= GetComponent<TargetAwarenessAttackReporter3D>() ?? gameObject.AddComponent<TargetAwarenessAttackReporter3D>();
         separation ??= GetComponent<EnemySeparation3D>();
         obstacleAvoidance ??= GetComponent<EnemyObstacleAvoidance3D>();
         patrol ??= GetComponent<EnemyPatrol3D>() ?? gameObject.AddComponent<EnemyPatrol3D>();
@@ -647,10 +651,10 @@ public class DuelistEnemyBrain3D : MonoBehaviour
         switch (choice)
         {
             case DuelistWeaponChoice.Projectile:
-                fired = TryFireProjectileWeapon(projectileWeapon, targetDirection);
+                fired = TryFireProjectileWeapon(projectileWeapon, targetDirection, target);
                 break;
             case DuelistWeaponChoice.Missile:
-                fired = TryFireProjectileWeapon(missileWeapon, targetDirection);
+                fired = TryFireProjectileWeapon(missileWeapon, targetDirection, target);
                 break;
             case DuelistWeaponChoice.Beam:
                 fired = TryUseBeam(target);
@@ -792,7 +796,7 @@ public class DuelistEnemyBrain3D : MonoBehaviour
         };
     }
 
-    private bool TryFireProjectileWeapon(EnemyProjectileWeaponBase3D weapon, Vector3 targetDirection)
+    private bool TryFireProjectileWeapon(EnemyProjectileWeaponBase3D weapon, Vector3 targetDirection, Entity3D target)
     {
         if (weapon == null)
         {
@@ -801,10 +805,16 @@ public class DuelistEnemyBrain3D : MonoBehaviour
 
         if (NetTickUtil.IsActive && netEnemyCombat != null && netEnemyCombat.IsSpawned)
         {
-            return netEnemyCombat.TryFireProjectilePattern(weapon, Faction3D.PlayerTeam, targetDirection);
+            return netEnemyCombat.TryFireProjectilePattern(weapon, Faction3D.PlayerTeam, targetDirection, target);
         }
 
-        return weapon.TryFireAtFaction(Faction3D.PlayerTeam, targetDirection);
+        bool fired = weapon.TryFireAtFaction(Faction3D.PlayerTeam, targetDirection);
+        if (fired)
+        {
+            attackReporter?.ReportAttack(target);
+        }
+
+        return fired;
     }
 
     // ---- Beam helpers (mirrors SplitterEnemyBrain3D's beam path) ----
@@ -823,7 +833,7 @@ public class DuelistEnemyBrain3D : MonoBehaviour
             return false;
         }
 
-        StartOrUpdateBeam(fireDirection);
+        StartOrUpdateBeam(fireDirection, target);
         return true;
     }
 
@@ -870,16 +880,17 @@ public class DuelistEnemyBrain3D : MonoBehaviour
         _beamActive = true;
     }
 
-    private void StartOrUpdateBeam(Vector3 aimDirection)
+    private void StartOrUpdateBeam(Vector3 aimDirection, Entity3D target)
     {
         if (NetTickUtil.IsActive && netEnemyCombat != null && netEnemyCombat.IsSpawned)
         {
-            netEnemyCombat.SetBeamState(beamWeapon, true, aimDirection);
+            netEnemyCombat.SetBeamState(beamWeapon, true, aimDirection, target);
         }
         else
         {
             beamWeapon.ApplyNetworkBeamAim(aimDirection);
             beamWeapon.ApplyNetworkBeamState(true, authoritative: true, PlayerCombatStats3D.InvalidAttackId);
+            attackReporter?.ReportSustainedAttack(target, Mathf.Max(thinkInterval * 2f, 0.25f));
         }
 
         _beamActive = true;
@@ -905,6 +916,7 @@ public class DuelistEnemyBrain3D : MonoBehaviour
         else
         {
             beamWeapon.ApplyNetworkBeamState(false, authoritative: true, PlayerCombatStats3D.InvalidAttackId);
+            attackReporter?.StopSustainedAttack(null);
         }
 
         _beamActive = false;

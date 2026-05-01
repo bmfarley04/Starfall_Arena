@@ -15,12 +15,14 @@ public struct TargetAwarenessPresentation3D
     public TargetAwarenessVisibility3D State;
     public Vector2 CanvasPosition;
     public Vector2 IndicatorDirection;
+    public Vector2 BracketSize;
     public bool RotateIndicator;
     public float IndicatorScale;
     public float BracketScale;
     public float BarScale;
     public float Health01;
     public float Shield01;
+    public float AttackPulse01;
     public bool SnapPosition;
 }
 
@@ -42,6 +44,8 @@ public class TargetAwarenessWidget3D : MonoBehaviour
     [SerializeField] private RectTransform root;
     [SerializeField] private RectTransform indicatorGroup;
     [SerializeField] private RectTransform bracketGroup;
+    [Tooltip("Optional RectTransform that should receive the computed target bracket size. Falls back to Bracket Group when left empty.")]
+    [SerializeField] private RectTransform bracketFrame;
     [SerializeField] private RectTransform healthBarGroup;
     [SerializeField] private RectTransform shieldBarGroup;
 
@@ -49,18 +53,35 @@ public class TargetAwarenessWidget3D : MonoBehaviour
     [SerializeField] private BarBinding3D healthBar;
     [SerializeField] private BarBinding3D shieldBar;
 
+    [Header("Attack Flash")]
+    [Tooltip("Specific red outer bracket Images that should pulse when this offscreen enemy is attacking the local player.")]
+    [SerializeField] private Image[] attackFlashBracketImages;
+    [Tooltip("Resting alpha for red offscreen attack brackets. 18/255 matches the current intended base transparency.")]
+    [SerializeField, Range(0f, 1f)] private float attackFlashBaseAlpha = 18f / 255f;
+    [Tooltip("Peak alpha for red offscreen attack brackets while an enemy attack warning is active.")]
+    [SerializeField, Range(0f, 1f)] private float attackFlashPeakAlpha = 1f;
+
     [Header("Smoothing")]
     [SerializeField] private float positionSmoothing = 18f;
     [SerializeField] private float scaleSmoothing = 14f;
     [SerializeField] private float fadeSmoothing = 12f;
+    [SerializeField] private float bracketSizeSmoothing = 18f;
     [SerializeField] private bool snapPositionToTarget = true;
-    [Tooltip("Canvas-space offset applied to the health and shield groups while brackets are shown. Positive X places bars to the right of the bracket group.")]
-    [SerializeField] private Vector2 bracketBarsOffset = new Vector2(72f, 0f);
+    [Tooltip("Horizontal gap from the right edge of the computed bracket to the health and shield bars.")]
+    [SerializeField] private float bracketBarRightGap = 12f;
+    [Tooltip("Additional canvas-space offset applied to the health bar after it is placed against the bracket's right edge.")]
+    [SerializeField] private Vector2 healthBarBracketOffset = Vector2.zero;
+    [Tooltip("Additional canvas-space offset applied to the shield bar after it is placed against the bracket's right edge.")]
+    [SerializeField] private Vector2 shieldBarBracketOffset = Vector2.zero;
     [Tooltip("Degrees added to the indicator direction. Use this when the authored arrow sprite points up/right/etc.")]
     [SerializeField] private float indicatorRotationOffset;
 
     private Vector2 _healthBarBasePosition;
     private Vector2 _shieldBarBasePosition;
+    private Vector2 _healthBarSize;
+    private Vector2 _shieldBarSize;
+    private Vector2 _currentBracketSize;
+    private Color[] _attackFlashBaseColors;
     private CanvasGroup _indicatorCanvasGroup;
     private CanvasGroup _bracketCanvasGroup;
     private CanvasGroup _healthCanvasGroup;
@@ -74,6 +95,7 @@ public class TargetAwarenessWidget3D : MonoBehaviour
     public void Initialize()
     {
         root ??= transform as RectTransform;
+        bracketFrame ??= bracketGroup;
         rootGroup ??= GetComponent<CanvasGroup>();
         if (rootGroup == null)
         {
@@ -85,6 +107,7 @@ public class TargetAwarenessWidget3D : MonoBehaviour
         _healthCanvasGroup = EnsureCanvasGroup(healthBarGroup);
         _shieldCanvasGroup = EnsureCanvasGroup(shieldBarGroup);
         CacheBarBasePositions();
+        CacheAttackFlashColors();
 
         InitializeBar(ref healthBar);
         InitializeBar(ref shieldBar);
@@ -130,12 +153,23 @@ public class TargetAwarenessWidget3D : MonoBehaviour
         _indicatorScale = Mathf.Lerp(_indicatorScale, Mathf.Max(0.01f, presentation.IndicatorScale), ExponentialLerp(scaleSmoothing, deltaTime));
         _bracketScale = Mathf.Lerp(_bracketScale, Mathf.Max(0.01f, presentation.BracketScale), ExponentialLerp(scaleSmoothing, deltaTime));
         _barScale = Mathf.Lerp(_barScale, Mathf.Max(0.01f, presentation.BarScale), ExponentialLerp(scaleSmoothing, deltaTime));
+        Vector2 targetBracketSize = new Vector2(Mathf.Max(1f, presentation.BracketSize.x), Mathf.Max(1f, presentation.BracketSize.y));
+        if (presentation.SnapPosition || _currentBracketSize.sqrMagnitude <= 0.0001f)
+        {
+            _currentBracketSize = targetBracketSize;
+        }
+        else
+        {
+            _currentBracketSize = Vector2.Lerp(_currentBracketSize, targetBracketSize, ExponentialLerp(bracketSizeSmoothing, deltaTime));
+        }
 
         ApplyScale(indicatorGroup, _indicatorScale);
         ApplyScale(bracketGroup, _bracketScale);
         ApplyScale(healthBarGroup, _barScale);
         ApplyScale(shieldBarGroup, _barScale);
+        ApplyBracketSize(_currentBracketSize);
         ApplyBracketBarOffsets(showBracket);
+        ApplyAttackFlash(presentation.AttackPulse01);
         RotateIndicator(presentation.IndicatorDirection, presentation.RotateIndicator);
         RefreshBars(presentation.Health01, presentation.Shield01);
     }
@@ -158,7 +192,9 @@ public class TargetAwarenessWidget3D : MonoBehaviour
         SetGroupAlphaImmediate(_bracketCanvasGroup, 0f);
         SetGroupAlphaImmediate(_healthCanvasGroup, 0f);
         SetGroupAlphaImmediate(_shieldCanvasGroup, 0f);
+        ApplyAttackFlash(0f);
         _hasPosition = false;
+        _currentBracketSize = Vector2.zero;
     }
 
     private void RotateIndicator(Vector2 direction, bool shouldRotate)
@@ -194,25 +230,84 @@ public class TargetAwarenessWidget3D : MonoBehaviour
         if (healthBarGroup != null)
         {
             _healthBarBasePosition = healthBarGroup.anchoredPosition;
+            _healthBarSize = healthBarGroup.rect.size;
         }
 
         if (shieldBarGroup != null)
         {
             _shieldBarBasePosition = shieldBarGroup.anchoredPosition;
+            _shieldBarSize = shieldBarGroup.rect.size;
         }
     }
 
     private void ApplyBracketBarOffsets(bool showBracket)
     {
-        Vector2 offset = showBracket ? bracketBarsOffset : Vector2.zero;
+        float bracketHalfWidth = Mathf.Max(0f, _currentBracketSize.x * 0.5f * Mathf.Max(0.01f, _bracketScale));
         if (healthBarGroup != null)
         {
-            healthBarGroup.anchoredPosition = _healthBarBasePosition + offset;
+            float healthHalfWidth = Mathf.Max(0f, _healthBarSize.x * 0.5f * Mathf.Max(0.01f, _barScale));
+            Vector2 bracketEdgePosition = new Vector2(bracketHalfWidth + bracketBarRightGap + healthHalfWidth, _healthBarBasePosition.y);
+            healthBarGroup.anchoredPosition = showBracket ? bracketEdgePosition + healthBarBracketOffset : _healthBarBasePosition;
         }
 
         if (shieldBarGroup != null)
         {
-            shieldBarGroup.anchoredPosition = _shieldBarBasePosition + offset;
+            float shieldHalfWidth = Mathf.Max(0f, _shieldBarSize.x * 0.5f * Mathf.Max(0.01f, _barScale));
+            Vector2 bracketEdgePosition = new Vector2(bracketHalfWidth + bracketBarRightGap + shieldHalfWidth, _shieldBarBasePosition.y);
+            shieldBarGroup.anchoredPosition = showBracket ? bracketEdgePosition + shieldBarBracketOffset : _shieldBarBasePosition;
+        }
+    }
+
+    private void ApplyBracketSize(Vector2 bracketSize)
+    {
+        if (bracketFrame == null)
+        {
+            return;
+        }
+
+        bracketFrame.sizeDelta = new Vector2(Mathf.Max(1f, bracketSize.x), Mathf.Max(1f, bracketSize.y));
+    }
+
+    private void CacheAttackFlashColors()
+    {
+        if (attackFlashBracketImages == null)
+        {
+            _attackFlashBaseColors = null;
+            return;
+        }
+
+        _attackFlashBaseColors = new Color[attackFlashBracketImages.Length];
+        for (int i = 0; i < attackFlashBracketImages.Length; i++)
+        {
+            Image image = attackFlashBracketImages[i];
+            _attackFlashBaseColors[i] = image != null ? image.color : Color.white;
+        }
+    }
+
+    private void ApplyAttackFlash(float pulse01)
+    {
+        if (attackFlashBracketImages == null || attackFlashBracketImages.Length == 0)
+        {
+            return;
+        }
+
+        if (_attackFlashBaseColors == null || _attackFlashBaseColors.Length != attackFlashBracketImages.Length)
+        {
+            CacheAttackFlashColors();
+        }
+
+        float alpha = Mathf.Lerp(attackFlashBaseAlpha, attackFlashPeakAlpha, Mathf.Clamp01(pulse01));
+        for (int i = 0; i < attackFlashBracketImages.Length; i++)
+        {
+            Image image = attackFlashBracketImages[i];
+            if (image == null)
+            {
+                continue;
+            }
+
+            Color color = i < _attackFlashBaseColors.Length ? _attackFlashBaseColors[i] : image.color;
+            color.a = alpha;
+            image.color = color;
         }
     }
 

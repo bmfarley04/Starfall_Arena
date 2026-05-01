@@ -83,6 +83,8 @@ public class TriumvirateEnemyBrain3D : NetworkBehaviour
     [SerializeField] private BeamWeapon3D finalBeamWeapon;
     [Tooltip("Network combat helper used to replicate the final beam visual.")]
     [SerializeField] private NetEnemyCombat3D netEnemyCombat;
+    [Tooltip("Presentation-only attack reporter used by TargetAwarenessHUD3D. Auto-assigned from this GameObject if left empty.")]
+    [SerializeField] private TargetAwarenessAttackReporter3D attackReporter;
     [Tooltip("Optional charge glow telegraph on this member. Reuses the generic projectile charge telegraph behavior for renderer emission, VFX, and light buildup.")]
     [SerializeField] private ProjectileChargeTelegraph3D chargeTelegraph;
     [Tooltip("Maximum final beam damage range.")]
@@ -151,6 +153,7 @@ public class TriumvirateEnemyBrain3D : NetworkBehaviour
         _networkObject = GetComponent<NetworkObject>();
         finalBeamWeapon ??= GetComponent<BeamWeapon3D>();
         netEnemyCombat ??= GetComponent<NetEnemyCombat3D>();
+        attackReporter ??= GetComponent<TargetAwarenessAttackReporter3D>() ?? gameObject.AddComponent<TargetAwarenessAttackReporter3D>();
         chargeTelegraph ??= GetComponentInChildren<ProjectileChargeTelegraph3D>(true);
     }
 
@@ -396,7 +399,7 @@ public class TriumvirateEnemyBrain3D : NetworkBehaviour
         {
             _survivorCountAtBeamStart = Mathf.Clamp(_activeMembers.Count, 1, 3);
             LogStateMessage($"Starting final converged beam from {_survivorCountAtBeamStart} surviving member(s). Total DPS={ResolveDamagePerSecond():F1}, slowEnabled={_survivorCountAtBeamStart >= 3}.");
-            StartFinalBeams(targetPoint);
+            StartFinalBeams(targetPoint, target);
             _stateEndTime = Time.time + Mathf.Max(0.01f, finalBeamDuration);
         }
         else
@@ -415,7 +418,7 @@ public class TriumvirateEnemyBrain3D : NetworkBehaviour
         }
     }
 
-    private void StartFinalBeams(Vector3 targetPoint)
+    private void StartFinalBeams(Vector3 targetPoint, Entity3D target)
     {
         for (int i = 0; i < _activeMembers.Count; i++)
         {
@@ -428,12 +431,13 @@ public class TriumvirateEnemyBrain3D : NetworkBehaviour
             Vector3 aimDirection = ResolveMemberAimDirection(member, targetPoint);
             if (NetTickUtil.IsActive && member.netEnemyCombat != null && member.netEnemyCombat.IsSpawned)
             {
-                member.netEnemyCombat.SetBeamState(member.finalBeamWeapon, true, aimDirection);
+                member.netEnemyCombat.SetBeamState(member.finalBeamWeapon, true, aimDirection, target);
             }
             else
             {
                 member.finalBeamWeapon.ApplyNetworkBeamAim(aimDirection);
                 member.finalBeamWeapon.ApplyNetworkBeamState(true, authoritative: true, PlayerCombatStats3D.InvalidAttackId);
+                member.attackReporter?.ReportSustainedAttack(target, 0.25f);
             }
         }
 
@@ -480,6 +484,7 @@ public class TriumvirateEnemyBrain3D : NetworkBehaviour
             else
             {
                 member.finalBeamWeapon.ApplyNetworkBeamState(false, authoritative: true, PlayerCombatStats3D.InvalidAttackId);
+                member.attackReporter?.StopSustainedAttack(null);
             }
         }
 

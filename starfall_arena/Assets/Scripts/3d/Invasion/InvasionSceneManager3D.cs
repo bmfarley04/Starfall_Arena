@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using Unity.Collections;
 using TMPro;
 using Unity.Netcode;
 using UnityEngine;
@@ -7,6 +8,20 @@ using UnityEngine;
 [DisallowMultipleComponent]
 public class InvasionSceneManager3D : MonoBehaviour
 {
+    private const string LivesMessageName = "StarfallArena.Invasion3D.PlayerLives";
+    private const string RespawnProtectionMessageName = "StarfallArena.Invasion3D.RespawnProtection";
+
+    [System.Serializable]
+    private struct RespawnConfig3D
+    {
+        [Tooltip("Seconds after a death before a player with remaining lives is spawned again at the death location.")]
+        public float respawnDelaySeconds;
+        [Tooltip("Seconds of damage immunity granted immediately after an Invasion respawn.")]
+        public float invulnerabilitySeconds;
+        [Tooltip("Seconds between shield visibility pulses during respawn invulnerability. Lower values keep the shield at a higher alpha.")]
+        public float shieldFlashIntervalSeconds;
+    }
+
     [Header("Spawn Points")]
     [Tooltip("Spawn point used for player slot 1.")]
     [SerializeField] private Transform player1SpawnPoint;
@@ -44,17 +59,25 @@ public class InvasionSceneManager3D : MonoBehaviour
     [SerializeField] private bool hideEnemyCounterWhenZero = false;
 
     [Header("Life Counter UI")]
-    [Tooltip("If enabled, this manager controls the optional heart/life counter canvas. This is display-only until the Invasion lives/respawn rules are implemented.")]
+    [Tooltip("If enabled, this manager controls the optional heart/life counter canvas for the local player's remaining lives.")]
     [SerializeField] private bool useLifeCounter = true;
     [Tooltip("Optional canvas group containing the heart/life counter UI.")]
     [SerializeField] private CanvasGroup lifeCounterCanvasGroup;
     [Tooltip("Text field that displays the current remaining player lives.")]
     [SerializeField] private TextMeshProUGUI lifeCounterText;
-    [Tooltip("Initial life count shown when Invasion gameplay starts. Gameplay life-loss rules are planned separately.")]
+    [Tooltip("Lives assigned to each player when Invasion gameplay starts. A life is consumed on each death; players respawn only while this remains above zero after the death.")]
     [Min(0)]
     [SerializeField] private int startingPlayerLives = 3;
-    [Tooltip("Format used for the life counter text. {0} is replaced by the remaining life count.")]
+    [Tooltip("Format used for the life counter text. {0} is the displayed/local life count, {1} is player 1 lives, and {2} is player 2 lives.")]
     [SerializeField] private string lifeCounterFormat = "{0}";
+
+    [Header("Respawn Rules")]
+    [SerializeField] private RespawnConfig3D respawn = new RespawnConfig3D
+    {
+        respawnDelaySeconds = 1.5f,
+        invulnerabilitySeconds = 3f,
+        shieldFlashIntervalSeconds = 0.12f
+    };
 
     [Header("Gameplay HUD")]
     [Tooltip("HUD roots that should be active during Invasion gameplay: health, vignette, crosshair, weapon container, ability container, FPS/ping, and enemy tracker.")]
@@ -89,6 +112,10 @@ public class InvasionSceneManager3D : MonoBehaviour
     private Coroutine _networkSessionSubscriptionCoroutine;
     private Coroutine _activeWaveIntroCoroutine;
     private int _lastWaveIntroSequenceId = -1;
+    private readonly int[] _playerLivesRemainingBySlot = new int[3];
+    private readonly Coroutine[] _respawnCoroutinesBySlot = new Coroutine[3];
+    private readonly Coroutine[] _respawnProtectionVisualCoroutinesBySlot = new Coroutine[3];
+    private bool _customNetworkMessagesRegistered;
 
     private IEnumerator Start()
     {
@@ -117,6 +144,9 @@ public class InvasionSceneManager3D : MonoBehaviour
     private void OnDestroy()
     {
         UnsubscribeWaveManagerEvents();
+        UnsubscribePlayerDeath(_player1);
+        UnsubscribePlayerDeath(_player2);
+        StopRespawnCoroutines();
 
         if (_networkSessionSubscriptionCoroutine != null)
         {
@@ -125,6 +155,7 @@ public class InvasionSceneManager3D : MonoBehaviour
         }
 
         UnsubscribeNetworkSessionEvents();
+        UnregisterCustomNetworkMessages();
     }
 
     private void RefreshNetworkMode()
@@ -163,6 +194,7 @@ public class InvasionSceneManager3D : MonoBehaviour
         if (_useNetworkSession && NetworkSessionData.Instance != null)
         {
             NetworkSessionData.Instance.MarkMatchStarted();
+            BroadcastPlayerLives();
         }
 
         if (waveManager == null)
@@ -307,14 +339,19 @@ public class InvasionSceneManager3D : MonoBehaviour
 
     private Player3D SpawnLocalPlayer(ShipData shipData, Transform spawnPoint, string playerTag)
     {
+        Vector3 position = spawnPoint != null ? spawnPoint.position : Vector3.zero;
+        Quaternion rotation = spawnPoint != null ? spawnPoint.rotation : Quaternion.identity;
+        return SpawnLocalPlayer(shipData, position, rotation, playerTag);
+    }
+
+    private Player3D SpawnLocalPlayer(ShipData shipData, Vector3 position, Quaternion rotation, string playerTag)
+    {
         if (shipData == null || shipData.shipPrefab == null)
         {
             Debug.LogError($"[InvasionSceneManager3D] Cannot spawn {playerTag}: missing ShipData or ship prefab.", this);
             return null;
         }
 
-        Vector3 position = spawnPoint != null ? spawnPoint.position : Vector3.zero;
-        Quaternion rotation = spawnPoint != null ? spawnPoint.rotation : Quaternion.identity;
         GameObject instance = Instantiate(shipData.shipPrefab, position, rotation);
         instance.name = $"InvasionPlayer3D_{playerTag}_{shipData.name}";
         instance.tag = playerTag;
@@ -333,14 +370,19 @@ public class InvasionSceneManager3D : MonoBehaviour
 
     private Player3D SpawnNetworkPlayer(ShipData shipData, Transform spawnPoint, ulong ownerClientId, byte playerSlot)
     {
+        Vector3 position = spawnPoint != null ? spawnPoint.position : Vector3.zero;
+        Quaternion rotation = spawnPoint != null ? spawnPoint.rotation : Quaternion.identity;
+        return SpawnNetworkPlayer(shipData, position, rotation, ownerClientId, playerSlot);
+    }
+
+    private Player3D SpawnNetworkPlayer(ShipData shipData, Vector3 position, Quaternion rotation, ulong ownerClientId, byte playerSlot)
+    {
         if (shipData == null || shipData.shipPrefab == null)
         {
             Debug.LogError($"[InvasionSceneManager3D] Cannot network-spawn player {playerSlot}: missing ShipData or ship prefab.", this);
             return null;
         }
 
-        Vector3 position = spawnPoint != null ? spawnPoint.position : Vector3.zero;
-        Quaternion rotation = spawnPoint != null ? spawnPoint.rotation : Quaternion.identity;
         GameObject instance = NetMgr.SpawnPlayerNetworked(shipData.shipPrefab, position, rotation, ownerClientId);
         if (instance == null)
         {
@@ -391,7 +433,224 @@ public class InvasionSceneManager3D : MonoBehaviour
         }
 
         stats.ResetStats();
+        SubscribePlayerDeath(player);
 
+        if (playerSlot == 1)
+        {
+            _player1 = player;
+        }
+        else if (playerSlot == 2)
+        {
+            _player2 = player;
+        }
+    }
+
+    private void SubscribePlayerDeath(Player3D player)
+    {
+        if (player == null)
+        {
+            return;
+        }
+
+        player.Died -= OnPlayerDeath;
+        player.Died += OnPlayerDeath;
+    }
+
+    private void UnsubscribePlayerDeath(Player3D player)
+    {
+        if (player == null)
+        {
+            return;
+        }
+
+        player.Died -= OnPlayerDeath;
+    }
+
+    private void OnPlayerDeath(Entity3D deadEntity)
+    {
+        if (!_isAuthoritativeController || deadEntity == null)
+        {
+            return;
+        }
+
+        Player3D deadPlayer = deadEntity as Player3D;
+        if (deadPlayer == null)
+        {
+            return;
+        }
+
+        byte playerSlot = ResolvePlayerSlot(deadPlayer);
+        if (playerSlot < 1 || playerSlot > 2)
+        {
+            Debug.LogWarning($"[InvasionSceneManager3D] Ignoring death for '{deadPlayer.name}' because its player slot could not be resolved.", deadPlayer);
+            return;
+        }
+
+        Vector3 deathPosition = deadPlayer.transform.position;
+        Quaternion deathRotation = deadPlayer.transform.rotation;
+        UnsubscribePlayerDeath(deadPlayer);
+        SetTrackedPlayer(playerSlot, null);
+
+        int livesAfterDeath = Mathf.Max(0, _playerLivesRemainingBySlot[playerSlot] - 1);
+        _playerLivesRemainingBySlot[playerSlot] = livesAfterDeath;
+        UpdateLifeCounter(ResolveDisplayedLives());
+        BroadcastPlayerLives();
+
+        if (livesAfterDeath <= 0)
+        {
+            Debug.Log($"[InvasionSceneManager3D] Player {playerSlot} died with no lives remaining and will not respawn.", this);
+            return;
+        }
+
+        if (_respawnCoroutinesBySlot[playerSlot] != null)
+        {
+            StopCoroutine(_respawnCoroutinesBySlot[playerSlot]);
+        }
+
+        _respawnCoroutinesBySlot[playerSlot] = StartCoroutine(RespawnPlayerAfterDelay(playerSlot, deathPosition, deathRotation));
+    }
+
+    private IEnumerator RespawnPlayerAfterDelay(byte playerSlot, Vector3 deathPosition, Quaternion deathRotation)
+    {
+        float delay = Mathf.Max(0f, respawn.respawnDelaySeconds);
+        if (delay > 0f)
+        {
+            yield return new WaitForSeconds(delay);
+        }
+
+        Player3D respawnedPlayer;
+        if (_useNetworkSession)
+        {
+            ulong ownerClientId = ResolveOwnerClientIdForSlot(playerSlot - 1);
+            ShipData shipData = playerSlot == 1 ? _player1Data : _player2Data;
+            respawnedPlayer = SpawnNetworkPlayer(shipData, deathPosition, deathRotation, ownerClientId, playerSlot);
+        }
+        else
+        {
+            ShipData shipData = playerSlot == 1 ? _player1Data : _player2Data;
+            string playerTag = playerSlot == 1 ? "Player1" : "Player2";
+            respawnedPlayer = SpawnLocalPlayer(shipData, deathPosition, deathRotation, playerTag);
+        }
+
+        _respawnCoroutinesBySlot[playerSlot] = null;
+
+        if (respawnedPlayer == null)
+        {
+            yield break;
+        }
+
+        ApplyRespawnProtection(respawnedPlayer, playerSlot);
+        BroadcastRespawnProtection(playerSlot, Mathf.Max(0f, respawn.invulnerabilitySeconds));
+        PlayerHUDManager3D.RebindAllAutoManagers();
+    }
+
+    private void ApplyRespawnProtection(Player3D player, byte playerSlot)
+    {
+        if (player == null)
+        {
+            return;
+        }
+
+        float duration = Mathf.Max(0f, respawn.invulnerabilitySeconds);
+        if (duration > 0f)
+        {
+            player.BeginDodgeInvulnerability(duration);
+        }
+
+        StartRespawnProtectionVisual(playerSlot, duration);
+    }
+
+    private void StartRespawnProtectionVisual(byte playerSlot, float duration)
+    {
+        if (playerSlot < 1 || playerSlot > 2)
+        {
+            return;
+        }
+
+        if (_respawnProtectionVisualCoroutinesBySlot[playerSlot] != null)
+        {
+            StopCoroutine(_respawnProtectionVisualCoroutinesBySlot[playerSlot]);
+        }
+
+        _respawnProtectionVisualCoroutinesBySlot[playerSlot] = StartCoroutine(RespawnProtectionVisualCoroutine(playerSlot, duration));
+    }
+
+    private IEnumerator RespawnProtectionVisualCoroutine(byte playerSlot, float duration)
+    {
+        Player3D player = null;
+        float waitForSpawnUntil = Time.realtimeSinceStartup + Mathf.Max(1f, spawnRetryIntervalSeconds * 10f);
+        while (player == null && Time.realtimeSinceStartup < waitForSpawnUntil)
+        {
+            player = ResolveTrackedOrNetworkPlayer(playerSlot);
+            if (player == null)
+            {
+                yield return null;
+            }
+        }
+
+        if (player == null)
+        {
+            _respawnProtectionVisualCoroutinesBySlot[playerSlot] = null;
+            yield break;
+        }
+
+        ShieldController shield = player.GetComponentInChildren<ShieldController>(true);
+        float endTime = Time.time + Mathf.Max(0f, duration);
+        float interval = Mathf.Max(0.03f, respawn.shieldFlashIntervalSeconds);
+
+        while (shield != null && Time.time < endTime)
+        {
+            shield.OnHit(player.transform.position);
+            yield return new WaitForSeconds(interval);
+        }
+
+        _respawnProtectionVisualCoroutinesBySlot[playerSlot] = null;
+    }
+
+    private Player3D ResolveTrackedOrNetworkPlayer(byte playerSlot)
+    {
+        Player3D trackedPlayer = playerSlot == 1 ? _player1 : _player2;
+        if (trackedPlayer != null)
+        {
+            return trackedPlayer;
+        }
+
+        if (NetMovement3D.TryGetPlayerBySlot(playerSlot, out NetMovement3D movement))
+        {
+            return movement != null ? movement.GetComponent<Player3D>() : null;
+        }
+
+        return null;
+    }
+
+    private byte ResolvePlayerSlot(Player3D player)
+    {
+        if (player == null)
+        {
+            return 0;
+        }
+
+        NetMovement3D movement = player.GetComponent<NetMovement3D>();
+        if (movement != null && movement.PlayerSlot > 0)
+        {
+            return movement.PlayerSlot;
+        }
+
+        if (player.CompareTag("Player1"))
+        {
+            return 1;
+        }
+
+        if (player.CompareTag("Player2"))
+        {
+            return 2;
+        }
+
+        return ReferenceEquals(player, _player1) ? (byte)1 : ReferenceEquals(player, _player2) ? (byte)2 : (byte)0;
+    }
+
+    private void SetTrackedPlayer(byte playerSlot, Player3D player)
+    {
         if (playerSlot == 1)
         {
             _player1 = player;
@@ -454,7 +713,10 @@ public class InvasionSceneManager3D : MonoBehaviour
             waveTextCanvasGroup.alpha = 0f;
         }
 
-        _currentPlayerLives = Mathf.Max(0, startingPlayerLives);
+        int clampedStartingLives = Mathf.Max(0, startingPlayerLives);
+        _playerLivesRemainingBySlot[1] = clampedStartingLives;
+        _playerLivesRemainingBySlot[2] = clampedStartingLives;
+        _currentPlayerLives = ResolveDisplayedLives();
         UpdateEnemyCounter(0);
         UpdateLifeCounter(_currentPlayerLives);
         SetGameplayHudActive(false);
@@ -487,7 +749,11 @@ public class InvasionSceneManager3D : MonoBehaviour
 
     public void SetPlayerLivesRemaining(int livesRemaining)
     {
-        UpdateLifeCounter(livesRemaining);
+        int clampedLives = Mathf.Max(0, livesRemaining);
+        _playerLivesRemainingBySlot[1] = clampedLives;
+        _playerLivesRemainingBySlot[2] = clampedLives;
+        UpdateLifeCounter(ResolveDisplayedLives());
+        BroadcastPlayerLives();
     }
 
     private void ConfigureNetworkUiCanvases()
@@ -663,6 +929,7 @@ public class InvasionSceneManager3D : MonoBehaviour
         session.OnSessionStateChanged += HandleNetworkSessionStateChanged;
         session.OnWaveStartPresentationChanged += HandleWaveStartPresentationChanged;
         session.OnInvasionEnemyCountChanged += HandleInvasionEnemyCountChanged;
+        RegisterCustomNetworkMessages();
         HandleNetworkSessionStateChanged(session.CurrentState);
 
         // Late-joining scene managers can miss the first wave-start presentation
@@ -816,20 +1083,146 @@ public class InvasionSceneManager3D : MonoBehaviour
 
         if (lifeCounterText != null)
         {
-            lifeCounterText.text = FormatLifeCounterText(_currentPlayerLives);
+            lifeCounterText.text = FormatLifeCounterText(_currentPlayerLives, _playerLivesRemainingBySlot[1], _playerLivesRemainingBySlot[2]);
         }
     }
 
-    private string FormatLifeCounterText(int livesRemaining)
+    private int ResolveDisplayedLives()
+    {
+        int localSlot = ResolveLocalPlayerSlot();
+        if (localSlot == 1 || localSlot == 2)
+        {
+            return _playerLivesRemainingBySlot[localSlot];
+        }
+
+        return Mathf.Min(_playerLivesRemainingBySlot[1], _playerLivesRemainingBySlot[2]);
+    }
+
+    private int ResolveLocalPlayerSlot()
+    {
+        if (!_useNetworkSession)
+        {
+            return 0;
+        }
+
+        NetworkSessionData session = NetworkSessionData.Instance;
+        int localSlotIndex = session != null ? session.GetLocalSlotIndex() : -1;
+        return localSlotIndex >= 0 ? localSlotIndex + 1 : 0;
+    }
+
+    private string FormatLifeCounterText(int livesRemaining, int player1Lives, int player2Lives)
     {
         string format = string.IsNullOrWhiteSpace(lifeCounterFormat) ? "{0}" : lifeCounterFormat;
         try
         {
-            return string.Format(format, livesRemaining);
+            return string.Format(format, livesRemaining, player1Lives, player2Lives);
         }
         catch (System.FormatException)
         {
             return livesRemaining.ToString();
+        }
+    }
+
+    private void RegisterCustomNetworkMessages()
+    {
+        NetworkManager networkManager = NetworkManager.Singleton;
+        if (!_useNetworkSession || networkManager == null || networkManager.CustomMessagingManager == null || _customNetworkMessagesRegistered)
+        {
+            return;
+        }
+
+        networkManager.CustomMessagingManager.RegisterNamedMessageHandler(LivesMessageName, HandlePlayerLivesMessage);
+        networkManager.CustomMessagingManager.RegisterNamedMessageHandler(RespawnProtectionMessageName, HandleRespawnProtectionMessage);
+        _customNetworkMessagesRegistered = true;
+    }
+
+    private void UnregisterCustomNetworkMessages()
+    {
+        NetworkManager networkManager = NetworkManager.Singleton;
+        if (!_customNetworkMessagesRegistered || networkManager == null || networkManager.CustomMessagingManager == null)
+        {
+            _customNetworkMessagesRegistered = false;
+            return;
+        }
+
+        networkManager.CustomMessagingManager.UnregisterNamedMessageHandler(LivesMessageName);
+        networkManager.CustomMessagingManager.UnregisterNamedMessageHandler(RespawnProtectionMessageName);
+        _customNetworkMessagesRegistered = false;
+    }
+
+    private void BroadcastPlayerLives()
+    {
+        NetworkManager networkManager = NetworkManager.Singleton;
+        if (!_useNetworkSession || networkManager == null || !networkManager.IsServer || networkManager.CustomMessagingManager == null)
+        {
+            return;
+        }
+
+        using (FastBufferWriter writer = new FastBufferWriter(sizeof(int) * 2, Allocator.Temp))
+        {
+            writer.WriteValueSafe(_playerLivesRemainingBySlot[1]);
+            writer.WriteValueSafe(_playerLivesRemainingBySlot[2]);
+            networkManager.CustomMessagingManager.SendNamedMessage(LivesMessageName, networkManager.ConnectedClientsIds, writer, NetworkDelivery.ReliableSequenced);
+        }
+    }
+
+    private void HandlePlayerLivesMessage(ulong senderClientId, FastBufferReader reader)
+    {
+        if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsServer)
+        {
+            return;
+        }
+
+        reader.ReadValueSafe(out int player1Lives);
+        reader.ReadValueSafe(out int player2Lives);
+        _playerLivesRemainingBySlot[1] = Mathf.Max(0, player1Lives);
+        _playerLivesRemainingBySlot[2] = Mathf.Max(0, player2Lives);
+        UpdateLifeCounter(ResolveDisplayedLives());
+    }
+
+    private void BroadcastRespawnProtection(byte playerSlot, float duration)
+    {
+        NetworkManager networkManager = NetworkManager.Singleton;
+        if (!_useNetworkSession || networkManager == null || !networkManager.IsServer || networkManager.CustomMessagingManager == null)
+        {
+            return;
+        }
+
+        using (FastBufferWriter writer = new FastBufferWriter(16, Allocator.Temp))
+        {
+            writer.WriteValueSafe(playerSlot);
+            writer.WriteValueSafe(duration);
+            networkManager.CustomMessagingManager.SendNamedMessage(RespawnProtectionMessageName, networkManager.ConnectedClientsIds, writer, NetworkDelivery.ReliableSequenced);
+        }
+    }
+
+    private void HandleRespawnProtectionMessage(ulong senderClientId, FastBufferReader reader)
+    {
+        if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsServer)
+        {
+            return;
+        }
+
+        reader.ReadValueSafe(out byte playerSlot);
+        reader.ReadValueSafe(out float duration);
+        StartRespawnProtectionVisual(playerSlot, Mathf.Max(0f, duration));
+    }
+
+    private void StopRespawnCoroutines()
+    {
+        for (int i = 1; i <= 2; i++)
+        {
+            if (_respawnCoroutinesBySlot[i] != null)
+            {
+                StopCoroutine(_respawnCoroutinesBySlot[i]);
+                _respawnCoroutinesBySlot[i] = null;
+            }
+
+            if (_respawnProtectionVisualCoroutinesBySlot[i] != null)
+            {
+                StopCoroutine(_respawnProtectionVisualCoroutinesBySlot[i]);
+                _respawnProtectionVisualCoroutinesBySlot[i] = null;
+            }
         }
     }
 }

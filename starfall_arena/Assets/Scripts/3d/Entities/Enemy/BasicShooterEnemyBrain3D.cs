@@ -29,6 +29,9 @@ public class BasicShooterEnemyBrain3D : MonoBehaviour
     [Tooltip("Network combat helper for replicated enemy projectile fire. Auto-assigned from this GameObject if left empty.")]
     [SerializeField] private NetEnemyCombat3D netEnemyCombat;
 
+    [Tooltip("Presentation-only attack reporter used by TargetAwarenessHUD3D. Auto-assigned from this GameObject if left empty.")]
+    [SerializeField] private TargetAwarenessAttackReporter3D attackReporter;
+
     [Tooltip("Seconds between AI decision ticks. Lower is more responsive but costs more CPU.")]
     [SerializeField] private float thinkInterval = 0.05f;
 
@@ -56,6 +59,7 @@ public class BasicShooterEnemyBrain3D : MonoBehaviour
         obstacleAvoidance ??= GetComponent<EnemyObstacleAvoidance3D>();
         patrol ??= GetComponent<EnemyPatrol3D>() ?? gameObject.AddComponent<EnemyPatrol3D>();
         netEnemyCombat ??= GetComponent<NetEnemyCombat3D>();
+        attackReporter ??= GetComponent<TargetAwarenessAttackReporter3D>() ?? gameObject.AddComponent<TargetAwarenessAttackReporter3D>();
         _networkObject = GetComponent<NetworkObject>();
     }
 
@@ -123,7 +127,7 @@ public class BasicShooterEnemyBrain3D : MonoBehaviour
         {
             if (!chargeAttack.IsCharging)
             {
-                chargeAttack.TryBeginCharge(Faction3D.PlayerTeam, toTarget.normalized);
+                chargeAttack.TryBeginCharge(Faction3D.PlayerTeam, toTarget.normalized, target);
             }
 
             return;
@@ -136,11 +140,14 @@ public class BasicShooterEnemyBrain3D : MonoBehaviour
 
         if (NetTickUtil.IsActive && netEnemyCombat != null && netEnemyCombat.IsSpawned)
         {
-            netEnemyCombat.TryFireProjectilePattern(primaryWeapon, Faction3D.PlayerTeam, toTarget.normalized);
+            netEnemyCombat.TryFireProjectilePattern(primaryWeapon, Faction3D.PlayerTeam, toTarget.normalized, target);
             return;
         }
 
-        primaryWeapon.TryFireAtFaction(Faction3D.PlayerTeam, toTarget.normalized);
+        if (primaryWeapon.TryFireAtFaction(Faction3D.PlayerTeam, toTarget.normalized))
+        {
+            attackReporter?.ReportAttack(target);
+        }
     }
 
     private bool IsAimedAtTarget(Vector3 toTarget)

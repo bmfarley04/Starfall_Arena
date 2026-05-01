@@ -13,6 +13,7 @@ public class NetEnemyCombat3D : NetworkBehaviour
     private NetEnemyMovement3D _movement;
     private IEnemyProjectileWeapon3D[] _projectileWeapons;
     private BeamWeapon3D[] _beamWeapons;
+    private TargetAwarenessAttackReporter3D _attackReporter;
     private bool _loggedMissingWeapon;
     private bool _loggedMissingProjectile;
     private bool _loggedMissingBeamWeapon;
@@ -25,20 +26,35 @@ public class NetEnemyCombat3D : NetworkBehaviour
 
     public bool TryFireProjectilePattern(IEnemyProjectileWeapon3D sourceWeapon, Faction3D targetFaction)
     {
-        return TryFireProjectilePattern(sourceWeapon, targetFaction, Vector3.zero);
+        return TryFireProjectilePattern(sourceWeapon, targetFaction, Vector3.zero, null);
     }
 
     public bool TryFireProjectilePattern(IEnemyProjectileWeapon3D sourceWeapon, Faction3D targetFaction, Vector3 fireDirectionOverride)
     {
-        return TryFireProjectilePatternInternal(sourceWeapon, targetFaction, fireDirectionOverride, useConvergencePoint: false, convergencePoint: Vector3.zero);
+        return TryFireProjectilePattern(sourceWeapon, targetFaction, fireDirectionOverride, null);
+    }
+
+    public bool TryFireProjectilePattern(IEnemyProjectileWeapon3D sourceWeapon, Faction3D targetFaction, Vector3 fireDirectionOverride, Entity3D intendedTarget)
+    {
+        return TryFireProjectilePatternInternal(sourceWeapon, targetFaction, fireDirectionOverride, useConvergencePoint: false, convergencePoint: Vector3.zero, intendedTarget);
     }
 
     public bool TryFireProjectilePatternConverged(IEnemyProjectileWeapon3D sourceWeapon, Faction3D targetFaction, Vector3 convergencePoint)
     {
-        return TryFireProjectilePatternInternal(sourceWeapon, targetFaction, Vector3.zero, useConvergencePoint: true, convergencePoint);
+        return TryFireProjectilePatternConverged(sourceWeapon, targetFaction, convergencePoint, null);
+    }
+
+    public bool TryFireProjectilePatternConverged(IEnemyProjectileWeapon3D sourceWeapon, Faction3D targetFaction, Vector3 convergencePoint, Entity3D intendedTarget)
+    {
+        return TryFireProjectilePatternInternal(sourceWeapon, targetFaction, Vector3.zero, useConvergencePoint: true, convergencePoint, intendedTarget);
     }
 
     private bool TryFireProjectilePatternInternal(IEnemyProjectileWeapon3D sourceWeapon, Faction3D targetFaction, Vector3 fireDirectionOverride, bool useConvergencePoint, Vector3 convergencePoint)
+    {
+        return TryFireProjectilePatternInternal(sourceWeapon, targetFaction, fireDirectionOverride, useConvergencePoint, convergencePoint, null);
+    }
+
+    private bool TryFireProjectilePatternInternal(IEnemyProjectileWeapon3D sourceWeapon, Faction3D targetFaction, Vector3 fireDirectionOverride, bool useConvergencePoint, Vector3 convergencePoint, Entity3D intendedTarget)
     {
         if (!IsServer || !IsSpawned)
         {
@@ -80,15 +96,21 @@ public class NetEnemyCombat3D : NetworkBehaviour
 
         for (int i = 0; i < _projectileRequests.Count; i++)
         {
-            SpawnAuthoritativeProjectile(sourceWeapon, _projectileRequests[i], targetFaction);
+            SpawnAuthoritativeProjectile(sourceWeapon, _projectileRequests[i], targetFaction, intendedTarget);
         }
 
         _enemy?.RecordCombatActivity();
+        ReportAttack(intendedTarget);
         sourceWeapon.NetworkFireSound?.PlayAtPoint(transform.position);
         return true;
     }
 
     public bool SetBeamState(BeamWeapon3D sourceWeapon, bool isFiring, Vector3 aimDirection)
+    {
+        return SetBeamState(sourceWeapon, isFiring, aimDirection, null);
+    }
+
+    public bool SetBeamState(BeamWeapon3D sourceWeapon, bool isFiring, Vector3 aimDirection, Entity3D intendedTarget)
     {
         if (!IsServer || !IsSpawned)
         {
@@ -115,12 +137,14 @@ public class NetEnemyCombat3D : NetworkBehaviour
 
         sourceWeapon.ApplyNetworkBeamState(isFiring, authoritative: true, NetTickUtil.CurrentTick);
         _enemy?.RecordCombatActivity();
+        ReportSustainedAttack(isFiring, intendedTarget);
         BroadcastEnemyBeamStateClientRpc(new NetBeamState3D
         {
             Tick = NetTickUtil.CurrentTick,
             IsFiring = isFiring,
             AimDirection = aimDirection.sqrMagnitude > 0.0001f ? aimDirection.normalized : Vector3.zero,
-            BeamIndex = beamIndex
+            BeamIndex = beamIndex,
+            IntendedTargetNetworkObjectId = ResolveNetworkObjectId(intendedTarget)
         });
         return true;
     }
@@ -163,6 +187,11 @@ public class NetEnemyCombat3D : NetworkBehaviour
 
     public bool SetFlamethrowerState(EnemyFlamethrowerWeapon3D sourceWeapon, bool isFiring)
     {
+        return SetFlamethrowerState(sourceWeapon, isFiring, null);
+    }
+
+    public bool SetFlamethrowerState(EnemyFlamethrowerWeapon3D sourceWeapon, bool isFiring, Entity3D intendedTarget)
+    {
         if (!IsServer || !IsSpawned)
         {
             return false;
@@ -176,7 +205,8 @@ public class NetEnemyCombat3D : NetworkBehaviour
 
         sourceWeapon.ApplyNetworkFlameState(isFiring, authoritativeDamage: true);
         _enemy?.RecordCombatActivity();
-        BroadcastEnemyFlamethrowerStateClientRpc(isFiring);
+        ReportSustainedAttack(isFiring, intendedTarget);
+        BroadcastEnemyFlamethrowerStateClientRpc(isFiring, ResolveNetworkObjectId(intendedTarget));
         return true;
     }
 
@@ -203,7 +233,8 @@ public class NetEnemyCombat3D : NetworkBehaviour
     private void SpawnAuthoritativeProjectile(
         IEnemyProjectileWeapon3D sourceWeapon,
         NetProjectileFireRequest3D fireRequest,
-        Faction3D targetFaction)
+        Faction3D targetFaction,
+        Entity3D intendedTarget)
     {
         sourceWeapon.SpawnNetworkProjectile(
             fireRequest,
@@ -221,7 +252,8 @@ public class NetEnemyCombat3D : NetworkBehaviour
         BroadcastEnemyProjectileClientRpc(new NetProjectileSpawnData3D
         {
             Fire = fireRequest,
-            ServerSpawnTime = NetworkManager.Singleton != null ? NetworkManager.Singleton.ServerTime.Time : 0d
+            ServerSpawnTime = NetworkManager.Singleton != null ? NetworkManager.Singleton.ServerTime.Time : 0d,
+            IntendedTargetNetworkObjectId = ResolveNetworkObjectId(intendedTarget)
         });
     }
 
@@ -284,6 +316,7 @@ public class NetEnemyCombat3D : NetworkBehaviour
             serverAuthoritativeGameplay: false);
 
         sourceWeapon.NetworkFireSound?.PlayAtPoint(transform.position);
+        ReportAttack(ResolveNetworkTarget(spawnData.IntendedTargetNetworkObjectId));
     }
 
     [ClientRpc]
@@ -306,6 +339,7 @@ public class NetEnemyCombat3D : NetworkBehaviour
         }
 
         beamWeapon.ApplyNetworkBeamState(state.IsFiring, authoritative: false, PlayerCombatStats3D.InvalidAttackId);
+        ReportSustainedAttack(state.IsFiring, ResolveNetworkTarget(state.IntendedTargetNetworkObjectId));
     }
 
     [ClientRpc]
@@ -326,7 +360,7 @@ public class NetEnemyCombat3D : NetworkBehaviour
     }
 
     [ClientRpc]
-    private void BroadcastEnemyFlamethrowerStateClientRpc(bool isFiring)
+    private void BroadcastEnemyFlamethrowerStateClientRpc(bool isFiring, ulong intendedTargetNetworkObjectId)
     {
         if (IsServer)
         {
@@ -341,14 +375,66 @@ public class NetEnemyCombat3D : NetworkBehaviour
         }
 
         flamethrowerWeapon.ApplyNetworkFlameState(isFiring, authoritativeDamage: false);
+        ReportSustainedAttack(isFiring, ResolveNetworkTarget(intendedTargetNetworkObjectId));
     }
 
     private void CacheReferences()
     {
         _enemy ??= GetComponent<Enemy3D>();
         _movement ??= GetComponent<NetEnemyMovement3D>();
+        _attackReporter ??= GetComponent<TargetAwarenessAttackReporter3D>();
         CacheProjectileWeapons();
         CacheBeamWeapons();
+    }
+
+    private void ReportAttack(Entity3D intendedTarget)
+    {
+        if (intendedTarget == null)
+        {
+            return;
+        }
+
+        _attackReporter ??= GetComponent<TargetAwarenessAttackReporter3D>() ?? gameObject.AddComponent<TargetAwarenessAttackReporter3D>();
+        _attackReporter.ReportAttack(intendedTarget);
+    }
+
+    private void ReportSustainedAttack(bool isFiring, Entity3D intendedTarget)
+    {
+        _attackReporter ??= GetComponent<TargetAwarenessAttackReporter3D>() ?? gameObject.AddComponent<TargetAwarenessAttackReporter3D>();
+        if (isFiring)
+        {
+            _attackReporter.ReportSustainedAttack(intendedTarget, 0.25f);
+        }
+        else
+        {
+            _attackReporter.StopSustainedAttack(intendedTarget);
+        }
+    }
+
+    private static ulong ResolveNetworkObjectId(Entity3D target)
+    {
+        if (target == null || !target.TryGetComponent(out NetworkObject networkObject) || !networkObject.IsSpawned)
+        {
+            return 0UL;
+        }
+
+        return networkObject.NetworkObjectId;
+    }
+
+    private static Entity3D ResolveNetworkTarget(ulong networkObjectId)
+    {
+        if (networkObjectId == 0UL || NetworkManager.Singleton == null)
+        {
+            return null;
+        }
+
+        if (!NetworkManager.Singleton.SpawnManager.SpawnedObjects.TryGetValue(networkObjectId, out NetworkObject networkObject)
+            || networkObject == null)
+        {
+            return null;
+        }
+
+        return networkObject.GetComponent<Entity3D>();
     }
 
     private bool TryResolveBeamWeapon(int beamIndex, out BeamWeapon3D beamWeapon)
