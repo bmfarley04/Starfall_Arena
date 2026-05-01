@@ -113,6 +113,7 @@ public class InvasionWaveManager3D : MonoBehaviour
     [SerializeField] private float waveStartDelaySeconds = 0f;
 
     private readonly List<Enemy3D> _aliveEnemies = new List<Enemy3D>();
+    private readonly List<Enemy3D> _pendingRevealEnemies = new List<Enemy3D>();
     private readonly List<Vector3> _formationOffsets = new List<Vector3>(16);
     private float _activeFormationYBias;
     private Coroutine _waveRoutine;
@@ -170,7 +171,7 @@ public class InvasionWaveManager3D : MonoBehaviour
 
             WaveStarted?.Invoke(waveNumber);
             yield return RunWaveSequence(waves[waveIndex]);
-            yield return new WaitUntil(() => _aliveEnemies.Count == 0);
+            yield return new WaitUntil(() => !HasOutstandingTrackedEnemies());
             WaveCleared?.Invoke(waveNumber);
 
             if (waveIndex < waveCount - 1 && waveEndDelaySeconds > 0f)
@@ -339,7 +340,7 @@ public class InvasionWaveManager3D : MonoBehaviour
             return null;
         }
 
-        TrackEnemy(enemy);
+        RegisterSpawnedEnemy(enemy);
         return enemy;
     }
 
@@ -471,7 +472,43 @@ public class InvasionWaveManager3D : MonoBehaviour
         return new Vector3(axisA, axisB * _activeFormationYBias, axisB);
     }
 
-    private void TrackEnemy(Enemy3D enemy)
+    private void RegisterSpawnedEnemy(Enemy3D enemy)
+    {
+        if (enemy == null)
+        {
+            return;
+        }
+
+        SpawnArrivalEffect3D arrivalEffect = enemy.GetComponent<SpawnArrivalEffect3D>();
+        if (arrivalEffect != null && !arrivalEffect.HasRevealed)
+        {
+            QueuePendingRevealEnemy(enemy, arrivalEffect);
+            return;
+        }
+
+        TrackAliveEnemy(enemy);
+    }
+
+    private void QueuePendingRevealEnemy(Enemy3D enemy, SpawnArrivalEffect3D arrivalEffect)
+    {
+        if (enemy == null || arrivalEffect == null)
+        {
+            return;
+        }
+
+        if (_pendingRevealEnemies.Contains(enemy) || _aliveEnemies.Contains(enemy))
+        {
+            return;
+        }
+
+        _pendingRevealEnemies.Add(enemy);
+        enemy.Died -= HandlePendingEnemyDied;
+        enemy.Died += HandlePendingEnemyDied;
+        arrivalEffect.Revealed -= HandlePendingEnemyRevealed;
+        arrivalEffect.Revealed += HandlePendingEnemyRevealed;
+    }
+
+    private void TrackAliveEnemy(Enemy3D enemy)
     {
         if (enemy == null || _aliveEnemies.Contains(enemy))
         {
@@ -481,6 +518,28 @@ public class InvasionWaveManager3D : MonoBehaviour
         _aliveEnemies.Add(enemy);
         enemy.Died += HandleEnemyDied;
         AliveEnemyCountChanged?.Invoke(_aliveEnemies.Count);
+    }
+
+    private void HandlePendingEnemyRevealed(SpawnArrivalEffect3D arrivalEffect)
+    {
+        if (arrivalEffect == null)
+        {
+            return;
+        }
+
+        Enemy3D enemy = arrivalEffect.GetComponent<Enemy3D>();
+        PromotePendingEnemyToAlive(enemy);
+    }
+
+    private void HandlePendingEnemyDied(Entity3D entity)
+    {
+        Enemy3D enemy = entity as Enemy3D;
+        if (enemy == null)
+        {
+            return;
+        }
+
+        RemovePendingRevealEnemy(enemy);
     }
 
     private void HandleEnemyDied(Entity3D entity)
@@ -496,6 +555,34 @@ public class InvasionWaveManager3D : MonoBehaviour
         AliveEnemyCountChanged?.Invoke(_aliveEnemies.Count);
     }
 
+    private void PromotePendingEnemyToAlive(Enemy3D enemy)
+    {
+        if (enemy == null)
+        {
+            return;
+        }
+
+        RemovePendingRevealEnemy(enemy);
+        TrackAliveEnemy(enemy);
+    }
+
+    private void RemovePendingRevealEnemy(Enemy3D enemy)
+    {
+        if (enemy == null)
+        {
+            return;
+        }
+
+        SpawnArrivalEffect3D arrivalEffect = enemy.GetComponent<SpawnArrivalEffect3D>();
+        if (arrivalEffect != null)
+        {
+            arrivalEffect.Revealed -= HandlePendingEnemyRevealed;
+        }
+
+        enemy.Died -= HandlePendingEnemyDied;
+        _pendingRevealEnemies.Remove(enemy);
+    }
+
     private void ClearTrackedEnemies()
     {
         for (int i = 0; i < _aliveEnemies.Count; i++)
@@ -506,8 +593,51 @@ public class InvasionWaveManager3D : MonoBehaviour
             }
         }
 
+        for (int i = 0; i < _pendingRevealEnemies.Count; i++)
+        {
+            Enemy3D pendingEnemy = _pendingRevealEnemies[i];
+            if (pendingEnemy == null)
+            {
+                continue;
+            }
+
+            pendingEnemy.Died -= HandlePendingEnemyDied;
+            SpawnArrivalEffect3D arrivalEffect = pendingEnemy.GetComponent<SpawnArrivalEffect3D>();
+            if (arrivalEffect != null)
+            {
+                arrivalEffect.Revealed -= HandlePendingEnemyRevealed;
+            }
+        }
+
         _aliveEnemies.Clear();
+        _pendingRevealEnemies.Clear();
         AliveEnemyCountChanged?.Invoke(_aliveEnemies.Count);
+    }
+
+    private bool HasOutstandingTrackedEnemies()
+    {
+        CleanupNullTrackedEnemies();
+        return _aliveEnemies.Count > 0 || _pendingRevealEnemies.Count > 0;
+    }
+
+    private void CleanupNullTrackedEnemies()
+    {
+        for (int i = _aliveEnemies.Count - 1; i >= 0; i--)
+        {
+            if (_aliveEnemies[i] == null)
+            {
+                _aliveEnemies.RemoveAt(i);
+                AliveEnemyCountChanged?.Invoke(_aliveEnemies.Count);
+            }
+        }
+
+        for (int i = _pendingRevealEnemies.Count - 1; i >= 0; i--)
+        {
+            if (_pendingRevealEnemies[i] == null)
+            {
+                _pendingRevealEnemies.RemoveAt(i);
+            }
+        }
     }
 
     private bool HasSpawnAuthority()

@@ -69,6 +69,11 @@ public class SpawnArrivalEffect3D : MonoBehaviour
     private Coroutine _revealRoutine;
     private bool _hasPlayed;
     private bool _isHidden;
+    private bool _hasRevealed;
+
+    public event System.Action<SpawnArrivalEffect3D> Revealed;
+
+    public bool HasRevealed => _hasRevealed;
 
     private void Awake()
     {
@@ -109,7 +114,7 @@ public class SpawnArrivalEffect3D : MonoBehaviour
         }
         else
         {
-            RestoreRevealTargets();
+            CompleteReveal();
         }
     }
 
@@ -117,7 +122,20 @@ public class SpawnArrivalEffect3D : MonoBehaviour
     {
         yield return new WaitForSeconds(delay);
         _revealRoutine = null;
+        CompleteReveal();
+    }
+
+    private void CompleteReveal()
+    {
         RestoreRevealTargets();
+
+        if (_hasRevealed)
+        {
+            return;
+        }
+
+        _hasRevealed = true;
+        Revealed?.Invoke(this);
     }
 
     private void SpawnEffect()

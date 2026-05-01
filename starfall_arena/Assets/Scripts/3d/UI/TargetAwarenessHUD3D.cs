@@ -759,6 +759,11 @@ public class TargetAwarenessHUD3D : PlayerHUDBindingTarget3D
             return false;
         }
 
+        if (IsPendingArrivalReveal(entity))
+        {
+            return false;
+        }
+
         if (!IsWithinAwarenessRange(entity))
         {
             return false;
@@ -775,6 +780,17 @@ public class TargetAwarenessHUD3D : PlayerHUDBindingTarget3D
         }
 
         return entity.CurrentHealth > 0f;
+    }
+
+    private static bool IsPendingArrivalReveal(Entity3D entity)
+    {
+        if (entity == null)
+        {
+            return false;
+        }
+
+        SpawnArrivalEffect3D arrivalEffect = entity.GetComponent<SpawnArrivalEffect3D>();
+        return arrivalEffect != null && !arrivalEffect.HasRevealed;
     }
 
     private bool IsWithinAwarenessRange(Entity3D entity)
