@@ -6747,7 +6747,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::InvasionWaveManager3D
   waves: []
-  spawnPoints: []
   startOnEnable: 1
   waveEndDelaySeconds: 3
   waveStartDelaySeconds: 0
@@ -9365,6 +9364,67 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1001 &1871973706
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 4459078204942125031, guid: 45b170708adafd343bd4e110edf859cc, type: 3}
+      propertyPath: GlobalObjectIdHash
+      value: 4138697596
+      objectReference: {fileID: 0}
+    - target: {fileID: 7279590565626816591, guid: 45b170708adafd343bd4e110edf859cc, type: 3}
+      propertyPath: m_Name
+      value: basicEnemy
+      objectReference: {fileID: 0}
+    - target: {fileID: 8495706933887049310, guid: 45b170708adafd343bd4e110edf859cc, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -8.16244
+      objectReference: {fileID: 0}
+    - target: {fileID: 8495706933887049310, guid: 45b170708adafd343bd4e110edf859cc, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8495706933887049310, guid: 45b170708adafd343bd4e110edf859cc, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 125.56366
+      objectReference: {fileID: 0}
+    - target: {fileID: 8495706933887049310, guid: 45b170708adafd343bd4e110edf859cc, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8495706933887049310, guid: 45b170708adafd343bd4e110edf859cc, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8495706933887049310, guid: 45b170708adafd343bd4e110edf859cc, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8495706933887049310, guid: 45b170708adafd343bd4e110edf859cc, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8495706933887049310, guid: 45b170708adafd343bd4e110edf859cc, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8495706933887049310, guid: 45b170708adafd343bd4e110edf859cc, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8495706933887049310, guid: 45b170708adafd343bd4e110edf859cc, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 45b170708adafd343bd4e110edf859cc, type: 3}
 --- !u!1 &1872632151
 GameObject:
   m_ObjectHideFlags: 0
@@ -10002,6 +10062,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: fortressEnemy (1)
       objectReference: {fileID: 0}
+    - target: {fileID: 5723954577492871350, guid: 67ddc44c4546f394ca0a6767e900c122, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 9212841648702151964, guid: 67ddc44c4546f394ca0a6767e900c122, type: 3}
       propertyPath: GlobalObjectIdHash
       value: 2116893685
@@ -10466,6 +10530,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 2029641327}
     m_Modifications:
+    - target: {fileID: -3029620960672476160, guid: cde2502dbb1943c4e989581533885ba9, type: 3}
+      propertyPath: GlobalObjectIdHash
+      value: 2404029128
+      objectReference: {fileID: 0}
     - target: {fileID: 2461026213711029054, guid: cde2502dbb1943c4e989581533885ba9, type: 3}
       propertyPath: m_Name
       value: artilleryEnemy
@@ -11546,6 +11614,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 2029641327}
     m_Modifications:
+    - target: {fileID: -5515900418639487515, guid: adef4d23cb9668841be1ca462087f47f, type: 3}
+      propertyPath: GlobalObjectIdHash
+      value: 3315468864
+      objectReference: {fileID: 0}
     - target: {fileID: 1335939055478967543, guid: adef4d23cb9668841be1ca462087f47f, type: 3}
       propertyPath: m_LocalPosition.x
       value: 27
@@ -11938,3 +12010,4 @@ SceneRoots:
   - {fileID: 1150678635}
   - {fileID: 1409203464}
   - {fileID: 1779300724}
+  - {fileID: 1871973706}

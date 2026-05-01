@@ -4860,6 +4860,7 @@ GameObject:
   - component: {fileID: -3029620960672476160}
   - component: {fileID: 1697909581809674589}
   - component: {fileID: 2146989867595516086}
+  - component: {fileID: 7004142910355513823}
   m_Layer: 0
   m_Name: artilleryEnemy
   m_TagString: Enemy
@@ -5138,6 +5139,7 @@ MonoBehaviour:
   flightController: {fileID: 3132292780157064821}
   targetSensor: {fileID: 5880156582198937469}
   obstacleAvoidance: {fileID: 0}
+  separation: {fileID: 0}
   patrol: {fileID: 0}
   beamWeapon: {fileID: 3081354594133750957}
   netEnemyCombat: {fileID: 0}
@@ -5268,6 +5270,22 @@ MonoBehaviour:
     maxExtrapolationMs: 40
     hardSnapDistance: 30
     smoothingCatchUpRate: 0
+--- !u!114 &7004142910355513823
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2461026213711029054}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 238b149a7cc0c1d4da4692a5e73aec1d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemySeparation3D
+  separationRadius: 8
+  separationStrength: 1
+  verticalWeight: 1
+  unstickSpeedScale: 0.2
 --- !u!1 &2884287284395979221
 GameObject:
   m_ObjectHideFlags: 0

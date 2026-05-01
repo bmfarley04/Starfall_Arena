@@ -267,6 +267,7 @@ GameObject:
   - component: {fileID: 4953110987904400346}
   - component: {fileID: 6857844489779159265}
   - component: {fileID: -4337706212769040941}
+  - component: {fileID: -2369498203580673346}
   m_Layer: 0
   m_Name: duelistEnemy
   m_TagString: Enemy
@@ -662,6 +663,7 @@ MonoBehaviour:
   strafeMover: {fileID: 3615236724536077468}
   targetSensor: {fileID: 7226521470456372098}
   netEnemyCombat: {fileID: 0}
+  attackReporter: {fileID: 0}
   separation: {fileID: 0}
   obstacleAvoidance: {fileID: 0}
   patrol: {fileID: 0}
@@ -805,7 +807,29 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NetEnemyMovement3D
   ShowTopMostFoldoutHeaderGroup: 1
-  interpolationBufferTicks: 2
+  interpolationSettings:
+    minVisualDelayMs: 80
+    maxVisualDelayMs: 120
+    bufferStarvationWarningThreshold: 5
+    maxExtrapolationMs: 40
+    hardSnapDistance: 30
+    smoothingCatchUpRate: 0
+--- !u!114 &-2369498203580673346
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5780689782910019324}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 238b149a7cc0c1d4da4692a5e73aec1d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemySeparation3D
+  separationRadius: 8
+  separationStrength: 1
+  verticalWeight: 1
+  unstickSpeedScale: 0.2
 --- !u!1 &6940028620797228721
 GameObject:
   m_ObjectHideFlags: 0

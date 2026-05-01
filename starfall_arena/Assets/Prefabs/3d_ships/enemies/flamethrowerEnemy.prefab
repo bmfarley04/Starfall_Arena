@@ -29,6 +29,7 @@ GameObject:
   - component: {fileID: 243004889681536805}
   - component: {fileID: -6285254230737239412}
   - component: {fileID: -307044459524717227}
+  - component: {fileID: -3873604026403189231}
   m_Layer: 0
   m_Name: flamethrowerEnemy
   m_TagString: Enemy
@@ -404,6 +405,7 @@ MonoBehaviour:
   strafeMover: {fileID: 2987330086573494579}
   patrol: {fileID: 8670701288625461945}
   netEnemyCombat: {fileID: 0}
+  attackReporter: {fileID: 0}
   thinkInterval: 0.05
   tooCloseRetreatDistance: 14
   preferredRangeMin: 20
@@ -480,6 +482,9 @@ MonoBehaviour:
   chargeLight: {fileID: 0}
   chargeLightMaxAddedIntensity: 5
   fadeOutDuration: 0.12
+  useWarningSphere: 0
+  warningSpherePrefab: {fileID: 0}
+  warningSphereEndScaleMultiplier: 0.05
 --- !u!114 &5791312176970835958
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -498,9 +503,12 @@ MonoBehaviour:
   beamWeapon: {fileID: 0}
   flamethrowerWeapon: {fileID: 2517135278298198213}
   netEnemyCombat: {fileID: 0}
+  attackReporter: {fileID: 0}
   chargeTelegraph: {fileID: 220747767187672308}
   chargeDuration: 1
   stopTelegraphOnFire: 1
+  targetAwarenessPreFireFlashLeadSeconds: 0.2
+  targetAwarenessPreFirePulseSeconds: 0.45
 --- !u!114 &243004889681536805
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -556,7 +564,29 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NetEnemyMovement3D
   ShowTopMostFoldoutHeaderGroup: 1
-  interpolationBufferTicks: 2
+  interpolationSettings:
+    minVisualDelayMs: 80
+    maxVisualDelayMs: 120
+    bufferStarvationWarningThreshold: 5
+    maxExtrapolationMs: 40
+    hardSnapDistance: 30
+    smoothingCatchUpRate: 0
+--- !u!114 &-3873604026403189231
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3571762344471351850}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 238b149a7cc0c1d4da4692a5e73aec1d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemySeparation3D
+  separationRadius: 8
+  separationStrength: 1
+  verticalWeight: 1
+  unstickSpeedScale: 0.2
 --- !u!1 &4023685652884570755
 GameObject:
   m_ObjectHideFlags: 0

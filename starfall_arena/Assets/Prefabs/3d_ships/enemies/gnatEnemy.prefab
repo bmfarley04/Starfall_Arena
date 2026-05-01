@@ -26,6 +26,7 @@ GameObject:
   - component: {fileID: -5515900418639487515}
   - component: {fileID: 484521640646455670}
   - component: {fileID: -1364718704198653327}
+  - component: {fileID: 4338509371409583380}
   m_Layer: 0
   m_Name: gnatEnemy
   m_TagString: Enemy
@@ -326,6 +327,7 @@ MonoBehaviour:
   patrol: {fileID: 0}
   separation: {fileID: 0}
   netEnemyCombat: {fileID: 0}
+  attackReporter: {fileID: 0}
   thinkInterval: 0.05
   preferredRangeMin: 70
   preferredRangeMax: 80
@@ -463,7 +465,29 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NetEnemyMovement3D
   ShowTopMostFoldoutHeaderGroup: 1
-  interpolationBufferTicks: 2
+  interpolationSettings:
+    minVisualDelayMs: 80
+    maxVisualDelayMs: 120
+    bufferStarvationWarningThreshold: 5
+    maxExtrapolationMs: 40
+    hardSnapDistance: 30
+    smoothingCatchUpRate: 0
+--- !u!114 &4338509371409583380
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1837983289991426574}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 238b149a7cc0c1d4da4692a5e73aec1d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemySeparation3D
+  separationRadius: 8
+  separationStrength: 1
+  verticalWeight: 1
+  unstickSpeedScale: 0.2
 --- !u!1 &3030521018079085080
 GameObject:
   m_ObjectHideFlags: 0
