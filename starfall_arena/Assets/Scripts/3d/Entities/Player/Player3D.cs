@@ -62,6 +62,8 @@ public class Player3D : Entity3D
     [SerializeField] private PlayerScreenShake3D playerScreenShake3D;
     [SerializeField] private AimAssist3D aimAssist3D;
     [SerializeField] private PlayerHUDManager3D hudManager3D;
+    [Tooltip("Visual-model anchor used by enemy warning spheres. Assign a child transform centered on the rendered ship, not the gameplay root.")]
+    [SerializeField] private Transform warningSphereAnchor;
     [Header("Split State")]
     [SerializeField] private List<SplitStateLightningRig3D> splitStateLightningRigs = new();
     [SerializeField] private List<ShipSplitOffsetRig3D> splitStateOffsetRigs = new();
@@ -107,6 +109,7 @@ public class Player3D : Entity3D
     public PlayerInput3D PlayerInput3D => playerInput3D;
     public PlayerCameraRig3D PlayerCameraRig3D => playerCameraRig3D;
     public AimAssist3D AimAssist3D => aimAssist3D;
+    public Transform WarningSphereAnchor => warningSphereAnchor;
 
     private AudioSource[] _audioSourcePool;
     private AudioSource _beamHitLoopSource;

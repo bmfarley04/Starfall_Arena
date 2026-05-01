@@ -107,13 +107,18 @@ Base input rule:
   - suppresses inherited muzzle-FX spawning because missile prefabs should carry their own exhaust/trail/launch presentation instead of using generic gun muzzle flashes
 - `ProjectileChargeTelegraph3D`
   - generic visual charge tell for projectile-style attacks; it owns renderer emission ramps, optional VFX roots, and optional charge lights
+  - can optionally spawn a warning sphere that follows the chosen player's explicit `Player3D` warning anchor and shrinks over the same charge duration
+  - sphere support is opt-in per telegraph component and is still presentation-owned here, not in the enemy brain or weapon component
   - replaces the artillery-named telegraph script for new work, while `ArtilleryFortressChargeTelegraph3D` remains as a compatibility wrapper for existing prefab components
   - presentation only: it does not know which weapon to fire and must be driven by a brain or attack driver
 - `EnemyProjectileChargeAttack3D`
   - generic enemy windup/firing driver for configured projectile, beam, or flamethrower attacks
   - for projectile mode, supports any `IEnemyProjectileWeapon3D`, including normal enemy projectiles, staggered projectile racks, missiles, and staggered missile racks
-  - locks the supplied fire direction at windup start, plays `ProjectileChargeTelegraph3D`, then fires through `NetEnemyCombat3D` in networked sessions or directly through the assigned weapon offline
-  - beam mode starts `BeamWeapon3D` after the windup using the locked aim direction; flamethrower mode starts `EnemyFlamethrowerWeapon3D` after the windup while that weapon owns its normal burst duration and damage rules
+  - without warning-sphere mode, it preserves the older behavior: lock the supplied fire direction at windup start, play `ProjectileChargeTelegraph3D`, then fire through `NetEnemyCombat3D` in networked sessions or directly through the assigned weapon offline
+  - with warning-sphere mode enabled on the assigned telegraph, it locks the chosen target entity at windup start instead of allowing retargeting, then re-resolves that same target's explicit warning anchor live through the charge
+  - physical projectile release still happens at charge completion, not predicted impact time: the sphere shrinking to near-zero means "the shot is releasing now," and the projectile still uses normal travel/collision after that point
+  - beam startup sphere timing means "the first damage frame should start now"; if the live target is no longer reachable at release, the telegraphed beam must cancel instead of starting with stale aim
+  - flamethrower mode starts `EnemyFlamethrowerWeapon3D` after the windup while that weapon owns its normal burst duration and damage rules
   - `BasicShooterEnemyBrain3D` can use this optional driver to turn its immediate projectile shot into a telegraphed delayed shot without changing the normal instant-fire path when the driver is absent
 - `StaggeredMissileWeaponEnemy3D`
   - enemy-only guided missile launcher variant for racks with several authored launcher transforms
@@ -310,7 +315,7 @@ Aim rules:
 - `TargetAwarenessHUD3D` is a local-player combat readability layer for non-local `Entity3D` targets. It should bind through `PlayerHUDManager3D`, read replicated proxy state, and remain presentation-only with no target-awareness RPCs.
 - offscreen/far target indicators should use screen-space ellipse clamping instead of rectangular corner snapping; trackers should not disappear because of distance alone. Close visible targets hide target UI, mid-range visible targets show brackets/bars, far visible targets may show an upright floating indicator, and offscreen/occluded targets use directional indicators.
 - visible target brackets should be sized from the target's projected screen-space mesh bounds, not from distance-only scale curves. Automatic bounds use active `MeshRenderer` and `SkinnedMeshRenderer` children only, while odd-shaped prefabs can add `TargetAwarenessBounds3D` for a simple authored local-space box override.
-- `TargetAwarenessWidget3D` should place health/shield bars from the computed bracket edge so bar placement stays consistent across enemy sizes. Offscreen red attack brackets may pulse alpha only when `TargetAwarenessAttackReporter3D` says that target actually attacked the bound local player; projectile, beam, and flame enemy attack paths should pass their intended target through existing combat state/visual messages instead of adding target-awareness-specific RPCs.
+- `TargetAwarenessWidget3D` should place health/shield bars from the computed bracket edge so bar placement stays consistent across enemy sizes. Offscreen red attack brackets may pulse alpha only when `TargetAwarenessAttackReporter3D` says that target actually attacked, sustained an attack, or explicitly scheduled a charged pre-fire warning against the bound local player; projectile, beam, and flame enemy attack paths should pass their intended target through existing combat state/visual messages instead of adding target-awareness-specific RPCs.
 - `PlayerWeaponSelectionHUD3D` should treat each slot explicitly as either remaining-resource display or cooldown-ready progress display
 - `PlayerAbilitySelectionHUD3D` should use cooldown-ready progress and ready-state box feedback instead of blindly reusing older cooldown-remaining semantics
 - combat HUD elements that live on a scene canvas should bind through `PlayerHUDManager3D`, not by having player prefabs race to claim shared HUD objects

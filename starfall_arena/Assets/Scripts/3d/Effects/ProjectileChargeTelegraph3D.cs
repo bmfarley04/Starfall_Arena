@@ -50,6 +50,17 @@ public class ProjectileChargeTelegraph3D : MonoBehaviour
     [Tooltip("Seconds used to fade the emission/light back to idle after charging stops. Set to 0 for an immediate snap-off.")]
     [SerializeField] private float fadeOutDuration = 0.12f;
 
+    [Header("Warning Sphere")]
+    [Tooltip("If enabled, this telegraph also spawns a warning sphere that follows the chosen player's warning anchor and shrinks over the same charge duration.")]
+    [SerializeField] private bool useWarningSphere;
+
+    [Tooltip("Optional warning sphere prefab spawned while this telegraph charges. Keep this assigned only on attacks that should visibly condense onto the player.")]
+    [SerializeField] private GameObject warningSpherePrefab;
+
+    [Tooltip("Uniform scale multiplier applied to the warning sphere at full charge. Use a small nonzero value so the sphere nearly collapses without disappearing to exact zero scale.")]
+    [Range(0f, 1f)]
+    [SerializeField] private float warningSphereEndScaleMultiplier = 0.05f;
+
     private struct RendererState
     {
         public Renderer Renderer;
@@ -68,9 +79,17 @@ public class ProjectileChargeTelegraph3D : MonoBehaviour
     private float _fadeStartNormalizedIntensity;
     private float _currentNormalizedIntensity;
     private float _baseLightIntensity;
+    private Transform _warningSphereTargetAnchor;
+    private Entity3D _warningSphereTargetEntity;
+    private GameObject _warningSphereInstance;
+    private Vector3 _warningSphereBaseScale = Vector3.one;
     private bool _isCharging;
     private bool _isFadingOut;
     private bool _cachedLightIntensity;
+    private bool _loggedMissingWarningSphereAnchor;
+    private bool _loggedMissingWarningSpherePrefab;
+
+    public bool UsesWarningSphere => useWarningSphere;
 
     private void Reset()
     {
@@ -98,6 +117,12 @@ public class ProjectileChargeTelegraph3D : MonoBehaviour
     {
         if (_isCharging)
         {
+            if (!RefreshWarningSphereTargetAnchor())
+            {
+                StopCharge(immediate: true);
+                return;
+            }
+
             float normalizedTime = _chargeDuration <= 0.0001f
                 ? 1f
                 : Mathf.Clamp01((Time.time - _chargeStartedAt) / _chargeDuration);
@@ -129,6 +154,7 @@ public class ProjectileChargeTelegraph3D : MonoBehaviour
         maxChargeEmissionIntensity = Mathf.Max(0f, maxChargeEmissionIntensity);
         chargeLightMaxAddedIntensity = Mathf.Max(0f, chargeLightMaxAddedIntensity);
         fadeOutDuration = Mathf.Max(0f, fadeOutDuration);
+        warningSphereEndScaleMultiplier = Mathf.Clamp01(warningSphereEndScaleMultiplier);
 
         if (string.IsNullOrWhiteSpace(emissionColorProperty))
         {
@@ -141,12 +167,28 @@ public class ProjectileChargeTelegraph3D : MonoBehaviour
 
     public void PlayCharge(float duration)
     {
-        PlayCharge(duration, 0f);
+        PlayCharge(duration, 0f, null);
     }
 
     public void PlayCharge(float duration, float elapsedSeconds)
     {
+        PlayCharge(duration, elapsedSeconds, null);
+    }
+
+    public void PlayCharge(float duration, Entity3D intendedTarget)
+    {
+        PlayCharge(duration, 0f, intendedTarget);
+    }
+
+    public void PlayCharge(float duration, float elapsedSeconds, Entity3D intendedTarget)
+    {
         CacheReferences();
+
+        _warningSphereTargetEntity = intendedTarget;
+        if (!RefreshWarningSphereTargetAnchor())
+        {
+            return;
+        }
 
         _chargeDuration = Mathf.Max(0f, duration);
         _chargeStartedAt = Time.time - Mathf.Max(0f, elapsedSeconds);
@@ -163,6 +205,9 @@ public class ProjectileChargeTelegraph3D : MonoBehaviour
     public void StopCharge(bool immediate = false)
     {
         _isCharging = false;
+        DespawnWarningSphere();
+        _warningSphereTargetAnchor = null;
+        _warningSphereTargetEntity = null;
 
         if (immediate || fadeOutDuration <= 0.0001f)
         {
@@ -188,6 +233,11 @@ public class ProjectileChargeTelegraph3D : MonoBehaviour
         {
             _baseLightIntensity = chargeLight.intensity;
             _cachedLightIntensity = true;
+        }
+
+        if (useWarningSphere && warningSpherePrefab != null)
+        {
+            GameObjectPool3D.Prewarm(warningSpherePrefab, 1);
         }
 
         int rendererCount = chargeRenderers != null ? chargeRenderers.Length : 0;
@@ -296,6 +346,8 @@ public class ProjectileChargeTelegraph3D : MonoBehaviour
             chargeLight.intensity = baseIntensity + (chargeLightMaxAddedIntensity * _currentNormalizedIntensity);
             chargeLight.enabled = chargeLight.intensity > 0.0001f;
         }
+
+        UpdateWarningSphereVisual();
     }
 
     private void ApplyEmissionToRenderer(RendererState state, float emissionIntensity)
@@ -381,6 +433,31 @@ public class ProjectileChargeTelegraph3D : MonoBehaviour
         }
     }
 
+    public bool TryResolveWarningSphereAnchor(Entity3D intendedTarget, out Transform warningAnchor)
+    {
+        warningAnchor = null;
+        if (!useWarningSphere)
+        {
+            return true;
+        }
+
+        if (intendedTarget is not Player3D targetPlayer || targetPlayer.WarningSphereAnchor == null)
+        {
+            if (!_loggedMissingWarningSphereAnchor)
+            {
+                string targetName = intendedTarget != null ? intendedTarget.name : "null";
+                Debug.LogWarning($"[{nameof(ProjectileChargeTelegraph3D)}] Warning sphere telegraph on {name} requires a Player3D target with an assigned warning sphere anchor, but received {targetName}.", this);
+                _loggedMissingWarningSphereAnchor = true;
+            }
+
+            return false;
+        }
+
+        _loggedMissingWarningSphereAnchor = false;
+        warningAnchor = targetPlayer.WarningSphereAnchor;
+        return true;
+    }
+
     private static void RestoreRendererBaseline(RendererState state)
     {
         if (state.Renderer == null)
@@ -389,5 +466,87 @@ public class ProjectileChargeTelegraph3D : MonoBehaviour
         }
 
         state.Renderer.SetPropertyBlock(state.HadOriginalPropertyBlock ? state.OriginalPropertyBlock : null);
+    }
+
+    private bool RefreshWarningSphereTargetAnchor()
+    {
+        if (!useWarningSphere)
+        {
+            return true;
+        }
+
+        if (!TryResolveWarningSphereAnchor(_warningSphereTargetEntity, out Transform warningAnchor))
+        {
+            DespawnWarningSphere();
+            _warningSphereTargetAnchor = null;
+            return false;
+        }
+
+        _warningSphereTargetAnchor = warningAnchor;
+        EnsureWarningSphereSpawned();
+        return _warningSphereInstance != null;
+    }
+
+    private void EnsureWarningSphereSpawned()
+    {
+        if (!useWarningSphere || _warningSphereTargetAnchor == null)
+        {
+            return;
+        }
+
+        if (warningSpherePrefab == null)
+        {
+            if (!_loggedMissingWarningSpherePrefab)
+            {
+                Debug.LogWarning($"[{nameof(ProjectileChargeTelegraph3D)}] Warning sphere is enabled on {name}, but no warning sphere prefab is assigned.", this);
+                _loggedMissingWarningSpherePrefab = true;
+            }
+
+            return;
+        }
+
+        _loggedMissingWarningSpherePrefab = false;
+
+        if (_warningSphereInstance != null)
+        {
+            return;
+        }
+
+        _warningSphereInstance = GameObjectPool3D.Spawn(
+            warningSpherePrefab,
+            _warningSphereTargetAnchor.position,
+            _warningSphereTargetAnchor.rotation);
+        if (_warningSphereInstance == null)
+        {
+            return;
+        }
+
+        _warningSphereBaseScale = _warningSphereInstance.transform.localScale;
+        UpdateWarningSphereVisual();
+    }
+
+    private void UpdateWarningSphereVisual()
+    {
+        if (_warningSphereInstance == null || _warningSphereTargetAnchor == null)
+        {
+            return;
+        }
+
+        Transform warningTransform = _warningSphereInstance.transform;
+        warningTransform.SetPositionAndRotation(_warningSphereTargetAnchor.position, _warningSphereTargetAnchor.rotation);
+
+        float scaleMultiplier = Mathf.Lerp(1f, warningSphereEndScaleMultiplier, _currentNormalizedIntensity);
+        warningTransform.localScale = Vector3.Scale(_warningSphereBaseScale, Vector3.one * scaleMultiplier);
+    }
+
+    private void DespawnWarningSphere()
+    {
+        if (_warningSphereInstance == null)
+        {
+            return;
+        }
+
+        GameObjectPool3D.Despawn(_warningSphereInstance);
+        _warningSphereInstance = null;
     }
 }

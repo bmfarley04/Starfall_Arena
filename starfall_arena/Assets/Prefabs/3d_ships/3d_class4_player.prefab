@@ -5514,6 +5514,7 @@ MonoBehaviour:
   playerScreenShake3D: {fileID: 0}
   aimAssist3D: {fileID: 4307210007083528062}
   hudManager3D: {fileID: 0}
+  warningSphereAnchor: {fileID: 190829179039992599}
   splitStateLightningRigs: []
   splitStateOffsetRigs: []
   anchorConfig:

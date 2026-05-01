@@ -112,7 +112,7 @@ When updating docs:
 
 When writing or changing code in this repo:
 
-- when you're in plan mode/asked to make a plan, ask EXTENSIVE questions to the user to prevent any miscommunication. highlight what parameters to expose, any edge cases, how to architect the system (simplicity vs complexity), etc. You should probalby be asking at least 6-9 questions per plan mode.
+- when you're in plan mode/asked to make a plan, ask EXTENSIVE questions to the user to prevent any miscommunication. highlight what parameters to expose, any edge cases, how to architect the system (simplicity vs complexity), etc. You should probalby be asking at least 6-9 questions per plan mode. Your questions should leave very little ambiguity as to the design intentions and how things should look/behave. 
 - MAKE SURE TO ADD TOOLTIPS TO ANY PARAMETERS WHICH MIGHT BE UNCLEAR
 - FOCUS ON CLEAR NAMING CONVENTIONS FOR SERIALZIED PARAMETERS
 - you tend to vastly over-engineer things and complicate solutions - be aggressive with making sure we are preferring the simplest implementation to get the desired goal. Challenge me and ask me questions about how I want to implement a system so that it's easy for me to edit as the game developer. 

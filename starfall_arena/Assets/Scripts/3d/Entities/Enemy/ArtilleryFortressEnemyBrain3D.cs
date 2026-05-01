@@ -102,6 +102,7 @@ public class ArtilleryFortressEnemyBrain3D : NetworkBehaviour
     private Vector3 _lockedFireDirection;
     private Vector3 _lockedFirePoint;
     private Entity3D _currentTarget;
+    private Entity3D _chargeTarget;
 
     private void Awake()
     {
@@ -163,6 +164,7 @@ public class ArtilleryFortressEnemyBrain3D : NetworkBehaviour
         StopChargeTelegraphLocal(immediate: true);
         _state = FortressState.Acquiring;
         _currentTarget = null;
+        _chargeTarget = null;
     }
 
     private void Update()
@@ -191,7 +193,9 @@ public class ArtilleryFortressEnemyBrain3D : NetworkBehaviour
 
     private void Think()
     {
-        Entity3D target = ResolveTrackedTarget();
+        Entity3D target = _state == FortressState.Charging
+            ? ResolveChargeTarget()
+            : ResolveTrackedTarget();
         if (!IsTargetEngageable(target))
         {
             CancelChargeAndAcquire(clearFlightIntent: false);
@@ -250,14 +254,41 @@ public class ArtilleryFortressEnemyBrain3D : NetworkBehaviour
 
         _lockedFireDirection = aimDirection;
         _lockedFirePoint = aimPoint;
+        _chargeTarget = target;
         _chargeDuration = Mathf.Max(0f, chargeWindUpDuration);
         _chargeEndsAt = Time.time + _chargeDuration;
         _state = FortressState.Charging;
-        StartChargeTelegraph(_chargeDuration);
+        if (UsesWarningSphereCharge() && !TryResolveWarningTargetAnchor(target, out _))
+        {
+            CancelChargeAndAcquire(clearFlightIntent: true);
+            return;
+        }
+
+        StartChargeTelegraph(_chargeDuration, target);
     }
 
     private void TickCharging(Entity3D target)
     {
+        if (UsesWarningSphereCharge() && !TryResolveWarningTargetAnchor(target, out _))
+        {
+            CancelChargeAndAcquire(clearFlightIntent: true);
+            return;
+        }
+
+        if (UsesWarningSphereCharge())
+        {
+            Vector3 liveAimPoint = ResolveAimPoint(target);
+            Vector3 liveAimDirection = ResolveDirectionFromRoot(liveAimPoint);
+            if (liveAimDirection.sqrMagnitude <= 0.0001f)
+            {
+                CancelChargeAndAcquire(clearFlightIntent: true);
+                return;
+            }
+
+            _lockedFirePoint = liveAimPoint;
+            _lockedFireDirection = liveAimDirection;
+        }
+
         if (_lockedFireDirection.sqrMagnitude <= 0.0001f)
         {
             CancelChargeAndAcquire(clearFlightIntent: true);
@@ -286,6 +317,7 @@ public class ArtilleryFortressEnemyBrain3D : NetworkBehaviour
         TryFireLockedShot();
         StopChargeTelegraph();
         _state = FortressState.Acquiring;
+        _chargeTarget = null;
     }
 
     private void TryFireLockedShot()
@@ -297,13 +329,13 @@ public class ArtilleryFortressEnemyBrain3D : NetworkBehaviour
 
         if (NetTickUtil.IsActive && netEnemyCombat != null && netEnemyCombat.IsSpawned)
         {
-            netEnemyCombat.TryFireProjectilePatternConverged(cannonWeapon, Faction3D.PlayerTeam, _lockedFirePoint, _currentTarget);
+            netEnemyCombat.TryFireProjectilePatternConverged(cannonWeapon, Faction3D.PlayerTeam, _lockedFirePoint, _chargeTarget);
             return;
         }
 
         if (cannonWeapon.TryFireAtFactionConverged(Faction3D.PlayerTeam, _lockedFirePoint))
         {
-            attackReporter?.ReportAttack(_currentTarget);
+            attackReporter?.ReportAttack(_chargeTarget);
         }
     }
 
@@ -531,6 +563,7 @@ public class ArtilleryFortressEnemyBrain3D : NetworkBehaviour
         _state = FortressState.Acquiring;
         _lockedFireDirection = Vector3.zero;
         _lockedFirePoint = Vector3.zero;
+        _chargeTarget = null;
     }
 
     private void PatrolOrClearFlightIntent()
@@ -543,13 +576,13 @@ public class ArtilleryFortressEnemyBrain3D : NetworkBehaviour
         flightController?.ClearFlightIntent();
     }
 
-    private void StartChargeTelegraph(float duration)
+    private void StartChargeTelegraph(float duration, Entity3D intendedTarget)
     {
-        chargeTelegraph?.PlayCharge(duration);
+        chargeTelegraph?.PlayCharge(duration, intendedTarget);
 
         if (ShouldReplicateTelegraph())
         {
-            StartChargeTelegraphClientRpc(duration, ResolveNetworkServerTime());
+            StartChargeTelegraphClientRpc(duration, ResolveNetworkServerTime(), ResolveNetworkObjectId(intendedTarget));
         }
     }
 
@@ -559,7 +592,7 @@ public class ArtilleryFortressEnemyBrain3D : NetworkBehaviour
 
         if (ShouldReplicateTelegraph())
         {
-            StopChargeTelegraphClientRpc();
+            StopChargeTelegraphClientRpc(ResolveNetworkObjectId(_chargeTarget));
         }
     }
 
@@ -603,7 +636,7 @@ public class ArtilleryFortressEnemyBrain3D : NetworkBehaviour
     }
 
     [ClientRpc]
-    private void StartChargeTelegraphClientRpc(float duration, double serverStartTime)
+    private void StartChargeTelegraphClientRpc(float duration, double serverStartTime, ulong intendedTargetNetworkObjectId)
     {
         if (IsServer)
         {
@@ -616,11 +649,11 @@ public class ArtilleryFortressEnemyBrain3D : NetworkBehaviour
             elapsed = Mathf.Max(0f, (float)(NetworkManager.Singleton.ServerTime.Time - serverStartTime));
         }
 
-        chargeTelegraph?.PlayCharge(duration, elapsed);
+        chargeTelegraph?.PlayCharge(duration, elapsed, ResolveNetworkTarget(intendedTargetNetworkObjectId));
     }
 
     [ClientRpc]
-    private void StopChargeTelegraphClientRpc()
+    private void StopChargeTelegraphClientRpc(ulong intendedTargetNetworkObjectId)
     {
         if (IsServer)
         {
@@ -628,5 +661,47 @@ public class ArtilleryFortressEnemyBrain3D : NetworkBehaviour
         }
 
         StopChargeTelegraphLocal(immediate: false);
+    }
+
+    private Entity3D ResolveChargeTarget()
+    {
+        return IsTrackedTargetValid(_chargeTarget) ? _chargeTarget : null;
+    }
+
+    private bool UsesWarningSphereCharge()
+    {
+        return chargeTelegraph != null && chargeTelegraph.UsesWarningSphere;
+    }
+
+    private bool TryResolveWarningTargetAnchor(Entity3D target, out Transform warningAnchor)
+    {
+        warningAnchor = null;
+        return chargeTelegraph == null || chargeTelegraph.TryResolveWarningSphereAnchor(target, out warningAnchor);
+    }
+
+    private static ulong ResolveNetworkObjectId(Entity3D target)
+    {
+        if (target == null || !target.TryGetComponent(out NetworkObject networkObject) || !networkObject.IsSpawned)
+        {
+            return 0UL;
+        }
+
+        return networkObject.NetworkObjectId;
+    }
+
+    private static Entity3D ResolveNetworkTarget(ulong networkObjectId)
+    {
+        if (networkObjectId == 0UL || NetworkManager.Singleton == null)
+        {
+            return null;
+        }
+
+        if (!NetworkManager.Singleton.SpawnManager.SpawnedObjects.TryGetValue(networkObjectId, out NetworkObject networkObject)
+            || networkObject == null)
+        {
+            return null;
+        }
+
+        return networkObject.GetComponent<Entity3D>();
     }
 }

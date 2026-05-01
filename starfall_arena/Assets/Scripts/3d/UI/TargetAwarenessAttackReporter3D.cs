@@ -11,6 +11,7 @@ public class TargetAwarenessAttackReporter3D : MonoBehaviour
 
     private Entity3D _lastIntendedTarget;
     private float _pulseStartTime = float.NegativeInfinity;
+    private float _pendingPeakTime = float.NegativeInfinity;
     private float _pulseEndTime = float.NegativeInfinity;
     private float _activeSustainedUntil = float.NegativeInfinity;
 
@@ -29,7 +30,43 @@ public class TargetAwarenessAttackReporter3D : MonoBehaviour
         float now = Time.unscaledTime;
         _lastIntendedTarget = intendedTarget;
         _pulseStartTime = now;
+        _pendingPeakTime = now;
         _pulseEndTime = now + Mathf.Max(0.02f, pulseSeconds);
+    }
+
+    public void ReportPendingAttack(Entity3D intendedTarget, float secondsUntilAttack, float leadSeconds, float pulseSeconds)
+    {
+        if (intendedTarget == null)
+        {
+            return;
+        }
+
+        float now = Time.unscaledTime;
+        float clampedSecondsUntilAttack = Mathf.Max(0f, secondsUntilAttack);
+        float clampedLeadSeconds = Mathf.Max(0.02f, leadSeconds);
+        float attackTime = now + clampedSecondsUntilAttack;
+        float warningStartTime = Mathf.Max(now, attackTime - clampedLeadSeconds);
+
+        _lastIntendedTarget = intendedTarget;
+        _pulseStartTime = warningStartTime;
+        _pendingPeakTime = attackTime;
+        _pulseEndTime = Mathf.Max(_pulseEndTime, attackTime + Mathf.Max(0.02f, pulseSeconds));
+    }
+
+    public void CancelPendingAttack(Entity3D intendedTarget)
+    {
+        if (intendedTarget != null && _lastIntendedTarget != intendedTarget)
+        {
+            return;
+        }
+
+        float now = Time.unscaledTime;
+        if (now < _pendingPeakTime)
+        {
+            _pulseStartTime = float.NegativeInfinity;
+            _pendingPeakTime = float.NegativeInfinity;
+            _pulseEndTime = Mathf.Min(_pulseEndTime, now);
+        }
     }
 
     public void ReportSustainedAttack(Entity3D intendedTarget, float activeSeconds)
@@ -42,6 +79,7 @@ public class TargetAwarenessAttackReporter3D : MonoBehaviour
         float now = Time.unscaledTime;
         _lastIntendedTarget = intendedTarget;
         _pulseStartTime = now;
+        _pendingPeakTime = now;
         _activeSustainedUntil = Mathf.Max(_activeSustainedUntil, now + Mathf.Max(sustainedGraceSeconds, activeSeconds));
         _pulseEndTime = Mathf.Max(_pulseEndTime, _activeSustainedUntil);
     }
@@ -75,8 +113,19 @@ public class TargetAwarenessAttackReporter3D : MonoBehaviour
             return 0f;
         }
 
-        float duration = Mathf.Max(0.02f, _pulseEndTime - _pulseStartTime);
-        return 1f - Mathf.Clamp01((now - _pulseStartTime) / duration);
+        if (now < _pulseStartTime)
+        {
+            return 0f;
+        }
+
+        if (now < _pendingPeakTime)
+        {
+            float warmupDuration = Mathf.Max(0.02f, _pendingPeakTime - _pulseStartTime);
+            return Mathf.Clamp01((now - _pulseStartTime) / warmupDuration);
+        }
+
+        float duration = Mathf.Max(0.02f, _pulseEndTime - Mathf.Max(_pulseStartTime, _pendingPeakTime));
+        return 1f - Mathf.Clamp01((now - Mathf.Max(_pulseStartTime, _pendingPeakTime)) / duration);
     }
 
     private void OnValidate()

@@ -40,6 +40,12 @@ public class EnemyProjectileChargeAttack3D : NetworkBehaviour
     [Tooltip("If true, the charge visual stops as soon as the weapon fires. Disable only when another component intentionally owns the fade-out timing.")]
     [SerializeField] private bool stopTelegraphOnFire = true;
 
+    [Tooltip("Seconds before a charged attack releases that the offscreen target-awareness brackets should begin pulsing. Keep short so long charge tells do not flash for the entire windup.")]
+    [SerializeField] private float targetAwarenessPreFireFlashLeadSeconds = 0.2f;
+
+    [Tooltip("Seconds the target-awareness attack flash may continue after the scheduled charged attack release if no later fire report replaces it.")]
+    [SerializeField] private float targetAwarenessPreFirePulseSeconds = 0.45f;
+
     private IEnemyProjectileWeapon3D _projectileWeapon;
     private bool _isCharging;
     private float _fireAtTime;
@@ -50,6 +56,7 @@ public class EnemyProjectileChargeAttack3D : NetworkBehaviour
     public bool IsCharging => _isCharging;
     public bool IsFireGateReady => !_isCharging && IsSelectedWeaponReady();
     public float ChargeDuration => chargeDuration;
+    private bool UsesWarningSphereTelegraph => chargeTelegraph != null && chargeTelegraph.UsesWarningSphere;
 
     private void Awake()
     {
@@ -59,6 +66,8 @@ public class EnemyProjectileChargeAttack3D : NetworkBehaviour
     private void OnValidate()
     {
         chargeDuration = Mathf.Max(0f, chargeDuration);
+        targetAwarenessPreFireFlashLeadSeconds = Mathf.Max(0f, targetAwarenessPreFireFlashLeadSeconds);
+        targetAwarenessPreFirePulseSeconds = Mathf.Max(0.02f, targetAwarenessPreFirePulseSeconds);
 
         if (projectileWeaponComponent != null && projectileWeaponComponent is not IEnemyProjectileWeapon3D)
         {
@@ -76,6 +85,12 @@ public class EnemyProjectileChargeAttack3D : NetworkBehaviour
     {
         if (!_isCharging || !HasFireAuthority())
         {
+            return;
+        }
+
+        if (UsesWarningSphereTelegraph && !TryResolveWarningTargetPoint(out _))
+        {
+            CancelCharge(immediate: true);
             return;
         }
 
@@ -110,6 +125,13 @@ public class EnemyProjectileChargeAttack3D : NetworkBehaviour
         _lockedFireDirection = fireDirection.normalized;
         _intendedTarget = intendedTarget;
 
+        if (UsesWarningSphereTelegraph && !TryResolveWarningTargetPoint(out _))
+        {
+            _lockedFireDirection = Vector3.zero;
+            _intendedTarget = null;
+            return false;
+        }
+
         if (chargeDuration <= 0.0001f)
         {
             FireChargedWeapon();
@@ -118,7 +140,8 @@ public class EnemyProjectileChargeAttack3D : NetworkBehaviour
 
         _isCharging = true;
         _fireAtTime = Time.time + chargeDuration;
-        PlayChargeTelegraph(chargeDuration);
+        ReportPendingTargetAwarenessAttack(chargeDuration);
+        PlayChargeTelegraph(chargeDuration, _intendedTarget);
         return true;
     }
 
@@ -130,13 +153,16 @@ public class EnemyProjectileChargeAttack3D : NetworkBehaviour
         }
 
         _isCharging = false;
+        Entity3D pendingTarget = _intendedTarget;
         _lockedFireDirection = Vector3.zero;
-        _intendedTarget = null;
+        attackReporter?.CancelPendingAttack(pendingTarget);
         StopChargeTelegraph(immediate);
+        _intendedTarget = null;
     }
 
     private void FireChargedWeapon()
     {
+        Entity3D pendingTarget = _intendedTarget;
         bool fired = weaponType switch
         {
             ChargedEnemyWeaponType.Beam => FireBeam(),
@@ -150,7 +176,7 @@ public class EnemyProjectileChargeAttack3D : NetworkBehaviour
 
         if (stopTelegraphOnFire || !fired)
         {
-            StopChargeTelegraph(immediate: false);
+            StopChargeTelegraph(immediate: false, pendingTarget);
         }
     }
 
@@ -158,11 +184,15 @@ public class EnemyProjectileChargeAttack3D : NetworkBehaviour
     {
         if (ResolveProjectileWeapon() == null)
         {
-            CancelCharge(immediate: true);
             return false;
         }
 
-        Vector3 fireDirection = ResolveLockedFireDirection();
+        Vector3 fireDirection = ResolveProjectileFireDirection();
+        if (fireDirection.sqrMagnitude <= 0.0001f)
+        {
+            return false;
+        }
+
         if (NetTickUtil.IsActive && netEnemyCombat != null && netEnemyCombat.IsSpawned)
         {
             return netEnemyCombat.TryFireProjectilePattern(_projectileWeapon, _targetFaction, fireDirection, _intendedTarget);
@@ -181,11 +211,15 @@ public class EnemyProjectileChargeAttack3D : NetworkBehaviour
     {
         if (ResolveBeamWeapon() == null || !beamWeapon.CanStartBeamNow())
         {
-            CancelCharge(immediate: true);
             return false;
         }
 
-        Vector3 aimDirection = ResolveLockedFireDirection();
+        Vector3 aimDirection = ResolveBeamFireDirection();
+        if (aimDirection.sqrMagnitude <= 0.0001f)
+        {
+            return false;
+        }
+
         if (NetTickUtil.IsActive && netEnemyCombat != null && netEnemyCombat.IsSpawned)
         {
             return netEnemyCombat.SetBeamState(beamWeapon, true, aimDirection, _intendedTarget);
@@ -201,7 +235,6 @@ public class EnemyProjectileChargeAttack3D : NetworkBehaviour
     {
         if (ResolveFlamethrowerWeapon() == null || !flamethrowerWeapon.CanStartBurst())
         {
-            CancelCharge(immediate: true);
             return false;
         }
 
@@ -224,6 +257,48 @@ public class EnemyProjectileChargeAttack3D : NetworkBehaviour
         return _lockedFireDirection.sqrMagnitude > 0.0001f
             ? _lockedFireDirection
             : transform.forward;
+    }
+
+    private Vector3 ResolveProjectileFireDirection()
+    {
+        if (!UsesWarningSphereTelegraph)
+        {
+            return ResolveLockedFireDirection();
+        }
+
+        if (!TryResolveWarningTargetPoint(out Vector3 targetPoint))
+        {
+            return Vector3.zero;
+        }
+
+        Vector3 fireDirection = targetPoint - transform.position;
+        return fireDirection.sqrMagnitude > 0.0001f ? fireDirection.normalized : Vector3.zero;
+    }
+
+    private Vector3 ResolveBeamFireDirection()
+    {
+        if (!UsesWarningSphereTelegraph)
+        {
+            return ResolveLockedFireDirection();
+        }
+
+        if (beamWeapon == null || !TryResolveWarningTargetPoint(out Vector3 targetPoint))
+        {
+            return Vector3.zero;
+        }
+
+        Vector3 beamForward = beamWeapon.GetBeamForwardDirection();
+        Vector3 beamOrigin = beamWeapon.GetBeamOrigin(beamForward);
+        Vector3 aimDirection = targetPoint - beamOrigin;
+        if (aimDirection.sqrMagnitude <= 0.0001f)
+        {
+            return Vector3.zero;
+        }
+
+        aimDirection.Normalize();
+        return CanReleaseBeamAtTarget(beamOrigin, targetPoint, aimDirection)
+            ? aimDirection
+            : Vector3.zero;
     }
 
     private void CacheReferences()
@@ -285,23 +360,38 @@ public class EnemyProjectileChargeAttack3D : NetworkBehaviour
         return flamethrowerWeapon;
     }
 
-    private void PlayChargeTelegraph(float duration)
+    private void ReportPendingTargetAwarenessAttack(float secondsUntilFire)
     {
-        chargeTelegraph?.PlayCharge(duration);
+        if (targetAwarenessPreFireFlashLeadSeconds <= 0f)
+        {
+            return;
+        }
+
+        attackReporter?.ReportPendingAttack(
+            _intendedTarget,
+            secondsUntilFire,
+            Mathf.Min(targetAwarenessPreFireFlashLeadSeconds, Mathf.Max(0.02f, secondsUntilFire)),
+            targetAwarenessPreFirePulseSeconds);
+    }
+
+    private void PlayChargeTelegraph(float duration, Entity3D intendedTarget)
+    {
+        chargeTelegraph?.PlayCharge(duration, intendedTarget);
 
         if (ShouldReplicateTelegraph())
         {
-            PlayChargeTelegraphClientRpc(duration, ResolveNetworkServerTime());
+            PlayChargeTelegraphClientRpc(duration, ResolveNetworkServerTime(), ResolveNetworkObjectId(intendedTarget));
         }
     }
 
-    private void StopChargeTelegraph(bool immediate)
+    private void StopChargeTelegraph(bool immediate, Entity3D pendingTargetOverride = null)
     {
+        Entity3D pendingTarget = pendingTargetOverride != null ? pendingTargetOverride : _intendedTarget;
         chargeTelegraph?.StopCharge(immediate);
 
         if (ShouldReplicateTelegraph())
         {
-            StopChargeTelegraphClientRpc(immediate);
+            StopChargeTelegraphClientRpc(immediate, ResolveNetworkObjectId(pendingTarget));
         }
     }
 
@@ -326,7 +416,7 @@ public class EnemyProjectileChargeAttack3D : NetworkBehaviour
     }
 
     [ClientRpc]
-    private void PlayChargeTelegraphClientRpc(float duration, double serverStartTime)
+    private void PlayChargeTelegraphClientRpc(float duration, double serverStartTime, ulong intendedTargetNetworkObjectId)
     {
         if (IsServer)
         {
@@ -339,11 +429,18 @@ public class EnemyProjectileChargeAttack3D : NetworkBehaviour
             elapsed = Mathf.Max(0f, (float)(NetworkManager.Singleton.ServerTime.Time - serverStartTime));
         }
 
-        chargeTelegraph?.PlayCharge(duration, elapsed);
+        Entity3D intendedTarget = ResolveNetworkTarget(intendedTargetNetworkObjectId);
+        chargeTelegraph?.PlayCharge(duration, elapsed, intendedTarget);
+        float remaining = Mathf.Max(0f, duration - elapsed);
+        attackReporter?.ReportPendingAttack(
+            intendedTarget,
+            remaining,
+            Mathf.Min(targetAwarenessPreFireFlashLeadSeconds, Mathf.Max(0.02f, remaining)),
+            targetAwarenessPreFirePulseSeconds);
     }
 
     [ClientRpc]
-    private void StopChargeTelegraphClientRpc(bool immediate)
+    private void StopChargeTelegraphClientRpc(bool immediate, ulong intendedTargetNetworkObjectId)
     {
         if (IsServer)
         {
@@ -351,5 +448,109 @@ public class EnemyProjectileChargeAttack3D : NetworkBehaviour
         }
 
         chargeTelegraph?.StopCharge(immediate);
+        attackReporter?.CancelPendingAttack(ResolveNetworkTarget(intendedTargetNetworkObjectId));
+    }
+
+    private static ulong ResolveNetworkObjectId(Entity3D target)
+    {
+        if (target == null || !target.TryGetComponent(out NetworkObject networkObject) || !networkObject.IsSpawned)
+        {
+            return 0UL;
+        }
+
+        return networkObject.NetworkObjectId;
+    }
+
+    private static Entity3D ResolveNetworkTarget(ulong networkObjectId)
+    {
+        if (networkObjectId == 0UL || NetworkManager.Singleton == null)
+        {
+            return null;
+        }
+
+        if (!NetworkManager.Singleton.SpawnManager.SpawnedObjects.TryGetValue(networkObjectId, out NetworkObject networkObject)
+            || networkObject == null)
+        {
+            return null;
+        }
+
+        return networkObject.GetComponent<Entity3D>();
+    }
+
+    private bool TryResolveWarningTargetPoint(out Vector3 targetPoint)
+    {
+        targetPoint = Vector3.zero;
+        if (!UsesWarningSphereTelegraph)
+        {
+            return false;
+        }
+
+        if (_intendedTarget == null || !chargeTelegraph.TryResolveWarningSphereAnchor(_intendedTarget, out Transform targetAnchor) || targetAnchor == null)
+        {
+            return false;
+        }
+
+        targetPoint = targetAnchor.position;
+        return true;
+    }
+
+    private bool CanReleaseBeamAtTarget(Vector3 beamOrigin, Vector3 targetPoint, Vector3 aimDirection)
+    {
+        if (beamWeapon == null || _intendedTarget == null)
+        {
+            return false;
+        }
+
+        float distanceToTarget = Vector3.Distance(beamOrigin, targetPoint);
+        if (distanceToTarget > beamWeapon.MaxDistance)
+        {
+            return false;
+        }
+
+        if (!Physics.Linecast(beamOrigin, targetPoint, out RaycastHit hit, ~0, QueryTriggerInteraction.Ignore))
+        {
+            return true;
+        }
+
+        if (hit.collider == null)
+        {
+            return true;
+        }
+
+        if (hit.collider.transform.IsChildOf(transform))
+        {
+            Vector3 nudgedOrigin = beamOrigin + (aimDirection.normalized * 0.25f);
+            if (!Physics.Linecast(nudgedOrigin, targetPoint, out hit, ~0, QueryTriggerInteraction.Ignore))
+            {
+                return true;
+            }
+
+            if (hit.collider == null)
+            {
+                return true;
+            }
+        }
+
+        Entity3D hitEntity = ResolveHitEntity(hit.collider);
+        return hitEntity == _intendedTarget;
+    }
+
+    private static Entity3D ResolveHitEntity(Collider hitCollider)
+    {
+        if (hitCollider == null)
+        {
+            return null;
+        }
+
+        if (hitCollider.attachedRigidbody != null)
+        {
+            Entity3D rigidbodyEntity = hitCollider.attachedRigidbody.GetComponent<Entity3D>();
+            if (rigidbodyEntity != null)
+            {
+                return rigidbodyEntity;
+            }
+        }
+
+        return hitCollider.GetComponentInParent<Entity3D>();
     }
 }

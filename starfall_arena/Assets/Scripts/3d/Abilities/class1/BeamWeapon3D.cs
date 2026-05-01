@@ -56,6 +56,7 @@ public class BeamWeapon3D : Weapon3D, IBeamWeaponNetwork3D
 
     private bool UsesBeamCapacity => beam.capacity > 0f && beam.drainRate > 0f;
     public bool IsBeamActive => _activeBeam != null;
+    public float MaxDistance => Mathf.Max(0f, beam.maxDistance);
 
     protected override void Awake()
     {
