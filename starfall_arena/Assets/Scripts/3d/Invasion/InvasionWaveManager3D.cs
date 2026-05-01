@@ -40,6 +40,9 @@ public class InvasionWaveManager3D : MonoBehaviour
         [Tooltip("Column count used only by Grid formations. Values below 1 are treated as 1 column.")]
         [Min(1)]
         public int gridColumns = 3;
+
+        [Tooltip("How much of the formation's secondary axis is also applied as local Y offset. Set to 0 to keep the formation flat. Higher values make wedges, rings, and grids gain more vertical variation around the center point.")]
+        public float yBias = 0f;
     }
 
     [Serializable]
@@ -111,6 +114,7 @@ public class InvasionWaveManager3D : MonoBehaviour
 
     private readonly List<Enemy3D> _aliveEnemies = new List<Enemy3D>();
     private readonly List<Vector3> _formationOffsets = new List<Vector3>(16);
+    private float _activeFormationYBias;
     private Coroutine _waveRoutine;
 
     public event Func<int, IEnumerator> WaveIntroRequested;
@@ -374,6 +378,7 @@ public class InvasionWaveManager3D : MonoBehaviour
         }
 
         FormationConfig3D resolvedFormation = formation ?? new FormationConfig3D();
+        _activeFormationYBias = resolvedFormation.yBias;
         float spacing = Mathf.Max(0.01f, resolvedFormation.slotSpacing);
 
         switch (resolvedFormation.preset)
@@ -399,8 +404,8 @@ public class InvasionWaveManager3D : MonoBehaviour
         float halfSpan = (totalEnemyCount - 1) * 0.5f;
         for (int i = 0; i < totalEnemyCount; i++)
         {
-            float x = (i - halfSpan) * spacing;
-            _formationOffsets.Add(new Vector3(x, 0f, 0f));
+            float axisA = (i - halfSpan) * spacing;
+            _formationOffsets.Add(CreatePlaneOffset(axisA, 0f));
         }
     }
 
@@ -415,13 +420,13 @@ public class InvasionWaveManager3D : MonoBehaviour
         int row = 1;
         while (_formationOffsets.Count < totalEnemyCount)
         {
-            _formationOffsets.Add(new Vector3(-row * spacing, 0f, -row * spacing));
+            _formationOffsets.Add(CreatePlaneOffset(-row * spacing, -row * spacing));
             if (_formationOffsets.Count >= totalEnemyCount)
             {
                 break;
             }
 
-            _formationOffsets.Add(new Vector3(row * spacing, 0f, -row * spacing));
+            _formationOffsets.Add(CreatePlaneOffset(row * spacing, -row * spacing));
             row++;
         }
     }
@@ -438,9 +443,9 @@ public class InvasionWaveManager3D : MonoBehaviour
         for (int i = 0; i < totalEnemyCount; i++)
         {
             float angle = (Mathf.PI * 2f * i) / totalEnemyCount;
-            float x = Mathf.Cos(angle) * radius;
-            float z = Mathf.Sin(angle) * radius;
-            _formationOffsets.Add(new Vector3(x, 0f, z));
+            float axisA = Mathf.Cos(angle) * radius;
+            float axisB = Mathf.Sin(angle) * radius;
+            _formationOffsets.Add(CreatePlaneOffset(axisA, axisB));
         }
     }
 
@@ -455,10 +460,15 @@ public class InvasionWaveManager3D : MonoBehaviour
         {
             int row = i / columns;
             int column = i % columns;
-            float x = (column - halfColumns) * spacing;
-            float z = (halfRows - row) * spacing;
-            _formationOffsets.Add(new Vector3(x, 0f, z));
+            float axisA = (column - halfColumns) * spacing;
+            float axisB = (halfRows - row) * spacing;
+            _formationOffsets.Add(CreatePlaneOffset(axisA, axisB));
         }
+    }
+
+    private Vector3 CreatePlaneOffset(float axisA, float axisB)
+    {
+        return new Vector3(axisA, axisB * _activeFormationYBias, axisB);
     }
 
     private void TrackEnemy(Enemy3D enemy)

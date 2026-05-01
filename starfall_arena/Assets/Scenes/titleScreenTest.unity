@@ -56102,7 +56102,7 @@ MonoBehaviour:
   test3DGameplaySceneName: 3d_invasion
   test3DClientAddress: 10.33.102.92
   autoStart3DTestFlowOnSceneStart: 1
-  autoStart3DTestRole: 0
+  autoStart3DTestRole: 1
   test3DHostShip: {fileID: 11400000, guid: c5d1fa71d54b4ee0a6ff742ad53fbc50, type: 2}
   test3DClientShip: {fileID: 11400000, guid: c5d1fa71d54b4ee0a6ff742ad53fbc50, type: 2}
   submitHoldDuration: 1

@@ -58,6 +58,7 @@ Implemented foundation:
 - `InvasionWaveManager3D` now separates wave timing into two authored delays: an end delay after a wave is fully cleared before the next intro is requested, and a start delay after `WAVE N` presentation before enemy spawning begins. The same start delay applies to wave 1 as well, so the first wave does not bypass spawn timing just because there was no prior clear.
 - each wave now owns ordered timed sub-waves plus one optional separate boss block
 - each sub-wave generates one preset formation (`Line`, `Wedge`, `Ring`, or `Grid`) around an authored center spawn point and fills those slots sequentially by enemy-entry order
+- each sub-wave can optionally add simple vertical variation through a `Y Bias` value, which converts part of the formation's secondary-axis spread into local Y offset while keeping the same preset layout
 - sub-waves advance by authored delay after their burst finishes, not by waiting for all earlier enemies to die, so overlapping live enemy groups inside one wave are expected
 - all formation members and optional bosses still spawn through `InvasionWaveManager3D.SpawnEnemyAt(...)` so network spawning, alive-enemy tracking, HUD enemy counts, and death-spawn child tracking stay centralized
 - `InvasionSceneManager3D` is the dedicated beginning-flow manager for networked Invasion. It owns player spawning, per-player life counts, death-position respawns, respawn invulnerability presentation, gameplay HUD activation, wave text presentation, optional enemy counter presentation, optional heart/life counter presentation, UI canvas camera/sorting setup, and arena boundary startup.
@@ -118,7 +119,7 @@ The current wave manager supports finite configured waves with timed sub-wave se
 
 - `InvasionWaveManager3D` owns wave order, timed sub-wave sequencing, optional boss spawning, alive-enemy tracking, wave-clear detection, and inter-wave delay
 - each wave should be authored as ordered sub-waves plus an optional separate boss block, not as one flat enemy list
-- each sub-wave should use one authored center spawn point plus one preset formation (`Line`, `Wedge`, `Ring`, or `Grid`) instead of spawning every enemy at one exact point
+- each sub-wave should use one authored center spawn point plus one preset formation (`Line`, `Wedge`, `Ring`, or `Grid`) plus an optional `Y Bias` instead of spawning every enemy at one exact point
 - sub-wave members should fill generated formation slots sequentially by entry order, so mixed enemy types can share one layout without per-slot manual authoring
 - sub-waves advance by their authored delay after the burst completes, not by arena-clear; the overall wave still waits for all tracked enemies, tracked child spawns, and the optional boss to die before clearing
 - `InvasionWaveManager3D` owns both wave timing beats: the delay from a cleared wave to the next wave intro, and the delay from wave-intro text to actual spawning
@@ -411,6 +412,7 @@ For `3d_invasion`:
 - do not wire versus, countdown, win tracker, round-end, or game-end UI into this manager
 - add `InvasionWaveManager3D`
 - leave `Start On Enable` off when `InvasionSceneManager3D` owns the scene flow; otherwise waves can begin before players are spawned and before `WAVE N` presentation is subscribed
-- author each wave as ordered sub-waves with center spawn points, formation presets, enemy entries, burst timing, and optional separate boss settings
+- author each wave as ordered sub-waves with center spawn points, formation presets, optional `Y Bias`, enemy entries, burst timing, and optional separate boss settings
 - add roughly five finite wave entries for the current target, starting with at least one basic shooter test wave
+- `Assets/Prefabs/3d_ships/invasionManager.prefab` currently ships with a boss-free five-wave sample set for testing. It exercises basic, suicide, artillery, tank, duelist, splitter, swarm scout, fortress, and triumvirate prefabs across line, wedge, ring, and grid formations, and uses authored child spawn anchors on the prefab for varied spawn centers/facing instead of leaving every sub-wave at the manager root.
 - ensure networked enemy prefabs are registered with NGO before network spawning
