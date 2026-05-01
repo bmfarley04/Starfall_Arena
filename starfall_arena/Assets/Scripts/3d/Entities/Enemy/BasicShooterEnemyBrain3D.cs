@@ -23,6 +23,9 @@ public class BasicShooterEnemyBrain3D : MonoBehaviour
     [Tooltip("Optional spherecast obstacle avoidance. Leave empty (or disable useObstacleAvoidance) for the cheapest path.")]
     [SerializeField] private EnemyObstacleAvoidance3D obstacleAvoidance;
 
+    [Tooltip("Optional enemy-only separation steering. Add EnemySeparation3D to the prefab when clustered shooters should fan out instead of stacking.")]
+    [SerializeField] private EnemySeparation3D separation;
+
     [Tooltip("Optional patrol fallback used when no player-team target is inside detection range.")]
     [SerializeField] private EnemyPatrol3D patrol;
 
@@ -57,6 +60,7 @@ public class BasicShooterEnemyBrain3D : MonoBehaviour
         flightController ??= GetComponent<EnemyAIFlightController3D>();
         targetSensor ??= GetComponent<EnemyTargetSensor3D>();
         obstacleAvoidance ??= GetComponent<EnemyObstacleAvoidance3D>();
+        separation ??= GetComponent<EnemySeparation3D>();
         patrol ??= GetComponent<EnemyPatrol3D>() ?? gameObject.AddComponent<EnemyPatrol3D>();
         netEnemyCombat ??= GetComponent<NetEnemyCombat3D>();
         attackReporter ??= GetComponent<TargetAwarenessAttackReporter3D>() ?? gameObject.AddComponent<TargetAwarenessAttackReporter3D>();
@@ -112,11 +116,15 @@ public class BasicShooterEnemyBrain3D : MonoBehaviour
             return;
         }
 
-        Vector3 steeringDirection = useObstacleAvoidance && obstacleAvoidance != null && obstacleAvoidance.isActiveAndEnabled
-            ? obstacleAvoidance.ResolveSteeringDirection(toTarget)
-            : toTarget.normalized;
+        float speedScale = ResolveDistanceSpeedScale(toTarget.magnitude);
+        Vector3 steeringDirection = ResolveSteeringDirection(toTarget.normalized);
+        if (speedScale <= 0f && TryResolveUnstickIntent(out Vector3 unstickDirection, out float unstickSpeedScale))
+        {
+            steeringDirection = ResolveObstacleAvoidance(unstickDirection);
+            speedScale = unstickSpeedScale;
+        }
 
-        flightController?.SetMoveDirection(steeringDirection, ResolveDistanceSpeedScale(toTarget.magnitude));
+        flightController?.SetMoveDirection(steeringDirection, speedScale);
 
         if (!IsAimedAtTarget(toTarget))
         {
@@ -181,6 +189,40 @@ public class BasicShooterEnemyBrain3D : MonoBehaviour
         }
 
         return Mathf.InverseLerp(stop, full, distanceToTarget);
+    }
+
+    private Vector3 ResolveSteeringDirection(Vector3 desiredDirection)
+    {
+        Vector3 resolved = desiredDirection.sqrMagnitude > 0.0001f ? desiredDirection.normalized : transform.forward;
+        if (separation != null && separation.isActiveAndEnabled)
+        {
+            resolved = separation.ResolveSteeringDirection(resolved);
+        }
+
+        return ResolveObstacleAvoidance(resolved);
+    }
+
+    private Vector3 ResolveObstacleAvoidance(Vector3 desiredDirection)
+    {
+        Vector3 resolved = desiredDirection.sqrMagnitude > 0.0001f ? desiredDirection.normalized : transform.forward;
+        if (useObstacleAvoidance && obstacleAvoidance != null && obstacleAvoidance.isActiveAndEnabled)
+        {
+            resolved = obstacleAvoidance.ResolveSteeringDirection(resolved);
+        }
+
+        return resolved.sqrMagnitude > 0.0001f ? resolved.normalized : transform.forward;
+    }
+
+    private bool TryResolveUnstickIntent(out Vector3 direction, out float speedScale)
+    {
+        if (separation != null && separation.isActiveAndEnabled)
+        {
+            return separation.TryGetUnstickIntent(out direction, out speedScale);
+        }
+
+        direction = Vector3.zero;
+        speedScale = 0f;
+        return false;
     }
 
     private bool HasBrainAuthority()

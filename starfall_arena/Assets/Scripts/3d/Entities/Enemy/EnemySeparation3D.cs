@@ -1,183 +1,168 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// Lightweight inter-agent separation steering for enemies.
-/// Mirrors the API of <see cref="EnemyObstacleAvoidance3D"/>: enemy brains call
-/// <see cref="ResolveSteeringDirection"/> with their desired pursuit/disengage direction
-/// and get back a direction biased away from nearby allies (and optionally away from
-/// the player at very close range so a swarm fans out on approach).
-///
-/// This does NOT replace obstacle avoidance - typical wiring is:
-///     desired -> separation.ResolveSteeringDirection(...)
-///             -> obstacleAvoidance.ResolveSteeringDirection(...)
-///             -> flightController.SetMoveDirection(...)
-///
-/// Cheap: one OverlapSphereNonAlloc per call into a static buffer, no allocations per
-/// frame, intended to run at the brain's think tick (default 0.05s).
+/// Minimal enemy-only separation steering. Add this component to enemy prefabs that
+/// should gently fan out from nearby enemies, then route brain steering through
+/// ResolveSteeringDirection before obstacle avoidance.
 /// </summary>
 [DisallowMultipleComponent]
 public class EnemySeparation3D : MonoBehaviour
 {
-    private static readonly Collider[] OverlapBuffer = new Collider[16];
+    private const float MinDirectionSqrMagnitude = 0.0001f;
+    private static readonly List<EnemySeparation3D> ActiveAgents = new List<EnemySeparation3D>(64);
 
-    [Header("Detection")]
-    [Tooltip("Layers that contain ship/agent colliders (player + enemy ships). Leave empty to make this component a no-op. Performance note: keep this mask narrow - the OverlapSphere only checks these layers.")]
-    [SerializeField] private LayerMask agentMask;
+    [Header("Enemy Separation")]
+    [Tooltip("Radius in meters where other enemies with EnemySeparation3D start pushing this enemy away. Start around 2-3x the ship width.")]
+    [SerializeField] private float separationRadius = 8f;
 
-    [Header("Allies")]
-    [Tooltip("Radius (meters) within which same-faction allies repel this agent. Tune to roughly 2-3x ship width so neighbors push apart before their colliders touch.")]
-    [SerializeField] private float allyRadius = 6f;
+    [Tooltip("How strongly the separation direction bends the brain's desired movement direction. 1 is a gentle fan-out; higher values make enemies prioritize spacing more.")]
+    [SerializeField] private float separationStrength = 1f;
 
-    [Tooltip("How strongly nearby allies push this agent away. 1.0 is a reasonable default; raise for tighter formations falling apart, lower if rammers feel reluctant to commit on approach.")]
-    [SerializeField] private float allyRepulsionStrength = 1f;
+    [Tooltip("Multiplier applied to vertical separation. 1 allows full 3D fan-out; 0 keeps separation mostly horizontal.")]
+    [SerializeField] private float verticalWeight = 1f;
 
-    [Header("Player Proximity")]
-    [Tooltip("Radius (meters) within which non-ally entities (typically the player) contribute a small lateral bias so a converging swarm fans out instead of clipping in from the same vector. Set to 0 to disable. Should be smaller than allyRadius - this is meant for the final approach only.")]
-    [SerializeField] private float playerProximityRadius = 4f;
+    [Tooltip("Speed scale used by brains that are otherwise stopped but need a tiny nudge away from overlapping enemies.")]
+    [SerializeField, Range(0f, 1f)] private float unstickSpeedScale = 0.2f;
 
-    [Tooltip("How strongly the player (non-ally entity) within playerProximityRadius pushes this agent sideways. Kept gentler than ally repulsion so it doesn't override pursuit / impact mechanics - this is steering bias only, not collision avoidance.")]
-    [SerializeField] private float playerRepulsionStrength = 0.5f;
+    private Enemy3D _selfEnemy;
 
-    [Header("Blend")]
-    [Tooltip("How strongly the summed separation vector bends the desired direction. 1.0 mirrors EnemyObstacleAvoidance3D defaults. Higher values turn more sharply away from neighbors.")]
-    [SerializeField] private float blendStrength = 1f;
-
-    private Entity3D _selfEntity;
-    private Faction3D _selfFaction = Faction3D.Neutral;
-    private bool _selfFactionResolved;
+    public float UnstickSpeedScale => Mathf.Clamp01(unstickSpeedScale);
 
     private void Awake()
     {
-        _selfEntity = GetComponentInParent<Entity3D>();
-        ResolveSelfFaction();
+        _selfEnemy = GetComponentInParent<Enemy3D>();
+    }
+
+    private void OnEnable()
+    {
+        if (!ActiveAgents.Contains(this))
+        {
+            ActiveAgents.Add(this);
+        }
+    }
+
+    private void OnDisable()
+    {
+        ActiveAgents.Remove(this);
+    }
+
+    private void OnDestroy()
+    {
+        ActiveAgents.Remove(this);
+    }
+
+    private void OnValidate()
+    {
+        separationRadius = Mathf.Max(0f, separationRadius);
+        separationStrength = Mathf.Max(0f, separationStrength);
+        verticalWeight = Mathf.Max(0f, verticalWeight);
+        unstickSpeedScale = Mathf.Clamp01(unstickSpeedScale);
     }
 
     public Vector3 ResolveSteeringDirection(Vector3 desiredDirection)
     {
-        bool hasDesired = desiredDirection.sqrMagnitude > 0.0001f;
-        Vector3 desired = hasDesired ? desiredDirection.normalized : transform.forward;
+        Vector3 desired = desiredDirection.sqrMagnitude > MinDirectionSqrMagnitude
+            ? desiredDirection.normalized
+            : transform.forward;
 
-        if (agentMask.value == 0)
+        if (!TryGetSeparationDirection(out Vector3 separationDirection))
         {
             return desired;
         }
 
-        if (!_selfFactionResolved)
+        Vector3 steered = desired + separationDirection * separationStrength;
+        return steered.sqrMagnitude > MinDirectionSqrMagnitude ? steered.normalized : desired;
+    }
+
+    public bool TryGetUnstickIntent(out Vector3 unstickDirection, out float speedScale)
+    {
+        speedScale = UnstickSpeedScale;
+        if (speedScale <= 0f || !TryGetSeparationDirection(out unstickDirection))
         {
-            ResolveSelfFaction();
+            unstickDirection = Vector3.zero;
+            speedScale = 0f;
+            return false;
         }
 
-        float queryRadius = Mathf.Max(allyRadius, playerProximityRadius);
-        if (queryRadius <= 0.01f)
+        return true;
+    }
+
+    public bool TryGetSeparationDirection(out Vector3 separationDirection)
+    {
+        separationDirection = Vector3.zero;
+        if (!IsLiveEnemy(_selfEnemy))
         {
-            return desired;
+            return false;
+        }
+
+        float radius = Mathf.Max(0f, separationRadius);
+        if (radius <= 0.01f)
+        {
+            return false;
         }
 
         Vector3 selfPosition = transform.position;
-        int hitCount = Physics.OverlapSphereNonAlloc(
-            selfPosition,
-            queryRadius,
-            OverlapBuffer,
-            agentMask,
-            QueryTriggerInteraction.Ignore);
-
-        Vector3 separation = Vector3.zero;
-        for (int i = 0; i < hitCount; i++)
+        float radiusSqr = radius * radius;
+        for (int i = 0; i < ActiveAgents.Count; i++)
         {
-            Collider hit = OverlapBuffer[i];
-            if (hit == null || hit.transform.IsChildOf(transform))
+            EnemySeparation3D other = ActiveAgents[i];
+            if (other == null || other == this || !IsLiveEnemy(other._selfEnemy))
             {
                 continue;
             }
 
-            Entity3D candidate = hit.GetComponentInParent<Entity3D>();
-            if (candidate == null || candidate == _selfEntity || candidate.CurrentHealth <= 0f)
+            Vector3 offset = selfPosition - other.transform.position;
+            Vector3 weightedOffset = new Vector3(offset.x, offset.y * verticalWeight, offset.z);
+            float weightedDistanceSqr = weightedOffset.sqrMagnitude;
+            if (weightedDistanceSqr > radiusSqr)
             {
                 continue;
             }
 
-            Vector3 offset = selfPosition - candidate.transform.position;
-            float distance = offset.magnitude;
-            if (distance <= 0.0001f)
+            if (weightedDistanceSqr <= MinDirectionSqrMagnitude)
             {
-                // Co-located fallback: push along this agent's right vector so the pair separates deterministically.
-                separation += transform.right * allyRepulsionStrength;
-                continue;
+                weightedOffset = ResolveStableFallbackDirection(other);
+                weightedDistanceSqr = weightedOffset.sqrMagnitude;
             }
 
-            Vector3 awayDirection = offset / distance;
-            Faction3D candidateFaction = FactionMember3D.ResolveFaction(candidate);
-            bool isAlly = _selfFaction != Faction3D.Neutral && candidateFaction == _selfFaction;
-
-            if (isAlly)
-            {
-                if (distance > allyRadius)
-                {
-                    continue;
-                }
-
-                float falloff = 1f - Mathf.Clamp01(distance / Mathf.Max(0.01f, allyRadius));
-                separation += awayDirection * (falloff * allyRepulsionStrength);
-            }
-            else
-            {
-                if (playerProximityRadius <= 0.01f || distance > playerProximityRadius)
-                {
-                    continue;
-                }
-
-                // Bias sideways relative to the desired direction so we don't just shove away from
-                // the player (that would defeat the whole point of pursuing them). Pick the side
-                // that the agent is already favoring.
-                Vector3 lateral = Vector3.Cross(desired, awayDirection);
-                if (lateral.sqrMagnitude <= 0.0001f)
-                {
-                    lateral = transform.right;
-                }
-                else
-                {
-                    lateral.Normalize();
-                    // Prefer the side the agent is already drifting toward to avoid jittering between sides.
-                    if (Vector3.Dot(lateral, transform.right) < 0f)
-                    {
-                        lateral = -lateral;
-                    }
-                }
-
-                float falloff = 1f - Mathf.Clamp01(distance / Mathf.Max(0.01f, playerProximityRadius));
-                separation += lateral * (falloff * playerRepulsionStrength);
-            }
+            float distance = Mathf.Sqrt(weightedDistanceSqr);
+            Vector3 awayDirection = weightedOffset / Mathf.Max(distance, 0.0001f);
+            float falloff = 1f - Mathf.Clamp01(distance / radius);
+            separationDirection += awayDirection * falloff;
         }
 
-        if (separation.sqrMagnitude <= 0.0001f)
+        if (separationDirection.sqrMagnitude <= MinDirectionSqrMagnitude)
         {
-            return desired;
+            separationDirection = Vector3.zero;
+            return false;
         }
 
-        Vector3 blended = desired + separation.normalized * Mathf.Max(0f, blendStrength);
-        return blended.sqrMagnitude > 0.0001f ? blended.normalized : desired;
+        separationDirection.Normalize();
+        return true;
     }
 
-    private void ResolveSelfFaction()
+    private Vector3 ResolveStableFallbackDirection(EnemySeparation3D other)
     {
-        if (_selfEntity == null)
-        {
-            _selfEntity = GetComponentInParent<Entity3D>();
-        }
+        int hash = GetInstanceID() ^ (other != null ? other.GetInstanceID() * 397 : 0);
+        float side = (hash & 1) == 0 ? 1f : -1f;
+        float lift = (hash & 2) == 0 ? 0.35f : -0.35f;
+        Vector3 right = transform.right.sqrMagnitude > MinDirectionSqrMagnitude ? transform.right : Vector3.right;
+        Vector3 up = transform.up.sqrMagnitude > MinDirectionSqrMagnitude ? transform.up : Vector3.up;
+        Vector3 fallback = right * side + up * (lift * verticalWeight);
+        return fallback.sqrMagnitude > MinDirectionSqrMagnitude ? fallback.normalized : Vector3.right * side;
+    }
 
-        _selfFaction = FactionMember3D.ResolveFaction(_selfEntity);
-        _selfFactionResolved = _selfEntity != null;
+    private static bool IsLiveEnemy(Enemy3D enemy)
+    {
+        return enemy != null
+            && enemy.CurrentHealth > 0f
+            && enemy.gameObject.activeInHierarchy;
     }
 
     private void OnDrawGizmosSelected()
     {
-        Gizmos.color = new Color(0.2f, 1f, 0.4f, 1f); // green = ally radius
-        Gizmos.DrawWireSphere(transform.position, allyRadius);
-
-        if (playerProximityRadius > 0.01f)
-        {
-            Gizmos.color = new Color(1f, 0.3f, 0.9f, 1f); // magenta = player proximity
-            Gizmos.DrawWireSphere(transform.position, playerProximityRadius);
-        }
+        Gizmos.color = new Color(0.2f, 1f, 0.4f, 1f);
+        Gizmos.DrawWireSphere(transform.position, separationRadius);
     }
 }
