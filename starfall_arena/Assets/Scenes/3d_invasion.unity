@@ -2498,8 +2498,8 @@ MonoBehaviour:
   - waveName: WAVE 1
     enemies:
     - enemyPrefab: {fileID: 7279590565626816591, guid: 45b170708adafd343bd4e110edf859cc, type: 3}
-      count: 1
-      spawnDelay: 0
+      count: 3
+      spawnDelay: 1
   spawnPoints: []
   startOnEnable: 0
   waveEndDelaySeconds: 6
@@ -8175,7 +8175,7 @@ MonoBehaviour:
     ignoreInactiveTargets: 0
   distance:
     awarenessRange: 900
-    closeHideDistance: 30
+    closeHideDistance: 20
     bracketMaxDistance: 500
     thresholdHysteresis: 8
   screenClamp:
