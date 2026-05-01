@@ -5524,7 +5524,7 @@ MonoBehaviour:
   dodgeConfig:
     enabled: 1
     cooldown: 1
-    dodgeDistance: 4
+    dodgeDistance: 1.5
     slideDuration: 0.18
     invulnerabilityDuration: 0.3
   logDodgeDebug: 1
@@ -6032,8 +6032,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Dodge3D
   isLocked: 0
   dodge:
-    cooldown: 1
-    dodgeDistance: 20
+    cooldown: 3
+    dodgeDistance: 8
     slideDuration: 0.35
     primeWindow: 1.5
     directionInputDeadzone: 0.35
@@ -6139,7 +6139,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::NetMovement3D
   ShowTopMostFoldoutHeaderGroup: 1
   reconciliationThreshold: 0.1
-  interpolationBufferTicks: 2
+  logOwnerCorrections: 1
+  interpolationSettings:
+    minVisualDelayMs: 80
+    maxVisualDelayMs: 120
+    bufferStarvationWarningThreshold: 5
+    maxExtrapolationMs: 40
+    hardSnapDistance: 30
+    smoothingCatchUpRate: 0
   maxCombatRewindTicks: 6
 --- !u!114 &7050303922495527899
 MonoBehaviour:

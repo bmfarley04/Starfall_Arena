@@ -104,6 +104,7 @@ These classes should stay narrow and mostly coordinate dedicated 3D systems.
   - owns local-player-only 3D coordination, victim-side hit audio, and the dedicated `OnAnchor` input state
   - Anchor is a hold input that suppresses thrust while applying a configurable rotation multiplier for fast facing changes
   - while Anchor is active, `Player3D` can also drive split-state presentation rigs
+  - owns the generic left-stick flick dodge path; this must stay separate from any class-specific dodge ability component in cooldown, movement resolution, and presentation routing
   - owns player shield regeneration timing/rate config (`regenDelay`, `regenRate`) and applies regen with server authority in networked matches
 - `PlayerCombatStats3D`
   - lightweight 3D combat-stat counter attached to spawned 3D players by `SceneManager3D`

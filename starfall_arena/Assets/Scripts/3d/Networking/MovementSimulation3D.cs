@@ -160,6 +160,7 @@ public static class MovementSimulation3D
             state.DodgeVelocity = Vector3.zero;
             state.DodgeExitVelocity = Vector3.zero;
             state.DodgeDuration = 0f;
+            state.DodgeKind = NetDodgeKind3D.Generic;
             return;
         }
 
@@ -176,6 +177,7 @@ public static class MovementSimulation3D
             state.DodgeVelocity = Vector3.zero;
             state.DodgeExitVelocity = Vector3.zero;
             state.DodgeDuration = 0f;
+            state.DodgeKind = NetDodgeKind3D.Generic;
         }
     }
 

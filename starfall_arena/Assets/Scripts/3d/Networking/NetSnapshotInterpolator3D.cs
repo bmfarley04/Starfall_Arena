@@ -371,7 +371,8 @@ public sealed class NetSnapshotInterpolator3D
             DodgeVelocity = Vector3.Lerp(from.DodgeVelocity, to.DodgeVelocity, t),
             DodgeExitVelocity = Vector3.Lerp(from.DodgeExitVelocity, to.DodgeExitVelocity, t),
             DodgeRemainingTime = Mathf.Lerp(from.DodgeRemainingTime, to.DodgeRemainingTime, t),
-            DodgeDuration = Mathf.Lerp(from.DodgeDuration, to.DodgeDuration, t)
+            DodgeDuration = Mathf.Lerp(from.DodgeDuration, to.DodgeDuration, t),
+            DodgeKind = t < 0.5f ? from.DodgeKind : to.DodgeKind
         };
     }
 
@@ -387,7 +388,8 @@ public sealed class NetSnapshotInterpolator3D
             DodgeVelocity = Vector3.Lerp(from.DodgeVelocity, to.DodgeVelocity, t),
             DodgeExitVelocity = Vector3.Lerp(from.DodgeExitVelocity, to.DodgeExitVelocity, t),
             DodgeRemainingTime = Mathf.Lerp(from.DodgeRemainingTime, to.DodgeRemainingTime, t),
-            DodgeDuration = Mathf.Lerp(from.DodgeDuration, to.DodgeDuration, t)
+            DodgeDuration = Mathf.Lerp(from.DodgeDuration, to.DodgeDuration, t),
+            DodgeKind = t < 0.5f ? from.DodgeKind : to.DodgeKind
         };
     }
 
@@ -403,7 +405,8 @@ public sealed class NetSnapshotInterpolator3D
             DodgeVelocity = snapshot.DodgeVelocity,
             DodgeExitVelocity = snapshot.DodgeExitVelocity,
             DodgeRemainingTime = snapshot.DodgeRemainingTime,
-            DodgeDuration = snapshot.DodgeDuration
+            DodgeDuration = snapshot.DodgeDuration,
+            DodgeKind = snapshot.DodgeKind
         };
     }
 

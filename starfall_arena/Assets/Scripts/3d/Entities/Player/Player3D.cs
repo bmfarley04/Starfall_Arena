@@ -220,25 +220,10 @@ public class Player3D : Entity3D
         _netMovement3D ??= GetComponent<NetMovement3D>();
         if (CanUseNetworkDodgeMovement(_netMovement3D))
         {
-            Dodge3D classDodgeAbility = GetComponent<Dodge3D>();
-            if (classDodgeAbility != null && !classDodgeAbility.CanAcceptNetworkDodgeRequest())
-            {
-                LogDodgeRejected("class Dodge3D ability rejected network dodge request");
-                return false;
-            }
-
-            if (!_netMovement3D.QueuePredictedDodge(worldDirection))
+            if (!_netMovement3D.QueuePredictedDodge(worldDirection, NetDodgeKind3D.Generic))
             {
                 LogDodgeRejected("NetMovement3D.QueuePredictedDodge returned false");
                 return false;
-            }
-
-            if (classDodgeAbility != null)
-            {
-                LogDodgeDebug("queued class Dodge3D predicted dodge");
-                classDodgeAbility.MarkNetworkDodgeAccepted();
-                classDodgeAbility.PlayNetworkDodgePresentation(worldDirection);
-                return true;
             }
 
             MarkGenericDodgeAccepted();

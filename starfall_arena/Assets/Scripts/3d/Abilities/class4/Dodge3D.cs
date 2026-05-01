@@ -225,7 +225,7 @@ public class Dodge3D : Ability3D
         NetMovement3D movement = GetComponent<NetMovement3D>();
         if (CanUseNetworkDodgeMovement(movement))
         {
-            if (movement.QueuePredictedDodge(worldDirection))
+            if (movement.QueuePredictedDodge(worldDirection, NetDodgeKind3D.Class4Ability))
             {
                 MarkAbilityUsed();
                 StartDodgePresentation(worldDirection);

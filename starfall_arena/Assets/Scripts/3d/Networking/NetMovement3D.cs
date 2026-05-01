@@ -71,6 +71,7 @@ public class NetMovement3D : NetworkBehaviour
     private bool _loggedOwnerShipFlightMissing;
     private bool _loggedMissingCombatBridge;
     private bool _pendingDodgeRequested;
+    private NetDodgeKind3D _pendingDodgeKind = NetDodgeKind3D.Generic;
     private Vector3 _pendingDodgeDirection;
     private int _lastAcceptedDodgeTick = -1;
     private int _lastSentTick = -1;
@@ -90,6 +91,7 @@ public class NetMovement3D : NetworkBehaviour
     private Vector3 _lastBoundaryCorrectionPosition;
     private Vector3 _lastBoundaryCorrectionVelocity;
     private int _lastBoundaryCorrectionTick = -1;
+    private NetDodgeKind3D _lastQueuedDodgeKind = NetDodgeKind3D.Generic;
     private Vector3 _lastQueuedDodgeDirection;
     private int _lastQueuedDodgeTick = -1;
 
@@ -363,7 +365,7 @@ public class NetMovement3D : NetworkBehaviour
         }
     }
 
-    public bool QueuePredictedDodge(Vector3 worldDirection)
+    public bool QueuePredictedDodge(Vector3 worldDirection, NetDodgeKind3D dodgeKind = NetDodgeKind3D.Generic)
     {
         if (!IsOwner || !IsSpawned || _movementLocked.Value || worldDirection.sqrMagnitude <= 0.0001f)
         {
@@ -371,7 +373,9 @@ public class NetMovement3D : NetworkBehaviour
         }
 
         _pendingDodgeRequested = true;
+        _pendingDodgeKind = dodgeKind;
         _pendingDodgeDirection = worldDirection.normalized;
+        _lastQueuedDodgeKind = dodgeKind;
         _lastQueuedDodgeDirection = _pendingDodgeDirection;
         _lastQueuedDodgeTick = NetTickUtil.CurrentTick;
         return true;
@@ -427,6 +431,7 @@ public class NetMovement3D : NetworkBehaviour
             _ownerState.DodgeExitVelocity = Vector3.zero;
             _ownerState.DodgeRemainingTime = 0f;
             _ownerState.DodgeDuration = 0f;
+            _ownerState.DodgeKind = NetDodgeKind3D.Generic;
         }
 
         if (_serverStateInitialized)
@@ -437,6 +442,7 @@ public class NetMovement3D : NetworkBehaviour
             _serverState.DodgeExitVelocity = Vector3.zero;
             _serverState.DodgeRemainingTime = 0f;
             _serverState.DodgeDuration = 0f;
+            _serverState.DodgeKind = NetDodgeKind3D.Generic;
         }
 
         ResetRemoteInterpolationState();
@@ -489,9 +495,11 @@ public class NetMovement3D : NetworkBehaviour
             ThrustMultiplier = _player != null ? _player.GetCombinedThrustMultiplier() : 1f,
             SlowMultiplier = _player != null ? _player.GetSlowMultiplier() : 1f,
             DodgeRequested = !_movementLocked.Value && _pendingDodgeRequested,
+            DodgeKind = _pendingDodgeKind,
             DodgeDirection = _pendingDodgeDirection
         };
         _pendingDodgeRequested = false;
+        _pendingDodgeKind = NetDodgeKind3D.Generic;
         _pendingDodgeDirection = Vector3.zero;
 
         int inputIndex = tick % ClientInputBufferSize;
@@ -538,6 +546,7 @@ public class NetMovement3D : NetworkBehaviour
             input.LookInput = Vector2.zero;
             input.ThrustInput = 0f;
             input.DodgeRequested = false;
+            input.DodgeKind = NetDodgeKind3D.Generic;
             input.DodgeDirection = Vector3.zero;
         }
 
@@ -757,13 +766,13 @@ public class NetMovement3D : NetworkBehaviour
         }
 
         CacheReferences();
-        bool useClassDodgeAbility = _dodgeAbility != null;
-        if (!useClassDodgeAbility && _player == null)
+        bool useClassDodgeAbility = input.DodgeKind == NetDodgeKind3D.Class4Ability;
+        if ((useClassDodgeAbility && _dodgeAbility == null) || (!useClassDodgeAbility && _player == null))
         {
             return;
         }
 
-        if (validateDodge && !CanAcceptNetworkDodgeAtTick(input.Tick))
+        if (validateDodge && !CanAcceptNetworkDodge(in input))
         {
             return;
         }
@@ -793,6 +802,7 @@ public class NetMovement3D : NetworkBehaviour
         state.DodgeExitVelocity = state.Velocity;
         state.DodgeRemainingTime = duration;
         state.DodgeDuration = duration;
+        state.DodgeKind = input.DodgeKind;
 
         if (validateDodge)
         {
@@ -808,9 +818,9 @@ public class NetMovement3D : NetworkBehaviour
         }
     }
 
-    private bool CanAcceptNetworkDodgeAtTick(int inputTick)
+    private bool CanAcceptNetworkDodge(in NetInputSnapshot3D input)
     {
-        bool useClassDodgeAbility = _dodgeAbility != null;
+        bool useClassDodgeAbility = input.DodgeKind == NetDodgeKind3D.Class4Ability;
         bool canAcceptState = useClassDodgeAbility
             ? _dodgeAbility.CanAcceptNetworkDodgeState()
             : _player != null && _player.CanAcceptNetworkDodgeState();
@@ -823,7 +833,7 @@ public class NetMovement3D : NetworkBehaviour
             ? _dodgeAbility.GetNetworkDodgeCooldownDuration()
             : _player.GetNetworkDodgeCooldownDuration());
         int cooldownTicks = Mathf.CeilToInt(cooldownDuration / Mathf.Max(0.0001f, GetTickDeltaTime()));
-        return _lastAcceptedDodgeTick < 0 || inputTick >= _lastAcceptedDodgeTick + cooldownTicks;
+        return _lastAcceptedDodgeTick < 0 || input.Tick >= _lastAcceptedDodgeTick + cooldownTicks;
     }
 
     private void UpdateRemoteDodgePresentation(in MovementState3D state)
@@ -832,9 +842,9 @@ public class NetMovement3D : NetworkBehaviour
         if (isDodgeActive && !_remoteDodgePresentationActive)
         {
             CacheReferences();
-            if (_dodgeAbility != null)
+            if (state.DodgeKind == NetDodgeKind3D.Class4Ability)
             {
-                _dodgeAbility.PlayNetworkDodgePresentation(state.DodgeVelocity);
+                _dodgeAbility?.PlayNetworkDodgePresentation(state.DodgeVelocity);
             }
             else
             {
@@ -910,7 +920,8 @@ public class NetMovement3D : NetworkBehaviour
             DodgeVelocity = Vector3.zero,
             DodgeExitVelocity = Vector3.zero,
             DodgeRemainingTime = 0f,
-            DodgeDuration = 0f
+            DodgeDuration = 0f,
+            DodgeKind = NetDodgeKind3D.Generic
         };
     }
 
@@ -926,7 +937,8 @@ public class NetMovement3D : NetworkBehaviour
             DodgeVelocity = snapshot.DodgeVelocity,
             DodgeExitVelocity = snapshot.DodgeExitVelocity,
             DodgeRemainingTime = snapshot.DodgeRemainingTime,
-            DodgeDuration = snapshot.DodgeDuration
+            DodgeDuration = snapshot.DodgeDuration,
+            DodgeKind = snapshot.DodgeKind
         };
     }
 
@@ -945,7 +957,8 @@ public class NetMovement3D : NetworkBehaviour
             DodgeVelocity = state.DodgeVelocity,
             DodgeExitVelocity = state.DodgeExitVelocity,
             DodgeRemainingTime = state.DodgeRemainingTime,
-            DodgeDuration = state.DodgeDuration
+            DodgeDuration = state.DodgeDuration,
+            DodgeKind = state.DodgeKind
         };
     }
 
@@ -1252,12 +1265,12 @@ public class NetMovement3D : NetworkBehaviour
         builder.AppendLine($"correctionDistance={correctionDistance:0.###} positionError={positionError:0.###} velocityError={velocityError:0.###} rotationErrorDegrees={rotationError:0.###}");
         builder.AppendLine($"predictedPosition={FormatVector3(predicted.Position)} serverPosition={FormatVector3(serverState.Position)} currentOwnerPosition={FormatVector3(_ownerState.Position)}");
         builder.AppendLine($"predictedVelocity={FormatVector3(predicted.Velocity)} serverVelocity={FormatVector3(serverState.Velocity)} currentOwnerVelocity={FormatVector3(_ownerState.Velocity)}");
-        builder.AppendLine($"input thrust={input.ThrustInput:0.###} look={FormatVector2(input.LookInput)} friction={input.FrictionEnabled} dodgeRequest={input.DodgeRequested} dodgeDirection={FormatVector3(input.DodgeDirection)} slowMultiplier={input.SlowMultiplier:0.###}");
+        builder.AppendLine($"input thrust={input.ThrustInput:0.###} look={FormatVector2(input.LookInput)} friction={input.FrictionEnabled} dodgeRequest={input.DodgeRequested} dodgeKind={input.DodgeKind} dodgeDirection={FormatVector3(input.DodgeDirection)} slowMultiplier={input.SlowMultiplier:0.###}");
         builder.AppendLine($"recentMovementSideEffect={GetMostRecentMovementSideEffectSummary(currentTick)}");
         builder.AppendLine($"lastCombatVelocityDelta={FormatTickedVector(_lastCombatVelocityDeltaTick, _lastCombatVelocityDelta)}");
         builder.AppendLine($"lastCombatWarp={FormatTickedVector(_lastCombatWarpTick, _lastCombatWarpPosition)}");
         builder.AppendLine($"lastBoundaryCorrection={FormatBoundaryCorrection()}");
-        builder.AppendLine($"lastQueuedDodge={FormatTickedVector(_lastQueuedDodgeTick, _lastQueuedDodgeDirection)}");
+        builder.AppendLine($"lastQueuedDodge={FormatQueuedDodge()}");
 
         Debug.Log(builder.ToString(), this);
     }
@@ -1338,6 +1351,13 @@ public class NetMovement3D : NetworkBehaviour
         return $"tick={_lastBoundaryCorrectionTick}, position={FormatVector3(_lastBoundaryCorrectionPosition)}, velocity={FormatVector3(_lastBoundaryCorrectionVelocity)}";
     }
 
+    private string FormatQueuedDodge()
+    {
+        return _lastQueuedDodgeTick < 0
+            ? "none"
+            : $"tick={_lastQueuedDodgeTick}, kind={_lastQueuedDodgeKind}, value={FormatVector3(_lastQueuedDodgeDirection)}";
+    }
+
     private static string FormatTickedVector(int tick, Vector3 value)
     {
         return tick < 0 ? "none" : $"tick={tick}, value={FormatVector3(value)}";
@@ -1401,6 +1421,7 @@ public class NetMovement3D : NetworkBehaviour
             _ownerState.DodgeExitVelocity = Vector3.zero;
             _ownerState.DodgeRemainingTime = 0f;
             _ownerState.DodgeDuration = 0f;
+            _ownerState.DodgeKind = NetDodgeKind3D.Generic;
         }
 
         if (_serverStateInitialized)
@@ -1410,6 +1431,7 @@ public class NetMovement3D : NetworkBehaviour
             _serverState.DodgeExitVelocity = Vector3.zero;
             _serverState.DodgeRemainingTime = 0f;
             _serverState.DodgeDuration = 0f;
+            _serverState.DodgeKind = NetDodgeKind3D.Generic;
         }
 
         _shipFlight?.ApplyExternalSimulationState(

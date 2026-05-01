@@ -1,6 +1,12 @@
 using Unity.Netcode;
 using UnityEngine;
 
+public enum NetDodgeKind3D : byte
+{
+    Generic = 0,
+    Class4Ability = 1
+}
+
 public struct NetInputSnapshot3D : INetworkSerializable
 {
     public int Tick;
@@ -12,6 +18,7 @@ public struct NetInputSnapshot3D : INetworkSerializable
     public float ThrustMultiplier;
     public float SlowMultiplier;
     public bool DodgeRequested;
+    public NetDodgeKind3D DodgeKind;
     public Vector3 DodgeDirection;
 
     public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
@@ -25,6 +32,7 @@ public struct NetInputSnapshot3D : INetworkSerializable
         serializer.SerializeValue(ref ThrustMultiplier);
         serializer.SerializeValue(ref SlowMultiplier);
         serializer.SerializeValue(ref DodgeRequested);
+        serializer.SerializeValue(ref DodgeKind);
         serializer.SerializeValue(ref DodgeDirection);
     }
 }
@@ -43,6 +51,7 @@ public struct NetStateSnapshot3D : INetworkSerializable
     public Vector3 DodgeExitVelocity;
     public float DodgeRemainingTime;
     public float DodgeDuration;
+    public NetDodgeKind3D DodgeKind;
 
     public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
     {
@@ -58,6 +67,7 @@ public struct NetStateSnapshot3D : INetworkSerializable
         serializer.SerializeValue(ref DodgeExitVelocity);
         serializer.SerializeValue(ref DodgeRemainingTime);
         serializer.SerializeValue(ref DodgeDuration);
+        serializer.SerializeValue(ref DodgeKind);
     }
 }
 
@@ -72,6 +82,7 @@ public struct MovementState3D
     public Vector3 DodgeExitVelocity;
     public float DodgeRemainingTime;
     public float DodgeDuration;
+    public NetDodgeKind3D DodgeKind;
 }
 
 public enum NetProjectileVisualType3D : byte

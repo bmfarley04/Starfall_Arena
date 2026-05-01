@@ -56103,8 +56103,8 @@ MonoBehaviour:
   test3DClientAddress: 10.33.102.92
   autoStart3DTestFlowOnSceneStart: 1
   autoStart3DTestRole: 1
-  test3DHostShip: {fileID: 11400000, guid: c5d1fa71d54b4ee0a6ff742ad53fbc50, type: 2}
-  test3DClientShip: {fileID: 11400000, guid: c5d1fa71d54b4ee0a6ff742ad53fbc50, type: 2}
+  test3DHostShip: {fileID: 11400000, guid: 7c9e3b1b784102e44b69ce6ee15c2187, type: 2}
+  test3DClientShip: {fileID: 11400000, guid: 7c9e3b1b784102e44b69ce6ee15c2187, type: 2}
   submitHoldDuration: 1
   backHoldDuration: 1
   joinConfirmButton:
