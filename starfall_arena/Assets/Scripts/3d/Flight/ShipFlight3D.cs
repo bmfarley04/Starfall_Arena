@@ -287,7 +287,11 @@ public class ShipFlight3D : MonoBehaviour
 
         if (_rb != null)
         {
-            _rb.linearVelocity = linearVelocity;
+            if (!_rb.isKinematic)
+            {
+                _rb.linearVelocity = linearVelocity;
+            }
+
             _rb.angularDamping = frictionEnabled ? flightAssist.activeAngularDamping : 0f;
         }
     }
