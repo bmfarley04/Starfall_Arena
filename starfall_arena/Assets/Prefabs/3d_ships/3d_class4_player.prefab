@@ -5244,6 +5244,7 @@ GameObject:
   - component: {fileID: 7050303922495527899}
   - component: {fileID: 5035944875366506294}
   - component: {fileID: 4307210007083528062}
+  - component: {fileID: -9203007294384600122}
   m_Layer: 0
   m_Name: 3d_class4_player
   m_TagString: Enemy
@@ -5487,8 +5488,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 472a711a0b2023940b16aa210d0274a3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: '::'
-  maxHealth: 2000
-  maxShield: 2000
+  maxHealth: 100
+  maxShield: 100
   shieldController: {fileID: 7730684126597357551}
   impulseRecoilPitchSensitivity: 10
   uprightRecoveryEnabled: 1
@@ -5510,6 +5511,7 @@ MonoBehaviour:
   deathEffects: {fileID: 8288383124772000926}
   playerInput3D: {fileID: 2709859321838343538}
   playerCameraRig3D: {fileID: 8218329567873975671}
+  playerScreenShake3D: {fileID: 0}
   aimAssist3D: {fileID: 4307210007083528062}
   hudManager3D: {fileID: 0}
   splitStateLightningRigs: []
@@ -6209,6 +6211,38 @@ MonoBehaviour:
       maxAssistRange: 145
       screenDistanceWeight: 0.65
       maxAngularCorrection: 4
+--- !u!114 &-9203007294384600122
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6962877402401494773}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3b92962b8dc845c08a290f8a1ea2809d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerScreenShake3D
+  impulseSource: {fileID: 2283964329603430011}
+  addMissingImpulseSourceAtRuntime: 1
+  speedShake:
+    enabled: 1
+    startSpeedNormalized: 0.72
+    fullShakeSpeedNormalized: 1
+    minImpulseStrength: 0.04
+    maxImpulseStrength: 0.16
+    intervalAtStartSpeed: 0.32
+    intervalAtFullSpeed: 0.12
+  hitShake:
+    enabled: 1
+    minDamage: 1
+    damageForMaxShake: 35
+    minImpulseStrength: 0.25
+    maxImpulseStrength: 1.2
+    hullDamageMultiplier: 1.25
+    beamDamageMultiplier: 0.45
+    directDamageMultiplier: 0.75
+    minImpulseInterval: 0.08
 --- !u!1 &8101278649858300069
 GameObject:
   m_ObjectHideFlags: 0

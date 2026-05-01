@@ -472,6 +472,7 @@ GameObject:
   - component: {fileID: 1524455165470484394}
   - component: {fileID: 6190683714811522588}
   - component: {fileID: -7606376376767454836}
+  - component: {fileID: -3603030616537203367}
   m_Layer: 0
   m_Name: 3d_class1_player
   m_TagString: Enemy
@@ -716,8 +717,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 472a711a0b2023940b16aa210d0274a3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: '::'
-  maxHealth: 2000
-  maxShield: 2000
+  maxHealth: 100
+  maxShield: 100
   shieldController: {fileID: 5034837498720385779}
   impulseRecoilPitchSensitivity: 10
   uprightRecoveryEnabled: 1
@@ -739,6 +740,7 @@ MonoBehaviour:
   deathEffects: {fileID: 9194935005271649546}
   playerInput3D: {fileID: 3261048947178620207}
   playerCameraRig3D: {fileID: 3760524061682020281}
+  playerScreenShake3D: {fileID: 0}
   aimAssist3D: {fileID: 0}
   hudManager3D: {fileID: 0}
   splitStateLightningRigs: []
@@ -1459,6 +1461,38 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::FactionMember3D
   faction: 1
+--- !u!114 &-3603030616537203367
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2568558604607578100}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3b92962b8dc845c08a290f8a1ea2809d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerScreenShake3D
+  impulseSource: {fileID: 1525667686077189124}
+  addMissingImpulseSourceAtRuntime: 1
+  speedShake:
+    enabled: 1
+    startSpeedNormalized: 0.72
+    fullShakeSpeedNormalized: 1
+    minImpulseStrength: 0.04
+    maxImpulseStrength: 0.16
+    intervalAtStartSpeed: 0.32
+    intervalAtFullSpeed: 0.12
+  hitShake:
+    enabled: 1
+    minDamage: 1
+    damageForMaxShake: 35
+    minImpulseStrength: 0.25
+    maxImpulseStrength: 1.2
+    hullDamageMultiplier: 1.25
+    beamDamageMultiplier: 0.45
+    directDamageMultiplier: 0.75
+    minImpulseInterval: 0.08
 --- !u!1 &3042639647086152311
 GameObject:
   m_ObjectHideFlags: 0
