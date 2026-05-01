@@ -10,6 +10,9 @@ using UnityEngine;
 public class EnemySeparation3D : MonoBehaviour
 {
     private const float MinDirectionSqrMagnitude = 0.0001f;
+    private const float MinUnstickSqrMagnitude = 0.0025f;
+    private const float SeparationSmoothingPerSecond = 8f;
+    private const float SeparationReleaseSmoothingPerSecond = 12f;
     private static readonly List<EnemySeparation3D> ActiveAgents = new List<EnemySeparation3D>(64);
 
     [Header("Enemy Separation")]
@@ -26,6 +29,11 @@ public class EnemySeparation3D : MonoBehaviour
     [SerializeField, Range(0f, 1f)] private float unstickSpeedScale = 0.2f;
 
     private Enemy3D _selfEnemy;
+    private Vector3 _smoothedSeparation;
+    private Vector3 _cachedSeparation;
+    private int _cachedFrame = -1;
+    private float _lastSampleTime = -1f;
+    private bool _cachedHasSeparation;
 
     public float UnstickSpeedScale => Mathf.Clamp01(unstickSpeedScale);
 
@@ -45,6 +53,7 @@ public class EnemySeparation3D : MonoBehaviour
     private void OnDisable()
     {
         ActiveAgents.Remove(this);
+        ResetSmoothing();
     }
 
     private void OnDestroy()
@@ -78,32 +87,46 @@ public class EnemySeparation3D : MonoBehaviour
     public bool TryGetUnstickIntent(out Vector3 unstickDirection, out float speedScale)
     {
         speedScale = UnstickSpeedScale;
-        if (speedScale <= 0f || !TryGetSeparationDirection(out unstickDirection))
+        if (speedScale <= 0f
+            || !TryGetSeparationDirection(out unstickDirection)
+            || unstickDirection.sqrMagnitude < MinUnstickSqrMagnitude)
         {
             unstickDirection = Vector3.zero;
             speedScale = 0f;
             return false;
         }
 
+        unstickDirection.Normalize();
         return true;
     }
 
     public bool TryGetSeparationDirection(out Vector3 separationDirection)
     {
+        if (_cachedFrame == Time.frameCount)
+        {
+            separationDirection = _cachedSeparation;
+            return _cachedHasSeparation;
+        }
+
         separationDirection = Vector3.zero;
         if (!TryResolveSelfEnemy(out Enemy3D selfEnemy) || !IsLiveEnemy(selfEnemy))
         {
+            ResetSmoothing();
+            CacheSeparation(Vector3.zero, false);
             return false;
         }
 
         float radius = Mathf.Max(0f, separationRadius);
         if (radius <= 0.01f)
         {
+            ResetSmoothing();
+            CacheSeparation(Vector3.zero, false);
             return false;
         }
 
         Vector3 selfPosition = transform.position;
         float radiusSqr = radius * radius;
+        Vector3 rawSeparation = Vector3.zero;
         for (int i = 0; i < ActiveAgents.Count; i++)
         {
             EnemySeparation3D other = ActiveAgents[i];
@@ -132,17 +155,55 @@ public class EnemySeparation3D : MonoBehaviour
             float distance = Mathf.Sqrt(weightedDistanceSqr);
             Vector3 awayDirection = weightedOffset / Mathf.Max(distance, 0.0001f);
             float falloff = 1f - Mathf.Clamp01(distance / radius);
-            separationDirection += awayDirection * falloff;
+            rawSeparation += awayDirection * falloff;
         }
 
-        if (separationDirection.sqrMagnitude <= MinDirectionSqrMagnitude)
+        Vector3 targetSeparation = rawSeparation.sqrMagnitude > 1f ? rawSeparation.normalized : rawSeparation;
+        _smoothedSeparation = SmoothSeparation(_smoothedSeparation, targetSeparation);
+        if (_smoothedSeparation.sqrMagnitude <= MinDirectionSqrMagnitude)
         {
-            separationDirection = Vector3.zero;
+            CacheSeparation(Vector3.zero, false);
+            separationDirection = _cachedSeparation;
             return false;
         }
 
-        separationDirection.Normalize();
+        CacheSeparation(_smoothedSeparation, true);
+        separationDirection = _cachedSeparation;
         return true;
+    }
+
+    private Vector3 SmoothSeparation(Vector3 current, Vector3 target)
+    {
+        float now = Time.time;
+        float deltaTime = _lastSampleTime >= 0f ? Mathf.Max(0f, now - _lastSampleTime) : 0f;
+        _lastSampleTime = now;
+
+        if (deltaTime <= 0f)
+        {
+            return target;
+        }
+
+        float smoothing = target.sqrMagnitude > current.sqrMagnitude
+            ? SeparationSmoothingPerSecond
+            : SeparationReleaseSmoothingPerSecond;
+        float blend = 1f - Mathf.Exp(-smoothing * deltaTime);
+        return Vector3.Lerp(current, target, blend);
+    }
+
+    private void CacheSeparation(Vector3 direction, bool hasSeparation)
+    {
+        _cachedFrame = Time.frameCount;
+        _cachedSeparation = direction;
+        _cachedHasSeparation = hasSeparation;
+    }
+
+    private void ResetSmoothing()
+    {
+        _smoothedSeparation = Vector3.zero;
+        _cachedSeparation = Vector3.zero;
+        _cachedFrame = -1;
+        _lastSampleTime = -1f;
+        _cachedHasSeparation = false;
     }
 
     private Vector3 ResolveStableFallbackDirection(EnemySeparation3D other)

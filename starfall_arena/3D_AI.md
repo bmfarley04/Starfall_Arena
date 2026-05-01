@@ -31,6 +31,7 @@ The 3D AI path should stay modular. Enemy prefabs should compose small scripts i
   - optional enemy-only inter-agent separation steering helper that mirrors the `EnemyObstacleAvoidance3D` API (`ResolveSteeringDirection(Vector3 desired)`)
   - uses a static registry of enabled `EnemySeparation3D` components instead of physics overlap/layer-mask setup, so adding the component to an eligible enemy prefab is the opt-in switch
   - only considers living `Enemy3D` instances that also have `EnemySeparation3D`; it does not push away from players and should not be added to player prefabs
+  - preserves distance falloff and smooths the separation vector over time so clustered enemies fan out without twitching when neighbors cross the edge of the separation radius
   - exposes four prefab-only tuning fields: `Separation Radius`, `Separation Strength`, `Vertical Weight`, and `Unstick Speed Scale`
   - direct-chase and hold-range brains can use its unstick helper to apply a very small movement nudge only when they would otherwise be stopped while overlapping another separated enemy
   - intended chaining: `desired -> separation -> obstacleAvoidance -> flight controller`

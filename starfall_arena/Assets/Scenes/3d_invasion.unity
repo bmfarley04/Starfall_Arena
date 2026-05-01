@@ -8229,7 +8229,7 @@ MonoBehaviour:
   occlusion:
     occlusionMask:
       serializedVersion: 2
-      m_Bits: 4294967295
+      m_Bits: 256
     targetUiOffset: {x: 0, y: 0, z: 0}
     targetIndicatorOffset: {x: 0, y: 0, z: 0}
     targetAimOffset: {x: 0, y: 0, z: 0}
