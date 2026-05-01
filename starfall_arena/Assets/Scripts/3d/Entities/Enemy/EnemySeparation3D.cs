@@ -91,7 +91,7 @@ public class EnemySeparation3D : MonoBehaviour
     public bool TryGetSeparationDirection(out Vector3 separationDirection)
     {
         separationDirection = Vector3.zero;
-        if (!IsLiveEnemy(_selfEnemy))
+        if (!TryResolveSelfEnemy(out Enemy3D selfEnemy) || !IsLiveEnemy(selfEnemy))
         {
             return false;
         }
@@ -107,7 +107,10 @@ public class EnemySeparation3D : MonoBehaviour
         for (int i = 0; i < ActiveAgents.Count; i++)
         {
             EnemySeparation3D other = ActiveAgents[i];
-            if (other == null || other == this || !IsLiveEnemy(other._selfEnemy))
+            if (other == null
+                || other == this
+                || !other.TryResolveSelfEnemy(out Enemy3D otherEnemy)
+                || !IsLiveEnemy(otherEnemy))
             {
                 continue;
             }
@@ -158,6 +161,17 @@ public class EnemySeparation3D : MonoBehaviour
         return enemy != null
             && enemy.CurrentHealth > 0f
             && enemy.gameObject.activeInHierarchy;
+    }
+
+    private bool TryResolveSelfEnemy(out Enemy3D enemy)
+    {
+        if (_selfEnemy == null)
+        {
+            _selfEnemy = GetComponentInParent<Enemy3D>();
+        }
+
+        enemy = _selfEnemy;
+        return enemy != null;
     }
 
     private void OnDrawGizmosSelected()

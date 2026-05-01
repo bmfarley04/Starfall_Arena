@@ -30,6 +30,9 @@ public class ArtilleryFortressEnemyBrain3D : NetworkBehaviour
     [Tooltip("Faction-aware target sensor. Set its detectionRadius high (e.g. 200-300m) on the prefab - that radius is what enforces the fortress's long-range identity. Auto-assigned from this GameObject if left empty.")]
     [SerializeField] private EnemyTargetSensor3D targetSensor;
 
+    [Tooltip("Optional enemy-only separation steering. Add EnemySeparation3D to the prefab when multiple fortresses should avoid stacking while creeping or acquiring.")]
+    [SerializeField] private EnemySeparation3D separation;
+
     [Tooltip("Optional patrol fallback used when no player-team target is inside detection range.")]
     [SerializeField] private EnemyPatrol3D patrol;
 
@@ -116,6 +119,7 @@ public class ArtilleryFortressEnemyBrain3D : NetworkBehaviour
 
         flightController ??= GetComponent<EnemyAIFlightController3D>();
         targetSensor ??= GetComponent<EnemyTargetSensor3D>();
+        separation ??= GetComponent<EnemySeparation3D>();
         patrol ??= GetComponent<EnemyPatrol3D>() ?? gameObject.AddComponent<EnemyPatrol3D>();
         netEnemyCombat ??= GetComponent<NetEnemyCombat3D>();
         chargeTelegraph ??= GetComponentInChildren<ProjectileChargeTelegraph3D>(true);
@@ -234,7 +238,14 @@ public class ArtilleryFortressEnemyBrain3D : NetworkBehaviour
             return;
         }
 
-        flightController?.SetFacingDirection(aimDirection);
+        if (TryResolveUnstickIntent(out Vector3 unstickDirection, out float unstickSpeedScale))
+        {
+            flightController?.SetMoveDirection(unstickDirection, unstickSpeedScale);
+        }
+        else
+        {
+            flightController?.SetFacingDirection(aimDirection);
+        }
 
         if (TryFireCloseRangeMissile(target))
         {
@@ -461,7 +472,7 @@ public class ArtilleryFortressEnemyBrain3D : NetworkBehaviour
             return true;
         }
 
-        Vector3 moveDirection = toTarget.normalized;
+        Vector3 moveDirection = ResolveSteeringDirection(toTarget.normalized);
         Vector3 facingDirection = aimDirection.sqrMagnitude > 0.0001f ? aimDirection.normalized : moveDirection;
         flightController?.SetFlightIntent(moveDirection, facingDirection, outOfRangeApproachSpeedScale, moveBackward: false);
         return true;
@@ -546,6 +557,29 @@ public class ArtilleryFortressEnemyBrain3D : NetworkBehaviour
         }
 
         return Mathf.Max(0.01f, maxFiringRange) + Mathf.Max(0f, approachRangeBuffer);
+    }
+
+    private Vector3 ResolveSteeringDirection(Vector3 desiredDirection)
+    {
+        Vector3 resolved = desiredDirection.sqrMagnitude > 0.0001f ? desiredDirection.normalized : transform.forward;
+        if (separation != null && separation.isActiveAndEnabled)
+        {
+            resolved = separation.ResolveSteeringDirection(resolved);
+        }
+
+        return resolved.sqrMagnitude > 0.0001f ? resolved.normalized : transform.forward;
+    }
+
+    private bool TryResolveUnstickIntent(out Vector3 direction, out float speedScale)
+    {
+        if (separation != null && separation.isActiveAndEnabled)
+        {
+            return separation.TryGetUnstickIntent(out direction, out speedScale);
+        }
+
+        direction = Vector3.zero;
+        speedScale = 0f;
+        return false;
     }
 
     private void CancelChargeAndAcquire(bool clearFlightIntent)

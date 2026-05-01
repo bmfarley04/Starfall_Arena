@@ -14,6 +14,8 @@ public class ArtilleryBeamEnemyBrain3D : MonoBehaviour
     [SerializeField] private EnemyAIFlightController3D flightController;
     [SerializeField] private EnemyTargetSensor3D targetSensor;
     [SerializeField] private EnemyObstacleAvoidance3D obstacleAvoidance;
+    [Tooltip("Optional enemy-only separation steering. Add EnemySeparation3D to the prefab when clustered artillery enemies should fan out instead of stacking.")]
+    [SerializeField] private EnemySeparation3D separation;
     [SerializeField] private EnemyPatrol3D patrol;
     [SerializeField] private BeamWeapon3D beamWeapon;
     [SerializeField] private NetEnemyCombat3D netEnemyCombat;
@@ -40,6 +42,7 @@ public class ArtilleryBeamEnemyBrain3D : MonoBehaviour
         flightController ??= GetComponent<EnemyAIFlightController3D>();
         targetSensor ??= GetComponent<EnemyTargetSensor3D>();
         obstacleAvoidance ??= GetComponent<EnemyObstacleAvoidance3D>();
+        separation ??= GetComponent<EnemySeparation3D>();
         patrol ??= GetComponent<EnemyPatrol3D>() ?? gameObject.AddComponent<EnemyPatrol3D>();
         beamWeapon ??= GetComponent<BeamWeapon3D>();
         netEnemyCombat ??= GetComponent<NetEnemyCombat3D>();
@@ -127,7 +130,7 @@ public class ArtilleryBeamEnemyBrain3D : MonoBehaviour
         float preferredMaxRange = Mathf.Max(keepAwayDistance + 0.01f, optimalRange + rangeBuffer);
         if (distanceToTarget < keepAwayDistance)
         {
-            Vector3 retreatDirection = -targetDirection;
+            Vector3 retreatDirection = ResolveSteeringDirection(-targetDirection);
             float speedScale = ResolveRetreatSpeedScale(distanceToTarget);
             flightController?.SetFlightIntent(retreatDirection, targetDirection, speedScale, moveBackward: true);
             return;
@@ -135,14 +138,52 @@ public class ArtilleryBeamEnemyBrain3D : MonoBehaviour
 
         if (distanceToTarget > preferredMaxRange)
         {
-            Vector3 approachDirection = useObstacleAvoidance && obstacleAvoidance != null && obstacleAvoidance.isActiveAndEnabled
-                ? obstacleAvoidance.ResolveSteeringDirection(targetDirection)
-                : targetDirection;
+            Vector3 approachDirection = ResolveSteeringDirection(targetDirection);
             flightController?.SetFlightIntent(approachDirection, targetDirection, 1f, moveBackward: false);
             return;
         }
 
+        if (TryResolveUnstickIntent(out Vector3 unstickDirection, out float unstickSpeedScale))
+        {
+            flightController?.SetMoveDirection(ResolveObstacleAvoidance(unstickDirection), unstickSpeedScale);
+            return;
+        }
+
         flightController?.SetFacingDirection(targetDirection);
+    }
+
+    private Vector3 ResolveSteeringDirection(Vector3 desiredDirection)
+    {
+        Vector3 resolved = desiredDirection.sqrMagnitude > 0.0001f ? desiredDirection.normalized : transform.forward;
+        if (separation != null && separation.isActiveAndEnabled)
+        {
+            resolved = separation.ResolveSteeringDirection(resolved);
+        }
+
+        return ResolveObstacleAvoidance(resolved);
+    }
+
+    private Vector3 ResolveObstacleAvoidance(Vector3 desiredDirection)
+    {
+        Vector3 resolved = desiredDirection.sqrMagnitude > 0.0001f ? desiredDirection.normalized : transform.forward;
+        if (useObstacleAvoidance && obstacleAvoidance != null && obstacleAvoidance.isActiveAndEnabled)
+        {
+            resolved = obstacleAvoidance.ResolveSteeringDirection(resolved);
+        }
+
+        return resolved.sqrMagnitude > 0.0001f ? resolved.normalized : transform.forward;
+    }
+
+    private bool TryResolveUnstickIntent(out Vector3 direction, out float speedScale)
+    {
+        if (separation != null && separation.isActiveAndEnabled)
+        {
+            return separation.TryGetUnstickIntent(out direction, out speedScale);
+        }
+
+        direction = Vector3.zero;
+        speedScale = 0f;
+        return false;
     }
 
     private void UpdateBeam(Entity3D target, Vector3 targetDirection, float distanceToTarget)

@@ -28,10 +28,14 @@ The 3D AI path should stay modular. Enemy prefabs should compose small scripts i
   - this is steering/avoidance, not Unity NavMesh
   - currently not implemented anywhere since it was extremely buggy
 - `EnemySeparation3D`
-  - shared inter-agent separation steering helper that mirrors the `EnemyObstacleAvoidance3D` API (`ResolveSteeringDirection(Vector3 desired)`)
-  - non-alloc `OverlapSphere` against an `agentMask` LayerMask; pushes the desired direction away from same-faction allies inside `allyRadius` and biases laterally away from non-ally entities (e.g. the player) inside the smaller `playerProximityRadius`
+  - optional enemy-only inter-agent separation steering helper that mirrors the `EnemyObstacleAvoidance3D` API (`ResolveSteeringDirection(Vector3 desired)`)
+  - uses a static registry of enabled `EnemySeparation3D` components instead of physics overlap/layer-mask setup, so adding the component to an eligible enemy prefab is the opt-in switch
+  - only considers living `Enemy3D` instances that also have `EnemySeparation3D`; it does not push away from players and should not be added to player prefabs
+  - exposes four prefab-only tuning fields: `Separation Radius`, `Separation Strength`, `Vertical Weight`, and `Unstick Speed Scale`
+  - direct-chase and hold-range brains can use its unstick helper to apply a very small movement nudge only when they would otherwise be stopped while overlapping another separated enemy
   - intended chaining: `desired -> separation -> obstacleAvoidance -> flight controller`
-  - currently optional for future enemy brains; `RammerEnemyBrain3D` deliberately does not consume it because rammer charges should stay simple locked vectors
+  - eligible non-boss brains include `BasicShooterEnemyBrain3D`, `TankEnemyBrain3D`, `SplitterEnemyBrain3D`, `ArtilleryBeamEnemyBrain3D`, `ArtilleryFortressEnemyBrain3D`, `DuelistEnemyBrain3D`, `FlamethrowerEnemyBrain3D`, `GlassCannonInterceptorEnemyBrain3D`, and `SwarmScoutEnemyBrain3D`
+  - do not add it to `SuicideDroneEnemyBrain3D`, `RammerEnemyBrain3D`, `TriumvirateEnemyBrain3D`, or boss prefabs; those identities rely on committed collision pressure, authored formation slots, or boss-scale movement ownership
 - `EnemyPatrol3D`
   - reusable no-target fallback for Invasion enemies so they search the arena instead of freezing when players are outside detection range
   - generates patrol waypoints at runtime; designers do not author scene waypoint lists
@@ -244,7 +248,7 @@ Planned later pathing layers may include:
 - tactical orbit/kite positions
 - flow-field or waypoint goals for large waves
 
-Local separation between enemies is implemented as `EnemySeparation3D`; brains can opt in by adding the component to their prefab and routing their desired steering vector through it the same way they route through `EnemyObstacleAvoidance3D`. Do not add it to simple committed-charge enemies unless the behavior explicitly needs steering drift.
+Local separation between enemies is implemented as `EnemySeparation3D`; eligible brains can opt in by adding the component to their prefab and routing their desired steering vector through it before `EnemyObstacleAvoidance3D`. The component is registry-based, enemy-only, and prefab-tuned; do not add it to suicide drones, rammers, Triumvirate formation ships, bosses, or player prefabs.
 
 ## Old Stellar Onslaught Inspiration
 
