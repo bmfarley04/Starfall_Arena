@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Text;
 using Unity.Cinemachine;
 using Unity.Netcode;
 using UnityEngine;
@@ -12,12 +13,23 @@ public class NetMovement3D : NetworkBehaviour
 {
     private const int ClientInputBufferSize = 64;
     private const int ServerStateBufferSize = 120;
+    private const int RecentMovementSideEffectWindowTicks = 6;
 
     private static readonly List<NetMovement3D> ActiveInstances = new List<NetMovement3D>();
+
+    private enum OwnerCorrectionCause
+    {
+        PredictionMissing,
+        PositionError,
+        AuthoritativeSnap
+    }
 
     [Header("Reconciliation")]
     [Tooltip("Position error in world units before a server correction triggers local replay.")]
     [SerializeField] private float reconciliationThreshold = 0.1f;
+
+    [Tooltip("Logs every owner-side reconciliation correction with tick, input, error, and recent movement-side-effect context.")]
+    [SerializeField] private bool logOwnerCorrections = true;
 
     [Header("Interpolation")]
     [SerializeField] private NetInterpolationSettings3D interpolationSettings = new NetInterpolationSettings3D();
@@ -71,6 +83,15 @@ public class NetMovement3D : NetworkBehaviour
     private bool _remoteDodgePresentationActive;
     private int _ownerCorrectionCount;
     private float _ownerCorrectionDistanceTotal;
+    private Vector3 _lastCombatVelocityDelta;
+    private int _lastCombatVelocityDeltaTick = -1;
+    private Vector3 _lastCombatWarpPosition;
+    private int _lastCombatWarpTick = -1;
+    private Vector3 _lastBoundaryCorrectionPosition;
+    private Vector3 _lastBoundaryCorrectionVelocity;
+    private int _lastBoundaryCorrectionTick = -1;
+    private Vector3 _lastQueuedDodgeDirection;
+    private int _lastQueuedDodgeTick = -1;
 
     public byte PlayerSlot => _networkPlayerIndex.Value;
     public NetInterpolationDiagnostics3D InterpolationDiagnostics => _remoteInterpolator.Diagnostics;
@@ -323,6 +344,9 @@ public class NetMovement3D : NetworkBehaviour
             return;
         }
 
+        _lastCombatVelocityDelta = velocityDelta;
+        _lastCombatVelocityDeltaTick = NetTickUtil.CurrentTick;
+
         if (_rb != null)
         {
             _rb.linearVelocity += velocityDelta;
@@ -348,11 +372,16 @@ public class NetMovement3D : NetworkBehaviour
 
         _pendingDodgeRequested = true;
         _pendingDodgeDirection = worldDirection.normalized;
+        _lastQueuedDodgeDirection = _pendingDodgeDirection;
+        _lastQueuedDodgeTick = NetTickUtil.CurrentTick;
         return true;
     }
 
     public void ApplyCombatWarp(Vector3 position)
     {
+        _lastCombatWarpPosition = position;
+        _lastCombatWarpTick = NetTickUtil.CurrentTick;
+
         if (_rb != null)
         {
             _rb.position = position;
@@ -375,6 +404,10 @@ public class NetMovement3D : NetworkBehaviour
 
     public void ApplyBoundaryCorrection(Vector3 correctedPosition, Vector3 correctedVelocity)
     {
+        _lastBoundaryCorrectionPosition = correctedPosition;
+        _lastBoundaryCorrectionVelocity = correctedVelocity;
+        _lastBoundaryCorrectionTick = NetTickUtil.CurrentTick;
+
         if (_rb != null)
         {
             _rb.position = correctedPosition;
@@ -566,7 +599,12 @@ public class NetMovement3D : NetworkBehaviour
         NetStateSnapshot3D predicted = _predictionBuffer[predictionIndex];
         if (predicted.Tick != serverState.Tick)
         {
-            ApplyAuthoritativeCorrection(serverState);
+            ApplyAuthoritativeCorrection(
+                serverState,
+                OwnerCorrectionCause.PredictionMissing,
+                predicted,
+                GetBufferedInputForTick(serverState.Tick),
+                predictionMatchesServerTick: false);
             return;
         }
 
@@ -576,11 +614,17 @@ public class NetMovement3D : NetworkBehaviour
             return;
         }
 
-        RegisterOwnerCorrection(positionError);
-
         MovementState3D replayState = ToMovementState(serverState);
         float dt = GetTickDeltaTime();
         int currentTick = NetTickUtil.CurrentTick;
+        RegisterOwnerCorrection(
+            OwnerCorrectionCause.PositionError,
+            positionError,
+            serverState,
+            predicted,
+            GetBufferedInputForTick(serverState.Tick),
+            predictionMatchesServerTick: true,
+            ticksReplayed: Mathf.Max(0, currentTick - serverState.Tick));
 
         for (int tick = serverState.Tick + 1; tick <= currentTick; tick++)
         {
@@ -613,11 +657,23 @@ public class NetMovement3D : NetworkBehaviour
         ApplyFlightTelemetry(latestLookInput, _predictionBuffer[latestInputIndex].ThrustInput, _predictionBuffer[latestInputIndex].FrictionEnabled, _ownerState, previousVelocity, dt);
     }
 
-    private void ApplyAuthoritativeCorrection(NetStateSnapshot3D snapshot)
+    private void ApplyAuthoritativeCorrection(
+        NetStateSnapshot3D snapshot,
+        OwnerCorrectionCause cause = OwnerCorrectionCause.AuthoritativeSnap,
+        NetStateSnapshot3D predicted = default,
+        NetInputSnapshot3D input = default,
+        bool predictionMatchesServerTick = false)
     {
         if (_ownerStateInitialized)
         {
-            RegisterOwnerCorrection(Vector3.Distance(_ownerState.Position, snapshot.Position));
+            RegisterOwnerCorrection(
+                cause,
+                Vector3.Distance(_ownerState.Position, snapshot.Position),
+                snapshot,
+                predicted,
+                input,
+                predictionMatchesServerTick,
+                ticksReplayed: 0);
         }
 
         _ownerState = ToMovementState(snapshot);
@@ -1113,10 +1169,182 @@ public class NetMovement3D : NetworkBehaviour
         return hasBridge;
     }
 
-    private void RegisterOwnerCorrection(float distance)
+    private NetInputSnapshot3D GetBufferedInputForTick(int tick)
+    {
+        if (_inputBuffer == null || _inputBuffer.Length == 0)
+        {
+            return default;
+        }
+
+        int inputIndex = tick % _inputBuffer.Length;
+        return _inputBuffer[inputIndex];
+    }
+
+    private void RegisterOwnerCorrection(
+        OwnerCorrectionCause cause,
+        float distance,
+        in NetStateSnapshot3D serverState,
+        in NetStateSnapshot3D predicted,
+        in NetInputSnapshot3D input,
+        bool predictionMatchesServerTick,
+        int ticksReplayed)
     {
         _ownerCorrectionCount++;
         _ownerCorrectionDistanceTotal += Mathf.Max(0f, distance);
+
+        if (logOwnerCorrections)
+        {
+            LogOwnerCorrection(
+                cause,
+                distance,
+                in serverState,
+                in predicted,
+                in input,
+                predictionMatchesServerTick,
+                ticksReplayed);
+        }
+    }
+
+    private void LogOwnerCorrection(
+        OwnerCorrectionCause cause,
+        float correctionDistance,
+        in NetStateSnapshot3D serverState,
+        in NetStateSnapshot3D predicted,
+        in NetInputSnapshot3D input,
+        bool predictionMatchesServerTick,
+        int ticksReplayed)
+    {
+        int currentTick = NetTickUtil.CurrentTick;
+        int serverTimelineTick = NetTickUtil.ServerTick;
+        bool inputMatchesCorrectionTick = input.Tick == serverState.Tick;
+        bool recentSideEffect = HasRecentMovementSideEffect(serverState.Tick, currentTick);
+
+        Vector3 referencePosition = predictionMatchesServerTick
+            ? predicted.Position
+            : _ownerStateInitialized ? _ownerState.Position : predicted.Position;
+        Vector3 referenceVelocity = predictionMatchesServerTick
+            ? predicted.Velocity
+            : _ownerStateInitialized ? _ownerState.Velocity : predicted.Velocity;
+        Quaternion referenceRotation = predictionMatchesServerTick
+            ? predicted.Rotation
+            : _ownerStateInitialized ? _ownerState.Rotation : predicted.Rotation;
+
+        float positionError = Vector3.Distance(referencePosition, serverState.Position);
+        float velocityError = Vector3.Distance(referenceVelocity, serverState.Velocity);
+        float rotationError = Quaternion.Angle(referenceRotation, serverState.Rotation);
+
+        ulong networkObjectId = NetworkObject != null ? NetworkObject.NetworkObjectId : 0UL;
+        ulong ownerClientId = NetworkObject != null ? NetworkObject.OwnerClientId : 0UL;
+
+        StringBuilder builder = new StringBuilder(1400);
+        builder.AppendLine("[NetMovement3D Correction]");
+        builder.AppendLine($"cause={cause}");
+        builder.AppendLine($"likelyCause={GetLikelyOwnerCorrectionCause(cause, recentSideEffect)}");
+        builder.AppendLine($"object={name} networkObjectId={networkObjectId} ownerClientId={ownerClientId} playerSlot={PlayerSlot} movementLocked={_movementLocked.Value}");
+        builder.AppendLine($"serverStateTick={serverState.Tick} localCurrentTick={currentTick} observedServerTick={serverTimelineTick} ticksReplayed={ticksReplayed}");
+        builder.AppendLine($"predictionBufferTick={predicted.Tick} predictionMatchesServerTick={predictionMatchesServerTick} inputTick={input.Tick} inputMatchesCorrectionTick={inputMatchesCorrectionTick}");
+        builder.AppendLine($"correctionDistance={correctionDistance:0.###} positionError={positionError:0.###} velocityError={velocityError:0.###} rotationErrorDegrees={rotationError:0.###}");
+        builder.AppendLine($"predictedPosition={FormatVector3(predicted.Position)} serverPosition={FormatVector3(serverState.Position)} currentOwnerPosition={FormatVector3(_ownerState.Position)}");
+        builder.AppendLine($"predictedVelocity={FormatVector3(predicted.Velocity)} serverVelocity={FormatVector3(serverState.Velocity)} currentOwnerVelocity={FormatVector3(_ownerState.Velocity)}");
+        builder.AppendLine($"input thrust={input.ThrustInput:0.###} look={FormatVector2(input.LookInput)} friction={input.FrictionEnabled} dodgeRequest={input.DodgeRequested} dodgeDirection={FormatVector3(input.DodgeDirection)} slowMultiplier={input.SlowMultiplier:0.###}");
+        builder.AppendLine($"recentMovementSideEffect={GetMostRecentMovementSideEffectSummary(currentTick)}");
+        builder.AppendLine($"lastCombatVelocityDelta={FormatTickedVector(_lastCombatVelocityDeltaTick, _lastCombatVelocityDelta)}");
+        builder.AppendLine($"lastCombatWarp={FormatTickedVector(_lastCombatWarpTick, _lastCombatWarpPosition)}");
+        builder.AppendLine($"lastBoundaryCorrection={FormatBoundaryCorrection()}");
+        builder.AppendLine($"lastQueuedDodge={FormatTickedVector(_lastQueuedDodgeTick, _lastQueuedDodgeDirection)}");
+
+        Debug.Log(builder.ToString(), this);
+    }
+
+    private bool HasRecentMovementSideEffect(int serverTick, int currentTick)
+    {
+        return IsSideEffectNearTick(_lastCombatVelocityDeltaTick, serverTick, currentTick)
+            || IsSideEffectNearTick(_lastCombatWarpTick, serverTick, currentTick)
+            || IsSideEffectNearTick(_lastBoundaryCorrectionTick, serverTick, currentTick)
+            || IsSideEffectNearTick(_lastQueuedDodgeTick, serverTick, currentTick);
+    }
+
+    private static bool IsSideEffectNearTick(int sideEffectTick, int serverTick, int currentTick)
+    {
+        if (sideEffectTick < 0)
+        {
+            return false;
+        }
+
+        return Mathf.Abs(serverTick - sideEffectTick) <= RecentMovementSideEffectWindowTicks
+            || Mathf.Abs(currentTick - sideEffectTick) <= RecentMovementSideEffectWindowTicks;
+    }
+
+    private static string GetLikelyOwnerCorrectionCause(OwnerCorrectionCause cause, bool recentSideEffect)
+    {
+        if (recentSideEffect)
+        {
+            return "recent non-replayable movement side effect may be involved";
+        }
+
+        if (cause == OwnerCorrectionCause.PredictionMissing)
+        {
+            return "prediction buffer missing or overwritten";
+        }
+
+        if (cause == OwnerCorrectionCause.PositionError)
+        {
+            return "server/client simulation drift";
+        }
+
+        return "authoritative snap applied";
+    }
+
+    private string GetMostRecentMovementSideEffectSummary(int currentTick)
+    {
+        string name = "none";
+        int tick = -1;
+
+        SetMostRecentMovementSideEffect(ref name, ref tick, "combat velocity delta", _lastCombatVelocityDeltaTick);
+        SetMostRecentMovementSideEffect(ref name, ref tick, "combat warp", _lastCombatWarpTick);
+        SetMostRecentMovementSideEffect(ref name, ref tick, "boundary correction", _lastBoundaryCorrectionTick);
+        SetMostRecentMovementSideEffect(ref name, ref tick, "queued dodge", _lastQueuedDodgeTick);
+
+        if (tick < 0)
+        {
+            return "none";
+        }
+
+        return $"{name} tick={tick} ticksAgo={Mathf.Max(0, currentTick - tick)}";
+    }
+
+    private static void SetMostRecentMovementSideEffect(ref string name, ref int tick, string candidateName, int candidateTick)
+    {
+        if (candidateTick > tick)
+        {
+            name = candidateName;
+            tick = candidateTick;
+        }
+    }
+
+    private string FormatBoundaryCorrection()
+    {
+        if (_lastBoundaryCorrectionTick < 0)
+        {
+            return "none";
+        }
+
+        return $"tick={_lastBoundaryCorrectionTick}, position={FormatVector3(_lastBoundaryCorrectionPosition)}, velocity={FormatVector3(_lastBoundaryCorrectionVelocity)}";
+    }
+
+    private static string FormatTickedVector(int tick, Vector3 value)
+    {
+        return tick < 0 ? "none" : $"tick={tick}, value={FormatVector3(value)}";
+    }
+
+    private static string FormatVector2(Vector2 value)
+    {
+        return $"({value.x:0.###}, {value.y:0.###})";
+    }
+
+    private static string FormatVector3(Vector3 value)
+    {
+        return $"({value.x:0.###}, {value.y:0.###}, {value.z:0.###})";
     }
 
     private void ResetRemoteInterpolationState()

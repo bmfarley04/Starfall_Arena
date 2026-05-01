@@ -2496,7 +2496,16 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::InvasionWaveManager3D
   waves:
   - waveName: WAVE 1
-    subWaves: []
+    subWaves:
+    - subWaveName: 
+      centerSpawnPoint: {fileID: 0}
+      formation:
+        preset: 0
+        slotSpacing: 0
+        gridColumns: 0
+      enemies: []
+      spawnBurstIntervalSeconds: 0
+      delayBeforeNextSubWaveSeconds: 0
     enableBoss: 0
     boss:
       bossPrefab: {fileID: 0}
@@ -6494,7 +6503,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &1030349890
 MonoBehaviour:
   m_ObjectHideFlags: 0

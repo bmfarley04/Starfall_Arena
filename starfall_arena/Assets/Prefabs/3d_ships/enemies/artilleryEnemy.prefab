@@ -4855,7 +4855,6 @@ GameObject:
   - component: {fileID: 515792633475163076}
   - component: {fileID: 3081354594133750957}
   - component: {fileID: 4469119398017779373}
-  - component: {fileID: 9100000000000000002}
   - component: {fileID: 816407253166191784}
   - component: {fileID: 8013721388911703374}
   - component: {fileID: -3029620960672476160}
@@ -5142,6 +5141,7 @@ MonoBehaviour:
   patrol: {fileID: 0}
   beamWeapon: {fileID: 3081354594133750957}
   netEnemyCombat: {fileID: 0}
+  attackReporter: {fileID: 0}
   thinkInterval: 0.05
   aimToleranceDegrees: 8
   keepAwayDistance: 100
@@ -5154,19 +5154,6 @@ MonoBehaviour:
   lineOfSightMask:
     serializedVersion: 2
     m_Bits: 4294967295
---- !u!114 &9100000000000000002
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2461026213711029054}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: bfab71f04e15488aa75cd8ce1856c6d3, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::EnemyBalanceProfileApplier3D
-  profile: {fileID: 11400000, guid: 2f091593120f4c7abaf88bb712fd532d, type: 2}
 --- !u!114 &816407253166191784
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5274,7 +5261,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NetEnemyMovement3D
   ShowTopMostFoldoutHeaderGroup: 1
-  interpolationBufferTicks: 2
+  interpolationSettings:
+    minVisualDelayMs: 80
+    maxVisualDelayMs: 120
+    bufferStarvationWarningThreshold: 5
+    maxExtrapolationMs: 40
+    hardSnapDistance: 30
+    smoothingCatchUpRate: 0
 --- !u!1 &2884287284395979221
 GameObject:
   m_ObjectHideFlags: 0

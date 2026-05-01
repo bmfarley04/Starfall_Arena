@@ -11476,7 +11476,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::NetMovement3D
   ShowTopMostFoldoutHeaderGroup: 1
   reconciliationThreshold: 0.1
-  interpolationBufferTicks: 2
+  interpolationSettings:
+    minVisualDelayMs: 80
+    maxVisualDelayMs: 120
+    bufferStarvationWarningThreshold: 5
+    maxExtrapolationMs: 40
+    hardSnapDistance: 30
+    smoothingCatchUpRate: 0
   maxCombatRewindTicks: 6
 --- !u!114 &492492662401554447
 MonoBehaviour:
