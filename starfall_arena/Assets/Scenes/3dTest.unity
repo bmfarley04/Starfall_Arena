@@ -9998,17 +9998,9 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 3792316846408591602, guid: 67ddc44c4546f394ca0a6767e900c122, type: 3}
-      propertyPath: chargeWindUpDuration
-      value: 1.5
-      objectReference: {fileID: 0}
     - target: {fileID: 5723954577492871350, guid: 67ddc44c4546f394ca0a6767e900c122, type: 3}
       propertyPath: m_Name
       value: fortressEnemy (1)
-      objectReference: {fileID: 0}
-    - target: {fileID: 7110419251988611543, guid: 67ddc44c4546f394ca0a6767e900c122, type: 3}
-      propertyPath: idleEmissionIntensity
-      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 9212841648702151964, guid: 67ddc44c4546f394ca0a6767e900c122, type: 3}
       propertyPath: GlobalObjectIdHash

@@ -16,12 +16,14 @@ public class NetMovement3D : NetworkBehaviour
     private static readonly List<NetMovement3D> ActiveInstances = new List<NetMovement3D>();
 
     [Header("Reconciliation")]
+    [Tooltip("Position error in world units before a server correction triggers local replay.")]
     [SerializeField] private float reconciliationThreshold = 0.1f;
 
     [Header("Interpolation")]
-    [SerializeField] private int interpolationBufferTicks = 2;
+    [SerializeField] private NetInterpolationSettings3D interpolationSettings = new NetInterpolationSettings3D();
 
     [Header("Combat Rewind")]
+    [Tooltip("Maximum lag-compensation window for player projectile and beam validation, in ticks.")]
     [SerializeField] private int maxCombatRewindTicks = 6;
 
     private readonly NetworkVariable<bool> _movementLocked = new NetworkVariable<bool>(
@@ -45,7 +47,7 @@ public class NetMovement3D : NetworkBehaviour
     private NetInputSnapshot3D[] _inputBuffer;
     private NetStateSnapshot3D[] _predictionBuffer;
     private NetStateSnapshot3D[] _stateHistory;
-    private NetStateSnapshot3D[] _interpolationBuffer;
+    private readonly NetSnapshotInterpolator3D _remoteInterpolator = new NetSnapshotInterpolator3D();
 
     private MovementState3D _ownerState;
     private MovementState3D _serverState;
@@ -64,14 +66,16 @@ public class NetMovement3D : NetworkBehaviour
     private int _lastProcessedServerTick = -1;
     private int _stateHistoryHead = -1;
 
-    private int _interpWriteIndex;
-    private int _interpCount;
-    private float _interpTimer;
     private Vector3 _lastAppliedVisualVelocity;
     private bool _hasLastAppliedVisualVelocity;
     private bool _remoteDodgePresentationActive;
+    private int _ownerCorrectionCount;
+    private float _ownerCorrectionDistanceTotal;
 
     public byte PlayerSlot => _networkPlayerIndex.Value;
+    public NetInterpolationDiagnostics3D InterpolationDiagnostics => _remoteInterpolator.Diagnostics;
+    public int OwnerCorrectionCount => _ownerCorrectionCount;
+    public float AverageOwnerCorrectionDistance => _ownerCorrectionCount > 0 ? _ownerCorrectionDistanceTotal / _ownerCorrectionCount : 0f;
 
     public override void OnNetworkSpawn()
     {
@@ -115,7 +119,7 @@ public class NetMovement3D : NetworkBehaviour
 
         if (!IsOwner && !IsServer)
         {
-            _interpolationBuffer = new NetStateSnapshot3D[ServerStateBufferSize];
+            _remoteInterpolator.Initialize(ServerStateBufferSize, interpolationSettings);
             _rb.isKinematic = true;
         }
         else
@@ -172,6 +176,7 @@ public class NetMovement3D : NetworkBehaviour
             _rb.isKinematic = false;
         }
 
+        _remoteInterpolator.Reset();
         base.OnNetworkDespawn();
     }
 
@@ -364,6 +369,8 @@ public class NetMovement3D : NetworkBehaviour
         {
             _serverState.Position = position;
         }
+
+        ResetRemoteInterpolationState();
     }
 
     public void ApplyBoundaryCorrection(Vector3 correctedPosition, Vector3 correctedVelocity)
@@ -395,6 +402,8 @@ public class NetMovement3D : NetworkBehaviour
             _serverState.DodgeRemainingTime = 0f;
             _serverState.DodgeDuration = 0f;
         }
+
+        ResetRemoteInterpolationState();
     }
 
     private void OwnerTick()
@@ -561,10 +570,13 @@ public class NetMovement3D : NetworkBehaviour
             return;
         }
 
-        if (Vector3.Distance(predicted.Position, serverState.Position) <= reconciliationThreshold)
+        float positionError = Vector3.Distance(predicted.Position, serverState.Position);
+        if (positionError <= reconciliationThreshold)
         {
             return;
         }
+
+        RegisterOwnerCorrection(positionError);
 
         MovementState3D replayState = ToMovementState(serverState);
         float dt = GetTickDeltaTime();
@@ -603,6 +615,11 @@ public class NetMovement3D : NetworkBehaviour
 
     private void ApplyAuthoritativeCorrection(NetStateSnapshot3D snapshot)
     {
+        if (_ownerStateInitialized)
+        {
+            RegisterOwnerCorrection(Vector3.Distance(_ownerState.Position, snapshot.Position));
+        }
+
         _ownerState = ToMovementState(snapshot);
         ApplySimulationState(_ownerState, snap: true);
         ApplyFlightTelemetry(snapshot.FilteredLookInput, snapshot.ThrustInput, snapshot.FrictionEnabled, _ownerState, GetEffectiveVelocity(_ownerState), GetTickDeltaTime());
@@ -610,75 +627,33 @@ public class NetMovement3D : NetworkBehaviour
 
     private void BufferInterpolationState(NetStateSnapshot3D state)
     {
-        if (_interpolationBuffer == null || _interpolationBuffer.Length == 0)
-        {
-            return;
-        }
-
-        int index = _interpWriteIndex % _interpolationBuffer.Length;
-        _interpolationBuffer[index] = state;
-        _interpWriteIndex++;
-        _interpCount = Mathf.Min(_interpCount + 1, _interpolationBuffer.Length);
+        _remoteInterpolator.AddSnapshot(state, this, "NetMovement3D");
     }
 
     private void InterpolateRemote()
     {
-        int requiredSamples = Mathf.Max(2, interpolationBufferTicks);
-        if (_interpCount < requiredSamples)
-        {
-            return;
-        }
-
-        int newestIndex = (_interpWriteIndex - 1) % _interpolationBuffer.Length;
-        if (newestIndex < 0)
-        {
-            newestIndex += _interpolationBuffer.Length;
-        }
-
-        int olderIndex = (_interpWriteIndex - 2) % _interpolationBuffer.Length;
-        if (olderIndex < 0)
-        {
-            olderIndex += _interpolationBuffer.Length;
-        }
-
-        NetStateSnapshot3D from = _interpolationBuffer[olderIndex];
-        NetStateSnapshot3D to = _interpolationBuffer[newestIndex];
-        int tickDelta = to.Tick - from.Tick;
-        if (tickDelta <= 0)
-        {
-            return;
-        }
-
         float tickInterval = GetTickDeltaTime();
-        float duration = tickDelta * tickInterval;
-        _interpTimer += Time.fixedDeltaTime;
-        float t = Mathf.Clamp01(_interpTimer / duration);
-
-        MovementState3D interpolatedState = new MovementState3D
+        if (!_remoteInterpolator.TrySample(
+            interpolationSettings,
+            tickInterval,
+            NetTickUtil.ServerTick,
+            Time.fixedDeltaTime,
+            this,
+            "NetMovement3D",
+            out MovementState3D interpolatedState,
+            out float interpolatedThrust,
+            out bool interpolatedFriction))
         {
-            Position = Vector3.Lerp(from.Position, to.Position, t),
-            Rotation = Quaternion.Slerp(from.Rotation, to.Rotation, t),
-            Velocity = Vector3.Lerp(from.Velocity, to.Velocity, t),
-            FilteredLookInput = Vector2.Lerp(from.FilteredLookInput, to.FilteredLookInput, t),
-            TurnRates = Vector2.Lerp(from.TurnRates, to.TurnRates, t),
-            DodgeVelocity = Vector3.Lerp(from.DodgeVelocity, to.DodgeVelocity, t),
-            DodgeExitVelocity = Vector3.Lerp(from.DodgeExitVelocity, to.DodgeExitVelocity, t),
-            DodgeRemainingTime = Mathf.Lerp(from.DodgeRemainingTime, to.DodgeRemainingTime, t),
-            DodgeDuration = Mathf.Lerp(from.DodgeDuration, to.DodgeDuration, t)
-        };
+            return;
+        }
 
         ApplySimulationState(interpolatedState);
         UpdateRemoteDodgePresentation(interpolatedState);
 
-        Vector3 previousVelocity = _hasLastAppliedVisualVelocity ? _lastAppliedVisualVelocity : GetEffectiveVelocity(ToMovementState(from));
-        ApplyFlightTelemetry(interpolatedState.FilteredLookInput, Mathf.Lerp(from.ThrustInput, to.ThrustInput, t), to.FrictionEnabled, interpolatedState, previousVelocity, tickInterval);
+        Vector3 previousVelocity = _hasLastAppliedVisualVelocity ? _lastAppliedVisualVelocity : GetEffectiveVelocity(interpolatedState);
+        ApplyFlightTelemetry(interpolatedState.FilteredLookInput, interpolatedThrust, interpolatedFriction, interpolatedState, previousVelocity, tickInterval);
         _lastAppliedVisualVelocity = GetEffectiveVelocity(interpolatedState);
         _hasLastAppliedVisualVelocity = true;
-
-        if (t >= 1f)
-        {
-            _interpTimer -= duration;
-        }
     }
 
     private void SimulateInputTick(
@@ -1138,6 +1113,24 @@ public class NetMovement3D : NetworkBehaviour
         return hasBridge;
     }
 
+    private void RegisterOwnerCorrection(float distance)
+    {
+        _ownerCorrectionCount++;
+        _ownerCorrectionDistanceTotal += Mathf.Max(0f, distance);
+    }
+
+    private void ResetRemoteInterpolationState()
+    {
+        if (IsOwner || IsServer)
+        {
+            return;
+        }
+
+        _remoteInterpolator.Reset();
+        _hasLastAppliedVisualVelocity = false;
+        _remoteDodgePresentationActive = false;
+    }
+
     private void HandleMovementLockedChanged(bool previousValue, bool newValue)
     {
         ApplyMovementLock(newValue);
@@ -1194,6 +1187,8 @@ public class NetMovement3D : NetworkBehaviour
             Vector3.zero,
             Vector3.zero,
             Vector3.zero);
+
+        ResetRemoteInterpolationState();
     }
 
     private void ApplyPlayerIndex(byte index)

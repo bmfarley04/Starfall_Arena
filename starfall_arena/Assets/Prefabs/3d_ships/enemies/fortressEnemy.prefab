@@ -10000,7 +10000,7 @@ MonoBehaviour:
     targetTag: 
     targetFaction: 1
     cooldown: 15
-    speed: 500
+    speed: 800
     damage: 100
     lifetime: 5
     impactForce: 0
@@ -10061,15 +10061,15 @@ MonoBehaviour:
   - {fileID: 3394221799534837996}
   flightController: {fileID: 4036106999025840659}
   targetSensor: {fileID: 109184916424653513}
-  patrol: {fileID: 0}
-  netEnemyCombat: {fileID: 0}
+  patrol: {fileID: 8638785466743754426}
+  netEnemyCombat: {fileID: -2783508877796770153}
   chargeTelegraph: {fileID: 7110419251988611543}
   attackReporter: {fileID: 0}
   thinkInterval: 0.05
   aimToleranceDegrees: 4
   useLeadAim: 1
   leadAimRefinementPasses: 2
-  chargeWindUpDuration: 3
+  chargeWindUpDuration: 1.5
   maxFiringRange: 700
   approachRangeBuffer: 200
   outOfRangeApproachSpeedScale: 1
@@ -10141,7 +10141,7 @@ MonoBehaviour:
   useChargeColorOverride: 0
   addToSharedMaterialEmission: 0
   onlyAffectAuthoredEmissionRenderers: 1
-  idleEmissionIntensity: 0
+  idleEmissionIntensity: 2
   maxChargeEmissionIntensity: 9
   chargeIntensityCurve:
     serializedVersion: 2

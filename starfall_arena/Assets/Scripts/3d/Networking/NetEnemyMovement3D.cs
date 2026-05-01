@@ -10,15 +10,14 @@ public class NetEnemyMovement3D : NetworkBehaviour
     private const int InterpolationBufferSize = 64;
 
     [Header("Enemy Interpolation")]
-    [SerializeField] private int interpolationBufferTicks = 2;
+    [SerializeField] private NetInterpolationSettings3D interpolationSettings = new NetInterpolationSettings3D();
 
     private Rigidbody _rb;
     private EnemyAIFlightController3D _enemyFlight;
-    private NetStateSnapshot3D[] _interpolationBuffer;
+    private readonly NetSnapshotInterpolator3D _remoteInterpolator = new NetSnapshotInterpolator3D();
     private int _lastPublishedTick = -1;
-    private int _interpWriteIndex;
-    private int _interpCount;
-    private float _interpTimer;
+
+    public NetInterpolationDiagnostics3D InterpolationDiagnostics => _remoteInterpolator.Diagnostics;
 
     public override void OnNetworkSpawn()
     {
@@ -27,7 +26,7 @@ public class NetEnemyMovement3D : NetworkBehaviour
 
         if (!IsServer)
         {
-            _interpolationBuffer = new NetStateSnapshot3D[InterpolationBufferSize];
+            _remoteInterpolator.Initialize(InterpolationBufferSize, interpolationSettings);
             _rb.isKinematic = true;
         }
         else
@@ -43,6 +42,7 @@ public class NetEnemyMovement3D : NetworkBehaviour
             _rb.isKinematic = false;
         }
 
+        _remoteInterpolator.Reset();
         base.OnNetworkDespawn();
     }
 
@@ -98,66 +98,29 @@ public class NetEnemyMovement3D : NetworkBehaviour
 
     private void BufferInterpolationState(NetStateSnapshot3D state)
     {
-        if (_interpolationBuffer == null || _interpolationBuffer.Length == 0)
-        {
-            return;
-        }
-
-        int index = _interpWriteIndex % _interpolationBuffer.Length;
-        _interpolationBuffer[index] = state;
-        _interpWriteIndex++;
-        _interpCount = Mathf.Min(_interpCount + 1, _interpolationBuffer.Length);
+        _remoteInterpolator.AddSnapshot(state, this, "NetEnemyMovement3D");
     }
 
     private void InterpolateRemote()
     {
-        int requiredSamples = Mathf.Max(2, interpolationBufferTicks);
-        if (_interpCount < requiredSamples)
+        if (!_remoteInterpolator.TrySample(
+            interpolationSettings,
+            GetTickDeltaTime(),
+            NetTickUtil.ServerTick,
+            Time.fixedDeltaTime,
+            this,
+            "NetEnemyMovement3D",
+            out MovementState3D sampledState,
+            out _,
+            out _))
         {
             return;
         }
 
-        int newestIndex = (_interpWriteIndex - 1) % _interpolationBuffer.Length;
-        if (newestIndex < 0)
-        {
-            newestIndex += _interpolationBuffer.Length;
-        }
-
-        int olderIndex = (_interpWriteIndex - 2) % _interpolationBuffer.Length;
-        if (olderIndex < 0)
-        {
-            olderIndex += _interpolationBuffer.Length;
-        }
-
-        NetStateSnapshot3D from = _interpolationBuffer[olderIndex];
-        NetStateSnapshot3D to = _interpolationBuffer[newestIndex];
-        int tickDelta = to.Tick - from.Tick;
-        if (tickDelta <= 0)
-        {
-            return;
-        }
-
-        float duration = tickDelta * GetTickDeltaTime();
-        if (duration <= 0f)
-        {
-            return;
-        }
-
-        _interpTimer += Time.fixedDeltaTime;
-        float t = Mathf.Clamp01(_interpTimer / duration);
-        Vector3 position = Vector3.Lerp(from.Position, to.Position, t);
-        Quaternion rotation = Quaternion.Slerp(from.Rotation, to.Rotation, t);
-        Vector3 velocity = Vector3.Lerp(from.Velocity, to.Velocity, t);
-
-        _rb.position = position;
-        _rb.rotation = rotation;
-        _rb.linearVelocity = velocity;
-        transform.SetPositionAndRotation(position, rotation);
-
-        if (t >= 1f)
-        {
-            _interpTimer -= duration;
-        }
+        _rb.position = sampledState.Position;
+        _rb.rotation = sampledState.Rotation;
+        _rb.linearVelocity = sampledState.Velocity;
+        transform.SetPositionAndRotation(sampledState.Position, sampledState.Rotation);
     }
 
     private NetStateSnapshot3D CaptureSnapshot(int tick)
