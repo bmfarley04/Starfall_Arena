@@ -637,7 +637,7 @@ MonoBehaviour:
   splitStateOffsetRigs: []
   anchorConfig:
     enabled: 1
-    rotationMultiplier: 3
+    rotationMultiplier: 5
     thrustMultiplier: 0.3
   dodgeConfig:
     enabled: 1
