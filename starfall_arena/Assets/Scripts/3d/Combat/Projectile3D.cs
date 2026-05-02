@@ -212,8 +212,15 @@ public class Projectile3D : MonoBehaviour, IPooledObject3D
         if (targetRb != null && _impactForce > 0f)
         {
             Vector3 velocityDelta = _direction.normalized * _impactForce;
-            targetRb.linearVelocity += velocityDelta;
-            targetRb.GetComponent<NetMovement3D>()?.ApplyCombatVelocityDelta(velocityDelta);
+            NetMovement3D netMovement = targetRb.GetComponent<NetMovement3D>();
+            if (netMovement != null)
+            {
+                netMovement.ApplyCombatVelocityDelta(velocityDelta);
+            }
+            else if (!targetRb.isKinematic)
+            {
+                targetRb.linearVelocity += velocityDelta;
+            }
         }
     }
 

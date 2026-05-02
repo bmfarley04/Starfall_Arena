@@ -1221,8 +1221,12 @@ public class InvasionSceneManager3D : MonoBehaviour
 
         if (player.Flight != null && player.Flight.Rigidbody != null)
         {
-            player.Flight.Rigidbody.linearVelocity = Vector3.zero;
-            player.Flight.Rigidbody.angularVelocity = Vector3.zero;
+            Rigidbody rb = player.Flight.Rigidbody;
+            if (!rb.isKinematic)
+            {
+                rb.linearVelocity = Vector3.zero;
+                rb.angularVelocity = Vector3.zero;
+            }
         }
     }
 

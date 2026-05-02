@@ -282,8 +282,15 @@ public class ForgeEnemyBeam3D : MonoBehaviour, IBeamRuntime3D, IBeamDirectionSou
                     if (targetRb != null && _impactForce > 0f)
                     {
                         Vector3 velocityDelta = aimDirection * (_impactForce * Time.deltaTime);
-                        targetRb.linearVelocity += velocityDelta;
-                        targetRb.GetComponent<NetMovement3D>()?.ApplyCombatVelocityDelta(velocityDelta);
+                        NetMovement3D netMovement = targetRb.GetComponent<NetMovement3D>();
+                        if (netMovement != null)
+                        {
+                            netMovement.ApplyCombatVelocityDelta(velocityDelta);
+                        }
+                        else if (!targetRb.isKinematic)
+                        {
+                            targetRb.linearVelocity += velocityDelta;
+                        }
                     }
                 }
 

@@ -364,10 +364,18 @@ public class TractorBeam3D : Ability3D
 
             Vector3 pullVelocity = -directionToTarget * tractorBeam.pullSpeed;
             Vector3 previousVelocity = targetBody.linearVelocity;
-            targetBody.linearVelocity = tractorBeam.freezeTargetMovement
+            Vector3 nextVelocity = tractorBeam.freezeTargetMovement
                 ? pullVelocity
-                : targetBody.linearVelocity + (pullVelocity * Time.fixedDeltaTime);
-            targetBody.GetComponent<NetMovement3D>()?.ApplyCombatVelocityDelta(targetBody.linearVelocity - previousVelocity);
+                : previousVelocity + (pullVelocity * Time.fixedDeltaTime);
+            NetMovement3D netMovement = targetBody.GetComponent<NetMovement3D>();
+            if (netMovement != null)
+            {
+                netMovement.ApplyCombatVelocityDelta(nextVelocity - previousVelocity);
+            }
+            else if (!targetBody.isKinematic)
+            {
+                targetBody.linearVelocity = nextVelocity;
+            }
         }
 
         _currentlyHitTargetIds.RemoveWhere(targetId => !_hitTargetIdsThisFrame.Contains(targetId));

@@ -125,8 +125,7 @@ public class PortalBossSpawn3D : NetworkBehaviour
         {
             _rb.position = transform.position;
             _rb.rotation = transform.rotation;
-            _rb.linearVelocity = Vector3.zero;
-            _rb.angularVelocity = Vector3.zero;
+            ClearDynamicRigidbodyMotion();
         }
 
         if (t >= 1f)
@@ -231,8 +230,7 @@ public class PortalBossSpawn3D : NetworkBehaviour
         {
             _rb.position = _startPosition;
             _rb.rotation = _finalRotation;
-            _rb.linearVelocity = Vector3.zero;
-            _rb.angularVelocity = Vector3.zero;
+            ClearDynamicRigidbodyMotion();
         }
     }
 
@@ -274,8 +272,7 @@ public class PortalBossSpawn3D : NetworkBehaviour
         {
             _rb.position = _finalPosition;
             _rb.rotation = _finalRotation;
-            _rb.linearVelocity = Vector3.zero;
-            _rb.angularVelocity = Vector3.zero;
+            ClearDynamicRigidbodyMotion();
         }
 
         RestoreIntroState();
@@ -295,9 +292,8 @@ public class PortalBossSpawn3D : NetworkBehaviour
 
         if (_rb != null)
         {
+            ClearDynamicRigidbodyMotion();
             _rb.isKinematic = true;
-            _rb.linearVelocity = Vector3.zero;
-            _rb.angularVelocity = Vector3.zero;
         }
 
         for (int i = 0; i < _resolvedDisabledBehaviours.Length; i++)
@@ -337,8 +333,7 @@ public class PortalBossSpawn3D : NetworkBehaviour
         if (_rb != null)
         {
             _rb.isKinematic = ResolveRestoreKinematicState();
-            _rb.linearVelocity = Vector3.zero;
-            _rb.angularVelocity = Vector3.zero;
+            ClearDynamicRigidbodyMotion();
         }
 
         for (int i = 0; i < _resolvedDisabledBehaviours.Length; i++)
@@ -599,6 +594,17 @@ public class PortalBossSpawn3D : NetworkBehaviour
         }
 
         return _resolvedOriginalKinematic ? _originalKinematic : (_rb != null && _rb.isKinematic);
+    }
+
+    private void ClearDynamicRigidbodyMotion()
+    {
+        if (_rb == null || _rb.isKinematic)
+        {
+            return;
+        }
+
+        _rb.linearVelocity = Vector3.zero;
+        _rb.angularVelocity = Vector3.zero;
     }
 
     private double ResolveSequenceTime()

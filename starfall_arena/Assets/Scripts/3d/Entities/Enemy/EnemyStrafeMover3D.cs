@@ -93,7 +93,7 @@ public class EnemyStrafeMover3D : MonoBehaviour
             return;
         }
 
-        if (!HasMovementAuthority() || _rb == null)
+        if (!HasMovementAuthority() || _rb == null || _rb.isKinematic)
         {
             return;
         }

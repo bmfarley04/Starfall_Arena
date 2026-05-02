@@ -66,7 +66,7 @@ public class EnemyAIFlightController3D : MonoBehaviour
 
     private void FixedUpdate()
     {
-        if (!HasMovementAuthority() || _rb == null || Time.fixedDeltaTime <= 0f)
+        if (!HasMovementAuthority() || _rb == null || _rb.isKinematic || Time.fixedDeltaTime <= 0f)
         {
             return;
         }

@@ -1412,7 +1412,10 @@ public class NetMovement3D : NetworkBehaviour
             return;
         }
 
-        _rb.linearVelocity = Vector3.zero;
+        if (!_rb.isKinematic)
+        {
+            _rb.linearVelocity = Vector3.zero;
+        }
 
         if (_ownerStateInitialized)
         {

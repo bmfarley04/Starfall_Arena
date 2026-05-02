@@ -124,7 +124,7 @@ public class ShipFlight3D : MonoBehaviour
 
     private void FixedUpdate()
     {
-        if (Time.fixedDeltaTime <= 0f)
+        if (Time.fixedDeltaTime <= 0f || _rb == null)
         {
             return;
         }
@@ -134,6 +134,11 @@ public class ShipFlight3D : MonoBehaviour
             _previousVelocity = _rb.linearVelocity;
             _lastFixedStepRecoilVelocityDelta = _recoilVelocityDeltaThisStep;
             _recoilVelocityDeltaThisStep = Vector3.zero;
+            return;
+        }
+
+        if (_rb.isKinematic)
+        {
             return;
         }
 
@@ -246,7 +251,7 @@ public class ShipFlight3D : MonoBehaviour
 
     public void ApplyRecoil(float recoilForce)
     {
-        if (_rb == null || Mathf.Approximately(recoilForce, 0f))
+        if (_rb == null || _rb.isKinematic || Mathf.Approximately(recoilForce, 0f))
         {
             return;
         }
@@ -473,7 +478,7 @@ public class ShipFlight3D : MonoBehaviour
 
     private void EnforceFlightPlane()
     {
-        if (_rb == null || !lockToWorldYPlane)
+        if (_rb == null || _rb.isKinematic || !lockToWorldYPlane)
         {
             return;
         }

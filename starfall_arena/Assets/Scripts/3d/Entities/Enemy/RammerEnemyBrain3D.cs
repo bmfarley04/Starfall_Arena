@@ -358,7 +358,7 @@ public class RammerEnemyBrain3D : MonoBehaviour
         }
 
         Rigidbody rb = target.GetComponent<Rigidbody>();
-        if (rb != null)
+        if (rb != null && !rb.isKinematic)
         {
             rb.linearVelocity += velocityDelta;
         }
