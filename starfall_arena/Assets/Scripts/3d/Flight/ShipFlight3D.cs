@@ -296,6 +296,35 @@ public class ShipFlight3D : MonoBehaviour
         }
     }
 
+    public PlayerBalanceProfile3D.FlightStats CaptureFlightStats()
+    {
+        return new PlayerBalanceProfile3D.FlightStats
+        {
+            thrustAcceleration = flight.thrustAcceleration,
+            maxSpeed = flight.maxSpeed,
+            lookInputResponse = flight.lookInputResponse,
+            pitchSpeed = flight.pitchSpeed,
+            yawSpeed = flight.yawSpeed,
+            pitchAcceleration = flight.pitchAcceleration,
+            pitchDeceleration = flight.pitchDeceleration,
+            yawAcceleration = flight.yawAcceleration,
+            yawDeceleration = flight.yawDeceleration,
+            minRotationMultiplierAtMaxSpeed = flight.minRotationMultiplierAtMaxSpeed
+        };
+    }
+
+    public PlayerBalanceProfile3D.FlightAssistStats CaptureFlightAssistStats()
+    {
+        return new PlayerBalanceProfile3D.FlightAssistStats
+        {
+            frictionDeceleration = flightAssist.frictionDeceleration,
+            activeAngularDamping = flightAssist.activeAngularDamping,
+            lateralDriftDamping = flightAssist.lateralDriftDamping,
+            verticalDriftDamping = flightAssist.verticalDriftDamping,
+            velocityAlignmentStrength = flightAssist.velocityAlignmentStrength
+        };
+    }
+
     private void ConfigureRigidbody()
     {
         _rb.useGravity = false;

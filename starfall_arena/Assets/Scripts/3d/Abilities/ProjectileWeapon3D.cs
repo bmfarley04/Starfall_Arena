@@ -39,6 +39,18 @@ public class ProjectileWeapon3D : Weapon3D
         weaponConfig.energyCost = Mathf.Max(0f, stats.energyCost);
     }
 
+    public PlayerBalanceProfile3D.ProjectileWeaponStats CaptureProfileStats()
+    {
+        return new PlayerBalanceProfile3D.ProjectileWeaponStats
+        {
+            cooldown = weaponConfig.cooldown,
+            speed = weaponConfig.speed,
+            damage = weaponConfig.damage,
+            lifetime = weaponConfig.lifetime,
+            energyCost = weaponConfig.energyCost
+        };
+    }
+
     public bool TryFire()
     {
         if (Time.time < _nextFireTime)

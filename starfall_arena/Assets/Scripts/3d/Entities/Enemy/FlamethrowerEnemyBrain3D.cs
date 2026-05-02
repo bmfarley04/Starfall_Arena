@@ -28,6 +28,9 @@ public class FlamethrowerEnemyBrain3D : MonoBehaviour
     [Tooltip("Optional inter-agent separation used while approaching or retreating so multiple flamethrowers do not stack perfectly.")]
     [SerializeField] private EnemySeparation3D separation;
 
+    [Tooltip("Optional final steering smoothing. Add EnemySteeringSmoother3D to soften approach direction changes without changing speed or facing rules.")]
+    [SerializeField] private EnemySteeringSmoother3D steeringSmoother;
+
     [Tooltip("World-space strafe overlay used to orbit the player while the flame burst is active.")]
     [SerializeField] private EnemyStrafeMover3D strafeMover;
 
@@ -93,6 +96,7 @@ public class FlamethrowerEnemyBrain3D : MonoBehaviour
         targetSensor ??= GetComponent<EnemyTargetSensor3D>();
         obstacleAvoidance ??= GetComponent<EnemyObstacleAvoidance3D>();
         separation ??= GetComponent<EnemySeparation3D>();
+        steeringSmoother ??= GetComponent<EnemySteeringSmoother3D>();
         strafeMover ??= GetComponent<EnemyStrafeMover3D>();
         patrol ??= GetComponent<EnemyPatrol3D>() ?? gameObject.AddComponent<EnemyPatrol3D>();
         netEnemyCombat ??= GetComponent<NetEnemyCombat3D>();
@@ -322,6 +326,11 @@ public class FlamethrowerEnemyBrain3D : MonoBehaviour
         if (allowObstacleAvoidance && useObstacleAvoidance && obstacleAvoidance != null && obstacleAvoidance.isActiveAndEnabled)
         {
             resolved = obstacleAvoidance.ResolveSteeringDirection(resolved);
+        }
+
+        if (allowObstacleAvoidance && steeringSmoother != null && steeringSmoother.isActiveAndEnabled)
+        {
+            resolved = steeringSmoother.ResolveSteeringDirection(resolved);
         }
 
         return resolved;

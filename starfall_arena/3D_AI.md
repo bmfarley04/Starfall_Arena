@@ -31,6 +31,20 @@ The 3D AI path should stay modular. Enemy prefabs should compose small scripts i
   - intended for asteroids and world geometry
   - this is steering/avoidance, not Unity NavMesh
   - prefab setup should keep obstacle layers limited to avoidable world geometry, not players, enemies, projectiles, or soft gameplay trigger volumes
+- `EnemySteeringSmoother3D`
+  - optional final steering polish component for enemies that already compute a desired world-space movement direction
+  - mirrors the `ResolveSteeringDirection(Vector3 desired)` API used by separation and obstacle avoidance
+  - smooths direction changes only; it does not own speed scales, facing rules, tactics, or Rigidbody movement
+  - intended chain for eligible direct-chase enemies is `desired -> separation -> obstacleAvoidance -> steeringSmoother -> flight controller`
+  - first-pass intended users are `BasicShooterEnemyBrain3D`, `TankEnemyBrain3D`, `SplitterEnemyBrain3D` approach, and `FlamethrowerEnemyBrain3D` approach
+  - keep tuning prefab-local for now through `Turn Smooth Time`, `Release Smooth Time`, and `Max Turn Degrees Per Second`; do not move these values into balance profiles until they prove broadly useful
+  - do not add it by default to rammers, suicide drones, Triumvirate formation ships, bosses, or other enemies whose identity depends on committed straight-line or authored movement
+- `EnemyVisualTilt3D`
+  - enemy-native presentation tilt for ships moved by `EnemyAIFlightController3D`
+  - reads enemy move/facing intent, Rigidbody velocity/acceleration, and optional `EnemyStrafeMover3D` velocity instead of relying on active `ShipFlight3D`
+  - applies bank/pitch only to the configured visual model child; it must never rotate the enemy root or affect gameplay movement
+  - intended v1 prefab users are direct-moving enemies such as Basic, Tank, Splitter, Flamethrower, Swarm Scout, and Gnat-style movers
+  - use `EnemyVisualTilt3D` on enemies and keep `ShipVisualTilt3D` for player ships; do not keep both pointed at the same visual model
 - `EnemySeparation3D`
   - optional enemy-only inter-agent separation steering helper that mirrors the `EnemyObstacleAvoidance3D` API (`ResolveSteeringDirection(Vector3 desired)`)
   - uses a static registry of enabled `EnemySeparation3D` components instead of physics overlap/layer-mask setup, so adding the component to an eligible enemy prefab is the opt-in switch
@@ -241,6 +255,7 @@ Current pathing is free-flight steering:
 - steer toward the desired target direction
 - probe forward for blockers, then sample simple right/left/up/down escape candidates when blocked
 - blend and smooth the selected escape side back into the desired target direction so obstacle routes read as arcs, not hard chevrons
+- optionally pass the final steering vector through `EnemySteeringSmoother3D` on direct-chase prefabs that should arc more naturally during normal pursuit
 - preserve 3D climb/dive movement
 - feed the final world-space direction to the simple enemy flight motor
 

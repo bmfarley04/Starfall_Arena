@@ -10,6 +10,9 @@ public class InvasionSceneManager3D : MonoBehaviour
 {
     private const string LivesMessageName = "StarfallArena.Invasion3D.PlayerLives";
     private const string RespawnProtectionMessageName = "StarfallArena.Invasion3D.RespawnProtection";
+    private const string RewardOffersMessageName = "StarfallArena.Invasion3D.RewardOffers";
+    private const string RewardChoiceMessageName = "StarfallArena.Invasion3D.RewardChoice";
+    private const string RewardAppliedMessageName = "StarfallArena.Invasion3D.RewardApplied";
 
     [System.Serializable]
     private struct RespawnConfig3D
@@ -39,6 +42,17 @@ public class InvasionSceneManager3D : MonoBehaviour
     [SerializeField] private InvasionWaveManager3D waveManager;
     [Tooltip("Arena boundary to reset and start once when the Invasion session begins.")]
     [SerializeField] private ArenaBoundary3D arenaBoundary;
+    [Tooltip("3D-only adapter that reuses the old augment-card visuals for the between-wave reward draft.")]
+    [SerializeField] private InvasionRewardPhasePresenter3D rewardPhasePresenter;
+
+    [Header("Between-Wave Rewards")]
+    [Tooltip("If enabled, cleared waves trigger a between-wave reward intermission before the next wave begins.")]
+    [SerializeField] private bool useBetweenWaveRewards = true;
+    [Tooltip("Reward definition assets used for the Invasion stat draft. If left empty, a default runtime reward pool matching the current design doc is created automatically.")]
+    [SerializeField] private InvasionStatRewardDefinition3D[] rewardDefinitions = new InvasionStatRewardDefinition3D[0];
+    [Tooltip("How many reward cards each player sees after a cleared wave.")]
+    [Min(1)]
+    [SerializeField] private int rewardsPerOffer = 3;
 
     [Header("Wave UI")]
     [Tooltip("Canvas group for the reused round text canvas. In Invasion this displays WAVE text only.")]
@@ -115,16 +129,30 @@ public class InvasionSceneManager3D : MonoBehaviour
     private readonly int[] _playerLivesRemainingBySlot = new int[3];
     private readonly Coroutine[] _respawnCoroutinesBySlot = new Coroutine[3];
     private readonly Coroutine[] _respawnProtectionVisualCoroutinesBySlot = new Coroutine[3];
+    private readonly InvasionPlayerRewardState3D[] _rewardStateBySlot = new InvasionPlayerRewardState3D[3];
+    private readonly int[][] _pendingRewardOfferIndicesBySlot = new int[3][];
+    private readonly bool[] _rewardChoiceReceivedBySlot = new bool[3];
+    private readonly List<InvasionStatRewardDefinition3D> _effectiveRewardDefinitions = new List<InvasionStatRewardDefinition3D>(16);
+    private readonly List<InvasionStatRewardDefinition3D> _runtimeDefaultRewardDefinitions = new List<InvasionStatRewardDefinition3D>(16);
+    private int _rewardPhaseSequenceId;
+    private bool _rewardPhaseActive;
     private bool _customNetworkMessagesRegistered;
 
     private IEnumerator Start()
     {
         yield return null;
         RefreshNetworkMode();
+        EnsureRewardStateContainers();
+        BuildEffectiveRewardDefinitionList();
 
         if (waveManager == null)
         {
             waveManager = FindFirstObjectByType<InvasionWaveManager3D>();
+        }
+
+        if (rewardPhasePresenter == null)
+        {
+            rewardPhasePresenter = FindFirstObjectByType<InvasionRewardPhasePresenter3D>(FindObjectsInactive.Include);
         }
 
         ResolveShipData();
@@ -156,6 +184,7 @@ public class InvasionSceneManager3D : MonoBehaviour
 
         UnsubscribeNetworkSessionEvents();
         UnregisterCustomNetworkMessages();
+        DestroyRuntimeDefaultRewards();
     }
 
     private void RefreshNetworkMode()
@@ -434,6 +463,13 @@ public class InvasionSceneManager3D : MonoBehaviour
 
         stats.ResetStats();
         SubscribePlayerDeath(player);
+        EnsureRewardStateContainers();
+        _rewardStateBySlot[playerSlot].CaptureBaseSnapshot(player);
+        _rewardStateBySlot[playerSlot].ApplyToPlayer(player);
+        if (_rewardPhaseActive)
+        {
+            SetPlayerIntermissionLocked(player, true);
+        }
 
         if (playerSlot == 1)
         {
@@ -706,6 +742,199 @@ public class InvasionSceneManager3D : MonoBehaviour
         arenaBoundary.StartBoundary();
     }
 
+    private void EnsureRewardStateContainers()
+    {
+        for (int i = 1; i <= 2; i++)
+        {
+            _rewardStateBySlot[i] ??= new InvasionPlayerRewardState3D();
+            _pendingRewardOfferIndicesBySlot[i] ??= new int[Mathf.Max(1, rewardsPerOffer)];
+            for (int offerIndex = 0; offerIndex < _pendingRewardOfferIndicesBySlot[i].Length; offerIndex++)
+            {
+                _pendingRewardOfferIndicesBySlot[i][offerIndex] = -1;
+            }
+        }
+    }
+
+    private void BuildEffectiveRewardDefinitionList()
+    {
+        _effectiveRewardDefinitions.Clear();
+        DestroyRuntimeDefaultRewards();
+
+        if (rewardDefinitions != null)
+        {
+            for (int i = 0; i < rewardDefinitions.Length; i++)
+            {
+                if (rewardDefinitions[i] != null)
+                {
+                    _effectiveRewardDefinitions.Add(rewardDefinitions[i]);
+                }
+            }
+        }
+
+        if (_effectiveRewardDefinitions.Count > 0)
+        {
+            return;
+        }
+
+        _runtimeDefaultRewardDefinitions.Add(CreateRuntimeReward(
+            "weapon_damage_up",
+            "Weapon Damage Up",
+            "+10% damage to all projectile, missile, and beam primary weapons for this run.",
+            1f,
+            true,
+            InvasionStatRewardDefinition3D.RewardEligibility3D.None,
+            new InvasionStatRewardDefinition3D.PersistentRewardPayload3D { allWeaponDamagePercent = 0.10f },
+            default));
+        _runtimeDefaultRewardDefinitions.Add(CreateRuntimeReward(
+            "projectile_cadence_up",
+            "Projectile Cadence Up",
+            "-8% cooldown on projectile and missile primary weapons for this run.",
+            1f,
+            true,
+            InvasionStatRewardDefinition3D.RewardEligibility3D.RequiresProjectileWeapon,
+            new InvasionStatRewardDefinition3D.PersistentRewardPayload3D { projectileCooldownReductionPercent = 0.08f },
+            default));
+        _runtimeDefaultRewardDefinitions.Add(CreateRuntimeReward(
+            "projectile_velocity_up",
+            "Projectile Velocity Up",
+            "+12% projectile speed and +10% projectile lifetime for this run.",
+            1f,
+            true,
+            InvasionStatRewardDefinition3D.RewardEligibility3D.RequiresProjectileWeapon,
+            new InvasionStatRewardDefinition3D.PersistentRewardPayload3D { projectileSpeedPercent = 0.12f, projectileLifetimePercent = 0.10f },
+            default));
+        _runtimeDefaultRewardDefinitions.Add(CreateRuntimeReward(
+            "beam_power_up",
+            "Beam Power Up",
+            "+10% beam damage for this run.",
+            1f,
+            true,
+            InvasionStatRewardDefinition3D.RewardEligibility3D.RequiresBeamWeapon,
+            new InvasionStatRewardDefinition3D.PersistentRewardPayload3D { beamDamagePercent = 0.10f },
+            default));
+        _runtimeDefaultRewardDefinitions.Add(CreateRuntimeReward(
+            "beam_efficiency_up",
+            "Beam Efficiency Up",
+            "+12% beam capacity and +12% beam regeneration for this run.",
+            1f,
+            true,
+            InvasionStatRewardDefinition3D.RewardEligibility3D.RequiresBeamWeapon,
+            new InvasionStatRewardDefinition3D.PersistentRewardPayload3D { beamCapacityPercent = 0.12f, beamRegenPercent = 0.12f },
+            default));
+        _runtimeDefaultRewardDefinitions.Add(CreateRuntimeReward(
+            "hull_up",
+            "Hull Up",
+            "+20 max hull for this run.",
+            1f,
+            true,
+            InvasionStatRewardDefinition3D.RewardEligibility3D.None,
+            new InvasionStatRewardDefinition3D.PersistentRewardPayload3D { flatMaxHealth = 20f },
+            default));
+        _runtimeDefaultRewardDefinitions.Add(CreateRuntimeReward(
+            "shield_up",
+            "Shield Up",
+            "+18 max shield for this run.",
+            1f,
+            true,
+            InvasionStatRewardDefinition3D.RewardEligibility3D.None,
+            new InvasionStatRewardDefinition3D.PersistentRewardPayload3D { flatMaxShield = 18f },
+            default));
+        _runtimeDefaultRewardDefinitions.Add(CreateRuntimeReward(
+            "shield_recovery_up",
+            "Shield Recovery Up",
+            "-12% shield regen delay and +15% shield regen rate for this run.",
+            1f,
+            true,
+            InvasionStatRewardDefinition3D.RewardEligibility3D.None,
+            new InvasionStatRewardDefinition3D.PersistentRewardPayload3D { shieldRegenDelayReductionPercent = 0.12f, shieldRegenRatePercent = 0.15f },
+            default));
+        _runtimeDefaultRewardDefinitions.Add(CreateRuntimeReward(
+            "field_repair",
+            "Field Repair",
+            "Restore 25% of missing hull and fully refill shield immediately.",
+            0.7f,
+            true,
+            InvasionStatRewardDefinition3D.RewardEligibility3D.None,
+            default,
+            new InvasionStatRewardDefinition3D.InstantRewardPayload3D { repairMissingHullFraction = 0.25f, refillShieldToFull = true }));
+        _runtimeDefaultRewardDefinitions.Add(CreateRuntimeReward(
+            "emergency_reserve",
+            "Emergency Reserve",
+            "+1 extra life. Can only be gained once per run.",
+            0.25f,
+            false,
+            InvasionStatRewardDefinition3D.RewardEligibility3D.OneTimePerRun,
+            default,
+            new InvasionStatRewardDefinition3D.InstantRewardPayload3D { grantExtraLife = true }));
+        _runtimeDefaultRewardDefinitions.Add(CreateRuntimeReward(
+            "thrusters_up",
+            "Thrusters Up",
+            "+10% thrust acceleration for this run.",
+            1f,
+            true,
+            InvasionStatRewardDefinition3D.RewardEligibility3D.None,
+            new InvasionStatRewardDefinition3D.PersistentRewardPayload3D { thrustAccelerationPercent = 0.10f },
+            default));
+        _runtimeDefaultRewardDefinitions.Add(CreateRuntimeReward(
+            "top_speed_up",
+            "Top Speed Up",
+            "+8% top speed for this run.",
+            1f,
+            true,
+            InvasionStatRewardDefinition3D.RewardEligibility3D.None,
+            new InvasionStatRewardDefinition3D.PersistentRewardPayload3D { maxSpeedPercent = 0.08f },
+            default));
+        _runtimeDefaultRewardDefinitions.Add(CreateRuntimeReward(
+            "turn_response_up",
+            "Turn Response Up",
+            "+10% turn speed and turn acceleration/deceleration for this run.",
+            1f,
+            true,
+            InvasionStatRewardDefinition3D.RewardEligibility3D.None,
+            new InvasionStatRewardDefinition3D.PersistentRewardPayload3D { turnResponsePercent = 0.10f },
+            default));
+        _runtimeDefaultRewardDefinitions.Add(CreateRuntimeReward(
+            "flight_assist_up",
+            "Flight Assist Up",
+            "Moderately tightens drift damping and velocity alignment for cleaner handling.",
+            1f,
+            true,
+            InvasionStatRewardDefinition3D.RewardEligibility3D.None,
+            new InvasionStatRewardDefinition3D.PersistentRewardPayload3D { flightAssistDampingPercent = 0.12f, flightAssistAlignmentPercent = 0.12f },
+            default));
+
+        _effectiveRewardDefinitions.AddRange(_runtimeDefaultRewardDefinitions);
+    }
+
+    private InvasionStatRewardDefinition3D CreateRuntimeReward(
+        string rewardId,
+        string displayName,
+        string description,
+        float offerWeight,
+        bool repeatable,
+        InvasionStatRewardDefinition3D.RewardEligibility3D eligibility,
+        InvasionStatRewardDefinition3D.PersistentRewardPayload3D persistent,
+        InvasionStatRewardDefinition3D.InstantRewardPayload3D instant)
+    {
+        InvasionStatRewardDefinition3D reward = ScriptableObject.CreateInstance<InvasionStatRewardDefinition3D>();
+        reward.name = $"RuntimeReward_{rewardId}";
+        reward.ConfigureRuntimeDefinition(rewardId, displayName, description, offerWeight, repeatable, eligibility, persistent, instant);
+        return reward;
+    }
+
+    private void DestroyRuntimeDefaultRewards()
+    {
+        for (int i = 0; i < _runtimeDefaultRewardDefinitions.Count; i++)
+        {
+            if (_runtimeDefaultRewardDefinitions[i] != null)
+            {
+                Destroy(_runtimeDefaultRewardDefinitions[i]);
+            }
+        }
+
+        _runtimeDefaultRewardDefinitions.Clear();
+    }
+
     private void SetInitialUiState()
     {
         if (waveTextCanvasGroup != null)
@@ -816,6 +1045,364 @@ public class InvasionSceneManager3D : MonoBehaviour
         yield return ShowWaveText(waveNumber);
     }
 
+    private IEnumerator PlayRewardPhaseAuthoritative(int clearedWaveNumber)
+    {
+        if (!useBetweenWaveRewards || _effectiveRewardDefinitions.Count == 0)
+        {
+            yield break;
+        }
+
+        EnsureRewardStateContainers();
+        _rewardPhaseActive = true;
+        _rewardPhaseSequenceId++;
+        ResetRewardChoiceState();
+        SetPlayersIntermissionLocked(true);
+
+        BuildOfferIndicesForPlayer(1);
+        BuildOfferIndicesForPlayer(2);
+
+        if (_useNetworkSession)
+        {
+            BroadcastRewardOffers();
+
+            int localSlot = ResolveLocalPlayerSlot();
+            if (localSlot == 1 || localSlot == 2)
+            {
+                StartLocalRewardSelection((byte)localSlot);
+            }
+
+            yield return WaitForNetworkRewardChoices();
+        }
+        else
+        {
+            yield return PresentLocalRewardSelectionSequential(1);
+            yield return PresentLocalRewardSelectionSequential(2);
+        }
+
+        _rewardPhaseActive = false;
+        SetPlayersIntermissionLocked(false);
+    }
+
+    private IEnumerator PresentLocalRewardSelectionSequential(byte playerSlot)
+    {
+        bool selectionResolved = false;
+        StartLocalRewardSelection(playerSlot, () => selectionResolved = true);
+        yield return new WaitUntil(() => selectionResolved);
+    }
+
+    private void StartLocalRewardSelection(byte playerSlot, System.Action onSelectionResolved = null)
+    {
+        List<InvasionStatRewardDefinition3D> offers = ResolveRewardOffersForSlot(playerSlot);
+        if (offers.Count == 0)
+        {
+            HandleLocalRewardChoice(playerSlot, 0);
+            onSelectionResolved?.Invoke();
+            return;
+        }
+
+        if (rewardPhasePresenter == null)
+        {
+            rewardPhasePresenter = FindFirstObjectByType<InvasionRewardPhasePresenter3D>(FindObjectsInactive.Include);
+        }
+
+        if (rewardPhasePresenter == null)
+        {
+            Debug.LogWarning("[InvasionSceneManager3D] Missing InvasionRewardPhasePresenter3D, auto-selecting the first reward.", this);
+            HandleLocalRewardChoice(playerSlot, 0);
+            onSelectionResolved?.Invoke();
+            return;
+        }
+
+        rewardPhasePresenter.ShowOffers(playerSlot, offers, choiceIndex =>
+        {
+            HandleLocalRewardChoice(playerSlot, choiceIndex);
+            onSelectionResolved?.Invoke();
+        });
+    }
+
+    private void HandleLocalRewardChoice(byte playerSlot, int offerChoiceIndex)
+    {
+        int rewardDefinitionIndex = ResolveRewardDefinitionIndexForOffer(playerSlot, offerChoiceIndex);
+        if (_useNetworkSession && !_isAuthoritativeController)
+        {
+            SendRewardChoiceToServer(playerSlot, offerChoiceIndex);
+            return;
+        }
+
+        ApplyRewardChoiceAuthoritative(playerSlot, rewardDefinitionIndex);
+    }
+
+    private void BuildOfferIndicesForPlayer(byte playerSlot)
+    {
+        EnsureRewardStateContainers();
+        int[] offers = _pendingRewardOfferIndicesBySlot[playerSlot];
+        for (int i = 0; i < offers.Length; i++)
+        {
+            offers[i] = -1;
+        }
+
+        List<int> eligibleRewardIndices = new List<int>(_effectiveRewardDefinitions.Count);
+        List<float> weights = new List<float>(_effectiveRewardDefinitions.Count);
+        Player3D livePlayer = ResolveTrackedOrNetworkPlayer(playerSlot);
+        InvasionPlayerRewardState3D rewardState = _rewardStateBySlot[playerSlot];
+        if (livePlayer != null)
+        {
+            rewardState.CaptureBaseSnapshot(livePlayer);
+        }
+
+        for (int rewardIndex = 0; rewardIndex < _effectiveRewardDefinitions.Count; rewardIndex++)
+        {
+            InvasionStatRewardDefinition3D reward = _effectiveRewardDefinitions[rewardIndex];
+            if (reward == null || !rewardState.CanOfferReward(reward, livePlayer))
+            {
+                continue;
+            }
+
+            float weight = Mathf.Max(0f, reward.OfferWeight);
+            if (weight <= 0f)
+            {
+                continue;
+            }
+
+            eligibleRewardIndices.Add(rewardIndex);
+            weights.Add(weight);
+        }
+
+        int offerCount = Mathf.Min(Mathf.Max(1, rewardsPerOffer), offers.Length);
+        for (int offerIndex = 0; offerIndex < offerCount && eligibleRewardIndices.Count > 0; offerIndex++)
+        {
+            int chosenPoolIndex = PickWeightedRewardPoolIndex(weights);
+            offers[offerIndex] = eligibleRewardIndices[chosenPoolIndex];
+            eligibleRewardIndices.RemoveAt(chosenPoolIndex);
+            weights.RemoveAt(chosenPoolIndex);
+        }
+    }
+
+    private static int PickWeightedRewardPoolIndex(List<float> weights)
+    {
+        float totalWeight = 0f;
+        for (int i = 0; i < weights.Count; i++)
+        {
+            totalWeight += Mathf.Max(0f, weights[i]);
+        }
+
+        if (totalWeight <= 0f)
+        {
+            return 0;
+        }
+
+        float roll = Random.value * totalWeight;
+        float cumulative = 0f;
+        for (int i = 0; i < weights.Count; i++)
+        {
+            cumulative += Mathf.Max(0f, weights[i]);
+            if (roll <= cumulative)
+            {
+                return i;
+            }
+        }
+
+        return Mathf.Max(0, weights.Count - 1);
+    }
+
+    private List<InvasionStatRewardDefinition3D> ResolveRewardOffersForSlot(byte playerSlot)
+    {
+        List<InvasionStatRewardDefinition3D> offers = new List<InvasionStatRewardDefinition3D>(Mathf.Max(1, rewardsPerOffer));
+        int[] indices = _pendingRewardOfferIndicesBySlot[playerSlot];
+        for (int i = 0; i < indices.Length; i++)
+        {
+            InvasionStatRewardDefinition3D reward = ResolveRewardDefinition(indices[i]);
+            if (reward != null)
+            {
+                offers.Add(reward);
+            }
+        }
+
+        return offers;
+    }
+
+    private int ResolveRewardDefinitionIndexForOffer(byte playerSlot, int offerChoiceIndex)
+    {
+        int[] offers = _pendingRewardOfferIndicesBySlot[playerSlot];
+        if (offers == null || offers.Length == 0)
+        {
+            return -1;
+        }
+
+        int clampedIndex = Mathf.Clamp(offerChoiceIndex, 0, offers.Length - 1);
+        int rewardDefinitionIndex = offers[clampedIndex];
+        if (rewardDefinitionIndex >= 0)
+        {
+            return rewardDefinitionIndex;
+        }
+
+        for (int i = 0; i < offers.Length; i++)
+        {
+            if (offers[i] >= 0)
+            {
+                return offers[i];
+            }
+        }
+
+        return -1;
+    }
+
+    private InvasionStatRewardDefinition3D ResolveRewardDefinition(int rewardIndex)
+    {
+        return rewardIndex >= 0 && rewardIndex < _effectiveRewardDefinitions.Count
+            ? _effectiveRewardDefinitions[rewardIndex]
+            : null;
+    }
+
+    private void ResetRewardChoiceState()
+    {
+        for (int i = 1; i <= 2; i++)
+        {
+            _rewardChoiceReceivedBySlot[i] = false;
+        }
+    }
+
+    private void ApplyRewardChoiceAuthoritative(byte playerSlot, int rewardDefinitionIndex)
+    {
+        if (playerSlot < 1 || playerSlot > 2 || _rewardChoiceReceivedBySlot[playerSlot])
+        {
+            return;
+        }
+
+        InvasionStatRewardDefinition3D reward = ResolveRewardDefinition(rewardDefinitionIndex);
+        if (reward == null)
+        {
+            Debug.LogWarning($"[InvasionSceneManager3D] Reward choice for player {playerSlot} resolved to an invalid definition index {rewardDefinitionIndex}.", this);
+            _rewardChoiceReceivedBySlot[playerSlot] = true;
+            return;
+        }
+
+        InvasionPlayerRewardState3D rewardState = _rewardStateBySlot[playerSlot];
+        Player3D livePlayer = ResolveTrackedOrNetworkPlayer(playerSlot);
+        rewardState.ApplyRewardDefinition(reward, livePlayer);
+        rewardState.ApplyToPlayer(livePlayer, reward);
+
+        if (reward.GrantsExtraLife)
+        {
+            _playerLivesRemainingBySlot[playerSlot] = Mathf.Max(0, _playerLivesRemainingBySlot[playerSlot]) + 1;
+            UpdateLifeCounter(ResolveDisplayedLives());
+            BroadcastPlayerLives();
+        }
+
+        _rewardChoiceReceivedBySlot[playerSlot] = true;
+
+        if (_useNetworkSession)
+        {
+            BroadcastRewardApplied(playerSlot, rewardDefinitionIndex);
+        }
+    }
+
+    private void ApplyRewardChoiceReplica(byte playerSlot, int rewardDefinitionIndex)
+    {
+        if (playerSlot < 1 || playerSlot > 2)
+        {
+            return;
+        }
+
+        InvasionStatRewardDefinition3D reward = ResolveRewardDefinition(rewardDefinitionIndex);
+        if (reward == null)
+        {
+            return;
+        }
+
+        InvasionPlayerRewardState3D rewardState = _rewardStateBySlot[playerSlot];
+        Player3D livePlayer = ResolveTrackedOrNetworkPlayer(playerSlot);
+        rewardState.ApplyRewardDefinition(reward, livePlayer);
+        rewardState.ApplyToPlayer(livePlayer, reward);
+
+        if (reward.GrantsExtraLife)
+        {
+            _playerLivesRemainingBySlot[playerSlot] = Mathf.Max(0, _playerLivesRemainingBySlot[playerSlot]) + 1;
+            UpdateLifeCounter(ResolveDisplayedLives());
+        }
+    }
+
+    private void SetPlayersIntermissionLocked(bool isLocked)
+    {
+        SetPlayerIntermissionLocked(_player1, isLocked);
+        SetPlayerIntermissionLocked(_player2, isLocked);
+    }
+
+    private void SetPlayerIntermissionLocked(Player3D player, bool isLocked)
+    {
+        if (player == null)
+        {
+            return;
+        }
+
+        NetMovement3D movement = player.GetComponent<NetMovement3D>();
+        if (_useNetworkSession && movement != null && _isAuthoritativeController)
+        {
+            movement.SetMovementLockedAuthoritative(isLocked);
+        }
+
+        if (player.PlayerInput3D != null)
+        {
+            player.PlayerInput3D.SetCombatInputSuppressed(isLocked);
+            if (!_useNetworkSession)
+            {
+                player.PlayerInput3D.enabled = !isLocked;
+            }
+        }
+
+        if (player.Flight != null && player.Flight.Rigidbody != null)
+        {
+            player.Flight.Rigidbody.linearVelocity = Vector3.zero;
+            player.Flight.Rigidbody.angularVelocity = Vector3.zero;
+        }
+    }
+
+    private IEnumerator WaitForNetworkRewardChoices()
+    {
+        while (_rewardPhaseActive)
+        {
+            for (byte slot = 1; slot <= 2; slot++)
+            {
+                if (_rewardChoiceReceivedBySlot[slot])
+                {
+                    continue;
+                }
+
+                if (!IsRewardChoiceClientStillConnected(slot))
+                {
+                    ApplyRewardChoiceAuthoritative(slot, ResolveRewardDefinitionIndexForOffer(slot, 0));
+                }
+            }
+
+            if (_rewardChoiceReceivedBySlot[1] && _rewardChoiceReceivedBySlot[2])
+            {
+                yield break;
+            }
+
+            yield return null;
+        }
+    }
+
+    private bool IsRewardChoiceClientStillConnected(byte playerSlot)
+    {
+        if (!_useNetworkSession || NetworkManager.Singleton == null || NetworkManager.Singleton.ConnectedClientsIds == null)
+        {
+            return true;
+        }
+
+        ulong ownerClientId = ResolveOwnerClientIdForSlot(playerSlot - 1);
+        IReadOnlyList<ulong> connectedClients = NetworkManager.Singleton.ConnectedClientsIds;
+        for (int i = 0; i < connectedClients.Count; i++)
+        {
+            if (connectedClients[i] == ownerClientId)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private IEnumerator ShowWaveText(int waveNumber)
     {
         if (waveText == null || waveTextCanvasGroup == null)
@@ -862,6 +1449,8 @@ public class InvasionSceneManager3D : MonoBehaviour
 
         waveManager.WaveIntroRequested -= PlayWaveIntroAuthoritative;
         waveManager.WaveIntroRequested += PlayWaveIntroAuthoritative;
+        waveManager.RewardPhaseRequested -= PlayRewardPhaseAuthoritative;
+        waveManager.RewardPhaseRequested += PlayRewardPhaseAuthoritative;
         waveManager.AllWavesCleared -= HandleAllWavesCleared;
         waveManager.AllWavesCleared += HandleAllWavesCleared;
         waveManager.AliveEnemyCountChanged -= HandleAliveEnemyCountChanged;
@@ -877,6 +1466,7 @@ public class InvasionSceneManager3D : MonoBehaviour
         }
 
         waveManager.WaveIntroRequested -= PlayWaveIntroAuthoritative;
+        waveManager.RewardPhaseRequested -= PlayRewardPhaseAuthoritative;
         waveManager.AllWavesCleared -= HandleAllWavesCleared;
         waveManager.AliveEnemyCountChanged -= HandleAliveEnemyCountChanged;
     }
@@ -1133,6 +1723,9 @@ public class InvasionSceneManager3D : MonoBehaviour
 
         networkManager.CustomMessagingManager.RegisterNamedMessageHandler(LivesMessageName, HandlePlayerLivesMessage);
         networkManager.CustomMessagingManager.RegisterNamedMessageHandler(RespawnProtectionMessageName, HandleRespawnProtectionMessage);
+        networkManager.CustomMessagingManager.RegisterNamedMessageHandler(RewardOffersMessageName, HandleRewardOffersMessage);
+        networkManager.CustomMessagingManager.RegisterNamedMessageHandler(RewardChoiceMessageName, HandleRewardChoiceMessage);
+        networkManager.CustomMessagingManager.RegisterNamedMessageHandler(RewardAppliedMessageName, HandleRewardAppliedMessage);
         _customNetworkMessagesRegistered = true;
     }
 
@@ -1147,6 +1740,9 @@ public class InvasionSceneManager3D : MonoBehaviour
 
         networkManager.CustomMessagingManager.UnregisterNamedMessageHandler(LivesMessageName);
         networkManager.CustomMessagingManager.UnregisterNamedMessageHandler(RespawnProtectionMessageName);
+        networkManager.CustomMessagingManager.UnregisterNamedMessageHandler(RewardOffersMessageName);
+        networkManager.CustomMessagingManager.UnregisterNamedMessageHandler(RewardChoiceMessageName);
+        networkManager.CustomMessagingManager.UnregisterNamedMessageHandler(RewardAppliedMessageName);
         _customNetworkMessagesRegistered = false;
     }
 
@@ -1206,6 +1802,178 @@ public class InvasionSceneManager3D : MonoBehaviour
         reader.ReadValueSafe(out byte playerSlot);
         reader.ReadValueSafe(out float duration);
         StartRespawnProtectionVisual(playerSlot, Mathf.Max(0f, duration));
+    }
+
+    private void BroadcastRewardOffers()
+    {
+        NetworkManager networkManager = NetworkManager.Singleton;
+        if (!_useNetworkSession || networkManager == null || !networkManager.IsServer || networkManager.CustomMessagingManager == null)
+        {
+            return;
+        }
+
+        int offerCount = Mathf.Max(1, rewardsPerOffer);
+        using (FastBufferWriter writer = new FastBufferWriter(4 + (offerCount * sizeof(int) * 2), Allocator.Temp))
+        {
+            writer.WriteValueSafe(_rewardPhaseSequenceId);
+            for (int slot = 1; slot <= 2; slot++)
+            {
+                int[] offers = _pendingRewardOfferIndicesBySlot[slot];
+                for (int i = 0; i < offerCount; i++)
+                {
+                    int rewardIndex = offers != null && i < offers.Length ? offers[i] : -1;
+                    writer.WriteValueSafe(rewardIndex);
+                }
+            }
+
+            networkManager.CustomMessagingManager.SendNamedMessage(RewardOffersMessageName, networkManager.ConnectedClientsIds, writer, NetworkDelivery.ReliableSequenced);
+        }
+    }
+
+    private void HandleRewardOffersMessage(ulong senderClientId, FastBufferReader reader)
+    {
+        if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsServer)
+        {
+            return;
+        }
+
+        reader.ReadValueSafe(out int sequenceId);
+        _rewardPhaseSequenceId = Mathf.Max(_rewardPhaseSequenceId, sequenceId);
+
+        EnsureRewardStateContainers();
+        ResetRewardChoiceState();
+        int offerCount = Mathf.Max(1, rewardsPerOffer);
+        for (int slot = 1; slot <= 2; slot++)
+        {
+            for (int i = 0; i < offerCount; i++)
+            {
+                reader.ReadValueSafe(out int rewardIndex);
+                if (_pendingRewardOfferIndicesBySlot[slot] == null || _pendingRewardOfferIndicesBySlot[slot].Length != offerCount)
+                {
+                    _pendingRewardOfferIndicesBySlot[slot] = new int[offerCount];
+                }
+
+                _pendingRewardOfferIndicesBySlot[slot][i] = rewardIndex;
+            }
+        }
+
+        _rewardPhaseActive = true;
+        SetPlayersIntermissionLocked(true);
+
+        int localSlot = ResolveLocalPlayerSlot();
+        if (localSlot == 1 || localSlot == 2)
+        {
+            StartLocalRewardSelection((byte)localSlot);
+        }
+    }
+
+    private void SendRewardChoiceToServer(byte playerSlot, int offerChoiceIndex)
+    {
+        NetworkManager networkManager = NetworkManager.Singleton;
+        if (!_useNetworkSession || networkManager == null || networkManager.CustomMessagingManager == null)
+        {
+            return;
+        }
+
+        using (FastBufferWriter writer = new FastBufferWriter(16, Allocator.Temp))
+        {
+            writer.WriteValueSafe(_rewardPhaseSequenceId);
+            writer.WriteValueSafe(playerSlot);
+            writer.WriteValueSafe(offerChoiceIndex);
+            networkManager.CustomMessagingManager.SendNamedMessage(RewardChoiceMessageName, NetworkManager.ServerClientId, writer, NetworkDelivery.ReliableSequenced);
+        }
+    }
+
+    private void HandleRewardChoiceMessage(ulong senderClientId, FastBufferReader reader)
+    {
+        if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsServer)
+        {
+            return;
+        }
+
+        reader.ReadValueSafe(out int sequenceId);
+        reader.ReadValueSafe(out byte playerSlot);
+        reader.ReadValueSafe(out int offerChoiceIndex);
+        if (sequenceId != _rewardPhaseSequenceId || !_rewardPhaseActive)
+        {
+            return;
+        }
+
+        byte senderSlot = ResolvePlayerSlotForClient(senderClientId);
+        if (senderSlot != playerSlot)
+        {
+            Debug.LogWarning($"[InvasionSceneManager3D] Ignoring reward choice from client {senderClientId} for mismatched slot {playerSlot}.", this);
+            return;
+        }
+
+        int rewardDefinitionIndex = ResolveRewardDefinitionIndexForOffer(playerSlot, offerChoiceIndex);
+        ApplyRewardChoiceAuthoritative(playerSlot, rewardDefinitionIndex);
+    }
+
+    private byte ResolvePlayerSlotForClient(ulong clientId)
+    {
+        NetworkSessionData session = NetworkSessionData.Instance;
+        if (session != null)
+        {
+            if (session.Player1Selection != null && session.Player1Selection.ClientId == clientId)
+            {
+                return 1;
+            }
+
+            if (session.Player2Selection != null && session.Player2Selection.ClientId == clientId)
+            {
+                return 2;
+            }
+        }
+
+        return 0;
+    }
+
+    private void BroadcastRewardApplied(byte playerSlot, int rewardDefinitionIndex)
+    {
+        NetworkManager networkManager = NetworkManager.Singleton;
+        if (!_useNetworkSession || networkManager == null || !networkManager.IsServer || networkManager.CustomMessagingManager == null)
+        {
+            return;
+        }
+
+        using (FastBufferWriter writer = new FastBufferWriter(16, Allocator.Temp))
+        {
+            writer.WriteValueSafe(_rewardPhaseSequenceId);
+            writer.WriteValueSafe(playerSlot);
+            writer.WriteValueSafe(rewardDefinitionIndex);
+            networkManager.CustomMessagingManager.SendNamedMessage(RewardAppliedMessageName, networkManager.ConnectedClientsIds, writer, NetworkDelivery.ReliableSequenced);
+        }
+    }
+
+    private void HandleRewardAppliedMessage(ulong senderClientId, FastBufferReader reader)
+    {
+        if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsServer)
+        {
+            return;
+        }
+
+        reader.ReadValueSafe(out int sequenceId);
+        reader.ReadValueSafe(out byte playerSlot);
+        reader.ReadValueSafe(out int rewardDefinitionIndex);
+        if (sequenceId != _rewardPhaseSequenceId && sequenceId != _rewardPhaseSequenceId + 1)
+        {
+            _rewardPhaseSequenceId = Mathf.Max(_rewardPhaseSequenceId, sequenceId);
+        }
+
+        EnsureRewardStateContainers();
+        ApplyRewardChoiceReplica(playerSlot, rewardDefinitionIndex);
+
+        if (playerSlot >= 1 && playerSlot <= 2)
+        {
+            _rewardChoiceReceivedBySlot[playerSlot] = true;
+        }
+
+        if (_rewardChoiceReceivedBySlot[1] && _rewardChoiceReceivedBySlot[2])
+        {
+            _rewardPhaseActive = false;
+            SetPlayersIntermissionLocked(false);
+        }
     }
 
     private void StopRespawnCoroutines()

@@ -29,8 +29,11 @@ public class EnemyAIFlightController3D : MonoBehaviour
     private bool _isMovingBackward;
 
     public Vector3 MoveDirection => _hasMoveIntent ? _moveDirection : Vector3.zero;
+    public Vector3 FacingDirection => _hasFacingIntent ? _facingDirection : Vector3.zero;
     public float MoveSpeed => moveSpeed;
     public Vector3 LinearVelocity => _rb != null ? _rb.linearVelocity : Vector3.zero;
+    public bool HasMoveIntent => _hasMoveIntent;
+    public bool HasFacingIntent => _hasFacingIntent;
     public bool IsMovingForward => _isMovingForward;
     public bool IsMovingBackward => _isMovingBackward;
     public bool IsApplyingThrust => _isMovingForward || _isMovingBackward;

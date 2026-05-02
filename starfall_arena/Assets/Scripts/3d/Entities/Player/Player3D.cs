@@ -126,6 +126,20 @@ public class Player3D : Entity3D
     public bool IsAnchorActive => anchorConfig.enabled && _anchorHeld;
     public bool IsDodgeInvulnerable => Time.time < _dodgeInvulnerableUntil;
 
+    public PlayerBalanceProfile3D.CoreStats CaptureCoreStats()
+    {
+        return new PlayerBalanceProfile3D.CoreStats
+        {
+            maxHealth = maxHealth,
+            maxShield = maxShield,
+            shieldRegenDelay = shieldRegen.regenDelay,
+            shieldRegenRate = shieldRegen.regenRate,
+            anchorEnabled = anchorConfig.enabled,
+            anchorRotationMultiplier = anchorConfig.rotationMultiplier,
+            anchorThrustMultiplier = anchorConfig.thrustMultiplier
+        };
+    }
+
     public void ApplyProfile(PlayerBalanceProfile3D.CoreStats core)
     {
         OverrideMaxHealthAndShield(core.maxHealth, core.maxShield, refillCurrentValues: true);

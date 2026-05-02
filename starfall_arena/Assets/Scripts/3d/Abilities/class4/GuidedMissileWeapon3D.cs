@@ -49,6 +49,7 @@ public class GuidedMissileWeapon3D : Weapon3D
     public SoundEffect NetworkFireSound => guidedMissile.fireSound;
     public GameObject RegularProjectilePrefab => guidedMissile.regular.missilePrefab;
     public GameObject EmpoweredProjectilePrefab => guidedMissile.empowered.missilePrefab;
+    public GuidedMissileConfig3D GuidedMissileConfig => guidedMissile;
 
     protected override bool SupportsMuzzleEffects => false;
 
@@ -61,6 +62,11 @@ public class GuidedMissileWeapon3D : Weapon3D
         guidedMissile.baseProjectile.energyCost = Mathf.Max(0f, stats.baseProjectile.energyCost);
         ApplyVariantProfile(stats.regular, ref guidedMissile.regular);
         ApplyVariantProfile(stats.empowered, ref guidedMissile.empowered);
+    }
+
+    public void SetGuidedMissileConfig(GuidedMissileConfig3D config)
+    {
+        guidedMissile = config;
     }
 
     private static void ApplyVariantProfile(Class4PlayerBalanceProfile3D.MissileVariantStats stats, ref MissileVariantConfig3D variant)

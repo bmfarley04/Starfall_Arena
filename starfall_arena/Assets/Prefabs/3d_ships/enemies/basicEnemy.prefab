@@ -163,7 +163,7 @@ GameObject:
   - component: {fileID: 6839147771054517269}
   - component: {fileID: 3111052346147751391}
   - component: {fileID: 8521091187178700546}
-  - component: {fileID: 8102121692020982188}
+  - component: {fileID: 6500000000000001001}
   - component: {fileID: 8263784457327884822}
   - component: {fileID: 9100000000000000001}
   - component: {fileID: 7722546587470475911}
@@ -174,6 +174,7 @@ GameObject:
   - component: {fileID: -1402132322610921366}
   - component: {fileID: -7216519775544358760}
   - component: {fileID: 5125496948465835274}
+  - component: {fileID: 4073585082287305671}
   m_Layer: 0
   m_Name: basicEnemy
   m_TagString: Enemy
@@ -302,7 +303,7 @@ MonoBehaviour:
   selectedWeaponIndex: 0
   abilities: []
   shipFlight: {fileID: 1489676882231302956}
-  shipVisualTilt: {fileID: 8102121692020982188}
+  shipVisualTilt: {fileID: 0}
   shipThrusterVfx: {fileID: 3111052346147751391}
   shipSpeedFx: {fileID: 0}
   deathEffects: {fileID: 8521091187178700546}
@@ -417,7 +418,7 @@ MonoBehaviour:
     sound: {fileID: 11400000, guid: 52e8c58e387b89849affa74c78d6d899, type: 2}
   scatterRoot: {fileID: 220338494063589957}
   scatterChance: 1
---- !u!114 &8102121692020982188
+--- !u!114 &6500000000000001001
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -426,32 +427,34 @@ MonoBehaviour:
   m_GameObject: {fileID: 7279590565626816591}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9e8f7219683416a4e967c145de82d06f, type: 3}
+  m_Script: {fileID: 11500000, guid: 6fdc0ed10b6b7d74d852b13f15d9909c, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ShipVisualTilt3D
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyVisualTilt3D
+  flightController: {fileID: 8333524130418560552}
+  strafeMover: {fileID: 0}
+  body: {fileID: 6994173486931492103}
   entity: {fileID: 7411681282315552791}
-  shipFlight: {fileID: 1489676882231302956}
   visualEffects:
     visualModel: {fileID: 220338494063589957}
-    maxBankAngle: 75
-    bankSensitivity: 20
-    steeringInputBankSensitivity: 24
+    maxBankAngle: 45
+    bankSensitivity: 16
+    steeringInputBankSensitivity: 18
     bankSmoothing: 8
     bankReturnSmoothing: 5
-    maxPitchLeanAngle: 40
-    pitchLeanSensitivity: 12
-    steeringInputPitchSensitivity: 14
+    maxPitchLeanAngle: 24
+    pitchLeanSensitivity: 10
+    steeringInputPitchSensitivity: 10
     pitchLeanSmoothing: 8
     pitchLeanReturnSmoothing: 5
-    forwardAccelPitchSensitivity: 0.08
-    lateralAccelBankSensitivity: 0.1
-    lateralDriftBankSensitivity: 0.5
-    verticalDriftPitchSensitivity: 0.35
-  barrelRoll:
-    degrees: 360
-    durationMultiplier: 1.1
-    minDuration: 0.18
-    entryBankAngle: 28
+    forwardAccelPitchSensitivity: 0.04
+    lateralAccelBankSensitivity: 0.06
+    lateralDriftBankSensitivity: 0.25
+    verticalDriftPitchSensitivity: 0.2
+  bankFromMoveIntent: 18
+  bankFromStrafeVelocity: 0.45
+  pitchFromMoveIntent: 10
+  useRigidbodyVelocity: 1
+  drawGizmos: 1
 --- !u!114 &8263784457327884822
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -470,6 +473,7 @@ MonoBehaviour:
   targetSensor: {fileID: 754838546632477888}
   obstacleAvoidance: {fileID: 0}
   separation: {fileID: 0}
+  steeringSmoother: {fileID: 0}
   patrol: {fileID: 7722546587470475911}
   netEnemyCombat: {fileID: -1402132322610921366}
   attackReporter: {fileID: 0}
@@ -477,7 +481,7 @@ MonoBehaviour:
   aimToleranceDegrees: 10
   stopDistance: 18
   fullSpeedDistance: 45
-  useObstacleAvoidance: 0
+  useObstacleAvoidance: 1
 --- !u!114 &9100000000000000001
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -598,7 +602,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 2645984438
+  GlobalObjectIdHash: 1052466865
   InScenePlacedSourceGlobalObjectIdHash: 0
   DeferredDespawnTick: 0
   Ownership: 1
@@ -713,6 +717,29 @@ MonoBehaviour:
   separationStrength: 1
   verticalWeight: 1
   unstickSpeedScale: 0.2
+--- !u!114 &4073585082287305671
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7279590565626816591}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b0102a7b9880bf64f87921c6c88ce3e4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyObstacleAvoidance3D
+  obstacleLayers:
+    serializedVersion: 2
+    m_Bits: 256
+  probeRadius: 3
+  forwardLookAheadDistance: 45
+  escapeCheckDistance: 30
+  avoidanceStrength: 1.25
+  escapeDirectionHoldTime: 0.35
+  avoidanceTurnSmoothTime: 0.18
+  avoidanceReleaseSmoothTime: 0.3
+  minimumArcStrength: 0.35
 --- !u!1001 &225114612700398349
 PrefabInstance:
   m_ObjectHideFlags: 0

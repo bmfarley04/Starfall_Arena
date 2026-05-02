@@ -57,6 +57,7 @@ public class BeamWeapon3D : Weapon3D, IBeamWeaponNetwork3D
     private bool UsesBeamCapacity => beam.capacity > 0f && beam.drainRate > 0f;
     public bool IsBeamActive => _activeBeam != null;
     public float MaxDistance => Mathf.Max(0f, beam.maxDistance);
+    public BeamWeaponConfig3D BeamConfig => beam;
 
     protected override void Awake()
     {
@@ -160,6 +161,21 @@ public class BeamWeapon3D : Weapon3D, IBeamWeaponNetwork3D
         beam.minimumStartEnergy = Mathf.Max(0f, stats.minimumStartEnergy);
         beam.rotationMultiplier = Mathf.Max(0f, stats.rotationMultiplier);
         beam.postFireRotationPenaltyDuration = Mathf.Max(0f, stats.postFireRotationPenaltyDuration);
+    }
+
+    public PlayerBalanceProfile3D.BeamWeaponStats CaptureProfileStats()
+    {
+        return new PlayerBalanceProfile3D.BeamWeaponStats
+        {
+            damagePerSecond = beam.damagePerSecond,
+            maxDistance = beam.maxDistance,
+            capacity = beam.capacity,
+            drainRate = beam.drainRate,
+            regenRate = beam.regenRate,
+            minimumStartEnergy = beam.minimumStartEnergy,
+            rotationMultiplier = beam.rotationMultiplier,
+            postFireRotationPenaltyDuration = beam.postFireRotationPenaltyDuration
+        };
     }
 
     public float GetRemainingBeamEnergy()

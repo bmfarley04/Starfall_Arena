@@ -97,6 +97,14 @@ public abstract class Entity3D : MonoBehaviour
         OnShieldChanged();
     }
 
+    public void SetCurrentDurability(float health, float shield)
+    {
+        currentHealth = Mathf.Clamp(health, 0f, maxHealth);
+        currentShield = Mathf.Clamp(shield, 0f, maxShield);
+        OnHealthChanged();
+        OnShieldChanged();
+    }
+
     public Ability3D GetAbility(int index)
     {
         if (index < 0 || index >= abilities.Length)

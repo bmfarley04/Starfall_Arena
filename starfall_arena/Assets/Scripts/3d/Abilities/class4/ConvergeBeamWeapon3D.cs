@@ -77,6 +77,7 @@ public class ConvergeBeamWeapon3D : Weapon3D, IBeamWeaponNetwork3D
 
     private bool UsesBeamCapacity => convergeBeam.capacity > 0f && convergeBeam.drainRate > 0f;
     private bool IsBeamActive => _activeBeams != null && _activeBeams.Length > 0;
+    public ConvergeBeamConfig3D ConvergeBeamConfig => convergeBeam;
 
     protected override void Awake()
     {
@@ -124,6 +125,11 @@ public class ConvergeBeamWeapon3D : Weapon3D, IBeamWeaponNetwork3D
         convergeBeam.capacity = Mathf.Max(0f, stats.capacity);
         convergeBeam.drainRate = Mathf.Max(0f, stats.drainRate);
         convergeBeam.regenRate = Mathf.Max(0f, stats.regenRate);
+    }
+
+    public void SetConvergeBeamConfig(ConvergeBeamConfig3D config)
+    {
+        convergeBeam = config;
     }
 
     protected override void OnFirePressed()

@@ -155,7 +155,7 @@ MonoBehaviour:
   selectedWeaponIndex: 0
   abilities: []
   shipFlight: {fileID: 7133702380656281750}
-  shipVisualTilt: {fileID: 4610729949207790201}
+  shipVisualTilt: {fileID: 0}
   shipThrusterVfx: {fileID: 5973741316665124015}
   shipSpeedFx: {fileID: 0}
   deathEffects: {fileID: 8407136640758178129}
@@ -282,32 +282,34 @@ MonoBehaviour:
   m_GameObject: {fileID: 1837983289991426574}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9e8f7219683416a4e967c145de82d06f, type: 3}
+  m_Script: {fileID: 11500000, guid: 6fdc0ed10b6b7d74d852b13f15d9909c, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ShipVisualTilt3D
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyVisualTilt3D
+  flightController: {fileID: 6943316115824602533}
+  strafeMover: {fileID: 0}
+  body: {fileID: 4346955362645140441}
   entity: {fileID: 3969675139743388159}
-  shipFlight: {fileID: 7133702380656281750}
   visualEffects:
     visualModel: {fileID: 7640924704806429303}
-    maxBankAngle: 75
-    bankSensitivity: 20
-    steeringInputBankSensitivity: 24
+    maxBankAngle: 45
+    bankSensitivity: 16
+    steeringInputBankSensitivity: 18
     bankSmoothing: 8
     bankReturnSmoothing: 5
-    maxPitchLeanAngle: 40
-    pitchLeanSensitivity: 12
-    steeringInputPitchSensitivity: 14
+    maxPitchLeanAngle: 24
+    pitchLeanSensitivity: 10
+    steeringInputPitchSensitivity: 10
     pitchLeanSmoothing: 8
     pitchLeanReturnSmoothing: 5
-    forwardAccelPitchSensitivity: 0.08
-    lateralAccelBankSensitivity: 0.1
-    lateralDriftBankSensitivity: 0.5
-    verticalDriftPitchSensitivity: 0.35
-  barrelRoll:
-    degrees: 360
-    durationMultiplier: 1.1
-    minDuration: 0.18
-    entryBankAngle: 28
+    forwardAccelPitchSensitivity: 0.04
+    lateralAccelBankSensitivity: 0.06
+    lateralDriftBankSensitivity: 0.25
+    verticalDriftPitchSensitivity: 0.2
+  bankFromMoveIntent: 18
+  bankFromStrafeVelocity: 0.45
+  pitchFromMoveIntent: 10
+  useRigidbodyVelocity: 1
+  drawGizmos: 1
 --- !u!114 &6683755836656951077
 MonoBehaviour:
   m_ObjectHideFlags: 0

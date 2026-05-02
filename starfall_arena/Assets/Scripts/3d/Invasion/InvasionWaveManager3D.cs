@@ -119,6 +119,7 @@ public class InvasionWaveManager3D : MonoBehaviour
     private Coroutine _waveRoutine;
 
     public event Func<int, IEnumerator> WaveIntroRequested;
+    public event Func<int, IEnumerator> RewardPhaseRequested;
     public event Action<int> WaveStarted;
     public event Action<int> WaveCleared;
     public event Action AllWavesCleared;
@@ -174,6 +175,11 @@ public class InvasionWaveManager3D : MonoBehaviour
             yield return new WaitUntil(() => !HasOutstandingTrackedEnemies());
             WaveCleared?.Invoke(waveNumber);
 
+            if (waveIndex < waveCount - 1)
+            {
+                yield return RunRewardPhase(waveNumber);
+            }
+
             if (waveIndex < waveCount - 1 && waveEndDelaySeconds > 0f)
             {
                 yield return new WaitForSeconds(waveEndDelaySeconds);
@@ -220,6 +226,24 @@ public class InvasionWaveManager3D : MonoBehaviour
         if (wave.enableBoss)
         {
             yield return SpawnWaveBoss(wave.boss);
+        }
+    }
+
+    private IEnumerator RunRewardPhase(int clearedWaveNumber)
+    {
+        Func<int, IEnumerator> rewardHandler = RewardPhaseRequested;
+        if (rewardHandler == null)
+        {
+            yield break;
+        }
+
+        Delegate[] handlers = rewardHandler.GetInvocationList();
+        for (int i = 0; i < handlers.Length; i++)
+        {
+            if (handlers[i] is Func<int, IEnumerator> handler)
+            {
+                yield return handler(clearedWaveNumber);
+            }
         }
     }
 

@@ -19,6 +19,7 @@ Current implemented beginning flow:
 - countdown UI is not used
 - player HUD elements stay active during gameplay: health, vignette, crosshair, weapon container, ability container, FPS/ping, enemy tracker, optional enemy counter, and optional heart/life counter
 - win trackers, round-end screens, game-end screens, and end-of-wave stat summaries are not used
+- between cleared waves, Invasion now enters a dedicated reward intermission before the next `WAVE N` intro. Players are movement/input locked, each player gets their own three-card stat-draft offer, and gameplay resumes only after both picks resolve.
 - players are not repositioned, despawned between waves, or movement-locked by the Invasion scene manager
 - game-end, full-team wipe, score, reward, and completion presentation are planned later; when the final configured wave is cleared, the current slice leaves gameplay active
 
@@ -128,6 +129,8 @@ The current wave manager supports finite configured waves with timed sub-wave se
 - `InvasionSceneManager3D` owns the synchronized `WAVE N` text beat before each wave, using `NetworkSessionData.BroadcastWaveStartServer(...)` in network sessions
 - the optional enemy counter should read `InvasionWaveManager3D`'s tracked alive-enemy count through `InvasionSceneManager3D`; do not make enemies or individual AI brains update HUD directly
 - scoring, rewards, difficulty scaling, revive rules, and objective variants are planned work
+- the current reward implementation is a run-only stat-draft layer, not a full port of duel augments. It uses 3D-owned reward definitions/state and reuses the old 2D augment-card visuals only as presentation.
+- rewards are inserted after a wave is fully cleared and before the normal inter-wave delay plus next-wave intro. The final configured wave does not open another reward phase.
 
 Keep menu/mode-entry integration separate from this foundation unless the task specifically asks for it.
 
@@ -407,10 +410,13 @@ For `3d_invasion`:
 - assign player 1 and player 2 spawn points
 - assign the two fallback 3D `ShipData` assets
 - assign `InvasionWaveManager3D`
+- assign `InvasionRewardPhasePresenter3D` and wire its `AugmentSelectManager` reference so the old augment-card visuals can present the new Invasion reward draft
+- optionally assign authored `InvasionStatRewardDefinition3D` assets on `InvasionSceneManager3D`. If none are assigned, the manager builds the current default reward pool at runtime from code using the documented Weapon Damage / Projectile Cadence / Projectile Velocity / Beam Power / Beam Efficiency / Hull / Shield / Shield Recovery / Field Repair / Emergency Reserve / Thrusters / Top Speed / Turn Response / Flight Assist set.
 - assign the reused round canvas group/text as the Wave UI references
 - optionally enable `Use Enemy Counter`, assign the enemy counter canvas/root, assign its TMP text, and tune the counter text format
 - optionally enable `Use Life Counter`, assign the heart/life counter canvas group, assign its TMP text, set `Starting Player Lives`, and tune the counter text format. `{0}` displays the local player's lives in network sessions or the lowest remaining player lives in non-network sessions; `{1}` and `{2}` display player 1 and player 2 lives respectively.
 - tune `Respawn Rules` on `InvasionSceneManager3D`: `Respawn Delay Seconds` controls how long the death presentation is allowed to breathe before the replacement ship appears, `Invulnerability Seconds` controls the temporary post-respawn damage immunity, and `Shield Flash Interval Seconds` controls how aggressively the manager pulses `ShieldController.OnHit(...)` for the visible high-alpha shield flash.
+- tune `Between-Wave Rewards` on `InvasionSceneManager3D`: enable/disable the reward system, set how many cards appear per offer, and replace the runtime-default reward pool with authored assets when design wants explicit inspector-managed tuning/weights/icons/descriptions.
 - assign gameplay HUD roots for health, vignette, crosshair, weapon container, ability container, FPS/ping, enemy tracker, and the enemy counter canvas if it should activate with the rest of gameplay HUD. The life counter is controlled through its canvas group instead of a root active toggle.
 - assign UI canvases and optional UI camera so network HUD sorting is deterministic
 - do not let child HUD scripts silently reassign those canvases back to `Camera.main`; the scene-level UI camera should remain the single source of truth for screen-space HUD canvas camera binding

@@ -77,6 +77,7 @@ GameObject:
   - component: {fileID: 6382349876768702951}
   - component: {fileID: 520867131601275356}
   - component: {fileID: 5751379781529739476}
+  - component: {fileID: 6500000000000001003}
   - component: {fileID: 4246944659233015937}
   - component: {fileID: 6183091794190445655}
   - component: {fileID: 971733307792674021}
@@ -260,6 +261,43 @@ MonoBehaviour:
   lockToWorldYPlane: 0
   captureInitialWorldY: 1
   lockedWorldY: 0
+--- !u!114 &6500000000000001003
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 774219852358409915}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6fdc0ed10b6b7d74d852b13f15d9909c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyVisualTilt3D
+  flightController: {fileID: 5751379781529739476}
+  strafeMover: {fileID: 0}
+  body: {fileID: 2477466183121515058}
+  entity: {fileID: 6382349876768702951}
+  visualEffects:
+    visualModel: {fileID: 7105181676880954568}
+    maxBankAngle: 45
+    bankSensitivity: 16
+    steeringInputBankSensitivity: 18
+    bankSmoothing: 8
+    bankReturnSmoothing: 5
+    maxPitchLeanAngle: 24
+    pitchLeanSensitivity: 10
+    steeringInputPitchSensitivity: 10
+    pitchLeanSmoothing: 8
+    pitchLeanReturnSmoothing: 5
+    forwardAccelPitchSensitivity: 0.04
+    lateralAccelBankSensitivity: 0.06
+    lateralDriftBankSensitivity: 0.25
+    verticalDriftPitchSensitivity: 0.2
+  bankFromMoveIntent: 18
+  bankFromStrafeVelocity: 0.45
+  pitchFromMoveIntent: 10
+  useRigidbodyVelocity: 1
+  drawGizmos: 1
 --- !u!114 &4246944659233015937
 MonoBehaviour:
   m_ObjectHideFlags: 0
