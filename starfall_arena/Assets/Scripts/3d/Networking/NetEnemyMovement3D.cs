@@ -65,7 +65,7 @@ public class NetEnemyMovement3D : NetworkBehaviour
 
     public void ApplyCombatVelocityDelta(Vector3 velocityDelta)
     {
-        if (_rb == null || velocityDelta.sqrMagnitude <= 0.000001f)
+        if (_rb == null || _rb.isKinematic || velocityDelta.sqrMagnitude <= 0.000001f)
         {
             return;
         }
@@ -119,7 +119,6 @@ public class NetEnemyMovement3D : NetworkBehaviour
 
         _rb.position = sampledState.Position;
         _rb.rotation = sampledState.Rotation;
-        _rb.linearVelocity = sampledState.Velocity;
         transform.SetPositionAndRotation(sampledState.Position, sampledState.Rotation);
     }
 

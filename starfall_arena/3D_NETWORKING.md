@@ -152,6 +152,7 @@ Invasion enemies use separate enemy-specific networking:
   - server publishes enemy Rigidbody position/rotation/velocity snapshots
   - clients use the same adaptive server-timeline interpolation helper as remote player proxies
   - clients do not run enemy gameplay AI
+  - client enemy proxies are kinematic and apply sampled position/rotation only; enemy `Rigidbody.linearVelocity` remains server-owned
 - `NetEnemyCombat3D`
   - server spawns enemy gameplay projectiles and owns damage
   - clients receive cosmetic projectile spawns
