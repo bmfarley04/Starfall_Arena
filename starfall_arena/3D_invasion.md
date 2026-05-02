@@ -372,6 +372,10 @@ For a Siege Carrier boss prefab:
 - add `NetworkObject` if it will spawn in networked Invasion
 - add `FactionMember3D` and set faction to `EnemyTeam`
 - add `Enemy3D`
+- if the prefab carries an attached boss health bar canvas, add `BossHealthBar3D` on the boss root and wire its `Enemy3D`, `CanvasGroup`, `Canvas`, `SegmentedBar`, and optional TMP health text references directly on the prefab. For `Screen Space - Camera` canvases, leave the component's UI camera override empty unless you need a manual override so it can bind to the shared `UICamera` at runtime through the normal HUD camera resolver.
+- boss bars should stay hidden until their spawn intro is actually complete. If the boss uses `SpawnArrivalEffect3D`, assign that reveal source on `BossHealthBar3D`; if it uses `PortalBossSpawn3D`, assign that instead. The boss bar reveal should be event-driven off the intro completion path, not a guessed hardcoded delay.
+- the boss bar should not pop on the first frame it becomes eligible to show. `BossHealthBar3D` now supports a short fade-in plus optional vertical settle offset so the bar can ease into place after the spawn intro while still reusing `SegmentedBar` for the same durability depletion plus white damage flash as the player HUD.
+- `BossHealthBar3D` is also the boss marker for HUD filtering. Any enemy carrying it should use the boss-specific target-awareness path instead of the normal target-awareness brackets/bars. Bosses only use the dedicated offscreen boss tracker icon, never the normal target-awareness bracket or health/shield presentation, and that boss tracker stays hidden until the same reveal-complete gate used by the boss bar.
 - add `Rigidbody` with gravity off
 - add `EnemyAIFlightController3D`; start with `moveSpeed` around `15` and a slow-to-moderate turn rate so the boss reads as a heavy carrier when it relocates, not a chase enemy
 - add `EnemyTargetSensor3D`; set detection range at least to `max(preferredRangeMax, engagementRange) + approachRangeBuffer`

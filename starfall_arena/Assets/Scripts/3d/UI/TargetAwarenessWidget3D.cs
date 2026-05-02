@@ -13,6 +13,7 @@ public enum TargetAwarenessVisibility3D
 public struct TargetAwarenessPresentation3D
 {
     public TargetAwarenessVisibility3D State;
+    public bool IsBossTarget;
     public Vector2 CanvasPosition;
     public Vector2 IndicatorDirection;
     public Vector2 BracketSize;
@@ -43,6 +44,10 @@ public class TargetAwarenessWidget3D : MonoBehaviour
     [SerializeField] private CanvasGroup rootGroup;
     [SerializeField] private RectTransform root;
     [SerializeField] private RectTransform indicatorGroup;
+    [Tooltip("Normal offscreen indicator visuals. Hide this for boss targets so the boss icon can replace the standard tracker art.")]
+    [SerializeField] private RectTransform normalIndicatorVisualGroup;
+    [Tooltip("Boss-only offscreen indicator visuals. Show this only when the presentation is a boss target edge indicator.")]
+    [SerializeField] private RectTransform bossIndicatorVisualGroup;
     [SerializeField] private RectTransform bracketGroup;
     [Tooltip("Optional RectTransform that should receive the computed target bracket size. Falls back to Bracket Group when left empty.")]
     [SerializeField] private RectTransform bracketFrame;
@@ -60,6 +65,8 @@ public class TargetAwarenessWidget3D : MonoBehaviour
     [SerializeField, Range(0f, 1f)] private float attackFlashBaseAlpha = 18f / 255f;
     [Tooltip("Peak alpha for red offscreen attack brackets while an enemy attack warning is active.")]
     [SerializeField, Range(0f, 1f)] private float attackFlashPeakAlpha = 1f;
+    [Tooltip("Boss icon Images that should pulse alongside the red offscreen brackets when a boss is threatening the local player.")]
+    [SerializeField] private Image[] bossAttackPulseImages;
 
     [Header("Smoothing")]
     [SerializeField] private float positionSmoothing = 18f;
@@ -82,7 +89,10 @@ public class TargetAwarenessWidget3D : MonoBehaviour
     private Vector2 _shieldBarSize;
     private Vector2 _currentBracketSize;
     private Color[] _attackFlashBaseColors;
+    private Color[] _bossAttackPulseBaseColors;
     private CanvasGroup _indicatorCanvasGroup;
+    private CanvasGroup _normalIndicatorVisualCanvasGroup;
+    private CanvasGroup _bossIndicatorVisualCanvasGroup;
     private CanvasGroup _bracketCanvasGroup;
     private CanvasGroup _healthCanvasGroup;
     private CanvasGroup _shieldCanvasGroup;
@@ -103,11 +113,14 @@ public class TargetAwarenessWidget3D : MonoBehaviour
         }
 
         _indicatorCanvasGroup = EnsureCanvasGroup(indicatorGroup);
+        _normalIndicatorVisualCanvasGroup = EnsureCanvasGroup(normalIndicatorVisualGroup);
+        _bossIndicatorVisualCanvasGroup = EnsureCanvasGroup(bossIndicatorVisualGroup);
         _bracketCanvasGroup = EnsureCanvasGroup(bracketGroup);
         _healthCanvasGroup = EnsureCanvasGroup(healthBarGroup);
         _shieldCanvasGroup = EnsureCanvasGroup(shieldBarGroup);
         CacheBarBasePositions();
         CacheAttackFlashColors();
+        CacheBossAttackPulseColors();
 
         InitializeBar(ref healthBar);
         InitializeBar(ref shieldBar);
@@ -143,9 +156,13 @@ public class TargetAwarenessWidget3D : MonoBehaviour
 
         bool showIndicator = presentation.State == TargetAwarenessVisibility3D.FloatingIndicator
             || presentation.State == TargetAwarenessVisibility3D.EdgeIndicator;
-        bool showBracket = presentation.State == TargetAwarenessVisibility3D.Bracket;
+        bool showBossIndicator = presentation.IsBossTarget && presentation.State == TargetAwarenessVisibility3D.EdgeIndicator;
+        bool showNormalIndicatorVisual = showIndicator && !presentation.IsBossTarget;
+        bool showBracket = presentation.State == TargetAwarenessVisibility3D.Bracket && !presentation.IsBossTarget;
 
         SetGroupAlpha(_indicatorCanvasGroup, showIndicator ? 1f : 0f, deltaTime);
+        SetGroupAlpha(_normalIndicatorVisualCanvasGroup, showNormalIndicatorVisual ? 1f : 0f, deltaTime);
+        SetGroupAlpha(_bossIndicatorVisualCanvasGroup, showBossIndicator ? 1f : 0f, deltaTime);
         SetGroupAlpha(_bracketCanvasGroup, showBracket ? 1f : 0f, deltaTime);
         SetGroupAlpha(_healthCanvasGroup, showBracket ? 1f : 0f, deltaTime);
         SetGroupAlpha(_shieldCanvasGroup, showBracket ? 1f : 0f, deltaTime);
@@ -170,6 +187,7 @@ public class TargetAwarenessWidget3D : MonoBehaviour
         ApplyBracketSize(_currentBracketSize);
         ApplyBracketBarOffsets(showBracket);
         ApplyAttackFlash(presentation.AttackPulse01);
+        ApplyBossAttackPulse(presentation.IsBossTarget ? presentation.AttackPulse01 : 0f);
         RotateIndicator(presentation.IndicatorDirection, presentation.RotateIndicator);
         RefreshBars(presentation.Health01, presentation.Shield01);
     }
@@ -189,10 +207,13 @@ public class TargetAwarenessWidget3D : MonoBehaviour
         }
 
         SetGroupAlphaImmediate(_indicatorCanvasGroup, 0f);
+        SetGroupAlphaImmediate(_normalIndicatorVisualCanvasGroup, 0f);
+        SetGroupAlphaImmediate(_bossIndicatorVisualCanvasGroup, 0f);
         SetGroupAlphaImmediate(_bracketCanvasGroup, 0f);
         SetGroupAlphaImmediate(_healthCanvasGroup, 0f);
         SetGroupAlphaImmediate(_shieldCanvasGroup, 0f);
         ApplyAttackFlash(0f);
+        ApplyBossAttackPulse(0f);
         _hasPosition = false;
         _currentBracketSize = Vector2.zero;
     }
@@ -270,42 +291,62 @@ public class TargetAwarenessWidget3D : MonoBehaviour
 
     private void CacheAttackFlashColors()
     {
-        if (attackFlashBracketImages == null)
+        CachePulseColors(attackFlashBracketImages, ref _attackFlashBaseColors);
+    }
+
+    private void CacheBossAttackPulseColors()
+    {
+        CachePulseColors(bossAttackPulseImages, ref _bossAttackPulseBaseColors);
+    }
+
+    private static void CachePulseColors(Image[] images, ref Color[] cache)
+    {
+        if (images == null)
         {
-            _attackFlashBaseColors = null;
+            cache = null;
             return;
         }
 
-        _attackFlashBaseColors = new Color[attackFlashBracketImages.Length];
-        for (int i = 0; i < attackFlashBracketImages.Length; i++)
+        cache = new Color[images.Length];
+        for (int i = 0; i < images.Length; i++)
         {
-            Image image = attackFlashBracketImages[i];
-            _attackFlashBaseColors[i] = image != null ? image.color : Color.white;
+            Image image = images[i];
+            cache[i] = image != null ? image.color : Color.white;
         }
     }
 
     private void ApplyAttackFlash(float pulse01)
     {
-        if (attackFlashBracketImages == null || attackFlashBracketImages.Length == 0)
+        ApplyPulseImages(attackFlashBracketImages, ref _attackFlashBaseColors, pulse01);
+    }
+
+    private void ApplyBossAttackPulse(float pulse01)
+    {
+        ApplyPulseImages(bossAttackPulseImages, ref _bossAttackPulseBaseColors, pulse01);
+    }
+
+    private void ApplyPulseImages(Image[] images, ref Color[] cache, float pulse01)
+    {
+        if (images == null || images.Length == 0)
         {
             return;
         }
 
-        if (_attackFlashBaseColors == null || _attackFlashBaseColors.Length != attackFlashBracketImages.Length)
+        if (cache == null || cache.Length != images.Length)
         {
-            CacheAttackFlashColors();
+            CachePulseColors(images, ref cache);
         }
 
         float alpha = Mathf.Lerp(attackFlashBaseAlpha, attackFlashPeakAlpha, Mathf.Clamp01(pulse01));
-        for (int i = 0; i < attackFlashBracketImages.Length; i++)
+        for (int i = 0; i < images.Length; i++)
         {
-            Image image = attackFlashBracketImages[i];
+            Image image = images[i];
             if (image == null)
             {
                 continue;
             }
 
-            Color color = i < _attackFlashBaseColors.Length ? _attackFlashBaseColors[i] : image.color;
+            Color color = i < cache.Length ? cache[i] : image.color;
             color.a = alpha;
             image.color = color;
         }

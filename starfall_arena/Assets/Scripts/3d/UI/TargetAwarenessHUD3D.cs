@@ -9,6 +9,7 @@ public class TargetAwarenessHUD3D : PlayerHUDBindingTarget3D
     private struct TargetRuntime3D
     {
         public Entity3D Target;
+        public BossHealthBar3D BossMarker;
         public TargetAwarenessWidget3D Widget;
         public TargetAwarenessBounds3D BoundsOverride;
         public TargetAwarenessAttackReporter3D AttackReporter;
@@ -327,6 +328,7 @@ public class TargetAwarenessHUD3D : PlayerHUDBindingTarget3D
         TargetAwarenessPresentation3D presentation = new TargetAwarenessPresentation3D
         {
             State = TargetAwarenessVisibility3D.Hidden,
+            IsBossTarget = runtime.BossMarker != null && runtime.BossMarker.ShouldUseBossTracker(),
             IndicatorDirection = runtime.LastIndicatorDirection.sqrMagnitude > 0.0001f ? runtime.LastIndicatorDirection : Vector2.up,
             Health01 = target.MaxHealth > 0f ? target.CurrentHealth / target.MaxHealth : 0f,
             Shield01 = target.MaxShield > 0f ? target.CurrentShield / target.MaxShield : 0f,
@@ -351,6 +353,12 @@ public class TargetAwarenessHUD3D : PlayerHUDBindingTarget3D
             && viewport.x >= 0f && viewport.x <= 1f
             && viewport.y >= 0f && viewport.y <= 1f;
         bool occluded = insideViewport && IsTargetOccluded(cameraPosition, occlusionPoint, target);
+        bool isBossTarget = presentation.IsBossTarget;
+
+        if (isBossTarget && (runtime.BossMarker == null || !runtime.BossMarker.IsTrackerRevealReady))
+        {
+            return presentation;
+        }
 
         TargetAwarenessVisibility3D desiredState;
         if (!insideViewport)
@@ -372,6 +380,11 @@ public class TargetAwarenessHUD3D : PlayerHUDBindingTarget3D
         else
         {
             desiredState = TargetAwarenessVisibility3D.FloatingIndicator;
+        }
+
+        if (isBossTarget && desiredState != TargetAwarenessVisibility3D.EdgeIndicator)
+        {
+            return presentation;
         }
 
         presentation.State = ResolveHeldState(ref runtime, desiredState);
@@ -939,6 +952,7 @@ public class TargetAwarenessHUD3D : PlayerHUDBindingTarget3D
         }
 
         runtime.BoundsOverride = runtime.Target.GetComponent<TargetAwarenessBounds3D>();
+        runtime.BossMarker = runtime.Target.GetComponent<BossHealthBar3D>();
         runtime.AttackReporter = runtime.Target.GetComponent<TargetAwarenessAttackReporter3D>();
         runtime.MeshRenderers = runtime.Target.GetComponentsInChildren<MeshRenderer>(true);
         runtime.SkinnedMeshRenderers = runtime.Target.GetComponentsInChildren<SkinnedMeshRenderer>(true);

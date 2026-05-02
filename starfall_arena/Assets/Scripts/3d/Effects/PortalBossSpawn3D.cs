@@ -10,6 +10,8 @@ using UnityEngine;
 [RequireComponent(typeof(Rigidbody))]
 public class PortalBossSpawn3D : NetworkBehaviour
 {
+    public event Action<PortalBossSpawn3D> SequenceCompleted;
+
     [Header("Portal Spawn")]
     [Tooltip("Portal visual prefab spawned at the boss's authored final spawn point. This should usually be Assets/Prefabs/3d_effects/Portal3D.prefab.")]
     [SerializeField] private GameObject portalPrefab;
@@ -278,6 +280,7 @@ public class PortalBossSpawn3D : NetworkBehaviour
 
         RestoreIntroState();
         StartPortalShrink();
+        SequenceCompleted?.Invoke(this);
     }
 
     private void ApplyIntroState()
