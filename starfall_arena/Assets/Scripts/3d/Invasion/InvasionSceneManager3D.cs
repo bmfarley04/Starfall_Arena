@@ -48,7 +48,7 @@ public class InvasionSceneManager3D : MonoBehaviour
     [Header("Between-Wave Rewards")]
     [Tooltip("If enabled, cleared waves trigger a between-wave reward intermission before the next wave begins.")]
     [SerializeField] private bool useBetweenWaveRewards = true;
-    [Tooltip("Reward definition assets used for the Invasion stat draft. If left empty, a default runtime reward pool matching the current design doc is created automatically.")]
+    [Tooltip("Reward definition assets used for the Invasion stat draft. If left empty, the manager auto-loads all InvasionStatRewardDefinition3D assets found under Resources/3D/InvasionRewards.")]
     [SerializeField] private InvasionStatRewardDefinition3D[] rewardDefinitions = new InvasionStatRewardDefinition3D[0];
     [Tooltip("How many reward cards each player sees after a cleared wave.")]
     [Min(1)]
@@ -133,7 +133,6 @@ public class InvasionSceneManager3D : MonoBehaviour
     private readonly int[][] _pendingRewardOfferIndicesBySlot = new int[3][];
     private readonly bool[] _rewardChoiceReceivedBySlot = new bool[3];
     private readonly List<InvasionStatRewardDefinition3D> _effectiveRewardDefinitions = new List<InvasionStatRewardDefinition3D>(16);
-    private readonly List<InvasionStatRewardDefinition3D> _runtimeDefaultRewardDefinitions = new List<InvasionStatRewardDefinition3D>(16);
     private int _rewardPhaseSequenceId;
     private bool _rewardPhaseActive;
     private bool _customNetworkMessagesRegistered;
@@ -184,7 +183,6 @@ public class InvasionSceneManager3D : MonoBehaviour
 
         UnsubscribeNetworkSessionEvents();
         UnregisterCustomNetworkMessages();
-        DestroyRuntimeDefaultRewards();
     }
 
     private void RefreshNetworkMode()
@@ -758,7 +756,6 @@ public class InvasionSceneManager3D : MonoBehaviour
     private void BuildEffectiveRewardDefinitionList()
     {
         _effectiveRewardDefinitions.Clear();
-        DestroyRuntimeDefaultRewards();
 
         if (rewardDefinitions != null)
         {
@@ -771,168 +768,22 @@ public class InvasionSceneManager3D : MonoBehaviour
             }
         }
 
-        if (_effectiveRewardDefinitions.Count > 0)
+        if (_effectiveRewardDefinitions.Count == 0)
         {
-            return;
-        }
-
-        _runtimeDefaultRewardDefinitions.Add(CreateRuntimeReward(
-            "weapon_damage_up",
-            "Weapon Damage Up",
-            "+10% damage to all projectile, missile, and beam primary weapons for this run.",
-            1f,
-            true,
-            InvasionStatRewardDefinition3D.RewardEligibility3D.None,
-            new InvasionStatRewardDefinition3D.PersistentRewardPayload3D { allWeaponDamagePercent = 0.10f },
-            default));
-        _runtimeDefaultRewardDefinitions.Add(CreateRuntimeReward(
-            "projectile_cadence_up",
-            "Projectile Cadence Up",
-            "-8% cooldown on projectile and missile primary weapons for this run.",
-            1f,
-            true,
-            InvasionStatRewardDefinition3D.RewardEligibility3D.RequiresProjectileWeapon,
-            new InvasionStatRewardDefinition3D.PersistentRewardPayload3D { projectileCooldownReductionPercent = 0.08f },
-            default));
-        _runtimeDefaultRewardDefinitions.Add(CreateRuntimeReward(
-            "projectile_velocity_up",
-            "Projectile Velocity Up",
-            "+12% projectile speed and +10% projectile lifetime for this run.",
-            1f,
-            true,
-            InvasionStatRewardDefinition3D.RewardEligibility3D.RequiresProjectileWeapon,
-            new InvasionStatRewardDefinition3D.PersistentRewardPayload3D { projectileSpeedPercent = 0.12f, projectileLifetimePercent = 0.10f },
-            default));
-        _runtimeDefaultRewardDefinitions.Add(CreateRuntimeReward(
-            "beam_power_up",
-            "Beam Power Up",
-            "+10% beam damage for this run.",
-            1f,
-            true,
-            InvasionStatRewardDefinition3D.RewardEligibility3D.RequiresBeamWeapon,
-            new InvasionStatRewardDefinition3D.PersistentRewardPayload3D { beamDamagePercent = 0.10f },
-            default));
-        _runtimeDefaultRewardDefinitions.Add(CreateRuntimeReward(
-            "beam_efficiency_up",
-            "Beam Efficiency Up",
-            "+12% beam capacity and +12% beam regeneration for this run.",
-            1f,
-            true,
-            InvasionStatRewardDefinition3D.RewardEligibility3D.RequiresBeamWeapon,
-            new InvasionStatRewardDefinition3D.PersistentRewardPayload3D { beamCapacityPercent = 0.12f, beamRegenPercent = 0.12f },
-            default));
-        _runtimeDefaultRewardDefinitions.Add(CreateRuntimeReward(
-            "hull_up",
-            "Hull Up",
-            "+20 max hull for this run.",
-            1f,
-            true,
-            InvasionStatRewardDefinition3D.RewardEligibility3D.None,
-            new InvasionStatRewardDefinition3D.PersistentRewardPayload3D { flatMaxHealth = 20f },
-            default));
-        _runtimeDefaultRewardDefinitions.Add(CreateRuntimeReward(
-            "shield_up",
-            "Shield Up",
-            "+18 max shield for this run.",
-            1f,
-            true,
-            InvasionStatRewardDefinition3D.RewardEligibility3D.None,
-            new InvasionStatRewardDefinition3D.PersistentRewardPayload3D { flatMaxShield = 18f },
-            default));
-        _runtimeDefaultRewardDefinitions.Add(CreateRuntimeReward(
-            "shield_recovery_up",
-            "Shield Recovery Up",
-            "-12% shield regen delay and +15% shield regen rate for this run.",
-            1f,
-            true,
-            InvasionStatRewardDefinition3D.RewardEligibility3D.None,
-            new InvasionStatRewardDefinition3D.PersistentRewardPayload3D { shieldRegenDelayReductionPercent = 0.12f, shieldRegenRatePercent = 0.15f },
-            default));
-        _runtimeDefaultRewardDefinitions.Add(CreateRuntimeReward(
-            "field_repair",
-            "Field Repair",
-            "Restore 25% of missing hull and fully refill shield immediately.",
-            0.7f,
-            true,
-            InvasionStatRewardDefinition3D.RewardEligibility3D.None,
-            default,
-            new InvasionStatRewardDefinition3D.InstantRewardPayload3D { repairMissingHullFraction = 0.25f, refillShieldToFull = true }));
-        _runtimeDefaultRewardDefinitions.Add(CreateRuntimeReward(
-            "emergency_reserve",
-            "Emergency Reserve",
-            "+1 extra life. Can only be gained once per run.",
-            0.25f,
-            false,
-            InvasionStatRewardDefinition3D.RewardEligibility3D.OneTimePerRun,
-            default,
-            new InvasionStatRewardDefinition3D.InstantRewardPayload3D { grantExtraLife = true }));
-        _runtimeDefaultRewardDefinitions.Add(CreateRuntimeReward(
-            "thrusters_up",
-            "Thrusters Up",
-            "+10% thrust acceleration for this run.",
-            1f,
-            true,
-            InvasionStatRewardDefinition3D.RewardEligibility3D.None,
-            new InvasionStatRewardDefinition3D.PersistentRewardPayload3D { thrustAccelerationPercent = 0.10f },
-            default));
-        _runtimeDefaultRewardDefinitions.Add(CreateRuntimeReward(
-            "top_speed_up",
-            "Top Speed Up",
-            "+8% top speed for this run.",
-            1f,
-            true,
-            InvasionStatRewardDefinition3D.RewardEligibility3D.None,
-            new InvasionStatRewardDefinition3D.PersistentRewardPayload3D { maxSpeedPercent = 0.08f },
-            default));
-        _runtimeDefaultRewardDefinitions.Add(CreateRuntimeReward(
-            "turn_response_up",
-            "Turn Response Up",
-            "+10% turn speed and turn acceleration/deceleration for this run.",
-            1f,
-            true,
-            InvasionStatRewardDefinition3D.RewardEligibility3D.None,
-            new InvasionStatRewardDefinition3D.PersistentRewardPayload3D { turnResponsePercent = 0.10f },
-            default));
-        _runtimeDefaultRewardDefinitions.Add(CreateRuntimeReward(
-            "flight_assist_up",
-            "Flight Assist Up",
-            "Moderately tightens drift damping and velocity alignment for cleaner handling.",
-            1f,
-            true,
-            InvasionStatRewardDefinition3D.RewardEligibility3D.None,
-            new InvasionStatRewardDefinition3D.PersistentRewardPayload3D { flightAssistDampingPercent = 0.12f, flightAssistAlignmentPercent = 0.12f },
-            default));
-
-        _effectiveRewardDefinitions.AddRange(_runtimeDefaultRewardDefinitions);
-    }
-
-    private InvasionStatRewardDefinition3D CreateRuntimeReward(
-        string rewardId,
-        string displayName,
-        string description,
-        float offerWeight,
-        bool repeatable,
-        InvasionStatRewardDefinition3D.RewardEligibility3D eligibility,
-        InvasionStatRewardDefinition3D.PersistentRewardPayload3D persistent,
-        InvasionStatRewardDefinition3D.InstantRewardPayload3D instant)
-    {
-        InvasionStatRewardDefinition3D reward = ScriptableObject.CreateInstance<InvasionStatRewardDefinition3D>();
-        reward.name = $"RuntimeReward_{rewardId}";
-        reward.ConfigureRuntimeDefinition(rewardId, displayName, description, offerWeight, repeatable, eligibility, persistent, instant);
-        return reward;
-    }
-
-    private void DestroyRuntimeDefaultRewards()
-    {
-        for (int i = 0; i < _runtimeDefaultRewardDefinitions.Count; i++)
-        {
-            if (_runtimeDefaultRewardDefinitions[i] != null)
+            InvasionStatRewardDefinition3D[] loadedRewards = Resources.LoadAll<InvasionStatRewardDefinition3D>("3D/InvasionRewards");
+            for (int i = 0; i < loadedRewards.Length; i++)
             {
-                Destroy(_runtimeDefaultRewardDefinitions[i]);
+                if (loadedRewards[i] != null)
+                {
+                    _effectiveRewardDefinitions.Add(loadedRewards[i]);
+                }
             }
         }
 
-        _runtimeDefaultRewardDefinitions.Clear();
+        if (_effectiveRewardDefinitions.Count == 0)
+        {
+            Debug.LogWarning("[InvasionSceneManager3D] No InvasionStatRewardDefinition3D assets were assigned and none were found in Resources/3D/InvasionRewards. Between-wave rewards will be disabled until a reward pool exists.", this);
+        }
     }
 
     private void SetInitialUiState()

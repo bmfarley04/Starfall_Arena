@@ -105,28 +105,6 @@ public class InvasionStatRewardDefinition3D : ScriptableObject
     public bool HasInstantRepair => instant.repairMissingHullFraction > 0f || instant.refillShieldToFull;
     public bool GrantsExtraLife => instant.grantExtraLife;
 
-    public void ConfigureRuntimeDefinition(
-        string runtimeRewardId,
-        string runtimeDisplayName,
-        string runtimeDescription,
-        float runtimeOfferWeight,
-        bool runtimeRepeatable,
-        RewardEligibility3D runtimeEligibility,
-        PersistentRewardPayload3D runtimePersistent,
-        InstantRewardPayload3D runtimeInstant,
-        Sprite runtimeIcon = null)
-    {
-        rewardId = runtimeRewardId;
-        displayName = runtimeDisplayName;
-        description = runtimeDescription;
-        offerWeight = runtimeOfferWeight;
-        repeatable = runtimeRepeatable;
-        eligibility = runtimeEligibility;
-        persistent = runtimePersistent;
-        instant = runtimeInstant;
-        icon = runtimeIcon;
-    }
-
     private void OnValidate()
     {
         offerWeight = Mathf.Max(0f, offerWeight);
