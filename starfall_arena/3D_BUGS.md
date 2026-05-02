@@ -10,6 +10,10 @@ Bug note format:
 - why it matters in the 3D path
 - how to avoid repeating it
 
+## Enemy Movement And Steering
+
+- 3D enemy obstacle avoidance should stay inspectable before it becomes clever. The old `EnemyObstacleAvoidance3D` blended five spherecast probes, hit normals, and hit-point offsets without a stable side choice, which made large-obstacle steering hard to reason about and left the component effectively unused. Prefer a simple forward-blocked check, explicit right/left/up/down escape sampling, and short escape-side memory before adding richer pathing layers.
+
 ## Damage And Combat Ownership
 
 - player-prefab 3D dodge routing must not infer "this dodge is the Class 4 ability" just because a `Dodge3D` component exists on the same ship. The generic left-stick flick dodge and Class 4 ability dodge share the same movement/network pipeline, so the request must carry an explicit dodge kind from input through authoritative resolution and remote presentation. Otherwise Class 4's normal dodge silently inherits the ability's cooldown, distance, and behavior.

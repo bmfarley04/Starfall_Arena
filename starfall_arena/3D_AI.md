@@ -23,10 +23,13 @@ The 3D AI path should stay modular. Enemy prefabs should compose small scripts i
   - current basic shooter target faction is `PlayerTeam`
   - does not gate targeting through obstacle line-of-sight checks
 - `EnemyObstacleAvoidance3D`
-  - adjusts a desired free-flight direction using non-alloc spherecast probes
+  - adjusts a desired free-flight direction with a simple forward-blocked steering filter
+  - uses one non-alloc forward spherecast along the requested movement direction, then samples right/left/up/down escape candidates only when forward travel is blocked
+  - blends the chosen escape side back into the original desired direction so enemies keep trying to reach the player instead of switching into full pathfinding behavior
+  - briefly holds the chosen escape direction to prevent centered asteroids or world geometry from causing left/right/up/down jitter
   - intended for asteroids and world geometry
   - this is steering/avoidance, not Unity NavMesh
-  - currently not implemented anywhere since it was extremely buggy
+  - prefab setup should keep obstacle layers limited to avoidable world geometry, not players, enemies, projectiles, or soft gameplay trigger volumes
 - `EnemySeparation3D`
   - optional enemy-only inter-agent separation steering helper that mirrors the `EnemyObstacleAvoidance3D` API (`ResolveSteeringDirection(Vector3 desired)`)
   - uses a static registry of enabled `EnemySeparation3D` components instead of physics overlap/layer-mask setup, so adding the component to an eligible enemy prefab is the opt-in switch

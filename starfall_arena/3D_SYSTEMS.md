@@ -238,6 +238,10 @@ Current folder contract:
 - `Invasion`
   - 3D Invasion mode flow and wave helpers
   - examples: `InvasionWaveManager3D`
+- `Environment`
+  - local-only authored environment population and static obstacle helpers
+  - examples: `AsteroidFieldSpawner3D`
+  - prefer explicit seeded generation for local obstacle fields when layout determinism matters for testing, iteration, or future network-safe scene reconstruction
 - `Flight`
   - shared 3D ship movement and reusable flight behavior
   - examples: `ShipFlight3D`
