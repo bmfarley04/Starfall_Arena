@@ -53,6 +53,12 @@ public class InvasionSceneManager3D : MonoBehaviour
     [Tooltip("How many reward cards each player sees after a cleared wave.")]
     [Min(1)]
     [SerializeField] private int rewardsPerOffer = 3;
+    [Tooltip("Seconds to wait after a wave is fully cleared before the reward cards are shown. This happens before players are locked into the reward intermission.")]
+    [Min(0f)]
+    [SerializeField] private float rewardPresentationDelaySeconds = 0.75f;
+    [Tooltip("Seconds to wait after the reward intermission finishes before handing control back to the next-wave intro sequence. This is in addition to any next-wave delay authored on InvasionWaveManager3D.")]
+    [Min(0f)]
+    [SerializeField] private float rewardPostPresentationDelaySeconds = 0.35f;
 
     [Header("Wave UI")]
     [Tooltip("Canvas group for the reused round text canvas. In Invasion this displays WAVE text only.")]
@@ -904,6 +910,11 @@ public class InvasionSceneManager3D : MonoBehaviour
             yield break;
         }
 
+        if (rewardPresentationDelaySeconds > 0f)
+        {
+            yield return new WaitForSecondsRealtime(rewardPresentationDelaySeconds);
+        }
+
         EnsureRewardStateContainers();
         _rewardPhaseActive = true;
         _rewardPhaseSequenceId++;
@@ -934,6 +945,11 @@ public class InvasionSceneManager3D : MonoBehaviour
 
         _rewardPhaseActive = false;
         SetPlayersIntermissionLocked(false);
+
+        if (rewardPostPresentationDelaySeconds > 0f)
+        {
+            yield return new WaitForSecondsRealtime(rewardPostPresentationDelaySeconds);
+        }
     }
 
     private IEnumerator PresentLocalRewardSelectionSequential(byte playerSlot)
