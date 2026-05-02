@@ -60,8 +60,8 @@ MonoBehaviour:
   randomizeSeedOnGenerate: 0
   spawnBoxSize: {x: 1000, y: 1000, z: 1000}
   centerSafeZoneRadius: 100
-  minUniformScale: 20
-  maxUniformScale: 50
+  minUniformScale: 30
+  maxUniformScale: 70
   overlapLayers:
     serializedVersion: 2
     m_Bits: 4294967295
