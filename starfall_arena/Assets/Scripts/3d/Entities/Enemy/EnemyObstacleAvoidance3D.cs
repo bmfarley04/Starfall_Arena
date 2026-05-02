@@ -31,8 +31,21 @@ public class EnemyObstacleAvoidance3D : MonoBehaviour
     [Tooltip("Seconds to keep using the chosen escape side after a forward hit so centered obstacles do not cause left/right jitter.")]
     [SerializeField] private float escapeDirectionHoldTime = 0.35f;
 
+    [Header("Arc Smoothing")]
+    [Tooltip("Seconds used to ease into the chosen obstacle-avoidance direction. Lower values react faster; higher values make wider, smoother arcs.")]
+    [SerializeField] private float avoidanceTurnSmoothTime = 0.18f;
+
+    [Tooltip("Seconds used to ease back toward the original desired direction after the forward probe is clear.")]
+    [SerializeField] private float avoidanceReleaseSmoothTime = 0.3f;
+
+    [Tooltip("Minimum escape-side influence while blocked. Useful when Avoidance Strength is tuned low but the enemy should still visibly arc around large obstacles.")]
+    [SerializeField] private float minimumArcStrength = 0.35f;
+
     private Vector3 _heldEscapeDirection;
+    private Vector3 _smoothedSteeringDirection;
     private float _heldEscapeUntilTime;
+    private float _lastSmoothingTime = -1f;
+    private bool _hasSmoothedSteeringDirection;
 
     public Vector3 ResolveSteeringDirection(Vector3 desiredDirection)
     {
@@ -42,19 +55,26 @@ public class EnemyObstacleAvoidance3D : MonoBehaviour
 
         if (desired.sqrMagnitude <= MinDirectionSqrMagnitude || obstacleLayers.value == 0)
         {
-            ClearHeldEscape();
+            ResetRuntimeSteering();
             return desired.sqrMagnitude > MinDirectionSqrMagnitude ? desired.normalized : Vector3.forward;
         }
 
         if (!IsBlocked(desired, forwardLookAheadDistance))
         {
             ClearHeldEscape();
-            return desired;
+            return SmoothSteeringDirection(desired, avoidanceReleaseSmoothTime);
         }
 
         Vector3 escapeDirection = ResolveEscapeDirection(desired);
-        Vector3 steered = desired + escapeDirection * avoidanceStrength;
-        return steered.sqrMagnitude > MinDirectionSqrMagnitude ? steered.normalized : desired;
+        float effectiveStrength = Mathf.Max(avoidanceStrength, minimumArcStrength);
+        Vector3 steered = desired + escapeDirection * effectiveStrength;
+        Vector3 targetSteering = steered.sqrMagnitude > MinDirectionSqrMagnitude ? steered.normalized : desired;
+        return SmoothSteeringDirection(targetSteering, avoidanceTurnSmoothTime);
+    }
+
+    private void OnDisable()
+    {
+        ResetRuntimeSteering();
     }
 
     private void OnValidate()
@@ -64,6 +84,9 @@ public class EnemyObstacleAvoidance3D : MonoBehaviour
         escapeCheckDistance = Mathf.Max(0f, escapeCheckDistance);
         avoidanceStrength = Mathf.Max(0f, avoidanceStrength);
         escapeDirectionHoldTime = Mathf.Max(0f, escapeDirectionHoldTime);
+        avoidanceTurnSmoothTime = Mathf.Max(0f, avoidanceTurnSmoothTime);
+        avoidanceReleaseSmoothTime = Mathf.Max(0f, avoidanceReleaseSmoothTime);
+        minimumArcStrength = Mathf.Max(0f, minimumArcStrength);
     }
 
     private Vector3 ResolveEscapeDirection(Vector3 desired)
@@ -189,6 +212,50 @@ public class EnemyObstacleAvoidance3D : MonoBehaviour
         _heldEscapeUntilTime = 0f;
     }
 
+    private Vector3 SmoothSteeringDirection(Vector3 targetDirection, float smoothTime)
+    {
+        Vector3 target = targetDirection.sqrMagnitude > MinDirectionSqrMagnitude
+            ? targetDirection.normalized
+            : transform.forward;
+
+        if (target.sqrMagnitude <= MinDirectionSqrMagnitude)
+        {
+            ResetRuntimeSteering();
+            return Vector3.forward;
+        }
+
+        float now = Time.time;
+        float deltaTime = _lastSmoothingTime >= 0f ? Mathf.Max(0f, now - _lastSmoothingTime) : 0f;
+        _lastSmoothingTime = now;
+
+        if (!_hasSmoothedSteeringDirection || smoothTime <= 0f)
+        {
+            _smoothedSteeringDirection = target;
+            _hasSmoothedSteeringDirection = true;
+            return target;
+        }
+
+        if (deltaTime <= 0f)
+        {
+            return _smoothedSteeringDirection;
+        }
+
+        float blend = 1f - Mathf.Exp(-deltaTime / Mathf.Max(0.0001f, smoothTime));
+        Vector3 smoothed = Vector3.Slerp(_smoothedSteeringDirection, target, blend);
+        _smoothedSteeringDirection = smoothed.sqrMagnitude > MinDirectionSqrMagnitude
+            ? smoothed.normalized
+            : target;
+        return _smoothedSteeringDirection;
+    }
+
+    private void ResetRuntimeSteering()
+    {
+        ClearHeldEscape();
+        _smoothedSteeringDirection = Vector3.zero;
+        _lastSmoothingTime = -1f;
+        _hasSmoothedSteeringDirection = false;
+    }
+
     private void OnDrawGizmosSelected()
     {
         Vector3 desired = transform.forward.sqrMagnitude > MinDirectionSqrMagnitude
@@ -204,6 +271,12 @@ public class EnemyObstacleAvoidance3D : MonoBehaviour
         DrawProbeGizmo(-right, escapeCheckDistance);
         DrawProbeGizmo(up, escapeCheckDistance);
         DrawProbeGizmo(-up, escapeCheckDistance);
+
+        if (_hasSmoothedSteeringDirection && _smoothedSteeringDirection.sqrMagnitude > MinDirectionSqrMagnitude)
+        {
+            Gizmos.color = new Color(1f, 0.35f, 0.9f, 1f);
+            Gizmos.DrawRay(transform.position, _smoothedSteeringDirection.normalized * Mathf.Max(1f, probeRadius * 4f));
+        }
     }
 
     private void DrawProbeGizmo(Vector3 direction, float distance)

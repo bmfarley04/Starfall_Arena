@@ -13,6 +13,7 @@ Bug note format:
 ## Enemy Movement And Steering
 
 - 3D enemy obstacle avoidance should stay inspectable before it becomes clever. The old `EnemyObstacleAvoidance3D` blended five spherecast probes, hit normals, and hit-point offsets without a stable side choice, which made large-obstacle steering hard to reason about and left the component effectively unused. Prefer a simple forward-blocked check, explicit right/left/up/down escape sampling, and short escape-side memory before adding richer pathing layers.
+- Do not smooth all enemy movement at the `EnemyAIFlightController3D` level just to make obstacle avoidance prettier. Rammers, formation ships, and boss movement often rely on sharp committed vectors or authored state-machine paths, so broad motor smoothing can quietly change enemy identity and combat timing. Smooth obstacle arcs inside `EnemyObstacleAvoidance3D` first, then extract a reusable steering smoother only if non-obstacle chase curves become a deliberate design goal.
 
 ## Damage And Combat Ownership
 

@@ -27,6 +27,7 @@ The 3D AI path should stay modular. Enemy prefabs should compose small scripts i
   - uses one non-alloc forward spherecast along the requested movement direction, then samples right/left/up/down escape candidates only when forward travel is blocked
   - blends the chosen escape side back into the original desired direction so enemies keep trying to reach the player instead of switching into full pathfinding behavior
   - briefly holds the chosen escape direction to prevent centered asteroids or world geometry from causing left/right/up/down jitter
+  - smooths into blocked avoidance and smooths back out when forward travel clears, so direct-chase enemies arc around obstacles instead of snapping through chevron-shaped steering changes
   - intended for asteroids and world geometry
   - this is steering/avoidance, not Unity NavMesh
   - prefab setup should keep obstacle layers limited to avoidable world geometry, not players, enemies, projectiles, or soft gameplay trigger volumes
@@ -238,8 +239,8 @@ When implementing a new enemy brain, document the chosen movement behavior for e
 Current pathing is free-flight steering:
 
 - steer toward the desired target direction
-- probe forward and along angled whiskers
-- bias away from obstacle hits
+- probe forward for blockers, then sample simple right/left/up/down escape candidates when blocked
+- blend and smooth the selected escape side back into the desired target direction so obstacle routes read as arcs, not hard chevrons
 - preserve 3D climb/dive movement
 - feed the final world-space direction to the simple enemy flight motor
 
