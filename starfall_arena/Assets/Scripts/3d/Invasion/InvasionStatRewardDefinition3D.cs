@@ -1,5 +1,12 @@
 using UnityEngine;
 
+public enum InvasionRewardTier3D
+{
+    Common = 1,
+    Epic = 2,
+    High = 3
+}
+
 [CreateAssetMenu(fileName = "InvasionStatRewardDefinition3D", menuName = "Starfall Arena/3D/Invasion/Stat Reward", order = 60)]
 public class InvasionStatRewardDefinition3D : ScriptableObject
 {
@@ -68,7 +75,7 @@ public class InvasionStatRewardDefinition3D : ScriptableObject
     [Header("Display")]
     [Tooltip("Title shown on the reused augment-card reward UI.")]
     [SerializeField] private string displayName = "Reward";
-    [Tooltip("Description shown on the reused augment-card reward UI.")]
+    [Tooltip("Shared description shown on the reused augment-card reward UI across all reward tiers.")]
     [TextArea(3, 5)]
     [SerializeField] private string description = "";
     [Tooltip("Icon shown on the reused augment-card reward UI.")]
@@ -83,11 +90,23 @@ public class InvasionStatRewardDefinition3D : ScriptableObject
     [Tooltip("Eligibility requirements used to filter which ships and run states may see this reward.")]
     [SerializeField] private RewardEligibility3D eligibility = RewardEligibility3D.None;
 
-    [Header("Payload")]
-    [Tooltip("Persistent run-long stat changes applied by this reward.")]
-    [SerializeField] private PersistentRewardPayload3D persistent;
-    [Tooltip("Immediate one-shot effects applied when this reward is chosen.")]
-    [SerializeField] private InstantRewardPayload3D instant;
+    [Header("Common Tier")]
+    [Tooltip("Persistent run-long stat changes applied when this reward is offered as a Common pick.")]
+    [SerializeField] private PersistentRewardPayload3D commonPersistent;
+    [Tooltip("Immediate one-shot effects applied when this reward is chosen as a Common pick.")]
+    [SerializeField] private InstantRewardPayload3D commonInstant;
+
+    [Header("Epic Tier")]
+    [Tooltip("Persistent run-long stat changes applied when this reward is offered as an Epic pick.")]
+    [SerializeField] private PersistentRewardPayload3D epicPersistent;
+    [Tooltip("Immediate one-shot effects applied when this reward is chosen as an Epic pick.")]
+    [SerializeField] private InstantRewardPayload3D epicInstant;
+
+    [Header("High Tier")]
+    [Tooltip("Persistent run-long stat changes applied when this reward is offered as a High-tier pick.")]
+    [SerializeField] private PersistentRewardPayload3D highPersistent;
+    [Tooltip("Immediate one-shot effects applied when this reward is chosen as a High-tier pick.")]
+    [SerializeField] private InstantRewardPayload3D highInstant;
 
     public string RewardId => string.IsNullOrWhiteSpace(rewardId) ? name : rewardId;
     public string DisplayName => string.IsNullOrWhiteSpace(displayName) ? name : displayName;
@@ -96,34 +115,75 @@ public class InvasionStatRewardDefinition3D : ScriptableObject
     public float OfferWeight => Mathf.Max(0f, offerWeight);
     public bool Repeatable => repeatable;
     public RewardEligibility3D Eligibility => eligibility;
-    public PersistentRewardPayload3D Persistent => persistent;
-    public InstantRewardPayload3D Instant => instant;
 
     public bool RequiresProjectileWeapon => (eligibility & RewardEligibility3D.RequiresProjectileWeapon) != 0;
     public bool RequiresBeamWeapon => (eligibility & RewardEligibility3D.RequiresBeamWeapon) != 0;
     public bool IsOneTimePerRun => !repeatable || (eligibility & RewardEligibility3D.OneTimePerRun) != 0;
-    public bool HasInstantRepair => instant.repairMissingHullFraction > 0f || instant.refillShieldToFull;
-    public bool GrantsExtraLife => instant.grantExtraLife;
+
+    public PersistentRewardPayload3D GetPersistentPayload(InvasionRewardTier3D tier)
+    {
+        return tier switch
+        {
+            InvasionRewardTier3D.Epic => epicPersistent,
+            InvasionRewardTier3D.High => highPersistent,
+            _ => commonPersistent
+        };
+    }
+
+    public InstantRewardPayload3D GetInstantPayload(InvasionRewardTier3D tier)
+    {
+        return tier switch
+        {
+            InvasionRewardTier3D.Epic => epicInstant,
+            InvasionRewardTier3D.High => highInstant,
+            _ => commonInstant
+        };
+    }
+
+    public bool HasInstantRepair(InvasionRewardTier3D tier)
+    {
+        InstantRewardPayload3D instant = GetInstantPayload(tier);
+        return instant.repairMissingHullFraction > 0f || instant.refillShieldToFull;
+    }
+
+    public bool GrantsExtraLife(InvasionRewardTier3D tier)
+    {
+        return GetInstantPayload(tier).grantExtraLife;
+    }
 
     private void OnValidate()
     {
         offerWeight = Mathf.Max(0f, offerWeight);
-        persistent.allWeaponDamagePercent = Mathf.Max(0f, persistent.allWeaponDamagePercent);
-        persistent.projectileCooldownReductionPercent = Mathf.Max(0f, persistent.projectileCooldownReductionPercent);
-        persistent.projectileSpeedPercent = Mathf.Max(0f, persistent.projectileSpeedPercent);
-        persistent.projectileLifetimePercent = Mathf.Max(0f, persistent.projectileLifetimePercent);
-        persistent.beamDamagePercent = Mathf.Max(0f, persistent.beamDamagePercent);
-        persistent.beamCapacityPercent = Mathf.Max(0f, persistent.beamCapacityPercent);
-        persistent.beamRegenPercent = Mathf.Max(0f, persistent.beamRegenPercent);
-        persistent.flatMaxHealth = Mathf.Max(0f, persistent.flatMaxHealth);
-        persistent.flatMaxShield = Mathf.Max(0f, persistent.flatMaxShield);
-        persistent.shieldRegenDelayReductionPercent = Mathf.Max(0f, persistent.shieldRegenDelayReductionPercent);
-        persistent.shieldRegenRatePercent = Mathf.Max(0f, persistent.shieldRegenRatePercent);
-        persistent.thrustAccelerationPercent = Mathf.Max(0f, persistent.thrustAccelerationPercent);
-        persistent.maxSpeedPercent = Mathf.Max(0f, persistent.maxSpeedPercent);
-        persistent.turnResponsePercent = Mathf.Max(0f, persistent.turnResponsePercent);
-        persistent.flightAssistDampingPercent = Mathf.Max(0f, persistent.flightAssistDampingPercent);
-        persistent.flightAssistAlignmentPercent = Mathf.Max(0f, persistent.flightAssistAlignmentPercent);
-        instant.repairMissingHullFraction = Mathf.Clamp01(instant.repairMissingHullFraction);
+        ClampPersistentPayload(ref commonPersistent);
+        ClampPersistentPayload(ref epicPersistent);
+        ClampPersistentPayload(ref highPersistent);
+        ClampInstantPayload(ref commonInstant);
+        ClampInstantPayload(ref epicInstant);
+        ClampInstantPayload(ref highInstant);
+    }
+
+    private static void ClampPersistentPayload(ref PersistentRewardPayload3D payload)
+    {
+        payload.allWeaponDamagePercent = Mathf.Max(0f, payload.allWeaponDamagePercent);
+        payload.projectileCooldownReductionPercent = Mathf.Max(0f, payload.projectileCooldownReductionPercent);
+        payload.projectileSpeedPercent = Mathf.Max(0f, payload.projectileSpeedPercent);
+        payload.projectileLifetimePercent = Mathf.Max(0f, payload.projectileLifetimePercent);
+        payload.beamDamagePercent = Mathf.Max(0f, payload.beamDamagePercent);
+        payload.beamCapacityPercent = Mathf.Max(0f, payload.beamCapacityPercent);
+        payload.beamRegenPercent = Mathf.Max(0f, payload.beamRegenPercent);
+        payload.flatMaxHealth = Mathf.Max(0f, payload.flatMaxHealth);
+        payload.flatMaxShield = Mathf.Max(0f, payload.flatMaxShield);
+        payload.shieldRegenDelayReductionPercent = Mathf.Max(0f, payload.shieldRegenDelayReductionPercent);
+        payload.shieldRegenRatePercent = Mathf.Max(0f, payload.shieldRegenRatePercent);
+        payload.thrustAccelerationPercent = Mathf.Max(0f, payload.thrustAccelerationPercent);
+        payload.maxSpeedPercent = Mathf.Max(0f, payload.maxSpeedPercent);
+        payload.turnResponsePercent = Mathf.Max(0f, payload.turnResponsePercent);
+        payload.flightAssistDampingPercent = Mathf.Max(0f, payload.flightAssistDampingPercent);
+        payload.flightAssistAlignmentPercent = Mathf.Max(0f, payload.flightAssistAlignmentPercent);
+    }
+
+    private static void ClampInstantPayload(ref InstantRewardPayload3D payload)
+    {
+        payload.repairMissingHullFraction = Mathf.Clamp01(payload.repairMissingHullFraction);
     }
 }

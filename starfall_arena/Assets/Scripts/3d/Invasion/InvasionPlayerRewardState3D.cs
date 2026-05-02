@@ -52,18 +52,27 @@ public class InvasionPlayerRewardState3D
         public float flightAssistAlignmentPercent;
     }
 
+    [Serializable]
+    public struct RewardHistoryEntry3D
+    {
+        public string rewardId;
+        public InvasionRewardTier3D tier;
+    }
+
     [SerializeField] private PlayerBaseRewardSnapshot3D baseSnapshot;
     [SerializeField] private RewardModifierTotals3D modifiers;
     [SerializeField] private bool baseSnapshotCaptured;
     [SerializeField] private bool hasTakenEmergencyReserve;
     [SerializeField] private bool pendingFieldRepair;
-    [SerializeField] private List<string> rewardHistory = new List<string>();
+    [SerializeField] private float pendingFieldRepairMissingHullFraction;
+    [SerializeField] private bool pendingFieldRepairRefillShieldToFull;
+    [SerializeField] private List<RewardHistoryEntry3D> rewardHistory = new List<RewardHistoryEntry3D>();
 
     public bool HasBaseSnapshot => baseSnapshotCaptured;
     public bool HasProjectileWeapons => baseSnapshotCaptured && baseSnapshot.hasProjectileWeapons;
     public bool HasBeamWeapons => baseSnapshotCaptured && baseSnapshot.hasBeamWeapons;
     public bool HasTakenEmergencyReserve => hasTakenEmergencyReserve;
-    public IReadOnlyList<string> RewardHistory => rewardHistory;
+    public IReadOnlyList<RewardHistoryEntry3D> RewardHistory => rewardHistory;
 
     public void CaptureBaseSnapshot(Player3D player)
     {
@@ -115,7 +124,7 @@ public class InvasionPlayerRewardState3D
         baseSnapshotCaptured = true;
     }
 
-    public bool CanOfferReward(InvasionStatRewardDefinition3D reward, Player3D livePlayer)
+    public bool CanOfferReward(InvasionStatRewardDefinition3D reward, InvasionRewardTier3D tier, Player3D livePlayer)
     {
         if (reward == null)
         {
@@ -132,20 +141,21 @@ public class InvasionPlayerRewardState3D
             return false;
         }
 
-        if (reward.GrantsExtraLife && hasTakenEmergencyReserve)
+        if (reward.GrantsExtraLife(tier) && hasTakenEmergencyReserve)
         {
             return false;
         }
 
-        if (reward.IsOneTimePerRun && rewardHistory.Contains(reward.RewardId))
+        if (reward.IsOneTimePerRun && HasRewardInHistory(reward.RewardId))
         {
             return false;
         }
 
-        if (reward.HasInstantRepair && livePlayer != null)
+        if (reward.HasInstantRepair(tier) && livePlayer != null)
         {
+            InvasionStatRewardDefinition3D.InstantRewardPayload3D instant = reward.GetInstantPayload(tier);
             bool hullMissing = livePlayer.CurrentHealth < livePlayer.MaxHealth - 0.01f;
-            bool shieldMissing = reward.Instant.refillShieldToFull && livePlayer.CurrentShield < livePlayer.MaxShield - 0.01f;
+            bool shieldMissing = instant.refillShieldToFull && livePlayer.CurrentShield < livePlayer.MaxShield - 0.01f;
             if (!hullMissing && !shieldMissing)
             {
                 return false;
@@ -155,14 +165,15 @@ public class InvasionPlayerRewardState3D
         return true;
     }
 
-    public void ApplyRewardDefinition(InvasionStatRewardDefinition3D reward, Player3D livePlayer)
+    public void ApplyRewardDefinition(InvasionStatRewardDefinition3D reward, InvasionRewardTier3D tier, Player3D livePlayer)
     {
         if (reward == null)
         {
             return;
         }
 
-        InvasionStatRewardDefinition3D.PersistentRewardPayload3D persistent = reward.Persistent;
+        InvasionStatRewardDefinition3D.PersistentRewardPayload3D persistent = reward.GetPersistentPayload(tier);
+        InvasionStatRewardDefinition3D.InstantRewardPayload3D instant = reward.GetInstantPayload(tier);
         modifiers.allWeaponDamagePercent = Mathf.Min(0.60f, modifiers.allWeaponDamagePercent + Mathf.Max(0f, persistent.allWeaponDamagePercent));
         modifiers.projectileCooldownReductionPercent = Mathf.Min(0.40f, modifiers.projectileCooldownReductionPercent + Mathf.Max(0f, persistent.projectileCooldownReductionPercent));
         modifiers.projectileSpeedPercent += Mathf.Max(0f, persistent.projectileSpeedPercent);
@@ -180,20 +191,26 @@ public class InvasionPlayerRewardState3D
         modifiers.flightAssistDampingPercent = Mathf.Min(0.35f, modifiers.flightAssistDampingPercent + Mathf.Max(0f, persistent.flightAssistDampingPercent));
         modifiers.flightAssistAlignmentPercent = Mathf.Min(0.35f, modifiers.flightAssistAlignmentPercent + Mathf.Max(0f, persistent.flightAssistAlignmentPercent));
 
-        if (reward.GrantsExtraLife)
+        if (instant.grantExtraLife)
         {
             hasTakenEmergencyReserve = true;
         }
 
-        if (reward.HasInstantRepair)
+        if (instant.repairMissingHullFraction > 0f || instant.refillShieldToFull)
         {
             pendingFieldRepair = livePlayer == null;
+            pendingFieldRepairMissingHullFraction = livePlayer == null ? instant.repairMissingHullFraction : 0f;
+            pendingFieldRepairRefillShieldToFull = livePlayer == null && instant.refillShieldToFull;
         }
 
-        rewardHistory.Add(reward.RewardId);
+        rewardHistory.Add(new RewardHistoryEntry3D
+        {
+            rewardId = reward.RewardId,
+            tier = tier
+        });
     }
 
-    public void ApplyToPlayer(Player3D player, InvasionStatRewardDefinition3D immediateReward = null)
+    public void ApplyToPlayer(Player3D player, InvasionStatRewardDefinition3D immediateReward = null, InvasionRewardTier3D immediateRewardTier = InvasionRewardTier3D.Common)
     {
         if (player == null)
         {
@@ -286,14 +303,30 @@ public class InvasionPlayerRewardState3D
 
         if (pendingFieldRepair)
         {
-            ApplyImmediateRepair(player, 0.25f, true);
+            ApplyImmediateRepair(player, pendingFieldRepairMissingHullFraction, pendingFieldRepairRefillShieldToFull);
             pendingFieldRepair = false;
+            pendingFieldRepairMissingHullFraction = 0f;
+            pendingFieldRepairRefillShieldToFull = false;
         }
 
-        if (immediateReward != null && immediateReward.HasInstantRepair)
+        if (immediateReward != null && immediateReward.HasInstantRepair(immediateRewardTier))
         {
-            ApplyImmediateRepair(player, immediateReward.Instant.repairMissingHullFraction, immediateReward.Instant.refillShieldToFull);
+            InvasionStatRewardDefinition3D.InstantRewardPayload3D instant = immediateReward.GetInstantPayload(immediateRewardTier);
+            ApplyImmediateRepair(player, instant.repairMissingHullFraction, instant.refillShieldToFull);
         }
+    }
+
+    private bool HasRewardInHistory(string rewardId)
+    {
+        for (int i = 0; i < rewardHistory.Count; i++)
+        {
+            if (rewardHistory[i].rewardId == rewardId)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public static void ApplyImmediateRepair(Player3D player, float missingHullFraction, bool refillShieldToFull)

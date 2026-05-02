@@ -1,0 +1,84 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cbf9338473b8a064fb6301732094a68d, type: 3}
+  m_Name: ProjectileVelocityUp
+  m_EditorClassIdentifier: Assembly-CSharp::InvasionStatRewardDefinition3D
+  rewardId: projectile_velocity_up
+  displayName: Projectile Velocity Up
+  description: Increase projectile speed and lifetime.
+  icon: {fileID: 21300000, guid: 44b2c1f91a896804780529464ef63e74, type: 3}
+  offerWeight: 1
+  repeatable: 1
+  eligibility: 1
+  commonPersistent:
+    allWeaponDamagePercent: 0
+    projectileCooldownReductionPercent: 0
+    projectileSpeedPercent: 0.12
+    projectileLifetimePercent: 0.1
+    beamDamagePercent: 0
+    beamCapacityPercent: 0
+    beamRegenPercent: 0
+    flatMaxHealth: 0
+    flatMaxShield: 0
+    shieldRegenDelayReductionPercent: 0
+    shieldRegenRatePercent: 0
+    thrustAccelerationPercent: 0
+    maxSpeedPercent: 0
+    turnResponsePercent: 0
+    flightAssistDampingPercent: 0
+    flightAssistAlignmentPercent: 0
+  commonInstant:
+    repairMissingHullFraction: 0
+    refillShieldToFull: 0
+    grantExtraLife: 0
+  epicPersistent:
+    allWeaponDamagePercent: 0
+    projectileCooldownReductionPercent: 0
+    projectileSpeedPercent: 0.2
+    projectileLifetimePercent: 0.18
+    beamDamagePercent: 0
+    beamCapacityPercent: 0
+    beamRegenPercent: 0
+    flatMaxHealth: 0
+    flatMaxShield: 0
+    shieldRegenDelayReductionPercent: 0
+    shieldRegenRatePercent: 0
+    thrustAccelerationPercent: 0
+    maxSpeedPercent: 0
+    turnResponsePercent: 0
+    flightAssistDampingPercent: 0
+    flightAssistAlignmentPercent: 0
+  epicInstant:
+    repairMissingHullFraction: 0
+    refillShieldToFull: 0
+    grantExtraLife: 0
+  highPersistent:
+    allWeaponDamagePercent: 0
+    projectileCooldownReductionPercent: 0
+    projectileSpeedPercent: 0.28
+    projectileLifetimePercent: 0.26
+    beamDamagePercent: 0
+    beamCapacityPercent: 0
+    beamRegenPercent: 0
+    flatMaxHealth: 0
+    flatMaxShield: 0
+    shieldRegenDelayReductionPercent: 0
+    shieldRegenRatePercent: 0
+    thrustAccelerationPercent: 0
+    maxSpeedPercent: 0
+    turnResponsePercent: 0
+    flightAssistDampingPercent: 0
+    flightAssistAlignmentPercent: 0
+  highInstant:
+    repairMissingHullFraction: 0
+    refillShieldToFull: 0
+    grantExtraLife: 0

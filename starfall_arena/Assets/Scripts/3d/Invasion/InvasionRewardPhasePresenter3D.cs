@@ -46,7 +46,7 @@ public class InvasionRewardPhasePresenter3D : MonoBehaviour
         CleanupRuntimeAugments();
     }
 
-    public void ShowOffers(int playerSlot, IReadOnlyList<InvasionStatRewardDefinition3D> offers, Action<int> onSelected)
+    public void ShowOffers(int playerSlot, InvasionRewardTier3D rewardTier, IReadOnlyList<InvasionStatRewardDefinition3D> offers, Action<int> onSelected)
     {
         if (augmentSelectManager == null)
         {
@@ -83,7 +83,7 @@ public class InvasionRewardPhasePresenter3D : MonoBehaviour
             return;
         }
 
-        augmentSelectManager.ShowNetworkAugmentSelect(playerSlot, tier: 1, _runtimeAugments);
+        augmentSelectManager.ShowNetworkAugmentSelect(playerSlot, ResolveVisualTier(rewardTier), _runtimeAugments);
 
         if (_countdownCoroutine != null)
         {
@@ -169,5 +169,15 @@ public class InvasionRewardPhasePresenter3D : MonoBehaviour
             StopCoroutine(_countdownCoroutine);
             _countdownCoroutine = null;
         }
+    }
+
+    private static int ResolveVisualTier(InvasionRewardTier3D rewardTier)
+    {
+        return rewardTier switch
+        {
+            InvasionRewardTier3D.Epic => 2,
+            InvasionRewardTier3D.High => 3,
+            _ => 1
+        };
     }
 }

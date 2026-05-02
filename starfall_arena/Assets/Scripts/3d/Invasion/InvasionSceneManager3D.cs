@@ -134,6 +134,7 @@ public class InvasionSceneManager3D : MonoBehaviour
     private readonly bool[] _rewardChoiceReceivedBySlot = new bool[3];
     private readonly List<InvasionStatRewardDefinition3D> _effectiveRewardDefinitions = new List<InvasionStatRewardDefinition3D>(16);
     private int _rewardPhaseSequenceId;
+    private InvasionRewardTier3D _activeRewardPhaseTier = InvasionRewardTier3D.Common;
     private bool _rewardPhaseActive;
     private bool _customNetworkMessagesRegistered;
 
@@ -906,11 +907,12 @@ public class InvasionSceneManager3D : MonoBehaviour
         EnsureRewardStateContainers();
         _rewardPhaseActive = true;
         _rewardPhaseSequenceId++;
+        _activeRewardPhaseTier = ResolveRewardTierForWave(clearedWaveNumber);
         ResetRewardChoiceState();
         SetPlayersIntermissionLocked(true);
 
-        BuildOfferIndicesForPlayer(1);
-        BuildOfferIndicesForPlayer(2);
+        BuildOfferIndicesForPlayer(1, _activeRewardPhaseTier);
+        BuildOfferIndicesForPlayer(2, _activeRewardPhaseTier);
 
         if (_useNetworkSession)
         {
@@ -964,7 +966,7 @@ public class InvasionSceneManager3D : MonoBehaviour
             return;
         }
 
-        rewardPhasePresenter.ShowOffers(playerSlot, offers, choiceIndex =>
+        rewardPhasePresenter.ShowOffers(playerSlot, _activeRewardPhaseTier, offers, choiceIndex =>
         {
             HandleLocalRewardChoice(playerSlot, choiceIndex);
             onSelectionResolved?.Invoke();
@@ -983,7 +985,7 @@ public class InvasionSceneManager3D : MonoBehaviour
         ApplyRewardChoiceAuthoritative(playerSlot, rewardDefinitionIndex);
     }
 
-    private void BuildOfferIndicesForPlayer(byte playerSlot)
+    private void BuildOfferIndicesForPlayer(byte playerSlot, InvasionRewardTier3D rewardTier)
     {
         EnsureRewardStateContainers();
         int[] offers = _pendingRewardOfferIndicesBySlot[playerSlot];
@@ -1004,7 +1006,7 @@ public class InvasionSceneManager3D : MonoBehaviour
         for (int rewardIndex = 0; rewardIndex < _effectiveRewardDefinitions.Count; rewardIndex++)
         {
             InvasionStatRewardDefinition3D reward = _effectiveRewardDefinitions[rewardIndex];
-            if (reward == null || !rewardState.CanOfferReward(reward, livePlayer))
+            if (reward == null || !rewardState.CanOfferReward(reward, rewardTier, livePlayer))
             {
                 continue;
             }
@@ -1130,10 +1132,10 @@ public class InvasionSceneManager3D : MonoBehaviour
 
         InvasionPlayerRewardState3D rewardState = _rewardStateBySlot[playerSlot];
         Player3D livePlayer = ResolveTrackedOrNetworkPlayer(playerSlot);
-        rewardState.ApplyRewardDefinition(reward, livePlayer);
-        rewardState.ApplyToPlayer(livePlayer, reward);
+        rewardState.ApplyRewardDefinition(reward, _activeRewardPhaseTier, livePlayer);
+        rewardState.ApplyToPlayer(livePlayer, reward, _activeRewardPhaseTier);
 
-        if (reward.GrantsExtraLife)
+        if (reward.GrantsExtraLife(_activeRewardPhaseTier))
         {
             _playerLivesRemainingBySlot[playerSlot] = Mathf.Max(0, _playerLivesRemainingBySlot[playerSlot]) + 1;
             UpdateLifeCounter(ResolveDisplayedLives());
@@ -1144,11 +1146,11 @@ public class InvasionSceneManager3D : MonoBehaviour
 
         if (_useNetworkSession)
         {
-            BroadcastRewardApplied(playerSlot, rewardDefinitionIndex);
+            BroadcastRewardApplied(playerSlot, rewardDefinitionIndex, _activeRewardPhaseTier);
         }
     }
 
-    private void ApplyRewardChoiceReplica(byte playerSlot, int rewardDefinitionIndex)
+    private void ApplyRewardChoiceReplica(byte playerSlot, int rewardDefinitionIndex, InvasionRewardTier3D rewardTier)
     {
         if (playerSlot < 1 || playerSlot > 2)
         {
@@ -1163,10 +1165,10 @@ public class InvasionSceneManager3D : MonoBehaviour
 
         InvasionPlayerRewardState3D rewardState = _rewardStateBySlot[playerSlot];
         Player3D livePlayer = ResolveTrackedOrNetworkPlayer(playerSlot);
-        rewardState.ApplyRewardDefinition(reward, livePlayer);
-        rewardState.ApplyToPlayer(livePlayer, reward);
+        rewardState.ApplyRewardDefinition(reward, rewardTier, livePlayer);
+        rewardState.ApplyToPlayer(livePlayer, reward, rewardTier);
 
-        if (reward.GrantsExtraLife)
+        if (reward.GrantsExtraLife(rewardTier))
         {
             _playerLivesRemainingBySlot[playerSlot] = Mathf.Max(0, _playerLivesRemainingBySlot[playerSlot]) + 1;
             UpdateLifeCounter(ResolveDisplayedLives());
@@ -1252,6 +1254,17 @@ public class InvasionSceneManager3D : MonoBehaviour
         }
 
         return false;
+    }
+
+    private static InvasionRewardTier3D ResolveRewardTierForWave(int clearedWaveNumber)
+    {
+        int normalizedWaveIndex = Mathf.Max(0, clearedWaveNumber - 1) % 3;
+        return normalizedWaveIndex switch
+        {
+            1 => InvasionRewardTier3D.Epic,
+            2 => InvasionRewardTier3D.High,
+            _ => InvasionRewardTier3D.Common
+        };
     }
 
     private IEnumerator ShowWaveText(int waveNumber)
@@ -1664,9 +1677,10 @@ public class InvasionSceneManager3D : MonoBehaviour
         }
 
         int offerCount = Mathf.Max(1, rewardsPerOffer);
-        using (FastBufferWriter writer = new FastBufferWriter(4 + (offerCount * sizeof(int) * 2), Allocator.Temp))
+        using (FastBufferWriter writer = new FastBufferWriter(8 + (offerCount * sizeof(int) * 2), Allocator.Temp))
         {
             writer.WriteValueSafe(_rewardPhaseSequenceId);
+            writer.WriteValueSafe((int)_activeRewardPhaseTier);
             for (int slot = 1; slot <= 2; slot++)
             {
                 int[] offers = _pendingRewardOfferIndicesBySlot[slot];
@@ -1689,7 +1703,9 @@ public class InvasionSceneManager3D : MonoBehaviour
         }
 
         reader.ReadValueSafe(out int sequenceId);
+        reader.ReadValueSafe(out int rewardTierValue);
         _rewardPhaseSequenceId = Mathf.Max(_rewardPhaseSequenceId, sequenceId);
+        _activeRewardPhaseTier = SanitizeRewardTier((InvasionRewardTier3D)rewardTierValue);
 
         EnsureRewardStateContainers();
         ResetRewardChoiceState();
@@ -1780,7 +1796,7 @@ public class InvasionSceneManager3D : MonoBehaviour
         return 0;
     }
 
-    private void BroadcastRewardApplied(byte playerSlot, int rewardDefinitionIndex)
+    private void BroadcastRewardApplied(byte playerSlot, int rewardDefinitionIndex, InvasionRewardTier3D rewardTier)
     {
         NetworkManager networkManager = NetworkManager.Singleton;
         if (!_useNetworkSession || networkManager == null || !networkManager.IsServer || networkManager.CustomMessagingManager == null)
@@ -1788,11 +1804,12 @@ public class InvasionSceneManager3D : MonoBehaviour
             return;
         }
 
-        using (FastBufferWriter writer = new FastBufferWriter(16, Allocator.Temp))
+        using (FastBufferWriter writer = new FastBufferWriter(20, Allocator.Temp))
         {
             writer.WriteValueSafe(_rewardPhaseSequenceId);
             writer.WriteValueSafe(playerSlot);
             writer.WriteValueSafe(rewardDefinitionIndex);
+            writer.WriteValueSafe((int)rewardTier);
             networkManager.CustomMessagingManager.SendNamedMessage(RewardAppliedMessageName, networkManager.ConnectedClientsIds, writer, NetworkDelivery.ReliableSequenced);
         }
     }
@@ -1807,13 +1824,16 @@ public class InvasionSceneManager3D : MonoBehaviour
         reader.ReadValueSafe(out int sequenceId);
         reader.ReadValueSafe(out byte playerSlot);
         reader.ReadValueSafe(out int rewardDefinitionIndex);
+        reader.ReadValueSafe(out int rewardTierValue);
         if (sequenceId != _rewardPhaseSequenceId && sequenceId != _rewardPhaseSequenceId + 1)
         {
             _rewardPhaseSequenceId = Mathf.Max(_rewardPhaseSequenceId, sequenceId);
         }
 
+        InvasionRewardTier3D rewardTier = SanitizeRewardTier((InvasionRewardTier3D)rewardTierValue);
+        _activeRewardPhaseTier = rewardTier;
         EnsureRewardStateContainers();
-        ApplyRewardChoiceReplica(playerSlot, rewardDefinitionIndex);
+        ApplyRewardChoiceReplica(playerSlot, rewardDefinitionIndex, rewardTier);
 
         if (playerSlot >= 1 && playerSlot <= 2)
         {
@@ -1825,6 +1845,16 @@ public class InvasionSceneManager3D : MonoBehaviour
             _rewardPhaseActive = false;
             SetPlayersIntermissionLocked(false);
         }
+    }
+
+    private static InvasionRewardTier3D SanitizeRewardTier(InvasionRewardTier3D tier)
+    {
+        return tier switch
+        {
+            InvasionRewardTier3D.Epic => InvasionRewardTier3D.Epic,
+            InvasionRewardTier3D.High => InvasionRewardTier3D.High,
+            _ => InvasionRewardTier3D.Common
+        };
     }
 
     private void StopRespawnCoroutines()

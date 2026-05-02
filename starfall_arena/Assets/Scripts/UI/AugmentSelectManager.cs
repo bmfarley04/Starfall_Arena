@@ -1568,9 +1568,23 @@ namespace StarfallArena.UI
         private void SetDefaultSelection(int tier)
         {
             Button[] buttons = GetButtonsForTier(tier);
-            Button defaultButton = (buttons != null && buttons.Length > 1 && buttons[1] != null)
-                ? buttons[1]  // center button
-                : null;
+            Button defaultButton = null;
+            if (buttons != null && buttons.Length > 1 && buttons[1] != null && buttons[1].gameObject.activeSelf && buttons[1].interactable)
+            {
+                defaultButton = buttons[1];
+            }
+
+            if (defaultButton == null && buttons != null)
+            {
+                foreach (Button button in buttons)
+                {
+                    if (button != null && button.gameObject.activeSelf && button.interactable)
+                    {
+                        defaultButton = button;
+                        break;
+                    }
+                }
+            }
 
             if (defaultButton != null && EventSystem.current != null)
             {

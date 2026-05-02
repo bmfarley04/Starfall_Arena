@@ -130,6 +130,8 @@ The current wave manager supports finite configured waves with timed sub-wave se
 - the optional enemy counter should read `InvasionWaveManager3D`'s tracked alive-enemy count through `InvasionSceneManager3D`; do not make enemies or individual AI brains update HUD directly
 - scoring, rewards, difficulty scaling, revive rules, and objective variants are planned work
 - the current reward implementation is a run-only stat-draft layer, not a full port of duel augments. It uses 3D-owned reward definitions/state and reuses the old 2D augment-card visuals only as presentation.
+- reward tiers are deterministic and repeat every three cleared waves: wave 1 reward = `Common`, wave 2 reward = `Epic`, wave 3 reward = `High`, then repeat. All cards shown for that wave come from the same resolved tier.
+- the reward presenter maps those tiers onto the old augment UI shells directly: `Common -> tier 1`, `Epic -> tier 2`, `High -> tier 3`.
 - rewards are inserted after a wave is fully cleared and before the normal inter-wave delay plus next-wave intro. The final configured wave does not open another reward phase.
 
 Keep menu/mode-entry integration separate from this foundation unless the task specifically asks for it.
@@ -412,6 +414,7 @@ For `3d_invasion`:
 - assign `InvasionWaveManager3D`
 - assign `InvasionRewardPhasePresenter3D` and wire its `AugmentSelectManager` reference so the old augment-card visuals can present the new Invasion reward draft
 - optionally assign authored `InvasionStatRewardDefinition3D` assets on `InvasionSceneManager3D`. If none are assigned, the manager auto-loads every `InvasionStatRewardDefinition3D` asset found under `Assets/Resources/3D/InvasionRewards`, so the reward pool still stays fully data-driven and icon-ready.
+- each reward asset now contains shared display data plus three hand-authored payload tiers: `Common`, `Epic`, and `High`. Keep names/icons/descriptions shared unless a future task explicitly expands the presentation model.
 - assign the reused round canvas group/text as the Wave UI references
 - optionally enable `Use Enemy Counter`, assign the enemy counter canvas/root, assign its TMP text, and tune the counter text format
 - optionally enable `Use Life Counter`, assign the heart/life counter canvas group, assign its TMP text, set `Starting Player Lives`, and tune the counter text format. `{0}` displays the local player's lives in network sessions or the lowest remaining player lives in non-network sessions; `{1}` and `{2}` display player 1 and player 2 lives respectively.
