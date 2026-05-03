@@ -212,6 +212,7 @@ Base input rule:
   - Class 1 charged projectile weapon for the 3D path
   - applies tier-based thrust/rotation penalties while charging and fires tier-specific projectile prefabs through `ProjectileWeapon3D`
   - replicates charge/tier presentation through `NetCombat3D`; release still uses the shared projectile request path
+  - inherits the base `ProjectileWeapon3D` target faction/tag and runs the shared player projectile targeting normalization before firing, so Invasion GigaBlast shots target `EnemyTeam` instead of damaging allied player-team ships
 - `GigaBlastProjectile3D`
   - optional projectile runtime for tiers that need piercing behavior
 

@@ -484,6 +484,7 @@ public class GigaBlastWeapon3D : Weapon3D
             muzzles = null,
             spawnAnchor = spawnAnchor,
             targetTag = baseWeapon.targetTag,
+            targetFaction = baseWeapon.targetFaction,
             speed = baseWeapon.speed * GetSpeedMultiplierForTier(tier),
             damage = baseWeapon.damage * GetDamageMultiplierForTier(tier),
             lifetime = projectileLifetime,
@@ -503,6 +504,7 @@ public class GigaBlastWeapon3D : Weapon3D
                 gigaBlastProjectile.EnablePiercing(GetPierceMultiplierForTier(tier));
             }
         };
+        NormalizePlayerProjectileTargeting(ref request);
 
         bool fired = projectileWeapon.Fire(request);
         if (!fired)
