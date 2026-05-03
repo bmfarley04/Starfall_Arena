@@ -186,7 +186,7 @@ Light:
   serializedVersion: 12
   m_Type: 1
   m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_Intensity: 1
+  m_Intensity: 3
   m_Range: 10
   m_SpotAngle: 30
   m_InnerSpotAngle: 21.80208
@@ -283,7 +283,134 @@ MonoBehaviour:
   m_EditorClassIdentifier: SpaceGraphicsToolkit::SpaceGraphicsToolkit.LightAndShadow.SgtLight
   treatAsPoint: 0
   useLightIntensity: 1
-  brightness: 2
+  brightness: 1
+--- !u!1 &1326095552543543165
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2329126362519240394}
+  - component: {fileID: 711373307908200096}
+  - component: {fileID: 2141331520071153278}
+  m_Layer: 0
+  m_Name: Directional Light (1)
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2329126362519240394
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1326095552543543165}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0.20879877, y: 0.92525864, z: 0.044431236, w: 0.3135688}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 400954519847266413}
+  m_LocalEulerAnglesHint: {x: 2.793, y: 143.164, z: 24.503}
+--- !u!108 &711373307908200096
+Light:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1326095552543543165}
+  m_Enabled: 1
+  serializedVersion: 12
+  m_Type: 1
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Intensity: 1
+  m_Range: 10
+  m_SpotAngle: 30
+  m_InnerSpotAngle: 21.80208
+  m_CookieSize2D: {x: 10, y: 10}
+  m_Shadows:
+    m_Type: 0
+    m_Resolution: -1
+    m_CustomResolution: -1
+    m_Strength: 1
+    m_Bias: 0.05
+    m_NormalBias: 0.4
+    m_NearPlane: 0.2
+    m_CullingMatrixOverride:
+      e00: 1
+      e01: 0
+      e02: 0
+      e03: 0
+      e10: 0
+      e11: 1
+      e12: 0
+      e13: 0
+      e20: 0
+      e21: 0
+      e22: 1
+      e23: 0
+      e30: 0
+      e31: 0
+      e32: 0
+      e33: 1
+    m_UseCullingMatrixOverride: 0
+  m_Cookie: {fileID: 0}
+  m_DrawHalo: 0
+  m_Flare: {fileID: 0}
+  m_RenderMode: 0
+  m_CullingMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_RenderingLayerMask: 1
+  m_Lightmapping: 4
+  m_LightShadowCasterMode: 0
+  m_AreaSize: {x: 1, y: 1}
+  m_BounceIntensity: 1
+  m_ColorTemperature: 6570
+  m_UseColorTemperature: 0
+  m_BoundingSphereOverride: {x: 0, y: 0, z: 0, w: 0}
+  m_UseBoundingSphereOverride: 0
+  m_UseViewFrustumForShadowCasterCull: 1
+  m_ForceVisible: 0
+  m_ShadowRadius: 0
+  m_ShadowAngle: 0
+  m_LightUnit: 1
+  m_LuxAtDistance: 1
+  m_EnableSpotReflector: 1
+--- !u!114 &2141331520071153278
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1326095552543543165}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 474bcb49853aa07438625e644c072ee6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Runtime::UnityEngine.Rendering.Universal.UniversalAdditionalLightData
+  m_UsePipelineSettings: 1
+  m_AdditionalLightsShadowResolutionTier: 2
+  m_CustomShadowLayers: 0
+  m_LightCookieSize: {x: 1, y: 1}
+  m_LightCookieOffset: {x: 0, y: 0}
+  m_SoftShadowQuality: 0
+  m_RenderingLayersMask:
+    serializedVersion: 0
+    m_Bits: 1
+  m_ShadowRenderingLayersMask:
+    serializedVersion: 0
+    m_Bits: 1
+  m_Version: 4
+  m_LightLayerMask: 1
+  m_ShadowLayerMask: 1
+  m_RenderingLayers: 1
+  m_ShadowRenderingLayers: 1
 --- !u!1 &1383751351143153070
 GameObject:
   m_ObjectHideFlags: 0
@@ -16144,11 +16271,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AsteroidBackdropSpawner3D
   asteroidPrefabs:
-  - {fileID: 4921488969581828540, guid: 0077a37e93eea73439ae598379e4793c, type: 3}
-  - {fileID: 1662243930232310542, guid: 503dde472d14ce94ea8d02de232b2cc5, type: 3}
-  - {fileID: 210419944973770645, guid: fa1e4a6e6d3f1f94ab0e5682e0d2fca5, type: 3}
-  - {fileID: 3507709162904490338, guid: 12ea526ff8aebe94782014107d2b3d3f, type: 3}
-  - {fileID: 4015782313430218192, guid: 54e1882a6e95d1e4ea2e66d2df5ee3c4, type: 3}
+  - {fileID: 4921488969581828540, guid: 21095b20e69a8394285a589265e215d3, type: 3}
+  - {fileID: 1662243930232310542, guid: 2cbd64ba3c8890b4ba891acba856d2c3, type: 3}
+  - {fileID: 3507709162904490338, guid: 180061531bd8f014d9c5e08d7d28c159, type: 3}
   spawnCount: 48
   useDeterministicSeed: 1
   generationSeed: 54321
@@ -16156,8 +16281,8 @@ MonoBehaviour:
   outerSpawnBoxSize: {x: 6000, y: 6000, z: 6000}
   innerExclusionBoxSize: {x: 1200, y: 1200, z: 1200}
   innerExclusionPadding: 50
-  minUniformScale: 100
-  maxUniformScale: 240
+  minUniformScale: 200
+  maxUniformScale: 400
   disableSpawnedColliders: 1
   spawnedAsteroidParent: {fileID: 2418315373527325938}
   logPlacementWarnings: 1
@@ -21940,7 +22065,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 632412957108431829, guid: e6e36a5a79f5c9644a39e0a0ac1b114c, type: 3}
       propertyPath: GlobalObjectIdHash
-      value: 1952940603
+      value: 3290796519
       objectReference: {fileID: 0}
     - target: {fileID: 1997738373755181367, guid: e6e36a5a79f5c9644a39e0a0ac1b114c, type: 3}
       propertyPath: m_Layer
@@ -21960,43 +22085,43 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5938876997777027291, guid: e6e36a5a79f5c9644a39e0a0ac1b114c, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 3287.4463
+      value: 2845.152
       objectReference: {fileID: 0}
     - target: {fileID: 5938876997777027291, guid: e6e36a5a79f5c9644a39e0a0ac1b114c, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 969.0919
+      value: 419.77716
       objectReference: {fileID: 0}
     - target: {fileID: 5938876997777027291, guid: e6e36a5a79f5c9644a39e0a0ac1b114c, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 3962.359
+      value: 4018.1433
       objectReference: {fileID: 0}
     - target: {fileID: 5938876997777027291, guid: e6e36a5a79f5c9644a39e0a0ac1b114c, type: 3}
       propertyPath: m_LocalRotation.w
-      value: 0.54799634
+      value: 0.4542426
       objectReference: {fileID: 0}
     - target: {fileID: 5938876997777027291, guid: e6e36a5a79f5c9644a39e0a0ac1b114c, type: 3}
       propertyPath: m_LocalRotation.x
-      value: 0.47784323
+      value: 0.079929166
       objectReference: {fileID: 0}
     - target: {fileID: 5938876997777027291, guid: e6e36a5a79f5c9644a39e0a0ac1b114c, type: 3}
       propertyPath: m_LocalRotation.y
-      value: 0.6144097
+      value: 0.57075685
       objectReference: {fileID: 0}
     - target: {fileID: 5938876997777027291, guid: e6e36a5a79f5c9644a39e0a0ac1b114c, type: 3}
       propertyPath: m_LocalRotation.z
-      value: -0.30637673
+      value: -0.67934644
       objectReference: {fileID: 0}
     - target: {fileID: 5938876997777027291, guid: e6e36a5a79f5c9644a39e0a0ac1b114c, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
-      value: 64.184
+      value: 58.005
       objectReference: {fileID: 0}
     - target: {fileID: 5938876997777027291, guid: e6e36a5a79f5c9644a39e0a0ac1b114c, type: 3}
       propertyPath: m_LocalEulerAnglesHint.y
-      value: 119.081
+      value: 50.685
       objectReference: {fileID: 0}
     - target: {fileID: 5938876997777027291, guid: e6e36a5a79f5c9644a39e0a0ac1b114c, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
-      value: 35.259
+      value: -83.04
       objectReference: {fileID: 0}
     - target: {fileID: 5938876997777027291, guid: e6e36a5a79f5c9644a39e0a0ac1b114c, type: 3}
       propertyPath: m_ConstrainProportionsScale
@@ -22138,6 +22263,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 5938876997777027291, guid: e6e36a5a79f5c9644a39e0a0ac1b114c, type: 3}
       insertIndex: -1
       addedObject: {fileID: 6955774876749865797}
+    - targetCorrespondingSourceObject: {fileID: 5938876997777027291, guid: e6e36a5a79f5c9644a39e0a0ac1b114c, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2329126362519240394}
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 6935636777801461194, guid: e6e36a5a79f5c9644a39e0a0ac1b114c, type: 3}
       insertIndex: -1
