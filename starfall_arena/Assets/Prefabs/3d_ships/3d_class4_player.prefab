@@ -5865,7 +5865,7 @@ MonoBehaviour:
     energyCost: 0
   fireSound: {fileID: 11400000, guid: d88eee37a015ff64ab34cc302b475757, type: 2}
   burst:
-    burstCooldown: 1
+    burstCooldown: 0.75
     burstCount: 3
     burstInterval: 0.08
 --- !u!114 &111100000000000102
@@ -5907,7 +5907,7 @@ MonoBehaviour:
     beamPrefab: {fileID: 100000, guid: 7767d0d49caff014ba0e057220a05183, type: 3}
     targetTag: Enemy
     targetFaction: 2
-    damagePerSecond: 25
+    damagePerSecond: 30
     maxDistance: 750
     recoilForcePerSecond: 0
     impactForce: 0
@@ -5930,9 +5930,9 @@ MonoBehaviour:
     maxAimDistance: 1000
     fallbackAimDistance: 150
     screenCenterDirectionBlend: 1
-    capacity: 100
+    capacity: 250
     drainRate: 25
-    regenRate: 4
+    regenRate: 20
     fireLoopSound: {fileID: 11400000, guid: 2e4ef6af0cbd6bf4091e3bcdb76e99fd, type: 2}
   beamLoopAudioSource: {fileID: 4310887104804224220}
 --- !u!114 &111100000000000103
@@ -5976,8 +5976,8 @@ MonoBehaviour:
       muzzles: []
       targetTag: Enemy
       targetFaction: 2
-      cooldown: 5
-      speed: 180
+      cooldown: 4
+      speed: 200
       damage: 40
       lifetime: 5
       impactForce: 0
@@ -6098,7 +6098,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 623134825
+  GlobalObjectIdHash: 3311927117
   InScenePlacedSourceGlobalObjectIdHash: 2698202182
   DeferredDespawnTick: 0
   Ownership: 1
