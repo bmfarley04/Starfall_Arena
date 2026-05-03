@@ -6132,6 +6132,7 @@ MonoBehaviour:
   useBetweenWaveRewards: 1
   rewardDefinitions: []
   rewardsPerOffer: 3
+  maxCraizanContractsPerOffer: 2
   rewardPresentationDelaySeconds: 0.75
   rewardPostPresentationDelaySeconds: 0.35
   waveTextCanvasGroup: {fileID: 929264362}
@@ -12854,7 +12855,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::InvasionRewardPhasePresenter3D
   augmentSelectManager: {fileID: 4615817175193650627}
   rewardPresentationRoot: {fileID: 8832883810891206183}
-  selectionTimeLimitSeconds: 10
+  selectionTimeLimitSeconds: 15
 --- !u!1 &1949117067
 GameObject:
   m_ObjectHideFlags: 0
