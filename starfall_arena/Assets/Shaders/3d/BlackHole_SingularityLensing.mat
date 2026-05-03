@@ -29,6 +29,7 @@ Material:
     - _BendFalloff: 5.38
     - _BendStrength: -1.5
     - _ChromaticAberration: 0.0222
+    - _DebugViewMode: 0
     - _DiskArcCoreStrength: 0.66
     - _DiskArcDopplerBoost: 1.24
     - _DiskArcFarSideDimming: 0.021

@@ -50,6 +50,9 @@ Shader "Starfall/3D/BlackHole/SingularityLensing"
 
         [Header(Event Horizon)]
         _EventHorizonColor("Event Horizon Color", Color) = (0.0, 0.0, 0.0, 1.0)
+
+        [Header(Debug)]
+        _DebugViewMode("Debug View Mode", Range(0.0, 4.0)) = 0.0
     }
 
     SubShader
@@ -142,6 +145,7 @@ Shader "Starfall/3D/BlackHole/SingularityLensing"
                 half _PhotonRingAlpha;
 
                 half4 _EventHorizonColor;
+                half _DebugViewMode;
             CBUFFER_END
 
             #define STARFALL_TWO_PI 6.28318530718
@@ -310,6 +314,27 @@ Shader "Starfall/3D/BlackHole/SingularityLensing"
                     horizonRadius + max(_PhotonRingWidth, 0.001),
                     normalizedRadius
                 );
+
+                if (_DebugViewMode > 0.5h && _DebugViewMode < 1.5h)
+                {
+                    return half4(horizonMask.xxx, 1.0h);
+                }
+
+                if (_DebugViewMode > 1.5h && _DebugViewMode < 2.5h)
+                {
+                    return half4(lensMask.xxx, 1.0h);
+                }
+
+                if (_DebugViewMode > 2.5h && _DebugViewMode < 3.5h)
+                {
+                    return half4(diskLightHorizonMask.xxx, 1.0h);
+                }
+
+                float hardHorizonRadius = horizonRadius + max(_HorizonSoftness, 0.001);
+                if (normalizedRadius <= hardHorizonRadius)
+                {
+                    return half4(_EventHorizonColor.rgb, 1.0h);
+                }
 
                 float2 screenDirection = screenDelta / max(length(screenDelta), 0.00001);
                 float bendRange = max(1.0 - horizonRadius, 0.0001);

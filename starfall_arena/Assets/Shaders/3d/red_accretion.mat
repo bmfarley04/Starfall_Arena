@@ -28,7 +28,7 @@ Material:
     - _BackHalfAngle: 0.49
     - _BackHalfFadeReach: 0.36
     - _BackHalfInnerFade: 0.271
-    - _Brightness: 3.9
+    - _Brightness: 5
     - _DepthClipThreshold: 0.0712
     - _DopplerBoost: 3
     - _DopplerFocus: 0.9
