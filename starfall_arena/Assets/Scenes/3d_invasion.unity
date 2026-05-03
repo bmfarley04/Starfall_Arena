@@ -620,7 +620,6 @@ MonoBehaviour:
   maxY: 500
   wallThickness: 3
   drawBoundaryGizmos: 1
-  drawBoundaryGizmosOnlyWhenSelected: 1
   drawBoundaryLabels: 1
   startBoundsGizmoColor: {r: 0.2, g: 0.9, b: 1, a: 0.45}
   currentBoundsGizmoColor: {r: 1, g: 0.35, b: 0.1, a: 0.85}
@@ -1079,6 +1078,37 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 144188738}
   m_CullTransparentMesh: 1
+--- !u!1 &167919177
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 167919178}
+  m_Layer: 0
+  m_Name: examplespawn
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &167919178
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 167919177}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 136.52982, y: 0, z: -139.67546}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 506924632}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &171847481
 GameObject:
   m_ObjectHideFlags: 0
@@ -3641,7 +3671,7 @@ PrefabInstance:
     - target: {fileID: 2559893300203955093, guid: 3bf52de825bf1664c8401e88f80f4977, type: 3}
       propertyPath: waves.Array.data[0].subWaves.Array.data[0].centerSpawnPoint
       value: 
-      objectReference: {fileID: 0}
+      objectReference: {fileID: 167919178}
     - target: {fileID: 2559893300203955093, guid: 3bf52de825bf1664c8401e88f80f4977, type: 3}
       propertyPath: waves.Array.data[0].subWaves.Array.data[1].centerSpawnPoint
       value: 
@@ -3653,7 +3683,7 @@ PrefabInstance:
     - target: {fileID: 2559893300203955093, guid: 3bf52de825bf1664c8401e88f80f4977, type: 3}
       propertyPath: waves.Array.data[1].subWaves.Array.data[0].centerSpawnPoint
       value: 
-      objectReference: {fileID: 0}
+      objectReference: {fileID: 167919178}
     - target: {fileID: 2559893300203955093, guid: 3bf52de825bf1664c8401e88f80f4977, type: 3}
       propertyPath: waves.Array.data[1].subWaves.Array.data[0].formation.preset
       value: 0
@@ -3783,11 +3813,21 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
-    m_RemovedGameObjects: []
+    m_RemovedGameObjects:
+    - {fileID: 700000000000000119, guid: 3bf52de825bf1664c8401e88f80f4977, type: 3}
+    - {fileID: 700000000000000117, guid: 3bf52de825bf1664c8401e88f80f4977, type: 3}
+    - {fileID: 700000000000000115, guid: 3bf52de825bf1664c8401e88f80f4977, type: 3}
+    - {fileID: 700000000000000113, guid: 3bf52de825bf1664c8401e88f80f4977, type: 3}
+    - {fileID: 700000000000000111, guid: 3bf52de825bf1664c8401e88f80f4977, type: 3}
+    - {fileID: 700000000000000109, guid: 3bf52de825bf1664c8401e88f80f4977, type: 3}
+    - {fileID: 700000000000000107, guid: 3bf52de825bf1664c8401e88f80f4977, type: 3}
+    - {fileID: 700000000000000105, guid: 3bf52de825bf1664c8401e88f80f4977, type: 3}
+    - {fileID: 700000000000000103, guid: 3bf52de825bf1664c8401e88f80f4977, type: 3}
+    - {fileID: 700000000000000101, guid: 3bf52de825bf1664c8401e88f80f4977, type: 3}
     m_AddedGameObjects:
     - targetCorrespondingSourceObject: {fileID: 2644385173095867508, guid: 3bf52de825bf1664c8401e88f80f4977, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 1833878274}
+      addedObject: {fileID: 167919178}
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 3bf52de825bf1664c8401e88f80f4977, type: 3}
 --- !u!4 &506924632 stripped
@@ -10597,37 +10637,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1810050351}
   m_CullTransparentMesh: 1
---- !u!1 &1833878273
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1833878274}
-  m_Layer: 0
-  m_Name: test
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &1833878274
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1833878273}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 100, z: 100}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 506924632}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1834890298
 GameObject:
   m_ObjectHideFlags: 0
@@ -11231,10 +11240,6 @@ PrefabInstance:
     - target: {fileID: 6862803107540431715, guid: e7ebcd4aca27e82408e6befe8f71659a, type: 3}
       propertyPath: GlobalObjectIdHash
       value: 3290796519
-      objectReference: {fileID: 0}
-    - target: {fileID: 6862803107540431715, guid: e7ebcd4aca27e82408e6befe8f71659a, type: 3}
-      propertyPath: SceneMigrationSynchronization
-      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8315572248094649039, guid: e7ebcd4aca27e82408e6befe8f71659a, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
