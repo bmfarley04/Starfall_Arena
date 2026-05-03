@@ -250,6 +250,7 @@ Bug note format:
 ## Environment And Screen-Space Effects
 
 - 3D black hole lensing should not be described as sampling the final frame when it uses URP `_CameraOpaqueTexture`. In Unity 6 / URP 17 this texture is copied after the skybox, which is enough for starfield skybox lensing, but it excludes transparent VFX drawn later. Keep opaque texture enabled on the active renderer asset for the current black hole prefab; add a dedicated late scene-color copy only if the effect must bend transparent objects behind it.
+- 3D distant-background parallax for world objects should follow translation only, not camera rotation. A camera-local lock can make far planets rotate around the camera and disappear whenever the player looks around, while raw camera deltas can inherit chase-camera orbit/lag. Prefer an explicit player/ship parallax origin and move the background object by a small fraction of that origin's world translation.
 
 ## HUD And Player-Facing Readability
 

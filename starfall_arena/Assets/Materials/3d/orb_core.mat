@@ -27,7 +27,7 @@ Material:
     m_Floats:
     - _Brightness: 0.2
     - _CellSharpness: 16
-    - _ExternalPulseIntensity: 1.0849127
+    - _ExternalPulseIntensity: 1.0793926
     - _FlowSpeed: 0.12
     - _LimbDarkening: 0.24
     - _NoiseScale: 5.2
