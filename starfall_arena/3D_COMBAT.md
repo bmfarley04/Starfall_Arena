@@ -34,7 +34,9 @@ For player-facing readability, projectile fire direction should be resolved from
 Current implementation rule for 3D projectile visuals:
 
 - 3D projectile prefabs should stay lightweight visual/data carriers
-- if projectile hit detection is already handled by scripted raycasts or sweep tests, do not also add projectile colliders or rigidbodies
+- if projectile hit detection is already handled by scripted raycasts or sweep tests, do not also add projectile colliders or rigidbodies unless another system needs projectile discovery
+- `Projectile3D` forces its own colliders into trigger mode at runtime and ignores other `Projectile3D` colliders in scripted hit checks, so projectile colliders can remain discoverable by systems such as enemy projectile-threat scans without physically blocking shots
+- projectiles with an explicit target tag or target faction ignore non-matching `Entity3D` colliders entirely. In Invasion, player-fired `EnemyTeam` bullets pass through other `PlayerTeam` ships instead of despawning on ally bodies before reaching enemies.
 - only keep collision components on the real world targets that need to be hittable
 
 ## 3D Weapon And Ability Model

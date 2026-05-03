@@ -53,6 +53,7 @@ public class Projectile3D : MonoBehaviour, IPooledObject3D
     protected bool _serverAuthoritativeGameplay;
     protected NetProjectileVisualType3D _visualType = NetProjectileVisualType3D.Primary;
     protected float _projectileScaleMultiplier = 1f;
+    private Collider[] _ownedColliders;
 
     public Vector3 Direction => _direction;
     public float Speed => _velocity.magnitude;
@@ -104,6 +105,8 @@ public class Projectile3D : MonoBehaviour, IPooledObject3D
 
     public virtual void Initialize(Vector3 direction, Vector3 shipVelocity, float speed, float damage, float lifetime, float impactForce, Entity3D shooter = null, int accuracyAttackId = PlayerCombatStats3D.InvalidAttackId)
     {
+        EnsureProjectileCollidersAreTriggers();
+
         _damage = damage;
         _lifetime = lifetime;
         _impactForce = impactForce;
@@ -345,6 +348,18 @@ public class Projectile3D : MonoBehaviour, IPooledObject3D
             return false;
         }
 
+        Projectile3D otherProjectile = collider.GetComponentInParent<Projectile3D>();
+        if (otherProjectile != null)
+        {
+            return false;
+        }
+
+        Entity3D hitEntity = ResolveHitEntity(collider);
+        if (hitEntity != null && HasTargetFilter() && !IsMatchingTarget(hitEntity))
+        {
+            return false;
+        }
+
         return true;
     }
 
@@ -492,6 +507,11 @@ public class Projectile3D : MonoBehaviour, IPooledObject3D
         return !string.IsNullOrEmpty(targetTag) && entity.CompareTag(targetTag);
     }
 
+    private bool HasTargetFilter()
+    {
+        return TargetFaction != Faction3D.Neutral || !string.IsNullOrEmpty(targetTag);
+    }
+
     protected bool CanApplyGameplay()
     {
         if (_isCosmeticOnly)
@@ -542,6 +562,19 @@ public class Projectile3D : MonoBehaviour, IPooledObject3D
     protected void DespawnSelf()
     {
         GameObjectPool3D.Despawn(gameObject);
+    }
+
+    private void EnsureProjectileCollidersAreTriggers()
+    {
+        _ownedColliders ??= GetComponentsInChildren<Collider>(true);
+        for (int i = 0; i < _ownedColliders.Length; i++)
+        {
+            Collider ownedCollider = _ownedColliders[i];
+            if (ownedCollider != null)
+            {
+                ownedCollider.isTrigger = true;
+            }
+        }
     }
 
     private bool TryProcessLagCompensatedHit(Vector3 from, Vector3 to)

@@ -9974,7 +9974,7 @@ MonoBehaviour:
     occlusionProbeRadius: 0.25
     stateHoldSeconds: 0.08
   scale:
-    distanceRange: {x: 45, y: 900}
+    distanceRange: {x: 60, y: 900}
     indicatorScaleRange: {x: 0.3, y: 0.1}
     bracketScaleRange: {x: 0.3, y: 0.15}
     barScaleRange: {x: 0.6, y: 0.4}
@@ -11994,7 +11994,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::InvasionRewardPhasePresenter3D
   augmentSelectManager: {fileID: 4615817175193650627}
-  rewardPresentationRoot: {fileID: 0}
+  rewardPresentationRoot: {fileID: 8832883810891206183}
   selectionTimeLimitSeconds: 10
 --- !u!1 &2013612482
 GameObject:

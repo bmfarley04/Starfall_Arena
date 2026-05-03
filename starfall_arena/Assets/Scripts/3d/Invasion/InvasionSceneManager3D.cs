@@ -973,9 +973,23 @@ public class InvasionSceneManager3D : MonoBehaviour
             BroadcastRewardOffers();
 
             int localSlot = ResolveLocalPlayerSlot();
+            if ((localSlot < 1 || localSlot > 2) && NetworkManager.Singleton != null && NetworkManager.Singleton.IsServer)
+            {
+                localSlot = ResolvePlayerSlotForClient(NetworkManager.Singleton.LocalClientId);
+                if (localSlot < 1 || localSlot > 2)
+                {
+                    localSlot = 1;
+                    Debug.LogWarning("[InvasionSceneManager3D] Could not resolve the host's local reward slot from session or owned player state; falling back to Player 1 so the host reward picker still opens.", this);
+                }
+            }
+
             if (localSlot == 1 || localSlot == 2)
             {
                 StartLocalRewardSelection((byte)localSlot);
+            }
+            else
+            {
+                Debug.LogWarning("[InvasionSceneManager3D] Could not resolve a local player slot for the reward picker. This peer will not show reward cards until slot ownership is available.", this);
             }
 
             yield return WaitForNetworkRewardChoices();
@@ -1767,6 +1781,11 @@ public class InvasionSceneManager3D : MonoBehaviour
             return 0;
         }
 
+        if (TryResolveLocalOwnedPlayerSlot(out int ownedPlayerSlot))
+        {
+            return ownedPlayerSlot;
+        }
+
         NetworkSessionData session = NetworkSessionData.Instance;
         int localSlotIndex = session != null ? session.GetLocalSlotIndex() : -1;
         if (localSlotIndex >= 0)
@@ -1789,11 +1808,6 @@ public class InvasionSceneManager3D : MonoBehaviour
         if (localClientId == ResolveOwnerClientIdForSlot(1))
         {
             return 2;
-        }
-
-        if (TryResolveLocalOwnedPlayerSlot(out int ownedPlayerSlot))
-        {
-            return ownedPlayerSlot;
         }
 
         return 0;
