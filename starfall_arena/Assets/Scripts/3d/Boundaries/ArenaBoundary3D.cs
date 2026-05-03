@@ -128,8 +128,9 @@ public class ArenaBoundary3D : NetworkBehaviour
     [SerializeField] private float wallThickness = 3f;
 
     [Header("Gizmos")]
+    [Tooltip("Draws the arena boundary gizmo in the Scene view even when this object is not selected.")]
     [SerializeField] private bool drawBoundaryGizmos = true;
-    [SerializeField] private bool drawBoundaryGizmosOnlyWhenSelected = true;
+    [Tooltip("Draws the text labels for the start/current boundary gizmo.")]
     [SerializeField] private bool drawBoundaryLabels = true;
     [SerializeField] private Color startBoundsGizmoColor = new Color(0.2f, 0.9f, 1f, 0.45f);
     [SerializeField] private Color currentBoundsGizmoColor = new Color(1f, 0.35f, 0.1f, 0.85f);
@@ -341,16 +342,6 @@ public class ArenaBoundary3D : NetworkBehaviour
     }
 
     private void OnDrawGizmos()
-    {
-        if (drawBoundaryGizmosOnlyWhenSelected)
-        {
-            return;
-        }
-
-        DrawBoundaryGizmos();
-    }
-
-    private void OnDrawGizmosSelected()
     {
         DrawBoundaryGizmos();
     }
