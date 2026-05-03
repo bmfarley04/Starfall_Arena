@@ -25,12 +25,10 @@ This flow is orchestrated mostly through scene-level manager scripts rather than
 Current menu/network note:
 
 1. title screen main menu
-2. host-mode select canvas (2D or 3D) after `Host Game`
-3. 3D sub-select canvas after the `3D` choice, where the host picks duel or invasion
-4. online host/join flow
-5. host waiting / client connect
-6. synchronized ship select
-7. gameplay scene load (2D mode -> normal gameplay scene, 3D duel -> `3d`, 3D invasion -> `3d_invasion`)
+2. `Host Game` opens the Duel/Invasion host choice canvas, while `Join Game` opens the direct-IP join canvas
+3. host waiting / client connect
+4. synchronized ship select
+5. gameplay scene load (Duel -> normal 2D PvP scene, Invasion -> `3d_invasion`)
 
 ## Main Manager Responsibilities
 
@@ -279,19 +277,20 @@ This makes `ShipData` a bridge between:
 - Existing split-screen flow should be treated as transitional or legacy-oriented unless a task specifically targets it.
 - `TitleScreenManager` now needs serialized references for the join canvas, the host-waiting canvas, the IP input field, and optional status text in addition to the legacy main menu canvas.
 - `TitleScreenManager` now also needs a serialized 2D controls canvas plus a separate 3D controls canvas, with LB/RB paging between them and 2D staying the default landing page.
-- `TitleScreenManager` now also needs a serialized host-mode-select canvas (2D/3D choice), its first-selected button, its hold-to-back target/fill references, and a host-waiting mode label text reference that displays the selected mode (for example `2D - DUEL` / `3D - DUEL`).
-- `TitleScreenManager` now also has a dedicated host-waiting TMP label that shows `WAITING ON OPPONENT...` for duel hosts and swaps to `WAITING ON TEAMMATE...` when the selected 3D branch is invasion.
-- `TitleScreenManager` now also needs a serialized 3D sub-select canvas that appears after choosing `3D`, plus its first-selected button, manual-navigation group, and optional back-hold references for returning to the 2D/3D host chooser.
-- `TitleScreenManager` now also exposes a toggle for whether the 3D host flow includes the invasion submenu; when that toggle is off, the 3D branch should skip the extra choice screen and go straight to the duel waiting screen.
+- `TitleScreenManager` now routes `Host Game` directly to the Duel/Invasion host choice canvas. Duel uses the normal 2D PvP scene, while Invasion uses `3d_invasion`.
+- `TitleScreenManager` now also has a dedicated host-waiting TMP label that shows `WAITING ON OPPONENT...` for duel hosts and swaps to `WAITING ON TEAMMATE...` when Invasion is selected.
+- `TitleScreenManager` keeps the old 2D/3D host-mode fields only as legacy serialized compatibility. The main title path should not route through that old canvas now that 3D duel has been removed.
+- `TitleScreenManager` still keeps compatibility methods for old UnityEvent wiring: `StartHosting3DDuelFlow()` now routes to the normal 2D duel host flow instead of loading the removed 3D duel path.
 - `TitleScreenManager` now owns only the special hold-style join/waiting controls. The main title `Host Game` and `Join Game` controls should stay on the normal clickable title-button pattern.
 - `TitleScreenManager` now slides horizontally between the 2D and 3D controls canvases when the player presses LB/RB, while the back hold on either page still returns to the main menu.
-- `TitleScreenManager` now routes hosted matches through a selected gameplay scene before `StartHostForMenu` (`2D` uses the configured normal scene, `3D` duel uses `3d`, and `3D` invasion uses `3d_invasion` while still keeping the 3D ship roster).
+- `TitleScreenManager` now routes hosted matches through a selected gameplay scene before `StartHostForMenu` (`Duel` uses the configured normal 2D PvP scene, and `Invasion` uses `3d_invasion` while still using the 3D ship roster).
 - `TitleScreenManager` now also exposes two test-only title shortcuts: `start3dhostflow()` hosts the configured 3D test scene immediately, and `start3dclientflow()` starts a client against the configured direct-IP test address. Those shortcuts still wait for the normal synchronized `ShipSelect` session state, then auto-lock the fixed 3D test pair (`3d_class1` for host / player 1, `3d_class2` for client / player 2) so both peers advance into gameplay without manual picks.
 - `TitleScreenManager` now also exposes an auto-start test helper for scene startup. When enabled in the Inspector, the title scene skips its normal intro/menu idle state and immediately enters the configured 3D test flow as either host or client based on a serialized default role.
+- `TitleScreenManager` can swap title background roots based on the local `PlayerPrefs` Invasion completion flag. When enabled, `Default Title Background` is active before the player has cleared Invasion and `Invasion Won Title Background` is active after completion.
 - `GameDataManager` now owns mode-specific ship registries (`2D` and `3D`) and `ShipSelectManager` resolves the active roster from that mode at screen entry instead of assuming one static list.
 - Bug note: hold-to-go-back UI on nonstandard title/menu surfaces such as the controls canvas must listen for the same back input as the rest of the controller-first UI (`B` on keyboard, controller east / Circle). The game-end return hold is a separate confirmation path and should use controller south / A with keyboard `X`, not the east / Circle back button. Do not swap these flows to Enter or left/right-face-button input.
 - Bug note: the controls screen page switch is not the same thing as the back hold. LB/RB should only swap between the 2D and 3D controls canvases; if those inputs are routed through the back-hold path, the menu will exit to the main title instead of paging.
-- Bug note: the 3D invasion submenu is now optional. If the title toggle disables it, the 3D host branch should not leave the player stranded on the submenu canvas; it must continue directly into the duel waiting flow.
+- Bug note: title host routing should not reintroduce the old 2D/3D choice. `Host Game` should open the Duel/Invasion canvas directly, and the Duel button should route to the 2D PvP scene rather than the removed 3D duel scene.
 - Bug note: the scene-start 3D test helper must route both host and client through the same shared setup path. Splitting startup automation into separate ad hoc host/client code paths makes their ship selection, scene label, and waiting/join UI behavior drift apart over time.
 - Bug note: the client-side 3D test helper can hit `ShipSelect` while the join canvas is still animating in. If the title flow only attempts the ship-select transition once and drops requests while another menu transition is active, the client gets stranded on the IP screen even though the session is already progressing. Queue or retry the ship-select transition after the current animation completes.
 - Bug note: scene-start auto test entry is not equivalent to pressing the test button later in the frame. If `TitleScreenManager` launches the auto client flow directly inside its own `Start()`, it can race the networking/session startup order and behave differently from the manual button path. Wait until the menu/network singletons are live before invoking the shared test helper.
@@ -299,10 +298,9 @@ This makes `ShipData` a bridge between:
 - Bug note: local gameplay ship prefabs currently ship with `PlayerInput` disabled for the network path, so local gameplay spawning must explicitly re-enable and pair devices or `SampleSceneSplitScreen` will load with both ships unresponsive.
 - `ShipSelectManager` now expects only a countdown timer text reference for the networked ship-select path; once a player locks in, that client should no longer be able to change ships before the timer expires.
 - Bug note: the main `Host Game` button must not keep any legacy `ShipSelect` transition wiring in `TitleScreenButton`, or the UI will bypass the waiting screen and appear to host successfully when networking never actually started.
-- Bug note: the main `Host Game` button must transition into the host-mode-select canvas first; do not start hosting directly from that button or the player will lose the 2D/3D branch and the server can load the wrong gameplay scene after ship select.
+- Bug note: the main `Host Game` button must transition into the Duel/Invasion host choice canvas first; do not start hosting directly from that button or the player will lose mode selection and the server can load the wrong gameplay scene after ship select.
 - Bug note: 3D menu routing and 3D ship-roster selection are separate pieces of configuration. Pointing the title flow at `3d_invasion` or a dedicated 3D test scene is not enough by itself; `GameDataManager` also has to recognize that scene token as a 3D roster scene or ship select will quietly fall back to the 2D roster.
 - Bug note: the 3D test title shortcuts must still leave the join/waiting canvases when the session reaches `ShipSelect`. If they auto-lock ships in the background but stay on the IP/join screen, the client appears stalled even though the network session is actually waiting on ship-select lock-ins.
-- Bug note: host-mode 3D preview models under the 2D/3D choice buttons should stay inactive until the host-mode canvas enter transition is complete. If they are active at canvas activation time, they appear to "pop in" before the UI fade/zoom finishes because mesh renderers are not affected by `CanvasGroup` alpha.
 - Bug note: when 2D and 3D ship rosters differ, ship select must switch to the active mode roster before loading previews/icons. Reusing a stale roster from the previous mode leads to wrong ship options and mismatched preview state when returning to title and hosting again in a different mode.
 - Bug note: the main `Local Multiplayer` button must not use direct scene loading to `SampleSceneSplitScreen`, or it will skip local ship select and never capture the two ship choices into `GameDataManager`.
 - Bug note: title-screen performance can regress badly on lower-spec hardware if `TitleScreenManager` eagerly spawns every ship-select preview model at scene start while return-to-title still uses a blocking `SceneManager.LoadScene`. In that setup, gameplay-to-title waits are usually dominated by title scene activation, asset upload, and preview-object initialization rather than by the ship-select-to-gameplay preload path. Avoid treating gameplay async preload as proof the menu return path is cheap; profile title-scene startup separately and keep menu preview content lazy or pooled.

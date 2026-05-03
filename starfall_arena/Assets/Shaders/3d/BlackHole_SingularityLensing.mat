@@ -28,7 +28,7 @@ Material:
     - _BendClamp: 0.6
     - _BendFalloff: 8
     - _BendStrength: -1.5
-    - _ChromaticAberration: 0.022
+    - _ChromaticAberration: 0.0249
     - _DebugViewMode: 0
     - _DiskArcCoreStrength: 0
     - _DiskArcDopplerBoost: 0
@@ -45,15 +45,15 @@ Material:
     - _DiskArcSpiralTightness: 0
     - _DiskArcVerticalBias: 0
     - _DiskArcWidth: 0.001
-    - _EventHorizonRadius: 0.548
+    - _EventHorizonRadius: 0.467
     - _HorizonSoftness: 0.001
     - _LensBackgroundDepthSoftness: 0.024
     - _LensBackgroundDepthThreshold: 0.978
     - _LensCausticBoost: 0.82
     - _LensForegroundDepthBias: -23
     - _LensForegroundDepthSoftness: 23.1
-    - _LensForegroundRejection: 0.973
-    - _LensOpacity: 1
+    - _LensForegroundRejection: 1
+    - _LensOpacity: 0
     - _LensedSourceBoost: 0.45
     - _LensedSourceRingWidth: 0.144
     - _LensedSourceThickness: 0.0249

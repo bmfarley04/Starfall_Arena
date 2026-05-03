@@ -2,7 +2,7 @@
 
 This document owns the 3D Invasion mode notes.
 
-Invasion is a 3D PvE mode where two player ships fight finite waves of alien enemies. It is separate from the current 3D duel flow and should live in the `3d_invasion` scene path unless a task explicitly says otherwise.
+Invasion is a 3D PvE mode where two player ships fight finite waves of alien enemies. It lives in the `3d_invasion` scene path and is now the only 3D gameplay branch exposed by the title host flow.
 
 ## Mode Flow
 
@@ -21,7 +21,8 @@ Current implemented beginning flow:
 - win trackers, round-end screens, game-end screens, and end-of-wave stat summaries are not used
 - between cleared waves, Invasion now enters a dedicated reward intermission before the next `WAVE N` intro. Players are movement/input locked, each player gets their own three-card stat-draft offer, and gameplay resumes only after both picks resolve.
 - players are not repositioned, despawned between waves, or movement-locked by the Invasion scene manager
-- game-end, full-team wipe, score, reward, and completion presentation are planned later; when the final configured wave is cleared, the current slice leaves gameplay active
+- when the final configured wave is cleared, `InvasionSceneManager3D` records the local profile's Invasion completion flag in `PlayerPrefs`; in networked Invasion the host also sends a completion message so connected clients save the same flag locally
+- game-end, full-team wipe, score, reward, and completion presentation are planned later; after recording completion, the current slice leaves gameplay active
 
 Important scene-manager pitfall:
 
@@ -79,13 +80,14 @@ Implemented foundation:
 
 ## Title Screen Entry
 
-- the title-screen 3D host flow now branches through a dedicated 3D sub-select canvas before matchmaking starts
-- the duel branch still loads `3d`, while the invasion branch loads `3d_invasion`
+- the title-screen host flow now branches directly through a Duel/Invasion select canvas before matchmaking starts
+- the Duel branch loads the normal 2D PvP scene, while the Invasion branch loads `3d_invasion`; the removed 3D duel branch should not be restored through title routing
 - invasion still uses the 3D ship roster; the title flow should not fall back to the 2D roster just because the scene token differs from the duel scene
 - test-only title shortcuts may also target `3d_invasion`, but they should still wait for the normal network `ShipSelect` state before auto-locking their fixed test ships; skipping that visible state makes the join flow look frozen even when the session is progressing correctly
 - the title scene can now optionally auto-start that same 3D invasion test flow on scene load and pick host or client from a serialized default role, so repeated local invasion/network setup does not require manual menu navigation every run
 - when that auto-start path runs as a client, the title flow must keep retrying the move out of the join/IP canvas if the network session reaches `ShipSelect` before the join transition animation finishes; otherwise the client appears stuck on the join UI even though the invasion test flow is already live underneath it
 - the auto-start invasion test helper should wait for the menu/network singletons to finish scene startup before launching the client path; calling the same helper too early from title-scene `Start()` is not reliably equivalent to pressing the test-client button after the scene is already idle
+- the title scene can optionally swap its background roots based on the saved Invasion completion flag. Wire the normal background to `Default Title Background` and the post-clear background to `Invasion Won Title Background` on `TitleScreenManager`.
 
 ## Mode Ownership
 

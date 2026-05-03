@@ -109,21 +109,25 @@ public class TitleScreenManager : MonoBehaviour
     [Tooltip("First selected button on the host waiting canvas")]
     [SerializeField] private GameObject hostWaitingFirstSelected;
 
-    [Tooltip("Canvas shown after Host Game where the player chooses 2D or 3D")]
+    [Tooltip("Legacy 2D/3D host-mode canvas. This is no longer used by the main Host Game flow now that 3D duel has been removed.")]
     [SerializeField] private CanvasGroup hostModeSelectCanvas;
 
-    [Tooltip("First selected button on the host mode select canvas")]
+    [Tooltip("Legacy first selected button for the old 2D/3D host-mode canvas.")]
     [SerializeField] private GameObject hostModeSelectFirstSelected;
 
-    [Tooltip("Canvas shown after choosing 3D where the player selects duel or invasion")]
+    [Tooltip("Canvas shown after Host Game where the player selects Duel or Invasion.")]
     [SerializeField] private CanvasGroup host3DModeSelectCanvas;
 
-    [Tooltip("First selected button on the 3D mode select canvas")]
+    [Tooltip("First selected button on the Duel/Invasion host-mode canvas.")]
     [SerializeField] private GameObject host3DModeSelectFirstSelected;
 
-    [Header("3D Menu Options")]
-    [Tooltip("If true, the 3D host flow shows the duel/invasion submenu. If false, 3D goes straight to the duel waiting screen.")]
-    [SerializeField] private bool show3DInvasionModeInMenu = true;
+    [Header("Title Background Progression")]
+    [Tooltip("If enabled, the title screen swaps to the invasion-complete background after this local player profile has cleared Invasion mode.")]
+    [SerializeField] private bool useInvasionWinTitleBackground = true;
+    [Tooltip("Normal title background root shown before Invasion mode has been cleared.")]
+    [SerializeField] private GameObject defaultTitleBackground;
+    [Tooltip("Alternate title background root shown after Invasion mode has been cleared.")]
+    [SerializeField] private GameObject invasionWonTitleBackground;
 
     [Header("Networking UI")]
     [SerializeField] private TMP_InputField ipAddressInputField;
@@ -134,12 +138,12 @@ public class TitleScreenManager : MonoBehaviour
     [Header("Host Scene Routing")]
     [Tooltip("2D gameplay scene loaded after both players lock in when hosting from title")]
     [SerializeField] private string network2DGameplaySceneName = "SampleScene";
-    [Tooltip("3D duel gameplay scene loaded after both players lock in when hosting from title")]
+    [Tooltip("Legacy 3D duel scene name. The normal title menu no longer routes here; it remains only for old test hooks/data compatibility.")]
     [SerializeField] private string network3DGameplaySceneName = "3d";
     [Tooltip("3D invasion gameplay scene loaded after both players lock in when hosting from title")]
     [SerializeField] private string network3DInvasionGameplaySceneName = "3d_invasion";
-    [SerializeField] private string host2DStatusLabel = "2D - DUEL";
-    [SerializeField] private string host3DStatusLabel = "3D - DUEL";
+    [SerializeField] private string host2DStatusLabel = "DUEL";
+    [SerializeField] private string host3DStatusLabel = "LEGACY 3D - DUEL";
     [SerializeField] private string host3DInvasionStatusLabel = "3D - INVASION";
     [SerializeField] private string hostWaitingStatusLabel = "WAITING ON OPPONENT...";
 
@@ -173,7 +177,9 @@ public class TitleScreenManager : MonoBehaviour
     [Header("Manual Navigation")]
     [SerializeField] private NavigationGroup joinGameNavigation;
     [SerializeField] private NavigationGroup hostWaitingNavigation;
+    [Tooltip("Legacy navigation group for the old 2D/3D host-mode canvas.")]
     [SerializeField] private NavigationGroup hostModeSelectNavigation;
+    [Tooltip("Navigation group for the Duel/Invasion host-mode canvas.")]
     [SerializeField] private NavigationGroup host3DModeSelectNavigation;
 
     [Header("Intro: Scene Fade In")]
@@ -240,6 +246,7 @@ public class TitleScreenManager : MonoBehaviour
         ResetHoldVisuals();
 
         _overlayAlpha = 1f;
+        ApplyTitleBackgroundProgression();
 
         // CRITICAL: Deactivate canvas GameObjects to prevent ANY events during intro
         // This prevents EventSystem auto-selection and mouse hover events
@@ -280,6 +287,25 @@ public class TitleScreenManager : MonoBehaviour
         {
             yield return new WaitForSecondsRealtime(uiFade.delay);
             yield return RunUIFade();
+        }
+    }
+
+    private void ApplyTitleBackgroundProgression()
+    {
+        if (!useInvasionWinTitleBackground)
+        {
+            return;
+        }
+
+        bool showInvasionWonBackground = PlayerProgressPrefs.HasWonInvasionMode;
+        if (defaultTitleBackground != null)
+        {
+            defaultTitleBackground.SetActive(!showInvasionWonBackground);
+        }
+
+        if (invasionWonTitleBackground != null)
+        {
+            invasionWonTitleBackground.SetActive(showInvasionWonBackground);
         }
     }
 
@@ -417,7 +443,9 @@ public class TitleScreenManager : MonoBehaviour
 
     public void StartHostingFlow()
     {
-        if (hostModeSelectCanvas == null)
+        CanvasGroup hostChoiceCanvas = host3DModeSelectCanvas != null ? host3DModeSelectCanvas : hostModeSelectCanvas;
+        GameObject firstSelected = host3DModeSelectCanvas != null ? host3DModeSelectFirstSelected : hostModeSelectFirstSelected;
+        if (hostChoiceCanvas == null)
         {
             StartHosting2DFlow();
             return;
@@ -430,7 +458,7 @@ public class TitleScreenManager : MonoBehaviour
 
         CanvasGroup source = _activeCanvas ?? mainMenuCanvas;
         _activeTransition = StartCoroutine(
-            RunTransition(source, hostModeSelectCanvas, hostModeSelectFirstSelected));
+            RunTransition(source, hostChoiceCanvas, firstSelected));
     }
 
     public void StartHosting2DFlow()
@@ -441,9 +469,9 @@ public class TitleScreenManager : MonoBehaviour
 
     public void StartHosting3DFlow()
     {
-        if (!show3DInvasionModeInMenu || host3DModeSelectCanvas == null)
+        if (host3DModeSelectCanvas == null)
         {
-            StartHosting3DDuelFlow();
+            StartHosting2DFlow();
             return;
         }
 
@@ -457,10 +485,14 @@ public class TitleScreenManager : MonoBehaviour
             RunTransition(source, host3DModeSelectCanvas, host3DModeSelectFirstSelected));
     }
 
+    public void StartHostingDuelFlow()
+    {
+        StartHosting2DFlow();
+    }
+
     public void StartHosting3DDuelFlow()
     {
-        _pendingHostModeLabel = host3DStatusLabel;
-        StartHostingForScene(network3DGameplaySceneName);
+        StartHostingDuelFlow();
     }
 
     public void StartHosting3DInvasionFlow()
@@ -497,13 +529,13 @@ public class TitleScreenManager : MonoBehaviour
 
     public void TransitionToHostModeSelectFrom3DMode()
     {
-        if (_activeTransition != null || host3DModeSelectCanvas == null || hostModeSelectCanvas == null)
+        if (_activeTransition != null || host3DModeSelectCanvas == null || mainMenuCanvas == null)
         {
             return;
         }
 
         _activeTransition = StartCoroutine(
-            RunTransition(host3DModeSelectCanvas, hostModeSelectCanvas, hostModeSelectFirstSelected));
+            RunTransition(host3DModeSelectCanvas, mainMenuCanvas, mainMenuFirstSelected));
     }
 
     public void StartJoinFlow()
@@ -539,7 +571,7 @@ public class TitleScreenManager : MonoBehaviour
         }
         else if (_activeCanvas == host3DModeSelectCanvas)
         {
-            TransitionToHostModeSelectFrom3DMode();
+            TransitionCanvas(host3DModeSelectCanvas, mainMenuCanvas, mainMenuFirstSelected);
         }
     }
 

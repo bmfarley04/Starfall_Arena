@@ -13,6 +13,7 @@ public class InvasionSceneManager3D : MonoBehaviour
     private const string RewardOffersMessageName = "StarfallArena.Invasion3D.RewardOffers";
     private const string RewardChoiceMessageName = "StarfallArena.Invasion3D.RewardChoice";
     private const string RewardAppliedMessageName = "StarfallArena.Invasion3D.RewardApplied";
+    private const string InvasionCompletedMessageName = "StarfallArena.Invasion3D.Completed";
 
     [System.Serializable]
     private struct RespawnConfig3D
@@ -1362,7 +1363,9 @@ public class InvasionSceneManager3D : MonoBehaviour
             return;
         }
 
-        Debug.Log("[InvasionSceneManager3D] All configured Invasion waves are cleared. Game-end flow is planned later, so gameplay remains active.", this);
+        PlayerProgressPrefs.MarkInvasionModeWon();
+        BroadcastInvasionCompleted();
+        Debug.Log("[InvasionSceneManager3D] All configured Invasion waves are cleared. The local profile now records Invasion as completed. Game-end flow is planned later, so gameplay remains active.", this);
     }
 
     private void HandleAliveEnemyCountChanged(int aliveEnemyCount)
@@ -1610,6 +1613,7 @@ public class InvasionSceneManager3D : MonoBehaviour
         networkManager.CustomMessagingManager.RegisterNamedMessageHandler(RewardOffersMessageName, HandleRewardOffersMessage);
         networkManager.CustomMessagingManager.RegisterNamedMessageHandler(RewardChoiceMessageName, HandleRewardChoiceMessage);
         networkManager.CustomMessagingManager.RegisterNamedMessageHandler(RewardAppliedMessageName, HandleRewardAppliedMessage);
+        networkManager.CustomMessagingManager.RegisterNamedMessageHandler(InvasionCompletedMessageName, HandleInvasionCompletedMessage);
         _customNetworkMessagesRegistered = true;
     }
 
@@ -1627,7 +1631,37 @@ public class InvasionSceneManager3D : MonoBehaviour
         networkManager.CustomMessagingManager.UnregisterNamedMessageHandler(RewardOffersMessageName);
         networkManager.CustomMessagingManager.UnregisterNamedMessageHandler(RewardChoiceMessageName);
         networkManager.CustomMessagingManager.UnregisterNamedMessageHandler(RewardAppliedMessageName);
+        networkManager.CustomMessagingManager.UnregisterNamedMessageHandler(InvasionCompletedMessageName);
         _customNetworkMessagesRegistered = false;
+    }
+
+    private void BroadcastInvasionCompleted()
+    {
+        NetworkManager networkManager = NetworkManager.Singleton;
+        if (!_useNetworkSession || networkManager == null || !networkManager.IsServer || networkManager.CustomMessagingManager == null)
+        {
+            return;
+        }
+
+        using (FastBufferWriter writer = new FastBufferWriter(sizeof(byte), Allocator.Temp))
+        {
+            writer.WriteValueSafe((byte)1);
+            networkManager.CustomMessagingManager.SendNamedMessage(InvasionCompletedMessageName, networkManager.ConnectedClientsIds, writer, NetworkDelivery.ReliableSequenced);
+        }
+    }
+
+    private void HandleInvasionCompletedMessage(ulong senderClientId, FastBufferReader reader)
+    {
+        if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsServer)
+        {
+            return;
+        }
+
+        reader.ReadValueSafe(out byte completed);
+        if (completed == 1)
+        {
+            PlayerProgressPrefs.MarkInvasionModeWon();
+        }
     }
 
     private void BroadcastPlayerLives()
