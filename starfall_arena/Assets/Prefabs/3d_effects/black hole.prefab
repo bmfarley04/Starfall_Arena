@@ -299,6 +299,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::BlackHoleMenaceVisual3D
   accretionDiskRenderer: {fileID: 6548358782405500681}
   accretionDiskMaterialIndex: 0
+  singularityLensRenderer: {fileID: 8018335133848082202}
+  singularityLensMaterialIndex: 0
   invasionWaveManager: {fileID: 0}
   previewMenacePercent: 0
   applyPreviewInEditMode: 1

@@ -305,6 +305,11 @@ Shader "Starfall/3D/BlackHole/SingularityLensing"
                     normalizedRadius
                 );
                 float lensMask = saturate(lensInnerMask * outerMask);
+                float diskLightHorizonMask = smoothstep(
+                    horizonRadius + max(_HorizonSoftness, 0.001),
+                    horizonRadius + max(_PhotonRingWidth, 0.001),
+                    normalizedRadius
+                );
 
                 float2 screenDirection = screenDelta / max(length(screenDelta), 0.00001);
                 float bendRange = max(1.0 - horizonRadius, 0.0001);
@@ -351,7 +356,7 @@ Shader "Starfall/3D/BlackHole/SingularityLensing"
                         gatheredLuma
                     );
                     float ringMask = 1.0 - smoothstep(0.0, max(_LensedSourceRingWidth, 0.0001), abs(normalizedRadius - horizonRadius));
-                    float gatherMask = saturate(sourceMask * ringMask * lensMask);
+                    float gatherMask = saturate(sourceMask * ringMask * lensMask * diskLightHorizonMask);
                     sceneColor = lerp(sceneColor, gatheredColor * (1.0h + _LensedSourceBoost), gatherMask);
                     lensedSourceVisibility = max(lensedSourceVisibility, gatherMask);
                 }
@@ -372,7 +377,7 @@ Shader "Starfall/3D/BlackHole/SingularityLensing"
                 float arcRadius = horizonRadius + _DiskArcRadiusOffset;
                 float diskArc = 1.0 - smoothstep(0.0, max(_DiskArcWidth, 0.0001), abs(normalizedRadius - arcRadius));
                 float verticalArcMask = pow(saturate(abs(screenDirection.y)), _DiskArcVerticalBias);
-                diskArc *= verticalArcMask * outerMask;
+                diskArc *= verticalArcMask * outerMask * diskLightHorizonMask;
 
                 float2 lensDirection = aspectDelta / max(length(aspectDelta), 0.00001);
                 float arcAngle01 = frac(atan2(lensDirection.y, lensDirection.x) / STARFALL_TWO_PI + 0.5);
@@ -415,7 +420,8 @@ Shader "Starfall/3D/BlackHole/SingularityLensing"
 
                 float offscreenSourceMask = (1.0 - bentUvMask) * step(0.5, _BlackHoleUseLensSourceTexture);
                 float offscreenArc = saturate(offscreenSourceMask * diskArc * lensedDiskPattern * _OffscreenDiskArcIntensity * arcRelativistic);
-                half3 offscreenArcColor = lerp(_OffscreenDiskArcColor.rgb, half3(1.0h, 0.92h, 0.78h), saturate(wrappedLines + brightCore));
+                half offscreenArcHotness = 0.65h + saturate(wrappedLines + brightCore) * 0.55h;
+                half3 offscreenArcColor = _OffscreenDiskArcColor.rgb * offscreenArcHotness;
                 color += offscreenArcColor * offscreenArc;
                 lensedSourceVisibility = max(lensedSourceVisibility, offscreenArc);
 

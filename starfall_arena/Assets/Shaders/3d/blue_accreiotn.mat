@@ -44,6 +44,8 @@ Material:
     - _OuterRadius: 1
     - _RingFrequency: 34
     - _RingSharpness: 3
+    - _ShadowOcclusionRadius: 0.31
+    - _ShadowOcclusionSoftness: 0.035
     - _SpinSpeed: 0.08
     - _SpiralTightness: 8
     - _WispSharpness: 2.4

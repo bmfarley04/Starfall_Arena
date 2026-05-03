@@ -10,6 +10,7 @@ public class BlackHoleMenaceVisual3D : NetworkBehaviour
     private static readonly int MidColorId = Shader.PropertyToID("_MidColor");
     private static readonly int OuterColorId = Shader.PropertyToID("_OuterColor");
     private static readonly int HotStreakColorId = Shader.PropertyToID("_HotStreakColor");
+    private static readonly int OffscreenDiskArcColorId = Shader.PropertyToID("_OffscreenDiskArcColor");
 
     [Header("References")]
     [Tooltip("Renderer using Starfall/3D/BlackHole/AccretionDisk. Only this renderer's accretion disk material is tinted by menace progress.")]
@@ -17,6 +18,12 @@ public class BlackHoleMenaceVisual3D : NetworkBehaviour
 
     [Tooltip("Material slot on Accretion Disk Renderer that uses Starfall/3D/BlackHole/AccretionDisk.")]
     [SerializeField] [Min(0)] private int accretionDiskMaterialIndex;
+
+    [Tooltip("Renderer using Starfall/3D/BlackHole/SingularityLensing. The off-screen fallback disk arc is tinted from the same menace palette.")]
+    [SerializeField] private Renderer singularityLensRenderer;
+
+    [Tooltip("Material slot on Singularity Lens Renderer that uses Starfall/3D/BlackHole/SingularityLensing.")]
+    [SerializeField] [Min(0)] private int singularityLensMaterialIndex;
 
     [Tooltip("Invasion wave manager that owns authored enemy totals and defeated-enemy progress. Required on the server/non-networked authority.")]
     [SerializeField] private InvasionWaveManager3D invasionWaveManager;
@@ -84,6 +91,7 @@ public class BlackHoleMenaceVisual3D : NetworkBehaviour
         NetworkVariableWritePermission.Server);
 
     private MaterialPropertyBlock _previewPropertyBlock;
+    private MaterialPropertyBlock _singularityPropertyBlock;
     private Material _runtimeDiskMaterial;
     private Material _originalDiskMaterial;
     private bool _runtimeMaterialAssigned;
@@ -91,6 +99,7 @@ public class BlackHoleMenaceVisual3D : NetworkBehaviour
     private bool _loggedMissingRenderer;
     private bool _loggedMissingWaveManager;
     private bool _loggedMissingMaterial;
+    private bool _loggedMissingSingularityMaterial;
     private bool _loggedMissingShaderProperties;
 
     private void Reset()
@@ -142,6 +151,7 @@ public class BlackHoleMenaceVisual3D : NetworkBehaviour
     private void OnValidate()
     {
         accretionDiskMaterialIndex = Mathf.Max(0, accretionDiskMaterialIndex);
+        singularityLensMaterialIndex = Mathf.Max(0, singularityLensMaterialIndex);
         previewMenacePercent = Mathf.Clamp(previewMenacePercent, 0f, 100f);
         midPaletteMenacePercent = Mathf.Clamp(midPaletteMenacePercent, 1f, 99f);
         innerWhiteHdrIntensity = Mathf.Max(0f, innerWhiteHdrIntensity);
@@ -206,6 +216,20 @@ public class BlackHoleMenaceVisual3D : NetworkBehaviour
             }
         }
 
+        if (singularityLensRenderer == null)
+        {
+            Renderer[] childRenderers = GetComponentsInChildren<Renderer>(true);
+            for (int i = 0; i < childRenderers.Length; i++)
+            {
+                Renderer candidate = childRenderers[i];
+                if (RendererHasSingularityLensMaterial(candidate))
+                {
+                    singularityLensRenderer = candidate;
+                    break;
+                }
+            }
+        }
+
         if (Application.isPlaying && invasionWaveManager == null)
         {
             invasionWaveManager = FindFirstObjectByType<InvasionWaveManager3D>();
@@ -231,6 +255,32 @@ public class BlackHoleMenaceVisual3D : NetworkBehaviour
             if (material.shader.name == "Starfall/3D/BlackHole/AccretionDisk")
             {
                 accretionDiskMaterialIndex = i;
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private bool RendererHasSingularityLensMaterial(Renderer candidate)
+    {
+        if (candidate == null)
+        {
+            return false;
+        }
+
+        Material[] materials = candidate.sharedMaterials;
+        for (int i = 0; i < materials.Length; i++)
+        {
+            Material material = materials[i];
+            if (material == null || material.shader == null)
+            {
+                continue;
+            }
+
+            if (material.shader.name == "Starfall/3D/BlackHole/SingularityLensing")
+            {
+                singularityLensMaterialIndex = i;
                 return true;
             }
         }
@@ -409,6 +459,7 @@ public class BlackHoleMenaceVisual3D : NetworkBehaviour
         Color midColor = LerpThroughMidPalette(startMidColor, midMidColor, finalMidColor, visualProgress);
         Color outerColor = LerpThroughMidPalette(startOuterColor, midOuterColor, finalOuterColor, visualProgress);
         Color hotStreakColor = LerpThroughMidPalette(startHotStreakColor, midHotStreakColor, finalHotStreakColor, visualProgress);
+        Color offscreenDiskArcColor = hotStreakColor;
 
         Material material = _runtimeDiskMaterial != null ? _runtimeDiskMaterial : ResolveCurrentSharedMaterial();
         if (material == null)
@@ -432,6 +483,7 @@ public class BlackHoleMenaceVisual3D : NetworkBehaviour
         }
 
         ApplyColorsToPropertyBlock(innerColor, midColor, outerColor, hotStreakColor);
+        ApplySingularityFallbackColor(offscreenDiskArcColor);
     }
 
     private void ApplyColorsToPropertyBlock(Color innerColor, Color midColor, Color outerColor, Color hotStreakColor)
@@ -445,6 +497,31 @@ public class BlackHoleMenaceVisual3D : NetworkBehaviour
         accretionDiskRenderer.SetPropertyBlock(_previewPropertyBlock, accretionDiskMaterialIndex);
     }
 
+    private void ApplySingularityFallbackColor(Color offscreenDiskArcColor)
+    {
+        if (singularityLensRenderer == null)
+        {
+            return;
+        }
+
+        Material material = ResolveSingularitySharedMaterial();
+        if (material == null)
+        {
+            LogMissingSingularityMaterial();
+            return;
+        }
+
+        if (!material.HasProperty(OffscreenDiskArcColorId))
+        {
+            return;
+        }
+
+        _singularityPropertyBlock ??= new MaterialPropertyBlock();
+        singularityLensRenderer.GetPropertyBlock(_singularityPropertyBlock, singularityLensMaterialIndex);
+        _singularityPropertyBlock.SetColor(OffscreenDiskArcColorId, offscreenDiskArcColor);
+        singularityLensRenderer.SetPropertyBlock(_singularityPropertyBlock, singularityLensMaterialIndex);
+    }
+
     private void ClearPreviewPropertyBlock()
     {
         if (accretionDiskRenderer == null)
@@ -453,6 +530,11 @@ public class BlackHoleMenaceVisual3D : NetworkBehaviour
         }
 
         accretionDiskRenderer.SetPropertyBlock(null, accretionDiskMaterialIndex);
+
+        if (singularityLensRenderer != null)
+        {
+            singularityLensRenderer.SetPropertyBlock(null, singularityLensMaterialIndex);
+        }
     }
 
     private Material ResolveCurrentSharedMaterial()
@@ -470,6 +552,24 @@ public class BlackHoleMenaceVisual3D : NetworkBehaviour
 
         int materialIndex = Mathf.Clamp(accretionDiskMaterialIndex, 0, sharedMaterials.Length - 1);
         accretionDiskMaterialIndex = materialIndex;
+        return sharedMaterials[materialIndex];
+    }
+
+    private Material ResolveSingularitySharedMaterial()
+    {
+        if (singularityLensRenderer == null)
+        {
+            return null;
+        }
+
+        Material[] sharedMaterials = singularityLensRenderer.sharedMaterials;
+        if (sharedMaterials == null || sharedMaterials.Length == 0)
+        {
+            return null;
+        }
+
+        int materialIndex = Mathf.Clamp(singularityLensMaterialIndex, 0, sharedMaterials.Length - 1);
+        singularityLensMaterialIndex = materialIndex;
         return sharedMaterials[materialIndex];
     }
 
@@ -545,6 +645,17 @@ public class BlackHoleMenaceVisual3D : NetworkBehaviour
 
         Debug.LogWarning($"[{nameof(BlackHoleMenaceVisual3D)}] Accretion Disk Renderer has no material at index {accretionDiskMaterialIndex}.", this);
         _loggedMissingMaterial = true;
+    }
+
+    private void LogMissingSingularityMaterial()
+    {
+        if (_loggedMissingSingularityMaterial)
+        {
+            return;
+        }
+
+        Debug.LogWarning($"[{nameof(BlackHoleMenaceVisual3D)}] Singularity Lens Renderer has no material at index {singularityLensMaterialIndex}, so the off-screen disk arc cannot be menace-tinted.", this);
+        _loggedMissingSingularityMaterial = true;
     }
 
     private void LogMissingShaderProperties()

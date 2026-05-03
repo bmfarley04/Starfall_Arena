@@ -7,6 +7,8 @@ Shader "Starfall/3D/BlackHole/AccretionDisk"
         _OuterRadius("Outer Radius", Range(0.0, 1.0)) = 0.95
         _InnerFade("Inner Fade Width", Range(0.001, 1.0)) = 0.08
         _OuterFade("Outer Fade Width", Range(0.001, 1.5)) = 0.18
+        _ShadowOcclusionRadius("Black Hole Shadow Occlusion Radius", Range(0.0, 1.0)) = 0.31
+        _ShadowOcclusionSoftness("Black Hole Shadow Occlusion Softness", Range(0.001, 0.25)) = 0.035
 
         [Header(Motion)]
         _SpinSpeed("Spin Speed", Float) = 0.24
@@ -86,6 +88,8 @@ Shader "Starfall/3D/BlackHole/AccretionDisk"
                 float _OuterRadius;
                 float _InnerFade;
                 float _OuterFade;
+                float _ShadowOcclusionRadius;
+                float _ShadowOcclusionSoftness;
 
                 float _SpinSpeed;
                 float _InfallSpeed;
@@ -173,7 +177,8 @@ Shader "Starfall/3D/BlackHole/AccretionDisk"
 
                 float innerMask = smoothstep(_InnerRadius, _InnerRadius + _InnerFade, radius);
                 float outerMask = 1.0 - smoothstep(outerRadius - _OuterFade, outerRadius, radius);
-                float diskMask = saturate(innerMask * outerMask);
+                float shadowOcclusionMask = smoothstep(_ShadowOcclusionRadius, _ShadowOcclusionRadius + _ShadowOcclusionSoftness, radius);
+                float diskMask = saturate(innerMask * outerMask * shadowOcclusionMask);
 
                 float angle = atan2(diskPosition.y, diskPosition.x);
                 float angular01 = frac(angle / STARFALL_TWO_PI + 0.5);
