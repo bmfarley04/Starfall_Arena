@@ -397,17 +397,18 @@ public abstract class Weapon3D : MonoBehaviour, IReticleSpinSource3D
             return;
         }
 
+        bool isInvasionScene = IsInvasionSceneActive();
         bool hasEnemyTeamTargets = SceneHasFactionTargets(Faction3D.EnemyTeam);
         bool hasDuelOpponentTag = TryResolveOpponentPlayerTag(out string opponentPlayerTag);
 
         if (request.targetFaction == Faction3D.EnemyTeam)
         {
-            if (!hasEnemyTeamTargets && hasDuelOpponentTag)
+            if (!hasEnemyTeamTargets && hasDuelOpponentTag && !isInvasionScene)
             {
                 request.targetFaction = Faction3D.Neutral;
                 request.targetTag = opponentPlayerTag;
             }
-            else if (hasEnemyTeamTargets && string.IsNullOrEmpty(request.targetTag))
+            else if ((hasEnemyTeamTargets || isInvasionScene) && string.IsNullOrEmpty(request.targetTag))
             {
                 request.targetTag = "Enemy";
             }
@@ -427,6 +428,13 @@ public abstract class Weapon3D : MonoBehaviour, IReticleSpinSource3D
         }
 
         if (hasEnemyTeamTargets)
+        {
+            request.targetFaction = Faction3D.EnemyTeam;
+            request.targetTag = "Enemy";
+            return;
+        }
+
+        if (isInvasionScene)
         {
             request.targetFaction = Faction3D.EnemyTeam;
             request.targetTag = "Enemy";
@@ -988,5 +996,10 @@ public abstract class Weapon3D : MonoBehaviour, IReticleSpinSource3D
         }
 
         return false;
+    }
+
+    private static bool IsInvasionSceneActive()
+    {
+        return FindFirstObjectByType<InvasionSceneManager3D>(FindObjectsInactive.Include) != null;
     }
 }

@@ -327,6 +327,11 @@ public class TractorBeam3D : Ability3D
                 continue;
             }
 
+            if (IsInvasionSceneActive() && FactionMember3D.AreAllied(entity, targetEntity))
+            {
+                continue;
+            }
+
             Rigidbody targetBody = hitCollider.attachedRigidbody != null
                 ? hitCollider.attachedRigidbody
                 : targetEntity.GetComponent<Rigidbody>();
@@ -408,6 +413,11 @@ public class TractorBeam3D : Ability3D
         }
 
         return hitCollider.GetComponentInParent<Entity3D>();
+    }
+
+    private static bool IsInvasionSceneActive()
+    {
+        return FindFirstObjectByType<InvasionSceneManager3D>(FindObjectsInactive.Include) != null;
     }
 
     private Vector3 GetForwardDirection()

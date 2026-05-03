@@ -493,6 +493,7 @@ public class GigaBlastWeapon3D : Weapon3D
             forwardOffset = gigaBlast.offsetDistance + GetSpawnOffsetForTier(tier),
             verticalOffset = gigaBlast.verticalOffset,
             canPierce = tier >= 3,
+            maxPierceCount = GetPierceCountForTier(tier),
             pierceMultiplier = GetPierceMultiplierForTier(tier),
             onProjectileSpawned = projectile =>
             {
@@ -651,6 +652,11 @@ public class GigaBlastWeapon3D : Weapon3D
             4 => gigaBlast.projectileScaling.tier4SpawnOffset,
             _ => 0f
         };
+    }
+
+    private int GetPierceCountForTier(int tier)
+    {
+        return tier >= 3 ? 1 : 0;
     }
 
     private float GetPierceMultiplierForTier(int tier)

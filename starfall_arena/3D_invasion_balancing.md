@@ -275,13 +275,14 @@ This is the agreed documentation target for the first seven-wave 3D Invasion set
 
 ### Implemented Invasion Manager Draft
 
-- `Assets/Prefabs/3d_ships/invasionManager.prefab` currently contains `7` waves and `77` timed sub-waves after the first pacing pass.
+- `Assets/Prefabs/3d_ships/invasionManager.prefab` currently contains `7` waves and `74` timed sub-waves after the first pacing and trim passes.
 - `startOnEnable` is disabled so the networked Invasion scene flow can start waves after player setup and WAVE intro presentation.
 - `waveStartDelaySeconds` is set to `3s` and `waveEndDelaySeconds` is set to `6s`.
 - The prefab uses eight V1 spawn anchors around the arena with vertical variation: north, northeast, east, southeast, south, southwest, west, and northwest.
 - All boss and mini-boss appearances are authored as regular timed sub-waves. The separate `enableBoss` path is intentionally disabled on every wave for this V1 draft.
 - Wave 7 includes a short elite prelude and then spawns `boss2Enemy` through a timed sub-wave; detailed final boss patterns and expanded spawner behavior are still separate tuning work.
-- The first pacing pass keeps the same roster beats but splits large packets into smaller chunks, generally caps early chunks at `3` enemies, mid chunks at `4`, and late chunks at `5`, and stretches most authored delays to more than double the prior values. This is intentionally conservative against early overwhelm and may need trimming once survival pressure is playtested.
+- The first pacing pass kept the same roster beats but split large packets into smaller chunks, generally capping early chunks at `3` enemies, mid chunks at `4`, and late chunks at `5`.
+- The follow-up trim pass halved the stretched delays and reduced early normal-basic repetition, especially in waves 1-3. Current early pacing intent is smaller groups with enough spacing to breathe, but without long dead air between every packet.
 
 ### Wave Progression
 
@@ -352,8 +353,8 @@ Wave 7:
 ### Known Setup Follow-Ups
 
 - Completed for the V1 prefab/profile pass: active enemy prefabs now have assigned balance profiles, missing profile appliers were added, `spawnedSuicideEnemy` has a weak spawned suicide profile, normal enemy detection values were moved away from accidental `5000` aggro, selective V1 variants exist as explicit prefabs, and all active normal/variant enemy prefabs are registered with NGO.
-- Completed for the V1 wave draft: `invasionManager.prefab` now has the initial seven-wave timed sub-wave implementation using the normal and variant prefabs from this balancing document, plus a slower first pacing pass that splits enemy packets into more gradual sub-waves.
-- Still planned: playtest the authored timings and active enemy counts, trim any wave that now drags after pressure is reduced, grouped mini-boss health presentation, empowered tank spawner loadouts, and final boss pattern tuning.
+- Completed for the V1 wave draft: `invasionManager.prefab` now has the initial seven-wave timed sub-wave implementation using the normal and variant prefabs from this balancing document, plus a pacing/trim pass that splits enemy packets into more gradual sub-waves while reducing early basic-enemy repetition.
+- Still planned: playtest the authored timings and active enemy counts, trim or re-expand individual waves based on actual downtime, grouped mini-boss health presentation, empowered tank spawner loadouts, and final boss pattern tuning.
 
 ## V1 Enemy Prefab Tuning Targets
 

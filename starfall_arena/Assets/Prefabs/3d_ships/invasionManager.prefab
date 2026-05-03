@@ -59,19 +59,7 @@ MonoBehaviour:
       - enemyPrefab: {fileID: 7279590565626816591, guid: 45b170708adafd343bd4e110edf859cc, type: 3}
         count: 3
       spawnBurstIntervalSeconds: 0.525
-      delayBeforeNextSubWaveSeconds: 24
-    - subWaveName: Opening Basics B
-      centerSpawnPoint: {fileID: 6088068838268084458}
-      formation:
-        preset: 0
-        slotSpacing: 42
-        gridColumns: 3
-        yBias: 0.15
-      enemies:
-      - enemyPrefab: {fileID: 7279590565626816591, guid: 45b170708adafd343bd4e110edf859cc, type: 3}
-        count: 1
-      spawnBurstIntervalSeconds: 0.525
-      delayBeforeNextSubWaveSeconds: 40.5
+      delayBeforeNextSubWaveSeconds: 12
     - subWaveName: First Chasers A
       centerSpawnPoint: {fileID: 7876810535454177908}
       formation:
@@ -81,9 +69,9 @@ MonoBehaviour:
         yBias: 0.2
       enemies:
       - enemyPrefab: {fileID: 7279590565626816591, guid: 45b170708adafd343bd4e110edf859cc, type: 3}
-        count: 3
+        count: 2
       spawnBurstIntervalSeconds: 0.45000002
-      delayBeforeNextSubWaveSeconds: 24
+      delayBeforeNextSubWaveSeconds: 12
     - subWaveName: First Chasers B
       centerSpawnPoint: {fileID: 7876810535454177908}
       formation:
@@ -95,20 +83,8 @@ MonoBehaviour:
       - enemyPrefab: {fileID: 2865276719882564100, guid: 58ce7d9b3625d104dab4b41990875d42, type: 3}
         count: 2
       spawnBurstIntervalSeconds: 0.45000002
-      delayBeforeNextSubWaveSeconds: 49.5
+      delayBeforeNextSubWaveSeconds: 24.75
     - subWaveName: Basic Crossfire A
-      centerSpawnPoint: {fileID: 4886795697271315279}
-      formation:
-        preset: 3
-        slotSpacing: 36
-        gridColumns: 3
-        yBias: 0.25
-      enemies:
-      - enemyPrefab: {fileID: 7279590565626816591, guid: 45b170708adafd343bd4e110edf859cc, type: 3}
-        count: 3
-      spawnBurstIntervalSeconds: 0.45000002
-      delayBeforeNextSubWaveSeconds: 24
-    - subWaveName: Basic Crossfire B
       centerSpawnPoint: {fileID: 4886795697271315279}
       formation:
         preset: 3
@@ -119,7 +95,7 @@ MonoBehaviour:
       - enemyPrefab: {fileID: 7279590565626816591, guid: 45b170708adafd343bd4e110edf859cc, type: 3}
         count: 2
       spawnBurstIntervalSeconds: 0.45000002
-      delayBeforeNextSubWaveSeconds: 63
+      delayBeforeNextSubWaveSeconds: 12
     - subWaveName: Twin Artillery Mini-Boss
       centerSpawnPoint: {fileID: 7014364711294536990}
       formation:
@@ -148,9 +124,9 @@ MonoBehaviour:
         yBias: 0.2
       enemies:
       - enemyPrefab: {fileID: 7279590565626816591, guid: 45b170708adafd343bd4e110edf859cc, type: 3}
-        count: 3
+        count: 2
       spawnBurstIntervalSeconds: 0.42000002
-      delayBeforeNextSubWaveSeconds: 28
+      delayBeforeNextSubWaveSeconds: 14
     - subWaveName: Standard Contact B
       centerSpawnPoint: {fileID: 37794342656127031}
       formation:
@@ -160,11 +136,11 @@ MonoBehaviour:
         yBias: 0.2
       enemies:
       - enemyPrefab: {fileID: 7279590565626816591, guid: 45b170708adafd343bd4e110edf859cc, type: 3}
-        count: 2
+        count: 1
       - enemyPrefab: {fileID: 2865276719882564100, guid: 58ce7d9b3625d104dab4b41990875d42, type: 3}
         count: 1
       spawnBurstIntervalSeconds: 0.42000002
-      delayBeforeNextSubWaveSeconds: 28
+      delayBeforeNextSubWaveSeconds: 14
     - subWaveName: Standard Contact C
       centerSpawnPoint: {fileID: 37794342656127031}
       formation:
@@ -176,7 +152,7 @@ MonoBehaviour:
       - enemyPrefab: {fileID: 2865276719882564100, guid: 58ce7d9b3625d104dab4b41990875d42, type: 3}
         count: 1
       spawnBurstIntervalSeconds: 0.42000002
-      delayBeforeNextSubWaveSeconds: 45
+      delayBeforeNextSubWaveSeconds: 22.5
     - subWaveName: Scout Screen
       centerSpawnPoint: {fileID: 2261995348430291399}
       formation:
@@ -188,7 +164,7 @@ MonoBehaviour:
       - enemyPrefab: {fileID: 1837983289991426574, guid: 4c9de6e18a704a44962ff82fb01f0862, type: 3}
         count: 5
       spawnBurstIntervalSeconds: 0.12
-      delayBeforeNextSubWaveSeconds: 33.75
+      delayBeforeNextSubWaveSeconds: 16.875
     - subWaveName: Artillery Becomes Standard A
       centerSpawnPoint: {fileID: 1145583114902681876}
       formation:
@@ -198,9 +174,9 @@ MonoBehaviour:
         yBias: 0.25
       enemies:
       - enemyPrefab: {fileID: 7279590565626816591, guid: 45b170708adafd343bd4e110edf859cc, type: 3}
-        count: 3
+        count: 1
       spawnBurstIntervalSeconds: 0.525
-      delayBeforeNextSubWaveSeconds: 28
+      delayBeforeNextSubWaveSeconds: 14
     - subWaveName: Artillery Becomes Standard B
       centerSpawnPoint: {fileID: 1145583114902681876}
       formation:
@@ -214,7 +190,7 @@ MonoBehaviour:
       - enemyPrefab: {fileID: 2461026213711029054, guid: cde2502dbb1943c4e989581533885ba9, type: 3}
         count: 2
       spawnBurstIntervalSeconds: 0.525
-      delayBeforeNextSubWaveSeconds: 56.25
+      delayBeforeNextSubWaveSeconds: 28.125
     - subWaveName: Gnat Aim Check A
       centerSpawnPoint: {fileID: 6088068838268084458}
       formation:
@@ -226,7 +202,7 @@ MonoBehaviour:
       - enemyPrefab: {fileID: 1837983289991426574, guid: adef4d23cb9668841be1ca462087f47f, type: 3}
         count: 3
       spawnBurstIntervalSeconds: 0.35
-      delayBeforeNextSubWaveSeconds: 28
+      delayBeforeNextSubWaveSeconds: 14
     - subWaveName: Gnat Aim Check B
       centerSpawnPoint: {fileID: 6088068838268084458}
       formation:
@@ -238,7 +214,7 @@ MonoBehaviour:
       - enemyPrefab: {fileID: 2865276719882564100, guid: 58ce7d9b3625d104dab4b41990875d42, type: 3}
         count: 3
       spawnBurstIntervalSeconds: 0.35
-      delayBeforeNextSubWaveSeconds: 67.5
+      delayBeforeNextSubWaveSeconds: 33.75
     - subWaveName: Tank Boss Arrival A
       centerSpawnPoint: {fileID: 4886795697271315279}
       formation:
@@ -250,7 +226,7 @@ MonoBehaviour:
       - enemyPrefab: {fileID: 1837983289991426574, guid: 4c9de6e18a704a44962ff82fb01f0862, type: 3}
         count: 3
       spawnBurstIntervalSeconds: 0.45000002
-      delayBeforeNextSubWaveSeconds: 28
+      delayBeforeNextSubWaveSeconds: 14
     - subWaveName: Tank Boss Arrival B
       centerSpawnPoint: {fileID: 4886795697271315279}
       formation:
@@ -281,9 +257,9 @@ MonoBehaviour:
         yBias: 0.25
       enemies:
       - enemyPrefab: {fileID: 7279590565626816591, guid: 45b170708adafd343bd4e110edf859cc, type: 3}
-        count: 4
+        count: 2
       spawnBurstIntervalSeconds: 0.375
-      delayBeforeNextSubWaveSeconds: 32
+      delayBeforeNextSubWaveSeconds: 16
     - subWaveName: Crowd Primer B
       centerSpawnPoint: {fileID: 6695327882882460332}
       formation:
@@ -293,11 +269,11 @@ MonoBehaviour:
         yBias: 0.25
       enemies:
       - enemyPrefab: {fileID: 7279590565626816591, guid: 45b170708adafd343bd4e110edf859cc, type: 3}
-        count: 2
+        count: 1
       - enemyPrefab: {fileID: 2865276719882564100, guid: 58ce7d9b3625d104dab4b41990875d42, type: 3}
         count: 2
       spawnBurstIntervalSeconds: 0.375
-      delayBeforeNextSubWaveSeconds: 32
+      delayBeforeNextSubWaveSeconds: 16
     - subWaveName: Crowd Primer C
       centerSpawnPoint: {fileID: 6695327882882460332}
       formation:
@@ -309,7 +285,7 @@ MonoBehaviour:
       - enemyPrefab: {fileID: 2865276719882564100, guid: 58ce7d9b3625d104dab4b41990875d42, type: 3}
         count: 1
       spawnBurstIntervalSeconds: 0.375
-      delayBeforeNextSubWaveSeconds: 56.25
+      delayBeforeNextSubWaveSeconds: 28.125
     - subWaveName: Scout And Gnat Mix A
       centerSpawnPoint: {fileID: 2261995348430291399}
       formation:
@@ -321,7 +297,7 @@ MonoBehaviour:
       - enemyPrefab: {fileID: 1837983289991426574, guid: 4c9de6e18a704a44962ff82fb01f0862, type: 3}
         count: 4
       spawnBurstIntervalSeconds: 0.15
-      delayBeforeNextSubWaveSeconds: 32
+      delayBeforeNextSubWaveSeconds: 16
     - subWaveName: Scout And Gnat Mix B
       centerSpawnPoint: {fileID: 2261995348430291399}
       formation:
@@ -335,7 +311,7 @@ MonoBehaviour:
       - enemyPrefab: {fileID: 1837983289991426574, guid: adef4d23cb9668841be1ca462087f47f, type: 3}
         count: 3
       spawnBurstIntervalSeconds: 0.35
-      delayBeforeNextSubWaveSeconds: 56.25
+      delayBeforeNextSubWaveSeconds: 28.125
     - subWaveName: Twin Tanks Enter Rotation A
       centerSpawnPoint: {fileID: 1145583114902681876}
       formation:
@@ -347,21 +323,9 @@ MonoBehaviour:
       - enemyPrefab: {fileID: 6067267420352304793, guid: cee62f2388d09ee41a7c13cefb04b422, type: 3}
         count: 2
       - enemyPrefab: {fileID: 7279590565626816591, guid: 45b170708adafd343bd4e110edf859cc, type: 3}
-        count: 2
+        count: 1
       spawnBurstIntervalSeconds: 0.67499995
-      delayBeforeNextSubWaveSeconds: 32
-    - subWaveName: Twin Tanks Enter Rotation B
-      centerSpawnPoint: {fileID: 1145583114902681876}
-      formation:
-        preset: 1
-        slotSpacing: 56
-        gridColumns: 3
-        yBias: 0.15
-      enemies:
-      - enemyPrefab: {fileID: 7279590565626816591, guid: 45b170708adafd343bd4e110edf859cc, type: 3}
-        count: 2
-      spawnBurstIntervalSeconds: 0.67499995
-      delayBeforeNextSubWaveSeconds: 67.5
+      delayBeforeNextSubWaveSeconds: 16
     - subWaveName: Flame Introduction
       centerSpawnPoint: {fileID: 37794342656127031}
       formation:
@@ -375,7 +339,7 @@ MonoBehaviour:
       - enemyPrefab: {fileID: 2461026213711029054, guid: cde2502dbb1943c4e989581533885ba9, type: 3}
         count: 2
       spawnBurstIntervalSeconds: 0.45000002
-      delayBeforeNextSubWaveSeconds: 67.5
+      delayBeforeNextSubWaveSeconds: 33.75
     - subWaveName: Duelist Skill Check
       centerSpawnPoint: {fileID: 4886795697271315279}
       formation:
@@ -408,7 +372,7 @@ MonoBehaviour:
       - enemyPrefab: {fileID: 7279590565626816591, guid: 45b170708adafd343bd4e110edf859cc, type: 3}
         count: 4
       spawnBurstIntervalSeconds: 0.35
-      delayBeforeNextSubWaveSeconds: 36
+      delayBeforeNextSubWaveSeconds: 18
     - subWaveName: Busy Opening B
       centerSpawnPoint: {fileID: 6088068838268084458}
       formation:
@@ -422,7 +386,7 @@ MonoBehaviour:
       - enemyPrefab: {fileID: 2865276719882564100, guid: 58ce7d9b3625d104dab4b41990875d42, type: 3}
         count: 2
       spawnBurstIntervalSeconds: 0.35
-      delayBeforeNextSubWaveSeconds: 36
+      delayBeforeNextSubWaveSeconds: 18
     - subWaveName: Busy Opening C
       centerSpawnPoint: {fileID: 6088068838268084458}
       formation:
@@ -436,7 +400,7 @@ MonoBehaviour:
       - enemyPrefab: {fileID: 1837983289991426574, guid: 4c9de6e18a704a44962ff82fb01f0862, type: 3}
         count: 3
       spawnBurstIntervalSeconds: 0.35
-      delayBeforeNextSubWaveSeconds: 36
+      delayBeforeNextSubWaveSeconds: 18
     - subWaveName: Busy Opening D
       centerSpawnPoint: {fileID: 6088068838268084458}
       formation:
@@ -448,7 +412,7 @@ MonoBehaviour:
       - enemyPrefab: {fileID: 1837983289991426574, guid: 4c9de6e18a704a44962ff82fb01f0862, type: 3}
         count: 2
       spawnBurstIntervalSeconds: 0.3
-      delayBeforeNextSubWaveSeconds: 56.25
+      delayBeforeNextSubWaveSeconds: 28.125
     - subWaveName: Mixed Threat Band A
       centerSpawnPoint: {fileID: 7876810535454177908}
       formation:
@@ -462,7 +426,7 @@ MonoBehaviour:
       - enemyPrefab: {fileID: 1837983289991426574, guid: adef4d23cb9668841be1ca462087f47f, type: 3}
         count: 2
       spawnBurstIntervalSeconds: 0.375
-      delayBeforeNextSubWaveSeconds: 36
+      delayBeforeNextSubWaveSeconds: 18
     - subWaveName: Mixed Threat Band B
       centerSpawnPoint: {fileID: 7876810535454177908}
       formation:
@@ -476,7 +440,7 @@ MonoBehaviour:
       - enemyPrefab: {fileID: 3571762344471351850, guid: 7c11f5d47116c624c9d3fc65c90921a2, type: 3}
         count: 2
       spawnBurstIntervalSeconds: 0.375
-      delayBeforeNextSubWaveSeconds: 67.5
+      delayBeforeNextSubWaveSeconds: 33.75
     - subWaveName: Duelists Join Regular Waves A
       centerSpawnPoint: {fileID: 37794342656127031}
       formation:
@@ -492,7 +456,7 @@ MonoBehaviour:
       - enemyPrefab: {fileID: 5150053452045289271, guid: ba57ca9a4458d874fa693f3d5429d44e, type: 3}
         count: 1
       spawnBurstIntervalSeconds: 0.6
-      delayBeforeNextSubWaveSeconds: 36
+      delayBeforeNextSubWaveSeconds: 18
     - subWaveName: Duelists Join Regular Waves B
       centerSpawnPoint: {fileID: 37794342656127031}
       formation:
@@ -504,7 +468,7 @@ MonoBehaviour:
       - enemyPrefab: {fileID: 5150053452045289271, guid: ba57ca9a4458d874fa693f3d5429d44e, type: 3}
         count: 2
       spawnBurstIntervalSeconds: 0.6
-      delayBeforeNextSubWaveSeconds: 67.5
+      delayBeforeNextSubWaveSeconds: 33.75
     - subWaveName: Triumvirate Introduction A
       centerSpawnPoint: {fileID: 7014364711294536990}
       formation:
@@ -518,7 +482,7 @@ MonoBehaviour:
       - enemyPrefab: {fileID: 1837983289991426574, guid: 4c9de6e18a704a44962ff82fb01f0862, type: 3}
         count: 2
       spawnBurstIntervalSeconds: 1.2
-      delayBeforeNextSubWaveSeconds: 36
+      delayBeforeNextSubWaveSeconds: 18
     - subWaveName: Triumvirate Introduction B
       centerSpawnPoint: {fileID: 7014364711294536990}
       formation:
@@ -530,7 +494,7 @@ MonoBehaviour:
       - enemyPrefab: {fileID: 1837983289991426574, guid: 4c9de6e18a704a44962ff82fb01f0862, type: 3}
         count: 3
       spawnBurstIntervalSeconds: 1.2
-      delayBeforeNextSubWaveSeconds: 78.75
+      delayBeforeNextSubWaveSeconds: 39.375
     - subWaveName: Fortress Boss Arrival A
       centerSpawnPoint: {fileID: 1145583114902681876}
       formation:
@@ -542,7 +506,7 @@ MonoBehaviour:
       - enemyPrefab: {fileID: 5150053452045289271, guid: ba57ca9a4458d874fa693f3d5429d44e, type: 3}
         count: 4
       spawnBurstIntervalSeconds: 1.05
-      delayBeforeNextSubWaveSeconds: 36
+      delayBeforeNextSubWaveSeconds: 18
     - subWaveName: Fortress Boss Arrival B
       centerSpawnPoint: {fileID: 1145583114902681876}
       formation:
@@ -573,7 +537,7 @@ MonoBehaviour:
       - enemyPrefab: {fileID: 5150053452045289271, guid: ba57ca9a4458d874fa693f3d5429d44e, type: 3}
         count: 5
       spawnBurstIntervalSeconds: 0.35
-      delayBeforeNextSubWaveSeconds: 40
+      delayBeforeNextSubWaveSeconds: 20
     - subWaveName: Elite Screen B
       centerSpawnPoint: {fileID: 2261995348430291399}
       formation:
@@ -585,7 +549,7 @@ MonoBehaviour:
       - enemyPrefab: {fileID: 1837983289991426574, guid: 4c9de6e18a704a44962ff82fb01f0862, type: 3}
         count: 5
       spawnBurstIntervalSeconds: 0.3
-      delayBeforeNextSubWaveSeconds: 40
+      delayBeforeNextSubWaveSeconds: 20
     - subWaveName: Elite Screen C
       centerSpawnPoint: {fileID: 2261995348430291399}
       formation:
@@ -597,7 +561,7 @@ MonoBehaviour:
       - enemyPrefab: {fileID: 2865276719882564100, guid: 58ce7d9b3625d104dab4b41990875d42, type: 3}
         count: 3
       spawnBurstIntervalSeconds: 0.35
-      delayBeforeNextSubWaveSeconds: 56.25
+      delayBeforeNextSubWaveSeconds: 28.125
     - subWaveName: Splitter Reveal A
       centerSpawnPoint: {fileID: 6695327882882460332}
       formation:
@@ -611,7 +575,7 @@ MonoBehaviour:
       - enemyPrefab: {fileID: 3571762344471351850, guid: 7c11f5d47116c624c9d3fc65c90921a2, type: 3}
         count: 2
       spawnBurstIntervalSeconds: 0.525
-      delayBeforeNextSubWaveSeconds: 40
+      delayBeforeNextSubWaveSeconds: 20
     - subWaveName: Splitter Reveal B
       centerSpawnPoint: {fileID: 6695327882882460332}
       formation:
@@ -623,7 +587,7 @@ MonoBehaviour:
       - enemyPrefab: {fileID: 2461026213711029054, guid: cde2502dbb1943c4e989581533885ba9, type: 3}
         count: 2
       spawnBurstIntervalSeconds: 0.525
-      delayBeforeNextSubWaveSeconds: 78.75
+      delayBeforeNextSubWaveSeconds: 39.375
     - subWaveName: Heavy Interlock A
       centerSpawnPoint: {fileID: 4886795697271315279}
       formation:
@@ -637,7 +601,7 @@ MonoBehaviour:
       - enemyPrefab: {fileID: 1837983289991426574, guid: adef4d23cb9668841be1ca462087f47f, type: 3}
         count: 3
       spawnBurstIntervalSeconds: 0.67499995
-      delayBeforeNextSubWaveSeconds: 40
+      delayBeforeNextSubWaveSeconds: 20
     - subWaveName: Heavy Interlock B
       centerSpawnPoint: {fileID: 4886795697271315279}
       formation:
@@ -649,7 +613,7 @@ MonoBehaviour:
       - enemyPrefab: {fileID: 1837983289991426574, guid: adef4d23cb9668841be1ca462087f47f, type: 3}
         count: 1
       spawnBurstIntervalSeconds: 0.67499995
-      delayBeforeNextSubWaveSeconds: 78.75
+      delayBeforeNextSubWaveSeconds: 39.375
     - subWaveName: Duelist Split Pressure
       centerSpawnPoint: {fileID: 37794342656127031}
       formation:
@@ -663,7 +627,7 @@ MonoBehaviour:
       - enemyPrefab: {fileID: 774219852358409915, guid: 2ec7415a3a3c0c446811e23e1de03acf, type: 3}
         count: 2
       spawnBurstIntervalSeconds: 0.525
-      delayBeforeNextSubWaveSeconds: 78.75
+      delayBeforeNextSubWaveSeconds: 39.375
     - subWaveName: Empowered Tank Pair A
       centerSpawnPoint: {fileID: 1145583114902681876}
       formation:
@@ -675,7 +639,7 @@ MonoBehaviour:
       - enemyPrefab: {fileID: 1775410630533781512, guid: 3e06abb173252484685fa784cb205796, type: 3}
         count: 5
       spawnBurstIntervalSeconds: 0.97499996
-      delayBeforeNextSubWaveSeconds: 40
+      delayBeforeNextSubWaveSeconds: 20
     - subWaveName: Empowered Tank Pair B
       centerSpawnPoint: {fileID: 1145583114902681876}
       formation:
@@ -687,7 +651,7 @@ MonoBehaviour:
       - enemyPrefab: {fileID: 1837983289991426574, guid: 4c9de6e18a704a44962ff82fb01f0862, type: 3}
         count: 5
       spawnBurstIntervalSeconds: 0.97499996
-      delayBeforeNextSubWaveSeconds: 40
+      delayBeforeNextSubWaveSeconds: 20
     - subWaveName: Empowered Tank Pair C
       centerSpawnPoint: {fileID: 1145583114902681876}
       formation:
@@ -718,7 +682,7 @@ MonoBehaviour:
       - enemyPrefab: {fileID: 7279590565626816591, guid: 45b170708adafd343bd4e110edf859cc, type: 3}
         count: 5
       spawnBurstIntervalSeconds: 0.35
-      delayBeforeNextSubWaveSeconds: 45
+      delayBeforeNextSubWaveSeconds: 22.5
     - subWaveName: Slow Recall B
       centerSpawnPoint: {fileID: 6088068838268084458}
       formation:
@@ -732,7 +696,7 @@ MonoBehaviour:
       - enemyPrefab: {fileID: 1837983289991426574, guid: 4c9de6e18a704a44962ff82fb01f0862, type: 3}
         count: 4
       spawnBurstIntervalSeconds: 0.35
-      delayBeforeNextSubWaveSeconds: 45
+      delayBeforeNextSubWaveSeconds: 22.5
     - subWaveName: Slow Recall C
       centerSpawnPoint: {fileID: 6088068838268084458}
       formation:
@@ -744,7 +708,7 @@ MonoBehaviour:
       - enemyPrefab: {fileID: 1837983289991426574, guid: 4c9de6e18a704a44962ff82fb01f0862, type: 3}
         count: 1
       spawnBurstIntervalSeconds: 0.27
-      delayBeforeNextSubWaveSeconds: 67.5
+      delayBeforeNextSubWaveSeconds: 33.75
     - subWaveName: Ranged And Chasers A
       centerSpawnPoint: {fileID: 7876810535454177908}
       formation:
@@ -758,7 +722,7 @@ MonoBehaviour:
       - enemyPrefab: {fileID: 2865276719882564100, guid: 58ce7d9b3625d104dab4b41990875d42, type: 3}
         count: 2
       spawnBurstIntervalSeconds: 0.35
-      delayBeforeNextSubWaveSeconds: 45
+      delayBeforeNextSubWaveSeconds: 22.5
     - subWaveName: Ranged And Chasers B
       centerSpawnPoint: {fileID: 7876810535454177908}
       formation:
@@ -772,7 +736,7 @@ MonoBehaviour:
       - enemyPrefab: {fileID: 1837983289991426574, guid: adef4d23cb9668841be1ca462087f47f, type: 3}
         count: 3
       spawnBurstIntervalSeconds: 0.35
-      delayBeforeNextSubWaveSeconds: 45
+      delayBeforeNextSubWaveSeconds: 22.5
     - subWaveName: Ranged And Chasers C
       centerSpawnPoint: {fileID: 7876810535454177908}
       formation:
@@ -784,7 +748,7 @@ MonoBehaviour:
       - enemyPrefab: {fileID: 1837983289991426574, guid: adef4d23cb9668841be1ca462087f47f, type: 3}
         count: 1
       spawnBurstIntervalSeconds: 0.35
-      delayBeforeNextSubWaveSeconds: 78.75
+      delayBeforeNextSubWaveSeconds: 39.375
     - subWaveName: One-Third Heavy Turn A
       centerSpawnPoint: {fileID: 1145583114902681876}
       formation:
@@ -800,7 +764,7 @@ MonoBehaviour:
       - enemyPrefab: {fileID: 1837983289991426574, guid: 4c9de6e18a704a44962ff82fb01f0862, type: 3}
         count: 1
       spawnBurstIntervalSeconds: 0.6
-      delayBeforeNextSubWaveSeconds: 45
+      delayBeforeNextSubWaveSeconds: 22.5
     - subWaveName: One-Third Heavy Turn B
       centerSpawnPoint: {fileID: 1145583114902681876}
       formation:
@@ -812,7 +776,7 @@ MonoBehaviour:
       - enemyPrefab: {fileID: 1837983289991426574, guid: 4c9de6e18a704a44962ff82fb01f0862, type: 3}
         count: 4
       spawnBurstIntervalSeconds: 0.6
-      delayBeforeNextSubWaveSeconds: 90
+      delayBeforeNextSubWaveSeconds: 45
     - subWaveName: High-Skill Midpoint A
       centerSpawnPoint: {fileID: 37794342656127031}
       formation:
@@ -828,7 +792,7 @@ MonoBehaviour:
       - enemyPrefab: {fileID: 5150053452045289271, guid: ba57ca9a4458d874fa693f3d5429d44e, type: 3}
         count: 1
       spawnBurstIntervalSeconds: 0.525
-      delayBeforeNextSubWaveSeconds: 45
+      delayBeforeNextSubWaveSeconds: 22.5
     - subWaveName: High-Skill Midpoint B
       centerSpawnPoint: {fileID: 37794342656127031}
       formation:
@@ -840,7 +804,7 @@ MonoBehaviour:
       - enemyPrefab: {fileID: 5150053452045289271, guid: ba57ca9a4458d874fa693f3d5429d44e, type: 3}
         count: 3
       spawnBurstIntervalSeconds: 0.525
-      delayBeforeNextSubWaveSeconds: 101.25
+      delayBeforeNextSubWaveSeconds: 50.625
     - subWaveName: Triumvirate And Elite Ranged A
       centerSpawnPoint: {fileID: 7014364711294536990}
       formation:
@@ -854,7 +818,7 @@ MonoBehaviour:
       - enemyPrefab: {fileID: 1837983289991426574, guid: adef4d23cb9668841be1ca462087f47f, type: 3}
         count: 3
       spawnBurstIntervalSeconds: 0.97499996
-      delayBeforeNextSubWaveSeconds: 45
+      delayBeforeNextSubWaveSeconds: 22.5
     - subWaveName: Triumvirate And Elite Ranged B
       centerSpawnPoint: {fileID: 7014364711294536990}
       formation:
@@ -868,7 +832,7 @@ MonoBehaviour:
       - enemyPrefab: {fileID: 6499528716222339576, guid: e22dc1d7f234c63448c2d3954980e2de, type: 3}
         count: 2
       spawnBurstIntervalSeconds: 0.97499996
-      delayBeforeNextSubWaveSeconds: 101.25
+      delayBeforeNextSubWaveSeconds: 50.625
     - subWaveName: Two-Thirds Fortress One A
       centerSpawnPoint: {fileID: 4886795697271315279}
       formation:
@@ -884,7 +848,7 @@ MonoBehaviour:
       - enemyPrefab: {fileID: 1837983289991426574, guid: 4c9de6e18a704a44962ff82fb01f0862, type: 3}
         count: 2
       spawnBurstIntervalSeconds: 0.90000004
-      delayBeforeNextSubWaveSeconds: 45
+      delayBeforeNextSubWaveSeconds: 22.5
     - subWaveName: Two-Thirds Fortress One B
       centerSpawnPoint: {fileID: 4886795697271315279}
       formation:
@@ -896,7 +860,7 @@ MonoBehaviour:
       - enemyPrefab: {fileID: 1837983289991426574, guid: 4c9de6e18a704a44962ff82fb01f0862, type: 3}
         count: 3
       spawnBurstIntervalSeconds: 0.90000004
-      delayBeforeNextSubWaveSeconds: 112.5
+      delayBeforeNextSubWaveSeconds: 56.25
     - subWaveName: Fortress Crossfire
       centerSpawnPoint: {fileID: 6695327882882460332}
       formation:
@@ -912,7 +876,7 @@ MonoBehaviour:
       - enemyPrefab: {fileID: 430036400341530371, guid: 9b5aecfb3d31c7046a24d761fe6cc790, type: 3}
         count: 2
       spawnBurstIntervalSeconds: 0.75
-      delayBeforeNextSubWaveSeconds: 112.5
+      delayBeforeNextSubWaveSeconds: 56.25
     - subWaveName: Empowered Fortress Finale A
       centerSpawnPoint: {fileID: 2261995348430291399}
       formation:
@@ -924,7 +888,7 @@ MonoBehaviour:
       - enemyPrefab: {fileID: 1775410630533781512, guid: 3e06abb173252484685fa784cb205796, type: 3}
         count: 5
       spawnBurstIntervalSeconds: 1.125
-      delayBeforeNextSubWaveSeconds: 45
+      delayBeforeNextSubWaveSeconds: 22.5
     - subWaveName: Empowered Fortress Finale B
       centerSpawnPoint: {fileID: 2261995348430291399}
       formation:
@@ -936,7 +900,7 @@ MonoBehaviour:
       - enemyPrefab: {fileID: 1837983289991426574, guid: 4c9de6e18a704a44962ff82fb01f0862, type: 3}
         count: 5
       spawnBurstIntervalSeconds: 1.125
-      delayBeforeNextSubWaveSeconds: 45
+      delayBeforeNextSubWaveSeconds: 22.5
     - subWaveName: Empowered Fortress Finale C
       centerSpawnPoint: {fileID: 2261995348430291399}
       formation:
@@ -969,7 +933,7 @@ MonoBehaviour:
       - enemyPrefab: {fileID: 5150053452045289271, guid: ba57ca9a4458d874fa693f3d5429d44e, type: 3}
         count: 5
       spawnBurstIntervalSeconds: 0.35
-      delayBeforeNextSubWaveSeconds: 45
+      delayBeforeNextSubWaveSeconds: 22.5
     - subWaveName: Final Prelude Screen B
       centerSpawnPoint: {fileID: 6088068838268084458}
       formation:
@@ -981,7 +945,7 @@ MonoBehaviour:
       - enemyPrefab: {fileID: 1837983289991426574, guid: 4c9de6e18a704a44962ff82fb01f0862, type: 3}
         count: 5
       spawnBurstIntervalSeconds: 0.27
-      delayBeforeNextSubWaveSeconds: 67.5
+      delayBeforeNextSubWaveSeconds: 33.75
     - subWaveName: Elite Aim Check A
       centerSpawnPoint: {fileID: 7876810535454177908}
       formation:
@@ -995,7 +959,7 @@ MonoBehaviour:
       - enemyPrefab: {fileID: 7508786818886090601, guid: 05487abbed8820649b63deb11e8e275c, type: 3}
         count: 2
       spawnBurstIntervalSeconds: 0.35
-      delayBeforeNextSubWaveSeconds: 45
+      delayBeforeNextSubWaveSeconds: 22.5
     - subWaveName: Elite Aim Check B
       centerSpawnPoint: {fileID: 7876810535454177908}
       formation:
@@ -1009,7 +973,7 @@ MonoBehaviour:
       - enemyPrefab: {fileID: 7021260351038386183, guid: ecc4b34fdd8435e47801b1fde2761fb7, type: 3}
         count: 2
       spawnBurstIntervalSeconds: 0.35
-      delayBeforeNextSubWaveSeconds: 78.75
+      delayBeforeNextSubWaveSeconds: 39.375
     - subWaveName: Elite Role Mix A
       centerSpawnPoint: {fileID: 37794342656127031}
       formation:
@@ -1025,7 +989,7 @@ MonoBehaviour:
       - enemyPrefab: {fileID: 1700586476895862781, guid: 0fd9b48ca53e5174f9bddbda8b9acb2d, type: 3}
         count: 1
       spawnBurstIntervalSeconds: 0.525
-      delayBeforeNextSubWaveSeconds: 45
+      delayBeforeNextSubWaveSeconds: 22.5
     - subWaveName: Elite Role Mix B
       centerSpawnPoint: {fileID: 37794342656127031}
       formation:
@@ -1037,7 +1001,7 @@ MonoBehaviour:
       - enemyPrefab: {fileID: 1700586476895862781, guid: 0fd9b48ca53e5174f9bddbda8b9acb2d, type: 3}
         count: 1
       spawnBurstIntervalSeconds: 0.525
-      delayBeforeNextSubWaveSeconds: 90
+      delayBeforeNextSubWaveSeconds: 45
     - subWaveName: Last Gate
       centerSpawnPoint: {fileID: 1145583114902681876}
       formation:
@@ -1051,7 +1015,7 @@ MonoBehaviour:
       - enemyPrefab: {fileID: 7988387970452210014, guid: 5baf9648cd746c74d891f2fa869e81e8, type: 3}
         count: 2
       spawnBurstIntervalSeconds: 0.97499996
-      delayBeforeNextSubWaveSeconds: 101.25
+      delayBeforeNextSubWaveSeconds: 50.625
     - subWaveName: Final Boss Arrival A
       centerSpawnPoint: {fileID: 7014364711294536990}
       formation:
@@ -1063,7 +1027,7 @@ MonoBehaviour:
       - enemyPrefab: {fileID: 1837983289991426574, guid: 4c9de6e18a704a44962ff82fb01f0862, type: 3}
         count: 5
       spawnBurstIntervalSeconds: 1.125
-      delayBeforeNextSubWaveSeconds: 45
+      delayBeforeNextSubWaveSeconds: 22.5
     - subWaveName: Final Boss Arrival B
       centerSpawnPoint: {fileID: 7014364711294536990}
       formation:
@@ -1075,7 +1039,7 @@ MonoBehaviour:
       - enemyPrefab: {fileID: 1775410630533781512, guid: 3e06abb173252484685fa784cb205796, type: 3}
         count: 5
       spawnBurstIntervalSeconds: 1.125
-      delayBeforeNextSubWaveSeconds: 45
+      delayBeforeNextSubWaveSeconds: 22.5
     - subWaveName: Final Boss Arrival C
       centerSpawnPoint: {fileID: 7014364711294536990}
       formation:

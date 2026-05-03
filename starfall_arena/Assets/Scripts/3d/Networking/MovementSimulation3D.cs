@@ -79,7 +79,8 @@ public static class MovementSimulation3D
         float effectiveThrustInput = input.ThrustMultiplier > 0f ? Mathf.Max(0f, input.ThrustInput) : 0f;
         bool isPrecisionThrottle = IsPrecisionThrottleInput(effectiveThrustInput, flight);
         float brakeInput = Mathf.Clamp01(-input.ThrustInput);
-        bool passiveLinearAssistEnabled = input.FrictionEnabled && assist.frictionDeceleration > 0f;
+        bool flightAssistEnabled = input.FrictionEnabled;
+        bool passiveForwardFrictionEnabled = flightAssistEnabled && assist.frictionDeceleration > 0f;
         Quaternion inverseRotation = Quaternion.Inverse(state.Rotation);
         Vector3 localVelocity = inverseRotation * state.Velocity;
 
@@ -106,19 +107,19 @@ public static class MovementSimulation3D
         {
             localVelocity.z = Mathf.MoveTowards(localVelocity.z, 0f, flight.precisionBrakeDeceleration * brakeInput * input.SlowMultiplier * dt);
         }
-        else if (passiveLinearAssistEnabled)
+        else if (passiveForwardFrictionEnabled)
         {
             localVelocity.z = Mathf.MoveTowards(localVelocity.z, 0f, assist.frictionDeceleration * dt);
         }
 
-        if (passiveLinearAssistEnabled)
+        if (flightAssistEnabled)
         {
             localVelocity.x = Mathf.MoveTowards(localVelocity.x, 0f, assist.lateralDriftDamping * dt);
             localVelocity.y = Mathf.MoveTowards(localVelocity.y, 0f, assist.verticalDriftDamping * dt);
         }
 
         Vector3 worldVelocity = state.Rotation * localVelocity;
-        worldVelocity = ApplyVelocityAlignment(worldVelocity, effectiveThrustInput, state, flight, assist, passiveLinearAssistEnabled, dt);
+        worldVelocity = ApplyVelocityAlignment(worldVelocity, effectiveThrustInput, state, flight, assist, flightAssistEnabled, dt);
 
         float effectiveMaxSpeed = Mathf.Max(0f, flight.maxSpeed * input.SlowMultiplier);
         if (effectiveMaxSpeed > 0f && worldVelocity.magnitude > effectiveMaxSpeed)
@@ -135,10 +136,10 @@ public static class MovementSimulation3D
         in MovementState3D state,
         in ShipFlightConfig3D flight,
         in ShipFlightAssistConfig3D assist,
-        bool passiveLinearAssistEnabled,
+        bool flightAssistEnabled,
         float dt)
     {
-        if (!passiveLinearAssistEnabled || assist.velocityAlignmentStrength <= 0f || effectiveThrustInput <= 0.05f || worldVelocity.sqrMagnitude <= MinSpeedSqrMagnitude)
+        if (!flightAssistEnabled || assist.velocityAlignmentStrength <= 0f || effectiveThrustInput <= 0.05f || worldVelocity.sqrMagnitude <= MinSpeedSqrMagnitude)
         {
             return worldVelocity;
         }

@@ -280,6 +280,11 @@ public abstract class Entity3D : MonoBehaviour
 
     public virtual void TakeDamage(float damage, Vector3 hitPoint, Entity3D attacker = null, DamageSource3D source = DamageSource3D.Projectile, int accuracyAttackId = PlayerCombatStats3D.InvalidAttackId)
     {
+        if (ShouldRejectInvasionAllyDamage(attacker))
+        {
+            return;
+        }
+
         damage = ModifyIncomingDamage(damage, attacker, source, accuracyAttackId);
         if (damage <= 0f || currentHealth <= 0f || _isDead)
         {
@@ -340,6 +345,11 @@ public abstract class Entity3D : MonoBehaviour
 
     public virtual void TakeDirectDamage(float damage, Vector3 hitPoint, Entity3D attacker = null, int accuracyAttackId = PlayerCombatStats3D.InvalidAttackId)
     {
+        if (ShouldRejectInvasionAllyDamage(attacker))
+        {
+            return;
+        }
+
         damage = ModifyIncomingDamage(damage, attacker, DamageSource3D.Direct, accuracyAttackId);
         if (damage <= 0f || currentHealth <= 0f || _isDead)
         {
@@ -698,6 +708,19 @@ public abstract class Entity3D : MonoBehaviour
     protected virtual float GetExternalMaxSpeedMultiplier()
     {
         return 1f;
+    }
+
+    private bool ShouldRejectInvasionAllyDamage(Entity3D attacker)
+    {
+        return attacker != null
+            && attacker != this
+            && IsInvasionSceneActive()
+            && FactionMember3D.AreAllied(attacker, this);
+    }
+
+    private static bool IsInvasionSceneActive()
+    {
+        return FindFirstObjectByType<InvasionSceneManager3D>(FindObjectsInactive.Include) != null;
     }
 
     private void BroadcastNetworkCombatState(Vector3 hitPoint, DamageSource3D source, float previousShield)

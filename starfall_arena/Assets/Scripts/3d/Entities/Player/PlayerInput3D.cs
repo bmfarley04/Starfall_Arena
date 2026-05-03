@@ -33,7 +33,6 @@ public class PlayerInput3D : MonoBehaviour, IShipFlightInputSource
     private Vector2 _gamepadLookInput;
     private Vector2 _moveInput;
     private float _thrustInput;
-    private bool _toggleFrictionPressed;
     private bool _fireHeld;
     private bool _isCursorLocked;
     private bool _appliedFireHeld;
@@ -101,9 +100,7 @@ public class PlayerInput3D : MonoBehaviour, IShipFlightInputSource
 
     public bool ConsumeToggleFrictionPressed()
     {
-        bool wasPressed = _toggleFrictionPressed;
-        _toggleFrictionPressed = false;
-        return wasPressed;
+        return false;
     }
 
     public void SetCombatInputSuppressed(bool suppressed)
@@ -136,10 +133,8 @@ public class PlayerInput3D : MonoBehaviour, IShipFlightInputSource
 
     public void OnToggleFriction(InputValue value)
     {
-        if (value.isPressed)
-        {
-            _toggleFrictionPressed = true;
-        }
+        // Player-facing friction toggles are intentionally disabled for 3D combat.
+        // Flight assist should stay stable so velocity realigns after hard turns.
     }
 
     public void OnFire(InputValue value)

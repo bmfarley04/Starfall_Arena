@@ -482,11 +482,6 @@ public class NetMovement3D : NetworkBehaviour
         _lastSentTick = tick;
         float dt = GetTickDeltaTime();
 
-        if (_playerInput3D != null && _playerInput3D.ConsumeToggleFrictionPressed())
-        {
-            _ownerFrictionEnabled = !_ownerFrictionEnabled;
-        }
-
         if (_playerInput3D == null && !_loggedOwnerInputMissing)
         {
             Debug.LogError("[NetMovement3D] Owner movement tick has no PlayerInput3D; thrust/look input will stay at zero.", this);

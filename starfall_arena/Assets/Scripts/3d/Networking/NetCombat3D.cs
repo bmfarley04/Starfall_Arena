@@ -842,6 +842,7 @@ public class NetCombat3D : NetworkBehaviour
     {
         resolvedTargetFaction = configuredTargetFaction;
         resolvedTargetTag = configuredTargetTag;
+        bool isInvasionScene = IsInvasionSceneActive();
 
         if (configuredTargetFaction == Faction3D.EnemyTeam)
         {
@@ -861,7 +862,7 @@ public class NetCombat3D : NetworkBehaviour
             return;
         }
 
-        if (SceneHasFactionTargets(Faction3D.EnemyTeam))
+        if (SceneHasFactionTargets(Faction3D.EnemyTeam) || isInvasionScene)
         {
             resolvedTargetFaction = Faction3D.EnemyTeam;
             resolvedTargetTag = "Enemy";
@@ -899,6 +900,11 @@ public class NetCombat3D : NetworkBehaviour
         }
 
         return false;
+    }
+
+    private static bool IsInvasionSceneActive()
+    {
+        return FindFirstObjectByType<InvasionSceneManager3D>(FindObjectsInactive.Include) != null;
     }
 
     private void CacheReferences()

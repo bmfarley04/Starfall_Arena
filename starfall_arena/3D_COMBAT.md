@@ -26,6 +26,7 @@ Invasion/PvE targeting rule:
 - new PvE code should prefer `FactionMember3D` and `Faction3D` over tags for gameplay filtering
 - tags remain a compatibility fallback for existing duel/prefab paths
 - Invasion defaults to no ally damage: `PlayerTeam` projectiles should not damage players, and `EnemyTeam` projectiles should not damage enemies
+- `Entity3D.TakeDamage(...)` / `TakeDirectDamage(...)` also reject same-faction attacker damage while `InvasionSceneManager3D` is active, so custom direct-damage paths cannot bypass the weapon-level faction checks
 - player duel projectile brokering still uses the opposite-player tag path when a request does not explicitly set `targetFaction`; Invasion player weapons that should damage enemies must set `targetFaction = EnemyTeam`
 - do not use a generic `"Player"` tag in the 3D path; the current tag set has `Player1`, `Player2`, and `Enemy`
 
@@ -216,6 +217,7 @@ Base input rule:
   - applies tier-based thrust/rotation penalties while charging and fires tier-specific projectile prefabs through `ProjectileWeapon3D`
   - replicates charge/tier presentation through `NetCombat3D`; release still uses the shared projectile request path
   - inherits the base `ProjectileWeapon3D` target faction/tag and runs the shared player projectile targeting normalization before firing, so Invasion GigaBlast shots target `EnemyTeam` instead of damaging allied player-team ships
+  - Invasion targeting stays `EnemyTeam` even during enemy-empty timing windows such as pre-wave delays and between-wave clears; do not fall back to duel opponent tags just because no enemies are currently alive
 - `GigaBlastProjectile3D`
   - optional projectile runtime for tiers that need piercing behavior
 
@@ -234,6 +236,7 @@ Base input rule:
 - `TractorBeam3D`
   - cone pull ability for the 3D path
   - pulls overlapping `Rigidbody` targets toward the ship with full 3D cone-angle checks (including vertical climb/dive space)
+  - in Invasion, same-faction entities are ignored so the pull cannot drag a co-op teammate around even when the target mask includes player layers
   - resolves cone aim from the same center-screen camera ray path used by 3D projectile weapons (with convergence + direction blend), while still using authored `spawnPoint` for beam origin/visual placement
   - can auto-align `visualRoot` to the same cone direction used by pull logic (`alignVisualToConeDirection`) and can optionally scale visuals to the gameplay cone dimensions (`scaleVisualToCone` + `visualConeScaleMultiplier`)
   - exposes a selected-object Scene gizmo (`drawGameplayConeGizmo`) so cone half-angle/range can be verified against runtime gameplay volume

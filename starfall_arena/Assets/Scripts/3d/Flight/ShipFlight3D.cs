@@ -403,7 +403,8 @@ public class ShipFlight3D : MonoBehaviour
         _effectiveThrustInput = thrustMultiplier > 0f ? Mathf.Max(0f, _thrustInput) : 0f;
         bool isPrecisionThrottle = IsPrecisionThrottleInput(_effectiveThrustInput);
         float brakeInput = Mathf.Clamp01(-_thrustInput);
-        bool passiveLinearAssistEnabled = frictionEnabled && flightAssist.frictionDeceleration > 0f;
+        bool flightAssistEnabled = frictionEnabled;
+        bool passiveForwardFrictionEnabled = flightAssistEnabled && flightAssist.frictionDeceleration > 0f;
         bool isApplyingThrust = _effectiveThrustInput > 0.05f;
 
         Vector3 localVelocity = transform.InverseTransformDirection(_rb.linearVelocity);
@@ -431,19 +432,19 @@ public class ShipFlight3D : MonoBehaviour
         {
             localVelocity.z = Mathf.MoveTowards(localVelocity.z, 0f, flight.precisionBrakeDeceleration * brakeInput * slowMultiplier * Time.fixedDeltaTime);
         }
-        else if (passiveLinearAssistEnabled)
+        else if (passiveForwardFrictionEnabled)
         {
             localVelocity.z = Mathf.MoveTowards(localVelocity.z, 0f, flightAssist.frictionDeceleration * Time.fixedDeltaTime);
         }
 
-        if (passiveLinearAssistEnabled)
+        if (flightAssistEnabled)
         {
             localVelocity.x = Mathf.MoveTowards(localVelocity.x, 0f, flightAssist.lateralDriftDamping * Time.fixedDeltaTime);
             localVelocity.y = Mathf.MoveTowards(localVelocity.y, 0f, flightAssist.verticalDriftDamping * Time.fixedDeltaTime);
         }
 
         Vector3 worldVelocity = transform.TransformDirection(localVelocity);
-        worldVelocity = ApplyVelocityAlignment(worldVelocity, passiveLinearAssistEnabled);
+        worldVelocity = ApplyVelocityAlignment(worldVelocity, flightAssistEnabled);
 
         float effectiveMaxSpeed = Mathf.Max(0f, flight.maxSpeed * maxSpeedMultiplier * slowMultiplier);
         if (effectiveMaxSpeed > 0f && worldVelocity.magnitude > effectiveMaxSpeed)
@@ -455,9 +456,9 @@ public class ShipFlight3D : MonoBehaviour
         _localVelocity = transform.InverseTransformDirection(_rb.linearVelocity);
     }
 
-    private Vector3 ApplyVelocityAlignment(Vector3 worldVelocity, bool passiveLinearAssistEnabled)
+    private Vector3 ApplyVelocityAlignment(Vector3 worldVelocity, bool flightAssistEnabled)
     {
-        if (!passiveLinearAssistEnabled || flightAssist.velocityAlignmentStrength <= 0f || _effectiveThrustInput <= 0.05f || worldVelocity.sqrMagnitude <= MinSpeedSqrMagnitude)
+        if (!flightAssistEnabled || flightAssist.velocityAlignmentStrength <= 0f || _effectiveThrustInput <= 0.05f || worldVelocity.sqrMagnitude <= MinSpeedSqrMagnitude)
         {
             return worldVelocity;
         }
