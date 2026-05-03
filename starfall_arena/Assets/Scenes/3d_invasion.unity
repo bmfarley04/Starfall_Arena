@@ -11033,7 +11033,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &1791662940
 RectTransform:
   m_ObjectHideFlags: 0
@@ -12220,6 +12220,7 @@ GameObject:
   - component: {fileID: 2033215997}
   - component: {fileID: 2033215996}
   - component: {fileID: 2033215995}
+  - component: {fileID: 2033215998}
   m_Layer: 5
   m_Name: teammateCanvas
   m_TagString: Untagged
@@ -12236,7 +12237,7 @@ RectTransform:
   m_GameObject: {fileID: 2033215993}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 2121106003}
@@ -12310,6 +12311,25 @@ Canvas:
   m_SortingLayerID: 0
   m_SortingOrder: 0
   m_TargetDisplay: 0
+--- !u!114 &2033215998
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2033215993}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9d3d9a1c28b64f4b9cf2d7e7fbf9d241, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  hudManager: {fileID: 1779300723}
+  hideWhenNoTeammate: 1
+  teammateRefreshInterval: 0.25
+  healthFillImage: {fileID: 418532455}
+  shieldFillImage: {fileID: 1579474407}
+  visibilityGroup: {fileID: 0}
+  autoConfigureFillImages: 1
 --- !u!1 &2085344690
 GameObject:
   m_ObjectHideFlags: 0
