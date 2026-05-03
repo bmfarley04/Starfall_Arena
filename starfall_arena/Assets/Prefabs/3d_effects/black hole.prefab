@@ -234,6 +234,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 5938876997777027291}
+  - component: {fileID: 632412957108431829}
+  - component: {fileID: 7744053758555926142}
   m_Layer: 0
   m_Name: black hole
   m_TagString: Untagged
@@ -258,3 +260,76 @@ Transform:
   - {fileID: 492553089420906221}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &632412957108431829
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6935636777801461194}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
+  GlobalObjectIdHash: 0
+  InScenePlacedSourceGlobalObjectIdHash: 0
+  DeferredDespawnTick: 0
+  Ownership: 1
+  AlwaysReplicateAsRoot: 0
+  SynchronizeTransform: 1
+  ActiveSceneSynchronization: 0
+  SceneMigrationSynchronization: 1
+  SpawnWithObservers: 1
+  DontDestroyWithOwner: 0
+  AutoObjectParentSync: 1
+  SyncOwnerTransformWhenParented: 1
+  AllowOwnerToParent: 0
+--- !u!114 &7744053758555926142
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6935636777801461194}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8c4e3d79f2d64b7fb96e879a820d334f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BlackHoleMenaceVisual3D
+  accretionDiskRenderer: {fileID: 6548358782405500681}
+  accretionDiskMaterialIndex: 0
+  invasionWaveManager: {fileID: 0}
+  previewMenacePercent: 0
+  applyPreviewInEditMode: 1
+  menaceResponseCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 1
+      outSlope: 1
+      tangentMode: 34
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 1
+      outSlope: 1
+      tangentMode: 34
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  startMidColor: {r: 0, g: 2.0155764, b: 10.680627, a: 1}
+  startOuterColor: {r: 0, g: 0.5728299, b: 1.8268172, a: 1}
+  startHotStreakColor: {r: 0, g: 1.0611426, b: 3.3899353, a: 1}
+  finalMidColor: {r: 12.374387, g: 0, b: 0.040595904, a: 1}
+  finalOuterColor: {r: 1.826817, g: 0, b: 0.005250956, a: 1}
+  finalHotStreakColor: {r: 6.7798715, g: 0, b: 0.10718339, a: 1}
+  innerWhiteHdrIntensity: 1.0694609

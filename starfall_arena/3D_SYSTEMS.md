@@ -84,6 +84,12 @@ These classes should stay narrow and mostly coordinate dedicated 3D systems.
 - `ShipSplitOffsetRig3D`
   - shared split-state offset coordinator for grouped ship pieces
   - caches each piece's authored local position and applies inspector-configured additive local offsets while the split state is active
+- `BlackHoleMenaceVisual3D`
+  - optional visual-only black hole controller for 3D Invasion
+  - drives the accretion disk `_MidColor`, `_OuterColor`, and `_HotStreakColor` from a blue start palette toward a red/orange final palette as enemy defeat progress increases
+  - keeps `_InnerColor` pure white through an exposed HDR intensity value
+  - uses a runtime material instance in play mode and edit-mode preview property blocks so tuning does not dirty shared material assets
+  - syncs menace progress through a server-written NetworkVariable when the black hole root has a `NetworkObject`
 
 ### Player-only 3D systems
 
@@ -281,9 +287,19 @@ When adding a new 3D script, place it under the subsystem it serves first. Do no
 - the accretion disk shader is additive, but intentionally renders in the opaque render-queue range so URP includes it in `_CameraOpaqueTexture`; this is required for the singularity shader to bend the disk image in screen space
 - because the disk renders before the skybox for lensing capture, it keeps depth writes enabled and clips faint pixels with `Depth Clip Threshold`; otherwise the skybox overwrites the disk anywhere there is no opaque object already behind it
 - the singularity/lensing shader renders after the disk, samples `_CameraOpaqueTexture`, bends samples radially around the sphere center, blacks out the event horizon, and adds a tunable HDR photon ring for bloom
+- in the current Unity 6 / URP 17 path, URP copies `_CameraOpaqueTexture` after the skybox, so skybox stars and nebulae are available for the black hole lensing pass when the active renderer asset has opaque texture enabled
+- `_CameraOpaqueTexture` is still not a true final-frame grab: transparent VFX rendered after the opaque texture copy will not be bent by the singularity unless a dedicated renderer feature copies scene color later and the shader is changed to sample that custom texture
 - `Bend Strength` can be negative to pull scene samples inward toward the event horizon; this is the useful direction for lifting the rear disk into the upper/lower Einstein-ring arcs
 - the `Lensed Disk Arc` controls add an art-directed procedural horizon band with repeated lane lines and noise similar to the flat disk, making the rear accretion disk read above and below the black core even when the pure screen-space bend samples the disk's central hole
 - the lensed disk arc has matching spin, infall, and spiral controls; keep those close to the accretion disk material values so the wrapped arcs animate like the same disk light rather than a separate static halo
+- the disk material now has explicit relativistic-look controls: `One-Side Hot Boost`, `Far-Side Dimming`, `Hot-Side Focus`, and `Hot Side Angle` are the primary knobs for Doppler-style brightness asymmetry
+- `Back-Half Inner Fade`, `Back-Half Fade Reach`, and `Back-Half Angle` are art-direction controls that hide the inner rear disk enough for the singularity's lensed arc to read as bent light instead of a flat ring running through the black core
+- the singularity material's `Lensed Background Brightening` boosts screen-sampled skybox/scene color near the lensing shear so sparse starfields show visible gravitational arcs instead of only a black cutout
+- prefer keeping `Disk Arc Intensity` at 0 when the real screen-sampled disk is visible; use `Lensed Source Thickness`, `Lensed Source Threshold`, `Lensed Source Boost`, and `Lensed Source Ring Width` to thicken the actual sampled disk color without painting a separate procedural arc over it
+- the lensed source thickening is a small brightest-sample gather around the bent scene UV, so tune it conservatively; it costs extra scene-color samples only on the singularity shell and should stay focused near the photon ring rather than becoming a broad fullscreen blur
+- `BlackHoleMenaceVisual3D` belongs on the black hole root when Invasion should color-shift the disk over the run; assign its accretion disk renderer and the scene's `InvasionWaveManager3D`
+- menace progress uses `InvasionWaveManager3D`'s authored enemy total as the denominator and defeated enemies as the numerator; runtime child-spawn kills may advance the numerator, but the denominator intentionally remains the authored wave total
+- menace only tints the accretion disk material colors and does not change lensing, photon ring, disk geometry, damage, gravity, wave rules, or enemy behavior
 - author the singularity sphere slightly larger than the visible black core; tune `Event Horizon Radius` on the material to decide how much of that sphere is pure black versus lensing falloff
 - the disk shader is quad-friendly: it converts centered UVs to polar coordinates, uses polar angle/radius for circular swirl motion, and masks the square corners away; keep the black hole centered at UV `(0.5, 0.5)`
 - the current PC/3D URP path has opaque texture enabled; any renderer asset used for this effect must keep opaque texture enabled or the lensing shader will not have a valid scene color source

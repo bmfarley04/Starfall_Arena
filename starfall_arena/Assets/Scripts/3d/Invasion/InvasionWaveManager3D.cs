@@ -117,6 +117,9 @@ public class InvasionWaveManager3D : MonoBehaviour
     private readonly List<Vector3> _formationOffsets = new List<Vector3>(16);
     private float _activeFormationYBias;
     private Coroutine _waveRoutine;
+    private int _authoredEnemyCount;
+    private int _defeatedEnemyCount;
+    private bool _loggedZeroAuthoredEnemyCount;
 
     public event Func<int, IEnumerator> WaveIntroRequested;
     public event Func<int, IEnumerator> RewardPhaseRequested;
@@ -124,10 +127,14 @@ public class InvasionWaveManager3D : MonoBehaviour
     public event Action<int> WaveCleared;
     public event Action AllWavesCleared;
     public event Action<int> AliveEnemyCountChanged;
+    public event Action<int, int, float> EnemyDefeatProgressChanged;
 
     public int AliveEnemyCount => _aliveEnemies.Count;
     public int WaveCount => waves != null ? waves.Length : 0;
     public bool IsRunning => _waveRoutine != null;
+    public int AuthoredEnemyCount => IsRunning ? _authoredEnemyCount : CalculateAuthoredEnemyCount();
+    public int DefeatedEnemyCount => _defeatedEnemyCount;
+    public float EnemyDefeatProgress01 => CalculateEnemyDefeatProgress01(_defeatedEnemyCount, AuthoredEnemyCount);
 
     private void OnEnable()
     {
@@ -155,6 +162,7 @@ public class InvasionWaveManager3D : MonoBehaviour
             return;
         }
 
+        ResetEnemyDefeatProgress();
         _waveRoutine = StartCoroutine(RunWaves());
     }
 
@@ -394,6 +402,88 @@ public class InvasionWaveManager3D : MonoBehaviour
         return total;
     }
 
+    private int CalculateAuthoredEnemyCount()
+    {
+        if (waves == null)
+        {
+            return 0;
+        }
+
+        int total = 0;
+        for (int waveIndex = 0; waveIndex < waves.Length; waveIndex++)
+        {
+            WaveConfig3D wave = waves[waveIndex];
+            if (wave == null)
+            {
+                continue;
+            }
+
+            if (wave.subWaves != null)
+            {
+                for (int subWaveIndex = 0; subWaveIndex < wave.subWaves.Length; subWaveIndex++)
+                {
+                    SubWaveConfig3D subWave = wave.subWaves[subWaveIndex];
+                    if (subWave == null)
+                    {
+                        continue;
+                    }
+
+                    total += GetTotalEnemyCount(subWave.enemies);
+                }
+            }
+
+            if (wave.enableBoss && wave.boss != null && wave.boss.bossPrefab != null)
+            {
+                total++;
+            }
+        }
+
+        return total;
+    }
+
+    private void ResetEnemyDefeatProgress()
+    {
+        _authoredEnemyCount = CalculateAuthoredEnemyCount();
+        _defeatedEnemyCount = 0;
+
+        if (_authoredEnemyCount <= 0 && !_loggedZeroAuthoredEnemyCount)
+        {
+            Debug.LogWarning("[InvasionWaveManager3D] Enemy defeat progress will stay at 0 because no authored enemies were found in the configured waves.", this);
+            _loggedZeroAuthoredEnemyCount = true;
+        }
+
+        PublishEnemyDefeatProgress();
+    }
+
+    private void RegisterEnemyDefeated()
+    {
+        int total = AuthoredEnemyCount;
+        if (total <= 0)
+        {
+            PublishEnemyDefeatProgress();
+            return;
+        }
+
+        _defeatedEnemyCount = Mathf.Min(_defeatedEnemyCount + 1, total);
+        PublishEnemyDefeatProgress();
+    }
+
+    private void PublishEnemyDefeatProgress()
+    {
+        int total = AuthoredEnemyCount;
+        EnemyDefeatProgressChanged?.Invoke(_defeatedEnemyCount, total, CalculateEnemyDefeatProgress01(_defeatedEnemyCount, total));
+    }
+
+    private static float CalculateEnemyDefeatProgress01(int defeated, int total)
+    {
+        if (total <= 0)
+        {
+            return 0f;
+        }
+
+        return Mathf.Clamp01(defeated / (float)total);
+    }
+
     private void BuildFormationOffsets(int totalEnemyCount, FormationConfig3D formation)
     {
         _formationOffsets.Clear();
@@ -564,6 +654,7 @@ public class InvasionWaveManager3D : MonoBehaviour
         }
 
         RemovePendingRevealEnemy(enemy);
+        RegisterEnemyDefeated();
     }
 
     private void HandleEnemyDied(Entity3D entity)
@@ -576,6 +667,7 @@ public class InvasionWaveManager3D : MonoBehaviour
 
         enemy.Died -= HandleEnemyDied;
         _aliveEnemies.Remove(enemy);
+        RegisterEnemyDefeated();
         AliveEnemyCountChanged?.Invoke(_aliveEnemies.Count);
     }
 

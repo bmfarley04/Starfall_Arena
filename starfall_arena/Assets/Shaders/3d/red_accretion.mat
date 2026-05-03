@@ -1,0 +1,56 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: red_accretion
+  m_Shader: {fileID: 4800000, guid: d957c48f9ef64cc4ba0fd93ce2775f12, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs: []
+    m_Ints: []
+    m_Floats:
+    - _BackHalfAngle: 0.49
+    - _BackHalfFadeReach: 0.36
+    - _BackHalfInnerFade: 0.271
+    - _Brightness: 3.9
+    - _DepthClipThreshold: 0.0712
+    - _DopplerBoost: 3
+    - _DopplerFocus: 0.9
+    - _DopplerShadow: 0
+    - _HotSideAngle: -0.06
+    - _InfallSpeed: 0.08
+    - _InnerFade: 0.067
+    - _InnerRadius: 0.24
+    - _NoiseScale: 10
+    - _NoiseStrength: 0.75
+    - _Opacity: 0.407
+    - _OuterFade: 0.12
+    - _OuterRadius: 1
+    - _RingFrequency: 34
+    - _RingSharpness: 3
+    - _SpinSpeed: 0.08
+    - _SpiralTightness: 8
+    - _WispSharpness: 2.4
+    m_Colors:
+    - _HotStreakColor: {r: 6.7798715, g: 0, b: 0.10718339, a: 1}
+    - _InnerColor: {r: 1.0694609, g: 1.0694609, b: 1.0694609, a: 1}
+    - _MidColor: {r: 12.374387, g: 0, b: 0.040595904, a: 1}
+    - _OuterColor: {r: 1.826817, g: 0, b: 0.005250956, a: 1}
+  m_BuildTextureStacks: []
+  m_AllowLocking: 1

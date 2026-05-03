@@ -29,7 +29,12 @@ Shader "Starfall/3D/BlackHole/AccretionDisk"
         _Opacity("Opacity", Range(0.0, 2.0)) = 0.92
         _DepthClipThreshold("Depth Clip Threshold", Range(0.0, 0.25)) = 0.02
         _DopplerBoost("One-Side Hot Boost", Range(0.0, 3.0)) = 0.55
+        _DopplerShadow("Far-Side Dimming", Range(0.0, 0.95)) = 0.32
+        _DopplerFocus("Hot-Side Focus", Range(0.25, 8.0)) = 2.6
         _HotSideAngle("Hot Side Angle", Range(-3.1416, 3.1416)) = -0.65
+        _BackHalfInnerFade("Back-Half Inner Fade", Range(0.0, 1.0)) = 0.35
+        _BackHalfFadeReach("Back-Half Fade Reach", Range(0.001, 1.0)) = 0.32
+        _BackHalfAngle("Back-Half Angle", Range(-3.1416, 3.1416)) = 1.5708
     }
 
     SubShader
@@ -100,7 +105,12 @@ Shader "Starfall/3D/BlackHole/AccretionDisk"
                 half _Opacity;
                 half _DepthClipThreshold;
                 half _DopplerBoost;
+                half _DopplerShadow;
+                float _DopplerFocus;
                 float _HotSideAngle;
+                half _BackHalfInnerFade;
+                float _BackHalfFadeReach;
+                float _BackHalfAngle;
             CBUFFER_END
 
             float hash21(float2 p)
@@ -174,27 +184,35 @@ Shader "Starfall/3D/BlackHole/AccretionDisk"
 
                 float broadNoise = fbm(float2(spiralCoord * _NoiseScale, radialFlow * _NoiseScale * 0.55));
                 float fineNoise = fbm(float2(spiralCoord * _NoiseScale * 2.4 + 17.0, radialFlow * _NoiseScale * 1.7));
+                float clumpNoise = fbm(float2(spiralCoord * _NoiseScale * 0.32 + 31.0, radialFlow * _NoiseScale * 0.38 - 9.0));
                 float noiseValue = saturate((broadNoise * 0.72 + fineNoise * 0.44) * _NoiseStrength);
 
                 float ringWave = 0.5 + 0.5 * sin((radial01 * _RingFrequency + broadNoise * 2.0 - time * _InfallSpeed * 5.0) * STARFALL_TWO_PI);
                 float ringLines = pow(saturate(ringWave), _RingSharpness);
                 float wisps = pow(saturate(noiseValue), _WispSharpness);
+                float clumpMask = lerp(0.58, 1.38, smoothstep(0.18, 0.92, clumpNoise + broadNoise * 0.28));
 
-                float hotSide = 0.5 + 0.5 * cos(angle - _HotSideAngle);
-                hotSide = pow(saturate(hotSide), 2.6) * _DopplerBoost;
+                float hotSide01 = saturate(0.5 + 0.5 * cos(angle - _HotSideAngle));
+                float hotSide = pow(hotSide01, max(_DopplerFocus, 0.001));
+                float farSide = pow(saturate(1.0 - hotSide01), 1.35);
+                float dopplerMultiplier = max(0.08, 1.0 + hotSide * _DopplerBoost - farSide * _DopplerShadow);
+
+                float backSide = pow(saturate(0.5 + 0.5 * cos(angle - _BackHalfAngle)), 1.15);
+                float backCoreFade = 1.0 - smoothstep(0.0, max(_BackHalfFadeReach, 0.001), radial01);
+                diskMask *= saturate(1.0 - backSide * backCoreFade * _BackHalfInnerFade);
 
                 half3 gradient = lerp(_InnerColor.rgb, _MidColor.rgb, smoothstep(0.0, 0.55, radial01));
                 gradient = lerp(gradient, _OuterColor.rgb, smoothstep(0.45, 1.0, radial01));
-                gradient = lerp(gradient, _HotStreakColor.rgb, saturate(hotSide * (0.35 + ringLines)));
+                gradient = lerp(gradient, _HotStreakColor.rgb, saturate(hotSide * (0.22 + ringLines * 0.78)));
 
-                float laneIntensity = saturate(wisps * 0.85 + ringLines * 0.9);
-                float innerHeat = 1.0 - smoothstep(0.0, 0.62, radial01);
+                float laneIntensity = saturate((wisps * 0.85 + ringLines * 0.9) * clumpMask);
+                float innerHeat = pow(1.0 - smoothstep(0.0, 0.62, radial01), 1.25);
                 float alpha = diskMask * _Opacity * saturate(laneIntensity + innerHeat * 0.4);
 
                 clip(alpha - _DepthClipThreshold);
 
                 half3 color = gradient * _Brightness;
-                color *= 0.35 + laneIntensity * 1.4 + innerHeat * 0.75 + hotSide;
+                color *= (0.32 + laneIntensity * 1.35 + innerHeat * 1.1) * dopplerMultiplier;
 
                 return half4(color, alpha);
             }

@@ -238,6 +238,10 @@ Bug note format:
 - networked 3D speed FX must not rely on NGO to hide local boost presentation automatically. `ShipSpeedFx3D` is a plain `MonoBehaviour`, so every spawned replica can still build dust/trail visuals unless the script checks ownership itself. Keep speed FX owner-only in active network sessions so remote ships do not show another player's boost trails.
 - shared 3D split-state piece offsets must be applied as `authored local position + configured offset`, not as an overwrite of the current transform or as repeated incremental pushes. Otherwise the effect either destroys prefab-authored asymmetry or accumulates drift every time the split state toggles.
 
+## Environment And Screen-Space Effects
+
+- 3D black hole lensing should not be described as sampling the final frame when it uses URP `_CameraOpaqueTexture`. In Unity 6 / URP 17 this texture is copied after the skybox, which is enough for starfield skybox lensing, but it excludes transparent VFX drawn later. Keep opaque texture enabled on the active renderer asset for the current black hole prefab; add a dedicated late scene-color copy only if the effect must bend transparent objects behind it.
+
 ## HUD And Player-Facing Readability
 
 - 3D Invasion spawn-arrival enemies must not be counted or surfaced by HUD discovery before their reveal actually finishes. The old path tracked them in `InvasionWaveManager3D` at instantiate time while `SpawnArrivalEffect3D` merely hid renderers and disabled gameplay, so the enemy counter and target-awareness indicator showed ships that had not visibly entered play yet. Keep unrevealed arrivals in a pending state, exclude them from target discovery, and only promote them into alive-enemy/HUD tracking once the arrival effect reports reveal completion.

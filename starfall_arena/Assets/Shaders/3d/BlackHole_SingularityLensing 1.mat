@@ -7,7 +7,7 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: BlackHole_SingularityLensing
+  m_Name: BlackHole_SingularityLensing 1
   m_Shader: {fileID: 4800000, guid: 4b3e3472ee674bd29d31fd2b08f80771, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
@@ -54,11 +54,11 @@ Material:
     - _LensedSourceThreshold: 1.5
     - _ObjectRadius: 0.5
     - _OuterFade: 0.037
-    - _PhotonRingAlpha: 1
-    - _PhotonRingIntensity: 2.98
-    - _PhotonRingWidth: 0.0405
+    - _PhotonRingAlpha: 0.86
+    - _PhotonRingIntensity: 6.8
+    - _PhotonRingWidth: 0.0262
     m_Colors:
     - _EventHorizonColor: {r: 0, g: 0, b: 0, a: 1}
-    - _PhotonRingColor: {r: 1, g: 1, b: 1, a: 1}
+    - _PhotonRingColor: {r: 0.7490197, g: 0.05324946, b: 0, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

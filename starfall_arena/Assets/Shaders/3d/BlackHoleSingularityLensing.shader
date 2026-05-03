@@ -12,6 +12,11 @@ Shader "Starfall/3D/BlackHole/SingularityLensing"
         _BendClamp("Bend Clamp", Range(0.02, 0.6)) = 0.16
         _OuterFade("Outer Lens Fade", Range(0.001, 0.45)) = 0.18
         _ChromaticAberration("Chromatic Edge Split", Range(0.0, 0.08)) = 0.012
+        _LensCausticBoost("Lensed Background Brightening", Range(0.0, 3.0)) = 0.45
+        _LensedSourceThickness("Lensed Source Thickness", Range(0.0, 0.08)) = 0.012
+        _LensedSourceThreshold("Lensed Source Threshold", Range(0.0, 8.0)) = 0.6
+        _LensedSourceBoost("Lensed Source Boost", Range(0.0, 3.0)) = 0.35
+        _LensedSourceRingWidth("Lensed Source Ring Width", Range(0.001, 0.5)) = 0.18
 
         [Header(Lensed Disk Arc)]
         _DiskArcIntensity("Disk Arc Intensity", Range(0.0, 12.0)) = 3.0
@@ -26,6 +31,9 @@ Shader "Starfall/3D/BlackHole/SingularityLensing"
         _DiskArcSpinSpeed("Disk Arc Spin Speed", Float) = 0.24
         _DiskArcInfallSpeed("Disk Arc Infall Speed", Float) = 0.18
         _DiskArcSpiralTightness("Disk Arc Spiral Tightness", Range(0.0, 8.0)) = 2.4
+        _DiskArcDopplerBoost("Disk Arc Side Boost", Range(0.0, 3.0)) = 1.0
+        _DiskArcFarSideDimming("Disk Arc Far-Side Dimming", Range(0.0, 0.95)) = 0.18
+        _DiskArcHotSideAngle("Disk Arc Hot Side Angle", Range(-3.1416, 3.1416)) = -0.65
 
         [Header(Photon Ring)]
         [HDR]_PhotonRingColor("Photon Ring HDR Color", Color) = (6.0, 2.05, 0.42, 1.0)
@@ -86,6 +94,11 @@ Shader "Starfall/3D/BlackHole/SingularityLensing"
                 float _BendClamp;
                 float _OuterFade;
                 float _ChromaticAberration;
+                half _LensCausticBoost;
+                float _LensedSourceThickness;
+                half _LensedSourceThreshold;
+                half _LensedSourceBoost;
+                float _LensedSourceRingWidth;
 
                 half _DiskArcIntensity;
                 float _DiskArcRadiusOffset;
@@ -99,6 +112,9 @@ Shader "Starfall/3D/BlackHole/SingularityLensing"
                 float _DiskArcSpinSpeed;
                 float _DiskArcInfallSpeed;
                 float _DiskArcSpiralTightness;
+                half _DiskArcDopplerBoost;
+                half _DiskArcFarSideDimming;
+                float _DiskArcHotSideAngle;
 
                 half4 _PhotonRingColor;
                 float _PhotonRingWidth;
@@ -147,6 +163,18 @@ Shader "Starfall/3D/BlackHole/SingularityLensing"
                 value += noise2d(p) * amplitude;
 
                 return value;
+            }
+
+            float Luminance(half3 color)
+            {
+                return dot(color, half3(0.2126h, 0.7152h, 0.0722h));
+            }
+
+            half3 KeepBrighter(half3 current, half3 candidate)
+            {
+                float currentLuma = Luminance(current);
+                float candidateLuma = Luminance(candidate);
+                return lerp(current, candidate, step(currentLuma, candidateLuma));
             }
 
             float2 ScreenUvFromClip(float4 positionHCS)
@@ -230,9 +258,39 @@ Shader "Starfall/3D/BlackHole/SingularityLensing"
                     sceneColor.b = SampleSceneColor(blueUv).b;
                 }
 
+                float sourceThickness = _LensedSourceThickness * projectedRadius * lensMask;
+                if (sourceThickness > 0.00001)
+                {
+                    float2 radialOffset = screenDirection * sourceThickness;
+                    float2 tangentOffset = float2(-screenDirection.y, screenDirection.x) * sourceThickness;
+
+                    half3 gatheredColor = sceneColor;
+                    gatheredColor = KeepBrighter(gatheredColor, SampleSceneColor(saturate(bentUv + radialOffset)));
+                    gatheredColor = KeepBrighter(gatheredColor, SampleSceneColor(saturate(bentUv - radialOffset)));
+                    gatheredColor = KeepBrighter(gatheredColor, SampleSceneColor(saturate(bentUv + tangentOffset)));
+                    gatheredColor = KeepBrighter(gatheredColor, SampleSceneColor(saturate(bentUv - tangentOffset)));
+
+                    float gatheredLuma = Luminance(gatheredColor);
+                    float sourceMask = smoothstep(
+                        _LensedSourceThreshold,
+                        _LensedSourceThreshold + max(_LensedSourceThreshold * 0.75h, 0.05h),
+                        gatheredLuma
+                    );
+                    float ringMask = 1.0 - smoothstep(0.0, max(_LensedSourceRingWidth, 0.0001), abs(normalizedRadius - horizonRadius));
+                    float gatherMask = saturate(sourceMask * ringMask * lensMask);
+                    sceneColor = lerp(sceneColor, gatheredColor * (1.0h + _LensedSourceBoost), gatherMask);
+                }
+
+                float caustic = pow(saturate(bendProximity), 1.65) * lensMask;
+                sceneColor *= 1.0 + caustic * _LensCausticBoost;
+
                 float photonDistance = abs(normalizedRadius - horizonRadius);
                 float photonRing = 1.0 - smoothstep(0.0, max(_PhotonRingWidth, 0.0001), photonDistance);
+                float photonCore = 1.0 - smoothstep(0.0, max(_PhotonRingWidth * 0.28, 0.0001), photonDistance);
+                float photonBloom = 1.0 - smoothstep(0.0, max(_PhotonRingWidth * 1.85, 0.0001), photonDistance);
                 photonRing *= outerMask;
+                photonCore *= outerMask;
+                photonBloom *= outerMask;
 
                 half3 color = sceneColor;
 
@@ -272,14 +330,22 @@ Shader "Starfall/3D/BlackHole/SingularityLensing"
                 float brightCore = pow(saturate(1.0 - arcRadial01), 1.6) * _DiskArcCoreStrength;
                 float lensedDiskPattern = saturate(wrappedLines * 1.2 + strandMask * 0.35 + brightCore);
 
-                half3 lineColor = lerp(_PhotonRingColor.rgb, half3(1.0h, 0.88h, 0.58h), saturate(wrappedLines + brightCore));
-                color += lineColor * diskArc * lensedDiskPattern * _DiskArcIntensity;
+                float arcHotSide01 = saturate(0.5 + 0.5 * cos((arcAngle01 - 0.5) * STARFALL_TWO_PI - _DiskArcHotSideAngle));
+                float arcHotSide = pow(arcHotSide01, 2.7);
+                float arcFarSide = pow(saturate(1.0 - arcHotSide01), 1.25);
+                float arcRelativistic = max(0.08, 1.0 + arcHotSide * _DiskArcDopplerBoost - arcFarSide * _DiskArcFarSideDimming);
 
-                color += _PhotonRingColor.rgb * photonRing * _PhotonRingIntensity;
+                half3 lineColor = lerp(_PhotonRingColor.rgb, half3(1.0h, 0.88h, 0.58h), saturate(wrappedLines + brightCore));
+                color += lineColor * diskArc * lensedDiskPattern * _DiskArcIntensity * arcRelativistic;
+
+                half3 photonWhite = half3(1.0h, 0.92h, 0.72h);
+                color += _PhotonRingColor.rgb * photonBloom * _PhotonRingIntensity * 0.38h;
+                color += _PhotonRingColor.rgb * photonRing * _PhotonRingIntensity * 0.72h;
+                color += photonWhite * photonCore * _PhotonRingIntensity * 1.15h;
                 color = lerp(color, _EventHorizonColor.rgb, saturate(horizonMask));
 
                 half alpha = saturate(max(horizonMask, lensMask * _LensOpacity));
-                alpha = saturate(max(alpha, photonRing * _PhotonRingAlpha));
+                alpha = saturate(max(alpha, max(photonRing, photonBloom * 0.45) * _PhotonRingAlpha));
 
                 clip(alpha - 0.001);
 

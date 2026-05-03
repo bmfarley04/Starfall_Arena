@@ -57,6 +57,7 @@ Implemented foundation:
 - enemies with `SpawnArrivalEffect3D` stay in a pending-arrival state until the reveal finishes. During that pending window they do not contribute to `InvasionWaveManager3D.AliveEnemyCount`, do not appear on `TargetAwarenessHUD3D`, and do not satisfy "enemy exists" HUD expectations until the ship is actually visible/playable after the arrival beat.
 - `PortalBossSpawn3D` is a prefab-local boss entrance component for large Invasion enemies that should emerge from `Portal3D`. It moves the real boss root from behind the portal to the authored spawn point, disables gameplay during the entrance, and expects the portal prefab to include its own depth-mask disk so only the portion inside the portal silhouette is hidden while the boss exits.
 - `InvasionWaveManager3D` is a finite-wave spawner with nested wave -> sub-wave -> formation authoring
+- `InvasionWaveManager3D` exposes generic defeated-enemy progress for visual systems such as `BlackHoleMenaceVisual3D`: authored sub-wave enemy counts plus enabled bosses define the total, enemy deaths advance the defeated count, and progress is clamped from 0 to 1
 - `InvasionWaveManager3D` now separates wave timing into two authored delays: an end delay after a wave is fully cleared before the next intro is requested, and a start delay after `WAVE N` presentation before enemy spawning begins. The same start delay applies to wave 1 as well, so the first wave does not bypass spawn timing just because there was no prior clear.
 - each wave now owns ordered timed sub-waves plus one optional separate boss block
 - each sub-wave generates one preset formation (`Line`, `Wedge`, `Ring`, or `Grid`) around an authored center spawn point and fills those slots sequentially by enemy-entry order
@@ -428,6 +429,7 @@ For `3d_invasion`:
 - add `InvasionWaveManager3D`
 - leave `Start On Enable` off when `InvasionSceneManager3D` owns the scene flow; otherwise waves can begin before players are spawned and before `WAVE N` presentation is subscribed
 - author each wave as ordered sub-waves with center spawn points, formation presets, optional `Y Bias`, enemy entries, burst timing, and optional separate boss settings
+- optional: add `BlackHoleMenaceVisual3D` to the scene black hole root, keep its `Accretion Disk Renderer` assigned to the disk child, assign this `InvasionWaveManager3D`, and use `Preview Menace Percent` to tune the blue-to-red run progression in edit mode
 - add roughly five finite wave entries for the current target, starting with at least one basic shooter test wave
 - `Assets/Prefabs/3d_ships/invasionManager.prefab` currently ships with a boss-free five-wave sample set for testing. It exercises basic, suicide, artillery, tank, duelist, splitter, swarm scout, fortress, and triumvirate prefabs across line, wedge, ring, and grid formations, and uses authored child spawn anchors on the prefab for varied spawn centers/facing instead of leaving every sub-wave at the manager root.
 - ensure networked enemy prefabs are registered with NGO before network spawning
