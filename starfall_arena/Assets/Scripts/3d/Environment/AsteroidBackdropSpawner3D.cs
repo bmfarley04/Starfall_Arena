@@ -231,7 +231,7 @@ public class AsteroidBackdropSpawner3D : MonoBehaviour
 
         Transform parent = spawnedAsteroidParent != null ? spawnedAsteroidParent : transform;
         GameObject containerObject = new GameObject(SpawnedContainerName);
-        Transform container = containerObject.transform;
+        container = containerObject.transform;
         container.SetParent(parent, false);
         container.localPosition = Vector3.zero;
         container.localRotation = Quaternion.identity;
