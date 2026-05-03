@@ -17252,8 +17252,8 @@ MonoBehaviour:
   playerChoiceText: {fileID: 0}
   countdownTimerText: {fileID: 714083452}
   selectionTimeLimit: 15
-  player1Color: {r: 0.30980393, g: 0.7921569, b: 1, a: 1}
-  player2Color: {r: 1, g: 0.6156863, b: 0.30980393, a: 1}
+  player1Color: {r: 1, g: 1, b: 1, a: 1}
+  player2Color: {r: 1, g: 1, b: 1, a: 1}
   playerChoiceFadeDuration: 0.3
   cardDisableShrinkDuration: 0.3
   selectedMaterial: {fileID: 2100000, guid: 04ec926d61457be49a3b21aa10a6f67f, type: 2}
