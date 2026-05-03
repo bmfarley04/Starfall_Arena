@@ -411,6 +411,7 @@ public class BeamWeapon3D : Weapon3D, IBeamWeaponNetwork3D
 
         _activeBeam.SetCosmeticOnly(!authoritative);
         _activeBeam.SetNetworkAuthority(authoritative ? _netCombat : null);
+        _activeBeam.SetServerAuthoritativeGameplay(authoritative);
         _activeBeam.SetAccuracyAttackId(_activeBeamAttackId);
         if (_hasPendingNetworkAim)
         {

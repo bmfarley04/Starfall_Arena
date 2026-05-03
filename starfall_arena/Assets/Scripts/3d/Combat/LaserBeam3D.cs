@@ -50,6 +50,7 @@ public class LaserBeam3D : MonoBehaviour, IBeamRuntime3D, IBeamDirectionSource3D
     private Camera _aimCamera;
     private bool _isCosmeticOnly;
     private NetCombat3D _networkAuthority;
+    private bool _serverAuthoritativeGameplay;
     private bool _hasNetworkAim;
     private Vector3 _networkAimDirection;
     private bool _allowExplicitAimBehindForward;
@@ -115,6 +116,11 @@ public class LaserBeam3D : MonoBehaviour, IBeamRuntime3D, IBeamDirectionSource3D
     public void SetNetworkAuthority(NetCombat3D networkAuthority)
     {
         _networkAuthority = networkAuthority;
+    }
+
+    public void SetServerAuthoritativeGameplay(bool serverAuthoritativeGameplay)
+    {
+        _serverAuthoritativeGameplay = serverAuthoritativeGameplay;
     }
 
     public void SetAccuracyAttackId(int attackId)
@@ -565,6 +571,11 @@ public class LaserBeam3D : MonoBehaviour, IBeamRuntime3D, IBeamDirectionSource3D
         }
 
         if (!NetTickUtil.IsActive)
+        {
+            return true;
+        }
+
+        if (_serverAuthoritativeGameplay)
         {
             return true;
         }

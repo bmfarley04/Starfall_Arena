@@ -348,6 +348,7 @@ public class ConvergeBeamWeapon3D : Weapon3D, IBeamWeaponNetwork3D
 
             beam.SetCosmeticOnly(!_activeBeamAuthoritative);
             beam.SetNetworkAuthority(_activeBeamAuthoritative ? _netCombat : null);
+            beam.SetServerAuthoritativeGameplay(_activeBeamAuthoritative);
             beam.SetAccuracyAttackId(_activeBeamAttackId);
             beam.StartFiring();
             _activeBeams[i] = beam;

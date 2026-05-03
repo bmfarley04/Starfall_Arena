@@ -170,6 +170,7 @@ Base input rule:
   - runtime for the beam visual and hit behavior
   - resolves aim from camera center, not the parent transform's forward
   - separates cosmetic-only beam display from server-authoritative beam damage during network sessions
+  - networked beam runtimes now receive an explicit server-authoritative gameplay flag, matching the projectile path, so enemy beams driven by `NetEnemyCombat3D` can apply damage without needing a player `NetCombat3D` broker on the enemy prefab
   - now supports explicit `targetFaction` filtering in addition to the older `targetTag` fallback, which is required for Invasion enemies because the 3D project does not use a generic `"Player"` tag
   - can optionally delegate beam presentation to a `BeamVisualDriver3D` component, so enemy-only beams can use alternate looks such as Forge3D line-renderer visuals without changing gameplay authority or the default player beam path
     - can optionally require forward-only aim, which clamps any backward-facing resolved aim back onto the beam's forward reference; use this on enemy hardpoint beams when camera-style aim data should never let the beam fire behind the muzzle

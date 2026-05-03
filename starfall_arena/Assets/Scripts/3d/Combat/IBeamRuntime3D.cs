@@ -7,6 +7,7 @@ public interface IBeamRuntime3D
         Transform positionAnchor = null, float anchorOffset = 0f, float verticalOffset = 0f, Camera aimCamera = null);
     void SetCosmeticOnly(bool isCosmeticOnly);
     void SetNetworkAuthority(NetCombat3D networkAuthority);
+    void SetServerAuthoritativeGameplay(bool serverAuthoritativeGameplay);
     void SetAccuracyAttackId(int attackId);
     void SetNetworkAim(Vector3 direction);
     void ClearNetworkAim();
