@@ -73,6 +73,14 @@ public class InvasionPlayerRewardState3D
         public float executionLotteryChance;
         public float executionLotteryPerTargetCooldown;
         public float futureStatBoostMultiplierBonus;
+        public float shieldLeechDamageFraction;
+        public float hullRepairFractionOnNonBossKill;
+        public float postDodgeSpeedPercent;
+        public float postDodgeAccelerationPercent;
+        public float postDodgeBuffDurationSeconds;
+        public float targetMomentumDamagePercentPerHit;
+        public float targetMomentumMaxDamagePercent;
+        public float targetMomentumResetSeconds;
     }
 
     [Serializable]
@@ -265,7 +273,15 @@ public class InvasionPlayerRewardState3D
             modifiers.executionLotteryEnabled,
             modifiers.executionLotteryChance,
             modifiers.executionLotteryPerTargetCooldown,
-            modifiers.restoreFullShieldOnBreakOncePerWave);
+            modifiers.restoreFullShieldOnBreakOncePerWave,
+            modifiers.shieldLeechDamageFraction,
+            modifiers.hullRepairFractionOnNonBossKill,
+            modifiers.postDodgeSpeedPercent,
+            modifiers.postDodgeAccelerationPercent,
+            modifiers.postDodgeBuffDurationSeconds,
+            modifiers.targetMomentumDamagePercentPerHit,
+            modifiers.targetMomentumMaxDamagePercent,
+            modifiers.targetMomentumResetSeconds);
 
         if (pendingFieldRepair)
         {
@@ -403,6 +419,14 @@ public class InvasionPlayerRewardState3D
         modifiers.executionLotteryChance = Mathf.Max(modifiers.executionLotteryChance, payload.executionLotteryChance);
         modifiers.executionLotteryPerTargetCooldown = payload.executionLotteryPerTargetCooldown > 0f ? payload.executionLotteryPerTargetCooldown : modifiers.executionLotteryPerTargetCooldown;
         modifiers.futureStatBoostMultiplierBonus += payload.futureStatBoostMultiplierBonus;
+        modifiers.shieldLeechDamageFraction += payload.shieldLeechDamageFraction;
+        modifiers.hullRepairFractionOnNonBossKill += payload.hullRepairFractionOnNonBossKill;
+        modifiers.postDodgeSpeedPercent += payload.postDodgeSpeedPercent;
+        modifiers.postDodgeAccelerationPercent += payload.postDodgeAccelerationPercent;
+        modifiers.postDodgeBuffDurationSeconds = Mathf.Max(modifiers.postDodgeBuffDurationSeconds, payload.postDodgeBuffDurationSeconds);
+        modifiers.targetMomentumDamagePercentPerHit += payload.targetMomentumDamagePercentPerHit;
+        modifiers.targetMomentumMaxDamagePercent += payload.targetMomentumMaxDamagePercent;
+        modifiers.targetMomentumResetSeconds = Mathf.Max(modifiers.targetMomentumResetSeconds, payload.targetMomentumResetSeconds);
     }
 
     private bool HasRewardInHistory(string rewardId)

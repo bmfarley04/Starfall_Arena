@@ -140,7 +140,23 @@ public class Player3D : Entity3D
     private float _rewardExecutionLotteryPerTargetCooldown;
     private bool _rewardShieldBreakRestoreEnabled;
     private bool _rewardShieldBreakRestoreAvailable;
+    private float _rewardShieldLeechDamageFraction;
+    private float _rewardHullRepairFractionOnNonBossKill;
+    private float _rewardPostDodgeSpeedPercent;
+    private float _rewardPostDodgeAccelerationPercent;
+    private float _rewardPostDodgeBuffDurationSeconds;
+    private float _rewardPostDodgeBuffUntil = float.NegativeInfinity;
+    private float _rewardTargetMomentumDamagePercentPerHit;
+    private float _rewardTargetMomentumMaxDamagePercent;
+    private float _rewardTargetMomentumResetSeconds;
+    private readonly Dictionary<Entity3D, TargetMomentumState3D> _rewardTargetMomentumByTarget = new Dictionary<Entity3D, TargetMomentumState3D>();
     private bool _anchorHeld;
+
+    private struct TargetMomentumState3D
+    {
+        public int hitCount;
+        public float lastHitTime;
+    }
 
     public bool IsAnchorActive => anchorConfig.enabled && _anchorHeld;
     public bool IsDodgeInvulnerable => Time.time < _dodgeInvulnerableUntil;
@@ -189,7 +205,15 @@ public class Player3D : Entity3D
         bool executionLotteryEnabled,
         float executionLotteryChance,
         float executionLotteryPerTargetCooldown,
-        bool shieldBreakRestoreEnabled)
+        bool shieldBreakRestoreEnabled,
+        float shieldLeechDamageFraction,
+        float hullRepairFractionOnNonBossKill,
+        float postDodgeSpeedPercent,
+        float postDodgeAccelerationPercent,
+        float postDodgeBuffDurationSeconds,
+        float targetMomentumDamagePercentPerHit,
+        float targetMomentumMaxDamagePercent,
+        float targetMomentumResetSeconds)
     {
         _rewardExtraDodgeInvulnerabilitySeconds = Mathf.Max(0f, extraDodgeInvulnerabilitySeconds);
         _rewardOutgoingDamagePercent = Mathf.Max(-0.95f, outgoingDamagePercent);
@@ -208,6 +232,14 @@ public class Player3D : Entity3D
         _rewardExecutionLotteryChance = Mathf.Clamp01(executionLotteryChance);
         _rewardExecutionLotteryPerTargetCooldown = Mathf.Max(0f, executionLotteryPerTargetCooldown);
         _rewardShieldBreakRestoreEnabled = shieldBreakRestoreEnabled;
+        _rewardShieldLeechDamageFraction = Mathf.Max(0f, shieldLeechDamageFraction);
+        _rewardHullRepairFractionOnNonBossKill = Mathf.Max(0f, hullRepairFractionOnNonBossKill);
+        _rewardPostDodgeSpeedPercent = Mathf.Max(0f, postDodgeSpeedPercent);
+        _rewardPostDodgeAccelerationPercent = Mathf.Max(0f, postDodgeAccelerationPercent);
+        _rewardPostDodgeBuffDurationSeconds = Mathf.Max(0f, postDodgeBuffDurationSeconds);
+        _rewardTargetMomentumDamagePercentPerHit = Mathf.Max(0f, targetMomentumDamagePercentPerHit);
+        _rewardTargetMomentumMaxDamagePercent = Mathf.Max(0f, targetMomentumMaxDamagePercent);
+        _rewardTargetMomentumResetSeconds = Mathf.Max(0f, targetMomentumResetSeconds);
 
         for (int i = 0; i < abilities.Length; i++)
         {
@@ -218,6 +250,8 @@ public class Player3D : Entity3D
     public void ResetInvasionRewardWaveLimitedEffects()
     {
         _rewardShieldBreakRestoreAvailable = _rewardShieldBreakRestoreEnabled;
+        _rewardTargetMomentumByTarget.Clear();
+        _rewardPostDodgeBuffUntil = float.NegativeInfinity;
     }
 
     public void ConfigureInvasionRewardProjectileRequest(Weapon3D sourceWeapon, ref ProjectileFireRequest3D request)
@@ -473,6 +507,8 @@ public class Player3D : Entity3D
         _anchorHeld = false;
         StopLocalDodgeFallback();
         _dodgeInvulnerableUntil = float.NegativeInfinity;
+        _rewardPostDodgeBuffUntil = float.NegativeInfinity;
+        _rewardTargetMomentumByTarget.Clear();
         ApplySplitStatePresentation();
         StopBeamHitLoop();
         _chromaticAberrationFx?.ClearEffect();
@@ -485,6 +521,8 @@ public class Player3D : Entity3D
         _anchorHeld = false;
         StopLocalDodgeFallback();
         _dodgeInvulnerableUntil = float.NegativeInfinity;
+        _rewardPostDodgeBuffUntil = float.NegativeInfinity;
+        _rewardTargetMomentumByTarget.Clear();
         ApplySplitStatePresentation();
         StopBeamHitLoop();
         _chromaticAberrationFx?.ClearEffect();
@@ -720,12 +758,23 @@ public class Player3D : Entity3D
 
     protected override float GetExternalThrustMultiplier()
     {
+        float multiplier = Time.time < _rewardPostDodgeBuffUntil
+            ? 1f + _rewardPostDodgeAccelerationPercent
+            : 1f;
+
         if (!IsAnchorActive)
         {
-            return 1f;
+            return multiplier;
         }
 
-        return Mathf.Max(0f, anchorConfig.thrustMultiplier);
+        return multiplier * Mathf.Max(0f, anchorConfig.thrustMultiplier);
+    }
+
+    protected override float GetExternalMaxSpeedMultiplier()
+    {
+        return Time.time < _rewardPostDodgeBuffUntil
+            ? 1f + _rewardPostDodgeSpeedPercent
+            : 1f;
     }
 
     private void CacheSplitStateRigsIfNeeded()
@@ -845,13 +894,38 @@ public class Player3D : Entity3D
             return 0f;
         }
 
-        modifiedDamage *= 1f + _rewardOutgoingDamagePercent + ResolveRewardNoDamageRampPercent();
+        modifiedDamage *= 1f + _rewardOutgoingDamagePercent + ResolveRewardNoDamageRampPercent() + ResolveRewardTargetMomentumPercent(target);
         if (ShouldRewardExecutionLotteryKill(target))
         {
             return Mathf.Max(modifiedDamage, target.MaxHealth + target.MaxShield);
         }
 
         return Mathf.Max(0f, modifiedDamage);
+    }
+
+    public override void OnDamageDealtToTarget(Entity3D target, float appliedDamage, DamageSource3D source, int accuracyAttackId)
+    {
+        if (target == null || appliedDamage <= 0f)
+        {
+            return;
+        }
+
+        ApplyRewardShieldLeech(appliedDamage);
+        RegisterRewardTargetMomentumHit(target);
+    }
+
+    public override void OnEnemyKilledByDamage(Enemy3D enemy, float appliedDamage, DamageSource3D source, int accuracyAttackId)
+    {
+        if (enemy == null || enemy.IsBossEnemy || _rewardHullRepairFractionOnNonBossKill <= 0f || maxHealth <= 0f)
+        {
+            return;
+        }
+
+        float repairedHealth = Mathf.Min(maxHealth, currentHealth + (maxHealth * _rewardHullRepairFractionOnNonBossKill));
+        if (repairedHealth > currentHealth)
+        {
+            SetCurrentDurability(repairedHealth, currentShield);
+        }
     }
 
     protected override float ModifyIncomingDamage(float damage, Entity3D attacker, DamageSource3D source, int accuracyAttackId)
@@ -881,6 +955,61 @@ public class Player3D : Entity3D
         }
 
         return Mathf.Min(_rewardNoDamageRampMaxPercent, (timeSinceDamage - _rewardNoDamageRampDelay) * _rewardNoDamageRampPercentPerSecond);
+    }
+
+    private float ResolveRewardTargetMomentumPercent(Entity3D target)
+    {
+        if (target == null || _rewardTargetMomentumDamagePercentPerHit <= 0f || _rewardTargetMomentumMaxDamagePercent <= 0f)
+        {
+            return 0f;
+        }
+
+        if (!_rewardTargetMomentumByTarget.TryGetValue(target, out TargetMomentumState3D state))
+        {
+            return 0f;
+        }
+
+        if (_rewardTargetMomentumResetSeconds > 0f && Time.time - state.lastHitTime > _rewardTargetMomentumResetSeconds)
+        {
+            _rewardTargetMomentumByTarget.Remove(target);
+            return 0f;
+        }
+
+        return Mathf.Min(_rewardTargetMomentumMaxDamagePercent, state.hitCount * _rewardTargetMomentumDamagePercentPerHit);
+    }
+
+    private void RegisterRewardTargetMomentumHit(Entity3D target)
+    {
+        if (target == null || _rewardTargetMomentumDamagePercentPerHit <= 0f || _rewardTargetMomentumMaxDamagePercent <= 0f)
+        {
+            return;
+        }
+
+        _rewardTargetMomentumByTarget.TryGetValue(target, out TargetMomentumState3D state);
+        if (_rewardTargetMomentumResetSeconds > 0f && Time.time - state.lastHitTime > _rewardTargetMomentumResetSeconds)
+        {
+            state.hitCount = 0;
+        }
+
+        state.hitCount = Mathf.Max(0, state.hitCount) + 1;
+        state.lastHitTime = Time.time;
+        _rewardTargetMomentumByTarget[target] = state;
+    }
+
+    private void ApplyRewardShieldLeech(float appliedDamage)
+    {
+        if (_rewardShieldLeechDamageFraction <= 0f || appliedDamage <= 0f)
+        {
+            return;
+        }
+
+        float shieldLimit = GetCurrentShieldLimit();
+        if (shieldLimit <= 0f || currentShield >= shieldLimit)
+        {
+            return;
+        }
+
+        SetCurrentDurability(currentHealth, Mathf.Min(shieldLimit, currentShield + (appliedDamage * _rewardShieldLeechDamageFraction)));
     }
 
     private bool ShouldRewardExecutionLotteryKill(Entity3D target)
@@ -950,6 +1079,11 @@ public class Player3D : Entity3D
     private void MarkGenericDodgeAccepted()
     {
         _lastDodgeTime = Time.time;
+        if (_rewardPostDodgeBuffDurationSeconds > 0f && (_rewardPostDodgeSpeedPercent > 0f || _rewardPostDodgeAccelerationPercent > 0f))
+        {
+            _rewardPostDodgeBuffUntil = Mathf.Max(_rewardPostDodgeBuffUntil, Time.time + _rewardPostDodgeBuffDurationSeconds);
+        }
+
         BeginDodgeInvulnerability(Mathf.Max(0f, dodgeConfig.invulnerabilityDuration));
         LogDodgeDebug($"marked dodge accepted. cooldown={dodgeConfig.cooldown:0.000}s iframes={dodgeConfig.invulnerabilityDuration:0.000}s");
     }

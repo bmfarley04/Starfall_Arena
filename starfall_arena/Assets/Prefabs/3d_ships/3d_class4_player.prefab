@@ -5468,7 +5468,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 472a711a0b2023940b16aa210d0274a3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: '::'
-  maxHealth: 100
+  maxHealth: 75
   maxShield: 100
   shieldController: {fileID: 7730684126597357551}
   impulseRecoilPitchSensitivity: 10
@@ -5506,7 +5506,7 @@ MonoBehaviour:
     cooldown: 1
     dodgeDistance: 4
     slideDuration: 0.18
-    invulnerabilityDuration: 0.3
+    invulnerabilityDuration: 0.2
   logDodgeDebug: 1
   audioConfig:
     shieldDamageSound: {fileID: 11400000, guid: 87784f1904ec9074c86e30516fb1e37e, type: 2}
@@ -5530,8 +5530,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: '::'
   flight:
-    thrustAcceleration: 60
-    maxSpeed: 60
+    thrustAcceleration: 50
+    maxSpeed: 45
     precisionThrottleInputThreshold: 0.5
     precisionThrottleMaxSpeedFraction: 0.25
     precisionThrottleAccelerationMultiplier: 0.35
@@ -5856,16 +5856,16 @@ MonoBehaviour:
     - {fileID: 111100000000000004}
     targetTag: Enemy
     targetFaction: 2
-    cooldown: 1.5
-    speed: 250
+    cooldown: 1
+    speed: 350
     damage: 10
-    lifetime: 5
+    lifetime: 1.5
     impactForce: 0
     recoilForce: 0
     energyCost: 0
   fireSound: {fileID: 11400000, guid: d88eee37a015ff64ab34cc302b475757, type: 2}
   burst:
-    burstCooldown: 1.5
+    burstCooldown: 1
     burstCount: 3
     burstInterval: 0.08
 --- !u!114 &111100000000000102
@@ -5908,7 +5908,7 @@ MonoBehaviour:
     targetTag: Enemy
     targetFaction: 2
     damagePerSecond: 25
-    maxDistance: 1000
+    maxDistance: 750
     recoilForcePerSecond: 0
     impactForce: 0
     offsetDistance: 0
@@ -5978,7 +5978,7 @@ MonoBehaviour:
       targetFaction: 2
       cooldown: 5
       speed: 180
-      damage: 30
+      damage: 40
       lifetime: 5
       impactForce: 0
       recoilForce: 0
@@ -6042,7 +6042,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Empower3D
   isLocked: 0
   empower:
-    cooldown: 32
+    cooldown: 50
     duration: 14
     activateSound: {fileID: 11400000, guid: b93fb44e7717ca34292085cf9fbc563e, type: 2}
     deactivateSound: {fileID: 11400000, guid: dc69e487e94b10c4480eec65c4e60073, type: 2}
@@ -6098,7 +6098,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 3466037049
+  GlobalObjectIdHash: 623134825
   InScenePlacedSourceGlobalObjectIdHash: 2698202182
   DeferredDespawnTick: 0
   Ownership: 1
@@ -6134,6 +6134,11 @@ MonoBehaviour:
     hardSnapDistance: 30
     smoothingCatchUpRate: 0
   maxCombatRewindTicks: 6
+  networkMovementBlockerMask:
+    serializedVersion: 2
+    m_Bits: 256
+  blockerSkinWidth: 0.05
+  minimumBlockerSweepDistance: 0.001
 --- !u!114 &7050303922495527899
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -398,6 +398,7 @@ public class ShipFlight3D : MonoBehaviour
     private void HandleThrustAndAssist()
     {
         float thrustMultiplier = entity != null ? entity.GetCombinedThrustMultiplier() : 1f;
+        float maxSpeedMultiplier = entity != null ? entity.GetCombinedMaxSpeedMultiplier() : 1f;
         float slowMultiplier = entity != null ? entity.GetSlowMultiplier() : 1f;
         _effectiveThrustInput = thrustMultiplier > 0f ? Mathf.Max(0f, _thrustInput) : 0f;
         bool isPrecisionThrottle = IsPrecisionThrottleInput(_effectiveThrustInput);
@@ -416,7 +417,7 @@ public class ShipFlight3D : MonoBehaviour
 
             if (isPrecisionThrottle)
             {
-                float precisionMaxSpeed = flight.maxSpeed * flight.precisionThrottleMaxSpeedFraction * slowMultiplier;
+                float precisionMaxSpeed = flight.maxSpeed * flight.precisionThrottleMaxSpeedFraction * maxSpeedMultiplier * slowMultiplier;
                 localVelocity.z = previousForwardSpeed < precisionMaxSpeed
                     ? Mathf.Min(nextForwardSpeed, precisionMaxSpeed)
                     : previousForwardSpeed;
@@ -444,7 +445,7 @@ public class ShipFlight3D : MonoBehaviour
         Vector3 worldVelocity = transform.TransformDirection(localVelocity);
         worldVelocity = ApplyVelocityAlignment(worldVelocity, passiveLinearAssistEnabled);
 
-        float effectiveMaxSpeed = Mathf.Max(0f, flight.maxSpeed * slowMultiplier);
+        float effectiveMaxSpeed = Mathf.Max(0f, flight.maxSpeed * maxSpeedMultiplier * slowMultiplier);
         if (effectiveMaxSpeed > 0f && worldVelocity.magnitude > effectiveMaxSpeed)
         {
             worldVelocity = worldVelocity.normalized * effectiveMaxSpeed;

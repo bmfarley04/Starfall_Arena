@@ -134,6 +134,22 @@ public class InvasionStatRewardDefinition3D : ScriptableObject
         public float executionLotteryPerTargetCooldown;
         [Tooltip("Multiplies future normal stat boost payloads only. 0.25 = future stat boosts are 25% stronger.")]
         public float futureStatBoostMultiplierBonus;
+        [Tooltip("Restores this fraction of applied damage as shield. 0.04 = 4% of damage dealt returned as shield.")]
+        public float shieldLeechDamageFraction;
+        [Tooltip("Restores this fraction of max hull when killing a non-boss enemy. 0.02 = 2% max hull restored per kill.")]
+        public float hullRepairFractionOnNonBossKill;
+        [Tooltip("Adds this much percentage top speed after a generic dodge. 0.1 = +10% speed during the buff.")]
+        public float postDodgeSpeedPercent;
+        [Tooltip("Adds this much percentage acceleration after a generic dodge. 0.2 = +20% acceleration during the buff.")]
+        public float postDodgeAccelerationPercent;
+        [Tooltip("Seconds the post-dodge movement buff remains active.")]
+        public float postDodgeBuffDurationSeconds;
+        [Tooltip("Additional damage gained per consecutive hit on the same target. 0.03 = +3% per stack.")]
+        public float targetMomentumDamagePercentPerHit;
+        [Tooltip("Maximum damage bonus from Target Momentum against one target.")]
+        public float targetMomentumMaxDamagePercent;
+        [Tooltip("Seconds without hitting the same target before Target Momentum stacks reset.")]
+        public float targetMomentumResetSeconds;
     }
 
     [System.Serializable]
@@ -358,6 +374,14 @@ public class InvasionStatRewardDefinition3D : ScriptableObject
         payload.executionLotteryChance = Mathf.Clamp01(payload.executionLotteryChance);
         payload.executionLotteryPerTargetCooldown = Mathf.Max(0f, payload.executionLotteryPerTargetCooldown);
         payload.futureStatBoostMultiplierBonus = Mathf.Max(0f, payload.futureStatBoostMultiplierBonus);
+        payload.shieldLeechDamageFraction = Mathf.Max(0f, payload.shieldLeechDamageFraction);
+        payload.hullRepairFractionOnNonBossKill = Mathf.Max(0f, payload.hullRepairFractionOnNonBossKill);
+        payload.postDodgeSpeedPercent = Mathf.Max(0f, payload.postDodgeSpeedPercent);
+        payload.postDodgeAccelerationPercent = Mathf.Max(0f, payload.postDodgeAccelerationPercent);
+        payload.postDodgeBuffDurationSeconds = Mathf.Max(0f, payload.postDodgeBuffDurationSeconds);
+        payload.targetMomentumDamagePercentPerHit = Mathf.Max(0f, payload.targetMomentumDamagePercentPerHit);
+        payload.targetMomentumMaxDamagePercent = Mathf.Max(0f, payload.targetMomentumMaxDamagePercent);
+        payload.targetMomentumResetSeconds = Mathf.Max(0f, payload.targetMomentumResetSeconds);
     }
 
     private static void ClampInstantPayload(ref InstantRewardPayload3D payload)
@@ -397,6 +421,10 @@ public class InvasionStatRewardDefinition3D : ScriptableObject
         if (payload.noDamageRampMaxPercent > 0f) AppendLine(builder, $"After {payload.noDamageRampDelaySeconds:0.#}s without damage, gain {FormatPercent(payload.noDamageRampPercentPerSecond)} damage per second, up to {FormatPercent(payload.noDamageRampMaxPercent)}");
         if (payload.executionLotteryEnabled) AppendLine(builder, $"{FormatPercent(payload.executionLotteryChance)} chance for damage to one-shot non-boss enemies");
         if (payload.futureStatBoostMultiplierBonus > 0f) AppendLine(builder, $"Future stat boosts are {FormatPercent(payload.futureStatBoostMultiplierBonus)} stronger");
+        if (payload.shieldLeechDamageFraction > 0f) AppendLine(builder, $"Restore shields for {FormatPercent(payload.shieldLeechDamageFraction)} of damage dealt");
+        if (payload.hullRepairFractionOnNonBossKill > 0f) AppendLine(builder, $"Repair {FormatPercent(payload.hullRepairFractionOnNonBossKill)} max hull on non-boss enemy kill");
+        if (payload.postDodgeBuffDurationSeconds > 0f && (payload.postDodgeSpeedPercent > 0f || payload.postDodgeAccelerationPercent > 0f)) AppendLine(builder, $"After dodging, gain {FormatPercent(payload.postDodgeSpeedPercent)} speed and {FormatPercent(payload.postDodgeAccelerationPercent)} acceleration for {payload.postDodgeBuffDurationSeconds:0.#}s");
+        if (payload.targetMomentumMaxDamagePercent > 0f && payload.targetMomentumDamagePercentPerHit > 0f) AppendLine(builder, $"Consecutive hits on one target gain {FormatPercent(payload.targetMomentumDamagePercentPerHit)} damage, up to {FormatPercent(payload.targetMomentumMaxDamagePercent)}");
         if (instant.repairMissingHullFraction > 0f) AppendLine(builder, instant.repairMissingHullFraction >= 0.999f ? "Restore full hull" : $"Restore {FormatPercent(instant.repairMissingHullFraction)} missing hull");
         if (instant.refillShieldToFull) AppendLine(builder, "Refill shields");
         if (instant.grantExtraLife) AppendLine(builder, "Gain one extra life");

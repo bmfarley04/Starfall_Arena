@@ -148,7 +148,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c0cbd948069d15945be1463520830c3f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ReflectShield3D
-  shieldColor: {r: 0.77254903, g: 0.6392157, b: 0.05490196, a: 1}
+  shieldColor: {r: 0.77254903, g: 0.6392157, b: 0.05490196, a: 0.53333336}
   inflationAmount: 0.1
   maxAlpha: 1
   fadeInDuration: 0.15
@@ -362,7 +362,6 @@ GameObject:
   - component: {fileID: 1524455165470484394}
   - component: {fileID: 6190683714811522588}
   - component: {fileID: -7606376376767454836}
-  - component: {fileID: -3603030616537203367}
   m_Layer: 0
   m_Name: 3d_class1_player
   m_TagString: Enemy
@@ -669,7 +668,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: '::'
   flight:
     thrustAcceleration: 40
-    maxSpeed: 60
+    maxSpeed: 45
     precisionThrottleInputThreshold: 0.5
     precisionThrottleMaxSpeedFraction: 0.25
     precisionThrottleAccelerationMultiplier: 0.35
@@ -997,9 +996,9 @@ MonoBehaviour:
     targetTag: Enemy
     targetFaction: 2
     cooldown: 0.25
-    speed: 250
+    speed: 300
     damage: 5
-    lifetime: 5
+    lifetime: 1.5
     impactForce: 0
     recoilForce: 0
     energyCost: 18
@@ -1043,8 +1042,8 @@ MonoBehaviour:
     beamPrefab: {fileID: 100000, guid: 7767d0d49caff014ba0e057220a05183, type: 3}
     targetTag: Enemy
     targetFaction: 2
-    damagePerSecond: 50
-    maxDistance: 1000
+    damagePerSecond: 55
+    maxDistance: 800
     recoilForcePerSecond: 0
     impactForce: 0
     offsetDistance: 1.6
@@ -1073,11 +1072,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Reflector3D
   isLocked: 0
   reflect:
-    cooldown: 10
+    cooldown: 15
     activeDuration: 1.5
     shield: {fileID: 1105708909720134415}
     reflectedProjectileColor: {r: 0.77254903, g: 0.6392157, b: 0.05490196, a: 0}
-    reflectedProjectileDamageMultiplier: 2
+    reflectedProjectileDamageMultiplier: 1
     reflectedProjectileSound: {fileID: 11400000, guid: 9eb877fd117843243bf3853dc3a30234, type: 2}
 --- !u!114 &6369695681249732700
 MonoBehaviour:
@@ -1093,7 +1092,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Teleport3D
   isLocked: 0
   teleport:
-    cooldown: 10
+    cooldown: 5
     preTeleportDelay: 0.1
     teleportDistance: 50
     animation:
@@ -1155,10 +1154,10 @@ MonoBehaviour:
   muzzleEffectPrewarmCount: 4
   gigaBlast:
     timing:
-      cooldown: 0.1
+      cooldown: 8
       minChargeTime: 0.5
       maxChargeTime: 3
-      projectileLifetime: 5
+      projectileLifetime: 2
     tierThresholds:
       tier1Time: 0.5
       tier2Time: 1
@@ -1185,12 +1184,12 @@ MonoBehaviour:
       tier2ImpactMultiplier: 6
       tier2SpawnOffset: 3
       tier3SpeedMultiplier: 2
-      tier3DamageMultiplier: 10
+      tier3DamageMultiplier: 15
       tier3RecoilMultiplier: 10
       tier3ImpactMultiplier: 10
       tier3SpawnOffset: 10
       tier4SpeedMultiplier: 3
-      tier4DamageMultiplier: 16
+      tier4DamageMultiplier: 20
       tier4RecoilMultiplier: 20
       tier4ImpactMultiplier: 16
       tier4SpawnOffset: 20
@@ -1302,7 +1301,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 2698202182
+  GlobalObjectIdHash: 2730648464
   InScenePlacedSourceGlobalObjectIdHash: 2698202182
   DeferredDespawnTick: 0
   Ownership: 1
@@ -1338,6 +1337,11 @@ MonoBehaviour:
     hardSnapDistance: 30
     smoothingCatchUpRate: 0
   maxCombatRewindTicks: 6
+  networkMovementBlockerMask:
+    serializedVersion: 2
+    m_Bits: 256
+  blockerSkinWidth: 0.05
+  minimumBlockerSweepDistance: 0.001
 --- !u!114 &6190683714811522588
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1364,53 +1368,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::FactionMember3D
   faction: 1
---- !u!114 &-3603030616537203367
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2568558604607578100}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3b92962b8dc845c08a290f8a1ea2809d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::PlayerScreenShake3D
-  impulseSource: {fileID: 1525667686077189124}
-  addMissingImpulseSourceAtRuntime: 1
-  randomizeImpulseDirectionOnCameraPlane: 1
-  cameraPlaneHorizontalWeight: 1
-  cameraPlaneVerticalWeight: 0.55
-  localImpulseDirection: {x: 1, y: 0.35, z: 0}
-  speedShake:
-    enabled: 1
-    startSpeedNormalized: 0.72
-    fullShakeSpeedNormalized: 1
-    minImpulseStrength: 0.04
-    maxImpulseStrength: 0.16
-    intervalAtStartSpeed: 0.32
-    intervalAtFullSpeed: 0.12
-  hitShake:
-    enabled: 1
-    minDamage: 1
-    damageForMaxShake: 35
-    minImpulseStrength: 0.25
-    maxImpulseStrength: 1.2
-    hullDamageMultiplier: 1.25
-    beamDamageMultiplier: 0.45
-    directDamageMultiplier: 0.75
-    minImpulseInterval: 0.08
-  hudShake:
-    enabled: 1
-    hudRootOverride: {fileID: 0}
-    uiCameraNameFilter: UICamera
-    pixelsPerImpulseStrength: 14
-    rotationDegreesPerImpulseStrength: 0.65
-    duration: 0.16
-    frequency: 38
-    speedImpulseMultiplier: 0.35
-    maxPixelOffset: 20
-    maxRotationDegrees: 1.1
 --- !u!1 &4620018556505518856
 GameObject:
   m_ObjectHideFlags: 0

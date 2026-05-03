@@ -22,8 +22,6 @@ public class MissileProjectile3D : Projectile3D
         public float explosionImpactForce;
         [Tooltip("Physics layers included in the missile explosion overlap query.")]
         public LayerMask collisionMask;
-        [Tooltip("Maximum colliders checked by the missile explosion query. Raise this only for dense scenes where splash can overlap more targets.")]
-        public int maxOverlapColliders;
     }
 
     [System.Serializable]
@@ -109,8 +107,7 @@ public class MissileProjectile3D : Projectile3D
         explosionRadius = 6f,
         explosionDamage = 20f,
         explosionImpactForce = 8f,
-        collisionMask = ~0,
-        maxOverlapColliders = 16
+        collisionMask = ~0
     };
 
     private Transform _target;
@@ -140,6 +137,8 @@ public class MissileProjectile3D : Projectile3D
     private AudioSource _impactAudioSource;
     private PooledObject3D _pooledObject;
     private Collider[] _areaDamageColliders;
+
+    private const int InitialAreaDamageColliderCapacity = 32;
 
     private bool UsesGuidance => guidance.mode == GuidanceMode3D.Guided;
 
@@ -535,16 +534,9 @@ public class MissileProjectile3D : Projectile3D
             return;
         }
 
-        EnsureAreaDamageBuffer();
-
         float damage = areaDamage.explosionDamage > 0f ? areaDamage.explosionDamage : _damage;
         float force = areaDamage.explosionImpactForce > 0f ? areaDamage.explosionImpactForce : _impactForce;
-        int hitCount = Physics.OverlapSphereNonAlloc(
-            explosionPosition,
-            radius,
-            _areaDamageColliders,
-            areaDamage.collisionMask,
-            QueryTriggerInteraction.Collide);
+        int hitCount = QueryAreaDamageColliders(explosionPosition, radius);
 
         for (int i = 0; i < hitCount; i++)
         {
@@ -617,11 +609,34 @@ public class MissileProjectile3D : Projectile3D
 
     private void EnsureAreaDamageBuffer()
     {
-        int desiredSize = Mathf.Max(1, areaDamage.maxOverlapColliders);
-        if (_areaDamageColliders == null || _areaDamageColliders.Length != desiredSize)
+        if (_areaDamageColliders == null || _areaDamageColliders.Length < InitialAreaDamageColliderCapacity)
         {
-            _areaDamageColliders = new Collider[desiredSize];
+            _areaDamageColliders = new Collider[InitialAreaDamageColliderCapacity];
         }
+    }
+
+    private int QueryAreaDamageColliders(Vector3 explosionPosition, float radius)
+    {
+        EnsureAreaDamageBuffer();
+
+        int hitCount;
+        do
+        {
+            hitCount = Physics.OverlapSphereNonAlloc(
+                explosionPosition,
+                radius,
+                _areaDamageColliders,
+                areaDamage.collisionMask,
+                QueryTriggerInteraction.Collide);
+
+            if (hitCount < _areaDamageColliders.Length)
+            {
+                return hitCount;
+            }
+
+            _areaDamageColliders = new Collider[_areaDamageColliders.Length * 2];
+        }
+        while (true);
     }
 
     private void SpawnExplosion(Vector3 hitPoint, Vector3 hitNormal)

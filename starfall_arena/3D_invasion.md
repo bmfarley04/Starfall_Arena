@@ -4,6 +4,8 @@ This document owns the 3D Invasion mode notes.
 
 Invasion is a 3D PvE mode where two player ships fight finite waves of alien enemies. It lives in the `3d_invasion` scene path and is now the only 3D gameplay branch exposed by the title host flow.
 
+For wave numbers, enemy stats, reward payloads, player ship baselines, boss pressure, and other tuning-sensitive mechanics, also read `3D_invasion_balancing.md`.
+
 ## Mode Flow
 
 Networked 3D Invasion is planned as a two-player cooperative PvE mode with roughly five finite waves for the current target. The enemy roster comes from the enemies documented in `3D_AI.md`; wave composition is authored on `InvasionWaveManager3D`.
@@ -144,7 +146,8 @@ The current wave manager supports finite configured waves with timed sub-wave se
 - `InvasionWaveManager3D` owns both wave timing beats: the delay from a cleared wave to the next wave intro, and the delay from wave-intro text to actual spawning
 - `InvasionSceneManager3D` owns the synchronized `WAVE N` text beat before each wave, using `NetworkSessionData.BroadcastWaveStartServer(...)` in network sessions
 - the optional enemy counter should read `InvasionWaveManager3D`'s tracked alive-enemy count through `InvasionSceneManager3D`; do not make enemies or individual AI brains update HUD directly
-- scoring, difficulty scaling, and objective variants are planned work
+- scoring and objective variants are planned work
+- difficulty and stat tuning guidance lives in `3D_invasion_balancing.md`; update that file whenever wave numbers, reward strength, enemy stats, player baselines, boss pressure, or tuning-sensitive mechanics change
 - the current reward implementation is a run-only 3D Invasion reward layer, not a full port of duel augments. It uses 3D-owned reward definitions/state and reuses the old 2D augment-card visuals only as presentation.
 - reward tiers are deterministic for the six reward screens in a seven-wave run: wave 1 reward = `Common`, wave 2 reward = `Epic`, wave 3 reward = `High`, then repeat for waves 4-6. Wave 7 is the boss and does not open another reward phase.
 - each reward asset declares its category, eligible Common/Epic/High tiers, offer weight, repeat rules, visual style override, instant payload, and persistent numeric payloads. Generated reward descriptions should come from the resolved payload so tuning changes are visible on cards.
@@ -153,6 +156,19 @@ The current wave manager supports finite configured waves with timed sub-wave se
 - the reward presenter maps normal offer tiers onto the old augment UI shells directly: `Common -> tier 1`, `Epic -> tier 2`, `High -> tier 3`. Contract cards carry per-card visual metadata so they can borrow the single tier 4 card style inside an otherwise tier 1-3 offer.
 - rewards are inserted after a wave is fully cleared and before the normal inter-wave delay plus next-wave intro. The final configured wave does not open another reward phase.
 - the reward phase temporarily hides the gameplay HUD through `InvasionSceneManager3D.SetGameplayHudActive(false)` on both host and clients, then restores it once both picks resolve so the next-wave intro can reuse the normal HUD-visible flow
+
+### Reward Strength Progression
+
+Use these as tuning targets for a seven-wave Invasion run with rewards after waves 1-6 and the boss on wave 7:
+
+- after rewards 1-2, the player should feel modestly improved but still vulnerable. A typical build should be roughly `+10-25%` stronger in one or two chosen axes, so early weak enemies still matter but begin to feel more manageable.
+- after rewards 3-4, the player should feel meaningfully online. A typical build should be roughly `+35-70%` stronger in its focused combat role, enough to support denser waves, stronger enemy variants, or more mixed pressure.
+- after rewards 5-6, the player should feel specialized and powerful. A focused build can reasonably reach roughly `+80-140%` effective strength in its main axis, while unfocused builds should still have several useful improvements rather than feeling flat.
+- normal stat damage alone should usually end a run around `+30-75%` damage depending on how often it is chosen and whether `Future Investment` was taken early. It should not multiply reward-by-reward; all percent bonuses add into one total before applying.
+- CRAIZAN CONTRACTS intentionally allow higher peaks, especially damage, energy throughput, durability, or handling, but those peaks should come with obvious survival or control costs. Enemy balance should assume contracts can create sharper builds than normal stat cards, not that every player will take them.
+- survivability progression should come from several additive channels: max hull/shield, incoming damage reduction, shield regeneration, reactive shields, overcharge, repairs, and extra life. Avoid tuning enemies around only max-health growth, because defensive builds may be strong through recovery or mitigation instead.
+- sustain and momentum perks are intentionally modest but reliable: `Combat Repair Protocol` repairs hull on non-boss kills, `Shield Leech` restores shield from confirmed applied damage, `Efficient Thrusters` gives a short speed/acceleration boost after generic dodges, and `Target Momentum` rewards repeated hits on one target. These do not require bespoke VFX and should stay readable through existing HUD/stat behavior.
+- the boss wave should assume the player has six rewards, but not assume a perfect build. Boss baseline tuning should feel fair against a mixed build, while optional hazards/add pressure can challenge high-roll contract or focused builds.
 
 Keep menu/mode-entry integration separate from this foundation unless the task specifically asks for it.
 
@@ -433,7 +449,7 @@ For `3d_invasion`:
 - assign the two fallback 3D `ShipData` assets
 - assign `InvasionWaveManager3D`
 - assign `InvasionRewardPhasePresenter3D` and wire its `AugmentSelectManager` reference so the old augment-card visuals can present the new Invasion reward draft. In `3d_invasion`, also wire `AugmentSelectManager` tier 4 references to the first card under `upgradeSelector -> AugmentCanvas -> tier4`; that single card is reused as the per-card CRAIZAN CONTRACT visual source.
-- optionally assign authored `InvasionStatRewardDefinition3D` assets on `InvasionSceneManager3D`. If none are assigned, the manager auto-loads every `InvasionStatRewardDefinition3D` asset found under `Assets/Resources/3D/InvasionRewards`, so the reward pool stays data-driven. The default catalog currently contains 21 assets: five repeatable stat boosts, permanent upgrades, one-time bonuses, and four repeatable CRAIZAN CONTRACTS.
+- optionally assign authored `InvasionStatRewardDefinition3D` assets on `InvasionSceneManager3D`. If none are assigned, the manager auto-loads every `InvasionStatRewardDefinition3D` asset found under `Assets/Resources/3D/InvasionRewards`, so the reward pool stays data-driven. The default catalog currently contains 25 assets: five repeatable stat boosts, permanent upgrades, one-time bonuses, and four repeatable CRAIZAN CONTRACTS.
 - each reward asset contains category, eligible reward tiers, optional visual style override, offer weight, repeat/eligibility rules, generated-description toggle, and editable numeric payloads. CRAIZAN CONTRACT assets should keep `Category = Craizan Contract`, `Eligible Reward Tiers = All`, `Use Visual Style Override = true`, and `Visual Style Override = Tier4`.
 - assign the reused round canvas group/text as the Wave UI references
 - optionally enable `Use Enemy Counter`, assign the enemy counter canvas/root, assign its TMP text, and tune the counter text format

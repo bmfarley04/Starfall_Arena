@@ -263,6 +263,7 @@ Base input rule:
   - can apply configurable area damage at the missile impact point through `AreaDamageConfig3D`, using a bounded non-alloc overlap query and the same faction/tag target filtering as direct projectile hits
     - missile splash uses `DamageSource3D.Projectile` because the 3D damage-source enum does not currently define a separate explosion source
     - splash applies radial combat velocity and the missile slow effect to every valid target caught in the radius
+    - splash expands its temporary overlap buffer when saturated and registers unique `Entity3D` targets before applying damage, so complex ship models with many child colliders cannot consume a fixed collider cap and hide other ships inside the explosion radius
   - does not use the base projectile hit effect path; missile impact presentation should come from the authored explosion setup instead
 - `Dodge3D`
   - Class 4 mobility ability on the `Ability3D` path

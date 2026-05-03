@@ -4760,8 +4760,8 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1.3, y: 1.3, z: 1.3}
-  m_ConstrainProportionsScale: 0
+  m_LocalScale: {x: 1.4999999, y: 1.4999999, z: 1.4999999}
+  m_ConstrainProportionsScale: 1
   m_Children:
   - {fileID: 452450}
   - {fileID: 452454}
@@ -4862,7 +4862,7 @@ MonoBehaviour:
     - {fileID: 19852454}
   impact:
     explosionPrefab: {fileID: 100014, guid: d96258cdf841f5e4d8af97dce9661d8c, type: 3}
-    explosionScale: 2
+    explosionScale: 4
     impactSound: {fileID: 11400000, guid: 52e8c58e387b89849affa74c78d6d899, type: 2}
   areaDamage:
     enabled: 1

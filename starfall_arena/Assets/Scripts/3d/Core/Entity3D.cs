@@ -203,6 +203,11 @@ public abstract class Entity3D : MonoBehaviour
         return multiplier;
     }
 
+    public float GetCombinedMaxSpeedMultiplier()
+    {
+        return Mathf.Max(0f, GetExternalMaxSpeedMultiplier());
+    }
+
     public float GetWeaponThrustMultiplier()
     {
         float multiplier = 1f;
@@ -550,6 +555,14 @@ public abstract class Entity3D : MonoBehaviour
         return Mathf.Max(0f, damage);
     }
 
+    public virtual void OnDamageDealtToTarget(Entity3D target, float appliedDamage, DamageSource3D source, int accuracyAttackId)
+    {
+    }
+
+    public virtual void OnEnemyKilledByDamage(Enemy3D enemy, float appliedDamage, DamageSource3D source, int accuracyAttackId)
+    {
+    }
+
     protected virtual float ModifyIncomingDamage(float damage, Entity3D attacker, DamageSource3D source, int accuracyAttackId)
     {
         return Mathf.Max(0f, damage);
@@ -581,6 +594,12 @@ public abstract class Entity3D : MonoBehaviour
         if (currentHealth <= 0f && this is Enemy3D)
         {
             attackerStats.RecordEnemyKilled();
+        }
+
+        attacker.OnDamageDealtToTarget(this, appliedDamage, source, accuracyAttackId);
+        if (currentHealth <= 0f && this is Enemy3D killedEnemy)
+        {
+            attacker.OnEnemyKilledByDamage(killedEnemy, appliedDamage, source, accuracyAttackId);
         }
 
         if (accuracyAttackId != PlayerCombatStats3D.InvalidAttackId)
@@ -672,6 +691,11 @@ public abstract class Entity3D : MonoBehaviour
     }
 
     protected virtual float GetExternalThrustMultiplier()
+    {
+        return 1f;
+    }
+
+    protected virtual float GetExternalMaxSpeedMultiplier()
     {
         return 1f;
     }
