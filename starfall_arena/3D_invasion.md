@@ -18,11 +18,14 @@ Current implemented beginning flow:
 - the existing round text canvas is reused only for `WAVE 1`, `WAVE 2`, etc.
 - countdown UI is not used
 - player HUD elements stay active during gameplay: health, vignette, crosshair, weapon container, ability container, FPS/ping, enemy tracker, optional enemy counter, and optional heart/life counter
-- win trackers, round-end screens, game-end screens, and end-of-wave stat summaries are not used
+- win trackers, round-end screens, and end-of-wave stat summaries are not used
+- the shared game-end screen manager is reused for Invasion completion/failure: final wave clear shows victory, full team wipe shows defeat, and the existing record field is supplied with the local player's enemy-kill count
 - between cleared waves, Invasion now enters a dedicated reward intermission before the next `WAVE N` intro. Players are movement/input locked, each player gets their own three-card stat-draft offer, and gameplay resumes only after both picks resolve.
+- during that reward intermission, the normal gameplay HUD roots are hidden so the upgrade presentation can take visual priority; the HUD is restored before the next `WAVE N` intro/gameplay beat resumes
 - players are not repositioned, despawned between waves, or movement-locked by the Invasion scene manager
-- when the final configured wave is cleared, `InvasionSceneManager3D` records the local profile's Invasion completion flag in `PlayerPrefs`; in networked Invasion the host also sends a completion message so connected clients save the same flag locally
-- game-end, full-team wipe, score, reward, and completion presentation are planned later; after recording completion, the current slice leaves gameplay active
+- when the final configured wave is cleared, `InvasionSceneManager3D` records the local profile's Invasion completion flag in `PlayerPrefs`; in networked Invasion the host also sends completion and game-end messages so connected clients save the same flag locally and show the same end screen
+- if both players run out of lives, Invasion ends in defeat instead of leaving a dead team in an active wave
+- when Invasion ends, gameplay HUD roots are hidden, players are movement/combat locked, the arena boundary stops, the reused game-end canvas appears, and optional `InvasionEndCameraFlyaround3D` can move the end camera around the arena
 
 Important scene-manager pitfall:
 
@@ -67,6 +70,8 @@ Implemented foundation:
 - all formation members and optional bosses still spawn through `InvasionWaveManager3D.SpawnEnemyAt(...)` so network spawning, alive-enemy tracking, HUD enemy counts, and death-spawn child tracking stay centralized
 - `InvasionWaveManager3D.SpawnEnemyAt(...)` now validates requested spawn positions before instantiating the enemy. If the authored point overlaps a configured spawn-blocking layer such as asteroids, debris, crippled ships, or other solid world blockers, the manager samples nearby alternate positions; if none are clear, it skips that spawn with a warning instead of creating an enemy embedded in geometry.
 - `InvasionSceneManager3D` is the dedicated beginning-flow manager for networked Invasion. It owns player spawning, per-player life counts, death-position respawns, respawn invulnerability presentation, gameplay HUD activation, wave text presentation, optional enemy counter presentation, optional heart/life counter presentation, UI canvas camera/sorting setup, and arena boundary startup.
+- `InvasionSceneManager3D` now also owns Invasion end flow. It accumulates per-slot run stats across respawned ship instances, reuses `GameEndScreenManager` for local victory/defeat presentation, and sends an Invasion-only custom game-end payload to clients so co-op completion can show victory for both local perspectives.
+- `PlayerCombatStats3D` tracks shots fired, shots hit, enemies killed, damage dealt, and damage taken on the gameplay-authoritative side. Invasion accumulates those per live ship instance because respawns destroy/despawn the old player object.
 - `InvasionSceneManager3D` only owns top-level HUD visibility and canvas camera/sorting setup. Actual player HUD data binding still happens through `PlayerHUDManager3D` on the HUD objects themselves, and the ship-specific weapon/ability HUD is runtime-instantiated by `PlayerWeaponAbilityHUDSpawner3D` after a player bind succeeds.
 - `TargetAwarenessHUD3D` should be wired to `EnemyTeam` in Invasion and tuned with a finite awareness range so the enemy tracker only reacts to nearby hostile ships instead of every alive entity in the scene.
 - Bug note: network Invasion clients must not rely only on the one-shot wave-start presentation event to enable gameplay HUD. If the scene manager subscribes after that event/RPC fires, the client can look like HUD binding failed even though the real problem is that every gameplay HUD root stayed inactive. Recover HUD visibility from replicated session state (`RoundTransition` / `InMatch`) as well.
@@ -79,6 +84,8 @@ Implemented foundation:
 - Bug note: Invasion arrival VFX must not register an enemy as "alive" the same frame the prefab is instantiated if `SpawnArrivalEffect3D` still hides/locks that ship for a reveal delay. The old path added the enemy to wave tracking immediately, which made the enemy counter and target-awareness indicator show invisible not-yet-playable enemies and could also let future logic confuse "spawn requested" with "enemy entered play." Keep unrevealed arrivals in a pending bucket until `SpawnArrivalEffect3D` reports reveal completion, then promote them into alive-enemy tracking and HUD discovery.
 - Bug note: host wave-clear and reward progression must not depend only on the `Enemy3D.Died` subscription path. In networked Invasion, a last-hit that originated from the remote client could still finish as a server-authoritative despawn/teardown timing path, and if the wave manager missed that one callback it would keep a stale tracked enemy forever, which blocked the host reward phase even though the arena was already clear. Keep a destroy/despawn fallback (`InvasionTrackedEnemyLifecycle3D`) and prune dead/disabled/unspawned enemies from the tracked lists before deciding whether a wave is still active.
 - Bug note: the host reward picker must not rely only on `NetworkSessionData.GetLocalSlotIndex()` to decide which local player slot should open cards. In Invasion gameplay, that session lookup can be briefly stale even while the host already owns the spawned player object, which let the client receive reward offers while the host never opened its own local picker. `InvasionSceneManager3D.ResolveLocalPlayerSlot()` should fall back to owner-client-id and owned-player-object checks before giving up.
+- Bug note: the reused augment visuals can fail silently if the shared `upgradeSelector` / `AugmentCanvas` hierarchy is still inactive while `AugmentSelectManager.ShowNetworkAugmentSelect(...)` only re-enables the chosen tier child canvas. In that state the host can have a valid local reward choice and an active presenter, but no cards render because the parent presentation roots never re-enter the active hierarchy. `InvasionRewardPhasePresenter3D` should force the shared presentation root and any child `Canvas` objects active before handing off to the old augment UI shell.
+- Bug note: Invasion run stats must not be read only from the currently alive player object at game end. Respawns create a fresh player ship and reset that instance's `PlayerCombatStats3D`, so kills, damage, and accuracy from earlier lives disappear unless `InvasionSceneManager3D` accumulates the dead instance's stats before spawning the replacement.
 
 ## Title Screen Entry
 
@@ -139,6 +146,7 @@ The current wave manager supports finite configured waves with timed sub-wave se
 - reward tiers are deterministic and repeat every three cleared waves: wave 1 reward = `Common`, wave 2 reward = `Epic`, wave 3 reward = `High`, then repeat. All cards shown for that wave come from the same resolved tier.
 - the reward presenter maps those tiers onto the old augment UI shells directly: `Common -> tier 1`, `Epic -> tier 2`, `High -> tier 3`.
 - rewards are inserted after a wave is fully cleared and before the normal inter-wave delay plus next-wave intro. The final configured wave does not open another reward phase.
+- the reward phase temporarily hides the gameplay HUD through `InvasionSceneManager3D.SetGameplayHudActive(false)` on both host and clients, then restores it once both picks resolve so the next-wave intro can reuse the normal HUD-visible flow
 
 Keep menu/mode-entry integration separate from this foundation unless the task specifically asks for it.
 
@@ -430,7 +438,9 @@ For `3d_invasion`:
 - assign UI canvases and optional UI camera so network HUD sorting is deterministic
 - do not let child HUD scripts silently reassign those canvases back to `Camera.main`; the scene-level UI camera should remain the single source of truth for screen-space HUD canvas camera binding
 - assign `ArenaBoundary3D` so the scene manager can reset/start it once when gameplay begins
-- do not wire versus, countdown, win tracker, round-end, or game-end UI into this manager
+- do not wire versus, countdown, win tracker, or round-end UI into this manager
+- assign the reused `GameEndScreenManager` if Invasion should show the end canvas after final wave clear or full team wipe. The canvas' final-record label should be authored/read as an enemy-kill count for Invasion because the manager receives a mode-specific record-text override.
+- optionally assign `InvasionEndCameraFlyaround3D` and tune its orbit target/radius/height/speed so the camera gently flies around the arena while the end screen is active.
 - add `InvasionWaveManager3D`
 - leave `Start On Enable` off when `InvasionSceneManager3D` owns the scene flow; otherwise waves can begin before players are spawned and before `WAVE N` presentation is subscribed
 - author each wave as ordered sub-waves with center spawn points, formation presets, optional `Y Bias`, enemy entries, burst timing, and optional separate boss settings

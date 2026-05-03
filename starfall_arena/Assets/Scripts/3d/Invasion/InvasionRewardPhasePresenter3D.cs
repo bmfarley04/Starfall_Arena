@@ -9,6 +9,8 @@ public class InvasionRewardPhasePresenter3D : MonoBehaviour
 {
     [Tooltip("Old augment-card UI manager reused only for the between-wave Invasion reward visuals and controller navigation.")]
     [SerializeField] private AugmentSelectManager augmentSelectManager;
+    [Tooltip("Optional shared presentation root that should be forced active before showing the reused augment UI. Leave empty to use this presenter object, which should usually be the upgradeSelector root.")]
+    [SerializeField] private GameObject rewardPresentationRoot;
     [Tooltip("Seconds a local player has to choose before the presenter auto-picks the left-most reward.")]
     [Min(1f)]
     [SerializeField] private float selectionTimeLimitSeconds = 12f;
@@ -25,6 +27,7 @@ public class InvasionRewardPhasePresenter3D : MonoBehaviour
     private void Awake()
     {
         augmentSelectManager ??= FindFirstObjectByType<AugmentSelectManager>(FindObjectsInactive.Include);
+        rewardPresentationRoot ??= gameObject;
     }
 
     private void OnEnable()
@@ -83,7 +86,9 @@ public class InvasionRewardPhasePresenter3D : MonoBehaviour
             return;
         }
 
+        EnsurePresentationHierarchyVisible();
         augmentSelectManager.ShowNetworkAugmentSelect(playerSlot, ResolveVisualTier(rewardTier), _runtimeAugments);
+        Canvas.ForceUpdateCanvases();
 
         if (_countdownCoroutine != null)
         {
@@ -168,6 +173,62 @@ public class InvasionRewardPhasePresenter3D : MonoBehaviour
         {
             StopCoroutine(_countdownCoroutine);
             _countdownCoroutine = null;
+        }
+    }
+
+    private void EnsurePresentationHierarchyVisible()
+    {
+        GameObject root = rewardPresentationRoot != null ? rewardPresentationRoot : gameObject;
+        SetHierarchyActive(root != null ? root.transform : null);
+        SetHierarchyActive(augmentSelectManager != null ? augmentSelectManager.transform : null);
+
+        if (root == null)
+        {
+            return;
+        }
+
+        Canvas[] canvases = root.GetComponentsInChildren<Canvas>(true);
+        for (int i = 0; i < canvases.Length; i++)
+        {
+            Canvas canvas = canvases[i];
+            if (canvas == null)
+            {
+                continue;
+            }
+
+            SetHierarchyActive(canvas.transform);
+            canvas.enabled = true;
+        }
+
+        CanvasGroup[] canvasGroups = root.GetComponentsInChildren<CanvasGroup>(true);
+        for (int i = 0; i < canvasGroups.Length; i++)
+        {
+            CanvasGroup canvasGroup = canvasGroups[i];
+            if (canvasGroup == null)
+            {
+                continue;
+            }
+
+            if (canvasGroup.transform == root.transform)
+            {
+                canvasGroup.alpha = 1f;
+                canvasGroup.interactable = false;
+                canvasGroup.blocksRaycasts = false;
+            }
+        }
+    }
+
+    private static void SetHierarchyActive(Transform leaf)
+    {
+        Transform current = leaf;
+        while (current != null)
+        {
+            if (!current.gameObject.activeSelf)
+            {
+                current.gameObject.SetActive(true);
+            }
+
+            current = current.parent;
         }
     }
 

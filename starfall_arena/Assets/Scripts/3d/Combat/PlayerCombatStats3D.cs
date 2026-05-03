@@ -9,6 +9,7 @@ public class PlayerCombatStats3D : MonoBehaviour
 
     public int shotsFired;
     public int shotsHit;
+    public int enemiesKilled;
     public float damageDealt;
     public float damageTaken;
 
@@ -20,6 +21,7 @@ public class PlayerCombatStats3D : MonoBehaviour
     {
         shotsFired = 0;
         shotsHit = 0;
+        enemiesKilled = 0;
         damageDealt = 0f;
         damageTaken = 0f;
         _nextAttackId = 1;
@@ -104,6 +106,16 @@ public class PlayerCombatStats3D : MonoBehaviour
         }
 
         damageDealt += amount;
+    }
+
+    public void RecordEnemyKilled()
+    {
+        if (!HasStatsAuthority())
+        {
+            return;
+        }
+
+        enemiesKilled++;
     }
 
     public void RecordDamageTaken(float amount)

@@ -244,6 +244,7 @@ public class GameEndScreenManager : MonoBehaviour
     /// <param name="damageDealt">Total damage dealt from the local perspective</param>
     /// <param name="damageTaken">Total damage taken from the local perspective</param>
     /// <param name="accuracy">Accuracy percentage (0-100)</param>
+    /// <param name="finalRecordOverride">Optional replacement for the duel wins-losses record text</param>
     public void ShowGameEndScreen(
         int winningPlayer,
         int perspectivePlayer,
@@ -253,7 +254,8 @@ public class GameEndScreenManager : MonoBehaviour
         int losses,
         float damageDealt,
         float damageTaken,
-        float accuracy)
+        float accuracy,
+        string finalRecordOverride = null)
     {
         // Stop any existing animation
         if (currentAnimation != null)
@@ -321,7 +323,7 @@ public class GameEndScreenManager : MonoBehaviour
         BeginTitleScenePreload();
 
         // Populate text fields
-        PopulateStats(perspectivePlayer, isLocalVictory, gameDuration, wins, losses, damageDealt, damageTaken, accuracy);
+        PopulateStats(perspectivePlayer, isLocalVictory, gameDuration, wins, losses, damageDealt, damageTaken, accuracy, finalRecordOverride);
 
         // Spawn ship model for the result presentation.
         SpawnShipModel(shipData);
@@ -346,15 +348,15 @@ public class GameEndScreenManager : MonoBehaviour
         }
     }
 
-    private void PopulateStats(int perspectivePlayer, bool isVictory, float gameDuration, int wins, int losses, float damageDealt, float damageTaken, float accuracy)
+    private void PopulateStats(int perspectivePlayer, bool isVictory, float gameDuration, int wins, int losses, float damageDealt, float damageTaken, float accuracy, string finalRecordOverride)
     {
         // Format duration as MM:SS
         int minutes = Mathf.FloorToInt(gameDuration / 60f);
         int seconds = Mathf.FloorToInt(gameDuration % 60f);
         string durationStr = $"{minutes}:{seconds:D2}";
 
-        // Format final record as W-L
-        string recordStr = $"{wins}-{losses}";
+        // Format final record as W-L unless a mode supplies a different stat value.
+        string recordStr = string.IsNullOrWhiteSpace(finalRecordOverride) ? $"{wins}-{losses}" : finalRecordOverride;
 
         // Format damage (whole numbers)
         string damageDealtStr = Mathf.RoundToInt(damageDealt).ToString();

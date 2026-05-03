@@ -561,6 +561,11 @@ public abstract class Entity3D : MonoBehaviour
         }
 
         attackerStats.RecordDamageDealt(appliedDamage);
+        if (currentHealth <= 0f && this is Enemy3D)
+        {
+            attackerStats.RecordEnemyKilled();
+        }
+
         if (accuracyAttackId != PlayerCombatStats3D.InvalidAttackId)
         {
             attackerStats.RegisterAttackHit(accuracyAttackId);

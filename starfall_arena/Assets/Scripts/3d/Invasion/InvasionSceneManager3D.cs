@@ -14,6 +14,7 @@ public class InvasionSceneManager3D : MonoBehaviour
     private const string RewardChoiceMessageName = "StarfallArena.Invasion3D.RewardChoice";
     private const string RewardAppliedMessageName = "StarfallArena.Invasion3D.RewardApplied";
     private const string InvasionCompletedMessageName = "StarfallArena.Invasion3D.Completed";
+    private const string GameEndMessageName = "StarfallArena.Invasion3D.GameEnd";
 
     [System.Serializable]
     private struct RespawnConfig3D
@@ -24,6 +25,23 @@ public class InvasionSceneManager3D : MonoBehaviour
         public float invulnerabilitySeconds;
         [Tooltip("Seconds between shield visibility pulses during respawn invulnerability. Lower values keep the shield at a higher alpha.")]
         public float shieldFlashIntervalSeconds;
+    }
+
+    private struct CombatStatsSnapshot
+    {
+        public int shotsFired;
+        public int shotsHit;
+        public int enemiesKilled;
+        public float damageDealt;
+        public float damageTaken;
+    }
+
+    private struct InvasionGameEndStats
+    {
+        public bool victory;
+        public float durationSeconds;
+        public CombatStatsSnapshot player1;
+        public CombatStatsSnapshot player2;
     }
 
     [Header("Spawn Points")]
@@ -45,6 +63,12 @@ public class InvasionSceneManager3D : MonoBehaviour
     [SerializeField] private ArenaBoundary3D arenaBoundary;
     [Tooltip("3D-only adapter that reuses the old augment-card visuals for the between-wave reward draft.")]
     [SerializeField] private InvasionRewardPhasePresenter3D rewardPhasePresenter;
+
+    [Header("Game End")]
+    [Tooltip("Existing shared game-end screen manager reused for Invasion victory/defeat presentation.")]
+    [SerializeField] private GameEndScreenManager gameEndScreenManager;
+    [Tooltip("Optional end-screen camera flyaround. If assigned, it begins when Invasion ends.")]
+    [SerializeField] private InvasionEndCameraFlyaround3D endCameraFlyaround;
 
     [Header("Between-Wave Rewards")]
     [Tooltip("If enabled, cleared waves trigger a between-wave reward intermission before the next wave begins.")]
@@ -127,6 +151,8 @@ public class InvasionSceneManager3D : MonoBehaviour
     private bool _isAuthoritativeController = true;
     private bool _wavesStarted;
     private bool _gameplayHudActive;
+    private bool _gameEnded;
+    private float _gameStartTime;
     private int _currentAliveEnemyCount;
     private int _currentPlayerLives;
     private NetworkSessionData _networkSession;
@@ -140,6 +166,7 @@ public class InvasionSceneManager3D : MonoBehaviour
     private readonly int[][] _pendingRewardOfferIndicesBySlot = new int[3][];
     private readonly bool[] _rewardChoiceReceivedBySlot = new bool[3];
     private readonly List<InvasionStatRewardDefinition3D> _effectiveRewardDefinitions = new List<InvasionStatRewardDefinition3D>(16);
+    private readonly CombatStatsSnapshot[] _accumulatedStatsBySlot = new CombatStatsSnapshot[3];
     private int _rewardPhaseSequenceId;
     private InvasionRewardTier3D _activeRewardPhaseTier = InvasionRewardTier3D.Common;
     private bool _rewardPhaseActive;
@@ -160,6 +187,16 @@ public class InvasionSceneManager3D : MonoBehaviour
         if (rewardPhasePresenter == null)
         {
             rewardPhasePresenter = FindFirstObjectByType<InvasionRewardPhasePresenter3D>(FindObjectsInactive.Include);
+        }
+
+        if (gameEndScreenManager == null)
+        {
+            gameEndScreenManager = FindFirstObjectByType<GameEndScreenManager>(FindObjectsInactive.Include);
+        }
+
+        if (endCameraFlyaround == null)
+        {
+            endCameraFlyaround = FindFirstObjectByType<InvasionEndCameraFlyaround3D>(FindObjectsInactive.Include);
         }
 
         ResolveShipData();
@@ -223,6 +260,7 @@ public class InvasionSceneManager3D : MonoBehaviour
     private IEnumerator GameLoop()
     {
         yield return SpawnPlayers();
+        _gameStartTime = Time.time;
         SetGameplayHudActive(true);
         StartArenaBoundary();
 
@@ -510,7 +548,7 @@ public class InvasionSceneManager3D : MonoBehaviour
 
     private void OnPlayerDeath(Entity3D deadEntity)
     {
-        if (!_isAuthoritativeController || deadEntity == null)
+        if (!_isAuthoritativeController || deadEntity == null || _gameEnded)
         {
             return;
         }
@@ -530,6 +568,7 @@ public class InvasionSceneManager3D : MonoBehaviour
 
         Vector3 deathPosition = deadPlayer.transform.position;
         Quaternion deathRotation = deadPlayer.transform.rotation;
+        AccumulateCurrentPlayerStats(playerSlot, deadPlayer);
         UnsubscribePlayerDeath(deadPlayer);
         SetTrackedPlayer(playerSlot, null);
 
@@ -541,6 +580,11 @@ public class InvasionSceneManager3D : MonoBehaviour
         if (livesAfterDeath <= 0)
         {
             Debug.Log($"[InvasionSceneManager3D] Player {playerSlot} died with no lives remaining and will not respawn.", this);
+            if (AreAllPlayersEliminated())
+            {
+                EndInvasionAuthoritative(victory: false);
+            }
+
             return;
         }
 
@@ -804,6 +848,10 @@ public class InvasionSceneManager3D : MonoBehaviour
         int clampedStartingLives = Mathf.Max(0, startingPlayerLives);
         _playerLivesRemainingBySlot[1] = clampedStartingLives;
         _playerLivesRemainingBySlot[2] = clampedStartingLives;
+        _accumulatedStatsBySlot[1] = default;
+        _accumulatedStatsBySlot[2] = default;
+        _gameEnded = false;
+        _gameStartTime = Time.time;
         _currentPlayerLives = ResolveDisplayedLives();
         UpdateEnemyCounter(0);
         UpdateLifeCounter(_currentPlayerLives);
@@ -921,6 +969,7 @@ public class InvasionSceneManager3D : MonoBehaviour
         _rewardPhaseSequenceId++;
         _activeRewardPhaseTier = ResolveRewardTierForWave(clearedWaveNumber);
         ResetRewardChoiceState();
+        SetGameplayHudActive(false);
         SetPlayersIntermissionLocked(true);
 
         BuildOfferIndicesForPlayer(1, _activeRewardPhaseTier);
@@ -946,6 +995,7 @@ public class InvasionSceneManager3D : MonoBehaviour
 
         _rewardPhaseActive = false;
         SetPlayersIntermissionLocked(false);
+        SetGameplayHudActive(true);
 
         if (rewardPostPresentationDelaySeconds > 0f)
         {
@@ -1358,14 +1408,14 @@ public class InvasionSceneManager3D : MonoBehaviour
 
     private void HandleAllWavesCleared()
     {
-        if (!_wavesStarted)
+        if (!_wavesStarted || _gameEnded)
         {
             return;
         }
 
         PlayerProgressPrefs.MarkInvasionModeWon();
         BroadcastInvasionCompleted();
-        Debug.Log("[InvasionSceneManager3D] All configured Invasion waves are cleared. The local profile now records Invasion as completed. Game-end flow is planned later, so gameplay remains active.", this);
+        EndInvasionAuthoritative(victory: true);
     }
 
     private void HandleAliveEnemyCountChanged(int aliveEnemyCount)
@@ -1377,6 +1427,151 @@ public class InvasionSceneManager3D : MonoBehaviour
         }
 
         UpdateEnemyCounter(aliveEnemyCount);
+    }
+
+    private void EndInvasionAuthoritative(bool victory)
+    {
+        if (_gameEnded)
+        {
+            return;
+        }
+
+        _gameEnded = true;
+        InvasionGameEndStats stats = BuildGameEndStats(victory);
+
+        if (_useNetworkSession && NetworkSessionData.Instance != null)
+        {
+            NetworkSessionData.Instance.SetLocalState(NetworkMatchState.MatchComplete, victory ? "Invasion complete." : "Invasion failed.");
+            BroadcastInvasionGameEnd(stats);
+        }
+
+        PresentInvasionGameEnd(stats);
+    }
+
+    private InvasionGameEndStats BuildGameEndStats(bool victory)
+    {
+        return new InvasionGameEndStats
+        {
+            victory = victory,
+            durationSeconds = Mathf.Max(0f, Time.time - _gameStartTime),
+            player1 = BuildFinalStatsForSlot(1),
+            player2 = BuildFinalStatsForSlot(2)
+        };
+    }
+
+    private CombatStatsSnapshot BuildFinalStatsForSlot(byte playerSlot)
+    {
+        CombatStatsSnapshot total = playerSlot >= 1 && playerSlot <= 2 ? _accumulatedStatsBySlot[playerSlot] : default;
+        AddStats(ref total, CopyStats(ResolveTrackedOrNetworkPlayer(playerSlot)?.GetComponent<PlayerCombatStats3D>()));
+        return total;
+    }
+
+    private void PresentInvasionGameEnd(InvasionGameEndStats stats)
+    {
+        _gameEnded = true;
+        StopRespawnCoroutines();
+        StopArenaBoundary();
+        SetPlayersIntermissionLocked(true);
+        SetGameplayHudActive(false);
+        endCameraFlyaround?.BeginFlyaround();
+
+        if (stats.victory)
+        {
+            PlayerProgressPrefs.MarkInvasionModeWon();
+        }
+
+        if (gameEndScreenManager == null)
+        {
+            gameEndScreenManager = FindFirstObjectByType<GameEndScreenManager>(FindObjectsInactive.Include);
+        }
+
+        if (gameEndScreenManager == null)
+        {
+            Debug.LogWarning("[InvasionSceneManager3D] Invasion ended, but no GameEndScreenManager is assigned for the reused end screen.", this);
+            return;
+        }
+
+        int perspectivePlayer = ResolveEndScreenPerspectivePlayer();
+        CombatStatsSnapshot localStats = perspectivePlayer == 2 ? stats.player2 : stats.player1;
+        ShipData localShip = perspectivePlayer == 2 ? _player2Data : _player1Data;
+        int resultWinner = stats.victory ? perspectivePlayer : perspectivePlayer == 1 ? 2 : 1;
+
+        gameEndScreenManager.ShowGameEndScreen(
+            resultWinner,
+            perspectivePlayer,
+            localShip,
+            stats.durationSeconds,
+            localStats.enemiesKilled,
+            0,
+            localStats.damageDealt,
+            localStats.damageTaken,
+            CalculateAccuracy(localStats),
+            localStats.enemiesKilled.ToString());
+    }
+
+    private int ResolveEndScreenPerspectivePlayer()
+    {
+        int localSlot = ResolveLocalPlayerSlot();
+        if (localSlot == 1 || localSlot == 2)
+        {
+            return localSlot;
+        }
+
+        return 1;
+    }
+
+    private void StopArenaBoundary()
+    {
+        if (arenaBoundary != null)
+        {
+            arenaBoundary.StopBoundary();
+        }
+    }
+
+    private bool AreAllPlayersEliminated()
+    {
+        return _playerLivesRemainingBySlot[1] <= 0
+            && _playerLivesRemainingBySlot[2] <= 0
+            && _player1 == null
+            && _player2 == null;
+    }
+
+    private void AccumulateCurrentPlayerStats(byte playerSlot, Player3D player)
+    {
+        if (playerSlot < 1 || playerSlot > 2 || player == null)
+        {
+            return;
+        }
+
+        AddStats(ref _accumulatedStatsBySlot[playerSlot], CopyStats(player.GetComponent<PlayerCombatStats3D>()));
+    }
+
+    private static CombatStatsSnapshot CopyStats(PlayerCombatStats3D source)
+    {
+        return source != null
+            ? new CombatStatsSnapshot
+            {
+                shotsFired = source.shotsFired,
+                shotsHit = source.shotsHit,
+                enemiesKilled = source.enemiesKilled,
+                damageDealt = source.damageDealt,
+                damageTaken = source.damageTaken
+            }
+            : default;
+    }
+
+    private static void AddStats(ref CombatStatsSnapshot target, CombatStatsSnapshot source)
+    {
+        target.shotsFired += source.shotsFired;
+        target.shotsHit += source.shotsHit;
+        target.enemiesKilled += source.enemiesKilled;
+        target.damageDealt += source.damageDealt;
+        target.damageTaken += source.damageTaken;
+    }
+
+    private static float CalculateAccuracy(CombatStatsSnapshot stats)
+    {
+        return stats.shotsFired > 0 ? (float)stats.shotsHit / stats.shotsFired * 100f : 0f;
     }
 
     private void SyncAliveEnemyCountFromWaveManager()
@@ -1676,6 +1871,7 @@ public class InvasionSceneManager3D : MonoBehaviour
         networkManager.CustomMessagingManager.RegisterNamedMessageHandler(RewardChoiceMessageName, HandleRewardChoiceMessage);
         networkManager.CustomMessagingManager.RegisterNamedMessageHandler(RewardAppliedMessageName, HandleRewardAppliedMessage);
         networkManager.CustomMessagingManager.RegisterNamedMessageHandler(InvasionCompletedMessageName, HandleInvasionCompletedMessage);
+        networkManager.CustomMessagingManager.RegisterNamedMessageHandler(GameEndMessageName, HandleGameEndMessage);
         _customNetworkMessagesRegistered = true;
     }
 
@@ -1694,7 +1890,62 @@ public class InvasionSceneManager3D : MonoBehaviour
         networkManager.CustomMessagingManager.UnregisterNamedMessageHandler(RewardChoiceMessageName);
         networkManager.CustomMessagingManager.UnregisterNamedMessageHandler(RewardAppliedMessageName);
         networkManager.CustomMessagingManager.UnregisterNamedMessageHandler(InvasionCompletedMessageName);
+        networkManager.CustomMessagingManager.UnregisterNamedMessageHandler(GameEndMessageName);
         _customNetworkMessagesRegistered = false;
+    }
+
+    private void BroadcastInvasionGameEnd(InvasionGameEndStats stats)
+    {
+        NetworkManager networkManager = NetworkManager.Singleton;
+        if (!_useNetworkSession || networkManager == null || !networkManager.IsServer || networkManager.CustomMessagingManager == null)
+        {
+            return;
+        }
+
+        using (FastBufferWriter writer = new FastBufferWriter(96, Allocator.Temp))
+        {
+            writer.WriteValueSafe(stats.victory ? (byte)1 : (byte)0);
+            writer.WriteValueSafe(stats.durationSeconds);
+            WriteCombatStats(ref writer, stats.player1);
+            WriteCombatStats(ref writer, stats.player2);
+            networkManager.CustomMessagingManager.SendNamedMessage(GameEndMessageName, networkManager.ConnectedClientsIds, writer, NetworkDelivery.ReliableSequenced);
+        }
+    }
+
+    private void HandleGameEndMessage(ulong senderClientId, FastBufferReader reader)
+    {
+        if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsServer)
+        {
+            return;
+        }
+
+        InvasionGameEndStats stats = new InvasionGameEndStats();
+        reader.ReadValueSafe(out byte victory);
+        reader.ReadValueSafe(out stats.durationSeconds);
+        stats.victory = victory == 1;
+        stats.player1 = ReadCombatStats(ref reader);
+        stats.player2 = ReadCombatStats(ref reader);
+        PresentInvasionGameEnd(stats);
+    }
+
+    private static void WriteCombatStats(ref FastBufferWriter writer, CombatStatsSnapshot stats)
+    {
+        writer.WriteValueSafe(stats.shotsFired);
+        writer.WriteValueSafe(stats.shotsHit);
+        writer.WriteValueSafe(stats.enemiesKilled);
+        writer.WriteValueSafe(stats.damageDealt);
+        writer.WriteValueSafe(stats.damageTaken);
+    }
+
+    private static CombatStatsSnapshot ReadCombatStats(ref FastBufferReader reader)
+    {
+        CombatStatsSnapshot stats = new CombatStatsSnapshot();
+        reader.ReadValueSafe(out stats.shotsFired);
+        reader.ReadValueSafe(out stats.shotsHit);
+        reader.ReadValueSafe(out stats.enemiesKilled);
+        reader.ReadValueSafe(out stats.damageDealt);
+        reader.ReadValueSafe(out stats.damageTaken);
+        return stats;
     }
 
     private void BroadcastInvasionCompleted()
@@ -1841,6 +2092,7 @@ public class InvasionSceneManager3D : MonoBehaviour
         }
 
         _rewardPhaseActive = true;
+        SetGameplayHudActive(false);
         SetPlayersIntermissionLocked(true);
 
         int localSlot = ResolveLocalPlayerSlot();
@@ -1960,6 +2212,7 @@ public class InvasionSceneManager3D : MonoBehaviour
         {
             _rewardPhaseActive = false;
             SetPlayersIntermissionLocked(false);
+            SetGameplayHudActive(true);
         }
     }
 
