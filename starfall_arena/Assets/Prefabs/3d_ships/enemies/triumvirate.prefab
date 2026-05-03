@@ -4926,7 +4926,7 @@ Rigidbody:
   serializedVersion: 5
   m_Mass: 1
   m_LinearDamping: 0
-  m_AngularDamping: 0.05
+  m_AngularDamping: 0
   m_CenterOfMass: {x: 0, y: 0, z: 0}
   m_InertiaTensor: {x: 1, y: 1, z: 1}
   m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
@@ -4938,9 +4938,9 @@ Rigidbody:
     m_Bits: 0
   m_ImplicitCom: 1
   m_ImplicitTensor: 1
-  m_UseGravity: 1
+  m_UseGravity: 0
   m_IsKinematic: 0
-  m_Interpolate: 0
+  m_Interpolate: 1
   m_Constraints: 0
   m_CollisionDetection: 0
 --- !u!114 &-6300485720475872420
@@ -5065,7 +5065,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NetEnemyMovement3D
   ShowTopMostFoldoutHeaderGroup: 1
-  interpolationBufferTicks: 2
+  interpolationSettings:
+    minVisualDelayMs: 80
+    maxVisualDelayMs: 120
+    bufferStarvationWarningThreshold: 5
+    maxExtrapolationMs: 40
+    hardSnapDistance: 30
+    smoothingCatchUpRate: 0
 --- !u!1 &4482474465765992111
 GameObject:
   m_ObjectHideFlags: 0
@@ -5192,7 +5198,7 @@ Rigidbody:
   serializedVersion: 5
   m_Mass: 1
   m_LinearDamping: 0
-  m_AngularDamping: 0
+  m_AngularDamping: 2
   m_CenterOfMass: {x: 0, y: 0, z: 0}
   m_InertiaTensor: {x: 1, y: 1, z: 1}
   m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
@@ -5444,6 +5450,7 @@ MonoBehaviour:
   linkJitterInterval: 0.05
   finalBeamWeapon: {fileID: 8560116361619406247}
   netEnemyCombat: {fileID: 0}
+  attackReporter: {fileID: 0}
   chargeTelegraph: {fileID: 0}
   finalBeamRange: 500
   finalBeamHitscanRadius: 0.45
@@ -5521,6 +5528,9 @@ MonoBehaviour:
   chargeLight: {fileID: 0}
   chargeLightMaxAddedIntensity: 5
   fadeOutDuration: 0.12
+  useWarningSphere: 0
+  warningSpherePrefab: {fileID: 0}
+  warningSphereEndScaleMultiplier: 0.05
 --- !u!114 &7753322501865276928
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6011,6 +6021,7 @@ MonoBehaviour:
   linkJitterInterval: 0.05
   finalBeamWeapon: {fileID: 4069157214293576489}
   netEnemyCombat: {fileID: 0}
+  attackReporter: {fileID: 0}
   chargeTelegraph: {fileID: 0}
   finalBeamRange: 500
   finalBeamHitscanRadius: 0.45
@@ -6088,6 +6099,9 @@ MonoBehaviour:
   chargeLight: {fileID: 0}
   chargeLightMaxAddedIntensity: 5
   fadeOutDuration: 0.12
+  useWarningSphere: 0
+  warningSpherePrefab: {fileID: 0}
+  warningSphereEndScaleMultiplier: 0.05
 --- !u!114 &8596503554786969050
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -11476,6 +11490,7 @@ MonoBehaviour:
   linkJitterInterval: 0.05
   finalBeamWeapon: {fileID: 1445180964325999496}
   netEnemyCombat: {fileID: 0}
+  attackReporter: {fileID: 0}
   chargeTelegraph: {fileID: 0}
   finalBeamRange: 500
   finalBeamHitscanRadius: 0.45
@@ -11553,6 +11568,9 @@ MonoBehaviour:
   chargeLight: {fileID: 0}
   chargeLightMaxAddedIntensity: 5
   fadeOutDuration: 0.12
+  useWarningSphere: 0
+  warningSpherePrefab: {fileID: 0}
+  warningSphereEndScaleMultiplier: 0.05
 --- !u!114 &7403757616906148470
 MonoBehaviour:
   m_ObjectHideFlags: 0

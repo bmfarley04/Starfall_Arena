@@ -14753,7 +14753,7 @@ Rigidbody:
   serializedVersion: 5
   m_Mass: 1
   m_LinearDamping: 0
-  m_AngularDamping: 2
+  m_AngularDamping: 0
   m_CenterOfMass: {x: 0, y: 0, z: 0}
   m_InertiaTensor: {x: 1, y: 1, z: 1}
   m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
@@ -14943,8 +14943,11 @@ MonoBehaviour:
   flightController: {fileID: 1829365813681681002}
   targetSensor: {fileID: 3740084540234369247}
   obstacleAvoidance: {fileID: 0}
+  separation: {fileID: 0}
+  steeringSmoother: {fileID: 0}
   patrol: {fileID: 0}
   netEnemyCombat: {fileID: 0}
+  attackReporter: {fileID: 0}
   thinkInterval: 0.05
   cannonAimToleranceDegrees: 8
   missileAimToleranceDegrees: 35
@@ -15144,7 +15147,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NetEnemyMovement3D
   ShowTopMostFoldoutHeaderGroup: 1
-  interpolationBufferTicks: 2
+  interpolationSettings:
+    minVisualDelayMs: 80
+    maxVisualDelayMs: 120
+    bufferStarvationWarningThreshold: 5
+    maxExtrapolationMs: 40
+    hardSnapDistance: 30
+    smoothingCatchUpRate: 0
 --- !u!1 &6236253945820780736
 GameObject:
   m_ObjectHideFlags: 0

@@ -45,21 +45,21 @@ Material:
     - _DiskArcSpiralTightness: 0
     - _DiskArcVerticalBias: 0
     - _DiskArcWidth: 0.001
-    - _EventHorizonRadius: 0.42
-    - _HorizonSoftness: 0.0716
+    - _EventHorizonRadius: 0.548
+    - _HorizonSoftness: 0.001
     - _LensBackgroundDepthSoftness: 0.024
     - _LensBackgroundDepthThreshold: 0.978
-    - _LensCausticBoost: 0
+    - _LensCausticBoost: 0.82
     - _LensForegroundDepthBias: -23
     - _LensForegroundDepthSoftness: 23.1
     - _LensForegroundRejection: 0.973
     - _LensOpacity: 1
-    - _LensedSourceBoost: 0
-    - _LensedSourceRingWidth: 0.13
-    - _LensedSourceThickness: 0
-    - _LensedSourceThreshold: 1.35
+    - _LensedSourceBoost: 0.45
+    - _LensedSourceRingWidth: 0.144
+    - _LensedSourceThickness: 0.0249
+    - _LensedSourceThreshold: 2.21
     - _ObjectRadius: 0.5
-    - _OffscreenDiskArcIntensity: 2.11
+    - _OffscreenDiskArcIntensity: 2.57
     - _OuterFade: 0.45
     - _PhotonRingAlpha: 1
     - _PhotonRingIntensity: 2.98

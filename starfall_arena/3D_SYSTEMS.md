@@ -91,6 +91,11 @@ These classes should stay narrow and mostly coordinate dedicated 3D systems.
   - keeps `_InnerColor` pure white through an exposed HDR intensity value
   - uses a runtime material instance plus the same renderer property-block override path in play mode and edit mode so preview and runtime color application stay visually consistent without dirtying shared material assets
   - syncs menace progress through a server-written NetworkVariable when the black hole root has a `NetworkObject`
+- `DistantAngularSizeStabilizer3D`
+  - visual-only helper for distant perspective-camera set pieces such as the Invasion black hole
+  - counter-scales the prefab as it moves off the camera forward axis so normal perspective edge growth does not make a fixed background object swell when the player turns
+  - captures the scene instance's current local scale at runtime by default, so prefab or scene scale overrides such as a black-hole root scale of 200 remain the centered baseline
+  - if `Capture Current Scale On Awake` is disabled, keep `Centered Local Scale` equal to the authored prefab scale and tune `Compensation Strength` down only if some natural perspective growth is desired
 
 ### Player-only 3D systems
 
@@ -247,8 +252,9 @@ Current folder contract:
   - examples: `InvasionWaveManager3D`
 - `Environment`
   - local-only authored environment population and static obstacle helpers
-  - examples: `AsteroidFieldSpawner3D`
+  - examples: `AsteroidFieldSpawner3D`, `AsteroidBackdropSpawner3D`
   - prefer explicit seeded generation for local obstacle fields when layout determinism matters for testing, iteration, or future network-safe scene reconstruction
+  - prefer a separate visual-only backdrop spawner for outside-arena dressing so distant scenery does not inherit gameplay colliders or obstacle-placement costs
 - `Flight`
   - shared 3D ship movement and reusable flight behavior
   - examples: `ShipFlight3D`
@@ -303,6 +309,8 @@ When adding a new 3D script, place it under the subsystem it serves first. Do no
 - screen-space lensing cannot sample accretion-disk pixels that are physically off-screen; the singularity shader therefore has a small `Offscreen Disk Arc` fallback that appears only when the bent source UV leaves the camera frame, while the normal on-screen look still comes from the captured lens-source texture
 - `BlackHoleMenaceVisual3D` also tints the singularity shader's `Offscreen Disk Arc HDR Color` from the current menace hot-streak color, so the fallback arc follows the same blue-to-red progression as the real accretion disk
 - bent lens-source UVs must fade out at the screen edge instead of clamping to the nearest edge pixel; clamping can smear a bright disk/photon pixel across the lens and cause tiny white flashes while the camera moves
+- singularity shaders compute their lens/core radius from scaled world radius, camera-to-object distance, and projection focal length instead of projecting local axis offsets; this keeps the black hole from swelling when a perspective camera turns and the object moves toward the screen edge
+- the black-hole prefab also uses `DistantAngularSizeStabilizer3D` on the root so the real disk and sphere meshes counter-scale with the same off-axis compensation as the shader masks
 - foreground rejection uses `_CameraDepthTexture` to gate bent samples against the current lens fragment's eye depth; keep the active renderer/camera depth texture available when `Foreground Rejection` is above 0, otherwise the lens cannot reliably distinguish behind-the-hole skybox/background pixels from ships, asteroids, cursors, and other foreground objects
 - `_CameraOpaqueTexture` is still not a true final-frame grab: transparent VFX rendered after the opaque texture copy will not be bent by the singularity unless a dedicated renderer feature copies scene color later and the shader is changed to sample that custom texture
 - `Bend Strength` can be negative to pull scene samples inward toward the event horizon; this is the useful direction for lifting the rear disk into the upper/lower Einstein-ring arcs

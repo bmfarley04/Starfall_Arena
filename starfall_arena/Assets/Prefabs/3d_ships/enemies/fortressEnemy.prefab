@@ -10029,7 +10029,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 2116893685
+  GlobalObjectIdHash: 1391632438
   InScenePlacedSourceGlobalObjectIdHash: 0
   DeferredDespawnTick: 0
   Ownership: 1
@@ -10061,6 +10061,7 @@ MonoBehaviour:
   - {fileID: 3394221799534837996}
   flightController: {fileID: 4036106999025840659}
   targetSensor: {fileID: 109184916424653513}
+  separation: {fileID: 0}
   patrol: {fileID: 8638785466743754426}
   netEnemyCombat: {fileID: -2783508877796770153}
   chargeTelegraph: {fileID: 7110419251988611543}
@@ -10377,7 +10378,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NetEnemyMovement3D
   ShowTopMostFoldoutHeaderGroup: 1
-  interpolationBufferTicks: 2
+  interpolationSettings:
+    minVisualDelayMs: 80
+    maxVisualDelayMs: 120
+    bufferStarvationWarningThreshold: 5
+    maxExtrapolationMs: 40
+    hardSnapDistance: 30
+    smoothingCatchUpRate: 0
 --- !u!114 &7123456789012345678
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -249,8 +249,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6fdc0ed10b6b7d74d852b13f15d9909c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyVisualTilt3D
-  flightController: {fileID: 4085942524718195484}
-  strafeMover: {fileID: 5791312176970835958}
+  flightController: {fileID: 0}
+  strafeMover: {fileID: 0}
   body: {fileID: 4955350368264630231}
   entity: {fileID: 6511585693592533134}
   visualEffects:
@@ -404,6 +404,7 @@ MonoBehaviour:
   targetSensor: {fileID: 7183041902638584638}
   obstacleAvoidance: {fileID: 0}
   separation: {fileID: 0}
+  steeringSmoother: {fileID: 0}
   strafeMover: {fileID: 2987330086573494579}
   patrol: {fileID: 8670701288625461945}
   netEnemyCombat: {fileID: 0}

@@ -5121,7 +5121,7 @@ Rigidbody:
   serializedVersion: 5
   m_Mass: 1000
   m_LinearDamping: 0
-  m_AngularDamping: 0.05
+  m_AngularDamping: 2
   m_CenterOfMass: {x: 0, y: 0, z: 0}
   m_InertiaTensor: {x: 1, y: 1, z: 1}
   m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
@@ -5849,6 +5849,7 @@ MonoBehaviour:
   targetSensor: {fileID: 6487050144468943013}
   patrol: {fileID: 1220677257115221643}
   netEnemyCombat: {fileID: 0}
+  attackReporter: {fileID: 0}
 --- !u!114 &5833685198212559877
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6112,7 +6113,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NetEnemyMovement3D
   ShowTopMostFoldoutHeaderGroup: 1
-  interpolationBufferTicks: 2
+  interpolationSettings:
+    minVisualDelayMs: 80
+    maxVisualDelayMs: 120
+    bufferStarvationWarningThreshold: 5
+    maxExtrapolationMs: 40
+    hardSnapDistance: 30
+    smoothingCatchUpRate: 0
 --- !u!114 &7123456789012345679
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6125,10 +6132,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2a94c91b57b04f1cb44e5b4f11a0d231, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PortalBossSpawn3D
+  ShowTopMostFoldoutHeaderGroup: 1
   portalPrefab: {fileID: 1000000000000010001, guid: 976f41ceec924e399424163b5c1e34c6, type: 3}
   portalUniformScale: 4.5
   emergeDistance: 220
   emergeDuration: 6
+  portalShrinkDuration: 0.75
   visualRenderers: []
   additionalBehavioursToDisable: []
   collidersToDisable: []

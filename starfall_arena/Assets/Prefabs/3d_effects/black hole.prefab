@@ -236,6 +236,7 @@ GameObject:
   - component: {fileID: 5938876997777027291}
   - component: {fileID: 632412957108431829}
   - component: {fileID: 7744053758555926142}
+  - component: {fileID: 6217439082856913564}
   m_Layer: 0
   m_Name: black hole
   m_TagString: Untagged
@@ -253,7 +254,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 3.0428, y: 1.47112, z: 20.90951}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 200, y: 200, z: 200}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 7075470905091396089}
@@ -339,3 +340,22 @@ MonoBehaviour:
   finalOuterColor: {r: 1.826817, g: 0, b: 0.005250956, a: 1}
   finalHotStreakColor: {r: 6.7798715, g: 0, b: 0.10718339, a: 1}
   innerWhiteHdrIntensity: 1.0694609
+--- !u!114 &6217439082856913564
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6935636777801461194}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6f4fe4a2b05f496f88f24d0d685fc456, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  targetCamera: {fileID: 0}
+  useMainCameraWhenTargetMissing: 1
+  captureCurrentScaleOnAwake: 1
+  centeredLocalScale: {x: 200, y: 200, z: 200}
+  compensationStrength: 1
+  minimumScaleMultiplier: 0.35
+  maximumScaleMultiplier: 1

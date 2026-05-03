@@ -253,22 +253,23 @@ Shader "Starfall/3D/BlackHole/SingularityLensing"
                 return screenPosition.xy / max(screenPosition.w, 0.00001);
             }
 
-            float ProjectedRadius(float2 centerUv)
+            float ProjectedRadius()
             {
                 float objectRadius = max(_ObjectRadius, 0.0001);
 
-                float2 xUv = ScreenUvFromClip(TransformObjectToHClip(float3(objectRadius, 0.0, 0.0)));
-                float2 yUv = ScreenUvFromClip(TransformObjectToHClip(float3(0.0, objectRadius, 0.0)));
-                float2 zUv = ScreenUvFromClip(TransformObjectToHClip(float3(0.0, 0.0, objectRadius)));
+                float3 centerWS = TransformObjectToWorld(float3(0.0, 0.0, 0.0));
+                float xRadiusWS = length(TransformObjectToWorld(float3(objectRadius, 0.0, 0.0)) - centerWS);
+                float yRadiusWS = length(TransformObjectToWorld(float3(0.0, objectRadius, 0.0)) - centerWS);
+                float zRadiusWS = length(TransformObjectToWorld(float3(0.0, 0.0, objectRadius)) - centerWS);
+                float worldRadius = max(max(xRadiusWS, yRadiusWS), max(zRadiusWS, 0.0001));
 
-                float aspect = _ScreenParams.x / max(_ScreenParams.y, 0.0001);
-                float2 aspectScale = float2(aspect, 1.0);
+                float cameraDistance = max(length(centerWS - _WorldSpaceCameraPos.xyz), 0.0001);
+                float verticalFocalLength = abs(UNITY_MATRIX_P._m11);
 
-                float xRadius = length((xUv - centerUv) * aspectScale);
-                float yRadius = length((yUv - centerUv) * aspectScale);
-                float zRadius = length((zUv - centerUv) * aspectScale);
+                float perspectiveRadius = 0.5 * verticalFocalLength * worldRadius / cameraDistance;
+                float orthographicRadius = 0.5 * verticalFocalLength * worldRadius;
 
-                return max(max(xRadius, yRadius), max(zRadius, 0.0001));
+                return max(lerp(perspectiveRadius, orthographicRadius, unity_OrthoParams.w), 0.0001);
             }
 
             Varyings vert(Attributes input)
@@ -278,7 +279,7 @@ Shader "Starfall/3D/BlackHole/SingularityLensing"
 
                 float4 centerHCS = TransformObjectToHClip(float3(0.0, 0.0, 0.0));
                 float2 centerUv = ScreenUvFromClip(centerHCS);
-                float projectedRadius = ProjectedRadius(centerUv);
+                float projectedRadius = ProjectedRadius();
                 float aspect = _ScreenParams.x / max(_ScreenParams.y, 0.0001);
 
                 output.positionHCS = positionInputs.positionCS;
