@@ -19,10 +19,10 @@ public class BlackHoleMenaceVisual3D : NetworkBehaviour
     [Tooltip("Material slot on Accretion Disk Renderer that uses Starfall/3D/BlackHole/AccretionDisk.")]
     [SerializeField] [Min(0)] private int accretionDiskMaterialIndex;
 
-    [Tooltip("Renderer using Starfall/3D/BlackHole/SingularityLensing. The off-screen fallback disk arc is tinted from the same menace palette.")]
+    [Tooltip("Renderer using a Starfall/3D/BlackHole singularity shader. The simplified singularity arc is tinted from the same menace palette.")]
     [SerializeField] private Renderer singularityLensRenderer;
 
-    [Tooltip("Material slot on Singularity Lens Renderer that uses Starfall/3D/BlackHole/SingularityLensing.")]
+    [Tooltip("Material slot on Singularity Lens Renderer that uses a Starfall/3D/BlackHole singularity shader.")]
     [SerializeField] [Min(0)] private int singularityLensMaterialIndex;
 
     [Tooltip("Invasion wave manager that owns authored enemy totals and defeated-enemy progress. Required on the server/non-networked authority.")]
@@ -278,7 +278,8 @@ public class BlackHoleMenaceVisual3D : NetworkBehaviour
                 continue;
             }
 
-            if (material.shader.name == "Starfall/3D/BlackHole/SingularityLensing")
+            if (material.shader.name == "Starfall/3D/BlackHole/SingularityLensing"
+                || material.shader.name == "Starfall/3D/BlackHole/SingularitySimple")
             {
                 singularityLensMaterialIndex = i;
                 return true;

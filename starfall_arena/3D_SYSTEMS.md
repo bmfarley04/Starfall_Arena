@@ -284,7 +284,11 @@ When adding a new 3D script, place it under the subsystem it serves first. Do no
 
 ## Black Hole Effect Shader Authoring
 
-- the 3D black hole effect uses two materials: `Starfall/3D/BlackHole/AccretionDisk` for a flat local-XZ disk/ring and `Starfall/3D/BlackHole/SingularityLensing` for an inflated sphere around the event horizon
+- the 3D black hole effect uses two core materials: `Starfall/3D/BlackHole/AccretionDisk` for a flat local-XZ disk/ring and `Starfall/3D/BlackHole/SingularityLensing` for the inflated full screen-space lensing sphere around the event horizon
+- the current prefab uses `SingularityLensing` again so the event-horizon sphere can sample `_CameraOpaqueTexture`, bend the already-rendered accretion disk, black out the event horizon, and draw the photon ring/halo in one full implementation
+- `SingularitySimple` remains available as a stable gameplay-background fallback: it avoids full scene-color/depth/lens-source sampling while still drawing a black core, photon ring, subtle menace-tinted horizon arc, procedural rear disk wrap, optional narrow screen-sampled wrap, and outer halo
+- use `SingularitySimple` when the full screen-space lensing path creates unacceptable sampling artifacts or foreground/UI interference
+- `Starfall/3D/BlackHole/SingularityLensingLegacy` and `BlackHole_SingularityLensing_Legacy.mat` are explicit preserved copies of the previous screen-space lensing implementation for comparison or rollback
 - the accretion disk shader is additive, but intentionally renders in the opaque render-queue range so URP includes it in `_CameraOpaqueTexture`; this is required for the singularity shader to bend the disk image in screen space
 - because the disk renders before the skybox for lensing capture, it keeps depth writes enabled and clips faint pixels with `Depth Clip Threshold`; otherwise the skybox overwrites the disk anywhere there is no opaque object already behind it
 - the disk shader owns a `Black Hole Shadow Occlusion Radius` center mask so bright opaque/captured disk lanes do not leak through the transparent singularity shell and bloom inside the event horizon

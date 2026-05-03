@@ -26,7 +26,7 @@ Material:
     m_Ints: []
     m_Floats:
     - _Brightness: 6.75
-    - _ExternalPulseIntensity: 1.0793926
+    - _ExternalPulseIntensity: 1.0028754
     - _FresnelPower: 4.52
     - _InnerFill: 0.536
     - _NoiseScale: 36.4
