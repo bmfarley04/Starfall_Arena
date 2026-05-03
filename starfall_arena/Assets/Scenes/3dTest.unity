@@ -7286,6 +7286,10 @@ PrefabInstance:
       propertyPath: invasionWaveManager
       value: 
       objectReference: {fileID: 1344907451}
+    - target: {fileID: 4360395891751302856, guid: e7ebcd4aca27e82408e6befe8f71659a, type: 3}
+      propertyPath: previewMenacePercent
+      value: 100
+      objectReference: {fileID: 0}
     - target: {fileID: 6862803107540431715, guid: e7ebcd4aca27e82408e6befe8f71659a, type: 3}
       propertyPath: GlobalObjectIdHash
       value: 1952940603
