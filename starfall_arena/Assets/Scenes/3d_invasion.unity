@@ -9952,9 +9952,10 @@ MonoBehaviour:
     showInInvasion: 1
     requireInvasionScene: 1
     maxDistance: 0
+    offscreenScaleRange: {x: 0.3, y: 0.1}
   distance:
     awarenessRange: 900
-    closeHideDistance: 20
+    closeHideDistance: 40
     bracketMaxDistance: 500
     thresholdHysteresis: 8
   screenClamp:

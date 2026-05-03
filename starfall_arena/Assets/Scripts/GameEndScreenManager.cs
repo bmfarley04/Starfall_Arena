@@ -279,6 +279,11 @@ public class GameEndScreenManager : MonoBehaviour
         float accuracy,
         string finalRecordOverride = null)
     {
+        if (!EnsurePresentationHostActive())
+        {
+            return;
+        }
+
         // Stop any existing animation
         if (currentAnimation != null)
         {
@@ -351,6 +356,46 @@ public class GameEndScreenManager : MonoBehaviour
 
         // Start spawn animation
         currentAnimation = StartCoroutine(SpawnAnimation());
+    }
+
+    private bool EnsurePresentationHostActive()
+    {
+        if (!enabled)
+        {
+            enabled = true;
+        }
+
+        if (gameObject.activeInHierarchy)
+        {
+            return true;
+        }
+
+        // Unity cannot start coroutines from an inactive host. The end screen may
+        // be kept under a disabled UI container, so activate the host path first.
+        Stack<Transform> inactiveParents = new Stack<Transform>();
+        Transform current = transform;
+        while (current != null)
+        {
+            if (!current.gameObject.activeSelf)
+            {
+                inactiveParents.Push(current);
+            }
+
+            current = current.parent;
+        }
+
+        while (inactiveParents.Count > 0)
+        {
+            inactiveParents.Pop().gameObject.SetActive(true);
+        }
+
+        if (!gameObject.activeInHierarchy)
+        {
+            Debug.LogError("[GameEndScreenManager] Cannot show the game-end screen because the manager is still inactive in hierarchy after activating its host path.", this);
+            return false;
+        }
+
+        return true;
     }
 
     /// <summary>

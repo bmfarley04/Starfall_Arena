@@ -173,11 +173,18 @@ public class TargetAwarenessWidget3D : MonoBehaviour
         bool showTeammateBracket = presentation.IsTeammateTarget && presentation.State == TargetAwarenessVisibility3D.Bracket;
         bool showNormalIndicatorVisual = showIndicator && !presentation.IsBossTarget && !presentation.IsTeammateTarget;
         bool showBracket = presentation.State == TargetAwarenessVisibility3D.Bracket && !presentation.IsBossTarget && !presentation.IsTeammateTarget;
+        bool normalUsesIndicatorGroup = IsSameOrDescendant(normalIndicatorVisualGroup, indicatorGroup);
+        bool bossUsesIndicatorGroup = IsSameOrDescendant(bossIndicatorVisualGroup, indicatorGroup);
+        bool teammateUsesIndicatorGroup = IsSameOrDescendant(teammateIndicatorVisualGroup, indicatorGroup);
+        bool showIndicatorGroup = (showNormalIndicatorVisual && normalUsesIndicatorGroup)
+            || (showBossIndicator && bossUsesIndicatorGroup)
+            || (showTeammateIndicator && teammateUsesIndicatorGroup)
+            || (showIndicator && normalIndicatorVisualGroup == null && bossIndicatorVisualGroup == null && teammateIndicatorVisualGroup == null);
 
-        SetGroupAlpha(_indicatorCanvasGroup, showIndicator ? 1f : 0f, deltaTime);
-        SetGroupAlpha(_normalIndicatorVisualCanvasGroup, showNormalIndicatorVisual ? 1f : 0f, deltaTime);
-        SetGroupAlpha(_bossIndicatorVisualCanvasGroup, showBossIndicator ? 1f : 0f, deltaTime);
-        SetGroupAlpha(_teammateIndicatorVisualCanvasGroup, showTeammateIndicator ? 1f : 0f, deltaTime);
+        SetGroupAlpha(_indicatorCanvasGroup, showIndicatorGroup ? 1f : 0f, deltaTime);
+        SetGroupAlphaIfDistinct(_normalIndicatorVisualCanvasGroup, _indicatorCanvasGroup, showNormalIndicatorVisual ? 1f : 0f, deltaTime);
+        SetGroupAlphaIfDistinct(_bossIndicatorVisualCanvasGroup, _indicatorCanvasGroup, showBossIndicator ? 1f : 0f, deltaTime);
+        SetGroupAlphaIfDistinct(_teammateIndicatorVisualCanvasGroup, _indicatorCanvasGroup, showTeammateIndicator ? 1f : 0f, deltaTime);
         SetGroupAlpha(_bracketCanvasGroup, showBracket ? 1f : 0f, deltaTime);
         SetGroupAlpha(_teammateBracketCanvasGroup, showTeammateBracket ? 1f : 0f, deltaTime);
         SetGroupAlpha(_healthCanvasGroup, showBracket ? 1f : 0f, deltaTime);
@@ -197,6 +204,8 @@ public class TargetAwarenessWidget3D : MonoBehaviour
         }
 
         ApplyScale(indicatorGroup, _indicatorScale);
+        ApplyScaleIfDistinct(bossIndicatorVisualGroup, indicatorGroup, _indicatorScale);
+        ApplyScaleIfDistinct(teammateIndicatorVisualGroup, indicatorGroup, _indicatorScale);
         ApplyScale(bracketGroup, _bracketScale);
         ApplyScale(teammateBracketGroup, _bracketScale);
         ApplyScale(healthBarGroup, _barScale);
@@ -206,7 +215,7 @@ public class TargetAwarenessWidget3D : MonoBehaviour
         ApplyBracketBarOffsets(showBracket);
         ApplyAttackFlash(presentation.AttackPulse01);
         ApplyBossAttackPulse(presentation.IsBossTarget ? presentation.AttackPulse01 : 0f);
-        RotateIndicator(presentation.IndicatorDirection, presentation.RotateIndicator);
+        RotateIndicators(presentation.IndicatorDirection, presentation.RotateIndicator);
         RefreshBars(presentation.Health01, presentation.Shield01);
     }
 
@@ -238,16 +247,13 @@ public class TargetAwarenessWidget3D : MonoBehaviour
         _currentBracketSize = Vector2.zero;
     }
 
-    private void RotateIndicator(Vector2 direction, bool shouldRotate)
+    private void RotateIndicators(Vector2 direction, bool shouldRotate)
     {
-        if (indicatorGroup == null)
-        {
-            return;
-        }
-
+        Quaternion rotation;
         if (!shouldRotate)
         {
-            indicatorGroup.localRotation = Quaternion.Euler(0f, 0f, indicatorRotationOffset);
+            rotation = Quaternion.Euler(0f, 0f, indicatorRotationOffset);
+            ApplyIndicatorRotation(rotation);
             return;
         }
 
@@ -257,7 +263,15 @@ public class TargetAwarenessWidget3D : MonoBehaviour
         }
 
         float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
-        indicatorGroup.localRotation = Quaternion.Euler(0f, 0f, angle + indicatorRotationOffset);
+        rotation = Quaternion.Euler(0f, 0f, angle + indicatorRotationOffset);
+        ApplyIndicatorRotation(rotation);
+    }
+
+    private void ApplyIndicatorRotation(Quaternion rotation)
+    {
+        ApplyRotation(indicatorGroup, rotation);
+        ApplyRotationIfDistinct(bossIndicatorVisualGroup, indicatorGroup, rotation);
+        ApplyRotationIfDistinct(teammateIndicatorVisualGroup, indicatorGroup, rotation);
     }
 
     private void RefreshBars(float health01, float shield01)
@@ -441,6 +455,16 @@ public class TargetAwarenessWidget3D : MonoBehaviour
         group.interactable = false;
     }
 
+    private void SetGroupAlphaIfDistinct(CanvasGroup group, CanvasGroup sharedGroup, float targetAlpha, float deltaTime)
+    {
+        if (group == sharedGroup)
+        {
+            return;
+        }
+
+        SetGroupAlpha(group, targetAlpha, deltaTime);
+    }
+
     private static void SetGroupAlphaImmediate(CanvasGroup group, float alpha)
     {
         if (group == null)
@@ -477,6 +501,55 @@ public class TargetAwarenessWidget3D : MonoBehaviour
         {
             target.localScale = Vector3.one * scale;
         }
+    }
+
+    private static void ApplyScaleIfDistinct(RectTransform target, RectTransform sharedTarget, float scale)
+    {
+        if (target == sharedTarget)
+        {
+            return;
+        }
+
+        ApplyScale(target, scale);
+    }
+
+    private static void ApplyRotation(RectTransform target, Quaternion rotation)
+    {
+        if (target != null)
+        {
+            target.localRotation = rotation;
+        }
+    }
+
+    private static void ApplyRotationIfDistinct(RectTransform target, RectTransform sharedTarget, Quaternion rotation)
+    {
+        if (target == sharedTarget)
+        {
+            return;
+        }
+
+        ApplyRotation(target, rotation);
+    }
+
+    private static bool IsSameOrDescendant(Transform candidate, Transform possibleAncestor)
+    {
+        if (candidate == null || possibleAncestor == null)
+        {
+            return false;
+        }
+
+        Transform current = candidate;
+        while (current != null)
+        {
+            if (current == possibleAncestor)
+            {
+                return true;
+            }
+
+            current = current.parent;
+        }
+
+        return false;
     }
 
     private static float ExponentialLerp(float smoothing, float deltaTime)

@@ -123,6 +123,8 @@ public class TargetAwarenessHUD3D : PlayerHUDBindingTarget3D
         public bool requireInvasionScene;
         [Tooltip("Maximum distance for teammate tracking. Use 0 or less to keep the co-op teammate indicator available at any distance.")]
         public float maxDistance;
+        [Tooltip("Distance-based scale range for the teammate offscreen indicator. X is the near scale, Y is the far scale.")]
+        public Vector2 offscreenScaleRange;
     }
 
     [Header("References")]
@@ -147,7 +149,8 @@ public class TargetAwarenessHUD3D : PlayerHUDBindingTarget3D
     {
         showInInvasion = true,
         requireInvasionScene = true,
-        maxDistance = 0f
+        maxDistance = 0f,
+        offscreenScaleRange = new Vector2(0.55f, 0.38f)
     };
 
     [Header("Distance")]
@@ -362,7 +365,9 @@ public class TargetAwarenessHUD3D : PlayerHUDBindingTarget3D
             IndicatorDirection = runtime.LastIndicatorDirection.sqrMagnitude > 0.0001f ? runtime.LastIndicatorDirection : Vector2.up,
             Health01 = target.MaxHealth > 0f ? target.CurrentHealth / target.MaxHealth : 0f,
             Shield01 = target.MaxShield > 0f ? target.CurrentShield / target.MaxShield : 0f,
-            IndicatorScale = EvaluateScale(scale.indicatorScaleRange, targetDistance),
+            IndicatorScale = runtime.Role == TargetAwarenessRole3D.Teammate
+                ? EvaluateScale(teammateIndicator.offscreenScaleRange, targetDistance)
+                : EvaluateScale(scale.indicatorScaleRange, targetDistance),
             BracketScale = EvaluateScale(scale.bracketScaleRange, targetDistance),
             BarScale = EvaluateScale(scale.barScaleRange, targetDistance),
             BracketSize = ResolveFallbackBracketSize(),
