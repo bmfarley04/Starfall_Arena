@@ -270,6 +270,7 @@ public struct ProjectileFireRequest3D
     public float forwardOffset;
     public float verticalOffset;
     public bool canPierce;
+    public int maxPierceCount;
     public float pierceMultiplier;
     public bool appliesSlow;
     public float slowMultiplier;

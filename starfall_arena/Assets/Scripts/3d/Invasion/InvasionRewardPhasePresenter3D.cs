@@ -49,7 +49,7 @@ public class InvasionRewardPhasePresenter3D : MonoBehaviour
         CleanupRuntimeAugments();
     }
 
-    public void ShowOffers(int playerSlot, InvasionRewardTier3D rewardTier, IReadOnlyList<InvasionStatRewardDefinition3D> offers, Action<int> onSelected)
+    public void ShowOffers(int playerSlot, InvasionRewardTier3D rewardTier, IReadOnlyList<InvasionStatRewardDefinition3D> offers, float statBoostMultiplier, Action<int> onSelected)
     {
         if (augmentSelectManager == null)
         {
@@ -62,6 +62,7 @@ public class InvasionRewardPhasePresenter3D : MonoBehaviour
         _selectionCallback = onSelected;
         _selectionCommitted = false;
         _currentRewards.Clear();
+        List<int> visualTiers = new List<int>(offers.Count);
 
         for (int i = 0; i < offers.Count; i++)
         {
@@ -75,9 +76,10 @@ public class InvasionRewardPhasePresenter3D : MonoBehaviour
             Augment displayAugment = ScriptableObject.CreateInstance<Augment>();
             displayAugment.name = $"RuntimeInvasionReward_{reward.RewardId}";
             displayAugment.augmentName = reward.DisplayName;
-            displayAugment.description = reward.Description;
+            displayAugment.description = reward.BuildDescription(rewardTier, statBoostMultiplier);
             displayAugment.icon = reward.Icon;
             _runtimeAugments.Add(displayAugment);
+            visualTiers.Add(ResolveVisualTier(reward.ResolveVisualTier(rewardTier)));
         }
 
         if (_runtimeAugments.Count == 0)
@@ -87,7 +89,7 @@ public class InvasionRewardPhasePresenter3D : MonoBehaviour
         }
 
         EnsurePresentationHierarchyVisible();
-        augmentSelectManager.ShowNetworkAugmentSelect(playerSlot, ResolveVisualTier(rewardTier), _runtimeAugments);
+        augmentSelectManager.ShowNetworkAugmentSelect(playerSlot, ResolveVisualTier(rewardTier), _runtimeAugments, visualTiers);
         Canvas.ForceUpdateCanvases();
 
         if (_countdownCoroutine != null)

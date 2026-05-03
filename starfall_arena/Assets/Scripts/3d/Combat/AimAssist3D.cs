@@ -74,6 +74,9 @@ public class AimAssist3D : MonoBehaviour
     };
 
     private const string ControllerScheme = "controller";
+    private float _extraAssistConeAngle;
+    private float _extraMaxAssistRange;
+    private float _extraMaxAngularCorrection;
 
     private struct TargetCandidate
     {
@@ -97,6 +100,13 @@ public class AimAssist3D : MonoBehaviour
     public void SetAimCamera(Camera camera)
     {
         aimCamera = camera;
+    }
+
+    public void SetRewardTuningBonus(float assistConeAngleBonus, float maxAssistRangeBonus, float maxAngularCorrectionBonus)
+    {
+        _extraAssistConeAngle = Mathf.Max(0f, assistConeAngleBonus);
+        _extraMaxAssistRange = Mathf.Max(0f, maxAssistRangeBonus);
+        _extraMaxAngularCorrection = Mathf.Max(0f, maxAngularCorrectionBonus);
     }
 
     public bool IsControllerAimAssistActive()
@@ -142,7 +152,7 @@ public class AimAssist3D : MonoBehaviour
 
         Vector3 targetDirection = toTarget.normalized;
         float angleToTarget = Vector3.Angle(assistedDirection, targetDirection);
-        float maxCorrection = Mathf.Max(0f, GetActivePreset().maxAngularCorrection);
+        float maxCorrection = Mathf.Max(0f, GetActivePreset().maxAngularCorrection + _extraMaxAngularCorrection);
         if (maxCorrection <= 0.001f)
         {
             return false;
@@ -184,8 +194,8 @@ public class AimAssist3D : MonoBehaviour
         }
 
         AimAssistPresetTuning3D preset = GetActivePreset();
-        float maxRange = Mathf.Max(1f, preset.maxAssistRange);
-        float maxAngle = Mathf.Max(0f, preset.assistConeAngle);
+        float maxRange = Mathf.Max(1f, preset.maxAssistRange + _extraMaxAssistRange);
+        float maxAngle = Mathf.Max(0f, preset.assistConeAngle + _extraAssistConeAngle);
         float sphereRadius = Mathf.Max(minimumDetectionRadius, Mathf.Tan(maxAngle * Mathf.Deg2Rad) * maxRange);
         RaycastHit[] hits = Physics.SphereCastAll(
             origin,

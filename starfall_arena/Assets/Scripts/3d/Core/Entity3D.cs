@@ -90,7 +90,7 @@ public abstract class Entity3D : MonoBehaviour
         else
         {
             currentHealth = Mathf.Clamp(currentHealth, 0f, maxHealth);
-            currentShield = Mathf.Clamp(currentShield, 0f, maxShield);
+            currentShield = Mathf.Clamp(currentShield, 0f, GetCurrentShieldLimit());
         }
 
         OnHealthChanged();
@@ -100,7 +100,7 @@ public abstract class Entity3D : MonoBehaviour
     public void SetCurrentDurability(float health, float shield)
     {
         currentHealth = Mathf.Clamp(health, 0f, maxHealth);
-        currentShield = Mathf.Clamp(shield, 0f, maxShield);
+        currentShield = Mathf.Clamp(shield, 0f, GetCurrentShieldLimit());
         OnHealthChanged();
         OnShieldChanged();
     }
@@ -275,6 +275,7 @@ public abstract class Entity3D : MonoBehaviour
 
     public virtual void TakeDamage(float damage, Vector3 hitPoint, Entity3D attacker = null, DamageSource3D source = DamageSource3D.Projectile, int accuracyAttackId = PlayerCombatStats3D.InvalidAttackId)
     {
+        damage = ModifyIncomingDamage(damage, attacker, source, accuracyAttackId);
         if (damage <= 0f || currentHealth <= 0f || _isDead)
         {
             return;
@@ -334,6 +335,7 @@ public abstract class Entity3D : MonoBehaviour
 
     public virtual void TakeDirectDamage(float damage, Vector3 hitPoint, Entity3D attacker = null, int accuracyAttackId = PlayerCombatStats3D.InvalidAttackId)
     {
+        damage = ModifyIncomingDamage(damage, attacker, DamageSource3D.Direct, accuracyAttackId);
         if (damage <= 0f || currentHealth <= 0f || _isDead)
         {
             return;
@@ -471,7 +473,7 @@ public abstract class Entity3D : MonoBehaviour
         float previousHealth = currentHealth;
         float previousShield = currentShield;
         currentHealth = Mathf.Clamp(state.Health, 0f, maxHealth);
-        currentShield = Mathf.Clamp(state.Shield, 0f, maxShield);
+        currentShield = Mathf.Clamp(state.Shield, 0f, GetCurrentShieldLimit());
 
         if (!Mathf.Approximately(previousHealth, currentHealth))
         {
@@ -541,6 +543,21 @@ public abstract class Entity3D : MonoBehaviour
         float signedRollDelta = Vector3.SignedAngle(currentUp.normalized, targetUp.normalized, forward);
         float clampedRollDelta = Mathf.Clamp(signedRollDelta, -maxDegreesDelta, maxDegreesDelta);
         return Quaternion.AngleAxis(clampedRollDelta, forward) * currentRotation;
+    }
+
+    public virtual float ModifyOutgoingDamage(float damage, Entity3D target, DamageSource3D source, int accuracyAttackId)
+    {
+        return Mathf.Max(0f, damage);
+    }
+
+    protected virtual float ModifyIncomingDamage(float damage, Entity3D attacker, DamageSource3D source, int accuracyAttackId)
+    {
+        return Mathf.Max(0f, damage);
+    }
+
+    protected virtual float GetCurrentShieldLimit()
+    {
+        return maxShield;
     }
 
     private void RecordDamageStats(Entity3D attacker, float previousHealth, float previousShield, DamageSource3D source, int accuracyAttackId)

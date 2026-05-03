@@ -10,20 +10,20 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: cbf9338473b8a064fb6301732094a68d, type: 3}
-  m_Name: ThrustersUp
+  m_Name: FlowState
   m_EditorClassIdentifier: Assembly-CSharp::InvasionStatRewardDefinition3D
-  rewardId: stat_ship_handling
-  category: 0
-  displayName: Thruster Harmonizer
-  description: Improve ship speed, acceleration, and turn response.
+  rewardId: perk_flow_state
+  category: 1
+  displayName: Flow State
+  description: Damage ramps up while avoiding damage.
   generateDescriptionFromPayload: 1
-  icon: {fileID: 21300000, guid: 0f1176432e710584e8f9764bb00c2edd, type: 3}
-  eligibleTiers: 7
+  icon: {fileID: 0}
+  eligibleTiers: 4
   visualStyleOverride: 1
   useVisualStyleOverride: 0
-  offerWeight: 1
-  repeatable: 1
-  eligibility: 0
+  offerWeight: 0.42
+  repeatable: 0
+  eligibility: 4
   commonPersistent:
     allWeaponDamagePercent: 0
     beamDamagePercent: 0
@@ -43,9 +43,9 @@ MonoBehaviour:
     shieldRegenRatePercent: 0
     incomingDamageReductionPercent: 0
     incomingDamageTakenPercent: 0
-    thrustAccelerationPercent: 0.08
-    maxSpeedPercent: 0.06
-    turnResponsePercent: 0.05
+    thrustAccelerationPercent: 0
+    maxSpeedPercent: 0
+    turnResponsePercent: 0
     flightAssistDampingPercent: 0
     flightAssistAlignmentPercent: 0
     extraDodgeInvulnerabilitySeconds: 0
@@ -87,9 +87,9 @@ MonoBehaviour:
     shieldRegenRatePercent: 0
     incomingDamageReductionPercent: 0
     incomingDamageTakenPercent: 0
-    thrustAccelerationPercent: 0.14
-    maxSpeedPercent: 0.1
-    turnResponsePercent: 0.09
+    thrustAccelerationPercent: 0
+    maxSpeedPercent: 0
+    turnResponsePercent: 0
     flightAssistDampingPercent: 0
     flightAssistAlignmentPercent: 0
     extraDodgeInvulnerabilitySeconds: 0
@@ -131,9 +131,9 @@ MonoBehaviour:
     shieldRegenRatePercent: 0
     incomingDamageReductionPercent: 0
     incomingDamageTakenPercent: 0
-    thrustAccelerationPercent: 0.22
-    maxSpeedPercent: 0.15
-    turnResponsePercent: 0.14
+    thrustAccelerationPercent: 0
+    maxSpeedPercent: 0
+    turnResponsePercent: 0
     flightAssistDampingPercent: 0
     flightAssistAlignmentPercent: 0
     extraDodgeInvulnerabilitySeconds: 0
@@ -145,9 +145,9 @@ MonoBehaviour:
     primaryWeaponPierceDamageMultiplier: 0
     restoreFullShieldOnBreakOncePerWave: 0
     shieldOverchargePercent: 0
-    noDamageRampDelaySeconds: 0
-    noDamageRampPercentPerSecond: 0
-    noDamageRampMaxPercent: 0
+    noDamageRampDelaySeconds: 4
+    noDamageRampPercentPerSecond: 0.03
+    noDamageRampMaxPercent: 0.4
     executionLotteryEnabled: 0
     executionLotteryChance: 0
     executionLotteryPerTargetCooldown: 0

@@ -110,6 +110,7 @@ public class Player3D : Entity3D
     public PlayerCameraRig3D PlayerCameraRig3D => playerCameraRig3D;
     public AimAssist3D AimAssist3D => aimAssist3D;
     public Transform WarningSphereAnchor => warningSphereAnchor;
+    public float InvasionRewardProjectileHitRadiusBonus => _rewardProjectileHitRadiusBonus;
 
     private AudioSource[] _audioSourcePool;
     private AudioSource _beamHitLoopSource;
@@ -121,6 +122,24 @@ public class Player3D : Entity3D
     private float _nextShieldRegenSyncTime = float.NegativeInfinity;
     private float _lastDodgeTime = float.NegativeInfinity;
     private float _dodgeInvulnerableUntil = float.NegativeInfinity;
+    private float _rewardExtraDodgeInvulnerabilitySeconds;
+    private float _rewardOutgoingDamagePercent;
+    private float _rewardIncomingDamageTakenPercent;
+    private float _rewardIncomingDamageReductionPercent;
+    private float _rewardShieldOverchargePercent;
+    private float _rewardProjectileHitRadiusBonus;
+    private bool _rewardPrimaryWeaponPierces;
+    private int _rewardPrimaryWeaponPierceCount;
+    private float _rewardPrimaryWeaponPierceDamageMultiplier = 1f;
+    private float _rewardNoDamageRampDelay;
+    private float _rewardNoDamageRampPercentPerSecond;
+    private float _rewardNoDamageRampMaxPercent;
+    private float _lastRewardDamageTakenTime = float.NegativeInfinity;
+    private bool _rewardExecutionLotteryEnabled;
+    private float _rewardExecutionLotteryChance;
+    private float _rewardExecutionLotteryPerTargetCooldown;
+    private bool _rewardShieldBreakRestoreEnabled;
+    private bool _rewardShieldBreakRestoreAvailable;
     private bool _anchorHeld;
 
     public bool IsAnchorActive => anchorConfig.enabled && _anchorHeld;
@@ -148,6 +167,74 @@ public class Player3D : Entity3D
         anchorConfig.enabled = core.anchorEnabled;
         anchorConfig.rotationMultiplier = Mathf.Max(0f, core.anchorRotationMultiplier);
         anchorConfig.thrustMultiplier = Mathf.Max(0f, core.anchorThrustMultiplier);
+    }
+
+    public void ApplyInvasionRewardRuntimeModifiers(
+        float extraDodgeInvulnerabilitySeconds,
+        float outgoingDamagePercent,
+        float incomingDamageTakenPercent,
+        float incomingDamageReductionPercent,
+        float abilityCooldownReductionPercent,
+        float shieldOverchargePercent,
+        float noDamageRampDelay,
+        float noDamageRampPercentPerSecond,
+        float noDamageRampMaxPercent,
+        float projectileHitRadiusBonus,
+        bool primaryWeaponPierces,
+        int primaryWeaponPierceCount,
+        float primaryWeaponPierceDamageMultiplier,
+        float aimAssistConeAngleBonus,
+        float aimAssistRangeBonus,
+        float aimAssistMaxCorrectionBonus,
+        bool executionLotteryEnabled,
+        float executionLotteryChance,
+        float executionLotteryPerTargetCooldown,
+        bool shieldBreakRestoreEnabled)
+    {
+        _rewardExtraDodgeInvulnerabilitySeconds = Mathf.Max(0f, extraDodgeInvulnerabilitySeconds);
+        _rewardOutgoingDamagePercent = Mathf.Max(-0.95f, outgoingDamagePercent);
+        _rewardIncomingDamageTakenPercent = Mathf.Max(-0.95f, incomingDamageTakenPercent);
+        _rewardIncomingDamageReductionPercent = Mathf.Clamp(incomingDamageReductionPercent, 0f, 0.85f);
+        _rewardShieldOverchargePercent = Mathf.Max(0f, shieldOverchargePercent);
+        _rewardNoDamageRampDelay = Mathf.Max(0f, noDamageRampDelay);
+        _rewardNoDamageRampPercentPerSecond = Mathf.Max(0f, noDamageRampPercentPerSecond);
+        _rewardNoDamageRampMaxPercent = Mathf.Max(0f, noDamageRampMaxPercent);
+        _rewardProjectileHitRadiusBonus = Mathf.Max(0f, projectileHitRadiusBonus);
+        _rewardPrimaryWeaponPierces = primaryWeaponPierces;
+        _rewardPrimaryWeaponPierceCount = Mathf.Max(0, primaryWeaponPierceCount);
+        _rewardPrimaryWeaponPierceDamageMultiplier = Mathf.Max(0f, primaryWeaponPierceDamageMultiplier);
+        aimAssist3D?.SetRewardTuningBonus(aimAssistConeAngleBonus, aimAssistRangeBonus, aimAssistMaxCorrectionBonus);
+        _rewardExecutionLotteryEnabled = executionLotteryEnabled;
+        _rewardExecutionLotteryChance = Mathf.Clamp01(executionLotteryChance);
+        _rewardExecutionLotteryPerTargetCooldown = Mathf.Max(0f, executionLotteryPerTargetCooldown);
+        _rewardShieldBreakRestoreEnabled = shieldBreakRestoreEnabled;
+
+        for (int i = 0; i < abilities.Length; i++)
+        {
+            abilities[i]?.SetExternalCooldownReduction(abilityCooldownReductionPercent);
+        }
+    }
+
+    public void ResetInvasionRewardWaveLimitedEffects()
+    {
+        _rewardShieldBreakRestoreAvailable = _rewardShieldBreakRestoreEnabled;
+    }
+
+    public void ConfigureInvasionRewardProjectileRequest(Weapon3D sourceWeapon, ref ProjectileFireRequest3D request)
+    {
+        if (!_rewardPrimaryWeaponPierces || _rewardPrimaryWeaponPierceCount <= 0 || sourceWeapon == null)
+        {
+            return;
+        }
+
+        if (weapons == null || weapons.Length == 0 || !ReferenceEquals(weapons[0], sourceWeapon))
+        {
+            return;
+        }
+
+        request.canPierce = true;
+        request.maxPierceCount = Mathf.Max(request.maxPierceCount, _rewardPrimaryWeaponPierceCount);
+        request.pierceMultiplier = Mathf.Max(request.pierceMultiplier, _rewardPrimaryWeaponPierceDamageMultiplier);
     }
 
     protected override void Awake()
@@ -299,12 +386,13 @@ public class Player3D : Entity3D
 
     public void BeginDodgeInvulnerability(float duration)
     {
-        if (duration <= 0f)
+        float resolvedDuration = duration + _rewardExtraDodgeInvulnerabilitySeconds;
+        if (resolvedDuration <= 0f)
         {
             return;
         }
 
-        _dodgeInvulnerableUntil = Mathf.Max(_dodgeInvulnerableUntil, Time.time + duration);
+        _dodgeInvulnerableUntil = Mathf.Max(_dodgeInvulnerableUntil, Time.time + resolvedDuration);
     }
 
     public void BeginDodgeCameraLag(float duration)
@@ -336,6 +424,7 @@ public class Player3D : Entity3D
         }
 
         _lastShieldHitTime = Time.time;
+        _lastRewardDamageTakenTime = Time.time;
         float previousShield = currentShield;
         float previousHealth = currentHealth;
 
@@ -344,6 +433,7 @@ public class Player3D : Entity3D
         float shieldDamageTaken = Mathf.Max(0f, previousShield - currentShield);
         float hullDamageTaken = Mathf.Max(0f, previousHealth - currentHealth);
         float totalDamageTaken = shieldDamageTaken + hullDamageTaken;
+        TryApplyRewardShieldBreakRestore(previousShield);
 
         if (totalDamageTaken <= 0f)
         {
@@ -490,6 +580,7 @@ public class Player3D : Entity3D
         }
 
         _lastShieldHitTime = Time.time;
+        _lastRewardDamageTakenTime = Time.time;
         float previousShield = currentShield;
         float previousHealth = currentHealth;
 
@@ -502,6 +593,8 @@ public class Player3D : Entity3D
         {
             playerScreenShake3D?.TriggerHitShake(totalDamageTaken, hullDamageTaken, DamageSource3D.Direct);
         }
+
+        TryApplyRewardShieldBreakRestore(previousShield);
     }
 
     public void UnbindHUD(PlayerHUDManager3D hud)
@@ -689,7 +782,8 @@ public class Player3D : Entity3D
 
     private void HandleShieldRegeneration(float deltaTime)
     {
-        if (currentShield >= maxShield || maxShield <= 0f || shieldRegen.regenRate <= 0f)
+        float shieldLimit = GetCurrentShieldLimit();
+        if (currentShield >= shieldLimit || shieldLimit <= 0f || shieldRegen.regenRate <= 0f)
         {
             shieldController?.SetRegeneration(false);
             return;
@@ -709,7 +803,7 @@ public class Player3D : Entity3D
         }
 
         float previousShield = currentShield;
-        currentShield = Mathf.Min(maxShield, currentShield + (shieldRegen.regenRate * deltaTime));
+        currentShield = Mathf.Min(shieldLimit, currentShield + (shieldRegen.regenRate * deltaTime));
 
         if (currentShield <= previousShield)
         {
@@ -723,7 +817,7 @@ public class Player3D : Entity3D
         if (NetTickUtil.IsActive && netCombat3D != null && netCombat3D.IsServer)
         {
             const float regenSyncInterval = 0.1f;
-            if (Time.time >= _nextShieldRegenSyncTime || Mathf.Approximately(currentShield, maxShield))
+            if (Time.time >= _nextShieldRegenSyncTime || Mathf.Approximately(currentShield, shieldLimit))
             {
                 bool isSlowed = IsSlowed;
                 netCombat3D.BroadcastCombatState(new NetCombatState3D
@@ -741,6 +835,91 @@ public class Player3D : Entity3D
                 _nextShieldRegenSyncTime = Time.time + regenSyncInterval;
             }
         }
+    }
+
+    public override float ModifyOutgoingDamage(float damage, Entity3D target, DamageSource3D source, int accuracyAttackId)
+    {
+        float modifiedDamage = base.ModifyOutgoingDamage(damage, target, source, accuracyAttackId);
+        if (modifiedDamage <= 0f)
+        {
+            return 0f;
+        }
+
+        modifiedDamage *= 1f + _rewardOutgoingDamagePercent + ResolveRewardNoDamageRampPercent();
+        if (ShouldRewardExecutionLotteryKill(target))
+        {
+            return Mathf.Max(modifiedDamage, target.MaxHealth + target.MaxShield);
+        }
+
+        return Mathf.Max(0f, modifiedDamage);
+    }
+
+    protected override float ModifyIncomingDamage(float damage, Entity3D attacker, DamageSource3D source, int accuracyAttackId)
+    {
+        float modifiedDamage = base.ModifyIncomingDamage(damage, attacker, source, accuracyAttackId);
+        modifiedDamage *= 1f + _rewardIncomingDamageTakenPercent;
+        modifiedDamage *= 1f - _rewardIncomingDamageReductionPercent;
+        return Mathf.Max(0f, modifiedDamage);
+    }
+
+    protected override float GetCurrentShieldLimit()
+    {
+        return maxShield * (1f + _rewardShieldOverchargePercent);
+    }
+
+    private float ResolveRewardNoDamageRampPercent()
+    {
+        if (_rewardNoDamageRampMaxPercent <= 0f || _rewardNoDamageRampPercentPerSecond <= 0f)
+        {
+            return 0f;
+        }
+
+        float timeSinceDamage = Time.time - _lastRewardDamageTakenTime;
+        if (timeSinceDamage <= _rewardNoDamageRampDelay)
+        {
+            return 0f;
+        }
+
+        return Mathf.Min(_rewardNoDamageRampMaxPercent, (timeSinceDamage - _rewardNoDamageRampDelay) * _rewardNoDamageRampPercentPerSecond);
+    }
+
+    private bool ShouldRewardExecutionLotteryKill(Entity3D target)
+    {
+        if (!_rewardExecutionLotteryEnabled || target == null || target.CurrentHealth <= 0f)
+        {
+            return false;
+        }
+
+        Enemy3D enemy = target as Enemy3D;
+        if (enemy == null || enemy.IsBossEnemy)
+        {
+            return false;
+        }
+
+        if (!enemy.CanRollRewardExecutionLottery(this, _rewardExecutionLotteryPerTargetCooldown))
+        {
+            return false;
+        }
+
+        return UnityEngine.Random.value < _rewardExecutionLotteryChance;
+    }
+
+    private void TryApplyRewardShieldBreakRestore(float previousShield)
+    {
+        if (!_rewardShieldBreakRestoreEnabled || !_rewardShieldBreakRestoreAvailable)
+        {
+            return;
+        }
+
+        if (previousShield <= 0f || currentShield > 0f || currentHealth <= 0f)
+        {
+            return;
+        }
+
+        _rewardShieldBreakRestoreAvailable = false;
+        currentShield = GetCurrentShieldLimit();
+        OnShieldChanged();
+        shieldController?.OnHit(transform.position);
     }
 
     private bool CanUseGenericDodge(out string rejectionReason)

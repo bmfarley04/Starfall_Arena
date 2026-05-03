@@ -215,6 +215,7 @@ namespace StarfallArena.UI
         private int currentTier;
         private int currentPickingPlayer; // 1 or 2
         private List<Augment> selectedAugments = new List<Augment>(3);
+        private List<int> selectedAugmentVisualTiers;
         private bool isShowing = false;
         private Coroutine _countdownCoroutine;
 
@@ -246,6 +247,35 @@ namespace StarfallArena.UI
         private bool _stickNavigated = false;
         private bool _useExternalTimer = false;
         private int _selectedCardIndex = -1;
+        private CardVisualSnapshot[][] _originalCardVisuals;
+
+        private struct ImageVisualSnapshot
+        {
+            public bool captured;
+            public Color color;
+            public Material material;
+            public Image.Type type;
+            public bool preserveAspect;
+        }
+
+        private struct TextVisualSnapshot
+        {
+            public bool captured;
+            public Color color;
+            public Material material;
+            public TMP_FontAsset font;
+            public FontStyles fontStyle;
+            public TextAlignmentOptions alignment;
+        }
+
+        private struct CardVisualSnapshot
+        {
+            public ImageVisualSnapshot container;
+            public ImageVisualSnapshot innerContainer;
+            public ImageVisualSnapshot icon;
+            public TextVisualSnapshot name;
+            public TextVisualSnapshot description;
+        }
 
         // Selection effect: cached original materials per card so we can restore
         private Dictionary<Image, Material> _originalContainerMaterials = new Dictionary<Image, Material>();
@@ -698,6 +728,7 @@ namespace StarfallArena.UI
 
             // Pick randomly from tier
             selectedAugments = SelectRandomAugments(currentTier);
+            selectedAugmentVisualTiers = null;
 
             // Populate UI with selected augments
             PopulateUI(currentTier, selectedAugments);
@@ -724,6 +755,11 @@ namespace StarfallArena.UI
         }
 
         public void ShowNetworkAugmentSelect(int pickingPlayer, int tier, List<Augment> augments)
+        {
+            ShowNetworkAugmentSelect(pickingPlayer, tier, augments, null);
+        }
+
+        public void ShowNetworkAugmentSelect(int pickingPlayer, int tier, List<Augment> augments, IReadOnlyList<int> perCardVisualTiers)
         {
             if (augments == null || augments.Count == 0)
             {
@@ -752,6 +788,7 @@ namespace StarfallArena.UI
             DisableUIModuleNavigation();
 
             selectedAugments = new List<Augment>(augments);
+            selectedAugmentVisualTiers = perCardVisualTiers != null ? new List<int>(perCardVisualTiers) : null;
             PopulateUI(currentTier, selectedAugments);
             UpdateDisplayedOptionCount(currentTier, selectedAugments.Count);
             UpdatePlayerChoiceUI(pickingPlayer);
@@ -947,6 +984,7 @@ namespace StarfallArena.UI
             _useExternalTimer = false;
             _selectedCardIndex = -1;
             _stickNavigated = false;
+            selectedAugmentVisualTiers = null;
 
             // Re-enable the UI module navigation for other screens
             EnableUIModuleNavigation();
@@ -1375,8 +1413,138 @@ namespace StarfallArena.UI
                     break;
             }
 
+            ApplyPerCardVisualStyles(tier, augments.Count);
+
             // Re-enable all card buttons (may have been disabled from previous pick)
             ReEnableCardButtons(tier);
+        }
+
+        private void ApplyPerCardVisualStyles(int baseTier, int cardCount)
+        {
+            EnsureOriginalCardVisualsCaptured();
+            for (int i = 0; i < cardCount; i++)
+            {
+                int visualTier = selectedAugmentVisualTiers != null && i < selectedAugmentVisualTiers.Count
+                    ? Mathf.Clamp(selectedAugmentVisualTiers[i], 1, 4)
+                    : baseTier;
+                int sourceIndex = visualTier == 4 ? 0 : i;
+                ApplyCardVisualSnapshot(baseTier, i, GetOriginalCardVisualSnapshot(visualTier, sourceIndex));
+            }
+        }
+
+        private void EnsureOriginalCardVisualsCaptured()
+        {
+            if (_originalCardVisuals != null)
+            {
+                return;
+            }
+
+            _originalCardVisuals = new CardVisualSnapshot[5][];
+            for (int tier = 1; tier <= 4; tier++)
+            {
+                int count = tier == 4 ? 1 : 3;
+                _originalCardVisuals[tier] = new CardVisualSnapshot[count];
+                for (int i = 0; i < count; i++)
+                {
+                    _originalCardVisuals[tier][i] = CaptureCardVisualSnapshot(tier, i);
+                }
+            }
+        }
+
+        private CardVisualSnapshot GetOriginalCardVisualSnapshot(int tier, int index)
+        {
+            EnsureOriginalCardVisualsCaptured();
+            if (tier < 1 || tier >= _originalCardVisuals.Length || _originalCardVisuals[tier] == null || _originalCardVisuals[tier].Length == 0)
+            {
+                tier = 1;
+                index = 0;
+            }
+
+            index = Mathf.Clamp(index, 0, _originalCardVisuals[tier].Length - 1);
+            return _originalCardVisuals[tier][index];
+        }
+
+        private CardVisualSnapshot CaptureCardVisualSnapshot(int tier, int index)
+        {
+            return new CardVisualSnapshot
+            {
+                container = CaptureImageVisual(GetContainerForCard(tier, index)),
+                innerContainer = CaptureImageVisual(GetInnerContainerForCard(tier, index)),
+                icon = CaptureImageVisual(GetIconForCard(tier, index)),
+                name = CaptureTextVisual(GetNameForCard(tier, index)),
+                description = CaptureTextVisual(GetDescriptionForCard(tier, index))
+            };
+        }
+
+        private void ApplyCardVisualSnapshot(int tier, int index, CardVisualSnapshot snapshot)
+        {
+            ApplyImageVisual(GetContainerForCard(tier, index), snapshot.container);
+            ApplyImageVisual(GetInnerContainerForCard(tier, index), snapshot.innerContainer);
+            ApplyImageVisual(GetIconForCard(tier, index), snapshot.icon);
+            ApplyTextVisual(GetNameForCard(tier, index), snapshot.name);
+            ApplyTextVisual(GetDescriptionForCard(tier, index), snapshot.description);
+        }
+
+        private static ImageVisualSnapshot CaptureImageVisual(Image image)
+        {
+            if (image == null)
+            {
+                return default;
+            }
+
+            return new ImageVisualSnapshot
+            {
+                captured = true,
+                color = image.color,
+                material = image.material,
+                type = image.type,
+                preserveAspect = image.preserveAspect
+            };
+        }
+
+        private static void ApplyImageVisual(Image image, ImageVisualSnapshot snapshot)
+        {
+            if (image == null || !snapshot.captured)
+            {
+                return;
+            }
+
+            image.color = snapshot.color;
+            image.material = snapshot.material;
+            image.type = snapshot.type;
+            image.preserveAspect = snapshot.preserveAspect;
+        }
+
+        private static TextVisualSnapshot CaptureTextVisual(TextMeshProUGUI text)
+        {
+            if (text == null)
+            {
+                return default;
+            }
+
+            return new TextVisualSnapshot
+            {
+                captured = true,
+                color = text.color,
+                material = text.fontSharedMaterial,
+                font = text.font,
+                fontStyle = text.fontStyle,
+                alignment = text.alignment
+            };
+        }
+
+        private static void ApplyTextVisual(TextMeshProUGUI text, TextVisualSnapshot snapshot)
+        {
+            if (text == null || !snapshot.captured)
+            {
+                return;
+            }
+
+            text.color = snapshot.color;
+            text.fontSharedMaterial = snapshot.material;
+            text.font = snapshot.font;
+            text.fontStyle = snapshot.fontStyle;
+            text.alignment = snapshot.alignment;
         }
 
         private void SetOptionalUIElements(int tier, int choiceIndex, List<Augment> augments, Image icon, TextMeshProUGUI nameText, TextMeshProUGUI descriptionText)

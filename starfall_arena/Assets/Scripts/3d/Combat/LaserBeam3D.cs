@@ -251,6 +251,11 @@ public class LaserBeam3D : MonoBehaviour, IBeamRuntime3D, IBeamDirectionSource3D
                 if (CanApplyGameplay())
                 {
                     float damageThisFrame = _damagePerSecond * Time.deltaTime;
+                    if (_shooter != null)
+                    {
+                        damageThisFrame = _shooter.ModifyOutgoingDamage(damageThisFrame, damageable, DamageSource3D.Beam, _accuracyAttackId);
+                    }
+
                     damageable.TakeDamage(damageThisFrame, hit.point, _shooter, DamageSource3D.Beam, _accuracyAttackId);
 
                     Rigidbody targetRb = hit.collider.attachedRigidbody;

@@ -9,6 +9,7 @@ public class Ability3D : MonoBehaviour
     protected bool isDisabledByOtherAbility = false;
     [HideInInspector] public bool isLocked = false;
 
+    private float _externalCooldownReductionPercent;
     private float _lastAvailabilityChangedReadyRatio = float.NaN;
     private bool _lastAvailabilityChangedOnCooldown;
     private bool _lastAvailabilityChangedLocked;
@@ -17,7 +18,7 @@ public class Ability3D : MonoBehaviour
     public event Action<Ability3D> AvailabilityChanged;
 
     public float CooldownRemaining => Mathf.Max(0f, GetCooldownReadyTime() - Time.time);
-    public float CooldownDuration => Mathf.Max(0f, GetCooldownDuration());
+    public float CooldownDuration => GetModifiedCooldownDuration();
     public float CooldownReadyRatio => GetCooldownReadyRatio();
     public bool UsesCooldownAvailability => !IsResourceBased();
 
@@ -128,7 +129,7 @@ public class Ability3D : MonoBehaviour
 
     public virtual float GetHUDFillRatio()
     {
-        float cooldown = GetCooldownDuration();
+        float cooldown = GetModifiedCooldownDuration();
         if (cooldown <= 0f) return 0f;
         float elapsed = Time.time - lastUsedAbility;
         if (elapsed >= cooldown) return 0f;
@@ -142,13 +143,19 @@ public class Ability3D : MonoBehaviour
 
     public virtual bool IsOnCooldown()
     {
-        float cooldown = GetCooldownDuration();
+        float cooldown = GetModifiedCooldownDuration();
         return cooldown > 0f && Time.time < lastUsedAbility + cooldown;
     }
 
     protected virtual float GetCooldownDuration()
     {
         return 0f;
+    }
+
+    public void SetExternalCooldownReduction(float cooldownReductionPercent)
+    {
+        _externalCooldownReductionPercent = Mathf.Clamp(cooldownReductionPercent, 0f, 0.85f);
+        RaiseAvailabilityChangedIfNeeded(force: true);
     }
 
     protected virtual float GetActiveDuration()
@@ -191,7 +198,12 @@ public class Ability3D : MonoBehaviour
 
     protected float GetCooldownReadyTime()
     {
-        return lastUsedAbility + GetCooldownDuration();
+        return lastUsedAbility + GetModifiedCooldownDuration();
+    }
+
+    private float GetModifiedCooldownDuration()
+    {
+        return Mathf.Max(0f, GetCooldownDuration() * (1f - _externalCooldownReductionPercent));
     }
 
     private float GetCooldownReadyRatio()

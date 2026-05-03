@@ -119,6 +119,7 @@ public struct NetProjectileFireRequest3D : INetworkSerializable
     public float RecoilForce;
     public bool ApplyRecoil;
     public bool CanPierce;
+    public int MaxPierceCount;
     public float PierceMultiplier;
     public bool AppliesSlow;
     public float SlowMultiplier;
@@ -154,6 +155,7 @@ public struct NetProjectileFireRequest3D : INetworkSerializable
         serializer.SerializeValue(ref RecoilForce);
         serializer.SerializeValue(ref ApplyRecoil);
         serializer.SerializeValue(ref CanPierce);
+        serializer.SerializeValue(ref MaxPierceCount);
         serializer.SerializeValue(ref PierceMultiplier);
         serializer.SerializeValue(ref AppliesSlow);
         serializer.SerializeValue(ref SlowMultiplier);

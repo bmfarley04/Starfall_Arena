@@ -12,73 +12,191 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cbf9338473b8a064fb6301732094a68d, type: 3}
   m_Name: FieldRepair
   m_EditorClassIdentifier: Assembly-CSharp::InvasionStatRewardDefinition3D
-  rewardId: field_repair
+  rewardId: bonus_field_repair
+  category: 2
   displayName: Field Repair
-  description: Repair missing hull and refill your shield.
+  description: Restore all missing hull.
+  generateDescriptionFromPayload: 1
   icon: {fileID: 21300000, guid: 4c3feb516dea6774d8c300e8267d7f45, type: 3}
-  offerWeight: 0.75
+  eligibleTiers: 1
+  visualStyleOverride: 1
+  useVisualStyleOverride: 0
+  offerWeight: 0.7
   repeatable: 1
   eligibility: 0
   commonPersistent:
     allWeaponDamagePercent: 0
+    beamDamagePercent: 0
     projectileCooldownReductionPercent: 0
+    projectileEnergyCostReductionPercent: 0
     projectileSpeedPercent: 0
     projectileLifetimePercent: 0
-    beamDamagePercent: 0
+    projectileHitRadiusBonus: 0
     beamCapacityPercent: 0
     beamRegenPercent: 0
+    abilityCooldownReductionPercent: 0
+    maxHealthPercent: 0
+    maxShieldPercent: 0
     flatMaxHealth: 0
     flatMaxShield: 0
     shieldRegenDelayReductionPercent: 0
     shieldRegenRatePercent: 0
+    incomingDamageReductionPercent: 0
+    incomingDamageTakenPercent: 0
     thrustAccelerationPercent: 0
     maxSpeedPercent: 0
     turnResponsePercent: 0
     flightAssistDampingPercent: 0
     flightAssistAlignmentPercent: 0
+    extraDodgeInvulnerabilitySeconds: 0
+    aimAssistConeAngleBonus: 0
+    aimAssistMaxCorrectionBonus: 0
+    aimAssistRangeBonus: 0
+    primaryWeaponPierces: 0
+    primaryWeaponPierceCount: 0
+    primaryWeaponPierceDamageMultiplier: 0
+    restoreFullShieldOnBreakOncePerWave: 0
+    shieldOverchargePercent: 0
+    noDamageRampDelaySeconds: 0
+    noDamageRampPercentPerSecond: 0
+    noDamageRampMaxPercent: 0
+    executionLotteryEnabled: 0
+    executionLotteryChance: 0
+    executionLotteryPerTargetCooldown: 0
+    futureStatBoostMultiplierBonus: 0
   commonInstant:
-    repairMissingHullFraction: 0.25
-    refillShieldToFull: 1
+    repairMissingHullFraction: 1
+    refillShieldToFull: 0
     grantExtraLife: 0
   epicPersistent:
     allWeaponDamagePercent: 0
+    beamDamagePercent: 0
     projectileCooldownReductionPercent: 0
+    projectileEnergyCostReductionPercent: 0
     projectileSpeedPercent: 0
     projectileLifetimePercent: 0
-    beamDamagePercent: 0
+    projectileHitRadiusBonus: 0
     beamCapacityPercent: 0
     beamRegenPercent: 0
+    abilityCooldownReductionPercent: 0
+    maxHealthPercent: 0
+    maxShieldPercent: 0
     flatMaxHealth: 0
     flatMaxShield: 0
     shieldRegenDelayReductionPercent: 0
     shieldRegenRatePercent: 0
+    incomingDamageReductionPercent: 0
+    incomingDamageTakenPercent: 0
     thrustAccelerationPercent: 0
     maxSpeedPercent: 0
     turnResponsePercent: 0
     flightAssistDampingPercent: 0
     flightAssistAlignmentPercent: 0
+    extraDodgeInvulnerabilitySeconds: 0
+    aimAssistConeAngleBonus: 0
+    aimAssistMaxCorrectionBonus: 0
+    aimAssistRangeBonus: 0
+    primaryWeaponPierces: 0
+    primaryWeaponPierceCount: 0
+    primaryWeaponPierceDamageMultiplier: 0
+    restoreFullShieldOnBreakOncePerWave: 0
+    shieldOverchargePercent: 0
+    noDamageRampDelaySeconds: 0
+    noDamageRampPercentPerSecond: 0
+    noDamageRampMaxPercent: 0
+    executionLotteryEnabled: 0
+    executionLotteryChance: 0
+    executionLotteryPerTargetCooldown: 0
+    futureStatBoostMultiplierBonus: 0
   epicInstant:
-    repairMissingHullFraction: 0.45
-    refillShieldToFull: 1
+    repairMissingHullFraction: 0
+    refillShieldToFull: 0
     grantExtraLife: 0
   highPersistent:
     allWeaponDamagePercent: 0
+    beamDamagePercent: 0
     projectileCooldownReductionPercent: 0
+    projectileEnergyCostReductionPercent: 0
     projectileSpeedPercent: 0
     projectileLifetimePercent: 0
-    beamDamagePercent: 0
+    projectileHitRadiusBonus: 0
     beamCapacityPercent: 0
     beamRegenPercent: 0
+    abilityCooldownReductionPercent: 0
+    maxHealthPercent: 0
+    maxShieldPercent: 0
     flatMaxHealth: 0
     flatMaxShield: 0
     shieldRegenDelayReductionPercent: 0
     shieldRegenRatePercent: 0
+    incomingDamageReductionPercent: 0
+    incomingDamageTakenPercent: 0
     thrustAccelerationPercent: 0
     maxSpeedPercent: 0
     turnResponsePercent: 0
     flightAssistDampingPercent: 0
     flightAssistAlignmentPercent: 0
+    extraDodgeInvulnerabilitySeconds: 0
+    aimAssistConeAngleBonus: 0
+    aimAssistMaxCorrectionBonus: 0
+    aimAssistRangeBonus: 0
+    primaryWeaponPierces: 0
+    primaryWeaponPierceCount: 0
+    primaryWeaponPierceDamageMultiplier: 0
+    restoreFullShieldOnBreakOncePerWave: 0
+    shieldOverchargePercent: 0
+    noDamageRampDelaySeconds: 0
+    noDamageRampPercentPerSecond: 0
+    noDamageRampMaxPercent: 0
+    executionLotteryEnabled: 0
+    executionLotteryChance: 0
+    executionLotteryPerTargetCooldown: 0
+    futureStatBoostMultiplierBonus: 0
   highInstant:
-    repairMissingHullFraction: 0.65
-    refillShieldToFull: 1
+    repairMissingHullFraction: 0
+    refillShieldToFull: 0
+    grantExtraLife: 0
+  tier4Persistent:
+    allWeaponDamagePercent: 0
+    beamDamagePercent: 0
+    projectileCooldownReductionPercent: 0
+    projectileEnergyCostReductionPercent: 0
+    projectileSpeedPercent: 0
+    projectileLifetimePercent: 0
+    projectileHitRadiusBonus: 0
+    beamCapacityPercent: 0
+    beamRegenPercent: 0
+    abilityCooldownReductionPercent: 0
+    maxHealthPercent: 0
+    maxShieldPercent: 0
+    flatMaxHealth: 0
+    flatMaxShield: 0
+    shieldRegenDelayReductionPercent: 0
+    shieldRegenRatePercent: 0
+    incomingDamageReductionPercent: 0
+    incomingDamageTakenPercent: 0
+    thrustAccelerationPercent: 0
+    maxSpeedPercent: 0
+    turnResponsePercent: 0
+    flightAssistDampingPercent: 0
+    flightAssistAlignmentPercent: 0
+    extraDodgeInvulnerabilitySeconds: 0
+    aimAssistConeAngleBonus: 0
+    aimAssistMaxCorrectionBonus: 0
+    aimAssistRangeBonus: 0
+    primaryWeaponPierces: 0
+    primaryWeaponPierceCount: 0
+    primaryWeaponPierceDamageMultiplier: 0
+    restoreFullShieldOnBreakOncePerWave: 0
+    shieldOverchargePercent: 0
+    noDamageRampDelaySeconds: 0
+    noDamageRampPercentPerSecond: 0
+    noDamageRampMaxPercent: 0
+    executionLotteryEnabled: 0
+    executionLotteryChance: 0
+    executionLotteryPerTargetCooldown: 0
+    futureStatBoostMultiplierBonus: 0
+  tier4Instant:
+    repairMissingHullFraction: 0
+    refillShieldToFull: 0
     grantExtraLife: 0

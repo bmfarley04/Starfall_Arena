@@ -441,7 +441,7 @@ public abstract class Weapon3D : MonoBehaviour, IReticleSpinSource3D
 
     protected ProjectileFireRequest3D BuildDefaultFireRequest(ProjectileWeaponConfig3D weaponConfig)
     {
-        return new ProjectileFireRequest3D
+        ProjectileFireRequest3D request = new ProjectileFireRequest3D
         {
             projectilePrefab = weaponConfig.projectilePrefab,
             muzzles = weaponConfig.muzzles,
@@ -458,6 +458,13 @@ public abstract class Weapon3D : MonoBehaviour, IReticleSpinSource3D
             projectileScaleMultiplier = 1f,
             accuracyAttackIdOverride = PlayerCombatStats3D.InvalidAttackId
         };
+
+        if (owner is Player3D player)
+        {
+            player.ConfigureInvasionRewardProjectileRequest(this, ref request);
+        }
+
+        return request;
     }
 
     protected bool FireProjectilePattern(ProjectileFireRequest3D request, ProjectileWeaponConfig3D fallbackConfig, SoundEffect fireSound = null)
@@ -562,6 +569,7 @@ public abstract class Weapon3D : MonoBehaviour, IReticleSpinSource3D
                 RecoilForce = request.recoilForce,
                 ApplyRecoil = request.recoilForce > 0f,
                 CanPierce = request.canPierce,
+                MaxPierceCount = request.maxPierceCount,
                 PierceMultiplier = request.pierceMultiplier,
                 AppliesSlow = request.appliesSlow,
                 SlowMultiplier = request.slowMultiplier,
@@ -617,6 +625,10 @@ public abstract class Weapon3D : MonoBehaviour, IReticleSpinSource3D
             fire.ImpactForce,
             owner,
             fire.AccuracyAttackId);
+        if (owner is Player3D player)
+        {
+            projectile.SetHitscanRadiusBonus(player.InvasionRewardProjectileHitRadiusBonus);
+        }
         ApplyProjectileScale(projectileObject.transform, fire.ProjectileScaleMultiplier);
         projectile.SetProjectileScaleMultiplier(fire.ProjectileScaleMultiplier);
 
@@ -627,10 +639,7 @@ public abstract class Weapon3D : MonoBehaviour, IReticleSpinSource3D
 
         if (fire.CanPierce)
         {
-            if (projectile is GigaBlastProjectile3D gigaBlastProjectile)
-            {
-                gigaBlastProjectile.EnablePiercing(fire.PierceMultiplier);
-            }
+            projectile.EnablePiercing(fire.MaxPierceCount, fire.PierceMultiplier);
         }
 
         if (fire.AppliesSlow)
@@ -711,15 +720,16 @@ public abstract class Weapon3D : MonoBehaviour, IReticleSpinSource3D
             owner,
             accuracyAttackId
         );
+        if (owner is Player3D player)
+        {
+            projectile.SetHitscanRadiusBonus(player.InvasionRewardProjectileHitRadiusBonus);
+        }
         ApplyProjectileScale(projectileObject.transform, request.projectileScaleMultiplier);
         projectile.SetProjectileScaleMultiplier(request.projectileScaleMultiplier);
 
         if (request.canPierce)
         {
-            if (projectile is GigaBlastProjectile3D gigaBlastProjectile)
-            {
-                gigaBlastProjectile.EnablePiercing(request.pierceMultiplier);
-            }
+            projectile.EnablePiercing(request.maxPierceCount, request.pierceMultiplier);
         }
 
         if (request.appliesSlow)

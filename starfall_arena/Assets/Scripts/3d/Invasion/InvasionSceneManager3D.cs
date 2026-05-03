@@ -79,6 +79,9 @@ public class InvasionSceneManager3D : MonoBehaviour
     [Tooltip("How many reward cards each player sees after a cleared wave.")]
     [Min(1)]
     [SerializeField] private int rewardsPerOffer = 3;
+    [Tooltip("Maximum CRAIZAN CONTRACT cards allowed in one reward offer. This should stay below Rewards Per Offer so every offer can include at least one normal stat boost.")]
+    [Min(0)]
+    [SerializeField] private int maxCraizanContractsPerOffer = 2;
     [Tooltip("Seconds to wait after a wave is fully cleared before the reward cards are shown. This happens before players are locked into the reward intermission.")]
     [Min(0f)]
     [SerializeField] private float rewardPresentationDelaySeconds = 0.75f;
@@ -819,9 +822,7 @@ public class InvasionSceneManager3D : MonoBehaviour
 
     private int GetRewardOfferCountForTier(InvasionRewardTier3D rewardTier)
     {
-        return rewardTier == InvasionRewardTier3D.Tier4
-            ? 1
-            : Mathf.Max(1, rewardsPerOffer);
+        return Mathf.Max(1, rewardsPerOffer);
     }
 
     private void BuildEffectiveRewardDefinitionList()
@@ -958,6 +959,8 @@ public class InvasionSceneManager3D : MonoBehaviour
 
     private IEnumerator PlayWaveIntroAuthoritative(int waveNumber)
     {
+        ResetRewardWaveLimitedEffectsForLivePlayers();
+
         if (_useNetworkSession && NetworkSessionData.Instance != null)
         {
             NetworkSessionData.Instance.BroadcastWaveStartServer(waveNumber);
@@ -1066,7 +1069,9 @@ public class InvasionSceneManager3D : MonoBehaviour
             return;
         }
 
-        rewardPhasePresenter.ShowOffers(playerSlot, _activeRewardPhaseTier, offers, choiceIndex =>
+        InvasionPlayerRewardState3D rewardState = _rewardStateBySlot[playerSlot];
+        float statBoostMultiplier = rewardState != null ? rewardState.FutureStatBoostMultiplier : 1f;
+        rewardPhasePresenter.ShowOffers(playerSlot, _activeRewardPhaseTier, offers, statBoostMultiplier, choiceIndex =>
         {
             HandleLocalRewardChoice(playerSlot, choiceIndex);
             onSelectionResolved?.Invoke();
@@ -1096,6 +1101,8 @@ public class InvasionSceneManager3D : MonoBehaviour
 
         List<int> eligibleRewardIndices = new List<int>(_effectiveRewardDefinitions.Count);
         List<float> weights = new List<float>(_effectiveRewardDefinitions.Count);
+        List<int> statRewardPoolIndices = new List<int>(_effectiveRewardDefinitions.Count);
+        List<float> statRewardWeights = new List<float>(_effectiveRewardDefinitions.Count);
         Player3D livePlayer = ResolveTrackedOrNetworkPlayer(playerSlot);
         InvasionPlayerRewardState3D rewardState = _rewardStateBySlot[playerSlot];
         if (livePlayer != null)
@@ -1119,15 +1126,103 @@ public class InvasionSceneManager3D : MonoBehaviour
 
             eligibleRewardIndices.Add(rewardIndex);
             weights.Add(weight);
+
+            if (reward.IsStatBoost)
+            {
+                statRewardPoolIndices.Add(rewardIndex);
+                statRewardWeights.Add(weight);
+            }
         }
 
         int offerCount = Mathf.Min(GetRewardOfferCountForTier(rewardTier), offers.Length);
-        for (int offerIndex = 0; offerIndex < offerCount && eligibleRewardIndices.Count > 0; offerIndex++)
+        int selectedCount = 0;
+        int contractCount = 0;
+        if (offerCount > 0 && statRewardPoolIndices.Count > 0)
         {
-            int chosenPoolIndex = PickWeightedRewardPoolIndex(weights);
-            offers[offerIndex] = eligibleRewardIndices[chosenPoolIndex];
+            int chosenStatIndex = statRewardPoolIndices[PickWeightedRewardPoolIndex(statRewardWeights)];
+            offers[selectedCount] = chosenStatIndex;
+            selectedCount++;
+            RemoveRewardFromPool(chosenStatIndex, eligibleRewardIndices, weights);
+        }
+
+        int maxContracts = Mathf.Min(Mathf.Max(0, maxCraizanContractsPerOffer), Mathf.Max(0, offerCount - 1));
+        while (selectedCount < offerCount && eligibleRewardIndices.Count > 0)
+        {
+            int chosenPoolIndex = PickWeightedEligibleRewardPoolIndex(eligibleRewardIndices, weights, contractCount, maxContracts);
+            if (chosenPoolIndex < 0)
+            {
+                break;
+            }
+
+            InvasionStatRewardDefinition3D chosenReward = ResolveRewardDefinition(eligibleRewardIndices[chosenPoolIndex]);
+            if (chosenReward != null && chosenReward.IsCraizanContract)
+            {
+                contractCount++;
+            }
+
+            offers[selectedCount] = eligibleRewardIndices[chosenPoolIndex];
+            selectedCount++;
             eligibleRewardIndices.RemoveAt(chosenPoolIndex);
             weights.RemoveAt(chosenPoolIndex);
+        }
+    }
+
+    private int PickWeightedEligibleRewardPoolIndex(List<int> rewardIndices, List<float> weights, int contractCount, int maxContracts)
+    {
+        if (contractCount < maxContracts)
+        {
+            return PickWeightedRewardPoolIndex(weights);
+        }
+
+        float totalWeight = 0f;
+        for (int i = 0; i < rewardIndices.Count; i++)
+        {
+            InvasionStatRewardDefinition3D reward = ResolveRewardDefinition(rewardIndices[i]);
+            if (reward == null || reward.IsCraizanContract)
+            {
+                continue;
+            }
+
+            totalWeight += Mathf.Max(0f, weights[i]);
+        }
+
+        if (totalWeight <= 0f)
+        {
+            return -1;
+        }
+
+        float roll = Random.value * totalWeight;
+        float cumulative = 0f;
+        for (int i = 0; i < rewardIndices.Count; i++)
+        {
+            InvasionStatRewardDefinition3D reward = ResolveRewardDefinition(rewardIndices[i]);
+            if (reward == null || reward.IsCraizanContract)
+            {
+                continue;
+            }
+
+            cumulative += Mathf.Max(0f, weights[i]);
+            if (roll <= cumulative)
+            {
+                return i;
+            }
+        }
+
+        return 0;
+    }
+
+    private static void RemoveRewardFromPool(int rewardIndex, List<int> rewardIndices, List<float> weights)
+    {
+        for (int i = rewardIndices.Count - 1; i >= 0; i--)
+        {
+            if (rewardIndices[i] != rewardIndex)
+            {
+                continue;
+            }
+
+            rewardIndices.RemoveAt(i);
+            weights.RemoveAt(i);
+            return;
         }
     }
 
@@ -1362,14 +1457,22 @@ public class InvasionSceneManager3D : MonoBehaviour
 
     private static InvasionRewardTier3D ResolveRewardTierForWave(int clearedWaveNumber)
     {
-        int normalizedWaveIndex = Mathf.Max(0, clearedWaveNumber - 1) % 4;
+        int normalizedWaveIndex = Mathf.Max(0, clearedWaveNumber - 1) % 3;
         return normalizedWaveIndex switch
         {
             1 => InvasionRewardTier3D.Epic,
             2 => InvasionRewardTier3D.High,
-            3 => InvasionRewardTier3D.Tier4,
             _ => InvasionRewardTier3D.Common
         };
+    }
+
+    private void ResetRewardWaveLimitedEffectsForLivePlayers()
+    {
+        for (byte playerSlot = 1; playerSlot <= 2; playerSlot++)
+        {
+            Player3D player = ResolveTrackedOrNetworkPlayer(playerSlot);
+            player?.ResetInvasionRewardWaveLimitedEffects();
+        }
     }
 
     private IEnumerator ShowWaveText(int waveNumber)

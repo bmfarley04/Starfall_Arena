@@ -53,6 +53,10 @@ public class Projectile3D : MonoBehaviour, IPooledObject3D
     protected bool _serverAuthoritativeGameplay;
     protected NetProjectileVisualType3D _visualType = NetProjectileVisualType3D.Primary;
     protected float _projectileScaleMultiplier = 1f;
+    protected bool _canPierce;
+    protected int _remainingPierces;
+    protected float _pierceDamageMultiplier = 1f;
+    private float _runtimeHitscanRadiusBonus;
     private Collider[] _ownedColliders;
 
     public Vector3 Direction => _direction;
@@ -120,6 +124,9 @@ public class Projectile3D : MonoBehaviour, IPooledObject3D
         _slowDuration = 0f;
         _slowEngineEmissionScale = 1f;
         _hitEntityIds.Clear();
+        _canPierce = false;
+        _remainingPierces = 0;
+        _pierceDamageMultiplier = 1f;
 
         transform.rotation = Quaternion.LookRotation(_direction, Vector3.up);
     }
@@ -151,6 +158,11 @@ public class Projectile3D : MonoBehaviour, IPooledObject3D
         _projectileScaleMultiplier = scaleMultiplier > 0f ? scaleMultiplier : 1f;
     }
 
+    public void SetHitscanRadiusBonus(float radiusBonus)
+    {
+        _runtimeHitscanRadiusBonus = Mathf.Max(0f, radiusBonus);
+    }
+
     public void EnableSlow(float slowMultiplier, float slowDuration, float slowEngineEmissionScale = 1f)
     {
         _appliesSlow = true;
@@ -159,10 +171,26 @@ public class Projectile3D : MonoBehaviour, IPooledObject3D
         _slowEngineEmissionScale = Mathf.Clamp01(slowEngineEmissionScale);
     }
 
+    public virtual void EnablePiercing(int maxPierceCount, float damageMultiplierPerPierce)
+    {
+        _canPierce = maxPierceCount > 0 && damageMultiplierPerPierce > 0f;
+        _remainingPierces = _canPierce ? Mathf.Max(0, maxPierceCount) : 0;
+        _pierceDamageMultiplier = _canPierce ? Mathf.Max(0f, damageMultiplierPerPierce) : 1f;
+    }
+
+    public virtual void EnablePiercing(float damageMultiplierPerPierce)
+    {
+        EnablePiercing(1, damageMultiplierPerPierce);
+    }
+
     public void OnSpawnedFromPool()
     {
         _age = 0f;
         _hitEntityIds.Clear();
+        _canPierce = false;
+        _remainingPierces = 0;
+        _pierceDamageMultiplier = 1f;
+        _runtimeHitscanRadiusBonus = 0f;
         _networkAuthority = null;
         _requestedFireTick = -1;
         _spawnServerTick = -1;
@@ -182,6 +210,10 @@ public class Projectile3D : MonoBehaviour, IPooledObject3D
         _slowDuration = 0f;
         _slowEngineEmissionScale = 1f;
         _hitEntityIds.Clear();
+        _canPierce = false;
+        _remainingPierces = 0;
+        _pierceDamageMultiplier = 1f;
+        _runtimeHitscanRadiusBonus = 0f;
         _networkAuthority = null;
         _requestedFireTick = -1;
         _spawnServerTick = -1;
@@ -200,7 +232,10 @@ public class Projectile3D : MonoBehaviour, IPooledObject3D
             return;
         }
 
-        damageable.TakeDamage(_damage, hitPoint, _shooter, DamageSource3D.Projectile, _accuracyAttackId);
+        float resolvedDamage = _shooter != null
+            ? _shooter.ModifyOutgoingDamage(_damage, damageable, DamageSource3D.Projectile, _accuracyAttackId)
+            : _damage;
+        damageable.TakeDamage(resolvedDamage, hitPoint, _shooter, DamageSource3D.Projectile, _accuracyAttackId);
         ApplyImpactForce(collider);
     }
 
@@ -233,7 +268,7 @@ public class Projectile3D : MonoBehaviour, IPooledObject3D
 
         int hitCount = Physics.SphereCastNonAlloc(
             origin,
-            Mathf.Max(0f, hitscanRadius),
+            Mathf.Max(0f, hitscanRadius + _runtimeHitscanRadiusBonus),
             _direction,
             HitBuffer,
             stepDistance,
@@ -267,7 +302,7 @@ public class Projectile3D : MonoBehaviour, IPooledObject3D
     {
         nearestHit = default;
 
-        float overlapRadius = Mathf.Max(0.001f, hitscanRadius);
+        float overlapRadius = Mathf.Max(0.001f, hitscanRadius + _runtimeHitscanRadiusBonus);
         int overlapCount = Physics.OverlapSphereNonAlloc(
             origin,
             overlapRadius,
@@ -355,6 +390,11 @@ public class Projectile3D : MonoBehaviour, IPooledObject3D
         }
 
         Entity3D hitEntity = ResolveHitEntity(collider);
+        if (_canPierce && hitEntity != null && _hitEntityIds.Contains(hitEntity.GetInstanceID()))
+        {
+            return false;
+        }
+
         if (hitEntity != null && HasTargetFilter() && !IsMatchingTarget(hitEntity))
         {
             return false;
@@ -381,6 +421,11 @@ public class Projectile3D : MonoBehaviour, IPooledObject3D
         Entity3D damageable = ResolveHitEntity(other);
         if (damageable != null && IsMatchingTarget(damageable))
         {
+            if (_canPierce && !TryRegisterEntityHit(damageable))
+            {
+                return;
+            }
+
             ApplyDamageToEntity(damageable, hit.point, other);
             if (CanApplyGameplay() && _appliesSlow)
             {
@@ -389,6 +434,12 @@ public class Projectile3D : MonoBehaviour, IPooledObject3D
                 {
                     damageable.ThrusterVfx?.ApplyTemporaryEmissionRateScale(_slowEngineEmissionScale, _slowDuration);
                 }
+            }
+
+            if (TryContinueAfterPierce())
+            {
+                SpawnHitEffect(hit);
+                return;
             }
         }
 
@@ -402,7 +453,16 @@ public class Projectile3D : MonoBehaviour, IPooledObject3D
         Entity3D damageable = ResolveHitEntity(other);
         if (damageable != null && IsMatchingTarget(damageable))
         {
+            if (_canPierce && !TryRegisterEntityHit(damageable))
+            {
+                return;
+            }
+
             ApplyDamageToEntity(damageable, hit.point, other);
+            if (TryContinueAfterPierce())
+            {
+                return;
+            }
         }
 
         DespawnSelf();
@@ -557,6 +617,18 @@ public class Projectile3D : MonoBehaviour, IPooledObject3D
     protected bool TryRegisterEntityHit(Entity3D target)
     {
         return target != null && _hitEntityIds.Add(target.GetInstanceID());
+    }
+
+    protected bool TryContinueAfterPierce()
+    {
+        if (!_canPierce || _remainingPierces <= 0 || _pierceDamageMultiplier <= 0f)
+        {
+            return false;
+        }
+
+        _remainingPierces--;
+        _damage *= _pierceDamageMultiplier;
+        return true;
     }
 
     protected void DespawnSelf()
