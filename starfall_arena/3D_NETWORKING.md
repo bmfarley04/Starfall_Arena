@@ -71,6 +71,13 @@ Current tick timing:
 
 Movement-affecting 3D abilities must be replayable from movement input history when they need owner prediction. Class 4 dodge is encoded as a one-tick dodge request plus direction in `NetInputSnapshot3D`, so owner prediction, server simulation, and reconciliation replay all start the dash from the same tick. Combat RPCs may play presentation, but they must not inject dodge movement outside `NetMovement3D`.
 
+Networked player prediction clamps against authored arena blockers:
+
+- `NetMovement3D` sweeps the predicted player body along each simulated tick displacement before applying the position
+- the default blocker mask targets the project `blocker` layer used by asteroids and destroyed-ship debris
+- when the sweep hits, prediction stops at the hit surface and projects velocity along the blocker normal so the ship can slide instead of continuing through the obstacle
+- keep this mask narrow; broad masks can make prediction snag on projectiles, VFX, HUD colliders, or non-solid gameplay volumes
+
 Important phase-1 constraint:
 
 - combat input is intentionally suppressed while `NetMovement3D` is active

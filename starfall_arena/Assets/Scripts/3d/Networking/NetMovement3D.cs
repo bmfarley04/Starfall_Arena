@@ -14,8 +14,10 @@ public class NetMovement3D : NetworkBehaviour
     private const int ClientInputBufferSize = 64;
     private const int ServerStateBufferSize = 120;
     private const int RecentMovementSideEffectWindowTicks = 6;
+    private const int MaxBlockerSweepHits = 8;
 
     private static readonly List<NetMovement3D> ActiveInstances = new List<NetMovement3D>();
+    private static readonly RaycastHit[] BlockerSweepHits = new RaycastHit[MaxBlockerSweepHits];
 
     private enum OwnerCorrectionCause
     {
@@ -37,6 +39,16 @@ public class NetMovement3D : NetworkBehaviour
     [Header("Combat Rewind")]
     [Tooltip("Maximum lag-compensation window for player projectile and beam validation, in ticks.")]
     [SerializeField] private int maxCombatRewindTicks = 6;
+
+    [Header("Movement Collision")]
+    [Tooltip("Physics layers that network-predicted player movement treats as solid world blockers. Keep this limited to arena blockers such as asteroids and destroyed ships so prediction does not snag on VFX, projectiles, or HUD-only colliders.")]
+    [SerializeField] private LayerMask networkMovementBlockerMask = 1 << 8;
+
+    [Tooltip("Small distance kept between the predicted player body and blocker surfaces after a movement sweep. Raise only if players visibly vibrate against blocker colliders.")]
+    [SerializeField] private float blockerSkinWidth = 0.05f;
+
+    [Tooltip("Minimum tick movement distance required before NetMovement3D performs a blocker sweep. Lower values are safer but do more physics queries while nearly stationary.")]
+    [SerializeField] private float minimumBlockerSweepDistance = 0.001f;
 
     private readonly NetworkVariable<bool> _movementLocked = new NetworkVariable<bool>(
         false,
@@ -730,6 +742,7 @@ public class NetMovement3D : NetworkBehaviour
         float dt,
         bool validateDodge)
     {
+        Vector3 startPosition = state.Position;
         ApplyDodgeFromInput(ref state, in input, validateDodge);
 
         MovementSimulation3D.SimulateTick(
@@ -741,7 +754,71 @@ public class NetMovement3D : NetworkBehaviour
             _shipFlight.LockedWorldY,
             dt);
 
+        ConstrainPredictedMovementAgainstBlockers(ref state, startPosition);
         ApplyUprightRecovery(ref state, in input, dt);
+    }
+
+    private void ConstrainPredictedMovementAgainstBlockers(ref MovementState3D state, Vector3 startPosition)
+    {
+        int blockerMask = networkMovementBlockerMask.value;
+        if (blockerMask == 0)
+        {
+            return;
+        }
+
+        Vector3 displacement = state.Position - startPosition;
+        float distance = displacement.magnitude;
+        if (distance <= Mathf.Max(0f, minimumBlockerSweepDistance))
+        {
+            return;
+        }
+
+        float radius = Mathf.Max(0.01f, GetCollisionRadius());
+        Vector3 direction = displacement / distance;
+        int hitCount = Physics.SphereCastNonAlloc(
+            startPosition,
+            radius,
+            direction,
+            BlockerSweepHits,
+            distance + Mathf.Max(0f, blockerSkinWidth),
+            blockerMask,
+            QueryTriggerInteraction.Ignore);
+
+        int nearestIndex = -1;
+        float nearestDistance = float.PositiveInfinity;
+        for (int i = 0; i < hitCount; i++)
+        {
+            RaycastHit hit = BlockerSweepHits[i];
+            if (hit.collider == null || hit.collider.transform.IsChildOf(transform))
+            {
+                continue;
+            }
+
+            if (hit.distance < nearestDistance)
+            {
+                nearestDistance = hit.distance;
+                nearestIndex = i;
+            }
+        }
+
+        if (nearestIndex < 0)
+        {
+            return;
+        }
+
+        RaycastHit nearestHit = BlockerSweepHits[nearestIndex];
+        float allowedDistance = Mathf.Max(0f, nearestHit.distance - Mathf.Max(0f, blockerSkinWidth));
+        state.Position = startPosition + direction * Mathf.Min(distance, allowedDistance);
+
+        if (Vector3.Dot(state.Velocity, nearestHit.normal) < 0f)
+        {
+            state.Velocity = Vector3.ProjectOnPlane(state.Velocity, nearestHit.normal);
+        }
+
+        if (state.DodgeRemainingTime > 0f && Vector3.Dot(state.DodgeVelocity, nearestHit.normal) < 0f)
+        {
+            state.DodgeVelocity = Vector3.ProjectOnPlane(state.DodgeVelocity, nearestHit.normal);
+        }
     }
 
     private void ApplyUprightRecovery(ref MovementState3D state, in NetInputSnapshot3D input, float dt)
