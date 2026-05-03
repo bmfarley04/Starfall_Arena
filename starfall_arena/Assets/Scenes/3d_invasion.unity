@@ -2584,17 +2584,6 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &224109831 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 2559893300203955093, guid: 3bf52de825bf1664c8401e88f80f4977, type: 3}
-  m_PrefabInstance: {fileID: 7332272539887264556}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0a8a6f8e0d9652e439bdd5aa9f661bb3, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::InvasionWaveManager3D
 --- !u!4 &224109832 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 2644385173095867508, guid: 3bf52de825bf1664c8401e88f80f4977, type: 3}
@@ -3835,6 +3824,17 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 2644385173095867508, guid: 3bf52de825bf1664c8401e88f80f4977, type: 3}
   m_PrefabInstance: {fileID: 506924631}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &506924633 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 2559893300203955093, guid: 3bf52de825bf1664c8401e88f80f4977, type: 3}
+  m_PrefabInstance: {fileID: 506924631}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0a8a6f8e0d9652e439bdd5aa9f661bb3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::InvasionWaveManager3D
 --- !u!1 &516850955
 GameObject:
   m_ObjectHideFlags: 0
@@ -5844,7 +5844,7 @@ MonoBehaviour:
   player2SpawnPoint: {fileID: 2100000004}
   defaultPlayer1Ship: {fileID: 11400000, guid: c5d1fa71d54b4ee0a6ff742ad53fbc50, type: 2}
   defaultPlayer2Ship: {fileID: 11400000, guid: 7c9e3b1b784102e44b69ce6ee15c2187, type: 2}
-  waveManager: {fileID: 224109831}
+  waveManager: {fileID: 506924633}
   arenaBoundary: {fileID: 88631714}
   rewardPhasePresenter: {fileID: 1923887239}
   useBetweenWaveRewards: 1
