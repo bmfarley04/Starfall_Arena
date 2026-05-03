@@ -6,6 +6,50 @@ using UnityEngine;
 using UnityEngine.Serialization;
 
 [DisallowMultipleComponent]
+public sealed class InvasionTrackedEnemyLifecycle3D : MonoBehaviour
+{
+    private Enemy3D _enemy;
+    private bool _hasNotifiedEnded;
+
+    public event Action<Enemy3D> TrackingEnded;
+
+    public Enemy3D Enemy
+    {
+        get
+        {
+            if (_enemy == null)
+            {
+                _enemy = GetComponent<Enemy3D>();
+            }
+
+            return _enemy;
+        }
+    }
+
+    public void ResetTrackingState()
+    {
+        _hasNotifiedEnded = false;
+        _enemy ??= GetComponent<Enemy3D>();
+    }
+
+    private void Awake()
+    {
+        _enemy = GetComponent<Enemy3D>();
+    }
+
+    private void OnDestroy()
+    {
+        if (_hasNotifiedEnded)
+        {
+            return;
+        }
+
+        _hasNotifiedEnded = true;
+        TrackingEnded?.Invoke(Enemy);
+    }
+}
+
+[DisallowMultipleComponent]
 public class InvasionWaveManager3D : MonoBehaviour
 {
     private enum FormationPreset3D
@@ -593,6 +637,8 @@ public class InvasionWaveManager3D : MonoBehaviour
             return;
         }
 
+        RegisterTrackedEnemyLifecycle(enemy);
+
         SpawnArrivalEffect3D arrivalEffect = enemy.GetComponent<SpawnArrivalEffect3D>();
         if (arrivalEffect != null && !arrivalEffect.HasRevealed)
         {
@@ -629,7 +675,9 @@ public class InvasionWaveManager3D : MonoBehaviour
             return;
         }
 
+        RegisterTrackedEnemyLifecycle(enemy);
         _aliveEnemies.Add(enemy);
+        enemy.Died -= HandleEnemyDied;
         enemy.Died += HandleEnemyDied;
         AliveEnemyCountChanged?.Invoke(_aliveEnemies.Count);
     }
@@ -654,6 +702,7 @@ public class InvasionWaveManager3D : MonoBehaviour
         }
 
         RemovePendingRevealEnemy(enemy);
+        UnregisterTrackedEnemyLifecycle(enemy);
         RegisterEnemyDefeated();
     }
 
@@ -667,6 +716,7 @@ public class InvasionWaveManager3D : MonoBehaviour
 
         enemy.Died -= HandleEnemyDied;
         _aliveEnemies.Remove(enemy);
+        UnregisterTrackedEnemyLifecycle(enemy);
         RegisterEnemyDefeated();
         AliveEnemyCountChanged?.Invoke(_aliveEnemies.Count);
     }
@@ -699,6 +749,82 @@ public class InvasionWaveManager3D : MonoBehaviour
         _pendingRevealEnemies.Remove(enemy);
     }
 
+    private void RegisterTrackedEnemyLifecycle(Enemy3D enemy)
+    {
+        if (enemy == null)
+        {
+            return;
+        }
+
+        // Networked enemies can still leave play through destroy/despawn timing
+        // after the server has already decided wave progression. Track teardown as
+        // a fallback so one missed death callback cannot stall the next reward phase.
+        InvasionTrackedEnemyLifecycle3D lifecycle = enemy.GetComponent<InvasionTrackedEnemyLifecycle3D>();
+        if (lifecycle == null)
+        {
+            lifecycle = enemy.gameObject.AddComponent<InvasionTrackedEnemyLifecycle3D>();
+        }
+
+        lifecycle.ResetTrackingState();
+        lifecycle.TrackingEnded -= HandleTrackedEnemyLifecycleEnded;
+        lifecycle.TrackingEnded += HandleTrackedEnemyLifecycleEnded;
+    }
+
+    private void UnregisterTrackedEnemyLifecycle(Enemy3D enemy)
+    {
+        if (enemy == null || !enemy.TryGetComponent(out InvasionTrackedEnemyLifecycle3D lifecycle))
+        {
+            return;
+        }
+
+        lifecycle.TrackingEnded -= HandleTrackedEnemyLifecycleEnded;
+    }
+
+    private void HandleTrackedEnemyLifecycleEnded(Enemy3D enemy)
+    {
+        RemoveEnemyFromTracking(enemy, enemy != null && enemy.CurrentHealth <= 0f);
+    }
+
+    private void RemoveEnemyFromTracking(Enemy3D enemy, bool shouldRegisterDefeat)
+    {
+        if (enemy == null)
+        {
+            return;
+        }
+
+        bool removedAliveEnemy = false;
+        bool removedPendingEnemy = false;
+
+        if (_aliveEnemies.Remove(enemy))
+        {
+            enemy.Died -= HandleEnemyDied;
+            removedAliveEnemy = true;
+        }
+
+        if (_pendingRevealEnemies.Contains(enemy))
+        {
+            RemovePendingRevealEnemy(enemy);
+            removedPendingEnemy = true;
+        }
+
+        if (!removedAliveEnemy && !removedPendingEnemy)
+        {
+            return;
+        }
+
+        UnregisterTrackedEnemyLifecycle(enemy);
+
+        if (shouldRegisterDefeat)
+        {
+            RegisterEnemyDefeated();
+        }
+
+        if (removedAliveEnemy)
+        {
+            AliveEnemyCountChanged?.Invoke(_aliveEnemies.Count);
+        }
+    }
+
     private void ClearTrackedEnemies()
     {
         for (int i = 0; i < _aliveEnemies.Count; i++)
@@ -706,6 +832,7 @@ public class InvasionWaveManager3D : MonoBehaviour
             if (_aliveEnemies[i] != null)
             {
                 _aliveEnemies[i].Died -= HandleEnemyDied;
+                UnregisterTrackedEnemyLifecycle(_aliveEnemies[i]);
             }
         }
 
@@ -718,6 +845,7 @@ public class InvasionWaveManager3D : MonoBehaviour
             }
 
             pendingEnemy.Died -= HandlePendingEnemyDied;
+            UnregisterTrackedEnemyLifecycle(pendingEnemy);
             SpawnArrivalEffect3D arrivalEffect = pendingEnemy.GetComponent<SpawnArrivalEffect3D>();
             if (arrivalEffect != null)
             {
@@ -732,28 +860,58 @@ public class InvasionWaveManager3D : MonoBehaviour
 
     private bool HasOutstandingTrackedEnemies()
     {
-        CleanupNullTrackedEnemies();
+        CleanupInvalidTrackedEnemies();
         return _aliveEnemies.Count > 0 || _pendingRevealEnemies.Count > 0;
     }
 
-    private void CleanupNullTrackedEnemies()
+    private void CleanupInvalidTrackedEnemies()
     {
         for (int i = _aliveEnemies.Count - 1; i >= 0; i--)
         {
-            if (_aliveEnemies[i] == null)
+            Enemy3D enemy = _aliveEnemies[i];
+            if (!IsTrackedEnemyStillOutstanding(enemy))
             {
-                _aliveEnemies.RemoveAt(i);
-                AliveEnemyCountChanged?.Invoke(_aliveEnemies.Count);
+                RemoveEnemyFromTracking(enemy, enemy != null && enemy.CurrentHealth <= 0f);
             }
         }
 
         for (int i = _pendingRevealEnemies.Count - 1; i >= 0; i--)
         {
-            if (_pendingRevealEnemies[i] == null)
+            Enemy3D enemy = _pendingRevealEnemies[i];
+            if (!IsTrackedEnemyStillOutstanding(enemy))
             {
-                _pendingRevealEnemies.RemoveAt(i);
+                RemoveEnemyFromTracking(enemy, enemy != null && enemy.CurrentHealth <= 0f);
             }
         }
+    }
+
+    private static bool IsTrackedEnemyStillOutstanding(Enemy3D enemy)
+    {
+        if (enemy == null)
+        {
+            return false;
+        }
+
+        // Treat dead, disabled, or already-despawned enemies as cleared even if the
+        // explicit Died event path was skipped. Wave advancement must follow the
+        // authoritative live enemy set, not one brittle callback chain.
+        if (enemy.CurrentHealth <= 0f)
+        {
+            return false;
+        }
+
+        GameObject enemyObject = enemy.gameObject;
+        if (!enemyObject.activeInHierarchy)
+        {
+            return false;
+        }
+
+        if (enemy.TryGetComponent(out NetworkObject networkObject) && NetTickUtil.IsActive && !networkObject.IsSpawned)
+        {
+            return false;
+        }
+
+        return true;
     }
 
     private bool HasSpawnAuthority()
