@@ -1584,7 +1584,69 @@ public class InvasionSceneManager3D : MonoBehaviour
 
         NetworkSessionData session = NetworkSessionData.Instance;
         int localSlotIndex = session != null ? session.GetLocalSlotIndex() : -1;
-        return localSlotIndex >= 0 ? localSlotIndex + 1 : 0;
+        if (localSlotIndex >= 0)
+        {
+            return localSlotIndex + 1;
+        }
+
+        NetworkManager networkManager = NetworkManager.Singleton;
+        if (networkManager == null)
+        {
+            return 0;
+        }
+
+        ulong localClientId = networkManager.LocalClientId;
+        if (localClientId == ResolveOwnerClientIdForSlot(0))
+        {
+            return 1;
+        }
+
+        if (localClientId == ResolveOwnerClientIdForSlot(1))
+        {
+            return 2;
+        }
+
+        if (TryResolveLocalOwnedPlayerSlot(out int ownedPlayerSlot))
+        {
+            return ownedPlayerSlot;
+        }
+
+        return 0;
+    }
+
+    private bool TryResolveLocalOwnedPlayerSlot(out int playerSlot)
+    {
+        playerSlot = TryResolveOwnedTrackedPlayerSlot(_player1, 1)
+            ?? TryResolveOwnedTrackedPlayerSlot(_player2, 2)
+            ?? 0;
+
+        if (playerSlot != 0)
+        {
+            return true;
+        }
+
+        for (byte slot = 1; slot <= 2; slot++)
+        {
+            if (!NetMovement3D.TryGetPlayerBySlot(slot, out NetMovement3D movement) || movement == null || !movement.IsSpawned || !movement.IsOwner)
+            {
+                continue;
+            }
+
+            playerSlot = slot;
+            return true;
+        }
+
+        return false;
+    }
+
+    private static int? TryResolveOwnedTrackedPlayerSlot(Player3D player, int expectedSlot)
+    {
+        if (player == null || !player.TryGetComponent(out NetworkObject networkObject) || !networkObject.IsSpawned || !networkObject.IsOwner)
+        {
+            return null;
+        }
+
+        return expectedSlot;
     }
 
     private string FormatLifeCounterText(int livesRemaining, int player1Lives, int player2Lives)
