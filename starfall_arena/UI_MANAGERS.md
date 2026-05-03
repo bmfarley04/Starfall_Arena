@@ -164,6 +164,7 @@ Important system note:
 - the winning player receives 2 augment choices
 - those pools are separate, even when both players are drawing from the same tier for the round
 - augment cards should remain pointer-hoverable and mouse-clickable during the active flow
+- Bug note: `AugmentSelectManager` should keep an explicit selected-card index while manually polling controller/keyboard input. Relying only on `EventSystem.currentSelectedGameObject` can let pointer hover, stale UI-module selection, and manual navigation fight each other, which makes controller selection flicker between adjacent cards in reused reward screens.
 
 ## HUD Architecture
 

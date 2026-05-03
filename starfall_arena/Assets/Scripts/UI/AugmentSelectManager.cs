@@ -227,6 +227,7 @@ namespace StarfallArena.UI
         // Stick navigation cooldown (prevents rapid-fire from held stick)
         private bool _stickNavigated = false;
         private bool _useExternalTimer = false;
+        private int _selectedCardIndex = -1;
 
         // Selection effect: cached original materials per card so we can restore
         private Dictionary<Image, Material> _originalContainerMaterials = new Dictionary<Image, Material>();
@@ -378,16 +379,10 @@ namespace StarfallArena.UI
             // --- Submit (A / South button) ---
             if (pad.buttonSouth.wasPressedThisFrame)
             {
-                // Find which card is currently selected and invoke its click
-                GameObject selected = EventSystem.current?.currentSelectedGameObject;
-                if (selected != null)
+                if (TryGetButtonForSelectedCard(out Button selectedButton))
                 {
-                    Button btn = selected.GetComponent<Button>();
-                    if (btn != null && btn.interactable)
-                    {
-                        btn.onClick.Invoke();
-                        return;
-                    }
+                    selectedButton.onClick.Invoke();
+                    return;
                 }
             }
 
@@ -436,20 +431,7 @@ namespace StarfallArena.UI
             }
             if (activeIndices.Count == 0) return;
 
-            // Find current selection index
-            GameObject selected = EventSystem.current?.currentSelectedGameObject;
-            int currentIndex = -1;
-            if (selected != null)
-            {
-                for (int i = 0; i < buttons.Length; i++)
-                {
-                    if (buttons[i] != null && buttons[i].gameObject == selected)
-                    {
-                        currentIndex = activeIndices.IndexOf(i);
-                        break;
-                    }
-                }
-            }
+            int currentIndex = activeIndices.IndexOf(_selectedCardIndex);
 
             // Compute next index
             int nextIndex;
@@ -464,8 +446,61 @@ namespace StarfallArena.UI
             }
 
             int btnIndex = activeIndices[nextIndex];
+            SetSelectedCardIndex(btnIndex);
+        }
+
+        private bool TryGetButtonForSelectedCard(out Button button)
+        {
+            button = null;
+            Button[] buttons = GetButtonsForTier(currentTier);
+            if (buttons == null)
+            {
+                return false;
+            }
+
+            if (_selectedCardIndex >= 0
+                && _selectedCardIndex < buttons.Length
+                && buttons[_selectedCardIndex] != null
+                && buttons[_selectedCardIndex].gameObject.activeSelf
+                && buttons[_selectedCardIndex].interactable)
+            {
+                button = buttons[_selectedCardIndex];
+                return true;
+            }
+
+            for (int i = 0; i < buttons.Length; i++)
+            {
+                if (buttons[i] == null || !buttons[i].gameObject.activeSelf || !buttons[i].interactable)
+                {
+                    continue;
+                }
+
+                SetSelectedCardIndex(i);
+                button = buttons[i];
+                return true;
+            }
+
+            return false;
+        }
+
+        private void SetSelectedCardIndex(int cardIndex)
+        {
+            Button[] buttons = GetButtonsForTier(currentTier);
+            if (buttons == null
+                || cardIndex < 0
+                || cardIndex >= buttons.Length
+                || buttons[cardIndex] == null
+                || !buttons[cardIndex].gameObject.activeSelf
+                || !buttons[cardIndex].interactable)
+            {
+                return;
+            }
+
+            _selectedCardIndex = cardIndex;
             if (EventSystem.current != null)
-                EventSystem.current.SetSelectedGameObject(buttons[btnIndex].gameObject);
+            {
+                EventSystem.current.SetSelectedGameObject(buttons[cardIndex].gameObject);
+            }
         }
 
         /// <summary>
@@ -481,15 +516,10 @@ namespace StarfallArena.UI
             // Submit (Enter / Space)
             if (kb.enterKey.wasPressedThisFrame || kb.numpadEnterKey.wasPressedThisFrame || kb.spaceKey.wasPressedThisFrame)
             {
-                GameObject selected = EventSystem.current?.currentSelectedGameObject;
-                if (selected != null)
+                if (TryGetButtonForSelectedCard(out Button selectedButton))
                 {
-                    Button btn = selected.GetComponent<Button>();
-                    if (btn != null && btn.interactable)
-                    {
-                        btn.onClick.Invoke();
-                        return;
-                    }
+                    selectedButton.onClick.Invoke();
+                    return;
                 }
             }
 
@@ -549,7 +579,11 @@ namespace StarfallArena.UI
 
                 // On Select (hovered via controller)
                 EventTrigger.Entry selectEntry = new EventTrigger.Entry { eventID = EventTriggerType.Select };
-                selectEntry.callback.AddListener(_ => OnCardHoverEnter(btn));
+                selectEntry.callback.AddListener(_ =>
+                {
+                    _selectedCardIndex = index;
+                    OnCardHoverEnter(btn);
+                });
                 trigger.triggers.Add(selectEntry);
 
                 // On Deselect (moved away via controller)
@@ -561,8 +595,7 @@ namespace StarfallArena.UI
                 EventTrigger.Entry pointerEnter = new EventTrigger.Entry { eventID = EventTriggerType.PointerEnter };
                 pointerEnter.callback.AddListener(_ =>
                 {
-                    if (EventSystem.current != null)
-                        EventSystem.current.SetSelectedGameObject(btn.gameObject);
+                    SetSelectedCardIndex(index);
                 });
                 trigger.triggers.Add(pointerEnter);
             }
@@ -632,6 +665,8 @@ namespace StarfallArena.UI
             isShowing = true;
             currentPickingPlayer = pickingPlayer;
             _useExternalTimer = false;
+            _selectedCardIndex = -1;
+            _stickNavigated = false;
 
             // Lock input to the picking player's gamepad
             SetActiveGamepad(pickingPlayer);
@@ -685,6 +720,8 @@ namespace StarfallArena.UI
             currentPickingPlayer = pickingPlayer;
             currentTier = tier;
             _useExternalTimer = true;
+            _selectedCardIndex = -1;
+            _stickNavigated = false;
 
             // Networked play: each client has only one local gamepad, so always use it
             // regardless of slot. We disable the UIInputModule (same as local split-screen)
@@ -888,6 +925,8 @@ namespace StarfallArena.UI
             isShowing = false;
             _activeGamepad = null;
             _useExternalTimer = false;
+            _selectedCardIndex = -1;
+            _stickNavigated = false;
 
             // Re-enable the UI module navigation for other screens
             EnableUIModuleNavigation();
@@ -1568,27 +1607,28 @@ namespace StarfallArena.UI
         private void SetDefaultSelection(int tier)
         {
             Button[] buttons = GetButtonsForTier(tier);
-            Button defaultButton = null;
+            int defaultIndex = -1;
             if (buttons != null && buttons.Length > 1 && buttons[1] != null && buttons[1].gameObject.activeSelf && buttons[1].interactable)
             {
-                defaultButton = buttons[1];
+                defaultIndex = 1;
             }
 
-            if (defaultButton == null && buttons != null)
+            if (defaultIndex < 0 && buttons != null)
             {
-                foreach (Button button in buttons)
+                for (int i = 0; i < buttons.Length; i++)
                 {
+                    Button button = buttons[i];
                     if (button != null && button.gameObject.activeSelf && button.interactable)
                     {
-                        defaultButton = button;
+                        defaultIndex = i;
                         break;
                     }
                 }
             }
 
-            if (defaultButton != null && EventSystem.current != null)
+            if (defaultIndex >= 0)
             {
-                EventSystem.current.SetSelectedGameObject(defaultButton.gameObject);
+                SetSelectedCardIndex(defaultIndex);
             }
         }
 
@@ -1601,12 +1641,12 @@ namespace StarfallArena.UI
             Button[] buttons = GetButtonsForTier(tier);
             if (buttons == null) return;
 
-            foreach (var btn in buttons)
+            for (int i = 0; i < buttons.Length; i++)
             {
+                Button btn = buttons[i];
                 if (btn != null && btn.gameObject.activeSelf && btn.interactable)
                 {
-                    if (EventSystem.current != null)
-                        EventSystem.current.SetSelectedGameObject(btn.gameObject);
+                    SetSelectedCardIndex(i);
                     return;
                 }
             }
@@ -1642,6 +1682,7 @@ namespace StarfallArena.UI
             }
 
             Augment selectedAugment = selectedAugments[choiceIndex];
+            _selectedCardIndex = choiceIndex;
             Debug.Log($"Player {currentPickingPlayer} selected augment: {selectedAugment.augmentName}");
 
             // Stop countdown

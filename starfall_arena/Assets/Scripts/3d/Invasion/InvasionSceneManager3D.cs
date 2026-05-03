@@ -67,6 +67,9 @@ public class InvasionSceneManager3D : MonoBehaviour
     [Header("Game End")]
     [Tooltip("Existing shared game-end screen manager reused for Invasion victory/defeat presentation.")]
     [SerializeField] private GameEndScreenManager gameEndScreenManager;
+    [Tooltip("Seconds to wait after the final wave is cleared before hiding gameplay HUD and showing the Victory screen. Defeat presentation is not delayed.")]
+    [Min(0f)]
+    [SerializeField] private float victoryScreenDelaySeconds = 1.5f;
 
     [Header("Between-Wave Rewards")]
     [Tooltip("If enabled, cleared waves trigger a between-wave reward intermission before the next wave begins.")]
@@ -156,6 +159,7 @@ public class InvasionSceneManager3D : MonoBehaviour
     private NetworkSessionData _networkSession;
     private Coroutine _networkSessionSubscriptionCoroutine;
     private Coroutine _activeWaveIntroCoroutine;
+    private Coroutine _gameEndPresentationCoroutine;
     private int _lastWaveIntroSequenceId = -1;
     private readonly int[] _playerLivesRemainingBySlot = new int[3];
     private readonly Coroutine[] _respawnCoroutinesBySlot = new Coroutine[3];
@@ -217,6 +221,12 @@ public class InvasionSceneManager3D : MonoBehaviour
         {
             StopCoroutine(_networkSessionSubscriptionCoroutine);
             _networkSessionSubscriptionCoroutine = null;
+        }
+
+        if (_gameEndPresentationCoroutine != null)
+        {
+            StopCoroutine(_gameEndPresentationCoroutine);
+            _gameEndPresentationCoroutine = null;
         }
 
         UnsubscribeNetworkSessionEvents();
@@ -1483,12 +1493,38 @@ public class InvasionSceneManager3D : MonoBehaviour
         StopRespawnCoroutines();
         StopArenaBoundary();
         SetPlayersIntermissionLocked(true);
-        SetGameplayHudActive(false);
 
         if (stats.victory)
         {
             PlayerProgressPrefs.MarkInvasionModeWon();
         }
+
+        if (_gameEndPresentationCoroutine != null)
+        {
+            StopCoroutine(_gameEndPresentationCoroutine);
+            _gameEndPresentationCoroutine = null;
+        }
+
+        float presentationDelay = stats.victory ? Mathf.Max(0f, victoryScreenDelaySeconds) : 0f;
+        if (presentationDelay > 0f)
+        {
+            _gameEndPresentationCoroutine = StartCoroutine(PresentInvasionGameEndAfterDelay(stats, presentationDelay));
+            return;
+        }
+
+        ShowInvasionGameEndScreen(stats);
+    }
+
+    private IEnumerator PresentInvasionGameEndAfterDelay(InvasionGameEndStats stats, float delaySeconds)
+    {
+        yield return new WaitForSeconds(delaySeconds);
+        _gameEndPresentationCoroutine = null;
+        ShowInvasionGameEndScreen(stats);
+    }
+
+    private void ShowInvasionGameEndScreen(InvasionGameEndStats stats)
+    {
+        SetGameplayHudActive(false);
 
         if (gameEndScreenManager == null)
         {
