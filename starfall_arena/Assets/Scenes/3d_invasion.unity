@@ -3901,6 +3901,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: invasionManager (1)
       objectReference: {fileID: 0}
+    - target: {fileID: 56601691610777928, guid: 3bf52de825bf1664c8401e88f80f4977, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 2559893300203955093, guid: 3bf52de825bf1664c8401e88f80f4977, type: 3}
       propertyPath: waves.Array.size
       value: 2
@@ -11775,7 +11779,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 48.80005, y: -64.900024}
+  m_AnchoredPosition: {x: 48.800293, y: -64.90015}
   m_SizeDelta: {x: 50, y: 47}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1770277719
@@ -19904,7 +19908,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 56601691610777928, guid: 3bf52de825bf1664c8401e88f80f4977, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 2559893300203955093, guid: 3bf52de825bf1664c8401e88f80f4977, type: 3}
       propertyPath: waves.Array.data[0].subWaves.Array.size
