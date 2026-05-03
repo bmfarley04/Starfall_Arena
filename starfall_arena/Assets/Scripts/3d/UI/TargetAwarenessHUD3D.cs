@@ -390,13 +390,23 @@ public class TargetAwarenessHUD3D : PlayerHUDBindingTarget3D
             return presentation;
         }
 
-        if (presentation.IsTeammateTarget && insideViewport)
-        {
-            return presentation;
-        }
-
         TargetAwarenessVisibility3D desiredState;
-        if (!insideViewport)
+        if (presentation.IsTeammateTarget)
+        {
+            if (!insideViewport)
+            {
+                desiredState = TargetAwarenessVisibility3D.EdgeIndicator;
+            }
+            else if (IsTooCloseForBrackets(targetDistance, runtime.CurrentState))
+            {
+                desiredState = TargetAwarenessVisibility3D.Hidden;
+            }
+            else
+            {
+                desiredState = TargetAwarenessVisibility3D.Bracket;
+            }
+        }
+        else if (!insideViewport)
         {
             desiredState = TargetAwarenessVisibility3D.EdgeIndicator;
         }
@@ -418,11 +428,6 @@ public class TargetAwarenessHUD3D : PlayerHUDBindingTarget3D
         }
 
         if (isBossTarget && desiredState != TargetAwarenessVisibility3D.EdgeIndicator)
-        {
-            return presentation;
-        }
-
-        if (presentation.IsTeammateTarget && desiredState != TargetAwarenessVisibility3D.EdgeIndicator)
         {
             return presentation;
         }

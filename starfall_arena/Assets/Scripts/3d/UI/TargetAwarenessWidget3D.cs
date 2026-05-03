@@ -52,8 +52,12 @@ public class TargetAwarenessWidget3D : MonoBehaviour
     [Tooltip("Teammate-only offscreen indicator visuals. Assign the friendly player locator icon here.")]
     [SerializeField] private RectTransform teammateIndicatorVisualGroup;
     [SerializeField] private RectTransform bracketGroup;
+    [Tooltip("Teammate-only onscreen bracket visuals. Assign the friendly player bracket group here; health/shield bars stay hidden for teammates.")]
+    [SerializeField] private RectTransform teammateBracketGroup;
     [Tooltip("Optional RectTransform that should receive the computed target bracket size. Falls back to Bracket Group when left empty.")]
     [SerializeField] private RectTransform bracketFrame;
+    [Tooltip("Optional RectTransform that receives the computed teammate bracket size. Falls back to Teammate Bracket Group when left empty.")]
+    [SerializeField] private RectTransform teammateBracketFrame;
     [SerializeField] private RectTransform healthBarGroup;
     [SerializeField] private RectTransform shieldBarGroup;
 
@@ -98,6 +102,7 @@ public class TargetAwarenessWidget3D : MonoBehaviour
     private CanvasGroup _bossIndicatorVisualCanvasGroup;
     private CanvasGroup _teammateIndicatorVisualCanvasGroup;
     private CanvasGroup _bracketCanvasGroup;
+    private CanvasGroup _teammateBracketCanvasGroup;
     private CanvasGroup _healthCanvasGroup;
     private CanvasGroup _shieldCanvasGroup;
     private Vector2 _currentPosition;
@@ -110,6 +115,7 @@ public class TargetAwarenessWidget3D : MonoBehaviour
     {
         root ??= transform as RectTransform;
         bracketFrame ??= bracketGroup;
+        teammateBracketFrame ??= teammateBracketGroup;
         rootGroup ??= GetComponent<CanvasGroup>();
         if (rootGroup == null)
         {
@@ -121,6 +127,7 @@ public class TargetAwarenessWidget3D : MonoBehaviour
         _bossIndicatorVisualCanvasGroup = EnsureCanvasGroup(bossIndicatorVisualGroup);
         _teammateIndicatorVisualCanvasGroup = EnsureCanvasGroup(teammateIndicatorVisualGroup);
         _bracketCanvasGroup = EnsureCanvasGroup(bracketGroup);
+        _teammateBracketCanvasGroup = EnsureCanvasGroup(teammateBracketGroup);
         _healthCanvasGroup = EnsureCanvasGroup(healthBarGroup);
         _shieldCanvasGroup = EnsureCanvasGroup(shieldBarGroup);
         CacheBarBasePositions();
@@ -163,6 +170,7 @@ public class TargetAwarenessWidget3D : MonoBehaviour
             || presentation.State == TargetAwarenessVisibility3D.EdgeIndicator;
         bool showBossIndicator = presentation.IsBossTarget && presentation.State == TargetAwarenessVisibility3D.EdgeIndicator;
         bool showTeammateIndicator = presentation.IsTeammateTarget && presentation.State == TargetAwarenessVisibility3D.EdgeIndicator;
+        bool showTeammateBracket = presentation.IsTeammateTarget && presentation.State == TargetAwarenessVisibility3D.Bracket;
         bool showNormalIndicatorVisual = showIndicator && !presentation.IsBossTarget && !presentation.IsTeammateTarget;
         bool showBracket = presentation.State == TargetAwarenessVisibility3D.Bracket && !presentation.IsBossTarget && !presentation.IsTeammateTarget;
 
@@ -171,6 +179,7 @@ public class TargetAwarenessWidget3D : MonoBehaviour
         SetGroupAlpha(_bossIndicatorVisualCanvasGroup, showBossIndicator ? 1f : 0f, deltaTime);
         SetGroupAlpha(_teammateIndicatorVisualCanvasGroup, showTeammateIndicator ? 1f : 0f, deltaTime);
         SetGroupAlpha(_bracketCanvasGroup, showBracket ? 1f : 0f, deltaTime);
+        SetGroupAlpha(_teammateBracketCanvasGroup, showTeammateBracket ? 1f : 0f, deltaTime);
         SetGroupAlpha(_healthCanvasGroup, showBracket ? 1f : 0f, deltaTime);
         SetGroupAlpha(_shieldCanvasGroup, showBracket ? 1f : 0f, deltaTime);
 
@@ -189,9 +198,11 @@ public class TargetAwarenessWidget3D : MonoBehaviour
 
         ApplyScale(indicatorGroup, _indicatorScale);
         ApplyScale(bracketGroup, _bracketScale);
+        ApplyScale(teammateBracketGroup, _bracketScale);
         ApplyScale(healthBarGroup, _barScale);
         ApplyScale(shieldBarGroup, _barScale);
         ApplyBracketSize(_currentBracketSize);
+        ApplyTeammateBracketSize(_currentBracketSize);
         ApplyBracketBarOffsets(showBracket);
         ApplyAttackFlash(presentation.AttackPulse01);
         ApplyBossAttackPulse(presentation.IsBossTarget ? presentation.AttackPulse01 : 0f);
@@ -218,6 +229,7 @@ public class TargetAwarenessWidget3D : MonoBehaviour
         SetGroupAlphaImmediate(_bossIndicatorVisualCanvasGroup, 0f);
         SetGroupAlphaImmediate(_teammateIndicatorVisualCanvasGroup, 0f);
         SetGroupAlphaImmediate(_bracketCanvasGroup, 0f);
+        SetGroupAlphaImmediate(_teammateBracketCanvasGroup, 0f);
         SetGroupAlphaImmediate(_healthCanvasGroup, 0f);
         SetGroupAlphaImmediate(_shieldCanvasGroup, 0f);
         ApplyAttackFlash(0f);
@@ -295,6 +307,16 @@ public class TargetAwarenessWidget3D : MonoBehaviour
         }
 
         bracketFrame.sizeDelta = new Vector2(Mathf.Max(1f, bracketSize.x), Mathf.Max(1f, bracketSize.y));
+    }
+
+    private void ApplyTeammateBracketSize(Vector2 bracketSize)
+    {
+        if (teammateBracketFrame == null)
+        {
+            return;
+        }
+
+        teammateBracketFrame.sizeDelta = new Vector2(Mathf.Max(1f, bracketSize.x), Mathf.Max(1f, bracketSize.y));
     }
 
     private void CacheAttackFlashColors()
