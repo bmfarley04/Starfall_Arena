@@ -173,9 +173,9 @@ MonoBehaviour:
     postDodgeSpeedPercent: 0
     postDodgeAccelerationPercent: 0
     postDodgeBuffDurationSeconds: 0
-    targetMomentumDamagePercentPerHit: 0.03
-    targetMomentumMaxDamagePercent: 0.3
-    targetMomentumResetSeconds: 2
+    targetMomentumDamagePercentPerHit: 0.038999997
+    targetMomentumMaxDamagePercent: 0.39000002
+    targetMomentumResetSeconds: 2.6
   highInstant:
     repairMissingHullFraction: 0
     refillShieldToFull: 0

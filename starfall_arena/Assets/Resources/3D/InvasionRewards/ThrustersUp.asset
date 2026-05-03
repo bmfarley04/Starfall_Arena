@@ -43,9 +43,9 @@ MonoBehaviour:
     shieldRegenRatePercent: 0
     incomingDamageReductionPercent: 0
     incomingDamageTakenPercent: 0
-    thrustAccelerationPercent: 0.08
-    maxSpeedPercent: 0.06
-    turnResponsePercent: 0.05
+    thrustAccelerationPercent: 0.103999995
+    maxSpeedPercent: 0.077999994
+    turnResponsePercent: 0.065
     flightAssistDampingPercent: 0
     flightAssistAlignmentPercent: 0
     extraDodgeInvulnerabilitySeconds: 0
@@ -64,6 +64,14 @@ MonoBehaviour:
     executionLotteryChance: 0
     executionLotteryPerTargetCooldown: 0
     futureStatBoostMultiplierBonus: 0
+    shieldLeechDamageFraction: 0
+    hullRepairFractionOnNonBossKill: 0
+    postDodgeSpeedPercent: 0
+    postDodgeAccelerationPercent: 0
+    postDodgeBuffDurationSeconds: 0
+    targetMomentumDamagePercentPerHit: 0
+    targetMomentumMaxDamagePercent: 0
+    targetMomentumResetSeconds: 0
   commonInstant:
     repairMissingHullFraction: 0
     refillShieldToFull: 0
@@ -87,9 +95,9 @@ MonoBehaviour:
     shieldRegenRatePercent: 0
     incomingDamageReductionPercent: 0
     incomingDamageTakenPercent: 0
-    thrustAccelerationPercent: 0.14
-    maxSpeedPercent: 0.1
-    turnResponsePercent: 0.09
+    thrustAccelerationPercent: 0.182
+    maxSpeedPercent: 0.13
+    turnResponsePercent: 0.117
     flightAssistDampingPercent: 0
     flightAssistAlignmentPercent: 0
     extraDodgeInvulnerabilitySeconds: 0
@@ -108,6 +116,14 @@ MonoBehaviour:
     executionLotteryChance: 0
     executionLotteryPerTargetCooldown: 0
     futureStatBoostMultiplierBonus: 0
+    shieldLeechDamageFraction: 0
+    hullRepairFractionOnNonBossKill: 0
+    postDodgeSpeedPercent: 0
+    postDodgeAccelerationPercent: 0
+    postDodgeBuffDurationSeconds: 0
+    targetMomentumDamagePercentPerHit: 0
+    targetMomentumMaxDamagePercent: 0
+    targetMomentumResetSeconds: 0
   epicInstant:
     repairMissingHullFraction: 0
     refillShieldToFull: 0
@@ -131,9 +147,9 @@ MonoBehaviour:
     shieldRegenRatePercent: 0
     incomingDamageReductionPercent: 0
     incomingDamageTakenPercent: 0
-    thrustAccelerationPercent: 0.22
-    maxSpeedPercent: 0.15
-    turnResponsePercent: 0.14
+    thrustAccelerationPercent: 0.28599998
+    maxSpeedPercent: 0.19500001
+    turnResponsePercent: 0.182
     flightAssistDampingPercent: 0
     flightAssistAlignmentPercent: 0
     extraDodgeInvulnerabilitySeconds: 0
@@ -152,6 +168,14 @@ MonoBehaviour:
     executionLotteryChance: 0
     executionLotteryPerTargetCooldown: 0
     futureStatBoostMultiplierBonus: 0
+    shieldLeechDamageFraction: 0
+    hullRepairFractionOnNonBossKill: 0
+    postDodgeSpeedPercent: 0
+    postDodgeAccelerationPercent: 0
+    postDodgeBuffDurationSeconds: 0
+    targetMomentumDamagePercentPerHit: 0
+    targetMomentumMaxDamagePercent: 0
+    targetMomentumResetSeconds: 0
   highInstant:
     repairMissingHullFraction: 0
     refillShieldToFull: 0
@@ -196,6 +220,14 @@ MonoBehaviour:
     executionLotteryChance: 0
     executionLotteryPerTargetCooldown: 0
     futureStatBoostMultiplierBonus: 0
+    shieldLeechDamageFraction: 0
+    hullRepairFractionOnNonBossKill: 0
+    postDodgeSpeedPercent: 0
+    postDodgeAccelerationPercent: 0
+    postDodgeBuffDurationSeconds: 0
+    targetMomentumDamagePercentPerHit: 0
+    targetMomentumMaxDamagePercent: 0
+    targetMomentumResetSeconds: 0
   tier4Instant:
     repairMissingHullFraction: 0
     refillShieldToFull: 0

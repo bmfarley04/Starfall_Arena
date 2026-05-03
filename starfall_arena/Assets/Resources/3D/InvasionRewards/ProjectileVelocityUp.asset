@@ -29,8 +29,8 @@ MonoBehaviour:
     beamDamagePercent: 0
     projectileCooldownReductionPercent: 0
     projectileEnergyCostReductionPercent: 0
-    projectileSpeedPercent: 0.1
-    projectileLifetimePercent: 0.08
+    projectileSpeedPercent: 0.13
+    projectileLifetimePercent: 0.103999995
     projectileHitRadiusBonus: 0
     beamCapacityPercent: 0
     beamRegenPercent: 0
@@ -64,6 +64,14 @@ MonoBehaviour:
     executionLotteryChance: 0
     executionLotteryPerTargetCooldown: 0
     futureStatBoostMultiplierBonus: 0
+    shieldLeechDamageFraction: 0
+    hullRepairFractionOnNonBossKill: 0
+    postDodgeSpeedPercent: 0
+    postDodgeAccelerationPercent: 0
+    postDodgeBuffDurationSeconds: 0
+    targetMomentumDamagePercentPerHit: 0
+    targetMomentumMaxDamagePercent: 0
+    targetMomentumResetSeconds: 0
   commonInstant:
     repairMissingHullFraction: 0
     refillShieldToFull: 0
@@ -73,8 +81,8 @@ MonoBehaviour:
     beamDamagePercent: 0
     projectileCooldownReductionPercent: 0
     projectileEnergyCostReductionPercent: 0
-    projectileSpeedPercent: 0.18
-    projectileLifetimePercent: 0.14
+    projectileSpeedPercent: 0.234
+    projectileLifetimePercent: 0.182
     projectileHitRadiusBonus: 0
     beamCapacityPercent: 0
     beamRegenPercent: 0
@@ -108,6 +116,14 @@ MonoBehaviour:
     executionLotteryChance: 0
     executionLotteryPerTargetCooldown: 0
     futureStatBoostMultiplierBonus: 0
+    shieldLeechDamageFraction: 0
+    hullRepairFractionOnNonBossKill: 0
+    postDodgeSpeedPercent: 0
+    postDodgeAccelerationPercent: 0
+    postDodgeBuffDurationSeconds: 0
+    targetMomentumDamagePercentPerHit: 0
+    targetMomentumMaxDamagePercent: 0
+    targetMomentumResetSeconds: 0
   epicInstant:
     repairMissingHullFraction: 0
     refillShieldToFull: 0
@@ -117,8 +133,8 @@ MonoBehaviour:
     beamDamagePercent: 0
     projectileCooldownReductionPercent: 0
     projectileEnergyCostReductionPercent: 0
-    projectileSpeedPercent: 0.28
-    projectileLifetimePercent: 0.22
+    projectileSpeedPercent: 0.364
+    projectileLifetimePercent: 0.28599998
     projectileHitRadiusBonus: 0
     beamCapacityPercent: 0
     beamRegenPercent: 0
@@ -152,6 +168,14 @@ MonoBehaviour:
     executionLotteryChance: 0
     executionLotteryPerTargetCooldown: 0
     futureStatBoostMultiplierBonus: 0
+    shieldLeechDamageFraction: 0
+    hullRepairFractionOnNonBossKill: 0
+    postDodgeSpeedPercent: 0
+    postDodgeAccelerationPercent: 0
+    postDodgeBuffDurationSeconds: 0
+    targetMomentumDamagePercentPerHit: 0
+    targetMomentumMaxDamagePercent: 0
+    targetMomentumResetSeconds: 0
   highInstant:
     repairMissingHullFraction: 0
     refillShieldToFull: 0
@@ -196,6 +220,14 @@ MonoBehaviour:
     executionLotteryChance: 0
     executionLotteryPerTargetCooldown: 0
     futureStatBoostMultiplierBonus: 0
+    shieldLeechDamageFraction: 0
+    hullRepairFractionOnNonBossKill: 0
+    postDodgeSpeedPercent: 0
+    postDodgeAccelerationPercent: 0
+    postDodgeBuffDurationSeconds: 0
+    targetMomentumDamagePercentPerHit: 0
+    targetMomentumMaxDamagePercent: 0
+    targetMomentumResetSeconds: 0
   tier4Instant:
     repairMissingHullFraction: 0
     refillShieldToFull: 0

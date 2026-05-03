@@ -60,6 +60,13 @@ Design read:
 
 The current 3D Invasion reward layer is run-only and applies additive modifier totals back onto each player's captured base snapshot.
 
+Current V1 tuning note:
+
+- The default reward assets under `Assets/Resources/3D/InvasionRewards` have received an across-the-board V1 buff to positive numeric reward effects: most beneficial values were multiplied by about `1.3x`.
+- This was applied as a buff pass, not a risk pass. Negative CRAIZAN CONTRACT drawbacks, positive incoming-damage-taken penalties, delay/cooldown lockout seconds where larger would be worse, booleans, and projectile pierce counts were left unchanged.
+- Instant missing-hull repair fractions were included but clamped to `1.0`, so full-repair rewards stay full repair rather than overflowing.
+- Unity serialization may add newly introduced zero-value payload fields to older reward assets when they are saved; those zero-field additions are expected and do not change reward strength.
+
 Important implementation facts:
 
 - Rewards are offered after cleared waves, except the final configured wave.
@@ -71,11 +78,11 @@ Important implementation facts:
 
 Current repeatable normal stat buckets include:
 
-- Damage Calibration: all weapon damage, roughly `+6% / +10% / +15%`
-- Energy Cycle Tuning: projectile cooldown reduction, projectile energy cost reduction, beam capacity, beam regen, and ability cooldown, roughly `+5-12%` cadence and `+8-20%` resource economy depending on tier
-- Reinforced Frame: max hull and max shield, roughly `+10% / +18% / +28%`
+- Damage Calibration: all weapon damage, roughly `+7.8% / +13% / +19.5%`
+- Energy Cycle Tuning: projectile cooldown reduction, projectile energy cost reduction, beam capacity, beam regen, and ability cooldown, roughly `+6.5-15.6%` cadence and `+10.4-26%` resource economy depending on tier
+- Reinforced Frame: max hull and max shield, roughly `+13% / +23.4% / +36.4%`
 - projectile handling: projectile speed/lifetime/hit forgiveness style scaling
-- ship handling: acceleration, top speed, and turn response, roughly `+8-22%` acceleration, `+6-15%` top speed, and `+5-14%` turn response depending on tier
+- ship handling: acceleration, top speed, and turn response, roughly `+10.4-28.6%` acceleration, `+7.8-19.5%` top speed, and `+6.5-18.2%` turn response depending on tier
 
 Current one-time or perk-style reward hooks include:
 

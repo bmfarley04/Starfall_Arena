@@ -116,7 +116,7 @@ MonoBehaviour:
     executionLotteryChance: 0
     executionLotteryPerTargetCooldown: 0
     futureStatBoostMultiplierBonus: 0
-    shieldLeechDamageFraction: 0.03
+    shieldLeechDamageFraction: 0.038999997
     hullRepairFractionOnNonBossKill: 0
     postDodgeSpeedPercent: 0
     postDodgeAccelerationPercent: 0
@@ -168,7 +168,7 @@ MonoBehaviour:
     executionLotteryChance: 0
     executionLotteryPerTargetCooldown: 0
     futureStatBoostMultiplierBonus: 0
-    shieldLeechDamageFraction: 0.05
+    shieldLeechDamageFraction: 0.065
     hullRepairFractionOnNonBossKill: 0
     postDodgeSpeedPercent: 0
     postDodgeAccelerationPercent: 0

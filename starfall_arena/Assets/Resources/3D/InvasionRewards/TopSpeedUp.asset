@@ -41,7 +41,7 @@ MonoBehaviour:
     flatMaxShield: 0
     shieldRegenDelayReductionPercent: 0
     shieldRegenRatePercent: 0
-    incomingDamageReductionPercent: 0.04
+    incomingDamageReductionPercent: 0.051999997
     incomingDamageTakenPercent: 0
     thrustAccelerationPercent: 0
     maxSpeedPercent: 0
@@ -64,6 +64,14 @@ MonoBehaviour:
     executionLotteryChance: 0
     executionLotteryPerTargetCooldown: 0
     futureStatBoostMultiplierBonus: 0
+    shieldLeechDamageFraction: 0
+    hullRepairFractionOnNonBossKill: 0
+    postDodgeSpeedPercent: 0
+    postDodgeAccelerationPercent: 0
+    postDodgeBuffDurationSeconds: 0
+    targetMomentumDamagePercentPerHit: 0
+    targetMomentumMaxDamagePercent: 0
+    targetMomentumResetSeconds: 0
   commonInstant:
     repairMissingHullFraction: 0
     refillShieldToFull: 0
@@ -85,7 +93,7 @@ MonoBehaviour:
     flatMaxShield: 0
     shieldRegenDelayReductionPercent: 0
     shieldRegenRatePercent: 0
-    incomingDamageReductionPercent: 0.07
+    incomingDamageReductionPercent: 0.091
     incomingDamageTakenPercent: 0
     thrustAccelerationPercent: 0
     maxSpeedPercent: 0
@@ -108,6 +116,14 @@ MonoBehaviour:
     executionLotteryChance: 0
     executionLotteryPerTargetCooldown: 0
     futureStatBoostMultiplierBonus: 0
+    shieldLeechDamageFraction: 0
+    hullRepairFractionOnNonBossKill: 0
+    postDodgeSpeedPercent: 0
+    postDodgeAccelerationPercent: 0
+    postDodgeBuffDurationSeconds: 0
+    targetMomentumDamagePercentPerHit: 0
+    targetMomentumMaxDamagePercent: 0
+    targetMomentumResetSeconds: 0
   epicInstant:
     repairMissingHullFraction: 0
     refillShieldToFull: 0
@@ -129,7 +145,7 @@ MonoBehaviour:
     flatMaxShield: 0
     shieldRegenDelayReductionPercent: 0
     shieldRegenRatePercent: 0
-    incomingDamageReductionPercent: 0.1
+    incomingDamageReductionPercent: 0.13
     incomingDamageTakenPercent: 0
     thrustAccelerationPercent: 0
     maxSpeedPercent: 0
@@ -152,6 +168,14 @@ MonoBehaviour:
     executionLotteryChance: 0
     executionLotteryPerTargetCooldown: 0
     futureStatBoostMultiplierBonus: 0
+    shieldLeechDamageFraction: 0
+    hullRepairFractionOnNonBossKill: 0
+    postDodgeSpeedPercent: 0
+    postDodgeAccelerationPercent: 0
+    postDodgeBuffDurationSeconds: 0
+    targetMomentumDamagePercentPerHit: 0
+    targetMomentumMaxDamagePercent: 0
+    targetMomentumResetSeconds: 0
   highInstant:
     repairMissingHullFraction: 0
     refillShieldToFull: 0
@@ -196,6 +220,14 @@ MonoBehaviour:
     executionLotteryChance: 0
     executionLotteryPerTargetCooldown: 0
     futureStatBoostMultiplierBonus: 0
+    shieldLeechDamageFraction: 0
+    hullRepairFractionOnNonBossKill: 0
+    postDodgeSpeedPercent: 0
+    postDodgeAccelerationPercent: 0
+    postDodgeBuffDurationSeconds: 0
+    targetMomentumDamagePercentPerHit: 0
+    targetMomentumMaxDamagePercent: 0
+    targetMomentumResetSeconds: 0
   tier4Instant:
     repairMissingHullFraction: 0
     refillShieldToFull: 0

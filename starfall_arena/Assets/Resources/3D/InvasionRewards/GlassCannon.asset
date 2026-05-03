@@ -64,6 +64,14 @@ MonoBehaviour:
     executionLotteryChance: 0
     executionLotteryPerTargetCooldown: 0
     futureStatBoostMultiplierBonus: 0
+    shieldLeechDamageFraction: 0
+    hullRepairFractionOnNonBossKill: 0
+    postDodgeSpeedPercent: 0
+    postDodgeAccelerationPercent: 0
+    postDodgeBuffDurationSeconds: 0
+    targetMomentumDamagePercentPerHit: 0
+    targetMomentumMaxDamagePercent: 0
+    targetMomentumResetSeconds: 0
   commonInstant:
     repairMissingHullFraction: 0
     refillShieldToFull: 0
@@ -108,6 +116,14 @@ MonoBehaviour:
     executionLotteryChance: 0
     executionLotteryPerTargetCooldown: 0
     futureStatBoostMultiplierBonus: 0
+    shieldLeechDamageFraction: 0
+    hullRepairFractionOnNonBossKill: 0
+    postDodgeSpeedPercent: 0
+    postDodgeAccelerationPercent: 0
+    postDodgeBuffDurationSeconds: 0
+    targetMomentumDamagePercentPerHit: 0
+    targetMomentumMaxDamagePercent: 0
+    targetMomentumResetSeconds: 0
   epicInstant:
     repairMissingHullFraction: 0
     refillShieldToFull: 0
@@ -152,12 +168,20 @@ MonoBehaviour:
     executionLotteryChance: 0
     executionLotteryPerTargetCooldown: 0
     futureStatBoostMultiplierBonus: 0
+    shieldLeechDamageFraction: 0
+    hullRepairFractionOnNonBossKill: 0
+    postDodgeSpeedPercent: 0
+    postDodgeAccelerationPercent: 0
+    postDodgeBuffDurationSeconds: 0
+    targetMomentumDamagePercentPerHit: 0
+    targetMomentumMaxDamagePercent: 0
+    targetMomentumResetSeconds: 0
   highInstant:
     repairMissingHullFraction: 0
     refillShieldToFull: 0
     grantExtraLife: 0
   tier4Persistent:
-    allWeaponDamagePercent: 0.35
+    allWeaponDamagePercent: 0.45499998
     beamDamagePercent: 0
     projectileCooldownReductionPercent: 0
     projectileEnergyCostReductionPercent: 0
@@ -196,6 +220,14 @@ MonoBehaviour:
     executionLotteryChance: 0
     executionLotteryPerTargetCooldown: 0
     futureStatBoostMultiplierBonus: 0
+    shieldLeechDamageFraction: 0
+    hullRepairFractionOnNonBossKill: 0
+    postDodgeSpeedPercent: 0
+    postDodgeAccelerationPercent: 0
+    postDodgeBuffDurationSeconds: 0
+    targetMomentumDamagePercentPerHit: 0
+    targetMomentumMaxDamagePercent: 0
+    targetMomentumResetSeconds: 0
   tier4Instant:
     repairMissingHullFraction: 0
     refillShieldToFull: 0

@@ -118,9 +118,9 @@ MonoBehaviour:
     futureStatBoostMultiplierBonus: 0
     shieldLeechDamageFraction: 0
     hullRepairFractionOnNonBossKill: 0
-    postDodgeSpeedPercent: 0.1
-    postDodgeAccelerationPercent: 0.2
-    postDodgeBuffDurationSeconds: 2
+    postDodgeSpeedPercent: 0.13
+    postDodgeAccelerationPercent: 0.26
+    postDodgeBuffDurationSeconds: 2.6
     targetMomentumDamagePercentPerHit: 0
     targetMomentumMaxDamagePercent: 0
     targetMomentumResetSeconds: 0
