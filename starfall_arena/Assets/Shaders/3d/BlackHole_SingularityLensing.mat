@@ -25,48 +25,48 @@ Material:
     m_TexEnvs: []
     m_Ints: []
     m_Floats:
-    - _BendClamp: 0.6
-    - _BendFalloff: 8
-    - _BendStrength: -1.5
-    - _ChromaticAberration: 0.0249
+    - _BendClamp: 0.189
+    - _BendFalloff: 2.05
+    - _BendStrength: -0.95
+    - _ChromaticAberration: 0.0039
     - _DebugViewMode: 0
-    - _DiskArcCoreStrength: 0
-    - _DiskArcDopplerBoost: 0
-    - _DiskArcFarSideDimming: 0
-    - _DiskArcHotSideAngle: -3.14
+    - _DiskArcCoreStrength: 0.72
+    - _DiskArcDopplerBoost: 1.8
+    - _DiskArcFarSideDimming: 0.58
+    - _DiskArcHotSideAngle: -0.69
     - _DiskArcInfallSpeed: 0.18
-    - _DiskArcIntensity: 0
-    - _DiskArcLineFrequency: 4
+    - _DiskArcIntensity: 0.58
+    - _DiskArcLineFrequency: 6
     - _DiskArcLineSharpness: 0.25
-    - _DiskArcNoiseScale: 0.5
+    - _DiskArcNoiseScale: 7.5
     - _DiskArcNoiseStrength: 0
-    - _DiskArcRadiusOffset: -0.25
+    - _DiskArcRadiusOffset: 0.035
     - _DiskArcSpinSpeed: 0.24
-    - _DiskArcSpiralTightness: 0
+    - _DiskArcSpiralTightness: 3.13
     - _DiskArcVerticalBias: 0
-    - _DiskArcWidth: 0.001
-    - _EventHorizonRadius: 0.467
+    - _DiskArcWidth: 0.22
+    - _EventHorizonRadius: 0.63
     - _HorizonSoftness: 0.001
-    - _LensBackgroundDepthSoftness: 0.024
-    - _LensBackgroundDepthThreshold: 0.978
-    - _LensCausticBoost: 0.82
-    - _LensForegroundDepthBias: -23
-    - _LensForegroundDepthSoftness: 23.1
+    - _LensBackgroundDepthSoftness: 0.0196
+    - _LensBackgroundDepthThreshold: 0.995
+    - _LensCausticBoost: 1.45
+    - _LensForegroundDepthBias: -3.7
+    - _LensForegroundDepthSoftness: 14.4
     - _LensForegroundRejection: 1
-    - _LensOpacity: 0
+    - _LensOpacity: 1
     - _LensedSourceBoost: 0.45
-    - _LensedSourceRingWidth: 0.144
-    - _LensedSourceThickness: 0.0249
-    - _LensedSourceThreshold: 2.21
+    - _LensedSourceRingWidth: 0.137
+    - _LensedSourceThickness: 0.0118
+    - _LensedSourceThreshold: 1.25
     - _ObjectRadius: 0.5
-    - _OffscreenDiskArcIntensity: 2.57
-    - _OuterFade: 0.45
-    - _PhotonRingAlpha: 1
-    - _PhotonRingIntensity: 2.98
-    - _PhotonRingWidth: 0.0405
+    - _OffscreenDiskArcIntensity: 2.3
+    - _OuterFade: 0.001
+    - _PhotonRingAlpha: 0.72
+    - _PhotonRingIntensity: 4.1
+    - _PhotonRingWidth: 0.044
     m_Colors:
     - _EventHorizonColor: {r: 0, g: 0, b: 0, a: 1}
     - _OffscreenDiskArcColor: {r: 0.35, g: 1.1, b: 2.8, a: 1}
-    - _PhotonRingColor: {r: 0, g: 1.7187631, b: 3.5648696, a: 1}
+    - _PhotonRingColor: {r: 0.18, g: 0.95, b: 2.45, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

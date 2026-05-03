@@ -4,7 +4,8 @@ public enum InvasionRewardTier3D
 {
     Common = 1,
     Epic = 2,
-    High = 3
+    High = 3,
+    Tier4 = 4
 }
 
 [CreateAssetMenu(fileName = "InvasionStatRewardDefinition3D", menuName = "Starfall Arena/3D/Invasion/Stat Reward", order = 60)]
@@ -108,6 +109,12 @@ public class InvasionStatRewardDefinition3D : ScriptableObject
     [Tooltip("Immediate one-shot effects applied when this reward is chosen as a High-tier pick.")]
     [SerializeField] private InstantRewardPayload3D highInstant;
 
+    [Header("Tier 4")]
+    [Tooltip("Persistent run-long stat changes applied when this reward is offered as an Invasion-only tier 4 pick. If tier 4 is left empty, the High-tier payload is used for compatibility.")]
+    [SerializeField] private PersistentRewardPayload3D tier4Persistent;
+    [Tooltip("Immediate one-shot effects applied when this reward is chosen as an Invasion-only tier 4 pick. If tier 4 is left empty, the High-tier payload is used for compatibility.")]
+    [SerializeField] private InstantRewardPayload3D tier4Instant;
+
     public string RewardId => string.IsNullOrWhiteSpace(rewardId) ? name : rewardId;
     public string DisplayName => string.IsNullOrWhiteSpace(displayName) ? name : displayName;
     public string Description => description;
@@ -126,6 +133,7 @@ public class InvasionStatRewardDefinition3D : ScriptableObject
         {
             InvasionRewardTier3D.Epic => epicPersistent,
             InvasionRewardTier3D.High => highPersistent,
+            InvasionRewardTier3D.Tier4 => HasConfiguredTier4Payload() ? tier4Persistent : highPersistent,
             _ => commonPersistent
         };
     }
@@ -136,6 +144,7 @@ public class InvasionStatRewardDefinition3D : ScriptableObject
         {
             InvasionRewardTier3D.Epic => epicInstant,
             InvasionRewardTier3D.High => highInstant,
+            InvasionRewardTier3D.Tier4 => HasConfiguredTier4Payload() ? tier4Instant : highInstant,
             _ => commonInstant
         };
     }
@@ -157,9 +166,43 @@ public class InvasionStatRewardDefinition3D : ScriptableObject
         ClampPersistentPayload(ref commonPersistent);
         ClampPersistentPayload(ref epicPersistent);
         ClampPersistentPayload(ref highPersistent);
+        ClampPersistentPayload(ref tier4Persistent);
         ClampInstantPayload(ref commonInstant);
         ClampInstantPayload(ref epicInstant);
         ClampInstantPayload(ref highInstant);
+        ClampInstantPayload(ref tier4Instant);
+    }
+
+    private bool HasConfiguredTier4Payload()
+    {
+        return HasAnyPersistentValue(tier4Persistent) || HasAnyInstantValue(tier4Instant);
+    }
+
+    private static bool HasAnyPersistentValue(PersistentRewardPayload3D payload)
+    {
+        return payload.allWeaponDamagePercent > 0f
+            || payload.projectileCooldownReductionPercent > 0f
+            || payload.projectileSpeedPercent > 0f
+            || payload.projectileLifetimePercent > 0f
+            || payload.beamDamagePercent > 0f
+            || payload.beamCapacityPercent > 0f
+            || payload.beamRegenPercent > 0f
+            || payload.flatMaxHealth > 0f
+            || payload.flatMaxShield > 0f
+            || payload.shieldRegenDelayReductionPercent > 0f
+            || payload.shieldRegenRatePercent > 0f
+            || payload.thrustAccelerationPercent > 0f
+            || payload.maxSpeedPercent > 0f
+            || payload.turnResponsePercent > 0f
+            || payload.flightAssistDampingPercent > 0f
+            || payload.flightAssistAlignmentPercent > 0f;
+    }
+
+    private static bool HasAnyInstantValue(InstantRewardPayload3D payload)
+    {
+        return payload.repairMissingHullFraction > 0f
+            || payload.refillShieldToFull
+            || payload.grantExtraLife;
     }
 
     private static void ClampPersistentPayload(ref PersistentRewardPayload3D payload)

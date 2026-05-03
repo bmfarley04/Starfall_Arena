@@ -28,6 +28,9 @@ namespace StarfallArena.UI
         [Tooltip("Tier 3 augments (legendary)")]
         [SerializeField] private List<Augment> tier3Augments = new List<Augment>();
 
+        [Tooltip("Optional tier 4 augments. This Invasion-only tier is shown as a single card and is not included in the normal 2D random tier order.")]
+        [SerializeField] private List<Augment> tier4Augments = new List<Augment>();
+
         [Header("Tier Selection Probabilities")]
         [Tooltip("Probability of tier 1 appearing (must sum to 1 with other tiers)")]
         [Range(0f, 1f)]
@@ -86,6 +89,12 @@ namespace StarfallArena.UI
         [SerializeField] private TextMeshProUGUI tier3Choice3Name;
         [SerializeField] private TextMeshProUGUI tier3Choice3Description;
 
+        [Header("Tier 4 UI References - Choice 1")]
+        [Tooltip("Invasion-only tier 4 choice 1 icon. Leave unassigned in 2D scenes.")]
+        [SerializeField] private Image tier4Choice1Icon;
+        [SerializeField] private TextMeshProUGUI tier4Choice1Name;
+        [SerializeField] private TextMeshProUGUI tier4Choice1Description;
+
         [Header("Canvas Groups")]
         [Tooltip("Canvas group containing tier 1 UI")]
         [SerializeField] private CanvasGroup tier1CanvasGroup;
@@ -96,26 +105,35 @@ namespace StarfallArena.UI
         [Tooltip("Canvas group containing tier 3 UI")]
         [SerializeField] private CanvasGroup tier3CanvasGroup;
 
-        [Header("Card Buttons (3 per tier — left, center, right)")]
+        [Tooltip("Optional canvas group containing tier 4 UI. Used by 3D Invasion reward visuals when assigned.")]
+        [SerializeField] private CanvasGroup tier4CanvasGroup;
+
+        [Header("Card Buttons")]
         [SerializeField] private Button[] tier1Buttons = new Button[3];
         [SerializeField] private Button[] tier2Buttons = new Button[3];
         [SerializeField] private Button[] tier3Buttons = new Button[3];
+        [Tooltip("Single Invasion-only tier 4 button. Leave unassigned in 2D scenes.")]
+        [SerializeField] private Button[] tier4Buttons = new Button[1];
 
-        [Header("Card Containers (border Image per card — 3 per tier)")]
+        [Header("Card Containers (border Image per card)")]
         [Tooltip("The 'container' Image child of each tier 1 card (border element)")]
         [SerializeField] private Image[] tier1Containers = new Image[3];
         [Tooltip("The 'container' Image child of each tier 2 card (border element)")]
         [SerializeField] private Image[] tier2Containers = new Image[3];
         [Tooltip("The 'container' Image child of each tier 3 card (border element)")]
         [SerializeField] private Image[] tier3Containers = new Image[3];
+        [Tooltip("The 'container' Image child of the single tier 4 card. Used only when the Invasion-only tier 4 UI is assigned.")]
+        [SerializeField] private Image[] tier4Containers = new Image[1];
 
-        [Header("Inner Card Containers (inner border Image per card - 3 per tier)")]
+        [Header("Inner Card Containers (inner border Image per card)")]
         [Tooltip("The 'inner container' Image child of each tier 1 card (inner border element)")]
         [SerializeField] private Image[] tier1InnerContainers = new Image[3];
         [Tooltip("The 'inner container' Image child of each tier 2 card (inner border element)")]
         [SerializeField] private Image[] tier2InnerContainers = new Image[3];
         [Tooltip("The 'inner container' Image child of each tier 3 card (inner border element)")]
         [SerializeField] private Image[] tier3InnerContainers = new Image[3];
+        [Tooltip("The inner border Image child of the single tier 4 card. Used only when the Invasion-only tier 4 UI is assigned.")]
+        [SerializeField] private Image[] tier4InnerContainers = new Image[1];
 
         [Header("Hover / Selection Scale")]
         [Tooltip("X scale multiplier when a card is hovered/selected")]
@@ -267,6 +285,7 @@ namespace StarfallArena.UI
             WireButtonEvents(tier1Buttons);
             WireButtonEvents(tier2Buttons);
             WireButtonEvents(tier3Buttons);
+            WireButtonEvents(tier4Buttons);
 
             // Create isolated RNG so tier shuffling is not affected by UnityEngine.Random.InitState calls in other systems
             InitializeTierOrderRng();
@@ -294,7 +313,8 @@ namespace StarfallArena.UI
         }
 
         /// <summary>
-        /// Generates a randomized order containing exactly one of each tier (1, 2, 3).
+        /// Generates a randomized order containing exactly one of each normal duel tier.
+        /// Tier 4 is Invasion-only and must be requested explicitly by the reward presenter.
         /// </summary>
         private void GenerateRandomizedGameTierOrder()
         {
@@ -313,7 +333,7 @@ namespace StarfallArena.UI
             }
 
             _gameTierOrderIndex = 0;
-            Debug.Log($"[AugmentSelect] Game tier order: {_gameTierOrder[0]} -> {_gameTierOrder[1]} -> {_gameTierOrder[2]}");
+            Debug.Log($"[AugmentSelect] Game tier order: {string.Join(" -> ", _gameTierOrder)}");
         }
 
         private void Update()
@@ -554,7 +574,7 @@ namespace StarfallArena.UI
         // ===== BUTTON WIRING =====
 
         /// <summary>
-        /// Wires onClick and select/deselect listeners for a set of 3 card buttons.
+        /// Wires onClick and select/deselect listeners for a set of card buttons.
         /// onClick is still wired so both manual polling (A button → onClick.Invoke)
         /// and EventSystem fallback path work.
         /// </summary>
@@ -1025,6 +1045,7 @@ namespace StarfallArena.UI
                 1 => tier1Containers,
                 2 => tier2Containers,
                 3 => tier3Containers,
+                4 => tier4Containers,
                 _ => tier1Containers
             };
             return (containers != null && index >= 0 && index < containers.Length) ? containers[index] : null;
@@ -1037,6 +1058,7 @@ namespace StarfallArena.UI
                 1 => tier1InnerContainers,
                 2 => tier2InnerContainers,
                 3 => tier3InnerContainers,
+                4 => tier4InnerContainers,
                 _ => tier1InnerContainers
             };
             return (containers != null && index >= 0 && index < containers.Length) ? containers[index] : null;
@@ -1055,6 +1077,7 @@ namespace StarfallArena.UI
                 (3, 0) => tier3Choice1Icon,
                 (3, 1) => tier3Choice2Icon,
                 (3, 2) => tier3Choice3Icon,
+                (4, 0) => tier4Choice1Icon,
                 _ => null
             };
         }
@@ -1072,6 +1095,7 @@ namespace StarfallArena.UI
                 (3, 0) => tier3Choice1Name,
                 (3, 1) => tier3Choice2Name,
                 (3, 2) => tier3Choice3Name,
+                (4, 0) => tier4Choice1Name,
                 _ => null
             };
         }
@@ -1089,6 +1113,7 @@ namespace StarfallArena.UI
                 (3, 0) => tier3Choice1Description,
                 (3, 1) => tier3Choice2Description,
                 (3, 2) => tier3Choice3Description,
+                (4, 0) => tier4Choice1Description,
                 _ => null
             };
         }
@@ -1201,6 +1226,7 @@ namespace StarfallArena.UI
             ReactivateButtons(tier1Buttons);
             ReactivateButtons(tier2Buttons);
             ReactivateButtons(tier3Buttons);
+            ReactivateButtons(tier4Buttons);
         }
 
         private void ReactivateButtons(Button[] buttons)
@@ -1228,6 +1254,7 @@ namespace StarfallArena.UI
             SetCanvasGroupVisibility(tier1CanvasGroup, false);
             SetCanvasGroupVisibility(tier2CanvasGroup, false);
             SetCanvasGroupVisibility(tier3CanvasGroup, false);
+            SetCanvasGroupVisibility(tier4CanvasGroup, false);
         }
 
         /// <summary>
@@ -1266,15 +1293,22 @@ namespace StarfallArena.UI
         }
 
         /// <summary>
-        /// Selects 3 random augments from the specified tier without duplicates.
+        /// Selects random augments from the specified tier without duplicates.
+        /// Tier 4 is intentionally capped to a single Invasion-only card.
         /// </summary>
         private List<Augment> SelectRandomAugments(int tier, int count = 3)
         {
+            if (tier == 4)
+            {
+                count = Mathf.Min(count, 1);
+            }
+
             List<Augment> sourceList = tier switch
             {
                 1 => tier1Augments,
                 2 => tier2Augments,
                 3 => tier3Augments,
+                4 => tier4Augments,
                 _ => tier1Augments
             };
 
@@ -1334,6 +1368,10 @@ namespace StarfallArena.UI
                     SetUIElements(tier3Choice1Icon, tier3Choice1Name, tier3Choice1Description, augments[0]);
                     SetOptionalUIElements(3, 1, augments, tier3Choice2Icon, tier3Choice2Name, tier3Choice2Description);
                     SetOptionalUIElements(3, 2, augments, tier3Choice3Icon, tier3Choice3Name, tier3Choice3Description);
+                    break;
+
+                case 4:
+                    SetUIElements(tier4Choice1Icon, tier4Choice1Name, tier4Choice1Description, augments[0]);
                     break;
             }
 
@@ -1483,6 +1521,7 @@ namespace StarfallArena.UI
                 1 => tier1CanvasGroup,
                 2 => tier2CanvasGroup,
                 3 => tier3CanvasGroup,
+                4 => tier4CanvasGroup,
                 _ => tier1CanvasGroup
             };
         }
@@ -1662,6 +1701,7 @@ namespace StarfallArena.UI
                 1 => tier1Buttons,
                 2 => tier2Buttons,
                 3 => tier3Buttons,
+                4 => tier4Buttons,
                 _ => tier1Buttons
             };
         }

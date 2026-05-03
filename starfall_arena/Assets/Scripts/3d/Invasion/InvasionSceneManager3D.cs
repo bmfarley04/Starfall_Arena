@@ -797,10 +797,10 @@ public class InvasionSceneManager3D : MonoBehaviour
 
     private void EnsureRewardStateContainers()
     {
+        int offerCount = GetCurrentRewardOfferCount();
         for (int i = 1; i <= 2; i++)
         {
             _rewardStateBySlot[i] ??= new InvasionPlayerRewardState3D();
-            int offerCount = Mathf.Max(1, rewardsPerOffer);
             if (_pendingRewardOfferIndicesBySlot[i] == null || _pendingRewardOfferIndicesBySlot[i].Length != offerCount)
             {
                 _pendingRewardOfferIndicesBySlot[i] = new int[offerCount];
@@ -810,6 +810,18 @@ public class InvasionSceneManager3D : MonoBehaviour
                 }
             }
         }
+    }
+
+    private int GetCurrentRewardOfferCount()
+    {
+        return GetRewardOfferCountForTier(_activeRewardPhaseTier);
+    }
+
+    private int GetRewardOfferCountForTier(InvasionRewardTier3D rewardTier)
+    {
+        return rewardTier == InvasionRewardTier3D.Tier4
+            ? 1
+            : Mathf.Max(1, rewardsPerOffer);
     }
 
     private void BuildEffectiveRewardDefinitionList()
@@ -1109,7 +1121,7 @@ public class InvasionSceneManager3D : MonoBehaviour
             weights.Add(weight);
         }
 
-        int offerCount = Mathf.Min(Mathf.Max(1, rewardsPerOffer), offers.Length);
+        int offerCount = Mathf.Min(GetRewardOfferCountForTier(rewardTier), offers.Length);
         for (int offerIndex = 0; offerIndex < offerCount && eligibleRewardIndices.Count > 0; offerIndex++)
         {
             int chosenPoolIndex = PickWeightedRewardPoolIndex(weights);
@@ -1148,7 +1160,7 @@ public class InvasionSceneManager3D : MonoBehaviour
 
     private List<InvasionStatRewardDefinition3D> ResolveRewardOffersForSlot(byte playerSlot)
     {
-        List<InvasionStatRewardDefinition3D> offers = new List<InvasionStatRewardDefinition3D>(Mathf.Max(1, rewardsPerOffer));
+        List<InvasionStatRewardDefinition3D> offers = new List<InvasionStatRewardDefinition3D>(GetCurrentRewardOfferCount());
         int[] indices = _pendingRewardOfferIndicesBySlot[playerSlot];
         for (int i = 0; i < indices.Length; i++)
         {
@@ -1350,11 +1362,12 @@ public class InvasionSceneManager3D : MonoBehaviour
 
     private static InvasionRewardTier3D ResolveRewardTierForWave(int clearedWaveNumber)
     {
-        int normalizedWaveIndex = Mathf.Max(0, clearedWaveNumber - 1) % 3;
+        int normalizedWaveIndex = Mathf.Max(0, clearedWaveNumber - 1) % 4;
         return normalizedWaveIndex switch
         {
             1 => InvasionRewardTier3D.Epic,
             2 => InvasionRewardTier3D.High,
+            3 => InvasionRewardTier3D.Tier4,
             _ => InvasionRewardTier3D.Common
         };
     }
@@ -2086,7 +2099,7 @@ public class InvasionSceneManager3D : MonoBehaviour
             return;
         }
 
-        int offerCount = Mathf.Max(1, rewardsPerOffer);
+        int offerCount = GetCurrentRewardOfferCount();
         using (FastBufferWriter writer = new FastBufferWriter(8 + (offerCount * sizeof(int) * 2), Allocator.Temp))
         {
             writer.WriteValueSafe(_rewardPhaseSequenceId);
@@ -2119,7 +2132,7 @@ public class InvasionSceneManager3D : MonoBehaviour
 
         EnsureRewardStateContainers();
         ResetRewardChoiceState();
-        int offerCount = Mathf.Max(1, rewardsPerOffer);
+        int offerCount = GetCurrentRewardOfferCount();
         for (int slot = 1; slot <= 2; slot++)
         {
             for (int i = 0; i < offerCount; i++)
@@ -2265,6 +2278,7 @@ public class InvasionSceneManager3D : MonoBehaviour
         {
             InvasionRewardTier3D.Epic => InvasionRewardTier3D.Epic,
             InvasionRewardTier3D.High => InvasionRewardTier3D.High,
+            InvasionRewardTier3D.Tier4 => InvasionRewardTier3D.Tier4,
             _ => InvasionRewardTier3D.Common
         };
     }

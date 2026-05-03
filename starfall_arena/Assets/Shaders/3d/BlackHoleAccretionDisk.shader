@@ -20,6 +20,8 @@ Shader "Starfall/3D/BlackHole/AccretionDisk"
         _NoiseStrength("Noise Strength", Range(0.0, 2.0)) = 0.75
         _RingFrequency("Ring Frequency", Range(1.0, 80.0)) = 34.0
         _RingSharpness("Ring Sharpness", Range(0.25, 12.0)) = 3.0
+        _RingLineStrength("Discrete Ring Line Strength", Range(0.0, 1.0)) = 0.55
+        _VolumetricFill("Soft Volumetric Fill", Range(0.0, 1.0)) = 0.35
         _WispSharpness("Wisp Sharpness", Range(0.25, 12.0)) = 2.4
 
         [Header(Color And Brightness)]
@@ -99,6 +101,8 @@ Shader "Starfall/3D/BlackHole/AccretionDisk"
                 float _NoiseStrength;
                 float _RingFrequency;
                 float _RingSharpness;
+                half _RingLineStrength;
+                half _VolumetricFill;
                 float _WispSharpness;
 
                 half4 _InnerColor;
@@ -196,6 +200,7 @@ Shader "Starfall/3D/BlackHole/AccretionDisk"
                 float ringLines = pow(saturate(ringWave), _RingSharpness);
                 float wisps = pow(saturate(noiseValue), _WispSharpness);
                 float clumpMask = lerp(0.58, 1.38, smoothstep(0.18, 0.92, clumpNoise + broadNoise * 0.28));
+                float softPlasma = smoothstep(0.14, 0.92, broadNoise * 0.72 + clumpNoise * 0.42 + innerMask * 0.2);
 
                 float hotSide01 = saturate(0.5 + 0.5 * cos(angle - _HotSideAngle));
                 float hotSide = pow(hotSide01, max(_DopplerFocus, 0.001));
@@ -210,14 +215,16 @@ Shader "Starfall/3D/BlackHole/AccretionDisk"
                 gradient = lerp(gradient, _OuterColor.rgb, smoothstep(0.45, 1.0, radial01));
                 gradient = lerp(gradient, _HotStreakColor.rgb, saturate(hotSide * (0.22 + ringLines * 0.78)));
 
-                float laneIntensity = saturate((wisps * 0.85 + ringLines * 0.9) * clumpMask);
+                float lineStrength = saturate(_RingLineStrength);
+                float fillStrength = saturate(_VolumetricFill);
+                float laneIntensity = saturate((wisps * 0.85 + ringLines * 0.9 * lineStrength + softPlasma * fillStrength) * clumpMask);
                 float innerHeat = pow(1.0 - smoothstep(0.0, 0.62, radial01), 1.25);
-                float alpha = diskMask * _Opacity * saturate(laneIntensity + innerHeat * 0.4);
+                float alpha = diskMask * _Opacity * saturate(laneIntensity + innerHeat * (0.4 + fillStrength * 0.3) + fillStrength * 0.18);
 
                 clip(alpha - _DepthClipThreshold);
 
                 half3 color = gradient * _Brightness;
-                color *= (0.32 + laneIntensity * 1.35 + innerHeat * 1.1) * dopplerMultiplier;
+                color *= (0.32 + laneIntensity * 1.2 + innerHeat * 1.1 + softPlasma * fillStrength * 0.45) * dopplerMultiplier;
 
                 return half4(color, alpha);
             }

@@ -11,6 +11,7 @@ public class BlackHoleMenaceVisual3D : NetworkBehaviour
     private static readonly int OuterColorId = Shader.PropertyToID("_OuterColor");
     private static readonly int HotStreakColorId = Shader.PropertyToID("_HotStreakColor");
     private static readonly int OffscreenDiskArcColorId = Shader.PropertyToID("_OffscreenDiskArcColor");
+    private static readonly int PhotonRingColorId = Shader.PropertyToID("_PhotonRingColor");
 
     [Header("References")]
     [Tooltip("Renderer using Starfall/3D/BlackHole/AccretionDisk. Only this renderer's accretion disk material is tinted by menace progress.")]
@@ -19,7 +20,7 @@ public class BlackHoleMenaceVisual3D : NetworkBehaviour
     [Tooltip("Material slot on Accretion Disk Renderer that uses Starfall/3D/BlackHole/AccretionDisk.")]
     [SerializeField] [Min(0)] private int accretionDiskMaterialIndex;
 
-    [Tooltip("Renderer using a Starfall/3D/BlackHole singularity shader. The simplified singularity arc is tinted from the same menace palette.")]
+    [Tooltip("Renderer using a Starfall/3D/BlackHole singularity shader. The lensed arc and photon ring are tinted from the same menace palette.")]
     [SerializeField] private Renderer singularityLensRenderer;
 
     [Tooltip("Material slot on Singularity Lens Renderer that uses a Starfall/3D/BlackHole singularity shader.")]
@@ -484,7 +485,7 @@ public class BlackHoleMenaceVisual3D : NetworkBehaviour
         }
 
         ApplyColorsToPropertyBlock(innerColor, midColor, outerColor, hotStreakColor);
-        ApplySingularityFallbackColor(offscreenDiskArcColor);
+        ApplySingularityPaletteColors(offscreenDiskArcColor, hotStreakColor);
     }
 
     private void ApplyColorsToPropertyBlock(Color innerColor, Color midColor, Color outerColor, Color hotStreakColor)
@@ -498,7 +499,7 @@ public class BlackHoleMenaceVisual3D : NetworkBehaviour
         accretionDiskRenderer.SetPropertyBlock(_previewPropertyBlock, accretionDiskMaterialIndex);
     }
 
-    private void ApplySingularityFallbackColor(Color offscreenDiskArcColor)
+    private void ApplySingularityPaletteColors(Color offscreenDiskArcColor, Color photonRingColor)
     {
         if (singularityLensRenderer == null)
         {
@@ -512,14 +513,25 @@ public class BlackHoleMenaceVisual3D : NetworkBehaviour
             return;
         }
 
-        if (!material.HasProperty(OffscreenDiskArcColorId))
+        bool canTintOffscreenArc = material.HasProperty(OffscreenDiskArcColorId);
+        bool canTintPhotonRing = material.HasProperty(PhotonRingColorId);
+        if (!canTintOffscreenArc && !canTintPhotonRing)
         {
             return;
         }
 
         _singularityPropertyBlock ??= new MaterialPropertyBlock();
         singularityLensRenderer.GetPropertyBlock(_singularityPropertyBlock, singularityLensMaterialIndex);
-        _singularityPropertyBlock.SetColor(OffscreenDiskArcColorId, offscreenDiskArcColor);
+        if (canTintOffscreenArc)
+        {
+            _singularityPropertyBlock.SetColor(OffscreenDiskArcColorId, offscreenDiskArcColor);
+        }
+
+        if (canTintPhotonRing)
+        {
+            _singularityPropertyBlock.SetColor(PhotonRingColorId, photonRingColor);
+        }
+
         singularityLensRenderer.SetPropertyBlock(_singularityPropertyBlock, singularityLensMaterialIndex);
     }
 
@@ -655,7 +667,7 @@ public class BlackHoleMenaceVisual3D : NetworkBehaviour
             return;
         }
 
-        Debug.LogWarning($"[{nameof(BlackHoleMenaceVisual3D)}] Singularity Lens Renderer has no material at index {singularityLensMaterialIndex}, so the off-screen disk arc cannot be menace-tinted.", this);
+        Debug.LogWarning($"[{nameof(BlackHoleMenaceVisual3D)}] Singularity Lens Renderer has no material at index {singularityLensMaterialIndex}, so singularity colors cannot be menace-tinted.", this);
         _loggedMissingSingularityMaterial = true;
     }
 

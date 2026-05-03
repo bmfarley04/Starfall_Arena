@@ -238,6 +238,7 @@ public class InvasionRewardPhasePresenter3D : MonoBehaviour
         {
             InvasionRewardTier3D.Epic => 2,
             InvasionRewardTier3D.High => 3,
+            InvasionRewardTier3D.Tier4 => 4,
             _ => 1
         };
     }

@@ -399,13 +399,20 @@ Shader "Starfall/3D/BlackHole/SingularityLensing"
                 photonBloom *= outerMask;
 
                 half3 color = sceneColor;
+                float2 lensDirection = aspectDelta / max(length(aspectDelta), 0.00001);
+                float photonAngle = atan2(lensDirection.y, lensDirection.x);
+                float photonHotSide01 = saturate(0.5 + 0.5 * cos(photonAngle - _DiskArcHotSideAngle));
+                float photonHotSide = pow(photonHotSide01, 2.35);
+                float photonFarSide = pow(saturate(1.0 - photonHotSide01), 1.25);
+                float photonRelativistic = max(
+                    0.08,
+                    1.0 + photonHotSide * _DiskArcDopplerBoost * 0.72 - photonFarSide * _DiskArcFarSideDimming);
 
                 float arcRadius = horizonRadius + _DiskArcRadiusOffset;
                 float diskArc = 1.0 - smoothstep(0.0, max(_DiskArcWidth, 0.0001), abs(normalizedRadius - arcRadius));
                 float verticalArcMask = pow(saturate(abs(screenDirection.y)), _DiskArcVerticalBias);
                 diskArc *= verticalArcMask * outerMask * diskLightHorizonMask;
 
-                float2 lensDirection = aspectDelta / max(length(aspectDelta), 0.00001);
                 float arcAngle01 = frac(atan2(lensDirection.y, lensDirection.x) / STARFALL_TWO_PI + 0.5);
                 float arcRadial01 = saturate((normalizedRadius - horizonRadius) / max(_DiskArcWidth, 0.0001));
                 float time = _Time.y;
@@ -452,14 +459,14 @@ Shader "Starfall/3D/BlackHole/SingularityLensing"
                 lensedSourceVisibility = max(lensedSourceVisibility, offscreenArc);
 
                 half3 photonWhite = half3(1.0h, 0.92h, 0.72h);
-                color += _PhotonRingColor.rgb * photonBloom * _PhotonRingIntensity * 0.38h;
-                color += _PhotonRingColor.rgb * photonRing * _PhotonRingIntensity * 0.72h;
-                color += photonWhite * photonCore * _PhotonRingIntensity * 1.15h;
+                color += _PhotonRingColor.rgb * photonBloom * _PhotonRingIntensity * 0.38h * photonRelativistic;
+                color += _PhotonRingColor.rgb * photonRing * _PhotonRingIntensity * 0.72h * photonRelativistic;
+                color += photonWhite * photonCore * _PhotonRingIntensity * 1.15h * photonRelativistic;
                 color = lerp(color, _EventHorizonColor.rgb, saturate(horizonMask));
 
                 float lensSourceDrivenAlpha = lerp(1.0, saturate(lensedSourceVisibility), step(0.5, _BlackHoleUseLensSourceTexture));
                 half alpha = saturate(max(horizonMask, lensMask * _LensOpacity * lensSourceDrivenAlpha));
-                alpha = saturate(max(alpha, max(photonRing, photonBloom * 0.45) * _PhotonRingAlpha));
+                alpha = saturate(max(alpha, max(photonRing, photonBloom * 0.45) * _PhotonRingAlpha * saturate(0.45 + photonRelativistic * 0.55)));
                 alpha = saturate(max(alpha, offscreenArc));
 
                 clip(alpha - 0.001);

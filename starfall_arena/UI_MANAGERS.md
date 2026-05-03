@@ -164,7 +164,9 @@ Important system note:
 - the winning player receives 2 augment choices
 - those pools are separate, even when both players are drawing from the same tier for the round
 - augment cards should remain pointer-hoverable and mouse-clickable during the active flow
+- `AugmentSelectManager` supports an optional single-card fourth tier for reused 3D Invasion reward visuals. Tier 4 is intentionally optional and explicit-only: normal 2D duel scenes can leave the tier 4 pool, canvas group, button, containers, and text/icon references unassigned, and the normal random tier order stays limited to tiers 1-3.
 - Bug note: `AugmentSelectManager` should keep an explicit selected-card index while manually polling controller/keyboard input. Relying only on `EventSystem.currentSelectedGameObject` can let pointer hover, stale UI-module selection, and manual navigation fight each other, which makes controller selection flicker between adjacent cards in reused reward screens.
+- Bug note: when adding a visual tier to the reused augment-card UI, every lookup path must be extended together: pool selection, canvas hiding/showing, button wiring, container material effects, icon/name/description binding, card reactivation, and presenter tier mapping. Missing one of these makes the reward picker look partially wired while selection, hover, or final highlight still targets the wrong tier.
 
 ## HUD Architecture
 
