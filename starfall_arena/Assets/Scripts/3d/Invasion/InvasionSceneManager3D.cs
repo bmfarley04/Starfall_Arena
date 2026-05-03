@@ -790,10 +790,14 @@ public class InvasionSceneManager3D : MonoBehaviour
         for (int i = 1; i <= 2; i++)
         {
             _rewardStateBySlot[i] ??= new InvasionPlayerRewardState3D();
-            _pendingRewardOfferIndicesBySlot[i] ??= new int[Mathf.Max(1, rewardsPerOffer)];
-            for (int offerIndex = 0; offerIndex < _pendingRewardOfferIndicesBySlot[i].Length; offerIndex++)
+            int offerCount = Mathf.Max(1, rewardsPerOffer);
+            if (_pendingRewardOfferIndicesBySlot[i] == null || _pendingRewardOfferIndicesBySlot[i].Length != offerCount)
             {
-                _pendingRewardOfferIndicesBySlot[i][offerIndex] = -1;
+                _pendingRewardOfferIndicesBySlot[i] = new int[offerCount];
+                for (int offerIndex = 0; offerIndex < _pendingRewardOfferIndicesBySlot[i].Length; offerIndex++)
+                {
+                    _pendingRewardOfferIndicesBySlot[i][offerIndex] = -1;
+                }
             }
         }
     }
