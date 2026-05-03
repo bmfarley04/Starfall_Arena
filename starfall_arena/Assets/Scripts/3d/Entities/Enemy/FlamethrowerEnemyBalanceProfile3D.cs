@@ -27,6 +27,7 @@ public class FlamethrowerEnemyBalanceProfile3D : EnemyBalanceProfile3D
         tooCloseRetreatDistance = 14f,
         preferredRangeMin = 20f,
         preferredRangeMax = 30f,
+        firingRangeGraceDistance = 2f,
         fullApproachDistance = 55f,
         retreatSpeedScale = 0.75f,
         flameOrbitStrafeSpeed = 10f,

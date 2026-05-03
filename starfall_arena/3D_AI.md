@@ -114,7 +114,7 @@ The 3D AI path should stay modular. Enemy prefabs should compose small scripts i
   - intentionally cheaper than the artillery brain: no line-of-sight raycast, no per-frame aim refresh, no beam state machine
 - `FlamethrowerEnemyBrain3D`
   - short-range pressure enemy that closes directly until it reaches its flame pocket, then keeps its nose on the target while using `EnemyFlamethrowerWeapon3D`
-  - movement bands: no target uses `EnemyPatrol3D`; detected-but-far approaches; `20-30m` preferred range faces the player and can fire; inside the lower band backs away while still facing the player; cooldown continues the same range management without firing
+  - movement bands: no target uses `EnemyPatrol3D`; detected-but-far approaches; `20-30m` preferred range faces the player and can fire, with a small outer charge-start grace distance capped by the weapon range so it does not stall on the exact approach edge; inside the lower band backs away while still facing the player; cooldown continues the same range management without firing
   - while a flame burst is active, it layers a slow orbit through `EnemyStrafeMover3D` so the enemy can slide around the player without giving up its forward flame lane
   - optional `EnemySeparation3D` can bias approach/retreat away from allies, and optional `EnemyObstacleAvoidance3D` can route approach steering around asteroids/world geometry
   - `EnemyFlamethrowerWeapon3D` owns the authored particle visual and the server-authoritative cone DPS; clients only receive replicated visual state through `NetEnemyCombat3D`

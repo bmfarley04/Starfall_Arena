@@ -221,7 +221,7 @@ For player-facing burst:
 
 ## V1 Wave Plan
 
-This is the agreed documentation target for the first seven-wave 3D Invasion setup. It is not yet a prefab, scene, or code implementation plan.
+This is the agreed documentation target for the first seven-wave 3D Invasion setup. The initial V1 authored wave set is now wired into `Assets/Prefabs/3d_ships/invasionManager.prefab`; treat those prefab values as the first playable draft that still needs timing, density, and boss-pressure playtests.
 
 ### Enemy Roster Roles
 
@@ -250,7 +250,7 @@ This is the agreed documentation target for the first seven-wave 3D Invasion set
 - Variant size should scale the visual model and gameplay colliders together. Larger enemies should honestly be physically larger and easier to hit.
 - Size implies tier identity: weak variants are smaller and lower pressure, elite variants are larger and tougher, and empowered variants are the largest and should carry stronger offense, spawners, or boss-like pressure.
 - Damage and cadence still remain role-specific. Do not blindly multiply every stat just because the variant is larger.
-- Variants should eventually have assigned balance profiles and network prefab registration before being added to networked waves.
+- Variants used by the V1 wave prefab should have assigned balance profiles and network prefab registration before being added to networked waves.
 
 ### Detection And Spawning Model
 
@@ -272,6 +272,15 @@ This is the agreed documentation target for the first seven-wave 3D Invasion set
 - Dense waves should generally stay around `20-30` active enemies.
 - Scouts count toward spectacle and target density, but they should remain low-threat fodder.
 - Wave length should increase through paced sub-waves and escalating pressure, not by making the final cleanup tedious.
+
+### Implemented Invasion Manager Draft
+
+- `Assets/Prefabs/3d_ships/invasionManager.prefab` currently contains `7` waves and `37` timed sub-waves.
+- `startOnEnable` is disabled so the networked Invasion scene flow can start waves after player setup and WAVE intro presentation.
+- `waveStartDelaySeconds` is set to `3s` and `waveEndDelaySeconds` is set to `6s`.
+- The prefab uses eight V1 spawn anchors around the arena with vertical variation: north, northeast, east, southeast, south, southwest, west, and northwest.
+- All boss and mini-boss appearances are authored as regular timed sub-waves. The separate `enableBoss` path is intentionally disabled on every wave for this V1 draft.
+- Wave 7 includes a short elite prelude and then spawns `boss2Enemy` through a timed sub-wave; detailed final boss patterns and expanded spawner behavior are still separate tuning work.
 
 ### Wave Progression
 
@@ -342,7 +351,8 @@ Wave 7:
 ### Known Setup Follow-Ups
 
 - Completed for the V1 prefab/profile pass: active enemy prefabs now have assigned balance profiles, missing profile appliers were added, `spawnedSuicideEnemy` has a weak spawned suicide profile, normal enemy detection values were moved away from accidental `5000` aggro, selective V1 variants exist as explicit prefabs, and all active normal/variant enemy prefabs are registered with NGO.
-- Still planned: author the seven-wave set, grouped mini-boss health presentation, empowered tank spawner loadouts, and final boss pattern tuning.
+- Completed for the V1 wave draft: `invasionManager.prefab` now has the initial seven-wave timed sub-wave implementation using the normal and variant prefabs from this balancing document.
+- Still planned: playtest the authored timings and active enemy counts, grouped mini-boss health presentation, empowered tank spawner loadouts, and final boss pattern tuning.
 
 ## V1 Enemy Prefab Tuning Targets
 
@@ -479,7 +489,7 @@ Use normal fortress as the wave 4 boss and wave 6 heavy. Use empowered fortress 
 ### Remaining Implementation Checklist
 
 - Verify the explicit variant prefabs in playtests for size readability, collider feel, and TTK.
-- Author wave entries against the normal and variant prefabs instead of hidden stat swaps.
+- Playtest the authored `invasionManager.prefab` wave entries against the normal and variant prefabs instead of hidden stat swaps.
 - Configure empowered tank spawner loadouts to use weak basics/scouts.
 - Build grouped boss health presentation for multi-enemy boss beats.
 - Keep boss2/final boss detailed pattern tuning for a separate boss-specific pass.

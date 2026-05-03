@@ -57,6 +57,9 @@ public class FlamethrowerEnemyBrain3D : MonoBehaviour
     [Tooltip("Upper edge of the desired flame pocket. The enemy can start firing once inside this range.")]
     [SerializeField] private float preferredRangeMax = 30f;
 
+    [Tooltip("Extra outer-edge allowance for starting a flame charge, capped by the flamethrower weapon range. Prevents the enemy from stalling just outside Preferred Range Max after approach speed eases to zero.")]
+    [SerializeField] private float firingRangeGraceDistance = 2f;
+
     [Tooltip("Distance beyond which the enemy approaches at full speed. Between Preferred Range Max and this value, approach speed scales down.")]
     [SerializeField] private float fullApproachDistance = 55f;
 
@@ -111,6 +114,7 @@ public class FlamethrowerEnemyBrain3D : MonoBehaviour
         tooCloseRetreatDistance = Mathf.Max(0f, tooCloseRetreatDistance);
         preferredRangeMin = Mathf.Max(tooCloseRetreatDistance + 0.01f, preferredRangeMin);
         preferredRangeMax = Mathf.Max(preferredRangeMin + 0.01f, preferredRangeMax);
+        firingRangeGraceDistance = Mathf.Max(0f, firingRangeGraceDistance);
         fullApproachDistance = Mathf.Max(preferredRangeMax + 0.01f, fullApproachDistance);
         aimToleranceDegrees = Mathf.Clamp(aimToleranceDegrees, 0f, 180f);
         flameOrbitStrafeSpeed = Mathf.Max(0f, flameOrbitStrafeSpeed);
@@ -124,6 +128,7 @@ public class FlamethrowerEnemyBrain3D : MonoBehaviour
         tooCloseRetreatDistance = Mathf.Max(0f, stats.tooCloseRetreatDistance);
         preferredRangeMin = Mathf.Max(tooCloseRetreatDistance + 0.01f, stats.preferredRangeMin);
         preferredRangeMax = Mathf.Max(preferredRangeMin + 0.01f, stats.preferredRangeMax);
+        firingRangeGraceDistance = Mathf.Max(0f, stats.firingRangeGraceDistance);
         fullApproachDistance = Mathf.Max(preferredRangeMax + 0.01f, stats.fullApproachDistance);
         retreatSpeedScale = Mathf.Clamp01(stats.retreatSpeedScale);
         flameOrbitStrafeSpeed = Mathf.Max(0f, stats.flameOrbitStrafeSpeed);
@@ -214,7 +219,7 @@ public class FlamethrowerEnemyBrain3D : MonoBehaviour
             return;
         }
 
-        if (distanceToTarget > preferredRangeMax || distanceToTarget < tooCloseRetreatDistance)
+        if (distanceToTarget > ResolveMaximumChargeStartDistance() || distanceToTarget < tooCloseRetreatDistance)
         {
             chargeAttack?.CancelCharge();
             return;
@@ -356,6 +361,14 @@ public class FlamethrowerEnemyBrain3D : MonoBehaviour
         return Mathf.Lerp(0.25f, retreatSpeedScale, Mathf.InverseLerp(preferredRangeMin, tooCloseRetreatDistance, distanceToTarget));
     }
 
+    private float ResolveMaximumChargeStartDistance()
+    {
+        float graceRange = preferredRangeMax + firingRangeGraceDistance;
+        return flamethrowerWeapon != null && flamethrowerWeapon.Range > 0f
+            ? Mathf.Min(graceRange, flamethrowerWeapon.Range)
+            : graceRange;
+    }
+
     private void PatrolOrClearFlightIntent()
     {
         if (patrol != null && patrol.isActiveAndEnabled && patrol.TryUpdatePatrolIntent())
@@ -393,6 +406,9 @@ public class FlamethrowerEnemyBrain3D : MonoBehaviour
 
         Gizmos.color = Color.yellow;
         Gizmos.DrawWireSphere(transform.position, preferredRangeMax);
+
+        Gizmos.color = new Color(1f, 0.5f, 0f, 0.9f);
+        Gizmos.DrawWireSphere(transform.position, ResolveMaximumChargeStartDistance());
 
         Gizmos.color = Color.cyan;
         Gizmos.DrawWireSphere(transform.position, fullApproachDistance);

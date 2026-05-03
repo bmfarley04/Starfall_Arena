@@ -36,6 +36,7 @@ MonoBehaviour:
     tooCloseRetreatDistance: 14
     preferredRangeMin: 20
     preferredRangeMax: 30
+    firingRangeGraceDistance: 2
     fullApproachDistance: 80
     retreatSpeedScale: 0.5
     flameOrbitStrafeSpeed: 10

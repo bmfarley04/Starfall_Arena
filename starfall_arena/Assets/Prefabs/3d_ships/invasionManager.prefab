@@ -30,16 +30,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 700000000000000102}
-  - {fileID: 700000000000000104}
-  - {fileID: 700000000000000106}
-  - {fileID: 700000000000000108}
-  - {fileID: 700000000000000110}
-  - {fileID: 700000000000000112}
-  - {fileID: 700000000000000114}
-  - {fileID: 700000000000000116}
-  - {fileID: 700000000000000118}
-  - {fileID: 700000000000000120}
+  - {fileID: 6283404746529344802}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &2559893300203955093
@@ -55,173 +46,593 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::InvasionWaveManager3D
   waves:
-  - waveName: WAVE 1
+  - waveName: WAVE 1 - Contact
     subWaves:
-    - subWaveName: Opening Line
-      centerSpawnPoint: {fileID: 700000000000000102}
+    - subWaveName: Opening Basics
+      centerSpawnPoint: {fileID: 6088068838268084458}
       formation:
         preset: 0
         slotSpacing: 42
         gridColumns: 3
-        yBias: 0.08
+        yBias: 0.15
       enemies:
-      - enemyPrefab: {fileID: 100100000, guid: 45b170708adafd343bd4e110edf859cc, type: 3}
+      - enemyPrefab: {fileID: 7279590565626816591, guid: 45b170708adafd343bd4e110edf859cc, type: 3}
         count: 4
-      spawnBurstIntervalSeconds: 0.15
-      delayBeforeNextSubWaveSeconds: 2
-    - subWaveName: Chase Breaker
-      centerSpawnPoint: {fileID: 700000000000000104}
+      spawnBurstIntervalSeconds: 0.35
+      delayBeforeNextSubWaveSeconds: 18
+    - subWaveName: First Chasers
+      centerSpawnPoint: {fileID: 7876810535454177908}
       formation:
         preset: 1
-        slotSpacing: 36
+        slotSpacing: 38
         gridColumns: 3
-        yBias: 0.18
+        yBias: 0.2
       enemies:
-      - enemyPrefab: {fileID: 100100000, guid: 58ce7d9b3625d104dab4b41990875d42, type: 3}
-        count: 2
-      - enemyPrefab: {fileID: 100100000, guid: 45b170708adafd343bd4e110edf859cc, type: 3}
-        count: 2
-      spawnBurstIntervalSeconds: 0.1
-      delayBeforeNextSubWaveSeconds: 0.75
-    enableBoss: 0
-    boss:
-      bossPrefab: {fileID: 0}
-      bossSpawnPoint: {fileID: 0}
-      delayBeforeBossSeconds: 0
-  - waveName: WAVE 2
-    subWaves:
-    - subWaveName: Artillery Ring
-      centerSpawnPoint: {fileID: 700000000000000106}
-      formation:
-        preset: 2
-        slotSpacing: 46
-        gridColumns: 3
-        yBias: 0.22
-      enemies:
-      - enemyPrefab: {fileID: 100100000, guid: cde2502dbb1943c4e989581533885ba9, type: 3}
+      - enemyPrefab: {fileID: 7279590565626816591, guid: 45b170708adafd343bd4e110edf859cc, type: 3}
         count: 3
-      spawnBurstIntervalSeconds: 0.25
-      delayBeforeNextSubWaveSeconds: 2.5
-    - subWaveName: Heavy Followup
-      centerSpawnPoint: {fileID: 700000000000000108}
+      - enemyPrefab: {fileID: 2865276719882564100, guid: 58ce7d9b3625d104dab4b41990875d42, type: 3}
+        count: 2
+      spawnBurstIntervalSeconds: 0.3
+      delayBeforeNextSubWaveSeconds: 22
+    - subWaveName: Basic Crossfire
+      centerSpawnPoint: {fileID: 4886795697271315279}
       formation:
         preset: 3
-        slotSpacing: 40
-        gridColumns: 2
-        yBias: 0.12
+        slotSpacing: 36
+        gridColumns: 3
+        yBias: 0.25
       enemies:
-      - enemyPrefab: {fileID: 100100000, guid: 45b170708adafd343bd4e110edf859cc, type: 3}
-        count: 3
-      - enemyPrefab: {fileID: 100100000, guid: cee62f2388d09ee41a7c13cefb04b422, type: 3}
-        count: 1
-      spawnBurstIntervalSeconds: 0.2
-      delayBeforeNextSubWaveSeconds: 1
+      - enemyPrefab: {fileID: 7279590565626816591, guid: 45b170708adafd343bd4e110edf859cc, type: 3}
+        count: 5
+      spawnBurstIntervalSeconds: 0.3
+      delayBeforeNextSubWaveSeconds: 28
+    - subWaveName: Twin Artillery Mini-Boss
+      centerSpawnPoint: {fileID: 7014364711294536990}
+      formation:
+        preset: 0
+        slotSpacing: 70
+        gridColumns: 2
+        yBias: 0
+      enemies:
+      - enemyPrefab: {fileID: 2461026213711029054, guid: cde2502dbb1943c4e989581533885ba9, type: 3}
+        count: 2
+      spawnBurstIntervalSeconds: 0.75
+      delayBeforeNextSubWaveSeconds: 0
     enableBoss: 0
     boss:
       bossPrefab: {fileID: 0}
       bossSpawnPoint: {fileID: 0}
       delayBeforeBossSeconds: 0
-  - waveName: WAVE 3
+  - waveName: WAVE 2 - Swarm Signals
     subWaves:
-    - subWaveName: Duel Pocket
-      centerSpawnPoint: {fileID: 700000000000000110}
+    - subWaveName: Standard Contact
+      centerSpawnPoint: {fileID: 37794342656127031}
+      formation:
+        preset: 3
+        slotSpacing: 38
+        gridColumns: 4
+        yBias: 0.2
+      enemies:
+      - enemyPrefab: {fileID: 7279590565626816591, guid: 45b170708adafd343bd4e110edf859cc, type: 3}
+        count: 5
+      - enemyPrefab: {fileID: 2865276719882564100, guid: 58ce7d9b3625d104dab4b41990875d42, type: 3}
+        count: 2
+      spawnBurstIntervalSeconds: 0.28
+      delayBeforeNextSubWaveSeconds: 20
+    - subWaveName: Scout Screen
+      centerSpawnPoint: {fileID: 2261995348430291399}
+      formation:
+        preset: 2
+        slotSpacing: 32
+        gridColumns: 3
+        yBias: 0.4
+      enemies:
+      - enemyPrefab: {fileID: 1837983289991426574, guid: 4c9de6e18a704a44962ff82fb01f0862, type: 3}
+        count: 5
+      spawnBurstIntervalSeconds: 0.08
+      delayBeforeNextSubWaveSeconds: 15
+    - subWaveName: Artillery Becomes Standard
+      centerSpawnPoint: {fileID: 1145583114902681876}
+      formation:
+        preset: 1
+        slotSpacing: 42
+        gridColumns: 3
+        yBias: 0.25
+      enemies:
+      - enemyPrefab: {fileID: 7279590565626816591, guid: 45b170708adafd343bd4e110edf859cc, type: 3}
+        count: 4
+      - enemyPrefab: {fileID: 2461026213711029054, guid: cde2502dbb1943c4e989581533885ba9, type: 3}
+        count: 2
+      spawnBurstIntervalSeconds: 0.35
+      delayBeforeNextSubWaveSeconds: 25
+    - subWaveName: Gnat Aim Check
+      centerSpawnPoint: {fileID: 6088068838268084458}
+      formation:
+        preset: 2
+        slotSpacing: 34
+        gridColumns: 3
+        yBias: 0.45
+      enemies:
+      - enemyPrefab: {fileID: 1837983289991426574, guid: adef4d23cb9668841be1ca462087f47f, type: 3}
+        count: 3
+      - enemyPrefab: {fileID: 2865276719882564100, guid: 58ce7d9b3625d104dab4b41990875d42, type: 3}
+        count: 3
+      spawnBurstIntervalSeconds: 0.15
+      delayBeforeNextSubWaveSeconds: 30
+    - subWaveName: Tank Boss Arrival
+      centerSpawnPoint: {fileID: 4886795697271315279}
       formation:
         preset: 1
         slotSpacing: 48
         gridColumns: 3
         yBias: 0.15
       enemies:
-      - enemyPrefab: {fileID: 100100000, guid: c826b1c48a0a1ae4c9e10e7580cc2944, type: 3}
-        count: 2
-      - enemyPrefab: {fileID: 100100000, guid: 45b170708adafd343bd4e110edf859cc, type: 3}
-        count: 2
-      spawnBurstIntervalSeconds: 0.18
-      delayBeforeNextSubWaveSeconds: 2
-    - subWaveName: Split Pressure
-      centerSpawnPoint: {fileID: 700000000000000112}
-      formation:
-        preset: 0
-        slotSpacing: 34
-        gridColumns: 3
-        yBias: 0.25
-      enemies:
-      - enemyPrefab: {fileID: 100100000, guid: 58ce7d9b3625d104dab4b41990875d42, type: 3}
-        count: 3
-      - enemyPrefab: {fileID: 100100000, guid: 2ec7415a3a3c0c446811e23e1de03acf, type: 3}
+      - enemyPrefab: {fileID: 6067267420352304793, guid: cee62f2388d09ee41a7c13cefb04b422, type: 3}
         count: 1
-      spawnBurstIntervalSeconds: 0.12
-      delayBeforeNextSubWaveSeconds: 1
-    enableBoss: 0
-    boss:
-      bossPrefab: {fileID: 0}
-      bossSpawnPoint: {fileID: 0}
-      delayBeforeBossSeconds: 0
-  - waveName: WAVE 4
-    subWaves:
-    - subWaveName: Swarm Screen
-      centerSpawnPoint: {fileID: 700000000000000114}
-      formation:
-        preset: 2
-        slotSpacing: 32
-        gridColumns: 3
-        yBias: 0.35
-      enemies:
-      - enemyPrefab: {fileID: 100100000, guid: 4c9de6e18a704a44962ff82fb01f0862, type: 3}
+      - enemyPrefab: {fileID: 1837983289991426574, guid: 4c9de6e18a704a44962ff82fb01f0862, type: 3}
         count: 5
-      spawnBurstIntervalSeconds: 0.05
-      delayBeforeNextSubWaveSeconds: 2
-    - subWaveName: Fortress Cell
-      centerSpawnPoint: {fileID: 700000000000000116}
-      formation:
-        preset: 1
-        slotSpacing: 54
-        gridColumns: 3
-        yBias: 0.3
-      enemies:
-      - enemyPrefab: {fileID: 100100000, guid: 82a69e3d51aa5024dba97824bdf3c1f9, type: 3}
-        count: 3
-      - enemyPrefab: {fileID: 100100000, guid: 67ddc44c4546f394ca0a6767e900c122, type: 3}
-        count: 1
-      spawnBurstIntervalSeconds: 0.25
-      delayBeforeNextSubWaveSeconds: 1.5
+      spawnBurstIntervalSeconds: 0.3
+      delayBeforeNextSubWaveSeconds: 0
     enableBoss: 0
     boss:
       bossPrefab: {fileID: 0}
       bossSpawnPoint: {fileID: 0}
       delayBeforeBossSeconds: 0
-  - waveName: WAVE 5
+  - waveName: WAVE 3 - Heat And Duelists
     subWaves:
-    - subWaveName: Anvil Group
-      centerSpawnPoint: {fileID: 700000000000000118}
+    - subWaveName: Crowd Primer
+      centerSpawnPoint: {fileID: 6695327882882460332}
       formation:
         preset: 3
+        slotSpacing: 38
+        gridColumns: 4
+        yBias: 0.25
+      enemies:
+      - enemyPrefab: {fileID: 7279590565626816591, guid: 45b170708adafd343bd4e110edf859cc, type: 3}
+        count: 6
+      - enemyPrefab: {fileID: 2865276719882564100, guid: 58ce7d9b3625d104dab4b41990875d42, type: 3}
+        count: 3
+      spawnBurstIntervalSeconds: 0.25
+      delayBeforeNextSubWaveSeconds: 25
+    - subWaveName: Scout And Gnat Mix
+      centerSpawnPoint: {fileID: 2261995348430291399}
+      formation:
+        preset: 2
+        slotSpacing: 34
+        gridColumns: 4
+        yBias: 0.5
+      enemies:
+      - enemyPrefab: {fileID: 1837983289991426574, guid: 4c9de6e18a704a44962ff82fb01f0862, type: 3}
+        count: 5
+      - enemyPrefab: {fileID: 1837983289991426574, guid: adef4d23cb9668841be1ca462087f47f, type: 3}
+        count: 3
+      spawnBurstIntervalSeconds: 0.1
+      delayBeforeNextSubWaveSeconds: 25
+    - subWaveName: Twin Tanks Enter Rotation
+      centerSpawnPoint: {fileID: 1145583114902681876}
+      formation:
+        preset: 1
+        slotSpacing: 56
+        gridColumns: 3
+        yBias: 0.15
+      enemies:
+      - enemyPrefab: {fileID: 6067267420352304793, guid: cee62f2388d09ee41a7c13cefb04b422, type: 3}
+        count: 2
+      - enemyPrefab: {fileID: 7279590565626816591, guid: 45b170708adafd343bd4e110edf859cc, type: 3}
+        count: 4
+      spawnBurstIntervalSeconds: 0.45
+      delayBeforeNextSubWaveSeconds: 30
+    - subWaveName: Flame Introduction
+      centerSpawnPoint: {fileID: 37794342656127031}
+      formation:
+        preset: 3
+        slotSpacing: 42
+        gridColumns: 3
+        yBias: 0.2
+      enemies:
+      - enemyPrefab: {fileID: 3571762344471351850, guid: 7c11f5d47116c624c9d3fc65c90921a2, type: 3}
+        count: 2
+      - enemyPrefab: {fileID: 2461026213711029054, guid: cde2502dbb1943c4e989581533885ba9, type: 3}
+        count: 2
+      spawnBurstIntervalSeconds: 0.3
+      delayBeforeNextSubWaveSeconds: 30
+    - subWaveName: Duelist Skill Check
+      centerSpawnPoint: {fileID: 4886795697271315279}
+      formation:
+        preset: 1
+        slotSpacing: 62
+        gridColumns: 3
+        yBias: 0.1
+      enemies:
+      - enemyPrefab: {fileID: 430036400341530371, guid: 9b5aecfb3d31c7046a24d761fe6cc790, type: 3}
+        count: 1
+      - enemyPrefab: {fileID: 6466424569337078564, guid: 6f751e0c8d208b948b71e6d92a301705, type: 3}
+        count: 2
+      spawnBurstIntervalSeconds: 0.6
+      delayBeforeNextSubWaveSeconds: 0
+    enableBoss: 0
+    boss:
+      bossPrefab: {fileID: 0}
+      bossSpawnPoint: {fileID: 0}
+      delayBeforeBossSeconds: 0
+  - waveName: WAVE 4 - Coordinated Pressure
+    subWaves:
+    - subWaveName: Busy Opening
+      centerSpawnPoint: {fileID: 6088068838268084458}
+      formation:
+        preset: 3
+        slotSpacing: 36
+        gridColumns: 4
+        yBias: 0.3
+      enemies:
+      - enemyPrefab: {fileID: 7279590565626816591, guid: 45b170708adafd343bd4e110edf859cc, type: 3}
+        count: 6
+      - enemyPrefab: {fileID: 2865276719882564100, guid: 58ce7d9b3625d104dab4b41990875d42, type: 3}
+        count: 3
+      - enemyPrefab: {fileID: 1837983289991426574, guid: 4c9de6e18a704a44962ff82fb01f0862, type: 3}
+        count: 5
+      spawnBurstIntervalSeconds: 0.2
+      delayBeforeNextSubWaveSeconds: 25
+    - subWaveName: Mixed Threat Band
+      centerSpawnPoint: {fileID: 7876810535454177908}
+      formation:
+        preset: 3
+        slotSpacing: 42
+        gridColumns: 4
+        yBias: 0.35
+      enemies:
+      - enemyPrefab: {fileID: 2461026213711029054, guid: cde2502dbb1943c4e989581533885ba9, type: 3}
+        count: 2
+      - enemyPrefab: {fileID: 1837983289991426574, guid: adef4d23cb9668841be1ca462087f47f, type: 3}
+        count: 4
+      - enemyPrefab: {fileID: 3571762344471351850, guid: 7c11f5d47116c624c9d3fc65c90921a2, type: 3}
+        count: 2
+      spawnBurstIntervalSeconds: 0.25
+      delayBeforeNextSubWaveSeconds: 30
+    - subWaveName: Duelists Join Regular Waves
+      centerSpawnPoint: {fileID: 37794342656127031}
+      formation:
+        preset: 1
         slotSpacing: 52
         gridColumns: 3
         yBias: 0.2
       enemies:
-      - enemyPrefab: {fileID: 100100000, guid: cee62f2388d09ee41a7c13cefb04b422, type: 3}
+      - enemyPrefab: {fileID: 5780689782910019324, guid: c826b1c48a0a1ae4c9e10e7580cc2944, type: 3}
+        count: 1
+      - enemyPrefab: {fileID: 6466424569337078564, guid: 6f751e0c8d208b948b71e6d92a301705, type: 3}
         count: 2
-      - enemyPrefab: {fileID: 100100000, guid: c826b1c48a0a1ae4c9e10e7580cc2944, type: 3}
-        count: 2
-      - enemyPrefab: {fileID: 100100000, guid: 2ec7415a3a3c0c446811e23e1de03acf, type: 3}
-        count: 2
-      spawnBurstIntervalSeconds: 0.18
-      delayBeforeNextSubWaveSeconds: 2.2
-    - subWaveName: Cleanup Chaos
-      centerSpawnPoint: {fileID: 700000000000000120}
+      - enemyPrefab: {fileID: 5150053452045289271, guid: ba57ca9a4458d874fa693f3d5429d44e, type: 3}
+        count: 3
+      spawnBurstIntervalSeconds: 0.4
+      delayBeforeNextSubWaveSeconds: 30
+    - subWaveName: Triumvirate Introduction
+      centerSpawnPoint: {fileID: 7014364711294536990}
       formation:
         preset: 2
-        slotSpacing: 36
+        slotSpacing: 70
         gridColumns: 3
-        yBias: 0.28
+        yBias: 0.25
       enemies:
-      - enemyPrefab: {fileID: 100100000, guid: 4c9de6e18a704a44962ff82fb01f0862, type: 3}
+      - enemyPrefab: {fileID: 3197767798142550287, guid: 82a69e3d51aa5024dba97824bdf3c1f9, type: 3}
+        count: 2
+      - enemyPrefab: {fileID: 1837983289991426574, guid: 4c9de6e18a704a44962ff82fb01f0862, type: 3}
         count: 5
-      - enemyPrefab: {fileID: 100100000, guid: cde2502dbb1943c4e989581533885ba9, type: 3}
+      spawnBurstIntervalSeconds: 0.8
+      delayBeforeNextSubWaveSeconds: 35
+    - subWaveName: Fortress Boss Arrival
+      centerSpawnPoint: {fileID: 1145583114902681876}
+      formation:
+        preset: 1
+        slotSpacing: 66
+        gridColumns: 3
+        yBias: 0.05
+      enemies:
+      - enemyPrefab: {fileID: 5723954577492871350, guid: 67ddc44c4546f394ca0a6767e900c122, type: 3}
+        count: 1
+      - enemyPrefab: {fileID: 5150053452045289271, guid: ba57ca9a4458d874fa693f3d5429d44e, type: 3}
+        count: 4
+      spawnBurstIntervalSeconds: 0.7
+      delayBeforeNextSubWaveSeconds: 0
+    enableBoss: 0
+    boss:
+      bossPrefab: {fileID: 0}
+      bossSpawnPoint: {fileID: 0}
+      delayBeforeBossSeconds: 0
+  - waveName: WAVE 5 - Splitting Front
+    subWaves:
+    - subWaveName: Elite Screen
+      centerSpawnPoint: {fileID: 2261995348430291399}
+      formation:
+        preset: 3
+        slotSpacing: 38
+        gridColumns: 4
+        yBias: 0.35
+      enemies:
+      - enemyPrefab: {fileID: 5150053452045289271, guid: ba57ca9a4458d874fa693f3d5429d44e, type: 3}
+        count: 5
+      - enemyPrefab: {fileID: 1837983289991426574, guid: 4c9de6e18a704a44962ff82fb01f0862, type: 3}
+        count: 5
+      - enemyPrefab: {fileID: 2865276719882564100, guid: 58ce7d9b3625d104dab4b41990875d42, type: 3}
+        count: 3
+      spawnBurstIntervalSeconds: 0.2
+      delayBeforeNextSubWaveSeconds: 25
+    - subWaveName: Splitter Reveal
+      centerSpawnPoint: {fileID: 6695327882882460332}
+      formation:
+        preset: 3
+        slotSpacing: 46
+        gridColumns: 3
+        yBias: 0.25
+      enemies:
+      - enemyPrefab: {fileID: 774219852358409915, guid: 2ec7415a3a3c0c446811e23e1de03acf, type: 3}
+        count: 3
+      - enemyPrefab: {fileID: 3571762344471351850, guid: 7c11f5d47116c624c9d3fc65c90921a2, type: 3}
         count: 2
-      - enemyPrefab: {fileID: 100100000, guid: 58ce7d9b3625d104dab4b41990875d42, type: 3}
+      - enemyPrefab: {fileID: 2461026213711029054, guid: cde2502dbb1943c4e989581533885ba9, type: 3}
         count: 2
-      spawnBurstIntervalSeconds: 0.08
+      spawnBurstIntervalSeconds: 0.35
+      delayBeforeNextSubWaveSeconds: 35
+    - subWaveName: Heavy Interlock
+      centerSpawnPoint: {fileID: 4886795697271315279}
+      formation:
+        preset: 1
+        slotSpacing: 58
+        gridColumns: 3
+        yBias: 0.15
+      enemies:
+      - enemyPrefab: {fileID: 6067267420352304793, guid: cee62f2388d09ee41a7c13cefb04b422, type: 3}
+        count: 2
+      - enemyPrefab: {fileID: 1837983289991426574, guid: adef4d23cb9668841be1ca462087f47f, type: 3}
+        count: 4
+      spawnBurstIntervalSeconds: 0.45
+      delayBeforeNextSubWaveSeconds: 35
+    - subWaveName: Duelist Split Pressure
+      centerSpawnPoint: {fileID: 37794342656127031}
+      formation:
+        preset: 3
+        slotSpacing: 48
+        gridColumns: 3
+        yBias: 0.25
+      enemies:
+      - enemyPrefab: {fileID: 5780689782910019324, guid: c826b1c48a0a1ae4c9e10e7580cc2944, type: 3}
+        count: 2
+      - enemyPrefab: {fileID: 774219852358409915, guid: 2ec7415a3a3c0c446811e23e1de03acf, type: 3}
+        count: 2
+      spawnBurstIntervalSeconds: 0.35
+      delayBeforeNextSubWaveSeconds: 35
+    - subWaveName: Empowered Tank Pair
+      centerSpawnPoint: {fileID: 1145583114902681876}
+      formation:
+        preset: 1
+        slotSpacing: 74
+        gridColumns: 3
+        yBias: 0.15
+      enemies:
+      - enemyPrefab: {fileID: 7988387970452210014, guid: 5baf9648cd746c74d891f2fa869e81e8, type: 3}
+        count: 2
+      - enemyPrefab: {fileID: 1775410630533781512, guid: 3e06abb173252484685fa784cb205796, type: 3}
+        count: 5
+      - enemyPrefab: {fileID: 1837983289991426574, guid: 4c9de6e18a704a44962ff82fb01f0862, type: 3}
+        count: 5
+      spawnBurstIntervalSeconds: 0.65
+      delayBeforeNextSubWaveSeconds: 0
+    enableBoss: 0
+    boss:
+      bossPrefab: {fileID: 0}
+      bossSpawnPoint: {fileID: 0}
+      delayBeforeBossSeconds: 0
+  - waveName: WAVE 6 - Full Roster Endurance
+    subWaves:
+    - subWaveName: Slow Recall
+      centerSpawnPoint: {fileID: 6088068838268084458}
+      formation:
+        preset: 3
+        slotSpacing: 38
+        gridColumns: 4
+        yBias: 0.25
+      enemies:
+      - enemyPrefab: {fileID: 7279590565626816591, guid: 45b170708adafd343bd4e110edf859cc, type: 3}
+        count: 6
+      - enemyPrefab: {fileID: 1837983289991426574, guid: 4c9de6e18a704a44962ff82fb01f0862, type: 3}
+        count: 5
+      spawnBurstIntervalSeconds: 0.18
+      delayBeforeNextSubWaveSeconds: 30
+    - subWaveName: Ranged And Chasers
+      centerSpawnPoint: {fileID: 7876810535454177908}
+      formation:
+        preset: 3
+        slotSpacing: 42
+        gridColumns: 4
+        yBias: 0.35
+      enemies:
+      - enemyPrefab: {fileID: 2461026213711029054, guid: cde2502dbb1943c4e989581533885ba9, type: 3}
+        count: 3
+      - enemyPrefab: {fileID: 2865276719882564100, guid: 58ce7d9b3625d104dab4b41990875d42, type: 3}
+        count: 4
+      - enemyPrefab: {fileID: 1837983289991426574, guid: adef4d23cb9668841be1ca462087f47f, type: 3}
+        count: 4
+      spawnBurstIntervalSeconds: 0.22
+      delayBeforeNextSubWaveSeconds: 35
+    - subWaveName: One-Third Heavy Turn
+      centerSpawnPoint: {fileID: 1145583114902681876}
+      formation:
+        preset: 1
+        slotSpacing: 62
+        gridColumns: 3
+        yBias: 0.15
+      enemies:
+      - enemyPrefab: {fileID: 6067267420352304793, guid: cee62f2388d09ee41a7c13cefb04b422, type: 3}
+        count: 2
+      - enemyPrefab: {fileID: 3571762344471351850, guid: 7c11f5d47116c624c9d3fc65c90921a2, type: 3}
+        count: 2
+      - enemyPrefab: {fileID: 1837983289991426574, guid: 4c9de6e18a704a44962ff82fb01f0862, type: 3}
+        count: 5
+      spawnBurstIntervalSeconds: 0.4
+      delayBeforeNextSubWaveSeconds: 40
+    - subWaveName: High-Skill Midpoint
+      centerSpawnPoint: {fileID: 37794342656127031}
+      formation:
+        preset: 3
+        slotSpacing: 50
+        gridColumns: 4
+        yBias: 0.25
+      enemies:
+      - enemyPrefab: {fileID: 774219852358409915, guid: 2ec7415a3a3c0c446811e23e1de03acf, type: 3}
+        count: 2
+      - enemyPrefab: {fileID: 5780689782910019324, guid: c826b1c48a0a1ae4c9e10e7580cc2944, type: 3}
+        count: 2
+      - enemyPrefab: {fileID: 5150053452045289271, guid: ba57ca9a4458d874fa693f3d5429d44e, type: 3}
+        count: 4
+      spawnBurstIntervalSeconds: 0.35
+      delayBeforeNextSubWaveSeconds: 45
+    - subWaveName: Triumvirate And Elite Ranged
+      centerSpawnPoint: {fileID: 7014364711294536990}
+      formation:
+        preset: 2
+        slotSpacing: 74
+        gridColumns: 4
+        yBias: 0.3
+      enemies:
+      - enemyPrefab: {fileID: 3197767798142550287, guid: 82a69e3d51aa5024dba97824bdf3c1f9, type: 3}
+        count: 2
+      - enemyPrefab: {fileID: 1837983289991426574, guid: adef4d23cb9668841be1ca462087f47f, type: 3}
+        count: 4
+      - enemyPrefab: {fileID: 6499528716222339576, guid: e22dc1d7f234c63448c2d3954980e2de, type: 3}
+        count: 2
+      spawnBurstIntervalSeconds: 0.65
+      delayBeforeNextSubWaveSeconds: 45
+    - subWaveName: Two-Thirds Fortress One
+      centerSpawnPoint: {fileID: 4886795697271315279}
+      formation:
+        preset: 1
+        slotSpacing: 74
+        gridColumns: 3
+        yBias: 0.1
+      enemies:
+      - enemyPrefab: {fileID: 5723954577492871350, guid: 67ddc44c4546f394ca0a6767e900c122, type: 3}
+        count: 1
+      - enemyPrefab: {fileID: 6067267420352304793, guid: cee62f2388d09ee41a7c13cefb04b422, type: 3}
+        count: 2
+      - enemyPrefab: {fileID: 1837983289991426574, guid: 4c9de6e18a704a44962ff82fb01f0862, type: 3}
+        count: 5
+      spawnBurstIntervalSeconds: 0.6
+      delayBeforeNextSubWaveSeconds: 50
+    - subWaveName: Fortress Crossfire
+      centerSpawnPoint: {fileID: 6695327882882460332}
+      formation:
+        preset: 3
+        slotSpacing: 60
+        gridColumns: 3
+        yBias: 0.2
+      enemies:
+      - enemyPrefab: {fileID: 5723954577492871350, guid: 67ddc44c4546f394ca0a6767e900c122, type: 3}
+        count: 1
+      - enemyPrefab: {fileID: 3428352689977542422, guid: 883d83e89fa14c04d9c26a3fab8ff279, type: 3}
+        count: 2
+      - enemyPrefab: {fileID: 430036400341530371, guid: 9b5aecfb3d31c7046a24d761fe6cc790, type: 3}
+        count: 2
+      spawnBurstIntervalSeconds: 0.5
+      delayBeforeNextSubWaveSeconds: 50
+    - subWaveName: Empowered Fortress Finale
+      centerSpawnPoint: {fileID: 2261995348430291399}
+      formation:
+        preset: 1
+        slotSpacing: 82
+        gridColumns: 3
+        yBias: 0.15
+      enemies:
+      - enemyPrefab: {fileID: 8285145228653432002, guid: 6f1496ac60b9e9e408c49eaf924c24ce, type: 3}
+        count: 1
+      - enemyPrefab: {fileID: 7988387970452210014, guid: 5baf9648cd746c74d891f2fa869e81e8, type: 3}
+        count: 2
+      - enemyPrefab: {fileID: 1775410630533781512, guid: 3e06abb173252484685fa784cb205796, type: 3}
+        count: 5
+      - enemyPrefab: {fileID: 1837983289991426574, guid: 4c9de6e18a704a44962ff82fb01f0862, type: 3}
+        count: 5
+      spawnBurstIntervalSeconds: 0.75
+      delayBeforeNextSubWaveSeconds: 0
+    enableBoss: 0
+    boss:
+      bossPrefab: {fileID: 0}
+      bossSpawnPoint: {fileID: 0}
+      delayBeforeBossSeconds: 0
+  - waveName: WAVE 7 - Siege Carrier
+    subWaves:
+    - subWaveName: Final Prelude Screen
+      centerSpawnPoint: {fileID: 6088068838268084458}
+      formation:
+        preset: 3
+        slotSpacing: 40
+        gridColumns: 4
+        yBias: 0.25
+      enemies:
+      - enemyPrefab: {fileID: 5150053452045289271, guid: ba57ca9a4458d874fa693f3d5429d44e, type: 3}
+        count: 5
+      - enemyPrefab: {fileID: 1837983289991426574, guid: 4c9de6e18a704a44962ff82fb01f0862, type: 3}
+        count: 5
+      spawnBurstIntervalSeconds: 0.18
+      delayBeforeNextSubWaveSeconds: 30
+    - subWaveName: Elite Aim Check
+      centerSpawnPoint: {fileID: 7876810535454177908}
+      formation:
+        preset: 2
+        slotSpacing: 42
+        gridColumns: 4
+        yBias: 0.5
+      enemies:
+      - enemyPrefab: {fileID: 6499528716222339576, guid: e22dc1d7f234c63448c2d3954980e2de, type: 3}
+        count: 3
+      - enemyPrefab: {fileID: 7508786818886090601, guid: 05487abbed8820649b63deb11e8e275c, type: 3}
+        count: 3
+      - enemyPrefab: {fileID: 7021260351038386183, guid: ecc4b34fdd8435e47801b1fde2761fb7, type: 3}
+        count: 2
+      spawnBurstIntervalSeconds: 0.18
+      delayBeforeNextSubWaveSeconds: 35
+    - subWaveName: Elite Role Mix
+      centerSpawnPoint: {fileID: 37794342656127031}
+      formation:
+        preset: 3
+        slotSpacing: 52
+        gridColumns: 3
+        yBias: 0.25
+      enemies:
+      - enemyPrefab: {fileID: 3428352689977542422, guid: 883d83e89fa14c04d9c26a3fab8ff279, type: 3}
+        count: 2
+      - enemyPrefab: {fileID: 430036400341530371, guid: 9b5aecfb3d31c7046a24d761fe6cc790, type: 3}
+        count: 2
+      - enemyPrefab: {fileID: 1700586476895862781, guid: 0fd9b48ca53e5174f9bddbda8b9acb2d, type: 3}
+        count: 2
+      spawnBurstIntervalSeconds: 0.35
+      delayBeforeNextSubWaveSeconds: 40
+    - subWaveName: Last Gate
+      centerSpawnPoint: {fileID: 1145583114902681876}
+      formation:
+        preset: 1
+        slotSpacing: 78
+        gridColumns: 3
+        yBias: 0.1
+      enemies:
+      - enemyPrefab: {fileID: 5723954577492871350, guid: 67ddc44c4546f394ca0a6767e900c122, type: 3}
+        count: 1
+      - enemyPrefab: {fileID: 7988387970452210014, guid: 5baf9648cd746c74d891f2fa869e81e8, type: 3}
+        count: 2
+      spawnBurstIntervalSeconds: 0.65
+      delayBeforeNextSubWaveSeconds: 45
+    - subWaveName: Final Boss Arrival
+      centerSpawnPoint: {fileID: 7014364711294536990}
+      formation:
+        preset: 1
+        slotSpacing: 84
+        gridColumns: 4
+        yBias: 0.25
+      enemies:
+      - enemyPrefab: {fileID: 8311721449157583992, guid: 3abe469261929d94fb24a7cd0c243bfb, type: 3}
+        count: 1
+      - enemyPrefab: {fileID: 1837983289991426574, guid: 4c9de6e18a704a44962ff82fb01f0862, type: 3}
+        count: 5
+      - enemyPrefab: {fileID: 1775410630533781512, guid: 3e06abb173252484685fa784cb205796, type: 3}
+        count: 5
+      spawnBurstIntervalSeconds: 0.75
       delayBeforeNextSubWaveSeconds: 0
     enableBoss: 0
     boss:
@@ -231,7 +642,14 @@ MonoBehaviour:
   startOnEnable: 0
   waveEndDelaySeconds: 6
   waveStartDelaySeconds: 3
---- !u!1 &700000000000000101
+  avoidBlockedSpawnPositions: 1
+  spawnBlockingLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  spawnClearanceRadius: 8
+  spawnRelocationAttempts: 12
+  spawnRelocationStep: 15
+--- !u!1 &302281488307702975
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -239,30 +657,30 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 700000000000000102}
+  - component: {fileID: 6695327882882460332}
   m_Layer: 0
-  m_Name: Wave1_LineAnchor
+  m_Name: V1Spawn_SouthWestMid
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &700000000000000102
+--- !u!4 &6695327882882460332
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 700000000000000101}
+  m_GameObject: {fileID: 302281488307702975}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 1, z: 0, w: 0}
-  m_LocalPosition: {x: -140, y: 20, z: 260}
+  m_LocalRotation: {x: 0, y: 0.38268346, z: 0, w: 0.9238795}
+  m_LocalPosition: {x: -310, y: 60, z: -310}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 2644385173095867508}
-  m_LocalEulerAnglesHint: {x: 0, y: 180, z: 0}
---- !u!1 &700000000000000103
+  m_Father: {fileID: 6283404746529344802}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &422599883571581722
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -270,30 +688,30 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 700000000000000104}
+  - component: {fileID: 6088068838268084458}
   m_Layer: 0
-  m_Name: Wave1_WedgeAnchor
+  m_Name: V1Spawn_NorthWestLow
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &700000000000000104
+--- !u!4 &6088068838268084458
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 700000000000000103}
+  m_GameObject: {fileID: 422599883571581722}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0.9238795, z: 0, w: 0.3826834}
-  m_LocalPosition: {x: 160, y: -10, z: 220}
+  m_LocalRotation: {x: 0, y: 0.92387956, z: 0, w: 0.38268346}
+  m_LocalPosition: {x: -310, y: -80, z: 310}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 2644385173095867508}
-  m_LocalEulerAnglesHint: {x: 0, y: 135, z: 0}
---- !u!1 &700000000000000105
+  m_Father: {fileID: 6283404746529344802}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1540380891552333254
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -301,123 +719,38 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 700000000000000106}
+  - component: {fileID: 6283404746529344802}
   m_Layer: 0
-  m_Name: Wave2_RingAnchor
+  m_Name: V1 Spawn Anchors
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &700000000000000106
+--- !u!4 &6283404746529344802
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 700000000000000105}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: -0.7071068, z: 0, w: 0.7071068}
-  m_LocalPosition: {x: -220, y: 55, z: 360}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 2644385173095867508}
-  m_LocalEulerAnglesHint: {x: 0, y: -90, z: 0}
---- !u!1 &700000000000000107
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 700000000000000108}
-  m_Layer: 0
-  m_Name: Wave2_GridAnchor
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &700000000000000108
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 700000000000000107}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: -0.3826834, z: 0, w: 0.9238795}
-  m_LocalPosition: {x: 110, y: 35, z: 395}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 2644385173095867508}
-  m_LocalEulerAnglesHint: {x: 0, y: -45, z: 0}
---- !u!1 &700000000000000109
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 700000000000000110}
-  m_Layer: 0
-  m_Name: Wave3_DuelAnchor
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &700000000000000110
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 700000000000000109}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0.7071068, z: 0, w: 0.7071068}
-  m_LocalPosition: {x: -80, y: -25, z: 520}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 2644385173095867508}
-  m_LocalEulerAnglesHint: {x: 0, y: 90, z: 0}
---- !u!1 &700000000000000111
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 700000000000000112}
-  m_Layer: 0
-  m_Name: Wave3_SplitAnchor
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &700000000000000112
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 700000000000000111}
+  m_GameObject: {fileID: 1540380891552333254}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 185, y: 45, z: 560}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children: []
+  m_Children:
+  - {fileID: 7014364711294536990}
+  - {fileID: 2261995348430291399}
+  - {fileID: 4886795697271315279}
+  - {fileID: 7876810535454177908}
+  - {fileID: 1145583114902681876}
+  - {fileID: 6695327882882460332}
+  - {fileID: 37794342656127031}
+  - {fileID: 6088068838268084458}
   m_Father: {fileID: 2644385173095867508}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &700000000000000113
+--- !u!1 &3836124578059379752
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -425,30 +758,30 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 700000000000000114}
+  - component: {fileID: 7876810535454177908}
   m_Layer: 0
-  m_Name: Wave4_ScoutAnchor
+  m_Name: V1Spawn_SouthEastHigh
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &700000000000000114
+--- !u!4 &7876810535454177908
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 700000000000000113}
+  m_GameObject: {fileID: 3836124578059379752}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0.3826834, z: 0, w: 0.9238795}
-  m_LocalPosition: {x: -260, y: 70, z: 710}
+  m_LocalRotation: {x: 0, y: 0.3826835, z: 0, w: -0.9238795}
+  m_LocalPosition: {x: 310, y: 150, z: -310}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 2644385173095867508}
-  m_LocalEulerAnglesHint: {x: 0, y: 45, z: 0}
---- !u!1 &700000000000000115
+  m_Father: {fileID: 6283404746529344802}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &4041869483394156399
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -456,30 +789,30 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 700000000000000116}
+  - component: {fileID: 1145583114902681876}
   m_Layer: 0
-  m_Name: Wave4_FortressAnchor
+  m_Name: V1Spawn_SouthLow
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &700000000000000116
+--- !u!4 &1145583114902681876
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 700000000000000115}
+  m_GameObject: {fileID: 4041869483394156399}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: -0.9238795, z: 0, w: 0.3826834}
-  m_LocalPosition: {x: 235, y: -40, z: 760}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: -150, z: -440}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 2644385173095867508}
-  m_LocalEulerAnglesHint: {x: 0, y: -135, z: 0}
---- !u!1 &700000000000000117
+  m_Father: {fileID: 6283404746529344802}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &5457516059958290370
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -487,30 +820,30 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 700000000000000118}
+  - component: {fileID: 4886795697271315279}
   m_Layer: 0
-  m_Name: Wave5_AnvilAnchor
+  m_Name: V1Spawn_EastLow
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &700000000000000118
+--- !u!4 &4886795697271315279
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 700000000000000117}
+  m_GameObject: {fileID: 5457516059958290370}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: -1, z: 0, w: 0}
-  m_LocalPosition: {x: -120, y: 30, z: 910}
+  m_LocalRotation: {x: 0, y: 0.7071068, z: 0, w: -0.7071068}
+  m_LocalPosition: {x: 440, y: -120, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 2644385173095867508}
-  m_LocalEulerAnglesHint: {x: 0, y: -180, z: 0}
---- !u!1 &700000000000000119
+  m_Father: {fileID: 6283404746529344802}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &7588909401939869829
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -518,26 +851,88 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 700000000000000120}
+  - component: {fileID: 7014364711294536990}
   m_Layer: 0
-  m_Name: Wave5_ChaosAnchor
+  m_Name: V1Spawn_NorthHigh
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &700000000000000120
+--- !u!4 &7014364711294536990
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 700000000000000119}
+  m_GameObject: {fileID: 7588909401939869829}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0.9238795, z: 0, w: 0.3826834}
-  m_LocalPosition: {x: 205, y: 85, z: 980}
+  m_LocalRotation: {x: 0, y: 1, z: 0, w: -0.00000004371139}
+  m_LocalPosition: {x: 0, y: 160, z: 440}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 2644385173095867508}
-  m_LocalEulerAnglesHint: {x: 0, y: 135, z: 0}
+  m_Father: {fileID: 6283404746529344802}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &7874986320393739473
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2261995348430291399}
+  m_Layer: 0
+  m_Name: V1Spawn_NorthEastMid
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2261995348430291399
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7874986320393739473}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0.92387956, z: 0, w: -0.3826834}
+  m_LocalPosition: {x: 310, y: 40, z: 310}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 6283404746529344802}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &8834916060664525441
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 37794342656127031}
+  m_Layer: 0
+  m_Name: V1Spawn_WestHigh
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &37794342656127031
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8834916060664525441}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0.7071068, z: 0, w: 0.7071068}
+  m_LocalPosition: {x: -440, y: 120, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 6283404746529344802}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}

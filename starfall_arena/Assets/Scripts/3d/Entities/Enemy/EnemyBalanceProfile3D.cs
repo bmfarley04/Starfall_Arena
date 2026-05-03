@@ -118,6 +118,8 @@ public abstract class EnemyBalanceProfile3D : ScriptableObject
         [Min(0f)] public float tooCloseRetreatDistance;
         [Min(0f)] public float preferredRangeMin;
         [Min(0f)] public float preferredRangeMax;
+        [Tooltip("Extra distance beyond Preferred Range Max where the flamethrower may begin charging, capped by the weapon range.")]
+        [Min(0f)] public float firingRangeGraceDistance;
         [Min(0f)] public float fullApproachDistance;
         [Range(0f, 1f)] public float retreatSpeedScale;
         [Min(0f)] public float flameOrbitStrafeSpeed;
