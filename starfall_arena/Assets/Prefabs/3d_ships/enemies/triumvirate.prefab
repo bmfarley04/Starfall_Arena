@@ -4853,9 +4853,16 @@ GameObject:
   - component: {fileID: 4202633324678181692}
   - component: {fileID: 4354138759284036908}
   - component: {fileID: 9101213481438357208}
+  - component: {fileID: 9088851545642349979}
+  - component: {fileID: 5159081893446114912}
+  - component: {fileID: 360109840100084116}
+  - component: {fileID: 6430633174940550612}
+  - component: {fileID: 5134710204215215020}
+  - component: {fileID: 8814295856620344282}
+  - component: {fileID: 8152666985347147206}
   m_Layer: 0
   m_Name: triumvirate
-  m_TagString: Untagged
+  m_TagString: Enemy
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -5016,10 +5023,11 @@ MonoBehaviour:
   shipThrusterVfx: {fileID: 0}
   shipSpeedFx: {fileID: 0}
   deathEffects: {fileID: 0}
+  isBossEnemy: 0
   aiFlightController: {fileID: 0}
   factionMember: {fileID: 0}
   netEnemyMovement: {fileID: 0}
-  netEnemyCombat: {fileID: 0}
+  netEnemyCombat: {fileID: 4202633324678181692}
 --- !u!114 &4202633324678181692
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5072,6 +5080,162 @@ MonoBehaviour:
     maxExtrapolationMs: 40
     hardSnapDistance: 30
     smoothingCatchUpRate: 0
+--- !u!114 &9088851545642349979
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3197767798142550287}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 97c06a93dd649d54b9c2050d318c0a49, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::FactionMember3D
+  faction: 2
+--- !u!114 &5159081893446114912
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3197767798142550287}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 59972fd2459f248448688b0421727b01, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShipThrusterVfx3D
+  shipFlight: {fileID: 0}
+  enemyFlight: {fileID: 0}
+  thrusterEffects:
+    thrusters: []
+    rampTime: 0
+    invertColors: 0
+--- !u!114 &360109840100084116
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3197767798142550287}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7db2445f66bd4ee28f0d35ef2674cf0a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DeathEffects3D
+  explosion:
+    prefab: {fileID: 0}
+    scale: 1
+    sound: {fileID: 0}
+  scatterRoot: {fileID: 0}
+  scatterChance: 0.75
+--- !u!114 &6430633174940550612
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3197767798142550287}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6fdc0ed10b6b7d74d852b13f15d9909c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyVisualTilt3D
+  flightController: {fileID: 4354138759284036908}
+  strafeMover: {fileID: 0}
+  body: {fileID: 0}
+  entity: {fileID: 0}
+  visualEffects:
+    visualModel: {fileID: 0}
+    maxBankAngle: 45
+    bankSensitivity: 16
+    steeringInputBankSensitivity: 18
+    bankSmoothing: 8
+    bankReturnSmoothing: 5
+    maxPitchLeanAngle: 24
+    pitchLeanSensitivity: 10
+    steeringInputPitchSensitivity: 10
+    pitchLeanSmoothing: 8
+    pitchLeanReturnSmoothing: 5
+    forwardAccelPitchSensitivity: 0.04
+    lateralAccelBankSensitivity: 0.06
+    lateralDriftBankSensitivity: 0.25
+    verticalDriftPitchSensitivity: 0.2
+  bankFromMoveIntent: 18
+  bankFromStrafeVelocity: 0.45
+  pitchFromMoveIntent: 10
+  useRigidbodyVelocity: 1
+  drawGizmos: 1
+--- !u!114 &5134710204215215020
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3197767798142550287}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e99321fabefad424ab4794ab9a9ecd45, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyTargetSensor3D
+  targetFaction: 1
+  detectionRange: 800
+  refreshInterval: 0.15
+--- !u!114 &8814295856620344282
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3197767798142550287}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bd24cd61985b47f3ba6857689d78dcfa, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyPatrol3D
+  targetSensor: {fileID: 5134710204215215020}
+  flightController: {fileID: 4354138759284036908}
+  obstacleAvoidance: {fileID: 0}
+  separation: {fileID: 0}
+  fallbackArenaSize: {x: 5000, y: 5000, z: 5000}
+  fallbackArenaCenter: {x: 0, y: 0, z: 0}
+  edgeMargin: 80
+  minLegDistance: 120
+  arrivalDistance: 30
+  waypointTimeout: 12
+  forwardBias: 0.35
+  patrolSpeedScale: 0.65
+  useSeparation: 0
+  useObstacleAvoidance: 1
+  drawGizmos: 1
+--- !u!114 &8152666985347147206
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3197767798142550287}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d1c2214c65e80b24a8d2d0d28f3f16ea, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SpawnArrivalEffect3D
+  arrivalEffect:
+    effectPrefab: {fileID: 0}
+    effectAnchor: {fileID: 0}
+    localPositionOffset: {x: 0, y: 0, z: 0}
+    localEulerOffset: {x: 0, y: 0, z: 0}
+    effectScaleMultiplier: 1
+    multiplyByShipScale: 1
+    autoCleanupEffect: 1
+    forceParticleHierarchyScaling: 1
+  reveal:
+    revealDelaySeconds: 0
+    hideVisualsUntilReveal: 0
+    visualRenderers: []
+    disableAssignedCollidersUntilReveal: 0
+    colliders: []
+    behaviours: []
 --- !u!1 &4482474465765992111
 GameObject:
   m_ObjectHideFlags: 0
@@ -5257,6 +5421,7 @@ MonoBehaviour:
   shipThrusterVfx: {fileID: 5318005584685833617}
   shipSpeedFx: {fileID: 0}
   deathEffects: {fileID: 1641321807294946625}
+  isBossEnemy: 0
   aiFlightController: {fileID: 3797620900250623217}
   factionMember: {fileID: 2721337429202861558}
   netEnemyMovement: {fileID: 0}
@@ -5828,6 +5993,7 @@ MonoBehaviour:
   shipThrusterVfx: {fileID: 1697371135822262961}
   shipSpeedFx: {fileID: 0}
   deathEffects: {fileID: 8991992765686681441}
+  isBossEnemy: 0
   aiFlightController: {fileID: 4757368708498442781}
   factionMember: {fileID: 720977608824972694}
   netEnemyMovement: {fileID: 0}
@@ -11297,6 +11463,7 @@ MonoBehaviour:
   shipThrusterVfx: {fileID: 7416476637767117740}
   shipSpeedFx: {fileID: 0}
   deathEffects: {fileID: 2990341383598995903}
+  isBossEnemy: 0
   aiFlightController: {fileID: 1653121106017723979}
   factionMember: {fileID: 665368491934887747}
   netEnemyMovement: {fileID: 0}

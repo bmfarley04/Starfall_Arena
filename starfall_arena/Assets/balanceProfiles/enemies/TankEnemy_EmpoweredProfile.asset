@@ -1,0 +1,37 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b2419976d6fc4ca18f1dfdb7a0f36734, type: 3}
+  m_Name: TankEnemy_EmpoweredProfile
+  m_EditorClassIdentifier: 
+  core:
+    maxHealth: 800
+    maxShield: 850
+    moveSpeed: 16
+    rotationDegreesPerSecond: 40
+    detectionRange: 700
+  projectileWeapons:
+  - cooldown: 8
+    speed: 190
+    damage: 55
+    lifetime: 5
+  - cooldown: 8
+    speed: 140
+    damage: 35
+    lifetime: 5
+  beamWeapons: []
+  brain:
+    thinkInterval: 0.05
+    cannonAimToleranceDegrees: 8
+    missileAimToleranceDegrees: 35
+    weaponStaggerDelay: 1
+    stopDistance: 35
+    fullSpeedDistance: 70

@@ -13,11 +13,11 @@ MonoBehaviour:
   m_Name: TriumvirateProfile
   m_EditorClassIdentifier: 
   core:
-    maxHealth: 50
-    maxShield: 150
+    maxHealth: 60
+    maxShield: 80
     moveSpeed: 30
     rotationDegreesPerSecond: 100
-    detectionRange: 5000
+    detectionRange: 700
   projectileWeapons: []
   beamWeapons:
   - damagePerSecond: 0
@@ -63,11 +63,11 @@ MonoBehaviour:
     linkJitterInterval: 0.05
     finalBeamRange: 500
     finalBeamHitscanRadius: 0.45
-    oneMemberDamagePerSecond: 10
-    twoMemberDamagePerSecond: 20
-    threeMemberDamagePerSecond: 40
+    oneMemberDamagePerSecond: 15
+    twoMemberDamagePerSecond: 30
+    threeMemberDamagePerSecond: 50
     finalBeamDuration: 3
-    attackCooldown: 5
+    attackCooldown: 6
     fullTriadSlowMultiplier: 0.7
     fullTriadSlowDuration: 0.35
     fullTriadSlowEngineEmissionScale: 0.7

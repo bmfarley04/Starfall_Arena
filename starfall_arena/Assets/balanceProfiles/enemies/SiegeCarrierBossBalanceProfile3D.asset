@@ -30,6 +30,7 @@ MonoBehaviour:
     approachRangeBuffer: 180
     approachSpeedScale: 0.25
     retreatSpeedScale: 0.18
+    preferredBandDriftSpeedScale: 0.12
     targetVerticalFollowWeight: 0.1
     planeReturnWeight: 0.35
     minimumPatternCooldown: 1.6

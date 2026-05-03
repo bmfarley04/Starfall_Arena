@@ -13,18 +13,18 @@ MonoBehaviour:
   m_Name: ArtilleryEnemyProfile
   m_EditorClassIdentifier: 
   core:
-    maxHealth: 50
-    maxShield: 100
-    moveSpeed: 40
+    maxHealth: 70
+    maxShield: 120
+    moveSpeed: 32
     rotationDegreesPerSecond: 100
-    detectionRange: 5000
+    detectionRange: 700
   projectileWeapons: []
   beamWeapons:
-  - damagePerSecond: 20
-    maxDistance: 400
-    capacity: 300
-    drainRate: 20
-    regenRate: 20
+  - damagePerSecond: 16
+    maxDistance: 450
+    capacity: 280
+    drainRate: 18
+    regenRate: 18
     minimumStartEnergy: 0
     rotationMultiplier: 0.2
     postFireRotationPenaltyDuration: 0.3
@@ -33,7 +33,7 @@ MonoBehaviour:
     aimToleranceDegrees: 8
     keepAwayDistance: 100
     retreatFullSpeedDistance: 50
-    optimalRange: 300
+    optimalRange: 400
     rangeBuffer: 5
-    maxEngagementRange: 400
+    maxEngagementRange: 450
     minimumBeamRestartEnergy: 40

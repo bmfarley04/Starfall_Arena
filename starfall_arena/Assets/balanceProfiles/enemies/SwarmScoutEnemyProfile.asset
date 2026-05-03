@@ -15,16 +15,16 @@ MonoBehaviour:
   core:
     maxHealth: 1
     maxShield: 0
-    moveSpeed: 40
+    moveSpeed: 70
     rotationDegreesPerSecond: 200
-    detectionRange: 2000
+    detectionRange: 550
   projectileWeapons: []
   beamWeapons: []
   brain:
     thinkInterval: 0.04
     autoLinkRadius: 200
     intendedSwarmSize: 5
-    requiredSurvivorsForAlert: 3
+    requiredSurvivorsForAlert: 5
     movementPattern: 1
     orbitRadius: 20
     orbitThickness: 12
@@ -41,6 +41,6 @@ MonoBehaviour:
     formationRollDegreesPerSecond: 35
     alertProbeRange: 450
     alertWarmupSeconds: 3
-    alertBroadcastRadius: 1400
-    alertDuration: 6
+    alertBroadcastRadius: 850
+    alertDuration: 5
     alertCooldown: 6

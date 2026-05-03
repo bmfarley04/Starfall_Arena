@@ -307,6 +307,7 @@ MonoBehaviour:
   shipThrusterVfx: {fileID: 3111052346147751391}
   shipSpeedFx: {fileID: 0}
   deathEffects: {fileID: 8521091187178700546}
+  isBossEnemy: 0
   aiFlightController: {fileID: 8333524130418560552}
   factionMember: {fileID: 695693369330019818}
   netEnemyMovement: {fileID: -7216519775544358760}
@@ -472,7 +473,7 @@ MonoBehaviour:
   flightController: {fileID: 8333524130418560552}
   targetSensor: {fileID: 754838546632477888}
   obstacleAvoidance: {fileID: 0}
-  separation: {fileID: 0}
+  separation: {fileID: 5125496948465835274}
   steeringSmoother: {fileID: 0}
   patrol: {fileID: 7722546587470475911}
   netEnemyCombat: {fileID: -1402132322610921366}
@@ -510,7 +511,7 @@ MonoBehaviour:
   targetSensor: {fileID: 754838546632477888}
   flightController: {fileID: 8333524130418560552}
   obstacleAvoidance: {fileID: 0}
-  separation: {fileID: 0}
+  separation: {fileID: 5125496948465835274}
   fallbackArenaSize: {x: 5000, y: 5000, z: 5000}
   fallbackArenaCenter: {x: 0, y: 0, z: 0}
   edgeMargin: 80
@@ -519,7 +520,7 @@ MonoBehaviour:
   waypointTimeout: 12
   forwardBias: 0.35
   patrolSpeedScale: 0.8
-  useSeparation: 0
+  useSeparation: 1
   useObstacleAvoidance: 0
   drawGizmos: 1
 --- !u!114 &6852498316464396451
@@ -632,7 +633,7 @@ MonoBehaviour:
   projectileWeaponComponent: {fileID: 6839147771054517269}
   beamWeapon: {fileID: 0}
   flamethrowerWeapon: {fileID: 0}
-  netEnemyCombat: {fileID: 0}
+  netEnemyCombat: {fileID: -1402132322610921366}
   attackReporter: {fileID: 0}
   chargeTelegraph: {fileID: 6852498316464396451}
   chargeDuration: 1

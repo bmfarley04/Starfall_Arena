@@ -162,10 +162,11 @@ MonoBehaviour:
   shipThrusterVfx: {fileID: 4085942524718195484}
   shipSpeedFx: {fileID: 0}
   deathEffects: {fileID: 8043257944792450962}
+  isBossEnemy: 0
   aiFlightController: {fileID: 4432109307632493717}
   factionMember: {fileID: 8668150442235299499}
   netEnemyMovement: {fileID: 0}
-  netEnemyCombat: {fileID: 0}
+  netEnemyCombat: {fileID: -6285254230737239412}
 --- !u!114 &4432109307632493717
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -249,7 +250,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6fdc0ed10b6b7d74d852b13f15d9909c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyVisualTilt3D
-  flightController: {fileID: 0}
+  flightController: {fileID: 4432109307632493717}
   strafeMover: {fileID: 0}
   body: {fileID: 4955350368264630231}
   entity: {fileID: 6511585693592533134}
@@ -302,7 +303,7 @@ MonoBehaviour:
   targetSensor: {fileID: 7183041902638584638}
   flightController: {fileID: 4432109307632493717}
   obstacleAvoidance: {fileID: 0}
-  separation: {fileID: 0}
+  separation: {fileID: -3873604026403189231}
   fallbackArenaSize: {x: 5000, y: 5000, z: 5000}
   fallbackArenaCenter: {x: 0, y: 0, z: 0}
   edgeMargin: 80
@@ -311,7 +312,7 @@ MonoBehaviour:
   waypointTimeout: 12
   forwardBias: 0.35
   patrolSpeedScale: 0.8
-  useSeparation: 0
+  useSeparation: 1
   useObstacleAvoidance: 0
   drawGizmos: 1
 --- !u!114 &3292359935811209606
@@ -403,11 +404,11 @@ MonoBehaviour:
   flightController: {fileID: 4432109307632493717}
   targetSensor: {fileID: 7183041902638584638}
   obstacleAvoidance: {fileID: 0}
-  separation: {fileID: 0}
+  separation: {fileID: -3873604026403189231}
   steeringSmoother: {fileID: 0}
   strafeMover: {fileID: 2987330086573494579}
   patrol: {fileID: 8670701288625461945}
-  netEnemyCombat: {fileID: 0}
+  netEnemyCombat: {fileID: -6285254230737239412}
   attackReporter: {fileID: 0}
   thinkInterval: 0.05
   tooCloseRetreatDistance: 14
@@ -418,7 +419,7 @@ MonoBehaviour:
   flameOrbitStrafeSpeed: 10
   flameOrbitVerticalBias: 0.12
   flameOrbitDirectionChangeInterval: 3
-  useSeparation: 0
+  useSeparation: 1
   useObstacleAvoidance: 0
   aimToleranceDegrees: 22
 --- !u!114 &220747767187672308
@@ -505,7 +506,7 @@ MonoBehaviour:
   projectileWeaponComponent: {fileID: 0}
   beamWeapon: {fileID: 0}
   flamethrowerWeapon: {fileID: 2517135278298198213}
-  netEnemyCombat: {fileID: 0}
+  netEnemyCombat: {fileID: -6285254230737239412}
   attackReporter: {fileID: 0}
   chargeTelegraph: {fileID: 220747767187672308}
   chargeDuration: 1

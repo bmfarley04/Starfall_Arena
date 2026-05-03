@@ -5151,10 +5151,11 @@ MonoBehaviour:
   shipThrusterVfx: {fileID: 5973741316665124015}
   shipSpeedFx: {fileID: 0}
   deathEffects: {fileID: 8407136640758178129}
+  isBossEnemy: 0
   aiFlightController: {fileID: 107427888545359193}
   factionMember: {fileID: 5121586720941418845}
   netEnemyMovement: {fileID: 9100000000000000006}
-  netEnemyCombat: {fileID: 0}
+  netEnemyCombat: {fileID: -8028800367529112516}
 --- !u!114 &107427888545359193
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5238,7 +5239,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6fdc0ed10b6b7d74d852b13f15d9909c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyVisualTilt3D
-  flightController: {fileID: 0}
+  flightController: {fileID: 107427888545359193}
   strafeMover: {fileID: 0}
   body: {fileID: 4346955362645140441}
   entity: {fileID: 3969675139743388159}
@@ -5277,7 +5278,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::SwarmScoutEnemyBrain3D
   flightController: {fileID: 107427888545359193}
   targetSensor: {fileID: 6943316115824602533}
-  patrol: {fileID: 0}
+  patrol: {fileID: -3826980938728814080}
   separation: {fileID: 0}
   obstacleAvoidance: {fileID: 0}
   swarmKey: SwarmScout
@@ -5332,8 +5333,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bd24cd61985b47f3ba6857689d78dcfa, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyPatrol3D
-  targetSensor: {fileID: 0}
-  flightController: {fileID: 0}
+  targetSensor: {fileID: 6943316115824602533}
+  flightController: {fileID: 107427888545359193}
   obstacleAvoidance: {fileID: 0}
   separation: {fileID: 0}
   fallbackArenaSize: {x: 5000, y: 5000, z: 5000}
@@ -5344,7 +5345,7 @@ MonoBehaviour:
   waypointTimeout: 12
   forwardBias: 0.35
   patrolSpeedScale: 0.65
-  useSeparation: 1
+  useSeparation: 0
   useObstacleAvoidance: 1
   drawGizmos: 1
 --- !u!114 &6709094219710358826

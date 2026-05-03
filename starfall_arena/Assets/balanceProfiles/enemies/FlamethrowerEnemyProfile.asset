@@ -13,20 +13,20 @@ MonoBehaviour:
   m_Name: FlamethrowerEnemyProfile
   m_EditorClassIdentifier: 
   core:
-    maxHealth: 100
-    maxShield: 100
-    moveSpeed: 40
-    rotationDegreesPerSecond: 220
-    detectionRange: 1000
+    maxHealth: 110
+    maxShield: 90
+    moveSpeed: 42
+    rotationDegreesPerSecond: 180
+    detectionRange: 550
   projectileWeapons: []
   beamWeapons: []
   flamethrowerWeapon:
-    damagePerSecond: 30
-    range: 32
-    halfAngleDegrees: 8
+    damagePerSecond: 28
+    range: 30
+    halfAngleDegrees: 24
     damageTickInterval: 0.1
-    burstDuration: 2.5
-    cooldown: 4
+    burstDuration: 1.5
+    cooldown: 3.5
     alignDamageToVisualDrift: 1
     driftVelocityScale: 1
     visualFlameSpeed: 42

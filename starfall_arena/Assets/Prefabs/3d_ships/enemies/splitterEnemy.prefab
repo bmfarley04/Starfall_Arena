@@ -223,10 +223,11 @@ MonoBehaviour:
   shipThrusterVfx: {fileID: 4246944659233015937}
   shipSpeedFx: {fileID: 0}
   deathEffects: {fileID: 6183091794190445655}
+  isBossEnemy: 0
   aiFlightController: {fileID: 5751379781529739476}
   factionMember: {fileID: 7973508943379848832}
   netEnemyMovement: {fileID: 0}
-  netEnemyCombat: {fileID: 0}
+  netEnemyCombat: {fileID: 2518549812547030709}
 --- !u!114 &520867131601275356
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -473,10 +474,10 @@ MonoBehaviour:
   flightController: {fileID: 5751379781529739476}
   targetSensor: {fileID: 520867131601275356}
   obstacleAvoidance: {fileID: 0}
-  separation: {fileID: 0}
+  separation: {fileID: 7808571497515816580}
   steeringSmoother: {fileID: 0}
-  patrol: {fileID: 0}
-  netEnemyCombat: {fileID: 0}
+  patrol: {fileID: -3436631760667480809}
+  netEnemyCombat: {fileID: 2518549812547030709}
   attackReporter: {fileID: 0}
   thinkInterval: 0.05
   holdDistance: 200
@@ -527,10 +528,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bd24cd61985b47f3ba6857689d78dcfa, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyPatrol3D
-  targetSensor: {fileID: 0}
-  flightController: {fileID: 0}
+  targetSensor: {fileID: 520867131601275356}
+  flightController: {fileID: 5751379781529739476}
   obstacleAvoidance: {fileID: 0}
-  separation: {fileID: 0}
+  separation: {fileID: 7808571497515816580}
   fallbackArenaSize: {x: 5000, y: 5000, z: 5000}
   fallbackArenaCenter: {x: 0, y: 0, z: 0}
   edgeMargin: 80

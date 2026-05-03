@@ -13,23 +13,23 @@ MonoBehaviour:
   m_Name: FortressEnemyProfile
   m_EditorClassIdentifier: 
   core:
-    maxHealth: 500
-    maxShield: 1000
-    moveSpeed: 20
+    maxHealth: 450
+    maxShield: 800
+    moveSpeed: 14
     rotationDegreesPerSecond: 40
-    detectionRange: 5000
+    detectionRange: 850
   projectileWeapons:
-  - cooldown: 15
+  - cooldown: 14
     speed: 500
-    damage: 100
+    damage: 90
     lifetime: 5
   - cooldown: 8
     speed: 120
     damage: 20
     lifetime: 5
-  - cooldown: 0.25
+  - cooldown: 0.3
     speed: 120
-    damage: 10
+    damage: 8
     lifetime: 5
   beamWeapons: []
   brain:

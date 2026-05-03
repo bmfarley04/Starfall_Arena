@@ -5034,7 +5034,6 @@ GameObject:
   - component: {fileID: 6589280690795347110}
   - component: {fileID: 981214103467688693}
   - component: {fileID: 1220677257115221643}
-  - component: {fileID: 1546886096681582788}
   - component: {fileID: 1867961828868232370}
   - component: {fileID: 5175858623837805472}
   - component: {fileID: 2504708004014066118}
@@ -5048,6 +5047,9 @@ GameObject:
   - component: {fileID: 9205410871108664787}
   - component: {fileID: 6364644879097331353}
   - component: {fileID: 7123456789012345679}
+  - component: {fileID: 7585572008960792029}
+  - component: {fileID: 4630352536319777799}
+  - component: {fileID: 2576565563206851298}
   m_Layer: 0
   m_Name: boss2Enemy
   m_TagString: Enemy
@@ -5247,14 +5249,15 @@ MonoBehaviour:
   selectedWeaponIndex: 0
   abilities: []
   shipFlight: {fileID: 8807266726861353719}
-  shipVisualTilt: {fileID: 1546886096681582788}
+  shipVisualTilt: {fileID: 0}
   shipThrusterVfx: {fileID: 501099650368901150}
   shipSpeedFx: {fileID: 0}
   deathEffects: {fileID: 5668869519396445522}
+  isBossEnemy: 0
   aiFlightController: {fileID: 6440567542941731420}
   factionMember: {fileID: 4744896403063961445}
   netEnemyMovement: {fileID: 0}
-  netEnemyCombat: {fileID: 0}
+  netEnemyCombat: {fileID: 9205410871108664787}
 --- !u!114 &7750781701762828512
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5413,8 +5416,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bd24cd61985b47f3ba6857689d78dcfa, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyPatrol3D
-  targetSensor: {fileID: 0}
-  flightController: {fileID: 0}
+  targetSensor: {fileID: 6487050144468943013}
+  flightController: {fileID: 6440567542941731420}
   obstacleAvoidance: {fileID: 0}
   separation: {fileID: 0}
   fallbackArenaSize: {x: 5000, y: 5000, z: 5000}
@@ -5425,44 +5428,9 @@ MonoBehaviour:
   waypointTimeout: 12
   forwardBias: 0.35
   patrolSpeedScale: 0.65
-  useSeparation: 1
+  useSeparation: 0
   useObstacleAvoidance: 1
   drawGizmos: 1
---- !u!114 &1546886096681582788
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8311721449157583992}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9e8f7219683416a4e967c145de82d06f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ShipVisualTilt3D
-  entity: {fileID: 1458613803562551006}
-  shipFlight: {fileID: 8807266726861353719}
-  visualEffects:
-    visualModel: {fileID: 4008396850354727258}
-    maxBankAngle: 75
-    bankSensitivity: 20
-    steeringInputBankSensitivity: 24
-    bankSmoothing: 8
-    bankReturnSmoothing: 5
-    maxPitchLeanAngle: 40
-    pitchLeanSensitivity: 12
-    steeringInputPitchSensitivity: 14
-    pitchLeanSmoothing: 8
-    pitchLeanReturnSmoothing: 5
-    forwardAccelPitchSensitivity: 0.08
-    lateralAccelBankSensitivity: 0.1
-    lateralDriftBankSensitivity: 0.5
-    verticalDriftPitchSensitivity: 0.35
-  barrelRoll:
-    degrees: 360
-    durationMultiplier: 1.1
-    minDuration: 0.18
-    entryBankAngle: 28
 --- !u!114 &1867961828868232370
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5847,8 +5815,8 @@ MonoBehaviour:
     m_Bits: 4294967295
   flightController: {fileID: 6440567542941731420}
   targetSensor: {fileID: 6487050144468943013}
-  patrol: {fileID: 1220677257115221643}
-  netEnemyCombat: {fileID: 0}
+  patrol: {fileID: 0}
+  netEnemyCombat: {fileID: 9205410871108664787}
   attackReporter: {fileID: 0}
 --- !u!114 &5833685198212559877
 MonoBehaviour:
@@ -6141,6 +6109,84 @@ MonoBehaviour:
   visualRenderers: []
   additionalBehavioursToDisable: []
   collidersToDisable: []
+--- !u!114 &7585572008960792029
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8311721449157583992}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6fdc0ed10b6b7d74d852b13f15d9909c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyVisualTilt3D
+  flightController: {fileID: 6440567542941731420}
+  strafeMover: {fileID: 0}
+  body: {fileID: 0}
+  entity: {fileID: 0}
+  visualEffects:
+    visualModel: {fileID: 0}
+    maxBankAngle: 45
+    bankSensitivity: 16
+    steeringInputBankSensitivity: 18
+    bankSmoothing: 8
+    bankReturnSmoothing: 5
+    maxPitchLeanAngle: 24
+    pitchLeanSensitivity: 10
+    steeringInputPitchSensitivity: 10
+    pitchLeanSmoothing: 8
+    pitchLeanReturnSmoothing: 5
+    forwardAccelPitchSensitivity: 0.04
+    lateralAccelBankSensitivity: 0.06
+    lateralDriftBankSensitivity: 0.25
+    verticalDriftPitchSensitivity: 0.2
+  bankFromMoveIntent: 18
+  bankFromStrafeVelocity: 0.45
+  pitchFromMoveIntent: 10
+  useRigidbodyVelocity: 1
+  drawGizmos: 1
+--- !u!114 &4630352536319777799
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8311721449157583992}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d1c2214c65e80b24a8d2d0d28f3f16ea, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SpawnArrivalEffect3D
+  arrivalEffect:
+    effectPrefab: {fileID: 0}
+    effectAnchor: {fileID: 0}
+    localPositionOffset: {x: 0, y: 0, z: 0}
+    localEulerOffset: {x: 0, y: 0, z: 0}
+    effectScaleMultiplier: 1
+    multiplyByShipScale: 1
+    autoCleanupEffect: 1
+    forceParticleHierarchyScaling: 1
+  reveal:
+    revealDelaySeconds: 0
+    hideVisualsUntilReveal: 0
+    visualRenderers: []
+    disableAssignedCollidersUntilReveal: 0
+    colliders: []
+    behaviours: []
+--- !u!114 &2576565563206851298
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8311721449157583992}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bfab71f04e15488aa75cd8ce1856c6d3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyBalanceProfileApplier3D
+  profile: {fileID: 11400000, guid: fdf3c62fd8a4ca14ca7e122089aabb7e, type: 2}
 --- !u!1001 &4012592746645055106
 PrefabInstance:
   m_ObjectHideFlags: 0

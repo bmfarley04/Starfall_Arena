@@ -13,11 +13,11 @@ MonoBehaviour:
   m_Name: SuicideEnemyProfile
   m_EditorClassIdentifier: 
   core:
-    maxHealth: 50
-    maxShield: 50
-    moveSpeed: 50
+    maxHealth: 45
+    maxShield: 35
+    moveSpeed: 58
     rotationDegreesPerSecond: 200
-    detectionRange: 5000
+    detectionRange: 550
   projectileWeapons: []
   beamWeapons: []
   brain:

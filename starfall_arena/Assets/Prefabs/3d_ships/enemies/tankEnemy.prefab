@@ -14680,6 +14680,7 @@ GameObject:
   - component: {fileID: 7472465163858771776}
   - component: {fileID: 86351170985818649}
   - component: {fileID: 4534781545565309400}
+  - component: {fileID: 1846608557299346623}
   m_Layer: 0
   m_Name: tankEnemy
   m_TagString: Enemy
@@ -14922,10 +14923,11 @@ MonoBehaviour:
   shipThrusterVfx: {fileID: 5716581735255394469}
   shipSpeedFx: {fileID: 0}
   deathEffects: {fileID: 7175862825742789349}
+  isBossEnemy: 0
   aiFlightController: {fileID: 1829365813681681002}
   factionMember: {fileID: 5479257193394350753}
   netEnemyMovement: {fileID: 0}
-  netEnemyCombat: {fileID: 0}
+  netEnemyCombat: {fileID: 86351170985818649}
 --- !u!114 &8333375227253951137
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -14943,10 +14945,10 @@ MonoBehaviour:
   flightController: {fileID: 1829365813681681002}
   targetSensor: {fileID: 3740084540234369247}
   obstacleAvoidance: {fileID: 0}
-  separation: {fileID: 0}
+  separation: {fileID: 1846608557299346623}
   steeringSmoother: {fileID: 0}
-  patrol: {fileID: 0}
-  netEnemyCombat: {fileID: 0}
+  patrol: {fileID: 2292903963402738620}
+  netEnemyCombat: {fileID: 86351170985818649}
   attackReporter: {fileID: 0}
   thinkInterval: 0.05
   cannonAimToleranceDegrees: 8
@@ -15052,10 +15054,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bd24cd61985b47f3ba6857689d78dcfa, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyPatrol3D
-  targetSensor: {fileID: 0}
-  flightController: {fileID: 0}
+  targetSensor: {fileID: 3740084540234369247}
+  flightController: {fileID: 1829365813681681002}
   obstacleAvoidance: {fileID: 0}
-  separation: {fileID: 0}
+  separation: {fileID: 1846608557299346623}
   fallbackArenaSize: {x: 5000, y: 5000, z: 5000}
   fallbackArenaCenter: {x: 0, y: 0, z: 0}
   edgeMargin: 80
@@ -15154,6 +15156,22 @@ MonoBehaviour:
     maxExtrapolationMs: 40
     hardSnapDistance: 30
     smoothingCatchUpRate: 0
+--- !u!114 &1846608557299346623
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6067267420352304793}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 238b149a7cc0c1d4da4692a5e73aec1d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemySeparation3D
+  separationRadius: 8
+  separationStrength: 1
+  verticalWeight: 1
+  unstickSpeedScale: 0.2
 --- !u!1 &6236253945820780736
 GameObject:
   m_ObjectHideFlags: 0

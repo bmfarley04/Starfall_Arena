@@ -4860,6 +4860,7 @@ GameObject:
   - component: {fileID: 9091437010417820445}
   - component: {fileID: 9064804421947624768}
   - component: {fileID: 2365962550676899065}
+  - component: {fileID: 1187081424238297859}
   m_Layer: 0
   m_Name: suicideEnemy
   m_TagString: Enemy
@@ -4992,10 +4993,11 @@ MonoBehaviour:
   shipThrusterVfx: {fileID: 7007259809539868391}
   shipSpeedFx: {fileID: 0}
   deathEffects: {fileID: 6201011263396867847}
+  isBossEnemy: 0
   aiFlightController: {fileID: 6563768460411624007}
   factionMember: {fileID: 4242791289460649545}
   netEnemyMovement: {fileID: 0}
-  netEnemyCombat: {fileID: 0}
+  netEnemyCombat: {fileID: 9064804421947624768}
 --- !u!114 &8489083175465811709
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5084,7 +5086,7 @@ MonoBehaviour:
   flightController: {fileID: 6563768460411624007}
   targetSensor: {fileID: 8489083175465811709}
   obstacleAvoidance: {fileID: 0}
-  patrol: {fileID: 0}
+  patrol: {fileID: -502402379776659934}
   thinkInterval: 0.05
   detonationDamage: 70
   detonationRadius: 4
@@ -5115,8 +5117,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bd24cd61985b47f3ba6857689d78dcfa, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyPatrol3D
-  targetSensor: {fileID: 0}
-  flightController: {fileID: 0}
+  targetSensor: {fileID: 8489083175465811709}
+  flightController: {fileID: 6563768460411624007}
   obstacleAvoidance: {fileID: 0}
   separation: {fileID: 0}
   fallbackArenaSize: {x: 5000, y: 5000, z: 5000}
@@ -5127,7 +5129,7 @@ MonoBehaviour:
   waypointTimeout: 12
   forwardBias: 0.35
   patrolSpeedScale: 0.65
-  useSeparation: 1
+  useSeparation: 0
   useObstacleAvoidance: 1
   drawGizmos: 1
 --- !u!114 &7319930878242164968
@@ -5217,6 +5219,43 @@ MonoBehaviour:
     maxExtrapolationMs: 40
     hardSnapDistance: 30
     smoothingCatchUpRate: 0
+--- !u!114 &1187081424238297859
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2865276719882564100}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6fdc0ed10b6b7d74d852b13f15d9909c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyVisualTilt3D
+  flightController: {fileID: 6563768460411624007}
+  strafeMover: {fileID: 0}
+  body: {fileID: 0}
+  entity: {fileID: 0}
+  visualEffects:
+    visualModel: {fileID: 0}
+    maxBankAngle: 45
+    bankSensitivity: 16
+    steeringInputBankSensitivity: 18
+    bankSmoothing: 8
+    bankReturnSmoothing: 5
+    maxPitchLeanAngle: 24
+    pitchLeanSensitivity: 10
+    steeringInputPitchSensitivity: 10
+    pitchLeanSmoothing: 8
+    pitchLeanReturnSmoothing: 5
+    forwardAccelPitchSensitivity: 0.04
+    lateralAccelBankSensitivity: 0.06
+    lateralDriftBankSensitivity: 0.25
+    verticalDriftPitchSensitivity: 0.2
+  bankFromMoveIntent: 18
+  bankFromStrafeVelocity: 0.45
+  pitchFromMoveIntent: 10
+  useRigidbodyVelocity: 1
+  drawGizmos: 1
 --- !u!1 &5533556178301806259
 GameObject:
   m_ObjectHideFlags: 0

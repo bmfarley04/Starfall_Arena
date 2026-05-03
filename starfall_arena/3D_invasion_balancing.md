@@ -341,16 +341,12 @@ Wave 7:
 
 ### Known Setup Follow-Ups
 
-- Regenerate or reassign enemy balance profiles for all enemy prefabs before serious stat tuning.
-- Add missing `EnemyBalanceProfileApplier3D` setup on artillery, duelist, fortress, and boss2 prefabs.
-- Assign a real profile to `spawnedSuicideEnemy`.
-- Retune prefab sensors away from accidental `5000` detection unless the enemy role explicitly needs map-wide or boss-scale aggro.
-- Create explicit variant prefabs for weak, elite, and empowered enemies before authoring the final wave set.
-- Register all networked variant prefabs with NGO before adding them to networked Invasion waves.
+- Completed for the V1 prefab/profile pass: active enemy prefabs now have assigned balance profiles, missing profile appliers were added, `spawnedSuicideEnemy` has a weak spawned suicide profile, normal enemy detection values were moved away from accidental `5000` aggro, selective V1 variants exist as explicit prefabs, and all active normal/variant enemy prefabs are registered with NGO.
+- Still planned: author the seven-wave set, grouped mini-boss health presentation, empowered tank spawner loadouts, and final boss pattern tuning.
 
 ## V1 Enemy Prefab Tuning Targets
 
-These numbers are the target balance profile values for the V1 wave plan. They are not yet implemented in assets. The next prefab/profile pass should create or regenerate matching `EnemyBalanceProfile3D` assets, then assign them through `EnemyBalanceProfileApplier3D`.
+These numbers are the implemented V1 balance profile values for the current prefab/profile pass. Future tuning should adjust the matching `EnemyBalanceProfile3D` assets first, then verify the assigned prefabs still route through `EnemyBalanceProfileApplier3D`.
 
 Player-scaling assumptions:
 
@@ -480,13 +476,12 @@ Boss detail is deferred, but use these temporary baselines for wave planning:
 
 Use normal fortress as the wave 4 boss and wave 6 heavy. Use empowered fortress only for the wave 6 finale.
 
-### Later Implementation Checklist
+### Remaining Implementation Checklist
 
-- Create or regenerate balance profiles for every listed variant.
-- Assign missing profile appliers on artillery, duelist, fortress, and boss2.
-- Assign a real profile to `spawnedSuicideEnemy`.
-- Retune accidental `5000` detection values to the plan above.
-- Create explicit prefab variants with size/collider scaling.
+- Verify the explicit variant prefabs in playtests for size readability, collider feel, and TTK.
+- Author wave entries against the normal and variant prefabs instead of hidden stat swaps.
+- Configure empowered tank spawner loadouts to use weak basics/scouts.
+- Build grouped boss health presentation for multi-enemy boss beats.
 - Keep boss2/final boss detailed pattern tuning for a separate boss-specific pass.
 
 ### Tuning Verification Targets

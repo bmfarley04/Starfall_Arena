@@ -19,10 +19,10 @@ MonoBehaviour:
     rotationDegreesPerSecond: 180
     detectionRange: 500
   projectileWeapons:
-  - cooldown: 2
-    speed: 120
+  - cooldown: 1.8
+    speed: 135
     damage: 10
-    lifetime: 5
+    lifetime: 4.5
   beamWeapons: []
   brain:
     thinkInterval: 0.05
