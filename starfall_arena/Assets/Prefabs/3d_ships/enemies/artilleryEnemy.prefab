@@ -5119,8 +5119,8 @@ MonoBehaviour:
     verticalOffset: 0
     muzzle: {fileID: 7103556224772885102}
     directionReference: {fileID: 0}
-    rotationMultiplier: 0.2
-    postFireRotationPenaltyDuration: 0.3
+    rotationMultiplier: 0.1
+    postFireRotationPenaltyDuration: 0.15
     capacity: 300
     drainRate: 20
     regenRate: 20
@@ -5153,7 +5153,7 @@ MonoBehaviour:
   retreatFullSpeedDistance: 50
   optimalRange: 300
   rangeBuffer: 5
-  maxEngagementRange: 400
+  maxEngagementRange: 300
   minimumBeamRestartEnergy: 40
   useObstacleAvoidance: 0
   lineOfSightMask:

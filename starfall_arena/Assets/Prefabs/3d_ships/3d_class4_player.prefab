@@ -5978,7 +5978,7 @@ MonoBehaviour:
       targetFaction: 2
       cooldown: 4
       speed: 200
-      damage: 40
+      damage: 100
       lifetime: 5
       impactForce: 0
       recoilForce: 0

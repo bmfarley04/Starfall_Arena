@@ -5264,8 +5264,8 @@ MonoBehaviour:
     verticalOffset: 0
     muzzle: {fileID: 5303625907484177955}
     directionReference: {fileID: 0}
-    rotationMultiplier: 0.2
-    postFireRotationPenaltyDuration: 0.3
+    rotationMultiplier: 0.1
+    postFireRotationPenaltyDuration: 0.15
     capacity: 300
     drainRate: 20
     regenRate: 20
@@ -5372,7 +5372,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 1769186075
+  GlobalObjectIdHash: 1098566083
   InScenePlacedSourceGlobalObjectIdHash: 0
   DeferredDespawnTick: 0
   Ownership: 1
