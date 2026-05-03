@@ -10,6 +10,10 @@ Bug note format:
 - why it matters in the 3D path
 - how to avoid repeating it
 
+## Invasion Scene Wiring
+
+- Invasion wave prefab changes can be masked by scene prefab-instance overrides. `Assets/Scenes/3d_invasion.unity` previously kept old overrides for `waves.Array.size`, nested sub-wave arrays, and removed spawn-anchor children on an `invasionManager` prefab instance, so the updated prefab looked correct on disk while the scene Inspector showed stale or empty wave data. When changing `Assets/Prefabs/3d_ships/invasionManager.prefab`, inspect the playable scene instance too and revert stale overrides so `InvasionSceneManager3D.waveManager` inherits the prefab-authored wave set.
+
 ## Enemy Movement And Steering
 
 - 3D Invasion enemy spawns must not trust authored spawn points blindly. Formation slots, boss points, and carrier-spawner anchors can land inside asteroids, debris, or crippled-ship colliders, and once the enemy is instantiated there the arrival/AI/steering layers are already too late to prevent a bad spawn. Keep the spawn-clearance overlap check inside `InvasionWaveManager3D.SpawnEnemyAt(...)`, tune the blocking layer mask to solid world blockers, and skip with a warning if no nearby clear position exists.
