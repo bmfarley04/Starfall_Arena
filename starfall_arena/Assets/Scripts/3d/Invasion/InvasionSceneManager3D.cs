@@ -67,8 +67,6 @@ public class InvasionSceneManager3D : MonoBehaviour
     [Header("Game End")]
     [Tooltip("Existing shared game-end screen manager reused for Invasion victory/defeat presentation.")]
     [SerializeField] private GameEndScreenManager gameEndScreenManager;
-    [Tooltip("Optional end-screen camera flyaround. If assigned, it begins when Invasion ends.")]
-    [SerializeField] private InvasionEndCameraFlyaround3D endCameraFlyaround;
 
     [Header("Between-Wave Rewards")]
     [Tooltip("If enabled, cleared waves trigger a between-wave reward intermission before the next wave begins.")]
@@ -192,11 +190,6 @@ public class InvasionSceneManager3D : MonoBehaviour
         if (gameEndScreenManager == null)
         {
             gameEndScreenManager = FindFirstObjectByType<GameEndScreenManager>(FindObjectsInactive.Include);
-        }
-
-        if (endCameraFlyaround == null)
-        {
-            endCameraFlyaround = FindFirstObjectByType<InvasionEndCameraFlyaround3D>(FindObjectsInactive.Include);
         }
 
         ResolveShipData();
@@ -1473,7 +1466,6 @@ public class InvasionSceneManager3D : MonoBehaviour
         StopArenaBoundary();
         SetPlayersIntermissionLocked(true);
         SetGameplayHudActive(false);
-        endCameraFlyaround?.BeginFlyaround();
 
         if (stats.victory)
         {
@@ -1494,11 +1486,9 @@ public class InvasionSceneManager3D : MonoBehaviour
         int perspectivePlayer = ResolveEndScreenPerspectivePlayer();
         CombatStatsSnapshot localStats = perspectivePlayer == 2 ? stats.player2 : stats.player1;
         ShipData localShip = perspectivePlayer == 2 ? _player2Data : _player1Data;
-        int resultWinner = stats.victory ? perspectivePlayer : perspectivePlayer == 1 ? 2 : 1;
 
-        gameEndScreenManager.ShowGameEndScreen(
-            resultWinner,
-            perspectivePlayer,
+        gameEndScreenManager.ShowGameEndScreenForResult(
+            stats.victory,
             localShip,
             stats.durationSeconds,
             localStats.enemiesKilled,
@@ -1906,8 +1896,16 @@ public class InvasionSceneManager3D : MonoBehaviour
         {
             writer.WriteValueSafe(stats.victory ? (byte)1 : (byte)0);
             writer.WriteValueSafe(stats.durationSeconds);
-            WriteCombatStats(ref writer, stats.player1);
-            WriteCombatStats(ref writer, stats.player2);
+            writer.WriteValueSafe(stats.player1.shotsFired);
+            writer.WriteValueSafe(stats.player1.shotsHit);
+            writer.WriteValueSafe(stats.player1.enemiesKilled);
+            writer.WriteValueSafe(stats.player1.damageDealt);
+            writer.WriteValueSafe(stats.player1.damageTaken);
+            writer.WriteValueSafe(stats.player2.shotsFired);
+            writer.WriteValueSafe(stats.player2.shotsHit);
+            writer.WriteValueSafe(stats.player2.enemiesKilled);
+            writer.WriteValueSafe(stats.player2.damageDealt);
+            writer.WriteValueSafe(stats.player2.damageTaken);
             networkManager.CustomMessagingManager.SendNamedMessage(GameEndMessageName, networkManager.ConnectedClientsIds, writer, NetworkDelivery.ReliableSequenced);
         }
     }
@@ -1926,15 +1924,6 @@ public class InvasionSceneManager3D : MonoBehaviour
         stats.player1 = ReadCombatStats(ref reader);
         stats.player2 = ReadCombatStats(ref reader);
         PresentInvasionGameEnd(stats);
-    }
-
-    private static void WriteCombatStats(ref FastBufferWriter writer, CombatStatsSnapshot stats)
-    {
-        writer.WriteValueSafe(stats.shotsFired);
-        writer.WriteValueSafe(stats.shotsHit);
-        writer.WriteValueSafe(stats.enemiesKilled);
-        writer.WriteValueSafe(stats.damageDealt);
-        writer.WriteValueSafe(stats.damageTaken);
     }
 
     private static CombatStatsSnapshot ReadCombatStats(ref FastBufferReader reader)

@@ -14,6 +14,7 @@ public struct TargetAwarenessPresentation3D
 {
     public TargetAwarenessVisibility3D State;
     public bool IsBossTarget;
+    public bool IsTeammateTarget;
     public Vector2 CanvasPosition;
     public Vector2 IndicatorDirection;
     public Vector2 BracketSize;
@@ -48,6 +49,8 @@ public class TargetAwarenessWidget3D : MonoBehaviour
     [SerializeField] private RectTransform normalIndicatorVisualGroup;
     [Tooltip("Boss-only offscreen indicator visuals. Show this only when the presentation is a boss target edge indicator.")]
     [SerializeField] private RectTransform bossIndicatorVisualGroup;
+    [Tooltip("Teammate-only offscreen indicator visuals. Assign the friendly player locator icon here.")]
+    [SerializeField] private RectTransform teammateIndicatorVisualGroup;
     [SerializeField] private RectTransform bracketGroup;
     [Tooltip("Optional RectTransform that should receive the computed target bracket size. Falls back to Bracket Group when left empty.")]
     [SerializeField] private RectTransform bracketFrame;
@@ -93,6 +96,7 @@ public class TargetAwarenessWidget3D : MonoBehaviour
     private CanvasGroup _indicatorCanvasGroup;
     private CanvasGroup _normalIndicatorVisualCanvasGroup;
     private CanvasGroup _bossIndicatorVisualCanvasGroup;
+    private CanvasGroup _teammateIndicatorVisualCanvasGroup;
     private CanvasGroup _bracketCanvasGroup;
     private CanvasGroup _healthCanvasGroup;
     private CanvasGroup _shieldCanvasGroup;
@@ -115,6 +119,7 @@ public class TargetAwarenessWidget3D : MonoBehaviour
         _indicatorCanvasGroup = EnsureCanvasGroup(indicatorGroup);
         _normalIndicatorVisualCanvasGroup = EnsureCanvasGroup(normalIndicatorVisualGroup);
         _bossIndicatorVisualCanvasGroup = EnsureCanvasGroup(bossIndicatorVisualGroup);
+        _teammateIndicatorVisualCanvasGroup = EnsureCanvasGroup(teammateIndicatorVisualGroup);
         _bracketCanvasGroup = EnsureCanvasGroup(bracketGroup);
         _healthCanvasGroup = EnsureCanvasGroup(healthBarGroup);
         _shieldCanvasGroup = EnsureCanvasGroup(shieldBarGroup);
@@ -157,12 +162,14 @@ public class TargetAwarenessWidget3D : MonoBehaviour
         bool showIndicator = presentation.State == TargetAwarenessVisibility3D.FloatingIndicator
             || presentation.State == TargetAwarenessVisibility3D.EdgeIndicator;
         bool showBossIndicator = presentation.IsBossTarget && presentation.State == TargetAwarenessVisibility3D.EdgeIndicator;
-        bool showNormalIndicatorVisual = showIndicator && !presentation.IsBossTarget;
-        bool showBracket = presentation.State == TargetAwarenessVisibility3D.Bracket && !presentation.IsBossTarget;
+        bool showTeammateIndicator = presentation.IsTeammateTarget && presentation.State == TargetAwarenessVisibility3D.EdgeIndicator;
+        bool showNormalIndicatorVisual = showIndicator && !presentation.IsBossTarget && !presentation.IsTeammateTarget;
+        bool showBracket = presentation.State == TargetAwarenessVisibility3D.Bracket && !presentation.IsBossTarget && !presentation.IsTeammateTarget;
 
         SetGroupAlpha(_indicatorCanvasGroup, showIndicator ? 1f : 0f, deltaTime);
         SetGroupAlpha(_normalIndicatorVisualCanvasGroup, showNormalIndicatorVisual ? 1f : 0f, deltaTime);
         SetGroupAlpha(_bossIndicatorVisualCanvasGroup, showBossIndicator ? 1f : 0f, deltaTime);
+        SetGroupAlpha(_teammateIndicatorVisualCanvasGroup, showTeammateIndicator ? 1f : 0f, deltaTime);
         SetGroupAlpha(_bracketCanvasGroup, showBracket ? 1f : 0f, deltaTime);
         SetGroupAlpha(_healthCanvasGroup, showBracket ? 1f : 0f, deltaTime);
         SetGroupAlpha(_shieldCanvasGroup, showBracket ? 1f : 0f, deltaTime);
@@ -209,6 +216,7 @@ public class TargetAwarenessWidget3D : MonoBehaviour
         SetGroupAlphaImmediate(_indicatorCanvasGroup, 0f);
         SetGroupAlphaImmediate(_normalIndicatorVisualCanvasGroup, 0f);
         SetGroupAlphaImmediate(_bossIndicatorVisualCanvasGroup, 0f);
+        SetGroupAlphaImmediate(_teammateIndicatorVisualCanvasGroup, 0f);
         SetGroupAlphaImmediate(_bracketCanvasGroup, 0f);
         SetGroupAlphaImmediate(_healthCanvasGroup, 0f);
         SetGroupAlphaImmediate(_shieldCanvasGroup, 0f);

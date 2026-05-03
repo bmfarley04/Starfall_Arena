@@ -309,7 +309,7 @@ This makes `ShipData` a bridge between:
 - opponent HUD canvases are not used in the active network scene
 - round-start text and countdown should be driven by a replicated network session cue rather than a host-only scene coroutine
 - game-end screens should use the local player's canvas slot in network mode for now (`player1` canvas on host, `player2` canvas on the remote client)
-- each game-end canvas now needs its own serialized result-label text reference so the screen can show `VICTORY` or `DEFEAT` per machine
+- `GameEndScreenManager` now treats its legacy Player 1 canvas wiring as the Victory screen and its legacy Player 2 canvas wiring as the Defeat screen. Result labels should be static text/art on those canvases, while the manager fills only variable stat fields.
 - `GameEndScreenManager` can receive an optional final-record text override. The duel flow still uses the normal wins-losses record, while 3D Invasion uses the same wired text field to show the local player's enemy-kill count.
 - round-end screens should keep the legacy local-multiplayer winner-canvas behavior, but in network mode they now use the local player's canvas slot (`player1` on host, `player2` on remote client), show owner-perspective stats, and need a per-canvas result label for `WIN` / `LOSS`
 - defeat presentation can reuse ship-part scatter from the ship preview prefab, but only if that prefab's visual pieces include `ShipPartScatter` components

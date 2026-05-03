@@ -6,9 +6,16 @@ public class TargetAwarenessHUD3D : PlayerHUDBindingTarget3D
 {
     private const float DefaultAwarenessRange = 900f;
 
+    private enum TargetAwarenessRole3D
+    {
+        Hostile,
+        Teammate
+    }
+
     private struct TargetRuntime3D
     {
         public Entity3D Target;
+        public TargetAwarenessRole3D Role;
         public BossHealthBar3D BossMarker;
         public TargetAwarenessWidget3D Widget;
         public TargetAwarenessBounds3D BoundsOverride;
@@ -107,6 +114,17 @@ public class TargetAwarenessHUD3D : PlayerHUDBindingTarget3D
         public Vector2 fallbackBracketSize;
     }
 
+    [System.Serializable]
+    private struct TeammateIndicatorConfig3D
+    {
+        [Tooltip("If enabled, Invasion HUD tracking shows the other player as a friendly offscreen-only edge indicator.")]
+        public bool showInInvasion;
+        [Tooltip("If enabled, teammate tracking is disabled outside Invasion so duel opponents cannot accidentally use the friendly icon path.")]
+        public bool requireInvasionScene;
+        [Tooltip("Maximum distance for teammate tracking. Use 0 or less to keep the co-op teammate indicator available at any distance.")]
+        public float maxDistance;
+    }
+
     [Header("References")]
     [SerializeField] private Canvas targetCanvas;
     [SerializeField] private RectTransform canvasRoot;
@@ -122,6 +140,14 @@ public class TargetAwarenessHUD3D : PlayerHUDBindingTarget3D
         refreshInterval = 0.25f,
         targetMask = ~0,
         ignoreInactiveTargets = true
+    };
+
+    [Header("Teammate Indicator")]
+    [SerializeField] private TeammateIndicatorConfig3D teammateIndicator = new TeammateIndicatorConfig3D
+    {
+        showInInvasion = true,
+        requireInvasionScene = true,
+        maxDistance = 0f
     };
 
     [Header("Distance")]
@@ -179,6 +205,7 @@ public class TargetAwarenessHUD3D : PlayerHUDBindingTarget3D
     private readonly Vector3[] _boundsWorldCorners = new Vector3[8];
     private float _nextDiscoveryTime;
     private bool _allowDuelOpponentFallback;
+    private bool _isInvasionSceneContext;
     private bool _loggedMissingTemplate;
     private bool _loggedMissingCanvas;
     private bool _loggedTemplateContainerFallback;
@@ -250,7 +277,8 @@ public class TargetAwarenessHUD3D : PlayerHUDBindingTarget3D
     private void RefreshTargets()
     {
         _nextDiscoveryTime = Time.unscaledTime + Mathf.Max(0.02f, discovery.refreshInterval);
-        _allowDuelOpponentFallback = !IsInvasionScene();
+        _isInvasionSceneContext = IsInvasionScene();
+        _allowDuelOpponentFallback = !_isInvasionSceneContext;
 
         if (BoundPlayer == null)
         {
@@ -267,12 +295,12 @@ public class TargetAwarenessHUD3D : PlayerHUDBindingTarget3D
         for (int i = 0; i < entities.Length; i++)
         {
             Entity3D entity = entities[i];
-            if (!IsValidTarget(entity))
+            if (!TryResolveTargetRole(entity, out TargetAwarenessRole3D role))
             {
                 continue;
             }
 
-            EnsureTargetRuntime(entity);
+            EnsureTargetRuntime(entity, role);
         }
 
         RemoveMissingTargets();
@@ -291,7 +319,7 @@ public class TargetAwarenessHUD3D : PlayerHUDBindingTarget3D
         for (int i = 0; i < _targets.Count; i++)
         {
             TargetRuntime3D runtime = _targets[i];
-            if (runtime.Target == null || runtime.Widget == null || !IsValidTarget(runtime.Target))
+            if (runtime.Target == null || runtime.Widget == null || !TryResolveTargetRole(runtime.Target, out TargetAwarenessRole3D role))
             {
                 runtime.Widget?.ApplyPresentation(new TargetAwarenessPresentation3D
                 {
@@ -303,6 +331,7 @@ public class TargetAwarenessHUD3D : PlayerHUDBindingTarget3D
                 continue;
             }
 
+            runtime.Role = role;
             TargetAwarenessPresentation3D presentation = BuildPresentation(ref runtime, gameplayCamera);
             runtime.CurrentState = presentation.State;
             runtime.HasPresented = true;
@@ -329,6 +358,7 @@ public class TargetAwarenessHUD3D : PlayerHUDBindingTarget3D
         {
             State = TargetAwarenessVisibility3D.Hidden,
             IsBossTarget = runtime.BossMarker != null && runtime.BossMarker.ShouldUseBossTracker(),
+            IsTeammateTarget = runtime.Role == TargetAwarenessRole3D.Teammate,
             IndicatorDirection = runtime.LastIndicatorDirection.sqrMagnitude > 0.0001f ? runtime.LastIndicatorDirection : Vector2.up,
             Health01 = target.MaxHealth > 0f ? target.CurrentHealth / target.MaxHealth : 0f,
             Shield01 = target.MaxShield > 0f ? target.CurrentShield / target.MaxShield : 0f,
@@ -360,6 +390,11 @@ public class TargetAwarenessHUD3D : PlayerHUDBindingTarget3D
             return presentation;
         }
 
+        if (presentation.IsTeammateTarget && insideViewport)
+        {
+            return presentation;
+        }
+
         TargetAwarenessVisibility3D desiredState;
         if (!insideViewport)
         {
@@ -383,6 +418,11 @@ public class TargetAwarenessHUD3D : PlayerHUDBindingTarget3D
         }
 
         if (isBossTarget && desiredState != TargetAwarenessVisibility3D.EdgeIndicator)
+        {
+            return presentation;
+        }
+
+        if (presentation.IsTeammateTarget && desiredState != TargetAwarenessVisibility3D.EdgeIndicator)
         {
             return presentation;
         }
@@ -755,8 +795,10 @@ public class TargetAwarenessHUD3D : PlayerHUDBindingTarget3D
         return targetDistance <= bracketDistance;
     }
 
-    private bool IsValidTarget(Entity3D entity)
+    private bool TryResolveTargetRole(Entity3D entity, out TargetAwarenessRole3D role)
     {
+        role = TargetAwarenessRole3D.Hostile;
+
         if (entity == null || BoundPlayer == null || ReferenceEquals(entity, BoundPlayer))
         {
             return false;
@@ -777,22 +819,29 @@ public class TargetAwarenessHUD3D : PlayerHUDBindingTarget3D
             return false;
         }
 
+        if (IsTeammateTarget(entity))
+        {
+            if (!IsWithinTeammateRange(entity))
+            {
+                return false;
+            }
+
+            role = TargetAwarenessRole3D.Teammate;
+            return entity.CurrentHealth > 0f;
+        }
+
         if (!IsWithinAwarenessRange(entity))
         {
             return false;
         }
 
-        if (!MatchesEnemyFaction(entity) && !IsDuelOpponent(entity))
+        if ((MatchesEnemyFaction(entity) || IsDuelOpponent(entity)) && !ShouldSuppressSameFactionTarget(entity))
         {
-            return false;
+            role = TargetAwarenessRole3D.Hostile;
+            return entity.CurrentHealth > 0f;
         }
 
-        if (ShouldSuppressSameFactionTarget(entity))
-        {
-            return false;
-        }
-
-        return entity.CurrentHealth > 0f;
+        return false;
     }
 
     private static bool IsPendingArrivalReveal(Entity3D entity)
@@ -814,9 +863,37 @@ public class TargetAwarenessHUD3D : PlayerHUDBindingTarget3D
         return sqrDistance <= awarenessRange * awarenessRange;
     }
 
+    private bool IsWithinTeammateRange(Entity3D entity)
+    {
+        float maxDistance = teammateIndicator.maxDistance;
+        if (maxDistance <= 0f)
+        {
+            return true;
+        }
+
+        float sqrDistance = (entity.transform.position - BoundPlayer.transform.position).sqrMagnitude;
+        return sqrDistance <= maxDistance * maxDistance;
+    }
+
     private bool MatchesEnemyFaction(Entity3D entity)
     {
         return FactionMember3D.ResolveFaction(entity) == ResolveEnemyFaction();
+    }
+
+    private bool IsTeammateTarget(Entity3D entity)
+    {
+        if (!teammateIndicator.showInInvasion || entity is not Player3D)
+        {
+            return false;
+        }
+
+        if (teammateIndicator.requireInvasionScene && !_isInvasionSceneContext)
+        {
+            return false;
+        }
+
+        return FactionMember3D.ResolveFaction(entity) == FactionMember3D.ResolveFaction(BoundPlayer)
+            && !IsDuelOpponent(entity);
     }
 
     private float ResolveAwarenessRange()
@@ -906,7 +983,7 @@ public class TargetAwarenessHUD3D : PlayerHUDBindingTarget3D
         return (mask.value & (1 << layer)) != 0;
     }
 
-    private void EnsureTargetRuntime(Entity3D target)
+    private void EnsureTargetRuntime(Entity3D target, TargetAwarenessRole3D role)
     {
         for (int i = 0; i < _targets.Count; i++)
         {
@@ -917,6 +994,7 @@ public class TargetAwarenessHUD3D : PlayerHUDBindingTarget3D
             }
 
             existing.Target = target;
+            existing.Role = role;
             CacheTargetPresentationReferences(ref existing);
             _targets[i] = existing;
             return;
@@ -931,6 +1009,7 @@ public class TargetAwarenessHUD3D : PlayerHUDBindingTarget3D
         TargetRuntime3D runtime = new TargetRuntime3D
         {
             Target = target,
+            Role = role,
             Widget = widget,
             CurrentState = TargetAwarenessVisibility3D.Hidden,
             LastIndicatorDirection = Vector2.up,
@@ -996,7 +1075,15 @@ public class TargetAwarenessHUD3D : PlayerHUDBindingTarget3D
         for (int i = 0; i < _targets.Count; i++)
         {
             TargetRuntime3D runtime = _targets[i];
-            runtime.Target = runtime.Target != null && IsValidTarget(runtime.Target) ? runtime.Target : null;
+            if (runtime.Target != null && TryResolveTargetRole(runtime.Target, out TargetAwarenessRole3D role))
+            {
+                runtime.Role = role;
+            }
+            else
+            {
+                runtime.Target = null;
+            }
+
             _targets[i] = runtime;
         }
     }
@@ -1006,8 +1093,10 @@ public class TargetAwarenessHUD3D : PlayerHUDBindingTarget3D
         for (int i = _targets.Count - 1; i >= 0; i--)
         {
             TargetRuntime3D runtime = _targets[i];
-            if (runtime.Target != null && IsValidTarget(runtime.Target))
+            if (runtime.Target != null && TryResolveTargetRole(runtime.Target, out TargetAwarenessRole3D role))
             {
+                runtime.Role = role;
+                _targets[i] = runtime;
                 continue;
             }
 
