@@ -1001,7 +1001,7 @@ MonoBehaviour:
     lifetime: 1.5
     impactForce: 0
     recoilForce: 0
-    energyCost: 18
+    energyCost: 10
   fireSound: {fileID: 11400000, guid: 80311ec3731e81d4c81d5e64fe8d23ea, type: 2}
 --- !u!114 &6766116784638287846
 MonoBehaviour:
@@ -1042,7 +1042,7 @@ MonoBehaviour:
     beamPrefab: {fileID: 100000, guid: 7767d0d49caff014ba0e057220a05183, type: 3}
     targetTag: Enemy
     targetFaction: 2
-    damagePerSecond: 55
+    damagePerSecond: 70
     maxDistance: 800
     recoilForcePerSecond: 0
     impactForce: 0
@@ -1053,7 +1053,7 @@ MonoBehaviour:
     rotationMultiplier: 0.3
     postFireRotationPenaltyDuration: 0
     capacity: 100
-    drainRate: 20
+    drainRate: 10
     regenRate: 20
     minimumStartEnergy: 0
     fireLoopSound: {fileID: 11400000, guid: 2e4ef6af0cbd6bf4091e3bcdb76e99fd, type: 2}
@@ -1154,7 +1154,7 @@ MonoBehaviour:
   muzzleEffectPrewarmCount: 4
   gigaBlast:
     timing:
-      cooldown: 8
+      cooldown: 3
       minChargeTime: 0.5
       maxChargeTime: 3
       projectileLifetime: 2
@@ -1174,22 +1174,22 @@ MonoBehaviour:
       tier4RotationMultiplier: 0.2
     projectileScaling:
       tier1SpeedMultiplier: 0.5
-      tier1DamageMultiplier: 2
+      tier1DamageMultiplier: 5
       tier1RecoilMultiplier: 2
       tier1ImpactMultiplier: 2
       tier1SpawnOffset: 2
       tier2SpeedMultiplier: 1
-      tier2DamageMultiplier: 6
+      tier2DamageMultiplier: 12
       tier2RecoilMultiplier: 6
       tier2ImpactMultiplier: 6
       tier2SpawnOffset: 3
       tier3SpeedMultiplier: 2
-      tier3DamageMultiplier: 15
+      tier3DamageMultiplier: 25
       tier3RecoilMultiplier: 10
       tier3ImpactMultiplier: 10
       tier3SpawnOffset: 10
       tier4SpeedMultiplier: 3
-      tier4DamageMultiplier: 20
+      tier4DamageMultiplier: 40
       tier4RecoilMultiplier: 20
       tier4ImpactMultiplier: 16
       tier4SpawnOffset: 20
@@ -1301,7 +1301,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 2730648464
+  GlobalObjectIdHash: 2698202182
   InScenePlacedSourceGlobalObjectIdHash: 2698202182
   DeferredDespawnTick: 0
   Ownership: 1
