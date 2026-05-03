@@ -87,8 +87,9 @@ These classes should stay narrow and mostly coordinate dedicated 3D systems.
 - `BlackHoleMenaceVisual3D`
   - optional visual-only black hole controller for 3D Invasion
   - drives the accretion disk `_MidColor`, `_OuterColor`, and `_HotStreakColor` from a blue start palette toward a red/orange final palette as enemy defeat progress increases
+  - blends authored disk colors through a tunable mid-menace palette instead of directly lerping blue to red, which avoids the unwanted purple midpoint without washing the disk fully white at 50% menace
   - keeps `_InnerColor` pure white through an exposed HDR intensity value
-  - uses a runtime material instance in play mode and edit-mode preview property blocks so tuning does not dirty shared material assets
+  - uses a runtime material instance plus the same renderer property-block override path in play mode and edit mode so preview and runtime color application stay visually consistent without dirtying shared material assets
   - syncs menace progress through a server-written NetworkVariable when the black hole root has a `NetworkObject`
 
 ### Player-only 3D systems
@@ -288,6 +289,7 @@ When adding a new 3D script, place it under the subsystem it serves first. Do no
 - because the disk renders before the skybox for lensing capture, it keeps depth writes enabled and clips faint pixels with `Depth Clip Threshold`; otherwise the skybox overwrites the disk anywhere there is no opaque object already behind it
 - the singularity/lensing shader renders after the disk, samples `_CameraOpaqueTexture`, bends samples radially around the sphere center, blacks out the event horizon, and adds a tunable HDR photon ring for bloom
 - in the current Unity 6 / URP 17 path, URP copies `_CameraOpaqueTexture` after the skybox, so skybox stars and nebulae are available for the black hole lensing pass when the active renderer asset has opaque texture enabled
+- foreground rejection uses `_CameraDepthTexture` to gate bent samples to far-background pixels; keep the active renderer/camera depth texture available when `Foreground Rejection` is above 0, otherwise the lens cannot reliably distinguish skybox/background from ships, asteroids, cursors, and other foreground objects
 - `_CameraOpaqueTexture` is still not a true final-frame grab: transparent VFX rendered after the opaque texture copy will not be bent by the singularity unless a dedicated renderer feature copies scene color later and the shader is changed to sample that custom texture
 - `Bend Strength` can be negative to pull scene samples inward toward the event horizon; this is the useful direction for lifting the rear disk into the upper/lower Einstein-ring arcs
 - the `Lensed Disk Arc` controls add an art-directed procedural horizon band with repeated lane lines and noise similar to the flat disk, making the rear accretion disk read above and below the black core even when the pure screen-space bend samples the disk's central hole
@@ -299,6 +301,7 @@ When adding a new 3D script, place it under the subsystem it serves first. Do no
 - the lensed source thickening is a small brightest-sample gather around the bent scene UV, so tune it conservatively; it costs extra scene-color samples only on the singularity shell and should stay focused near the photon ring rather than becoming a broad fullscreen blur
 - `BlackHoleMenaceVisual3D` belongs on the black hole root when Invasion should color-shift the disk over the run; assign its accretion disk renderer and the scene's `InvasionWaveManager3D`
 - menace progress uses `InvasionWaveManager3D`'s authored enemy total as the denominator and defeated enemies as the numerator; runtime child-spawn kills may advance the numerator, but the denominator intentionally remains the authored wave total
+- menace colors use Start, Mid, and Final palettes; keep the Mid palette warm/amber if the transition should feel threatening without passing through purple or pure white
 - menace only tints the accretion disk material colors and does not change lensing, photon ring, disk geometry, damage, gravity, wave rules, or enemy behavior
 - author the singularity sphere slightly larger than the visible black core; tune `Event Horizon Radius` on the material to decide how much of that sphere is pure black versus lensing falloff
 - the disk shader is quad-friendly: it converts centered UVs to polar coordinates, uses polar angle/radius for circular swirl motion, and masks the square corners away; keep the black hole centered at UV `(0.5, 0.5)`

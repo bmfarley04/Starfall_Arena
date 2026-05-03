@@ -46,7 +46,10 @@ Material:
     - _DiskArcWidth: 0.306
     - _EventHorizonRadius: 0.649
     - _HorizonSoftness: 0.001
+    - _LensBackgroundDepthSoftness: 0.01
+    - _LensBackgroundDepthThreshold: 0.995
     - _LensCausticBoost: 1.82
+    - _LensForegroundRejection: 1
     - _LensOpacity: 1
     - _LensedSourceBoost: 0
     - _LensedSourceRingWidth: 0.133

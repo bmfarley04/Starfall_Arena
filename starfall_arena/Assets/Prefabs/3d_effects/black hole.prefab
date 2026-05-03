@@ -272,7 +272,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 0
+  GlobalObjectIdHash: 1487669013
   InScenePlacedSourceGlobalObjectIdHash: 0
   DeferredDespawnTick: 0
   Ownership: 1
@@ -329,6 +329,10 @@ MonoBehaviour:
   startMidColor: {r: 0, g: 2.0155764, b: 10.680627, a: 1}
   startOuterColor: {r: 0, g: 0.5728299, b: 1.8268172, a: 1}
   startHotStreakColor: {r: 0, g: 1.0611426, b: 3.3899353, a: 1}
+  midPaletteMenacePercent: 50
+  midMidColor: {r: 8, g: 2.6, b: 0.35, a: 1}
+  midOuterColor: {r: 1.2, g: 0.85, b: 0.16, a: 1}
+  midHotStreakColor: {r: 4, g: 2.4, b: 0.35, a: 1}
   finalMidColor: {r: 12.374387, g: 0, b: 0.040595904, a: 1}
   finalOuterColor: {r: 1.826817, g: 0, b: 0.005250956, a: 1}
   finalHotStreakColor: {r: 6.7798715, g: 0, b: 0.10718339, a: 1}

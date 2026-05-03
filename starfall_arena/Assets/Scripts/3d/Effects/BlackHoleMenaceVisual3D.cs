@@ -22,8 +22,8 @@ public class BlackHoleMenaceVisual3D : NetworkBehaviour
     [SerializeField] private InvasionWaveManager3D invasionWaveManager;
 
     [Header("Preview")]
-    [Tooltip("Editor preview value for the black hole menace look. 0 uses the start palette; 1 uses the final palette.")]
-    [SerializeField] [Range(0f, 1f)] private float previewMenacePercent;
+    [Tooltip("Editor preview value for the black hole menace look. 0 uses the start palette; 100 uses the final palette.")]
+    [SerializeField] [Range(0f, 100f)] private float previewMenacePercent;
 
     [Tooltip("If enabled, Preview Menace Percent is applied in edit mode through a renderer property block without changing the shared material asset.")]
     [SerializeField] private bool applyPreviewInEditMode = true;
@@ -44,6 +44,22 @@ public class BlackHoleMenaceVisual3D : NetworkBehaviour
     [Tooltip("Start _HotStreakColor copied from the authored blue accretion material.")]
     [ColorUsage(true, true)]
     [SerializeField] private Color startHotStreakColor = new Color(0f, 1.0611426f, 3.3899353f, 1f);
+
+    [Header("Mid Palette")]
+    [Tooltip("Menace percentage where the authored middle palette is reached. This prevents the blue-to-red path from passing through purple or a full whiteout.")]
+    [SerializeField] [Range(1f, 99f)] private float midPaletteMenacePercent = 50f;
+
+    [Tooltip("Middle _MidColor used between the blue start and red final palette. Defaults to a hot amber instead of purple or pure white.")]
+    [ColorUsage(true, true)]
+    [SerializeField] private Color midMidColor = new Color(8f, 2.6f, 0.35f, 1f);
+
+    [Tooltip("Middle _OuterColor used between the blue start and red final palette. Defaults to a controlled gold edge so the disk does not wash out at 50% menace.")]
+    [ColorUsage(true, true)]
+    [SerializeField] private Color midOuterColor = new Color(1.2f, 0.85f, 0.16f, 1f);
+
+    [Tooltip("Middle _HotStreakColor used between the blue start and red final palette. Defaults to hot amber streaks for the transition state.")]
+    [ColorUsage(true, true)]
+    [SerializeField] private Color midHotStreakColor = new Color(4f, 2.4f, 0.35f, 1f);
 
     [Header("Final Palette")]
     [Tooltip("Final _MidColor copied from the authored red accretion material.")]
@@ -126,7 +142,8 @@ public class BlackHoleMenaceVisual3D : NetworkBehaviour
     private void OnValidate()
     {
         accretionDiskMaterialIndex = Mathf.Max(0, accretionDiskMaterialIndex);
-        previewMenacePercent = Mathf.Clamp01(previewMenacePercent);
+        previewMenacePercent = Mathf.Clamp(previewMenacePercent, 0f, 100f);
+        midPaletteMenacePercent = Mathf.Clamp(midPaletteMenacePercent, 1f, 99f);
         innerWhiteHdrIntensity = Mathf.Max(0f, innerWhiteHdrIntensity);
         EnsureResponseCurve();
         AutoAssignReferences();
@@ -170,7 +187,7 @@ public class BlackHoleMenaceVisual3D : NetworkBehaviour
             return;
         }
 
-        ApplyColors(previewMenacePercent, usePropertyBlock: true);
+        ApplyColors(previewMenacePercent / 100f, usePropertyBlock: true);
     }
 
     private void AutoAssignReferences()
@@ -189,16 +206,9 @@ public class BlackHoleMenaceVisual3D : NetworkBehaviour
             }
         }
 
-        if (invasionWaveManager == null)
+        if (Application.isPlaying && invasionWaveManager == null)
         {
             invasionWaveManager = FindFirstObjectByType<InvasionWaveManager3D>();
-#if UNITY_2022_3_OR_NEWER
-#else
-            if (invasionWaveManager == null)
-            {
-                invasionWaveManager = FindObjectOfType<InvasionWaveManager3D>();
-            }
-#endif
         }
     }
 
@@ -288,7 +298,14 @@ public class BlackHoleMenaceVisual3D : NetworkBehaviour
 
         if (_runtimeDiskMaterial != null)
         {
-            Destroy(_runtimeDiskMaterial);
+            if (Application.isPlaying)
+            {
+                Destroy(_runtimeDiskMaterial);
+            }
+            else
+            {
+                DestroyImmediate(_runtimeDiskMaterial);
+            }
         }
 
         _runtimeDiskMaterial = null;
@@ -389,15 +406,9 @@ public class BlackHoleMenaceVisual3D : NetworkBehaviour
 
         float visualProgress = EvaluateVisualProgress(progress01);
         Color innerColor = new Color(innerWhiteHdrIntensity, innerWhiteHdrIntensity, innerWhiteHdrIntensity, 1f);
-        Color midColor = Color.LerpUnclamped(startMidColor, finalMidColor, visualProgress);
-        Color outerColor = Color.LerpUnclamped(startOuterColor, finalOuterColor, visualProgress);
-        Color hotStreakColor = Color.LerpUnclamped(startHotStreakColor, finalHotStreakColor, visualProgress);
-
-        if (usePropertyBlock)
-        {
-            ApplyColorsToPropertyBlock(innerColor, midColor, outerColor, hotStreakColor);
-            return;
-        }
+        Color midColor = LerpThroughMidPalette(startMidColor, midMidColor, finalMidColor, visualProgress);
+        Color outerColor = LerpThroughMidPalette(startOuterColor, midOuterColor, finalOuterColor, visualProgress);
+        Color hotStreakColor = LerpThroughMidPalette(startHotStreakColor, midHotStreakColor, finalHotStreakColor, visualProgress);
 
         Material material = _runtimeDiskMaterial != null ? _runtimeDiskMaterial : ResolveCurrentSharedMaterial();
         if (material == null)
@@ -412,10 +423,15 @@ public class BlackHoleMenaceVisual3D : NetworkBehaviour
             return;
         }
 
-        material.SetColor(InnerColorId, innerColor);
-        material.SetColor(MidColorId, midColor);
-        material.SetColor(OuterColorId, outerColor);
-        material.SetColor(HotStreakColorId, hotStreakColor);
+        if (!usePropertyBlock)
+        {
+            material.SetColor(InnerColorId, innerColor);
+            material.SetColor(MidColorId, midColor);
+            material.SetColor(OuterColorId, outerColor);
+            material.SetColor(HotStreakColorId, hotStreakColor);
+        }
+
+        ApplyColorsToPropertyBlock(innerColor, midColor, outerColor, hotStreakColor);
     }
 
     private void ApplyColorsToPropertyBlock(Color innerColor, Color midColor, Color outerColor, Color hotStreakColor)
@@ -474,6 +490,20 @@ public class BlackHoleMenaceVisual3D : NetworkBehaviour
         }
 
         return Mathf.Clamp01(menaceResponseCurve.Evaluate(clampedProgress));
+    }
+
+    private Color LerpThroughMidPalette(Color startColor, Color midColor, Color finalColor, float progress01)
+    {
+        float clampedProgress = Mathf.Clamp01(progress01);
+        float midProgress = Mathf.Clamp(midPaletteMenacePercent / 100f, 0.01f, 0.99f);
+        if (clampedProgress < midProgress)
+        {
+            float firstHalf = Mathf.SmoothStep(0f, 1f, clampedProgress / midProgress);
+            return Color.LerpUnclamped(startColor, midColor, firstHalf);
+        }
+
+        float secondHalf = Mathf.SmoothStep(0f, 1f, (clampedProgress - midProgress) / (1f - midProgress));
+        return Color.LerpUnclamped(midColor, finalColor, secondHalf);
     }
 
     private void EnsureResponseCurve()
