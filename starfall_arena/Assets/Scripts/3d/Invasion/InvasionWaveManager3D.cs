@@ -156,9 +156,25 @@ public class InvasionWaveManager3D : MonoBehaviour
     [Min(0f)]
     [SerializeField] private float waveStartDelaySeconds = 0f;
 
+    [Header("Spawn Safety")]
+    [Tooltip("If enabled, enemy spawn positions are checked against solid scene blockers before the enemy prefab is instantiated.")]
+    [SerializeField] private bool avoidBlockedSpawnPositions = true;
+    [Tooltip("Layers that should block enemy spawn positions. Include asteroids, debris, crippled ships, and other solid world blockers; exclude soft gameplay triggers.")]
+    [SerializeField] private LayerMask spawnBlockingLayers = ~0;
+    [Tooltip("Radius checked around each proposed enemy spawn position. Increase for large enemies or chunky arrival effects.")]
+    [Min(0.1f)]
+    [SerializeField] private float spawnClearanceRadius = 8f;
+    [Tooltip("How many alternate positions are sampled when the authored spawn point is blocked. Higher values are safer but do more physics probes during spawning.")]
+    [Min(0)]
+    [SerializeField] private int spawnRelocationAttempts = 12;
+    [Tooltip("World-space distance between each ring of alternate spawn samples when the authored spawn point is blocked.")]
+    [Min(0.1f)]
+    [SerializeField] private float spawnRelocationStep = 15f;
+
     private readonly List<Enemy3D> _aliveEnemies = new List<Enemy3D>();
     private readonly List<Enemy3D> _pendingRevealEnemies = new List<Enemy3D>();
     private readonly List<Vector3> _formationOffsets = new List<Vector3>(16);
+    private readonly Collider[] _spawnSafetyHits = new Collider[16];
     private float _activeFormationYBias;
     private Coroutine _waveRoutine;
     private int _authoredEnemyCount;
@@ -392,7 +408,13 @@ public class InvasionWaveManager3D : MonoBehaviour
             return null;
         }
 
-        GameObject enemyObject = Instantiate(enemyPrefab, spawnPosition, spawnRotation);
+        if (!TryResolveSafeSpawnPosition(spawnPosition, spawnRotation, out Vector3 safeSpawnPosition))
+        {
+            Debug.LogWarning($"[InvasionWaveManager3D] Enemy spawn skipped because no clear spawn position was found for '{enemyPrefab.name}' near {spawnPosition}. Check Spawn Blocking Layers, Spawn Clearance Radius, and the authored spawn point.", this);
+            return null;
+        }
+
+        GameObject enemyObject = Instantiate(enemyPrefab, safeSpawnPosition, spawnRotation);
         configureBeforeNetworkSpawn?.Invoke(enemyObject);
 
         if (NetTickUtil.IsActive)
@@ -418,6 +440,63 @@ public class InvasionWaveManager3D : MonoBehaviour
 
         RegisterSpawnedEnemy(enemy);
         return enemy;
+    }
+
+    private bool TryResolveSafeSpawnPosition(Vector3 requestedPosition, Quaternion spawnRotation, out Vector3 resolvedPosition)
+    {
+        resolvedPosition = requestedPosition;
+        if (!avoidBlockedSpawnPositions)
+        {
+            return true;
+        }
+
+        if (IsSpawnPositionClear(requestedPosition))
+        {
+            return true;
+        }
+
+        int attempts = Mathf.Max(0, spawnRelocationAttempts);
+        if (attempts <= 0)
+        {
+            return false;
+        }
+
+        Vector3 right = spawnRotation * Vector3.right;
+        Vector3 up = spawnRotation * Vector3.up;
+        Vector3 forward = spawnRotation * Vector3.forward;
+        float step = Mathf.Max(0.1f, spawnRelocationStep);
+        const float goldenAngleDegrees = 137.50777f;
+
+        for (int i = 0; i < attempts; i++)
+        {
+            int ringIndex = (i / 6) + 1;
+            float radius = step * ringIndex;
+            float angle = goldenAngleDegrees * i * Mathf.Deg2Rad;
+            float verticalPhase = ((i % 3) - 1) * 0.5f;
+            Vector3 offset = (right * Mathf.Cos(angle) + forward * Mathf.Sin(angle) + up * verticalPhase).normalized * radius;
+            Vector3 candidate = requestedPosition + offset;
+
+            if (IsSpawnPositionClear(candidate))
+            {
+                resolvedPosition = candidate;
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private bool IsSpawnPositionClear(Vector3 position)
+    {
+        float radius = Mathf.Max(0.1f, spawnClearanceRadius);
+        int hitCount = Physics.OverlapSphereNonAlloc(
+            position,
+            radius,
+            _spawnSafetyHits,
+            spawnBlockingLayers,
+            QueryTriggerInteraction.Ignore);
+
+        return hitCount <= 0;
     }
 
     private Transform ResolveCenterPoint(Transform configuredPoint)
