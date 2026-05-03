@@ -15,6 +15,8 @@ Shader "Starfall/3D/BlackHole/SingularityLensing"
         _LensForegroundRejection("Foreground Rejection", Range(0.0, 1.0)) = 1.0
         _LensBackgroundDepthThreshold("Background Depth Threshold", Range(0.0, 1.0)) = 0.995
         _LensBackgroundDepthSoftness("Background Depth Softness", Range(0.0001, 0.1)) = 0.01
+        _LensForegroundDepthBias("Foreground Depth Bias", Range(-100.0, 100.0)) = -2.0
+        _LensForegroundDepthSoftness("Foreground Depth Softness", Range(0.001, 100.0)) = 8.0
         _LensCausticBoost("Lensed Background Brightening", Range(0.0, 3.0)) = 0.45
         _LensedSourceThickness("Lensed Source Thickness", Range(0.0, 0.08)) = 0.012
         _LensedSourceThreshold("Lensed Source Threshold", Range(0.0, 8.0)) = 0.6
@@ -53,7 +55,7 @@ Shader "Starfall/3D/BlackHole/SingularityLensing"
         Tags
         {
             "RenderType" = "Transparent"
-            "Queue" = "Transparent+50"
+            "Queue" = "Transparent-100"
             "RenderPipeline" = "UniversalPipeline"
         }
 
@@ -76,6 +78,10 @@ Shader "Starfall/3D/BlackHole/SingularityLensing"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareOpaqueTexture.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareDepthTexture.hlsl"
 
+            TEXTURE2D_X(_BlackHoleLensSourceTexture);
+            SAMPLER(sampler_BlackHoleLensSourceTexture);
+            float _BlackHoleUseLensSourceTexture;
+
             struct Attributes
             {
                 float4 positionOS : POSITION;
@@ -86,6 +92,7 @@ Shader "Starfall/3D/BlackHole/SingularityLensing"
                 float4 positionHCS : SV_POSITION;
                 float4 screenPos : TEXCOORD0;
                 float4 centerAndRadius : TEXCOORD1;
+                float lensEyeDepth : TEXCOORD2;
             };
 
             CBUFFER_START(UnityPerMaterial)
@@ -101,6 +108,8 @@ Shader "Starfall/3D/BlackHole/SingularityLensing"
                 half _LensForegroundRejection;
                 float _LensBackgroundDepthThreshold;
                 float _LensBackgroundDepthSoftness;
+                float _LensForegroundDepthBias;
+                float _LensForegroundDepthSoftness;
                 half _LensCausticBoost;
                 float _LensedSourceThickness;
                 half _LensedSourceThreshold;
@@ -184,23 +193,40 @@ Shader "Starfall/3D/BlackHole/SingularityLensing"
                 return lerp(current, candidate, step(currentLuma, candidateLuma));
             }
 
-            float BackgroundDepthMask(float2 uv)
+            float BackgroundDepthMask(float2 uv, float lensEyeDepth)
             {
                 float rawDepth = SampleSceneDepth(saturate(uv));
                 float linearDepth01 = Linear01Depth(rawDepth, _ZBufferParams);
+                float sampledEyeDepth = LinearEyeDepth(rawDepth, _ZBufferParams);
                 float backgroundMask = smoothstep(
                     saturate(_LensBackgroundDepthThreshold - _LensBackgroundDepthSoftness),
                     saturate(_LensBackgroundDepthThreshold),
                     linearDepth01
                 );
+                float behindLensMask = smoothstep(
+                    lensEyeDepth + _LensForegroundDepthBias,
+                    lensEyeDepth + _LensForegroundDepthBias + max(_LensForegroundDepthSoftness, 0.001),
+                    sampledEyeDepth
+                );
 
-                return lerp(1.0, backgroundMask, saturate(_LensForegroundRejection));
+                return lerp(1.0, saturate(backgroundMask * behindLensMask), saturate(_LensForegroundRejection));
             }
 
-            half3 SampleBackgroundSceneColor(float2 uv, half3 fallbackColor, out float backgroundMask)
+            half3 SampleBackgroundSceneColor(float2 uv, float lensEyeDepth, half3 fallbackColor, out float backgroundMask)
             {
                 float2 clampedUv = saturate(uv);
-                backgroundMask = BackgroundDepthMask(clampedUv);
+                if (_BlackHoleUseLensSourceTexture > 0.5)
+                {
+                    half4 lensSource = SAMPLE_TEXTURE2D_X(
+                        _BlackHoleLensSourceTexture,
+                        sampler_BlackHoleLensSourceTexture,
+                        UnityStereoTransformScreenSpaceTex(clampedUv));
+
+                    backgroundMask = saturate(max(lensSource.a, Luminance(lensSource.rgb) * 0.25h));
+                    return lerp(fallbackColor, lensSource.rgb, backgroundMask);
+                }
+
+                backgroundMask = BackgroundDepthMask(clampedUv, lensEyeDepth);
                 return lerp(fallbackColor, SampleSceneColor(clampedUv), backgroundMask);
             }
 
@@ -241,6 +267,7 @@ Shader "Starfall/3D/BlackHole/SingularityLensing"
                 output.positionHCS = positionInputs.positionCS;
                 output.screenPos = ComputeScreenPos(output.positionHCS);
                 output.centerAndRadius = float4(centerUv, projectedRadius, aspect);
+                output.lensEyeDepth = -positionInputs.positionVS.z;
                 return output;
             }
 
@@ -275,7 +302,7 @@ Shader "Starfall/3D/BlackHole/SingularityLensing"
                 half3 unbentSceneColor = SampleSceneColor(screenUv);
                 float2 bentUv = saturate(screenUv + screenDirection * bendAmount * lensMask);
                 float bentBackgroundMask = 1.0;
-                half3 sceneColor = SampleBackgroundSceneColor(bentUv, unbentSceneColor, bentBackgroundMask);
+                half3 sceneColor = SampleBackgroundSceneColor(bentUv, input.lensEyeDepth, unbentSceneColor, bentBackgroundMask);
 
                 if (_ChromaticAberration > 0.0001)
                 {
@@ -285,8 +312,8 @@ Shader "Starfall/3D/BlackHole/SingularityLensing"
                     float redBackgroundMask = 1.0;
                     float blueBackgroundMask = 1.0;
 
-                    sceneColor.r = SampleBackgroundSceneColor(redUv, sceneColor, redBackgroundMask).r;
-                    sceneColor.b = SampleBackgroundSceneColor(blueUv, sceneColor, blueBackgroundMask).b;
+                    sceneColor.r = SampleBackgroundSceneColor(redUv, input.lensEyeDepth, sceneColor, redBackgroundMask).r;
+                    sceneColor.b = SampleBackgroundSceneColor(blueUv, input.lensEyeDepth, sceneColor, blueBackgroundMask).b;
                 }
 
                 float sourceThickness = _LensedSourceThickness * projectedRadius * lensMask;
@@ -297,10 +324,10 @@ Shader "Starfall/3D/BlackHole/SingularityLensing"
 
                     half3 gatheredColor = sceneColor;
                     float gatherBackgroundMask = 1.0;
-                    gatheredColor = KeepBrighter(gatheredColor, SampleBackgroundSceneColor(bentUv + radialOffset, gatheredColor, gatherBackgroundMask));
-                    gatheredColor = KeepBrighter(gatheredColor, SampleBackgroundSceneColor(bentUv - radialOffset, gatheredColor, gatherBackgroundMask));
-                    gatheredColor = KeepBrighter(gatheredColor, SampleBackgroundSceneColor(bentUv + tangentOffset, gatheredColor, gatherBackgroundMask));
-                    gatheredColor = KeepBrighter(gatheredColor, SampleBackgroundSceneColor(bentUv - tangentOffset, gatheredColor, gatherBackgroundMask));
+                    gatheredColor = KeepBrighter(gatheredColor, SampleBackgroundSceneColor(bentUv + radialOffset, input.lensEyeDepth, gatheredColor, gatherBackgroundMask));
+                    gatheredColor = KeepBrighter(gatheredColor, SampleBackgroundSceneColor(bentUv - radialOffset, input.lensEyeDepth, gatheredColor, gatherBackgroundMask));
+                    gatheredColor = KeepBrighter(gatheredColor, SampleBackgroundSceneColor(bentUv + tangentOffset, input.lensEyeDepth, gatheredColor, gatherBackgroundMask));
+                    gatheredColor = KeepBrighter(gatheredColor, SampleBackgroundSceneColor(bentUv - tangentOffset, input.lensEyeDepth, gatheredColor, gatherBackgroundMask));
 
                     float gatheredLuma = Luminance(gatheredColor);
                     float sourceMask = smoothstep(

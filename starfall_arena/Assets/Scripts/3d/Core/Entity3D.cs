@@ -420,9 +420,8 @@ public abstract class Entity3D : MonoBehaviour
             return currentRotation;
         }
 
-        Quaternion targetRotation = ResolveUprightRotation(currentRotation);
         float maxDegreesDelta = Mathf.Max(0f, uprightRecoveryDegreesPerSecond) * deltaTime;
-        return Quaternion.RotateTowards(currentRotation, targetRotation, maxDegreesDelta);
+        return RotateTowardsUpright(currentRotation, maxDegreesDelta);
     }
 
     protected virtual void Die()
@@ -518,7 +517,7 @@ public abstract class Entity3D : MonoBehaviour
         return damageDirection.sqrMagnitude > 0.0001f ? damageDirection.normalized : Vector3.zero;
     }
 
-    private static Quaternion ResolveUprightRotation(Quaternion currentRotation)
+    private static Quaternion RotateTowardsUpright(Quaternion currentRotation, float maxDegreesDelta)
     {
         Vector3 forward = currentRotation * Vector3.forward;
         if (forward.sqrMagnitude <= 0.0001f)
@@ -527,19 +526,21 @@ public abstract class Entity3D : MonoBehaviour
         }
 
         forward.Normalize();
-        Vector3 upReference = Vector3.ProjectOnPlane(Vector3.up, forward);
-        if (upReference.sqrMagnitude <= 0.0001f)
+        Vector3 targetUp = Vector3.ProjectOnPlane(Vector3.up, forward);
+        if (targetUp.sqrMagnitude <= 0.0001f)
         {
-            Vector3 right = Vector3.ProjectOnPlane(currentRotation * Vector3.right, Vector3.up);
-            if (right.sqrMagnitude <= 0.0001f)
-            {
-                right = Vector3.right;
-            }
-
-            upReference = Vector3.Cross(forward, right.normalized);
+            return currentRotation;
         }
 
-        return Quaternion.LookRotation(forward, upReference.normalized);
+        Vector3 currentUp = Vector3.ProjectOnPlane(currentRotation * Vector3.up, forward);
+        if (currentUp.sqrMagnitude <= 0.0001f)
+        {
+            return currentRotation;
+        }
+
+        float signedRollDelta = Vector3.SignedAngle(currentUp.normalized, targetUp.normalized, forward);
+        float clampedRollDelta = Mathf.Clamp(signedRollDelta, -maxDegreesDelta, maxDegreesDelta);
+        return Quaternion.AngleAxis(clampedRollDelta, forward) * currentRotation;
     }
 
     private void RecordDamageStats(Entity3D attacker, float previousHealth, float previousShield, DamageSource3D source, int accuracyAttackId)
