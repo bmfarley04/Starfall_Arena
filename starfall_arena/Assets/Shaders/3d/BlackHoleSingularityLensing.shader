@@ -22,6 +22,8 @@ Shader "Starfall/3D/BlackHole/SingularityLensing"
         _LensedSourceThreshold("Lensed Source Threshold", Range(0.0, 8.0)) = 0.6
         _LensedSourceBoost("Lensed Source Boost", Range(0.0, 3.0)) = 0.35
         _LensedSourceRingWidth("Lensed Source Ring Width", Range(0.001, 0.5)) = 0.18
+        _OffscreenDiskArcIntensity("Offscreen Disk Arc Intensity", Range(0.0, 8.0)) = 1.2
+        [HDR]_OffscreenDiskArcColor("Offscreen Disk Arc HDR Color", Color) = (0.35, 1.1, 2.8, 1.0)
 
         [Header(Lensed Disk Arc)]
         _DiskArcIntensity("Disk Arc Intensity", Range(0.0, 12.0)) = 3.0
@@ -115,6 +117,8 @@ Shader "Starfall/3D/BlackHole/SingularityLensing"
                 half _LensedSourceThreshold;
                 half _LensedSourceBoost;
                 float _LensedSourceRingWidth;
+                half _OffscreenDiskArcIntensity;
+                half4 _OffscreenDiskArcColor;
 
                 half _DiskArcIntensity;
                 float _DiskArcRadiusOffset;
@@ -212,8 +216,17 @@ Shader "Starfall/3D/BlackHole/SingularityLensing"
                 return lerp(1.0, saturate(backgroundMask * behindLensMask), saturate(_LensForegroundRejection));
             }
 
+            float ScreenUvMask(float2 uv)
+            {
+                float2 edgeDistance = min(uv, 1.0 - uv);
+                float edgeDistanceMin = min(edgeDistance.x, edgeDistance.y);
+                float feather = 2.0 / max(min(_ScreenParams.x, _ScreenParams.y), 1.0);
+                return smoothstep(0.0, feather, edgeDistanceMin);
+            }
+
             half3 SampleBackgroundSceneColor(float2 uv, float lensEyeDepth, half3 fallbackColor, out float backgroundMask)
             {
+                float uvMask = ScreenUvMask(uv);
                 float2 clampedUv = saturate(uv);
                 if (_BlackHoleUseLensSourceTexture > 0.5)
                 {
@@ -222,11 +235,11 @@ Shader "Starfall/3D/BlackHole/SingularityLensing"
                         sampler_BlackHoleLensSourceTexture,
                         UnityStereoTransformScreenSpaceTex(clampedUv));
 
-                    backgroundMask = saturate(max(lensSource.a, Luminance(lensSource.rgb) * 0.25h));
+                    backgroundMask = saturate(max(lensSource.a, Luminance(lensSource.rgb) * 0.25h)) * uvMask;
                     return lerp(fallbackColor, lensSource.rgb, backgroundMask);
                 }
 
-                backgroundMask = BackgroundDepthMask(clampedUv, lensEyeDepth);
+                backgroundMask = BackgroundDepthMask(clampedUv, lensEyeDepth) * uvMask;
                 return lerp(fallbackColor, SampleSceneColor(clampedUv), backgroundMask);
             }
 
@@ -300,15 +313,17 @@ Shader "Starfall/3D/BlackHole/SingularityLensing"
                 bendAmount /= max(normalizedRadius, _BendClamp);
 
                 half3 unbentSceneColor = SampleSceneColor(screenUv);
-                float2 bentUv = saturate(screenUv + screenDirection * bendAmount * lensMask);
+                float2 bentUv = screenUv + screenDirection * bendAmount * lensMask;
+                float bentUvMask = ScreenUvMask(bentUv);
                 float bentBackgroundMask = 1.0;
                 half3 sceneColor = SampleBackgroundSceneColor(bentUv, input.lensEyeDepth, unbentSceneColor, bentBackgroundMask);
+                float lensedSourceVisibility = bentBackgroundMask;
 
                 if (_ChromaticAberration > 0.0001)
                 {
                     float chromaOffset = _ChromaticAberration * projectedRadius * lensMask * bendProximity;
-                    float2 redUv = saturate(bentUv + screenDirection * chromaOffset);
-                    float2 blueUv = saturate(bentUv - screenDirection * chromaOffset);
+                    float2 redUv = bentUv + screenDirection * chromaOffset;
+                    float2 blueUv = bentUv - screenDirection * chromaOffset;
                     float redBackgroundMask = 1.0;
                     float blueBackgroundMask = 1.0;
 
@@ -338,6 +353,7 @@ Shader "Starfall/3D/BlackHole/SingularityLensing"
                     float ringMask = 1.0 - smoothstep(0.0, max(_LensedSourceRingWidth, 0.0001), abs(normalizedRadius - horizonRadius));
                     float gatherMask = saturate(sourceMask * ringMask * lensMask);
                     sceneColor = lerp(sceneColor, gatheredColor * (1.0h + _LensedSourceBoost), gatherMask);
+                    lensedSourceVisibility = max(lensedSourceVisibility, gatherMask);
                 }
 
                 float caustic = pow(saturate(bendProximity), 1.65) * lensMask * bentBackgroundMask;
@@ -397,14 +413,22 @@ Shader "Starfall/3D/BlackHole/SingularityLensing"
                 half3 lineColor = lerp(_PhotonRingColor.rgb, half3(1.0h, 0.88h, 0.58h), saturate(wrappedLines + brightCore));
                 color += lineColor * diskArc * lensedDiskPattern * _DiskArcIntensity * arcRelativistic;
 
+                float offscreenSourceMask = (1.0 - bentUvMask) * step(0.5, _BlackHoleUseLensSourceTexture);
+                float offscreenArc = saturate(offscreenSourceMask * diskArc * lensedDiskPattern * _OffscreenDiskArcIntensity * arcRelativistic);
+                half3 offscreenArcColor = lerp(_OffscreenDiskArcColor.rgb, half3(1.0h, 0.92h, 0.78h), saturate(wrappedLines + brightCore));
+                color += offscreenArcColor * offscreenArc;
+                lensedSourceVisibility = max(lensedSourceVisibility, offscreenArc);
+
                 half3 photonWhite = half3(1.0h, 0.92h, 0.72h);
                 color += _PhotonRingColor.rgb * photonBloom * _PhotonRingIntensity * 0.38h;
                 color += _PhotonRingColor.rgb * photonRing * _PhotonRingIntensity * 0.72h;
                 color += photonWhite * photonCore * _PhotonRingIntensity * 1.15h;
                 color = lerp(color, _EventHorizonColor.rgb, saturate(horizonMask));
 
-                half alpha = saturate(max(horizonMask, lensMask * _LensOpacity));
+                float lensSourceDrivenAlpha = lerp(1.0, saturate(lensedSourceVisibility), step(0.5, _BlackHoleUseLensSourceTexture));
+                half alpha = saturate(max(horizonMask, lensMask * _LensOpacity * lensSourceDrivenAlpha));
                 alpha = saturate(max(alpha, max(photonRing, photonBloom * 0.45) * _PhotonRingAlpha));
+                alpha = saturate(max(alpha, offscreenArc));
 
                 clip(alpha - 0.001);
 

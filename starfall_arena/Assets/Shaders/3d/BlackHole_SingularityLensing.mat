@@ -58,12 +58,14 @@ Material:
     - _LensedSourceThickness: 0.08
     - _LensedSourceThreshold: 1.5
     - _ObjectRadius: 0.5
+    - _OffscreenDiskArcIntensity: 1.2
     - _OuterFade: 0.037
     - _PhotonRingAlpha: 1
     - _PhotonRingIntensity: 2.98
     - _PhotonRingWidth: 0.0405
     m_Colors:
     - _EventHorizonColor: {r: 0, g: 0, b: 0, a: 1}
+    - _OffscreenDiskArcColor: {r: 0.35, g: 1.1, b: 2.8, a: 1}
     - _PhotonRingColor: {r: 1, g: 1, b: 1, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1
