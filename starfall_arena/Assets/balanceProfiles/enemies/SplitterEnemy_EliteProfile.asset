@@ -1,0 +1,54 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c23f0fd5a3dc42d596237ca0c4d25085, type: 3}
+  m_Name: SplitterEnemy_EliteProfile
+  m_EditorClassIdentifier: 
+  core:
+    maxHealth: 220
+    maxShield: 170
+    moveSpeed: 38
+    rotationDegreesPerSecond: 180
+    detectionRange: 700
+  projectileWeapons:
+  - cooldown: 1.55
+    speed: 215
+    damage: 8
+    lifetime: 5
+  beamWeapons:
+  - damagePerSecond: 22
+    maxDistance: 480
+    capacity: 200
+    drainRate: 20
+    regenRate: 20
+    minimumStartEnergy: 20
+    rotationMultiplier: 0.2
+    postFireRotationPenaltyDuration: 0.3
+  brain:
+    thinkInterval: 0.05
+    holdDistance: 200
+    fullSpeedDistance: 400
+    projectileAimToleranceDegrees: 8
+    beamAimToleranceDegrees: 8
+    projectilePreferredDistance: 100
+    beamPreferredDistance: 200
+    mixedRangeBeamChance: 0.45
+    mixedRangeWidth: 14
+    decisionHoldDuration: 1
+    minimumBeamRestartEnergy: 20
+    projectileConvergenceDistance: 300
+    splitCount: 2
+    splitSpawnRadius: 4
+    verticalSpawnJitter: 1.5
+    childScaleMultiplier: 0.6
+    childMoveSpeedMultiplier: 1.35
+    childMaxHealth: 50
+    childMaxShield: 40

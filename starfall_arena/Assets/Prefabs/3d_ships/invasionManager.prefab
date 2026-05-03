@@ -1,0 +1,543 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &56601691610777928
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2644385173095867508}
+  - component: {fileID: 2559893300203955093}
+  m_Layer: 0
+  m_Name: invasionManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2644385173095867508
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 56601691610777928}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -7.12982, y: -0, z: 137.46085}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 700000000000000102}
+  - {fileID: 700000000000000104}
+  - {fileID: 700000000000000106}
+  - {fileID: 700000000000000108}
+  - {fileID: 700000000000000110}
+  - {fileID: 700000000000000112}
+  - {fileID: 700000000000000114}
+  - {fileID: 700000000000000116}
+  - {fileID: 700000000000000118}
+  - {fileID: 700000000000000120}
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2559893300203955093
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 56601691610777928}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0a8a6f8e0d9652e439bdd5aa9f661bb3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::InvasionWaveManager3D
+  waves:
+  - waveName: WAVE 1
+    subWaves:
+    - subWaveName: Opening Line
+      centerSpawnPoint: {fileID: 700000000000000102}
+      formation:
+        preset: 0
+        slotSpacing: 42
+        gridColumns: 3
+        yBias: 0.08
+      enemies:
+      - enemyPrefab: {fileID: 100100000, guid: 45b170708adafd343bd4e110edf859cc, type: 3}
+        count: 4
+      spawnBurstIntervalSeconds: 0.15
+      delayBeforeNextSubWaveSeconds: 2
+    - subWaveName: Chase Breaker
+      centerSpawnPoint: {fileID: 700000000000000104}
+      formation:
+        preset: 1
+        slotSpacing: 36
+        gridColumns: 3
+        yBias: 0.18
+      enemies:
+      - enemyPrefab: {fileID: 100100000, guid: 58ce7d9b3625d104dab4b41990875d42, type: 3}
+        count: 2
+      - enemyPrefab: {fileID: 100100000, guid: 45b170708adafd343bd4e110edf859cc, type: 3}
+        count: 2
+      spawnBurstIntervalSeconds: 0.1
+      delayBeforeNextSubWaveSeconds: 0.75
+    enableBoss: 0
+    boss:
+      bossPrefab: {fileID: 0}
+      bossSpawnPoint: {fileID: 0}
+      delayBeforeBossSeconds: 0
+  - waveName: WAVE 2
+    subWaves:
+    - subWaveName: Artillery Ring
+      centerSpawnPoint: {fileID: 700000000000000106}
+      formation:
+        preset: 2
+        slotSpacing: 46
+        gridColumns: 3
+        yBias: 0.22
+      enemies:
+      - enemyPrefab: {fileID: 100100000, guid: cde2502dbb1943c4e989581533885ba9, type: 3}
+        count: 3
+      spawnBurstIntervalSeconds: 0.25
+      delayBeforeNextSubWaveSeconds: 2.5
+    - subWaveName: Heavy Followup
+      centerSpawnPoint: {fileID: 700000000000000108}
+      formation:
+        preset: 3
+        slotSpacing: 40
+        gridColumns: 2
+        yBias: 0.12
+      enemies:
+      - enemyPrefab: {fileID: 100100000, guid: 45b170708adafd343bd4e110edf859cc, type: 3}
+        count: 3
+      - enemyPrefab: {fileID: 100100000, guid: cee62f2388d09ee41a7c13cefb04b422, type: 3}
+        count: 1
+      spawnBurstIntervalSeconds: 0.2
+      delayBeforeNextSubWaveSeconds: 1
+    enableBoss: 0
+    boss:
+      bossPrefab: {fileID: 0}
+      bossSpawnPoint: {fileID: 0}
+      delayBeforeBossSeconds: 0
+  - waveName: WAVE 3
+    subWaves:
+    - subWaveName: Duel Pocket
+      centerSpawnPoint: {fileID: 700000000000000110}
+      formation:
+        preset: 1
+        slotSpacing: 48
+        gridColumns: 3
+        yBias: 0.15
+      enemies:
+      - enemyPrefab: {fileID: 100100000, guid: c826b1c48a0a1ae4c9e10e7580cc2944, type: 3}
+        count: 2
+      - enemyPrefab: {fileID: 100100000, guid: 45b170708adafd343bd4e110edf859cc, type: 3}
+        count: 2
+      spawnBurstIntervalSeconds: 0.18
+      delayBeforeNextSubWaveSeconds: 2
+    - subWaveName: Split Pressure
+      centerSpawnPoint: {fileID: 700000000000000112}
+      formation:
+        preset: 0
+        slotSpacing: 34
+        gridColumns: 3
+        yBias: 0.25
+      enemies:
+      - enemyPrefab: {fileID: 100100000, guid: 58ce7d9b3625d104dab4b41990875d42, type: 3}
+        count: 3
+      - enemyPrefab: {fileID: 100100000, guid: 2ec7415a3a3c0c446811e23e1de03acf, type: 3}
+        count: 1
+      spawnBurstIntervalSeconds: 0.12
+      delayBeforeNextSubWaveSeconds: 1
+    enableBoss: 0
+    boss:
+      bossPrefab: {fileID: 0}
+      bossSpawnPoint: {fileID: 0}
+      delayBeforeBossSeconds: 0
+  - waveName: WAVE 4
+    subWaves:
+    - subWaveName: Swarm Screen
+      centerSpawnPoint: {fileID: 700000000000000114}
+      formation:
+        preset: 2
+        slotSpacing: 32
+        gridColumns: 3
+        yBias: 0.35
+      enemies:
+      - enemyPrefab: {fileID: 100100000, guid: 4c9de6e18a704a44962ff82fb01f0862, type: 3}
+        count: 5
+      spawnBurstIntervalSeconds: 0.05
+      delayBeforeNextSubWaveSeconds: 2
+    - subWaveName: Fortress Cell
+      centerSpawnPoint: {fileID: 700000000000000116}
+      formation:
+        preset: 1
+        slotSpacing: 54
+        gridColumns: 3
+        yBias: 0.3
+      enemies:
+      - enemyPrefab: {fileID: 100100000, guid: 82a69e3d51aa5024dba97824bdf3c1f9, type: 3}
+        count: 3
+      - enemyPrefab: {fileID: 100100000, guid: 67ddc44c4546f394ca0a6767e900c122, type: 3}
+        count: 1
+      spawnBurstIntervalSeconds: 0.25
+      delayBeforeNextSubWaveSeconds: 1.5
+    enableBoss: 0
+    boss:
+      bossPrefab: {fileID: 0}
+      bossSpawnPoint: {fileID: 0}
+      delayBeforeBossSeconds: 0
+  - waveName: WAVE 5
+    subWaves:
+    - subWaveName: Anvil Group
+      centerSpawnPoint: {fileID: 700000000000000118}
+      formation:
+        preset: 3
+        slotSpacing: 52
+        gridColumns: 3
+        yBias: 0.2
+      enemies:
+      - enemyPrefab: {fileID: 100100000, guid: cee62f2388d09ee41a7c13cefb04b422, type: 3}
+        count: 2
+      - enemyPrefab: {fileID: 100100000, guid: c826b1c48a0a1ae4c9e10e7580cc2944, type: 3}
+        count: 2
+      - enemyPrefab: {fileID: 100100000, guid: 2ec7415a3a3c0c446811e23e1de03acf, type: 3}
+        count: 2
+      spawnBurstIntervalSeconds: 0.18
+      delayBeforeNextSubWaveSeconds: 2.2
+    - subWaveName: Cleanup Chaos
+      centerSpawnPoint: {fileID: 700000000000000120}
+      formation:
+        preset: 2
+        slotSpacing: 36
+        gridColumns: 3
+        yBias: 0.28
+      enemies:
+      - enemyPrefab: {fileID: 100100000, guid: 4c9de6e18a704a44962ff82fb01f0862, type: 3}
+        count: 5
+      - enemyPrefab: {fileID: 100100000, guid: cde2502dbb1943c4e989581533885ba9, type: 3}
+        count: 2
+      - enemyPrefab: {fileID: 100100000, guid: 58ce7d9b3625d104dab4b41990875d42, type: 3}
+        count: 2
+      spawnBurstIntervalSeconds: 0.08
+      delayBeforeNextSubWaveSeconds: 0
+    enableBoss: 0
+    boss:
+      bossPrefab: {fileID: 0}
+      bossSpawnPoint: {fileID: 0}
+      delayBeforeBossSeconds: 0
+  startOnEnable: 0
+  waveEndDelaySeconds: 6
+  waveStartDelaySeconds: 3
+--- !u!1 &700000000000000101
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 700000000000000102}
+  m_Layer: 0
+  m_Name: Wave1_LineAnchor
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &700000000000000102
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 700000000000000101}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 1, z: 0, w: 0}
+  m_LocalPosition: {x: -140, y: 20, z: 260}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2644385173095867508}
+  m_LocalEulerAnglesHint: {x: 0, y: 180, z: 0}
+--- !u!1 &700000000000000103
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 700000000000000104}
+  m_Layer: 0
+  m_Name: Wave1_WedgeAnchor
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &700000000000000104
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 700000000000000103}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0.9238795, z: 0, w: 0.3826834}
+  m_LocalPosition: {x: 160, y: -10, z: 220}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2644385173095867508}
+  m_LocalEulerAnglesHint: {x: 0, y: 135, z: 0}
+--- !u!1 &700000000000000105
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 700000000000000106}
+  m_Layer: 0
+  m_Name: Wave2_RingAnchor
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &700000000000000106
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 700000000000000105}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: -0.7071068, z: 0, w: 0.7071068}
+  m_LocalPosition: {x: -220, y: 55, z: 360}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2644385173095867508}
+  m_LocalEulerAnglesHint: {x: 0, y: -90, z: 0}
+--- !u!1 &700000000000000107
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 700000000000000108}
+  m_Layer: 0
+  m_Name: Wave2_GridAnchor
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &700000000000000108
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 700000000000000107}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: -0.3826834, z: 0, w: 0.9238795}
+  m_LocalPosition: {x: 110, y: 35, z: 395}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2644385173095867508}
+  m_LocalEulerAnglesHint: {x: 0, y: -45, z: 0}
+--- !u!1 &700000000000000109
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 700000000000000110}
+  m_Layer: 0
+  m_Name: Wave3_DuelAnchor
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &700000000000000110
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 700000000000000109}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0.7071068, z: 0, w: 0.7071068}
+  m_LocalPosition: {x: -80, y: -25, z: 520}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2644385173095867508}
+  m_LocalEulerAnglesHint: {x: 0, y: 90, z: 0}
+--- !u!1 &700000000000000111
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 700000000000000112}
+  m_Layer: 0
+  m_Name: Wave3_SplitAnchor
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &700000000000000112
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 700000000000000111}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 185, y: 45, z: 560}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2644385173095867508}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &700000000000000113
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 700000000000000114}
+  m_Layer: 0
+  m_Name: Wave4_ScoutAnchor
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &700000000000000114
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 700000000000000113}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0.3826834, z: 0, w: 0.9238795}
+  m_LocalPosition: {x: -260, y: 70, z: 710}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2644385173095867508}
+  m_LocalEulerAnglesHint: {x: 0, y: 45, z: 0}
+--- !u!1 &700000000000000115
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 700000000000000116}
+  m_Layer: 0
+  m_Name: Wave4_FortressAnchor
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &700000000000000116
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 700000000000000115}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: -0.9238795, z: 0, w: 0.3826834}
+  m_LocalPosition: {x: 235, y: -40, z: 760}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2644385173095867508}
+  m_LocalEulerAnglesHint: {x: 0, y: -135, z: 0}
+--- !u!1 &700000000000000117
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 700000000000000118}
+  m_Layer: 0
+  m_Name: Wave5_AnvilAnchor
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &700000000000000118
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 700000000000000117}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: -1, z: 0, w: 0}
+  m_LocalPosition: {x: -120, y: 30, z: 910}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2644385173095867508}
+  m_LocalEulerAnglesHint: {x: 0, y: -180, z: 0}
+--- !u!1 &700000000000000119
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 700000000000000120}
+  m_Layer: 0
+  m_Name: Wave5_ChaosAnchor
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &700000000000000120
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 700000000000000119}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0.9238795, z: 0, w: 0.3826834}
+  m_LocalPosition: {x: 205, y: 85, z: 980}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2644385173095867508}
+  m_LocalEulerAnglesHint: {x: 0, y: 135, z: 0}

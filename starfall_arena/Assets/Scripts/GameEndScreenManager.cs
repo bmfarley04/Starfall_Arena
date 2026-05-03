@@ -13,10 +13,10 @@ public class GameEndScreenManager : MonoBehaviour
     [System.Serializable]
     public struct ReturnHoldUIReferences
     {
-        [Tooltip("Player 1 return button radial fill image")]
+        [Tooltip("Victory-screen return button radial fill image. Kept as player1ReturnFill for serialized scene compatibility.")]
         public Image player1ReturnFill;
 
-        [Tooltip("Player 2 return button radial fill image")]
+        [Tooltip("Defeat-screen return button radial fill image. Kept as player2ReturnFill for serialized scene compatibility.")]
         public Image player2ReturnFill;
     }
 
@@ -32,58 +32,52 @@ public class GameEndScreenManager : MonoBehaviour
     }
 
     [Header("Canvas References")]
-    [Tooltip("Player 1 victory screen canvas group")]
+    [Tooltip("Victory screen canvas group. Uses the legacy Player 1 field name so existing scene references stay assigned.")]
     [SerializeField] private CanvasGroup player1Canvas;
 
-    [Tooltip("Player 2 victory screen canvas group")]
+    [Tooltip("Defeat screen canvas group. Uses the legacy Player 2 field name so existing scene references stay assigned.")]
     [SerializeField] private CanvasGroup player2Canvas;
 
-    [Header("Player 1 Canvas Text Fields")]
-    [Tooltip("Victory/defeat label in Player 1 canvas")]
-    [SerializeField] private TextMeshProUGUI p1_resultText;
-
-    [Tooltip("Duration text in Player 1 canvas")]
+    [Header("Victory Canvas Text Fields")]
+    [Tooltip("Duration text in the victory canvas")]
     [SerializeField] private TextMeshProUGUI p1_durationText;
 
-    [Tooltip("Final record text (wins-losses) in Player 1 canvas")]
+    [Tooltip("Final record text in the victory canvas. Duel uses wins-losses; other modes can override this text.")]
     [SerializeField] private TextMeshProUGUI p1_finalRecordText;
 
-    [Tooltip("Damage dealt text in Player 1 canvas")]
+    [Tooltip("Damage dealt text in the victory canvas")]
     [SerializeField] private TextMeshProUGUI p1_damageDealtText;
 
-    [Tooltip("Damage taken text in Player 1 canvas")]
+    [Tooltip("Damage taken text in the victory canvas")]
     [SerializeField] private TextMeshProUGUI p1_damageTakenText;
 
-    [Tooltip("Accuracy text in Player 1 canvas")]
+    [Tooltip("Accuracy text in the victory canvas")]
     [SerializeField] private TextMeshProUGUI p1_accuracyText;
 
-    [Header("Player 2 Canvas Text Fields")]
-    [Tooltip("Victory/defeat label in Player 2 canvas")]
-    [SerializeField] private TextMeshProUGUI p2_resultText;
-
-    [Tooltip("Duration text in Player 2 canvas")]
+    [Header("Defeat Canvas Text Fields")]
+    [Tooltip("Duration text in the defeat canvas")]
     [SerializeField] private TextMeshProUGUI p2_durationText;
 
-    [Tooltip("Final record text (wins-losses) in Player 2 canvas")]
+    [Tooltip("Final record text in the defeat canvas. Duel uses wins-losses; other modes can override this text.")]
     [SerializeField] private TextMeshProUGUI p2_finalRecordText;
 
-    [Tooltip("Damage dealt text in Player 2 canvas")]
+    [Tooltip("Damage dealt text in the defeat canvas")]
     [SerializeField] private TextMeshProUGUI p2_damageDealtText;
 
-    [Tooltip("Damage taken text in Player 2 canvas")]
+    [Tooltip("Damage taken text in the defeat canvas")]
     [SerializeField] private TextMeshProUGUI p2_damageTakenText;
 
-    [Tooltip("Accuracy text in Player 2 canvas")]
+    [Tooltip("Accuracy text in the defeat canvas")]
     [SerializeField] private TextMeshProUGUI p2_accuracyText;
 
-    [Header("Player 1 Canvas Stat Sections")]
+    [Header("Victory Canvas Stat Sections")]
     [SerializeField] private CanvasGroup p1_durationSection;
     [SerializeField] private CanvasGroup p1_recordSection;
     [SerializeField] private CanvasGroup p1_damageDealtSection;
     [SerializeField] private CanvasGroup p1_damageTakenSection;
     [SerializeField] private CanvasGroup p1_accuracySection;
 
-    [Header("Player 2 Canvas Stat Sections")]
+    [Header("Defeat Canvas Stat Sections")]
     [SerializeField] private CanvasGroup p2_durationSection;
     [SerializeField] private CanvasGroup p2_recordSection;
     [SerializeField] private CanvasGroup p2_damageDealtSection;
@@ -91,10 +85,10 @@ public class GameEndScreenManager : MonoBehaviour
     [SerializeField] private CanvasGroup p2_accuracySection;
 
     [Header("Ship Model Spawn Points")]
-    [Tooltip("Transform where Player 1's ship model will be spawned")]
+    [Tooltip("Transform where the victory-screen ship model will be spawned")]
     [SerializeField] private Transform player1ShipSpawnPoint;
 
-    [Tooltip("Transform where Player 2's ship model will be spawned")]
+    [Tooltip("Transform where the defeat-screen ship model will be spawned")]
     [SerializeField] private Transform player2ShipSpawnPoint;
 
     [Header("Ship Warp Animation Settings")]
@@ -144,7 +138,7 @@ public class GameEndScreenManager : MonoBehaviour
     [SerializeField] private float scaleOvershoot = 1.15f;
 
     [Header("Return To Title (Hold)")]
-    [Tooltip("Return hold button fill references for each player canvas")]
+    [Tooltip("Return hold button fill references for the victory and defeat canvases")]
     [SerializeField] private ReturnHoldUIReferences returnHoldUI;
 
     [Tooltip("Hold button configuration for returning to title")]
@@ -244,6 +238,7 @@ public class GameEndScreenManager : MonoBehaviour
     /// <param name="damageDealt">Total damage dealt from the local perspective</param>
     /// <param name="damageTaken">Total damage taken from the local perspective</param>
     /// <param name="accuracy">Accuracy percentage (0-100)</param>
+    /// <param name="finalRecordOverride">Optional replacement for the duel wins-losses record text</param>
     public void ShowGameEndScreen(
         int winningPlayer,
         int perspectivePlayer,
@@ -253,8 +248,42 @@ public class GameEndScreenManager : MonoBehaviour
         int losses,
         float damageDealt,
         float damageTaken,
-        float accuracy)
+        float accuracy,
+        string finalRecordOverride = null)
     {
+        bool isLocalVictory = winningPlayer == perspectivePlayer;
+        ShowGameEndScreenForResult(isLocalVictory, shipData, gameDuration, wins, losses, damageDealt, damageTaken, accuracy, finalRecordOverride);
+    }
+
+    /// <summary>
+    /// Displays the game end screen using a direct local victory/defeat result.
+    /// Co-op modes should use this so both players can see the same result screen type with their own local stats.
+    /// </summary>
+    /// <param name="isVictory">True to show the victory canvas, false to show the defeat canvas</param>
+    /// <param name="shipData">Ship data containing the model prefab to display</param>
+    /// <param name="gameDuration">Total game duration in seconds</param>
+    /// <param name="wins">Number of rounds won from the local perspective</param>
+    /// <param name="losses">Number of rounds lost from the local perspective</param>
+    /// <param name="damageDealt">Total damage dealt from the local perspective</param>
+    /// <param name="damageTaken">Total damage taken from the local perspective</param>
+    /// <param name="accuracy">Accuracy percentage (0-100)</param>
+    /// <param name="finalRecordOverride">Optional replacement for the duel wins-losses record text</param>
+    public void ShowGameEndScreenForResult(
+        bool isVictory,
+        ShipData shipData,
+        float gameDuration,
+        int wins,
+        int losses,
+        float damageDealt,
+        float damageTaken,
+        float accuracy,
+        string finalRecordOverride = null)
+    {
+        if (!EnsurePresentationHostActive())
+        {
+            return;
+        }
+
         // Stop any existing animation
         if (currentAnimation != null)
         {
@@ -264,10 +293,9 @@ public class GameEndScreenManager : MonoBehaviour
         // Clean up any existing ship model
         CleanupShipPresentation();
 
-        bool isLocalVictory = winningPlayer == perspectivePlayer;
-
-        // Determine which canvas to show and which stat sections to animate
-        if (perspectivePlayer == 1)
+        // Determine which result canvas to show and which stat sections to animate.
+        // The serialized field names stay player1/player2 to preserve existing Unity scene references.
+        if (isVictory)
         {
             currentActiveCanvas = player1Canvas;
             currentShipSpawnPoint = player1ShipSpawnPoint;
@@ -296,7 +324,7 @@ public class GameEndScreenManager : MonoBehaviour
 
         if (currentActiveCanvas == null)
         {
-            Debug.LogError($"Player {perspectivePlayer} canvas is not assigned!");
+            Debug.LogError($"{(isVictory ? "Victory" : "Defeat")} canvas is not assigned!");
             return;
         }
 
@@ -308,11 +336,11 @@ public class GameEndScreenManager : MonoBehaviour
 
         if (currentShipSpawnPoint == null)
         {
-            Debug.LogError($"Player {perspectivePlayer} ship spawn point is not assigned!");
+            Debug.LogError($"{(isVictory ? "Victory" : "Defeat")} ship spawn point is not assigned!");
             return;
         }
 
-        currentPresentationIsVictory = isLocalVictory;
+        currentPresentationIsVictory = isVictory;
         _canReturnToTitle = false;
         _isLoadingTitle = false;
         _returnHoldTime = 0f;
@@ -321,13 +349,53 @@ public class GameEndScreenManager : MonoBehaviour
         BeginTitleScenePreload();
 
         // Populate text fields
-        PopulateStats(perspectivePlayer, isLocalVictory, gameDuration, wins, losses, damageDealt, damageTaken, accuracy);
+        PopulateStats(isVictory, gameDuration, wins, losses, damageDealt, damageTaken, accuracy, finalRecordOverride);
 
         // Spawn ship model for the result presentation.
         SpawnShipModel(shipData);
 
         // Start spawn animation
         currentAnimation = StartCoroutine(SpawnAnimation());
+    }
+
+    private bool EnsurePresentationHostActive()
+    {
+        if (!enabled)
+        {
+            enabled = true;
+        }
+
+        if (gameObject.activeInHierarchy)
+        {
+            return true;
+        }
+
+        // Unity cannot start coroutines from an inactive host. The end screen may
+        // be kept under a disabled UI container, so activate the host path first.
+        Stack<Transform> inactiveParents = new Stack<Transform>();
+        Transform current = transform;
+        while (current != null)
+        {
+            if (!current.gameObject.activeSelf)
+            {
+                inactiveParents.Push(current);
+            }
+
+            current = current.parent;
+        }
+
+        while (inactiveParents.Count > 0)
+        {
+            inactiveParents.Pop().gameObject.SetActive(true);
+        }
+
+        if (!gameObject.activeInHierarchy)
+        {
+            Debug.LogError("[GameEndScreenManager] Cannot show the game-end screen because the manager is still inactive in hierarchy after activating its host path.", this);
+            return false;
+        }
+
+        return true;
     }
 
     /// <summary>
@@ -346,15 +414,15 @@ public class GameEndScreenManager : MonoBehaviour
         }
     }
 
-    private void PopulateStats(int perspectivePlayer, bool isVictory, float gameDuration, int wins, int losses, float damageDealt, float damageTaken, float accuracy)
+    private void PopulateStats(bool isVictory, float gameDuration, int wins, int losses, float damageDealt, float damageTaken, float accuracy, string finalRecordOverride)
     {
         // Format duration as MM:SS
         int minutes = Mathf.FloorToInt(gameDuration / 60f);
         int seconds = Mathf.FloorToInt(gameDuration % 60f);
         string durationStr = $"{minutes}:{seconds:D2}";
 
-        // Format final record as W-L
-        string recordStr = $"{wins}-{losses}";
+        // Format final record as W-L unless a mode supplies a different stat value.
+        string recordStr = string.IsNullOrWhiteSpace(finalRecordOverride) ? $"{wins}-{losses}" : finalRecordOverride;
 
         // Format damage (whole numbers)
         string damageDealtStr = Mathf.RoundToInt(damageDealt).ToString();
@@ -363,12 +431,8 @@ public class GameEndScreenManager : MonoBehaviour
         // Format accuracy (1 decimal place)
         string accuracyStr = $"{accuracy:F1}%";
 
-        // Populate the appropriate canvas's text fields
-        string resultLabel = isVictory ? "VICTORY" : "DEFEAT";
-
-        if (perspectivePlayer == 1)
+        if (isVictory)
         {
-            if (p1_resultText != null) p1_resultText.text = resultLabel;
             if (p1_durationText != null) p1_durationText.text = durationStr;
             if (p1_finalRecordText != null) p1_finalRecordText.text = recordStr;
             if (p1_damageDealtText != null) p1_damageDealtText.text = damageDealtStr;
@@ -377,7 +441,6 @@ public class GameEndScreenManager : MonoBehaviour
         }
         else
         {
-            if (p2_resultText != null) p2_resultText.text = resultLabel;
             if (p2_durationText != null) p2_durationText.text = durationStr;
             if (p2_finalRecordText != null) p2_finalRecordText.text = recordStr;
             if (p2_damageDealtText != null) p2_damageDealtText.text = damageDealtStr;

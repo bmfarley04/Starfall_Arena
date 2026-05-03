@@ -105,6 +105,12 @@ public class Class2Shield3D : Ability3D, IProjectileImpactHandler3D
         return shield.cooldown;
     }
 
+    public void ApplyProfile(Class2PlayerBalanceProfile3D.Class2Stats stats)
+    {
+        shield.cooldown = Mathf.Max(0f, stats.shieldCooldown);
+        shield.activeDuration = Mathf.Max(0f, stats.shieldActiveDuration);
+    }
+
     public override void Die()
     {
         if (_shieldCoroutine != null)

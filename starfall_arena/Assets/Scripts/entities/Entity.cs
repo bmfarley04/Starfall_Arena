@@ -373,13 +373,13 @@ public abstract class Entity : MonoBehaviour
         }
         OnHealthChanged();
 
+        RecordDamageStats(attacker, accuracyAttackId, appliedShieldDamage + appliedHealthDamage);
+        BroadcastAuthoritativeCombatState(hitPoint, source, shieldTookHit, shieldBroke, impactForce, shieldIgnored || healthIgnored, artificialFairyTriggered);
+
         if (currentHealth <= 0)
         {
             Die();
         }
-
-        RecordDamageStats(attacker, accuracyAttackId, appliedShieldDamage + appliedHealthDamage);
-        BroadcastAuthoritativeCombatState(hitPoint, source, shieldTookHit, shieldBroke, impactForce, shieldIgnored || healthIgnored, artificialFairyTriggered);
     }
 
     /// <summary>
@@ -456,13 +456,13 @@ public abstract class Entity : MonoBehaviour
         }
         OnHealthChanged();
 
+        RecordDamageStats(attacker, accuracyAttackId, appliedHealthDamage);
+        BroadcastAuthoritativeCombatState(hitPoint, source, false, false, impactForce, healthIgnored, false);
+
         if (currentHealth <= 0)
         {
             Die();
         }
-
-        RecordDamageStats(attacker, accuracyAttackId, appliedHealthDamage);
-        BroadcastAuthoritativeCombatState(hitPoint, source, false, false, impactForce, healthIgnored, false);
     }
 
     protected void RecordDamageStats(Entity attacker, int accuracyAttackId, float appliedDamage)

@@ -1,0 +1,55 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Pulsar_Jet_North
+  m_Shader: {fileID: 4800000, guid: b0a61e257f584c55a8c87a4ef0e8d32f, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _NoiseTex:
+        m_Texture: {fileID: 2800000, guid: 233b7b909760eff4a8ff315b9f4cb7b3, type: 2}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _Alpha: 0.26
+    - _BaseFadeDistance: 0.03
+    - _Brightness: 1
+    - _ExternalPulseIntensity: 1.0034297
+    - _FresnelPower: 3.42
+    - _FresnelStrength: 2.27
+    - _InnerFill: 0.411
+    - _JitterScale: 6
+    - _JitterSpeed: 1.2
+    - _LengthFadePower: 0.7
+    - _NoiseScale: 40.5
+    - _NoiseStrength: 1.1
+    - _OutwardSign: 1
+    - _PulseSpeed: 0.7
+    - _PulseStrength: 0.28
+    - _ScrollSpeed: 1.8
+    - _TextureInfluence: 0.218
+    - _TipFadeDistance: 0.18
+    - _VertexJitterStrength: 0.16
+    m_Colors:
+    - _HotCoreColor: {r: 1.7213265, g: 7.536055, b: 13.350783, a: 1}
+    - _JetColor: {r: 0.45, g: 3, b: 10, a: 1}
+  m_BuildTextureStacks: []
+  m_AllowLocking: 1

@@ -3,46 +3,92 @@ using UnityEngine;
 [DisallowMultipleComponent]
 public class EnemyTargetSensor3D : MonoBehaviour
 {
-    private static readonly RaycastHit[] LineOfSightHits = new RaycastHit[16];
-
     [Header("Targeting")]
+    [Tooltip("Faction this enemy should acquire. In Invasion enemies should normally target PlayerTeam.")]
     [SerializeField] private Faction3D targetFaction = Faction3D.PlayerTeam;
+
+    [Tooltip("Maximum distance at which this sensor can acquire or keep a target. Balance profiles overwrite this at runtime.")]
     [SerializeField] private float detectionRange = 800f;
+
+    [Tooltip("Seconds between target scans. Lower values acquire targets sooner but call FindObjectsByType more often.")]
     [SerializeField] private float refreshInterval = 0.15f;
 
-    [Header("Line Of Sight")]
-    [Tooltip("Layers that block enemy sight, such as asteroids and world geometry. Leave empty to ignore sight blocking.")]
-    [SerializeField] private LayerMask lineOfSightBlockers;
-    [SerializeField] private float lineOfSightRadius = 0.5f;
-
     private Entity3D _currentTarget;
+    private Entity3D _alertedTarget;
+    private float _alertedTargetExpiresAt;
     private float _nextRefreshTime;
 
-    public Entity3D CurrentTarget => _currentTarget;
+    public Entity3D CurrentTarget => ResolveCurrentTarget();
+
+    private void OnEnable()
+    {
+        _nextRefreshTime = 0f;
+    }
 
     private void OnDisable()
     {
         _currentTarget = null;
+        _alertedTarget = null;
+        _alertedTargetExpiresAt = 0f;
+    }
+
+    public void ApplyProfile(EnemyBalanceProfile3D.CoreStats core)
+    {
+        detectionRange = Mathf.Max(0f, core.detectionRange);
+        _currentTarget = null;
+        _alertedTarget = null;
+        _alertedTargetExpiresAt = 0f;
+        _nextRefreshTime = 0f;
+    }
+
+    public void ReceiveTargetAlert(Entity3D target, float duration)
+    {
+        if (duration <= 0f || !IsCandidateTarget(target))
+        {
+            return;
+        }
+
+        _alertedTarget = target;
+        _alertedTargetExpiresAt = Mathf.Max(_alertedTargetExpiresAt, Time.time + duration);
     }
 
     public Entity3D RefreshTargetNow()
     {
         _nextRefreshTime = Time.time + Mathf.Max(0.02f, refreshInterval);
-        _currentTarget = FindNearestVisibleTarget();
-        return _currentTarget;
+        _currentTarget = FindNearestTarget();
+        return ResolveCurrentTarget();
     }
 
     public Entity3D GetTarget()
     {
-        if (Time.time >= _nextRefreshTime || !IsStillValid(_currentTarget))
+        bool hasValidNormalTarget = IsStillValid(_currentTarget);
+        bool hasValidAlertTarget = IsAlertStillValid();
+        if (Time.time >= _nextRefreshTime || (!hasValidNormalTarget && !hasValidAlertTarget))
         {
             return RefreshTargetNow();
         }
 
-        return _currentTarget;
+        return hasValidNormalTarget ? _currentTarget : _alertedTarget;
     }
 
-    private Entity3D FindNearestVisibleTarget()
+    private Entity3D ResolveCurrentTarget()
+    {
+        if (IsStillValid(_currentTarget))
+        {
+            return _currentTarget;
+        }
+
+        if (IsAlertStillValid())
+        {
+            return _alertedTarget;
+        }
+
+        _alertedTarget = null;
+        _alertedTargetExpiresAt = 0f;
+        return null;
+    }
+
+    private Entity3D FindNearestTarget()
     {
         Entity3D[] entities = FindObjectsByType<Entity3D>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
         Entity3D nearest = null;
@@ -63,11 +109,6 @@ public class EnemyTargetSensor3D : MonoBehaviour
                 continue;
             }
 
-            if (!HasLineOfSight(candidate, toCandidate))
-            {
-                continue;
-            }
-
             nearest = candidate;
             nearestDistanceSqr = distanceSqr;
         }
@@ -83,7 +124,12 @@ public class EnemyTargetSensor3D : MonoBehaviour
         }
 
         Vector3 toTarget = target.transform.position - transform.position;
-        return toTarget.sqrMagnitude <= detectionRange * detectionRange && HasLineOfSight(target, toTarget);
+        return toTarget.sqrMagnitude <= detectionRange * detectionRange;
+    }
+
+    private bool IsAlertStillValid()
+    {
+        return Time.time < _alertedTargetExpiresAt && IsCandidateTarget(_alertedTarget);
     }
 
     private bool IsCandidateTarget(Entity3D candidate)
@@ -93,48 +139,5 @@ public class EnemyTargetSensor3D : MonoBehaviour
             && candidate.gameObject.activeInHierarchy
             && !candidate.transform.IsChildOf(transform)
             && FactionMember3D.ResolveFaction(candidate) == targetFaction;
-    }
-
-    private bool HasLineOfSight(Entity3D candidate, Vector3 toCandidate)
-    {
-        if (lineOfSightBlockers.value == 0)
-        {
-            return true;
-        }
-
-        float distance = toCandidate.magnitude;
-        if (distance <= 0.01f)
-        {
-            return true;
-        }
-
-        Vector3 direction = toCandidate / distance;
-        int hitCount = Physics.SphereCastNonAlloc(
-            transform.position,
-            Mathf.Max(0f, lineOfSightRadius),
-            direction,
-            LineOfSightHits,
-            distance,
-            lineOfSightBlockers,
-            QueryTriggerInteraction.Ignore);
-
-        for (int i = 0; i < hitCount; i++)
-        {
-            Collider hitCollider = LineOfSightHits[i].collider;
-            if (hitCollider == null)
-            {
-                continue;
-            }
-
-            Transform hitTransform = hitCollider.transform;
-            if (hitTransform.IsChildOf(transform) || hitTransform.IsChildOf(candidate.transform))
-            {
-                continue;
-            }
-
-            return false;
-        }
-
-        return true;
     }
 }

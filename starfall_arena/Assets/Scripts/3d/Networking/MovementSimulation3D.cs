@@ -77,23 +77,48 @@ public static class MovementSimulation3D
         float dt)
     {
         float effectiveThrustInput = input.ThrustMultiplier > 0f ? Mathf.Max(0f, input.ThrustInput) : 0f;
+        bool isPrecisionThrottle = IsPrecisionThrottleInput(effectiveThrustInput, flight);
+        float brakeInput = Mathf.Clamp01(-input.ThrustInput);
+        bool passiveLinearAssistEnabled = input.FrictionEnabled && assist.frictionDeceleration > 0f;
         Quaternion inverseRotation = Quaternion.Inverse(state.Rotation);
         Vector3 localVelocity = inverseRotation * state.Velocity;
 
         if (effectiveThrustInput > 0.05f)
         {
-            localVelocity.z += effectiveThrustInput * flight.thrustAcceleration * input.ThrustMultiplier * input.SlowMultiplier * dt;
+            float accelerationMultiplier = isPrecisionThrottle ? flight.precisionThrottleAccelerationMultiplier : 1f;
+            float previousForwardSpeed = localVelocity.z;
+            float nextForwardSpeed = previousForwardSpeed
+                + (effectiveThrustInput * flight.thrustAcceleration * accelerationMultiplier * input.ThrustMultiplier * input.SlowMultiplier * dt);
+
+            if (isPrecisionThrottle)
+            {
+                float precisionMaxSpeed = flight.maxSpeed * flight.precisionThrottleMaxSpeedFraction * input.SlowMultiplier;
+                localVelocity.z = previousForwardSpeed < precisionMaxSpeed
+                    ? Mathf.Min(nextForwardSpeed, precisionMaxSpeed)
+                    : previousForwardSpeed;
+            }
+            else
+            {
+                localVelocity.z = nextForwardSpeed;
+            }
         }
-        else if (input.FrictionEnabled)
+        else if (brakeInput > 0.05f)
+        {
+            localVelocity.z = Mathf.MoveTowards(localVelocity.z, 0f, flight.precisionBrakeDeceleration * brakeInput * input.SlowMultiplier * dt);
+        }
+        else if (passiveLinearAssistEnabled)
         {
             localVelocity.z = Mathf.MoveTowards(localVelocity.z, 0f, assist.frictionDeceleration * dt);
         }
 
-        localVelocity.x = Mathf.MoveTowards(localVelocity.x, 0f, assist.lateralDriftDamping * dt);
-        localVelocity.y = Mathf.MoveTowards(localVelocity.y, 0f, assist.verticalDriftDamping * dt);
+        if (passiveLinearAssistEnabled)
+        {
+            localVelocity.x = Mathf.MoveTowards(localVelocity.x, 0f, assist.lateralDriftDamping * dt);
+            localVelocity.y = Mathf.MoveTowards(localVelocity.y, 0f, assist.verticalDriftDamping * dt);
+        }
 
         Vector3 worldVelocity = state.Rotation * localVelocity;
-        worldVelocity = ApplyVelocityAlignment(worldVelocity, effectiveThrustInput, state, flight, assist, dt);
+        worldVelocity = ApplyVelocityAlignment(worldVelocity, effectiveThrustInput, state, flight, assist, passiveLinearAssistEnabled, dt);
 
         float effectiveMaxSpeed = Mathf.Max(0f, flight.maxSpeed * input.SlowMultiplier);
         if (effectiveMaxSpeed > 0f && worldVelocity.magnitude > effectiveMaxSpeed)
@@ -110,9 +135,10 @@ public static class MovementSimulation3D
         in MovementState3D state,
         in ShipFlightConfig3D flight,
         in ShipFlightAssistConfig3D assist,
+        bool passiveLinearAssistEnabled,
         float dt)
     {
-        if (assist.velocityAlignmentStrength <= 0f || effectiveThrustInput <= 0.05f || worldVelocity.sqrMagnitude <= MinSpeedSqrMagnitude)
+        if (!passiveLinearAssistEnabled || assist.velocityAlignmentStrength <= 0f || effectiveThrustInput <= 0.05f || worldVelocity.sqrMagnitude <= MinSpeedSqrMagnitude)
         {
             return worldVelocity;
         }
@@ -133,18 +159,44 @@ public static class MovementSimulation3D
         {
             state.DodgeVelocity = Vector3.zero;
             state.DodgeExitVelocity = Vector3.zero;
+            state.DodgeDuration = 0f;
+            state.DodgeKind = NetDodgeKind3D.Generic;
             return;
         }
 
-        float dodgeStep = Mathf.Min(dt, state.DodgeRemainingTime);
-        state.Position += state.DodgeVelocity * dodgeStep;
+        float duration = Mathf.Max(0.0001f, state.DodgeDuration);
+        float previousProgress = Mathf.Clamp01((duration - state.DodgeRemainingTime) / duration);
+        float nextRemainingTime = Mathf.Max(0f, state.DodgeRemainingTime - dt);
+        float nextProgress = Mathf.Clamp01((duration - nextRemainingTime) / duration);
+        Vector3 totalDodgeOffset = state.DodgeVelocity * duration;
+        state.Position += totalDodgeOffset * (EaseOutCubic(nextProgress) - EaseOutCubic(previousProgress));
         state.DodgeRemainingTime = Mathf.Max(0f, state.DodgeRemainingTime - dt);
 
         if (state.DodgeRemainingTime <= 0f)
         {
             state.DodgeVelocity = Vector3.zero;
             state.DodgeExitVelocity = Vector3.zero;
+            state.DodgeDuration = 0f;
+            state.DodgeKind = NetDodgeKind3D.Generic;
         }
+    }
+
+    public static Vector3 GetCurrentDodgeVelocity(in MovementState3D state)
+    {
+        if (state.DodgeRemainingTime <= 0.001f || state.DodgeDuration <= 0.0001f)
+        {
+            return Vector3.zero;
+        }
+
+        float progress = Mathf.Clamp01((state.DodgeDuration - state.DodgeRemainingTime) / state.DodgeDuration);
+        float easeDerivative = 3f * (1f - progress) * (1f - progress);
+        return state.DodgeVelocity * easeDerivative;
+    }
+
+    public static float EaseOutCubic(float t)
+    {
+        float inverse = 1f - Mathf.Clamp01(t);
+        return 1f - (inverse * inverse * inverse);
     }
 
     private static Vector2 GetEffectiveSteeringInput(Vector2 filteredLookInput, bool invertY)
@@ -172,5 +224,12 @@ public static class MovementSimulation3D
         }
 
         return Mathf.Clamp(turnRate / maxTurnRate, -1f, 1f);
+    }
+
+    private static bool IsPrecisionThrottleInput(float effectiveThrustInput, in ShipFlightConfig3D flight)
+    {
+        return effectiveThrustInput > 0.05f
+            && flight.precisionThrottleInputThreshold > 0f
+            && effectiveThrustInput <= flight.precisionThrottleInputThreshold;
     }
 }

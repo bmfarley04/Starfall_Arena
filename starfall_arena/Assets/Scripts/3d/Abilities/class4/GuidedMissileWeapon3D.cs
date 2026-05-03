@@ -49,6 +49,33 @@ public class GuidedMissileWeapon3D : Weapon3D
     public SoundEffect NetworkFireSound => guidedMissile.fireSound;
     public GameObject RegularProjectilePrefab => guidedMissile.regular.missilePrefab;
     public GameObject EmpoweredProjectilePrefab => guidedMissile.empowered.missilePrefab;
+    public GuidedMissileConfig3D GuidedMissileConfig => guidedMissile;
+
+    protected override bool SupportsMuzzleEffects => false;
+
+    public void ApplyProfile(Class4PlayerBalanceProfile3D.GuidedMissileStats stats)
+    {
+        guidedMissile.baseProjectile.cooldown = Mathf.Max(0f, stats.baseProjectile.cooldown);
+        guidedMissile.baseProjectile.speed = Mathf.Max(0f, stats.baseProjectile.speed);
+        guidedMissile.baseProjectile.damage = Mathf.Max(0f, stats.baseProjectile.damage);
+        guidedMissile.baseProjectile.lifetime = Mathf.Max(0f, stats.baseProjectile.lifetime);
+        guidedMissile.baseProjectile.energyCost = Mathf.Max(0f, stats.baseProjectile.energyCost);
+        ApplyVariantProfile(stats.regular, ref guidedMissile.regular);
+        ApplyVariantProfile(stats.empowered, ref guidedMissile.empowered);
+    }
+
+    public void SetGuidedMissileConfig(GuidedMissileConfig3D config)
+    {
+        guidedMissile = config;
+    }
+
+    private static void ApplyVariantProfile(Class4PlayerBalanceProfile3D.MissileVariantStats stats, ref MissileVariantConfig3D variant)
+    {
+        variant.damageMultiplier = Mathf.Max(0f, stats.damageMultiplier);
+        variant.speedMultiplier = Mathf.Max(0f, stats.speedMultiplier);
+        variant.lifetimeOverride = Mathf.Max(0f, stats.lifetimeOverride);
+        variant.sizeMultiplier = Mathf.Max(0.01f, stats.sizeMultiplier);
+    }
 
     protected override void Awake()
     {

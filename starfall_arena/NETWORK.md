@@ -130,6 +130,11 @@ The active network gameplay scene now assumes:
 - game-end presentation must also be broadcast explicitly and remapped to local-player perspective on each client
 - local result presentation should be derived from `payload.WinningPlayer` versus the local slot, while the actual game-end canvas selection can still stay slot-based (`player1` on host, `player2` on remote client)
 
+Enemy combat-state note:
+
+- player `Entity3D` combat replication currently routes through `NetCombat3D`, but networked enemies need an equivalent health/shield/death broadcast path through `NetEnemyCombat3D`
+- replicating only enemy spawn/despawn or attack cosmetics is not sufficient for remote HUD/UI, because clients also need intermediate `NetCombatState3D` updates when the server changes enemy health, shield, shield-break state, or slow state
+
 ### NetMovement
 
 `NetMovement` is the main implemented networked gameplay system right now.
@@ -421,6 +426,7 @@ The existing movement implementation is a real first step toward that architectu
 - Bug note: server-side projectile rewind sweeps do not have `OnTriggerEnter2D`'s built-in "entry once" behavior. Any projectile that survives impact, especially piercing shots like Tier 3/4 `GigaBlast`, must keep its own "already hit this target during this flight" registry or the same target can be damaged again on later server ticks while the sweep still intersects the defender's rewind radius.
 - `NetStateSnapshot` now carries both shield and health so augment-driven healing / max-health changes stay visible on non-authoritative copies instead of living only on the server.
 - Bug note: if a networked augment seems to work only for the host, check both halves of the integration: the server copy must execute the runtime even when `Player` is disabled, and the client copies must receive the augment loadout/state explicitly because NGO does not replicate those `AugmentController` runtimes for you.
+- Bug note: lethal damage must broadcast the final authoritative combat state before calling `Die()` / despawning the player's `NetworkObject`. If death/despawn happens first, clients can receive death effects while missing the final shield-hit or shield-break visual state, which makes alpha shield flashing appear host-only on kill shots.
 - Bug note: the title-screen join flow can be triggered by more than one UI/input path on the same client. Guard repeated join presses while `_awaitingClientConnect` is true, otherwise a second `StartClientForMenu()` call will hit NGO after the first call already set `IsListening` and falsely report that a session is already active.
 - Bug note: if 2D and 3D use different ship rosters, the selected gameplay scene/mode must be synchronized to clients before ship select opens. Leaving clients on a local default roster can show invalid options that do not match the host's intended mode.
 - Bug note: ship-select preview browsing must stay local-only. Do not replicate non-committed ship picks (`lockIn=false`) through `NetworkSessionData`, or one peer's shoulder-button browsing can drive the other peer's preview state. Only committed lock-ins should update replicated ship selection payloads.

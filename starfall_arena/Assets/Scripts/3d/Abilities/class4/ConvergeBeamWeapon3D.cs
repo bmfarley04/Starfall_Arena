@@ -10,6 +10,7 @@ public class ConvergeBeamWeapon3D : Weapon3D, IBeamWeaponNetwork3D
         [Header("Beam Settings")]
         public GameObject beamPrefab;
         public string targetTag;
+        public Faction3D targetFaction;
         public float damagePerSecond;
         public float maxDistance;
         public float recoilForcePerSecond;
@@ -76,6 +77,7 @@ public class ConvergeBeamWeapon3D : Weapon3D, IBeamWeaponNetwork3D
 
     private bool UsesBeamCapacity => convergeBeam.capacity > 0f && convergeBeam.drainRate > 0f;
     private bool IsBeamActive => _activeBeams != null && _activeBeams.Length > 0;
+    public ConvergeBeamConfig3D ConvergeBeamConfig => convergeBeam;
 
     protected override void Awake()
     {
@@ -111,6 +113,23 @@ public class ConvergeBeamWeapon3D : Weapon3D, IBeamWeaponNetwork3D
     protected override bool ShouldRecoverResource()
     {
         return !IsBeamActive;
+    }
+
+    public void ApplyProfile(Class4PlayerBalanceProfile3D.ConvergeBeamStats stats)
+    {
+        convergeBeam.damagePerSecond = Mathf.Max(0f, stats.damagePerSecond);
+        convergeBeam.maxDistance = Mathf.Max(0f, stats.maxDistance);
+        convergeBeam.rotationMultiplier = Mathf.Max(0f, stats.rotationMultiplier);
+        convergeBeam.baseBeamCount = Mathf.Max(1, stats.baseBeamCount);
+        convergeBeam.empoweredBeamCount = Mathf.Max(1, stats.empoweredBeamCount);
+        convergeBeam.capacity = Mathf.Max(0f, stats.capacity);
+        convergeBeam.drainRate = Mathf.Max(0f, stats.drainRate);
+        convergeBeam.regenRate = Mathf.Max(0f, stats.regenRate);
+    }
+
+    public void SetConvergeBeamConfig(ConvergeBeamConfig3D config)
+    {
+        convergeBeam = config;
     }
 
     protected override void OnFirePressed()
@@ -262,6 +281,7 @@ public class ConvergeBeamWeapon3D : Weapon3D, IBeamWeaponNetwork3D
             Owner?.GetComponent<PlayerCombatStats3D>()?.RecordTrackedAttackFired(_activeBeamAttackId);
         }
 
+        Owner?.RecordCombatActivity();
         StartBeamLoopSound();
     }
 
@@ -291,13 +311,10 @@ public class ConvergeBeamWeapon3D : Weapon3D, IBeamWeaponNetwork3D
 
         _activeBeams = new LaserBeam3D[_activeHardpoints.Length];
         string resolvedTargetTag = convergeBeam.targetTag;
-        if (_activeBeamAuthoritative && NetTickUtil.IsActive && _netCombat != null && _netCombat.IsSpawned)
+        Faction3D resolvedTargetFaction = convergeBeam.targetFaction;
+        if (NetTickUtil.IsActive && _netCombat != null && _netCombat.IsSpawned)
         {
-            string enemyTag = _netCombat.GetEnemyTag();
-            if (!string.IsNullOrEmpty(enemyTag))
-            {
-                resolvedTargetTag = enemyTag;
-            }
+            _netCombat.ResolvePlayerTargeting(convergeBeam.targetFaction, convergeBeam.targetTag, out resolvedTargetFaction, out resolvedTargetTag);
         }
 
         for (int i = 0; i < _activeHardpoints.Length; i++)
@@ -318,6 +335,7 @@ public class ConvergeBeamWeapon3D : Weapon3D, IBeamWeaponNetwork3D
 
             beam.Initialize(
                 resolvedTargetTag,
+                resolvedTargetFaction,
                 convergeBeam.damagePerSecond,
                 convergeBeam.maxDistance,
                 convergeBeam.recoilForcePerSecond,
@@ -344,6 +362,7 @@ public class ConvergeBeamWeapon3D : Weapon3D, IBeamWeaponNetwork3D
         _activeBeamAuthoritative = true;
         _activeBeamAttackId = PlayerCombatStats3D.InvalidAttackId;
         _hasPendingNetworkAim = false;
+        Owner?.RecordCombatActivity();
         StopBeamLoopSound();
     }
 
@@ -439,24 +458,14 @@ public class ConvergeBeamWeapon3D : Weapon3D, IBeamWeaponNetwork3D
         }
     }
 
-    private Vector3 ResolveOwnerAimDirection()
+    protected override Vector3 ResolveOwnerAimDirection()
     {
         if (ShouldUseReplicatedAim())
         {
             return _pendingNetworkAimDirection;
         }
 
-        Camera cam = AimCamera;
-        if (cam != null)
-        {
-            Ray centerRay = cam.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
-            if (centerRay.direction.sqrMagnitude > 0.0001f)
-            {
-                return centerRay.direction.normalized;
-            }
-        }
-
-        return transform.forward.sqrMagnitude > 0.0001f ? transform.forward.normalized : Vector3.forward;
+        return base.ResolveOwnerAimDirection();
     }
 
     private Vector3 ResolveAimPoint()
@@ -474,12 +483,13 @@ public class ConvergeBeamWeapon3D : Weapon3D, IBeamWeaponNetwork3D
             return origin + (ResolveOwnerAimDirection() * Mathf.Max(1f, convergeBeam.fallbackAimDistance));
         }
 
-        Ray centerRay = cam.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
+        Vector3 aimDirection = ResolveOwnerAimDirection();
         float maxAimDistance = convergeBeam.maxAimDistance > 0f ? convergeBeam.maxAimDistance : 1000f;
         float fallbackAimDistance = convergeBeam.fallbackAimDistance > 0f ? convergeBeam.fallbackAimDistance : 150f;
-        Vector3 rayPoint = centerRay.origin + (centerRay.direction * Mathf.Max(fallbackAimDistance, maxAimDistance));
+        Vector3 rayOrigin = cam.transform.position;
+        Vector3 rayPoint = rayOrigin + (aimDirection * Mathf.Max(fallbackAimDistance, maxAimDistance));
 
-        if (Physics.Raycast(centerRay, out RaycastHit hit, maxAimDistance, convergeBeam.aimCollisionMask, QueryTriggerInteraction.Ignore))
+        if (Physics.Raycast(rayOrigin, aimDirection, out RaycastHit hit, maxAimDistance, convergeBeam.aimCollisionMask, QueryTriggerInteraction.Ignore))
         {
             rayPoint = hit.point;
         }

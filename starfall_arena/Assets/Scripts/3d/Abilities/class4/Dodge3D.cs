@@ -13,7 +13,8 @@ public class Dodge3D : Ability3D
         public float dodgeDistance;
         public float slideDuration;
         public float primeWindow;
-        public float lookDeadzone;
+        [Tooltip("Minimum left-stick magnitude required during the prime window before Dodge commits to a direction.")]
+        public float directionInputDeadzone;
 
         [Header("Empowerment")]
         public Empower3D empowerAbility;
@@ -32,7 +33,7 @@ public class Dodge3D : Ability3D
         dodgeDistance = 8f,
         slideDuration = 0.2f,
         primeWindow = 1.5f,
-        lookDeadzone = 0.35f,
+        directionInputDeadzone = 0.35f,
         empoweredCooldown = 1f
     };
 
@@ -75,16 +76,16 @@ public class Dodge3D : Ability3D
             return;
         }
 
-        Vector2 lookInput = _player != null && _player.PlayerInput3D != null
-            ? _player.PlayerInput3D.LookInput
+        Vector2 directionalInput = _player != null && _player.PlayerInput3D != null
+            ? _player.PlayerInput3D.MoveInput
             : Vector2.zero;
 
-        if (lookInput.magnitude <= Mathf.Clamp01(dodge.lookDeadzone))
+        if (directionalInput.magnitude <= Mathf.Clamp01(dodge.directionInputDeadzone))
         {
             return;
         }
 
-        ExecuteDodge(ResolveCardinalDirection(lookInput));
+        ExecuteDodge(ResolveCardinalDirection(directionalInput));
     }
 
     public override bool TryUseAbility(InputValue value)
@@ -130,6 +131,16 @@ public class Dodge3D : Ability3D
         return IsEmpoweredActive() ? dodge.empoweredCooldown : dodge.cooldown;
     }
 
+    public void ApplyProfile(Class4PlayerBalanceProfile3D.DodgeStats stats)
+    {
+        dodge.cooldown = Mathf.Max(0f, stats.cooldown);
+        dodge.dodgeDistance = Mathf.Max(0f, stats.dodgeDistance);
+        dodge.slideDuration = Mathf.Max(0.01f, stats.slideDuration);
+        dodge.primeWindow = Mathf.Max(0f, stats.primeWindow);
+        dodge.directionInputDeadzone = Mathf.Clamp01(stats.directionInputDeadzone);
+        dodge.empoweredCooldown = Mathf.Max(0f, stats.empoweredCooldown);
+    }
+
     public void ApplyNetworkDodge(Vector3 worldDirection, bool authoritative)
     {
         if (worldDirection.sqrMagnitude <= 0.0001f)
@@ -142,7 +153,17 @@ public class Dodge3D : Ability3D
 
     public bool CanAcceptNetworkDodgeRequest()
     {
-        return !isLocked && !isDisabledByOtherAbility && !IsOnCooldown();
+        return CanAcceptNetworkDodgeState() && !IsOnCooldown();
+    }
+
+    public bool CanAcceptNetworkDodgeState()
+    {
+        return !isLocked && !isDisabledByOtherAbility;
+    }
+
+    public float GetNetworkDodgeCooldownDuration()
+    {
+        return GetCooldownDuration();
     }
 
     public bool TryResolveNetworkDodge(
@@ -172,6 +193,7 @@ public class Dodge3D : Ability3D
     public void MarkNetworkDodgeAccepted()
     {
         MarkAbilityUsed();
+        _player?.BeginDodgeInvulnerability(Mathf.Max(0.01f, dodge.slideDuration));
     }
 
     public void PlayNetworkDodgePresentation(Vector3 worldDirection)
@@ -181,7 +203,7 @@ public class Dodge3D : Ability3D
             return;
         }
 
-        StartDodgePresentation();
+        StartDodgePresentation(worldDirection);
     }
 
     public override void Die()
@@ -203,10 +225,10 @@ public class Dodge3D : Ability3D
         NetMovement3D movement = GetComponent<NetMovement3D>();
         if (CanUseNetworkDodgeMovement(movement))
         {
-            if (movement.QueuePredictedDodge(worldDirection))
+            if (movement.QueuePredictedDodge(worldDirection, NetDodgeKind3D.Class4Ability))
             {
                 MarkAbilityUsed();
-                StartDodgePresentation();
+                StartDodgePresentation(worldDirection);
             }
             return;
         }
@@ -217,7 +239,7 @@ public class Dodge3D : Ability3D
 
     private void StartDodge(Vector3 worldDirection, bool authoritative)
     {
-        StartDodgePresentation();
+        StartDodgePresentation(worldDirection);
 
         if (!authoritative)
         {
@@ -236,23 +258,26 @@ public class Dodge3D : Ability3D
         StartLocalDodgeFallback(normalizedDirection, dodgeDistance, slideDuration);
     }
 
-    private void StartDodgePresentation()
+    private void StartDodgePresentation(Vector3 worldDirection)
     {
         dodge.dodgeSound?.PlayAtPoint(transform.position);
         _isDodging = true;
         _dodgeEndTime = Time.time + Mathf.Max(0.01f, dodge.slideDuration);
+        _player?.BeginDodgeInvulnerability(Mathf.Max(0.01f, dodge.slideDuration));
+        _player?.BeginDodgeCameraLag(Mathf.Max(0.01f, dodge.slideDuration));
+        _player?.BeginDodgeBarrelRoll(worldDirection, Mathf.Max(0.01f, dodge.slideDuration));
     }
 
-    private Vector3 ResolveCardinalDirection(Vector2 lookInput)
+    private Vector3 ResolveCardinalDirection(Vector2 directionalInput)
     {
         Vector3 direction;
-        if (Mathf.Abs(lookInput.x) >= Mathf.Abs(lookInput.y))
+        if (Mathf.Abs(directionalInput.x) >= Mathf.Abs(directionalInput.y))
         {
-            direction = lookInput.x >= 0f ? transform.right : -transform.right;
+            direction = directionalInput.x >= 0f ? transform.right : -transform.right;
         }
         else
         {
-            direction = lookInput.y >= 0f ? transform.forward : -transform.forward;
+            direction = directionalInput.y >= 0f ? transform.forward : -transform.forward;
         }
 
         if (entity != null && entity.Flight != null && entity.Flight.LockToWorldYPlane)
@@ -298,21 +323,30 @@ public class Dodge3D : Ability3D
         }
 
         float collisionRadius = ResolveCollisionRadius();
-        Vector3 previousOffset = Vector3.zero;
+        Vector3 startPosition = rb.position;
+        Vector3 targetPosition = ClampDodgePosition(startPosition + (worldDirection.normalized * dodgeDistance), collisionRadius);
+        Vector3 previousPosition = startPosition;
         float elapsed = 0f;
 
         while (elapsed < slideDuration)
         {
             elapsed += Time.fixedDeltaTime;
             float t = Mathf.Clamp01(elapsed / slideDuration);
-            float eased = 1f - ((1f - t) * (1f - t));
-            Vector3 currentOffset = worldDirection * (dodgeDistance * eased);
-            Vector3 targetPosition = rb.position + (currentOffset - previousOffset);
-            rb.MovePosition(ClampDodgePosition(targetPosition, collisionRadius));
-            previousOffset = currentOffset;
+            float eased = MovementSimulation3D.EaseOutCubic(t);
+            Vector3 flightDelta = rb.position - previousPosition;
+            startPosition += flightDelta;
+            targetPosition += flightDelta;
+
+            Vector3 currentPosition = Vector3.Lerp(startPosition, targetPosition, eased);
+            currentPosition = ClampDodgePosition(currentPosition, collisionRadius);
+            rb.MovePosition(currentPosition);
+            previousPosition = currentPosition;
             yield return new WaitForFixedUpdate();
         }
 
+        Vector3 finalPosition = ClampDodgePosition(targetPosition, collisionRadius);
+        rb.position = finalPosition;
+        transform.position = finalPosition;
         _localDodgeCoroutine = null;
     }
 

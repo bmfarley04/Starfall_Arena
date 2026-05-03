@@ -30,6 +30,27 @@ public class ProjectileWeapon3D : Weapon3D
         weaponConfig = config;
     }
 
+    public void ApplyProfile(PlayerBalanceProfile3D.ProjectileWeaponStats stats)
+    {
+        weaponConfig.cooldown = Mathf.Max(0f, stats.cooldown);
+        weaponConfig.speed = Mathf.Max(0f, stats.speed);
+        weaponConfig.damage = Mathf.Max(0f, stats.damage);
+        weaponConfig.lifetime = Mathf.Max(0f, stats.lifetime);
+        weaponConfig.energyCost = Mathf.Max(0f, stats.energyCost);
+    }
+
+    public PlayerBalanceProfile3D.ProjectileWeaponStats CaptureProfileStats()
+    {
+        return new PlayerBalanceProfile3D.ProjectileWeaponStats
+        {
+            cooldown = weaponConfig.cooldown,
+            speed = weaponConfig.speed,
+            damage = weaponConfig.damage,
+            lifetime = weaponConfig.lifetime,
+            energyCost = weaponConfig.energyCost
+        };
+    }
+
     public bool TryFire()
     {
         if (Time.time < _nextFireTime)

@@ -1,0 +1,71 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0cc749ae781c734409572e6a1eb0f442, type: 3}
+  m_Name: SiegeCarrierBossBalanceProfile3D
+  m_EditorClassIdentifier: Assembly-CSharp::SiegeCarrierBossBalanceProfile3D
+  core:
+    maxHealth: 2000
+    maxShield: 5000
+    moveSpeed: 20
+    rotationDegreesPerSecond: 20
+    detectionRange: 2500
+  projectileWeapons: []
+  beamWeapons: []
+  brain:
+    thinkInterval: 0.05
+    targetHistorySampleInterval: 0.05
+    targetHistorySamples: 16
+    preferredRangeMin: 180
+    preferredRangeMax: 260
+    engagementRange: 260
+    approachRangeBuffer: 180
+    approachSpeedScale: 0.25
+    retreatSpeedScale: 0.18
+    preferredBandDriftSpeedScale: 0.12
+    targetVerticalFollowWeight: 0.1
+    planeReturnWeight: 0.35
+    minimumPatternCooldown: 1.6
+    phaseTwoHealthPercent: 0.66
+    rakeShotCount: 14
+    rakeShotInterval: 0.12
+    rakeHistorySeconds: 0
+    rakeHistoryBlend: 0
+    rakeUseLeadAim: 1
+    rakeLeadProjectileSpeed: 0
+    rakeLeadTimeScale: 1
+    rakeAdditionalLeadSeconds: 0.03
+    rakeMaxLeadSeconds: 1.25
+    beamFenceActiveDuration: 1.2
+    beamFenceMaxBeams: 4
+    beamFenceAimRefreshInterval: 0.03
+    beamConvergenceLagSeconds: 0
+    beamConvergenceLagBlend: 0
+    beamConvergenceAimSmoothTime: 0.025
+    lightningSlowBeamActiveDuration: 1.35
+    lightningSlowBeamAimRefreshInterval: 0.02
+    lightningSlowBeamCount: 2
+    lightningSlowBeamLeadSeconds: 0.12
+    lightningSlowBeamAimSmoothTime: 0.025
+    lightningSlowBeamSlowRadius: 1.25
+    lightningSlowBeamSlowMultiplier: 0.45
+    lightningSlowBeamSlowDuration: 0.18
+    lightningSlowBeamSlowTickInterval: 0.08
+    orbitalPillarCount: 6
+    orbitalPillarRingRadius: 115
+    orbitalPillarGapDegrees: 70
+    orbitalPillarSphereTravelDuration: 3
+    orbitalPillarExpandDuration: 0.3
+    orbitalPillarOrbitDegreesPerSecond: 12
+    orbitalPillarDamageRadius: 16
+    orbitalPillarDamageHalfHeight: 3000
+    orbitalPillarDamagePerSecond: 35
+    orbitalPillarDamageTickInterval: 0.1

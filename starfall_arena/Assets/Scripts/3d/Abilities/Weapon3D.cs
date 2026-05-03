@@ -39,6 +39,7 @@ public abstract class Weapon3D : MonoBehaviour, IReticleSpinSource3D
     [Header("Aiming")]
     [SerializeField] private ProjectileAimMode3D aimMode = ProjectileAimMode3D.ScreenCenter;
     [SerializeField] private Camera aimCamera;
+    [SerializeField] private AimAssist3D aimAssist;
     [SerializeField] private LayerMask aimCollisionMask = ~0;
     [SerializeField] private float maxAimDistance = 1000f;
     [SerializeField] private float screenCenterConvergenceDistance = 150f;
@@ -72,6 +73,7 @@ public abstract class Weapon3D : MonoBehaviour, IReticleSpinSource3D
     public ShipFlight3D ShipFlight => shipFlight;
     public Color ReticleFillColor => reticleFillColor;
     public Camera AimCamera => aimCamera;
+    protected AimAssist3D AimAssist => aimAssist;
     public bool IsFireHeld => _isFireHeld;
     public float CurrentResourceUsage => _currentResourceUsage;
     public float ResourceCapacity => Mathf.Max(0f, GetConfiguredResourceCapacity());
@@ -81,12 +83,14 @@ public abstract class Weapon3D : MonoBehaviour, IReticleSpinSource3D
     public float CooldownReadyRatio => GetCooldownReadyRatio();
     public bool UsesResourceAvailability => availabilityMode == AvailabilityMode3D.ResourceConsumption;
     public bool UsesCooldownAvailability => availabilityMode == AvailabilityMode3D.Cooldown;
+    protected virtual bool SupportsMuzzleEffects => true;
 
     protected virtual void Awake()
     {
         owner ??= GetComponent<Entity3D>();
         shipFlight ??= GetComponent<ShipFlight3D>();
         _netCombat ??= GetComponent<NetCombat3D>();
+        aimAssist ??= GetComponent<AimAssist3D>();
         aimCamera ??= Camera.main;
 
         foreach (GameObject projectilePrefab in GetPrewarmProjectilePrefabs())
@@ -97,7 +101,7 @@ public abstract class Weapon3D : MonoBehaviour, IReticleSpinSource3D
             }
         }
 
-        if (muzzleEffectPrefab != null)
+        if (SupportsMuzzleEffects && muzzleEffectPrefab != null)
         {
             GameObjectPool3D.Prewarm(muzzleEffectPrefab, muzzleEffectPrewarmCount);
         }
@@ -225,6 +229,19 @@ public abstract class Weapon3D : MonoBehaviour, IReticleSpinSource3D
     public void SetAimCamera(Camera camera)
     {
         aimCamera = camera;
+        aimAssist?.SetAimCamera(camera);
+    }
+
+    protected virtual Vector3 ResolveOwnerAimDirection()
+    {
+        Ray aimRay = GetAimRay();
+        Vector3 direction = aimRay.direction.sqrMagnitude > 0.0001f ? aimRay.direction.normalized : transform.forward;
+        if (aimAssist != null)
+        {
+            aimAssist.TryGetAssistedAimDirection(aimRay.origin, direction, out direction);
+        }
+
+        return direction.sqrMagnitude > 0.0001f ? direction.normalized : transform.forward;
     }
 
     protected void SetAvailabilityMode(AvailabilityMode3D mode)
@@ -424,7 +441,7 @@ public abstract class Weapon3D : MonoBehaviour, IReticleSpinSource3D
 
     protected ProjectileFireRequest3D BuildDefaultFireRequest(ProjectileWeaponConfig3D weaponConfig)
     {
-        return new ProjectileFireRequest3D
+        ProjectileFireRequest3D request = new ProjectileFireRequest3D
         {
             projectilePrefab = weaponConfig.projectilePrefab,
             muzzles = weaponConfig.muzzles,
@@ -441,6 +458,13 @@ public abstract class Weapon3D : MonoBehaviour, IReticleSpinSource3D
             projectileScaleMultiplier = 1f,
             accuracyAttackIdOverride = PlayerCombatStats3D.InvalidAttackId
         };
+
+        if (owner is Player3D player)
+        {
+            player.ConfigureInvasionRewardProjectileRequest(this, ref request);
+        }
+
+        return request;
     }
 
     protected bool FireProjectilePattern(ProjectileFireRequest3D request, ProjectileWeaponConfig3D fallbackConfig, SoundEffect fireSound = null)
@@ -499,6 +523,7 @@ public abstract class Weapon3D : MonoBehaviour, IReticleSpinSource3D
 
         fireSound?.PlayAtPoint(transform.position);
         RecordReticleSpinPulse();
+        owner?.RecordCombatActivity();
         return true;
     }
 
@@ -544,6 +569,7 @@ public abstract class Weapon3D : MonoBehaviour, IReticleSpinSource3D
                 RecoilForce = request.recoilForce,
                 ApplyRecoil = request.recoilForce > 0f,
                 CanPierce = request.canPierce,
+                MaxPierceCount = request.maxPierceCount,
                 PierceMultiplier = request.pierceMultiplier,
                 AppliesSlow = request.appliesSlow,
                 SlowMultiplier = request.slowMultiplier,
@@ -572,7 +598,7 @@ public abstract class Weapon3D : MonoBehaviour, IReticleSpinSource3D
             return;
         }
 
-        if (playMuzzleEffect)
+        if (playMuzzleEffect && SupportsMuzzleEffects)
         {
             SpawnMuzzleEffect(fire.MuzzleEffectPosition, fire.MuzzleEffectRotation);
         }
@@ -599,6 +625,10 @@ public abstract class Weapon3D : MonoBehaviour, IReticleSpinSource3D
             fire.ImpactForce,
             owner,
             fire.AccuracyAttackId);
+        if (owner is Player3D player)
+        {
+            projectile.SetHitscanRadiusBonus(player.InvasionRewardProjectileHitRadiusBonus);
+        }
         ApplyProjectileScale(projectileObject.transform, fire.ProjectileScaleMultiplier);
         projectile.SetProjectileScaleMultiplier(fire.ProjectileScaleMultiplier);
 
@@ -609,10 +639,7 @@ public abstract class Weapon3D : MonoBehaviour, IReticleSpinSource3D
 
         if (fire.CanPierce)
         {
-            if (projectile is GigaBlastProjectile3D gigaBlastProjectile)
-            {
-                gigaBlastProjectile.EnablePiercing(fire.PierceMultiplier);
-            }
+            projectile.EnablePiercing(fire.MaxPierceCount, fire.PierceMultiplier);
         }
 
         if (fire.AppliesSlow)
@@ -693,15 +720,16 @@ public abstract class Weapon3D : MonoBehaviour, IReticleSpinSource3D
             owner,
             accuracyAttackId
         );
+        if (owner is Player3D player)
+        {
+            projectile.SetHitscanRadiusBonus(player.InvasionRewardProjectileHitRadiusBonus);
+        }
         ApplyProjectileScale(projectileObject.transform, request.projectileScaleMultiplier);
         projectile.SetProjectileScaleMultiplier(request.projectileScaleMultiplier);
 
         if (request.canPierce)
         {
-            if (projectile is GigaBlastProjectile3D gigaBlastProjectile)
-            {
-                gigaBlastProjectile.EnablePiercing(request.pierceMultiplier);
-            }
+            projectile.EnablePiercing(request.maxPierceCount, request.pierceMultiplier);
         }
 
         if (request.appliesSlow)
@@ -747,28 +775,40 @@ public abstract class Weapon3D : MonoBehaviour, IReticleSpinSource3D
     {
         if (aimMode != ProjectileAimMode3D.ScreenCenter || aimCamera == null)
         {
+            Vector3 fallbackDirection = transform.forward.sqrMagnitude > 0.0001f ? transform.forward.normalized : Vector3.forward;
+            if (aimAssist != null)
+            {
+                aimAssist.TryGetAssistedAimDirection(transform.position, fallbackDirection, out fallbackDirection);
+            }
+
             return new AimSolution
             {
-                point = transform.position + (transform.forward * maxAimDistance),
-                direction = transform.forward
+                point = transform.position + (fallbackDirection * maxAimDistance),
+                direction = fallbackDirection
             };
         }
 
         Ray centerRay = aimCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
-        if (Physics.Raycast(centerRay, out RaycastHit hit, maxAimDistance, aimCollisionMask, QueryTriggerInteraction.Ignore))
+        Vector3 assistedDirection = centerRay.direction.sqrMagnitude > 0.0001f ? centerRay.direction.normalized : transform.forward;
+        if (aimAssist != null)
+        {
+            aimAssist.TryGetAssistedAimDirection(centerRay.origin, assistedDirection, out assistedDirection);
+        }
+
+        if (Physics.Raycast(centerRay.origin, assistedDirection, out RaycastHit hit, maxAimDistance, aimCollisionMask, QueryTriggerInteraction.Ignore))
         {
             float convergenceDistance = Mathf.Max(screenCenterConvergenceDistance, hit.distance);
             return new AimSolution
             {
-                point = centerRay.origin + (centerRay.direction * convergenceDistance),
-                direction = centerRay.direction
+                point = centerRay.origin + (assistedDirection * convergenceDistance),
+                direction = assistedDirection
             };
         }
 
         return new AimSolution
         {
-            point = centerRay.origin + (centerRay.direction * Mathf.Max(screenCenterConvergenceDistance, maxAimDistance)),
-            direction = centerRay.direction
+            point = centerRay.origin + (assistedDirection * Mathf.Max(screenCenterConvergenceDistance, maxAimDistance)),
+            direction = assistedDirection
         };
     }
 
@@ -796,7 +836,7 @@ public abstract class Weapon3D : MonoBehaviour, IReticleSpinSource3D
 
     private void SpawnMuzzleEffect(Transform muzzle)
     {
-        if (muzzleEffectPrefab == null)
+        if (!SupportsMuzzleEffects || muzzleEffectPrefab == null)
         {
             return;
         }
@@ -813,7 +853,7 @@ public abstract class Weapon3D : MonoBehaviour, IReticleSpinSource3D
 
     private void SpawnMuzzleEffect(Vector3 position, Quaternion rotation)
     {
-        if (muzzleEffectPrefab == null)
+        if (!SupportsMuzzleEffects || muzzleEffectPrefab == null)
         {
             return;
         }

@@ -104,22 +104,6 @@ public class PerformanceStatsHUD3D : MonoBehaviour
 
     private void RefreshCanvasCameraBinding()
     {
-        if (targetCanvas == null)
-        {
-            return;
-        }
-
-        if (targetCanvas.renderMode == RenderMode.ScreenSpaceOverlay)
-        {
-            return;
-        }
-
-        Camera mainCamera = Camera.main;
-        if (mainCamera == null || ReferenceEquals(targetCanvas.worldCamera, mainCamera))
-        {
-            return;
-        }
-
-        targetCanvas.worldCamera = mainCamera;
+        HUDCanvasCameraResolver3D.BindCanvasToBestCamera(targetCanvas);
     }
 }

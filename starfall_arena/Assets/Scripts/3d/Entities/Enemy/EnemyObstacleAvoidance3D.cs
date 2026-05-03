@@ -1,54 +1,181 @@
 using UnityEngine;
+using UnityEngine.Serialization;
 
 [DisallowMultipleComponent]
 public class EnemyObstacleAvoidance3D : MonoBehaviour
 {
+    private const float MinDirectionSqrMagnitude = 0.0001f;
+    private const float MinProbeRadius = 0.01f;
     private static readonly RaycastHit[] HitBuffer = new RaycastHit[12];
 
     [Header("Obstacle Avoidance")]
-    [SerializeField] private LayerMask obstacleMask;
-    [SerializeField] private float lookAheadDistance = 45f;
+    [Tooltip("Physics layers treated as avoidable world geometry. Do not include players, enemies, or projectiles.")]
+    [FormerlySerializedAs("obstacleMask")]
+    [SerializeField] private LayerMask obstacleLayers;
+
+    [Tooltip("Body clearance radius used for obstacle spherecasts. Start near the enemy ship's collision width.")]
+    [FormerlySerializedAs("probeRadius")]
     [SerializeField] private float probeRadius = 3f;
-    [SerializeField] private float avoidanceStrength = 1.5f;
-    [Range(0f, 75f)]
-    [SerializeField] private float whiskerAngle = 28f;
+
+    [Tooltip("Distance in meters checked along the desired movement direction before avoidance turns on.")]
+    [FormerlySerializedAs("lookAheadDistance")]
+    [SerializeField] private float forwardLookAheadDistance = 45f;
+
+    [Tooltip("Distance in meters checked along each right/left/up/down escape candidate when forward movement is blocked.")]
+    [SerializeField] private float escapeCheckDistance = 30f;
+
+    [Tooltip("How strongly the chosen escape direction bends the original desired movement direction.")]
+    [FormerlySerializedAs("avoidanceStrength")]
+    [SerializeField] private float avoidanceStrength = 1.25f;
+
+    [Tooltip("Seconds to keep using the chosen escape side after a forward hit so centered obstacles do not cause left/right jitter.")]
+    [SerializeField] private float escapeDirectionHoldTime = 0.35f;
+
+    [Header("Arc Smoothing")]
+    [Tooltip("Seconds used to ease into the chosen obstacle-avoidance direction. Lower values react faster; higher values make wider, smoother arcs.")]
+    [SerializeField] private float avoidanceTurnSmoothTime = 0.18f;
+
+    [Tooltip("Seconds used to ease back toward the original desired direction after the forward probe is clear.")]
+    [SerializeField] private float avoidanceReleaseSmoothTime = 0.3f;
+
+    [Tooltip("Minimum escape-side influence while blocked. Useful when Avoidance Strength is tuned low but the enemy should still visibly arc around large obstacles.")]
+    [SerializeField] private float minimumArcStrength = 0.35f;
+
+    private Vector3 _heldEscapeDirection;
+    private Vector3 _smoothedSteeringDirection;
+    private float _heldEscapeUntilTime;
+    private float _lastSmoothingTime = -1f;
+    private bool _hasSmoothedSteeringDirection;
 
     public Vector3 ResolveSteeringDirection(Vector3 desiredDirection)
     {
-        if (desiredDirection.sqrMagnitude <= 0.0001f || obstacleMask.value == 0)
+        Vector3 desired = desiredDirection.sqrMagnitude > MinDirectionSqrMagnitude
+            ? desiredDirection.normalized
+            : transform.forward;
+
+        if (desired.sqrMagnitude <= MinDirectionSqrMagnitude || obstacleLayers.value == 0)
         {
-            return desiredDirection.sqrMagnitude > 0.0001f ? desiredDirection.normalized : transform.forward;
+            ResetRuntimeSteering();
+            return desired.sqrMagnitude > MinDirectionSqrMagnitude ? desired.normalized : Vector3.forward;
         }
 
-        Vector3 desired = desiredDirection.normalized;
-        Vector3 avoidance = Vector3.zero;
-        avoidance += Probe(desired, 1f);
-        avoidance += Probe(Quaternion.AngleAxis(whiskerAngle, transform.up) * desired, 0.65f);
-        avoidance += Probe(Quaternion.AngleAxis(-whiskerAngle, transform.up) * desired, 0.65f);
-        avoidance += Probe(Quaternion.AngleAxis(whiskerAngle, transform.right) * desired, 0.5f);
-        avoidance += Probe(Quaternion.AngleAxis(-whiskerAngle, transform.right) * desired, 0.5f);
-
-        if (avoidance.sqrMagnitude <= 0.0001f)
+        if (!IsBlocked(desired, forwardLookAheadDistance))
         {
-            return desired;
+            ClearHeldEscape();
+            return SmoothSteeringDirection(desired, avoidanceReleaseSmoothTime);
         }
 
-        Vector3 steered = desired + avoidance.normalized * Mathf.Max(0f, avoidanceStrength);
-        return steered.sqrMagnitude > 0.0001f ? steered.normalized : desired;
+        Vector3 escapeDirection = ResolveEscapeDirection(desired);
+        float effectiveStrength = Mathf.Max(avoidanceStrength, minimumArcStrength);
+        Vector3 steered = desired + escapeDirection * effectiveStrength;
+        Vector3 targetSteering = steered.sqrMagnitude > MinDirectionSqrMagnitude ? steered.normalized : desired;
+        return SmoothSteeringDirection(targetSteering, avoidanceTurnSmoothTime);
     }
 
-    private Vector3 Probe(Vector3 direction, float weight)
+    private void OnDisable()
     {
+        ResetRuntimeSteering();
+    }
+
+    private void OnValidate()
+    {
+        probeRadius = Mathf.Max(MinProbeRadius, probeRadius);
+        forwardLookAheadDistance = Mathf.Max(0f, forwardLookAheadDistance);
+        escapeCheckDistance = Mathf.Max(0f, escapeCheckDistance);
+        avoidanceStrength = Mathf.Max(0f, avoidanceStrength);
+        escapeDirectionHoldTime = Mathf.Max(0f, escapeDirectionHoldTime);
+        avoidanceTurnSmoothTime = Mathf.Max(0f, avoidanceTurnSmoothTime);
+        avoidanceReleaseSmoothTime = Mathf.Max(0f, avoidanceReleaseSmoothTime);
+        minimumArcStrength = Mathf.Max(0f, minimumArcStrength);
+    }
+
+    private Vector3 ResolveEscapeDirection(Vector3 desired)
+    {
+        if (HasHeldEscape())
+        {
+            return _heldEscapeDirection;
+        }
+
+        BuildEscapeBasis(desired, out Vector3 right, out Vector3 up);
+
+        Vector3 bestDirection = right;
+        float bestClearance = GetClearance(right, escapeCheckDistance);
+        TestEscapeCandidate(-right, ref bestDirection, ref bestClearance);
+        TestEscapeCandidate(up, ref bestDirection, ref bestClearance);
+        TestEscapeCandidate(-up, ref bestDirection, ref bestClearance);
+
+        HoldEscape(bestDirection);
+        return bestDirection;
+    }
+
+    private void TestEscapeCandidate(Vector3 candidate, ref Vector3 bestDirection, ref float bestClearance)
+    {
+        float clearance = GetClearance(candidate, escapeCheckDistance);
+        if (clearance > bestClearance)
+        {
+            bestDirection = candidate;
+            bestClearance = clearance;
+        }
+    }
+
+    private void BuildEscapeBasis(Vector3 desired, out Vector3 right, out Vector3 up)
+    {
+        Vector3 upReference = Mathf.Abs(Vector3.Dot(desired, Vector3.up)) < 0.95f
+            ? Vector3.up
+            : transform.up;
+
+        right = Vector3.Cross(upReference, desired);
+        if (right.sqrMagnitude <= MinDirectionSqrMagnitude)
+        {
+            right = transform.right.sqrMagnitude > MinDirectionSqrMagnitude ? transform.right : Vector3.right;
+        }
+
+        right.Normalize();
+
+        up = Vector3.Cross(desired, right);
+        if (up.sqrMagnitude <= MinDirectionSqrMagnitude)
+        {
+            up = transform.up.sqrMagnitude > MinDirectionSqrMagnitude ? transform.up : Vector3.up;
+        }
+
+        up.Normalize();
+    }
+
+    private bool IsBlocked(Vector3 direction, float distance)
+    {
+        return TryGetNearestHitDistance(direction, distance, out _);
+    }
+
+    private float GetClearance(Vector3 direction, float distance)
+    {
+        if (distance <= 0f)
+        {
+            return 0f;
+        }
+
+        return TryGetNearestHitDistance(direction, distance, out float nearestHitDistance)
+            ? nearestHitDistance
+            : distance;
+    }
+
+    private bool TryGetNearestHitDistance(Vector3 direction, float distance, out float nearestHitDistance)
+    {
+        nearestHitDistance = distance;
+        if (distance <= 0f || direction.sqrMagnitude <= MinDirectionSqrMagnitude)
+        {
+            return false;
+        }
+
         int hitCount = Physics.SphereCastNonAlloc(
             transform.position,
-            Mathf.Max(0.01f, probeRadius),
+            Mathf.Max(MinProbeRadius, probeRadius),
             direction.normalized,
             HitBuffer,
-            Mathf.Max(0.01f, lookAheadDistance),
-            obstacleMask,
+            distance,
+            obstacleLayers,
             QueryTriggerInteraction.Ignore);
 
-        Vector3 avoidance = Vector3.zero;
+        bool foundHit = false;
         for (int i = 0; i < hitCount; i++)
         {
             RaycastHit hit = HitBuffer[i];
@@ -58,23 +185,109 @@ public class EnemyObstacleAvoidance3D : MonoBehaviour
                 continue;
             }
 
-            float distanceRatio = lookAheadDistance > 0f ? 1f - Mathf.Clamp01(hit.distance / lookAheadDistance) : 1f;
-            Vector3 awayFromHit = transform.position - hit.point;
-            if (awayFromHit.sqrMagnitude <= 0.0001f)
-            {
-                awayFromHit = hit.normal;
-            }
-
-            avoidance += (hit.normal + awayFromHit.normalized) * distanceRatio * weight;
+            nearestHitDistance = Mathf.Min(nearestHitDistance, hit.distance);
+            foundHit = true;
         }
 
-        return avoidance;
+        return foundHit;
+    }
+
+    private bool HasHeldEscape()
+    {
+        return _heldEscapeDirection.sqrMagnitude > MinDirectionSqrMagnitude
+            && Time.time < _heldEscapeUntilTime;
+    }
+
+    private void HoldEscape(Vector3 escapeDirection)
+    {
+        _heldEscapeDirection = escapeDirection.sqrMagnitude > MinDirectionSqrMagnitude
+            ? escapeDirection.normalized
+            : Vector3.zero;
+        _heldEscapeUntilTime = Time.time + escapeDirectionHoldTime;
+    }
+
+    private void ClearHeldEscape()
+    {
+        _heldEscapeDirection = Vector3.zero;
+        _heldEscapeUntilTime = 0f;
+    }
+
+    private Vector3 SmoothSteeringDirection(Vector3 targetDirection, float smoothTime)
+    {
+        Vector3 target = targetDirection.sqrMagnitude > MinDirectionSqrMagnitude
+            ? targetDirection.normalized
+            : transform.forward;
+
+        if (target.sqrMagnitude <= MinDirectionSqrMagnitude)
+        {
+            ResetRuntimeSteering();
+            return Vector3.forward;
+        }
+
+        float now = Time.time;
+        float deltaTime = _lastSmoothingTime >= 0f ? Mathf.Max(0f, now - _lastSmoothingTime) : 0f;
+        _lastSmoothingTime = now;
+
+        if (!_hasSmoothedSteeringDirection || smoothTime <= 0f)
+        {
+            _smoothedSteeringDirection = target;
+            _hasSmoothedSteeringDirection = true;
+            return target;
+        }
+
+        if (deltaTime <= 0f)
+        {
+            return _smoothedSteeringDirection;
+        }
+
+        float blend = 1f - Mathf.Exp(-deltaTime / Mathf.Max(0.0001f, smoothTime));
+        Vector3 smoothed = Vector3.Slerp(_smoothedSteeringDirection, target, blend);
+        _smoothedSteeringDirection = smoothed.sqrMagnitude > MinDirectionSqrMagnitude
+            ? smoothed.normalized
+            : target;
+        return _smoothedSteeringDirection;
+    }
+
+    private void ResetRuntimeSteering()
+    {
+        ClearHeldEscape();
+        _smoothedSteeringDirection = Vector3.zero;
+        _lastSmoothingTime = -1f;
+        _hasSmoothedSteeringDirection = false;
     }
 
     private void OnDrawGizmosSelected()
     {
+        Vector3 desired = transform.forward.sqrMagnitude > MinDirectionSqrMagnitude
+            ? transform.forward.normalized
+            : Vector3.forward;
+
         Gizmos.color = Color.yellow;
-        Gizmos.DrawRay(transform.position, transform.forward * lookAheadDistance);
-        Gizmos.DrawWireSphere(transform.position + transform.forward * lookAheadDistance, probeRadius);
+        DrawProbeGizmo(desired, forwardLookAheadDistance);
+
+        BuildEscapeBasis(desired, out Vector3 right, out Vector3 up);
+        Gizmos.color = new Color(0.25f, 0.8f, 1f, 1f);
+        DrawProbeGizmo(right, escapeCheckDistance);
+        DrawProbeGizmo(-right, escapeCheckDistance);
+        DrawProbeGizmo(up, escapeCheckDistance);
+        DrawProbeGizmo(-up, escapeCheckDistance);
+
+        if (_hasSmoothedSteeringDirection && _smoothedSteeringDirection.sqrMagnitude > MinDirectionSqrMagnitude)
+        {
+            Gizmos.color = new Color(1f, 0.35f, 0.9f, 1f);
+            Gizmos.DrawRay(transform.position, _smoothedSteeringDirection.normalized * Mathf.Max(1f, probeRadius * 4f));
+        }
+    }
+
+    private void DrawProbeGizmo(Vector3 direction, float distance)
+    {
+        if (distance <= 0f || direction.sqrMagnitude <= MinDirectionSqrMagnitude)
+        {
+            return;
+        }
+
+        Vector3 normalizedDirection = direction.normalized;
+        Gizmos.DrawRay(transform.position, normalizedDirection * distance);
+        Gizmos.DrawWireSphere(transform.position + normalizedDirection * distance, Mathf.Max(MinProbeRadius, probeRadius));
     }
 }

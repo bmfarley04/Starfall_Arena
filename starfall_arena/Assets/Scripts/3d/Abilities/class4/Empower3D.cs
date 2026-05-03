@@ -69,6 +69,12 @@ public class Empower3D : Ability3D
         return empower.duration;
     }
 
+    public void ApplyProfile(Class4PlayerBalanceProfile3D.Class4Stats stats)
+    {
+        empower.cooldown = Mathf.Max(0f, stats.empowerCooldown);
+        empower.duration = Mathf.Max(0f, stats.empowerDuration);
+    }
+
     public override bool TryUseAbility(InputValue value)
     {
         if (!value.isPressed || isLocked || isDisabledByOtherAbility || IsOnCooldown())

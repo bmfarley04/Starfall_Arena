@@ -10,6 +10,21 @@ public class MissileProjectile3D : Projectile3D
     }
 
     [System.Serializable]
+    public struct AreaDamageConfig3D
+    {
+        [Tooltip("If enabled, missile impacts damage every valid target inside explosionRadius instead of only the directly hit target.")]
+        public bool enabled;
+        [Tooltip("World-space radius around the missile impact point that receives missile splash damage.")]
+        public float explosionRadius;
+        [Tooltip("Damage dealt to each valid target inside the missile explosion. If this is 0 or less, the missile's base projectile damage is used.")]
+        public float explosionDamage;
+        [Tooltip("Radial velocity impulse applied to each valid target inside the missile explosion. If this is 0 or less, the missile's base impact force is used.")]
+        public float explosionImpactForce;
+        [Tooltip("Physics layers included in the missile explosion overlap query.")]
+        public LayerMask collisionMask;
+    }
+
+    [System.Serializable]
     public struct GuidanceConfig3D
     {
         [Tooltip("Choose whether this missile flies straight or steers toward a target.")]
@@ -85,19 +100,45 @@ public class MissileProjectile3D : Projectile3D
         explosionScale = 1f
     };
 
+    [Header("Area Damage")]
+    [SerializeField] private AreaDamageConfig3D areaDamage = new AreaDamageConfig3D
+    {
+        enabled = true,
+        explosionRadius = 6f,
+        explosionDamage = 20f,
+        explosionImpactForce = 8f,
+        collisionMask = ~0
+    };
+
     private Transform _target;
     private Vector3 _inheritedVelocity;
     private Vector3 _currentDirection;
+    private Vector3 _formationForward;
+    private Vector3 _formationRight;
+    private Vector3 _formationUp;
+    private Vector3 _formationRadialDirection;
     private float _cruiseSpeed;
     private float _spawnTime;
+    private float _formationFanArcDegrees;
+    private float _formationFanOutDuration;
+    private float _formationHoldDuration;
+    private float _formationConvergeDuration;
+    private float _formationConvergenceRadius;
+    private float _formationMaxSpeedMultiplier;
+    private int _formationSlotIndex;
+    private int _formationSlotCount;
     private bool _isImpacted;
     private bool _impactVisualSpawned;
     private bool _endOfLifeTriggered;
+    private bool _usesFormationGuidance;
     private Renderer[] _visibleRenderers;
     private ParticleSystem[] _particles;
     private TrailRenderer[] _trails;
     private AudioSource _impactAudioSource;
     private PooledObject3D _pooledObject;
+    private Collider[] _areaDamageColliders;
+
+    private const int InitialAreaDamageColliderCapacity = 32;
 
     private bool UsesGuidance => guidance.mode == GuidanceMode3D.Guided;
 
@@ -106,15 +147,29 @@ public class MissileProjectile3D : Projectile3D
         _target = null;
         _inheritedVelocity = Vector3.zero;
         _currentDirection = transform.forward.sqrMagnitude > 0.0001f ? transform.forward.normalized : Vector3.forward;
+        _formationForward = _currentDirection;
+        _formationRight = transform.right.sqrMagnitude > 0.0001f ? transform.right.normalized : Vector3.right;
+        _formationUp = transform.up.sqrMagnitude > 0.0001f ? transform.up.normalized : Vector3.up;
+        _formationRadialDirection = _formationRight;
         _cruiseSpeed = 0f;
         _spawnTime = Time.time;
+        _formationSlotIndex = 0;
+        _formationSlotCount = 0;
+        _formationFanArcDegrees = 0f;
+        _formationFanOutDuration = 0f;
+        _formationHoldDuration = 0f;
+        _formationConvergeDuration = 0f;
+        _formationConvergenceRadius = 0f;
+        _formationMaxSpeedMultiplier = 1f;
         _isImpacted = false;
         _impactVisualSpawned = false;
         _endOfLifeTriggered = false;
+        _usesFormationGuidance = false;
 
         CacheVisualComponentsIfNeeded();
         ResetVisualState();
         EnsureImpactAudioSource();
+        EnsureAreaDamageBuffer();
     }
 
     private void OnDisable()
@@ -139,6 +194,51 @@ public class MissileProjectile3D : Projectile3D
         _spawnTime = Time.time;
         _target = UsesGuidance ? AcquireTarget() : null;
         UpdateMissileRotation();
+    }
+
+    public void ConfigureFormationGuidance(
+        int slotIndex,
+        int slotCount,
+        float fanArcDegrees,
+        float fanOutDuration,
+        float holdDuration,
+        float convergeDuration,
+        float convergenceRadius,
+        float maxSpeedMultiplier,
+        Vector3 formationForward,
+        Vector3 formationUp)
+    {
+        _formationSlotIndex = Mathf.Max(0, slotIndex);
+        _formationSlotCount = Mathf.Max(1, slotCount);
+        _formationFanArcDegrees = Mathf.Max(0f, fanArcDegrees);
+        _formationFanOutDuration = Mathf.Max(0f, fanOutDuration);
+        _formationHoldDuration = Mathf.Max(0f, holdDuration);
+        _formationConvergeDuration = Mathf.Max(0.01f, convergeDuration);
+        _formationConvergenceRadius = Mathf.Max(0f, convergenceRadius);
+        _formationMaxSpeedMultiplier = Mathf.Max(1f, maxSpeedMultiplier);
+        _formationForward = formationForward.sqrMagnitude > 0.0001f ? formationForward.normalized : _currentDirection;
+        _formationUp = formationUp.sqrMagnitude > 0.0001f ? formationUp.normalized : Vector3.up;
+        if (Mathf.Abs(Vector3.Dot(_formationForward, _formationUp)) > 0.98f)
+        {
+            _formationUp = Vector3.up;
+        }
+
+        _formationRight = Vector3.Cross(_formationUp, _formationForward);
+        if (_formationRight.sqrMagnitude <= 0.0001f)
+        {
+            _formationRight = transform.right.sqrMagnitude > 0.0001f ? transform.right.normalized : Vector3.right;
+        }
+        else
+        {
+            _formationRight.Normalize();
+        }
+
+        _formationRadialDirection = ResolveFormationRadialDirection();
+        _usesFormationGuidance = _formationSlotCount > 1;
+        if (_usesFormationGuidance && UsesGuidance && _target == null)
+        {
+            _target = AcquireTarget();
+        }
     }
 
     public void SetGuidanceEnabled(bool enabled)
@@ -180,6 +280,11 @@ public class MissileProjectile3D : Projectile3D
 
         UpdateGuidance();
         float speed = GetCurrentSpeed();
+        if (_usesFormationGuidance)
+        {
+            speed = ResolveFormationSpeed(speed);
+        }
+
         _direction = _currentDirection;
         _velocity = (_currentDirection * speed) + _inheritedVelocity;
         UpdateMissileRotation();
@@ -210,14 +315,14 @@ public class MissileProjectile3D : Projectile3D
         Entity3D damageable = ResolveHitEntity(other);
         if (damageable != null && IsMatchingTarget(damageable))
         {
-            ApplyDamageToEntity(damageable, hit.point, other);
-            if (CanApplyGameplay() && _appliesSlow)
+            if (areaDamage.enabled)
             {
-                damageable.ApplySlow(_slowMultiplier, _slowDuration);
-                if (_slowEngineEmissionScale < 1f)
-                {
-                    damageable.ThrusterVfx?.ApplyTemporaryEmissionRateScale(_slowEngineEmissionScale, _slowDuration);
-                }
+                ApplyAreaDamage(hit.point);
+            }
+            else
+            {
+                ApplyDamageToEntity(damageable, hit.point, other);
+                ApplySlowIfEnabled(damageable);
             }
         }
 
@@ -235,14 +340,14 @@ public class MissileProjectile3D : Projectile3D
         Entity3D damageable = ResolveHitEntity(other);
         if (damageable != null && IsMatchingTarget(damageable))
         {
-            ApplyDamageToEntity(damageable, hit.point, other);
-            if (CanApplyGameplay() && _appliesSlow)
+            if (areaDamage.enabled)
             {
-                damageable.ApplySlow(_slowMultiplier, _slowDuration);
-                if (_slowEngineEmissionScale < 1f)
-                {
-                    damageable.ThrusterVfx?.ApplyTemporaryEmissionRateScale(_slowEngineEmissionScale, _slowDuration);
-                }
+                ApplyAreaDamage(hit.point);
+            }
+            else
+            {
+                ApplyDamageToEntity(damageable, hit.point, other);
+                ApplySlowIfEnabled(damageable);
             }
         }
 
@@ -270,15 +375,96 @@ public class MissileProjectile3D : Projectile3D
             return;
         }
 
-        Vector3 toTarget = _target.position - transform.position;
-        if (toTarget.sqrMagnitude <= 0.0001f)
+        Vector3 desiredDirection = _usesFormationGuidance
+            ? ResolveFormationDesiredDirection()
+            : (_target.position - transform.position).normalized;
+        if (desiredDirection.sqrMagnitude <= 0.0001f)
         {
             return;
         }
 
-        Vector3 desiredDirection = toTarget.normalized;
         float turnStepRadians = Mathf.Max(0f, guidance.turnRateDegPerSecond) * Mathf.Deg2Rad * Time.deltaTime;
         _currentDirection = Vector3.RotateTowards(_currentDirection, desiredDirection, turnStepRadians, 0f).normalized;
+    }
+
+    private Vector3 ResolveFormationDesiredDirection()
+    {
+        float elapsed = Mathf.Max(0f, Time.time - _spawnTime - Mathf.Max(0f, guidance.guidanceStartDelay));
+        Vector3 fanDirection = ResolveFormationFanDirection();
+        float fanOutDuration = Mathf.Max(0.01f, _formationFanOutDuration);
+        if (elapsed < fanOutDuration)
+        {
+            float t = Mathf.Clamp01(elapsed / fanOutDuration);
+            return Vector3.Slerp(_formationForward, fanDirection, t).normalized;
+        }
+
+        if (elapsed < fanOutDuration + _formationHoldDuration)
+        {
+            return fanDirection;
+        }
+
+        if (_target == null)
+        {
+            return fanDirection;
+        }
+
+        float convergeElapsed = elapsed - fanOutDuration - _formationHoldDuration;
+        float convergeT = Mathf.Clamp01(convergeElapsed / Mathf.Max(0.01f, _formationConvergeDuration));
+        Vector3 aimPoint = ResolveFormationAimPoint(convergeT);
+        Vector3 toAimPoint = aimPoint - transform.position;
+        return toAimPoint.sqrMagnitude > 0.0001f ? toAimPoint.normalized : fanDirection;
+    }
+
+    private Vector3 ResolveFormationFanDirection()
+    {
+        float coneRadians = Mathf.Clamp(_formationFanArcDegrees, 0f, 179f) * Mathf.Deg2Rad;
+        Vector3 direction = (_formationForward * Mathf.Cos(coneRadians)) + (_formationRadialDirection * Mathf.Sin(coneRadians));
+        return direction.sqrMagnitude > 0.0001f ? direction.normalized : _formationForward;
+    }
+
+    private Vector3 ResolveFormationRadialDirection()
+    {
+        if (_formationSlotCount <= 1)
+        {
+            return _formationRight;
+        }
+
+        float angle = (_formationSlotIndex / (float)_formationSlotCount) * Mathf.PI * 2f;
+        Vector3 radial = (_formationRight * Mathf.Cos(angle)) + (_formationUp * Mathf.Sin(angle));
+        return radial.sqrMagnitude > 0.0001f ? radial.normalized : _formationRight;
+    }
+
+    private Vector3 ResolveFormationAimPoint(float convergeT)
+    {
+        if (_target == null)
+        {
+            return transform.position + _currentDirection;
+        }
+
+        float offset = _formationConvergenceRadius * (1f - Mathf.Clamp01(convergeT));
+        return _target.position + (_formationRadialDirection * offset);
+    }
+
+    private float ResolveFormationSpeed(float baseSpeed)
+    {
+        if (_target == null)
+        {
+            return baseSpeed;
+        }
+
+        float elapsed = Mathf.Max(0f, Time.time - _spawnTime - Mathf.Max(0f, guidance.guidanceStartDelay));
+        float convergeStart = Mathf.Max(0.01f, _formationFanOutDuration) + _formationHoldDuration;
+        if (elapsed < convergeStart)
+        {
+            return baseSpeed;
+        }
+
+        float remaining = Mathf.Max(0.02f, _formationConvergeDuration - (elapsed - convergeStart));
+        Vector3 finalTargetPoint = _target.position;
+        float distanceToFinalTarget = Vector3.Distance(transform.position, finalTargetPoint);
+        float synchronizedSpeed = distanceToFinalTarget / remaining;
+        float maxSpeed = Mathf.Max(baseSpeed, _cruiseSpeed * _formationMaxSpeedMultiplier);
+        return Mathf.Clamp(synchronizedSpeed, baseSpeed * 0.25f, maxSpeed);
     }
 
     private float GetCurrentSpeed()
@@ -333,6 +519,124 @@ public class MissileProjectile3D : Projectile3D
         }
 
         DespawnSelf();
+    }
+
+    private void ApplyAreaDamage(Vector3 explosionPosition)
+    {
+        if (!CanApplyGameplay())
+        {
+            return;
+        }
+
+        float radius = Mathf.Max(0f, areaDamage.explosionRadius);
+        if (radius <= 0f)
+        {
+            return;
+        }
+
+        float damage = areaDamage.explosionDamage > 0f ? areaDamage.explosionDamage : _damage;
+        float force = areaDamage.explosionImpactForce > 0f ? areaDamage.explosionImpactForce : _impactForce;
+        int hitCount = QueryAreaDamageColliders(explosionPosition, radius);
+
+        for (int i = 0; i < hitCount; i++)
+        {
+            Collider hitCollider = _areaDamageColliders[i];
+            if (hitCollider == null || !IsValidOverlapHit(hitCollider))
+            {
+                continue;
+            }
+
+            Entity3D damageable = ResolveHitEntity(hitCollider);
+            if (damageable == null || !IsMatchingTarget(damageable) || !TryRegisterEntityHit(damageable))
+            {
+                continue;
+            }
+
+            damageable.TakeDamage(damage, explosionPosition, _shooter, DamageSource3D.Projectile, _accuracyAttackId);
+            ApplyAreaImpactForce(hitCollider, explosionPosition, force);
+            ApplySlowIfEnabled(damageable);
+        }
+    }
+
+    private void ApplyAreaImpactForce(Collider hitCollider, Vector3 explosionPosition, float force)
+    {
+        if (!CanApplyGameplay() || force <= 0f || hitCollider == null)
+        {
+            return;
+        }
+
+        Rigidbody targetRb = hitCollider.attachedRigidbody;
+        if (targetRb == null)
+        {
+            return;
+        }
+
+        Vector3 forceDirection = targetRb.worldCenterOfMass - explosionPosition;
+        if (forceDirection.sqrMagnitude <= 0.0001f)
+        {
+            forceDirection = _currentDirection.sqrMagnitude > 0.0001f ? _currentDirection.normalized : transform.forward;
+        }
+        else
+        {
+            forceDirection.Normalize();
+        }
+
+        Vector3 velocityDelta = forceDirection * force;
+        NetMovement3D netMovement = targetRb.GetComponent<NetMovement3D>();
+        if (netMovement != null)
+        {
+            netMovement.ApplyCombatVelocityDelta(velocityDelta);
+        }
+        else if (!targetRb.isKinematic)
+        {
+            targetRb.linearVelocity += velocityDelta;
+        }
+    }
+
+    private void ApplySlowIfEnabled(Entity3D damageable)
+    {
+        if (!CanApplyGameplay() || !_appliesSlow || damageable == null)
+        {
+            return;
+        }
+
+        damageable.ApplySlow(_slowMultiplier, _slowDuration);
+        if (_slowEngineEmissionScale < 1f)
+        {
+            damageable.ThrusterVfx?.ApplyTemporaryEmissionRateScale(_slowEngineEmissionScale, _slowDuration);
+        }
+    }
+
+    private void EnsureAreaDamageBuffer()
+    {
+        if (_areaDamageColliders == null || _areaDamageColliders.Length < InitialAreaDamageColliderCapacity)
+        {
+            _areaDamageColliders = new Collider[InitialAreaDamageColliderCapacity];
+        }
+    }
+
+    private int QueryAreaDamageColliders(Vector3 explosionPosition, float radius)
+    {
+        EnsureAreaDamageBuffer();
+
+        int hitCount;
+        do
+        {
+            hitCount = Physics.OverlapSphereNonAlloc(
+                explosionPosition,
+                radius,
+                _areaDamageColliders,
+                areaDamage.collisionMask,
+                QueryTriggerInteraction.Collide);
+
+            if (hitCount < _areaDamageColliders.Length)
+            {
+                return hitCount;
+            }
+
+            _areaDamageColliders = new Collider[_areaDamageColliders.Length * 2];
+        }
+        while (true);
     }
 
     private void SpawnExplosion(Vector3 hitPoint, Vector3 hitNormal)
@@ -630,5 +934,16 @@ public class MissileProjectile3D : Projectile3D
     private static bool IsSpecificPlayerTargetTag(string value)
     {
         return value == "Player1" || value == "Player2";
+    }
+
+    private void OnDrawGizmosSelected()
+    {
+        if (!areaDamage.enabled)
+        {
+            return;
+        }
+
+        Gizmos.color = Color.red;
+        Gizmos.DrawWireSphere(transform.position, Mathf.Max(0f, areaDamage.explosionRadius));
     }
 }

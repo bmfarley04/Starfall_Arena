@@ -619,6 +619,12 @@ MonoBehaviour:
   minY: -500
   maxY: 500
   wallThickness: 3
+  drawBoundaryGizmos: 1
+  drawBoundaryGizmosOnlyWhenSelected: 1
+  drawBoundaryLabels: 1
+  startBoundsGizmoColor: {r: 0.2, g: 0.9, b: 1, a: 0.45}
+  currentBoundsGizmoColor: {r: 1, g: 0.35, b: 0.1, a: 0.85}
+  blockerGizmoColor: {r: 1, g: 0.9, b: 0.15, a: 0.35}
   startActiveOnEnable: 0
   autoStart: 0
   waves:
@@ -8692,6 +8698,7 @@ MonoBehaviour:
   gameplayCameraOverride: {fileID: 0}
   widgetTemplate: {fileID: 1791662941}
   widgetContainer: {fileID: 72753235}
+  enemyFaction: 2
   discovery:
     refreshInterval: 0.25
     targetMask:
@@ -8699,6 +8706,7 @@ MonoBehaviour:
       m_Bits: 4294967295
     ignoreInactiveTargets: 0
   distance:
+    awarenessRange: 900
     closeHideDistance: 70
     bracketMaxDistance: 500
     thresholdHysteresis: 8
@@ -8712,7 +8720,7 @@ MonoBehaviour:
   occlusion:
     occlusionMask:
       serializedVersion: 2
-      m_Bits: 4294967295
+      m_Bits: 256
     targetUiOffset: {x: 0, y: 0, z: 0}
     targetIndicatorOffset: {x: 0, y: 0, z: 0}
     targetAimOffset: {x: 0, y: 0, z: 0}
@@ -8723,6 +8731,11 @@ MonoBehaviour:
     indicatorScaleRange: {x: 0.3, y: 0.1}
     bracketScaleRange: {x: 0.3, y: 0.15}
     barScaleRange: {x: 0.6, y: 0.4}
+  bracketBounds:
+    bracketPadding: {x: 36, y: 28}
+    minBracketSize: {x: 72, y: 48}
+    maxBracketSize: {x: 420, y: 280}
+    fallbackBracketSize: {x: 120, y: 80}
 --- !u!1 &1523345961
 GameObject:
   m_ObjectHideFlags: 0
@@ -9980,6 +9993,7 @@ MonoBehaviour:
   root: {fileID: 1791662940}
   indicatorGroup: {fileID: 1352733187}
   bracketGroup: {fileID: 1902342473}
+  bracketFrame: {fileID: 0}
   healthBarGroup: {fileID: 1192998167}
   shieldBarGroup: {fileID: 1700731467}
   healthBar:
@@ -9990,11 +10004,17 @@ MonoBehaviour:
     fillImage: {fileID: 1700731468}
     segmentedBar: {fileID: 0}
     autoConfigureFillImage: 0
+  attackFlashBracketImages: []
+  attackFlashBaseAlpha: 0.07058824
+  attackFlashPeakAlpha: 1
   positionSmoothing: 18
   scaleSmoothing: 14
   fadeSmoothing: 12
+  bracketSizeSmoothing: 18
   snapPositionToTarget: 1
-  bracketBarsOffset: {x: 50, y: 0}
+  bracketBarRightGap: 12
+  healthBarBracketOffset: {x: 0, y: 0}
+  shieldBarBracketOffset: {x: 0, y: 0}
   indicatorRotationOffset: 0
 --- !u!225 &1791662942
 CanvasGroup:

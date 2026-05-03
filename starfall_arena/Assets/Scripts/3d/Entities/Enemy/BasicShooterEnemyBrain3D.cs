@@ -8,31 +8,80 @@ using UnityEngine;
 public class BasicShooterEnemyBrain3D : MonoBehaviour
 {
     [Header("Basic Shooter")]
-    [SerializeField] private ProjectileWeapon3D primaryWeapon;
+    [Tooltip("Enemy-only direct-fire projectile weapon. The brain gates firing by nose tolerance, then supplies the target direction so long-range shots are aimed at the player instead of inheriting the remaining tolerance error.")]
+    [SerializeField] private ProjectileWeaponEnemy3D primaryWeapon;
+
+    [Tooltip("Optional generic charge driver for this enemy's projectile or missile weapon. When assigned, the brain starts this telegraphed windup instead of firing Primary Weapon immediately.")]
+    [SerializeField] private EnemyProjectileChargeAttack3D chargeAttack;
+
+    [Tooltip("AI flight motor that drives the Rigidbody. Auto-assigned from this GameObject if left empty.")]
     [SerializeField] private EnemyAIFlightController3D flightController;
+
+    [Tooltip("Faction-aware target sensor. Auto-assigned from this GameObject if left empty.")]
     [SerializeField] private EnemyTargetSensor3D targetSensor;
+
+    [Tooltip("Optional spherecast obstacle avoidance. Leave empty (or disable useObstacleAvoidance) for the cheapest path.")]
     [SerializeField] private EnemyObstacleAvoidance3D obstacleAvoidance;
+
+    [Tooltip("Optional enemy-only separation steering. Add EnemySeparation3D to the prefab when clustered shooters should fan out instead of stacking.")]
+    [SerializeField] private EnemySeparation3D separation;
+
+    [Tooltip("Optional final steering smoothing. Add EnemySteeringSmoother3D to soften direct chase direction changes without changing speed or facing rules.")]
+    [SerializeField] private EnemySteeringSmoother3D steeringSmoother;
+
+    [Tooltip("Optional patrol fallback used when no player-team target is inside detection range.")]
+    [SerializeField] private EnemyPatrol3D patrol;
+
+    [Tooltip("Network combat helper for replicated enemy projectile fire. Auto-assigned from this GameObject if left empty.")]
     [SerializeField] private NetEnemyCombat3D netEnemyCombat;
+
+    [Tooltip("Presentation-only attack reporter used by TargetAwarenessHUD3D. Auto-assigned from this GameObject if left empty.")]
+    [SerializeField] private TargetAwarenessAttackReporter3D attackReporter;
+
+    [Tooltip("Seconds between AI decision ticks. Lower is more responsive but costs more CPU.")]
     [SerializeField] private float thinkInterval = 0.05f;
+
+    [Tooltip("Max angle (degrees) between the enemy's forward and the target direction before it will fire.")]
     [SerializeField] private float aimToleranceDegrees = 10f;
+
+    [Tooltip("Distance (meters) at which the enemy stops advancing and holds position to fire.")]
     [SerializeField] private float stopDistance = 18f;
+
+    [Tooltip("Distance (meters) beyond which the enemy moves at full speed toward the target.")]
     [SerializeField] private float fullSpeedDistance = 45f;
+
+    [Tooltip("If true, route steering through the obstacle avoidance component when one is assigned.")]
+    [SerializeField] private bool useObstacleAvoidance;
 
     private NetworkObject _networkObject;
     private float _nextThinkTime;
 
     private void Awake()
     {
-        primaryWeapon ??= GetComponent<ProjectileWeapon3D>();
+        primaryWeapon ??= GetComponent<ProjectileWeaponEnemy3D>();
+        chargeAttack ??= GetComponent<EnemyProjectileChargeAttack3D>();
         flightController ??= GetComponent<EnemyAIFlightController3D>();
         targetSensor ??= GetComponent<EnemyTargetSensor3D>();
         obstacleAvoidance ??= GetComponent<EnemyObstacleAvoidance3D>();
+        separation ??= GetComponent<EnemySeparation3D>();
+        steeringSmoother ??= GetComponent<EnemySteeringSmoother3D>();
+        patrol ??= GetComponent<EnemyPatrol3D>() ?? gameObject.AddComponent<EnemyPatrol3D>();
         netEnemyCombat ??= GetComponent<NetEnemyCombat3D>();
+        attackReporter ??= GetComponent<TargetAwarenessAttackReporter3D>() ?? gameObject.AddComponent<TargetAwarenessAttackReporter3D>();
         _networkObject = GetComponent<NetworkObject>();
+    }
+
+    public void ApplyProfile(EnemyBalanceProfile3D.BasicShooterBrainStats stats)
+    {
+        thinkInterval = Mathf.Max(0.01f, stats.thinkInterval);
+        aimToleranceDegrees = Mathf.Clamp(stats.aimToleranceDegrees, 0f, 180f);
+        stopDistance = Mathf.Max(0f, stats.stopDistance);
+        fullSpeedDistance = Mathf.Max(stopDistance + 0.01f, stats.fullSpeedDistance);
     }
 
     private void OnDisable()
     {
+        chargeAttack?.CancelCharge(immediate: true);
         flightController?.ClearFlightIntent();
     }
 
@@ -58,40 +107,74 @@ public class BasicShooterEnemyBrain3D : MonoBehaviour
         Entity3D target = targetSensor != null ? targetSensor.GetTarget() : null;
         if (target == null)
         {
-            flightController?.ClearFlightIntent();
+            chargeAttack?.CancelCharge();
+            PatrolOrClearFlightIntent();
             return;
         }
 
         Vector3 toTarget = target.transform.position - transform.position;
         if (toTarget.sqrMagnitude <= 0.0001f)
         {
+            chargeAttack?.CancelCharge();
             flightController?.ClearFlightIntent();
             return;
         }
 
-        Vector3 steeringDirection = obstacleAvoidance != null
-            ? obstacleAvoidance.ResolveSteeringDirection(toTarget)
-            : toTarget.normalized;
+        float speedScale = ResolveDistanceSpeedScale(toTarget.magnitude);
+        Vector3 steeringDirection = ResolveSteeringDirection(toTarget.normalized);
+        if (speedScale <= 0f && TryResolveUnstickIntent(out Vector3 unstickDirection, out float unstickSpeedScale))
+        {
+            steeringDirection = ResolveSteeringSmoothing(ResolveObstacleAvoidance(unstickDirection));
+            speedScale = unstickSpeedScale;
+        }
 
-        flightController?.SetMoveDirection(steeringDirection, ResolveDistanceSpeedScale(toTarget.magnitude));
+        flightController?.SetMoveDirection(steeringDirection, speedScale);
 
-        if (primaryWeapon == null || !IsAimedAtTarget(toTarget))
+        if (!IsAimedAtTarget(toTarget))
+        {
+            return;
+        }
+
+        if (chargeAttack != null)
+        {
+            if (!chargeAttack.IsCharging)
+            {
+                chargeAttack.TryBeginCharge(Faction3D.PlayerTeam, toTarget.normalized, target);
+            }
+
+            return;
+        }
+
+        if (primaryWeapon == null)
         {
             return;
         }
 
         if (NetTickUtil.IsActive && netEnemyCombat != null && netEnemyCombat.IsSpawned)
         {
-            netEnemyCombat.TryFireProjectilePattern(primaryWeapon, Faction3D.PlayerTeam);
+            netEnemyCombat.TryFireProjectilePattern(primaryWeapon, Faction3D.PlayerTeam, toTarget.normalized, target);
             return;
         }
 
-        primaryWeapon.TryFireAtFaction(Faction3D.PlayerTeam);
+        if (primaryWeapon.TryFireAtFaction(Faction3D.PlayerTeam, toTarget.normalized))
+        {
+            attackReporter?.ReportAttack(target);
+        }
     }
 
     private bool IsAimedAtTarget(Vector3 toTarget)
     {
         return Vector3.Angle(transform.forward, toTarget.normalized) <= Mathf.Max(0f, aimToleranceDegrees);
+    }
+
+    private void PatrolOrClearFlightIntent()
+    {
+        if (patrol != null && patrol.isActiveAndEnabled && patrol.TryUpdatePatrolIntent())
+        {
+            return;
+        }
+
+        flightController?.ClearFlightIntent();
     }
 
     private float ResolveDistanceSpeedScale(float distanceToTarget)
@@ -110,6 +193,51 @@ public class BasicShooterEnemyBrain3D : MonoBehaviour
         }
 
         return Mathf.InverseLerp(stop, full, distanceToTarget);
+    }
+
+    private Vector3 ResolveSteeringDirection(Vector3 desiredDirection)
+    {
+        Vector3 resolved = desiredDirection.sqrMagnitude > 0.0001f ? desiredDirection.normalized : transform.forward;
+        if (separation != null && separation.isActiveAndEnabled)
+        {
+            resolved = separation.ResolveSteeringDirection(resolved);
+        }
+
+        return ResolveSteeringSmoothing(ResolveObstacleAvoidance(resolved));
+    }
+
+    private Vector3 ResolveObstacleAvoidance(Vector3 desiredDirection)
+    {
+        Vector3 resolved = desiredDirection.sqrMagnitude > 0.0001f ? desiredDirection.normalized : transform.forward;
+        if (useObstacleAvoidance && obstacleAvoidance != null && obstacleAvoidance.isActiveAndEnabled)
+        {
+            resolved = obstacleAvoidance.ResolveSteeringDirection(resolved);
+        }
+
+        return resolved.sqrMagnitude > 0.0001f ? resolved.normalized : transform.forward;
+    }
+
+    private Vector3 ResolveSteeringSmoothing(Vector3 desiredDirection)
+    {
+        Vector3 resolved = desiredDirection.sqrMagnitude > 0.0001f ? desiredDirection.normalized : transform.forward;
+        if (steeringSmoother != null && steeringSmoother.isActiveAndEnabled)
+        {
+            resolved = steeringSmoother.ResolveSteeringDirection(resolved);
+        }
+
+        return resolved.sqrMagnitude > 0.0001f ? resolved.normalized : transform.forward;
+    }
+
+    private bool TryResolveUnstickIntent(out Vector3 direction, out float speedScale)
+    {
+        if (separation != null && separation.isActiveAndEnabled)
+        {
+            return separation.TryGetUnstickIntent(out direction, out speedScale);
+        }
+
+        direction = Vector3.zero;
+        speedScale = 0f;
+        return false;
     }
 
     private bool HasBrainAuthority()

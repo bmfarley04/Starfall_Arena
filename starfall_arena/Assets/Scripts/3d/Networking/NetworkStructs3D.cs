@@ -1,6 +1,12 @@
 using Unity.Netcode;
 using UnityEngine;
 
+public enum NetDodgeKind3D : byte
+{
+    Generic = 0,
+    Class4Ability = 1
+}
+
 public struct NetInputSnapshot3D : INetworkSerializable
 {
     public int Tick;
@@ -12,6 +18,7 @@ public struct NetInputSnapshot3D : INetworkSerializable
     public float ThrustMultiplier;
     public float SlowMultiplier;
     public bool DodgeRequested;
+    public NetDodgeKind3D DodgeKind;
     public Vector3 DodgeDirection;
 
     public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
@@ -25,6 +32,7 @@ public struct NetInputSnapshot3D : INetworkSerializable
         serializer.SerializeValue(ref ThrustMultiplier);
         serializer.SerializeValue(ref SlowMultiplier);
         serializer.SerializeValue(ref DodgeRequested);
+        serializer.SerializeValue(ref DodgeKind);
         serializer.SerializeValue(ref DodgeDirection);
     }
 }
@@ -42,6 +50,8 @@ public struct NetStateSnapshot3D : INetworkSerializable
     public Vector3 DodgeVelocity;
     public Vector3 DodgeExitVelocity;
     public float DodgeRemainingTime;
+    public float DodgeDuration;
+    public NetDodgeKind3D DodgeKind;
 
     public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
     {
@@ -56,6 +66,8 @@ public struct NetStateSnapshot3D : INetworkSerializable
         serializer.SerializeValue(ref DodgeVelocity);
         serializer.SerializeValue(ref DodgeExitVelocity);
         serializer.SerializeValue(ref DodgeRemainingTime);
+        serializer.SerializeValue(ref DodgeDuration);
+        serializer.SerializeValue(ref DodgeKind);
     }
 }
 
@@ -69,6 +81,8 @@ public struct MovementState3D
     public Vector3 DodgeVelocity;
     public Vector3 DodgeExitVelocity;
     public float DodgeRemainingTime;
+    public float DodgeDuration;
+    public NetDodgeKind3D DodgeKind;
 }
 
 public enum NetProjectileVisualType3D : byte
@@ -82,6 +96,11 @@ public enum NetProjectileVisualType3D : byte
     Class2PhysicalProjectile = 6,
     Class4GuidedMissile = 7,
     Class4GuidedMissileEmpowered = 8,
+    EnemyProjectile = 9,
+    EnemyMissile = 10,
+    EnemySecondaryProjectile = 11,
+    EnemyFormationMissile = 12,
+    EnemyHelixProjectile = 13,
 }
 
 public struct NetProjectileFireRequest3D : INetworkSerializable
@@ -100,6 +119,7 @@ public struct NetProjectileFireRequest3D : INetworkSerializable
     public float RecoilForce;
     public bool ApplyRecoil;
     public bool CanPierce;
+    public int MaxPierceCount;
     public float PierceMultiplier;
     public bool AppliesSlow;
     public float SlowMultiplier;
@@ -109,6 +129,15 @@ public struct NetProjectileFireRequest3D : INetworkSerializable
     public Faction3D TargetFaction;
     public NetProjectileVisualType3D VisualType;
     public int AccuracyAttackId;
+    public bool UsesFormation;
+    public int FormationSlotIndex;
+    public int FormationSlotCount;
+    public float FormationFanArcDegrees;
+    public float FormationFanOutDuration;
+    public float FormationHoldDuration;
+    public float FormationConvergeDuration;
+    public float FormationConvergenceRadius;
+    public float FormationMaxSpeedMultiplier;
 
     public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
     {
@@ -126,6 +155,7 @@ public struct NetProjectileFireRequest3D : INetworkSerializable
         serializer.SerializeValue(ref RecoilForce);
         serializer.SerializeValue(ref ApplyRecoil);
         serializer.SerializeValue(ref CanPierce);
+        serializer.SerializeValue(ref MaxPierceCount);
         serializer.SerializeValue(ref PierceMultiplier);
         serializer.SerializeValue(ref AppliesSlow);
         serializer.SerializeValue(ref SlowMultiplier);
@@ -135,6 +165,15 @@ public struct NetProjectileFireRequest3D : INetworkSerializable
         serializer.SerializeValue(ref TargetFaction);
         serializer.SerializeValue(ref VisualType);
         serializer.SerializeValue(ref AccuracyAttackId);
+        serializer.SerializeValue(ref UsesFormation);
+        serializer.SerializeValue(ref FormationSlotIndex);
+        serializer.SerializeValue(ref FormationSlotCount);
+        serializer.SerializeValue(ref FormationFanArcDegrees);
+        serializer.SerializeValue(ref FormationFanOutDuration);
+        serializer.SerializeValue(ref FormationHoldDuration);
+        serializer.SerializeValue(ref FormationConvergeDuration);
+        serializer.SerializeValue(ref FormationConvergenceRadius);
+        serializer.SerializeValue(ref FormationMaxSpeedMultiplier);
     }
 }
 
@@ -142,11 +181,13 @@ public struct NetProjectileSpawnData3D : INetworkSerializable
 {
     public NetProjectileFireRequest3D Fire;
     public double ServerSpawnTime;
+    public ulong IntendedTargetNetworkObjectId;
 
     public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
     {
         serializer.SerializeValue(ref Fire);
         serializer.SerializeValue(ref ServerSpawnTime);
+        serializer.SerializeValue(ref IntendedTargetNetworkObjectId);
     }
 }
 
@@ -155,12 +196,16 @@ public struct NetBeamState3D : INetworkSerializable
     public int Tick;
     public bool IsFiring;
     public Vector3 AimDirection;
+    public int BeamIndex;
+    public ulong IntendedTargetNetworkObjectId;
 
     public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
     {
         serializer.SerializeValue(ref Tick);
         serializer.SerializeValue(ref IsFiring);
         serializer.SerializeValue(ref AimDirection);
+        serializer.SerializeValue(ref BeamIndex);
+        serializer.SerializeValue(ref IntendedTargetNetworkObjectId);
     }
 }
 
@@ -168,11 +213,13 @@ public struct NetAimUpdate3D : INetworkSerializable
 {
     public int Tick;
     public Vector3 AimDirection;
+    public int BeamIndex;
 
     public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
     {
         serializer.SerializeValue(ref Tick);
         serializer.SerializeValue(ref AimDirection);
+        serializer.SerializeValue(ref BeamIndex);
     }
 }
 

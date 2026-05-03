@@ -134,6 +134,13 @@ public class Reflector3D : Ability3D
         return reflect.cooldown;
     }
 
+    public void ApplyProfile(Class1PlayerBalanceProfile3D.Class1Stats stats)
+    {
+        reflect.cooldown = Mathf.Max(0f, stats.reflectCooldown);
+        reflect.activeDuration = Mathf.Max(0f, stats.reflectActiveDuration);
+        reflect.reflectedProjectileDamageMultiplier = Mathf.Clamp(stats.reflectedProjectileDamageMultiplier, 0f, 5f);
+    }
+
     private IEnumerator ActivateReflectShield()
     {
         reflect.shield.Activate(reflect.reflectedProjectileColor);

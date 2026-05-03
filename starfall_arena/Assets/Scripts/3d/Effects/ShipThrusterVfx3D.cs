@@ -12,6 +12,7 @@ public class ShipThrusterVfx3D : MonoBehaviour
     }
 
     [SerializeField] private ShipFlight3D shipFlight;
+    [SerializeField] private EnemyAIFlightController3D enemyFlight;
     [SerializeField] private ThrusterEffects3DConfig thrusterEffects;
 
     private readonly Dictionary<ParticleSystem, ThrusterParticleState> _thrusterOriginalStates = new();
@@ -26,6 +27,11 @@ public class ShipThrusterVfx3D : MonoBehaviour
             shipFlight = GetComponent<ShipFlight3D>();
         }
 
+        if (enemyFlight == null)
+        {
+            enemyFlight = GetComponent<EnemyAIFlightController3D>();
+        }
+
         CacheThrusterDefaults();
     }
 
@@ -37,6 +43,11 @@ public class ShipThrusterVfx3D : MonoBehaviour
     public void SetShipFlight(ShipFlight3D flight)
     {
         shipFlight = flight;
+    }
+
+    public void SetEnemyFlight(EnemyAIFlightController3D flight)
+    {
+        enemyFlight = flight;
     }
 
     public void SetThrusterEffects(ThrusterEffects3DConfig config)
@@ -101,7 +112,7 @@ public class ShipThrusterVfx3D : MonoBehaviour
 
     private void UpdateThrusters()
     {
-        if (shipFlight == null || Time.deltaTime <= 0f)
+        if (Time.deltaTime <= 0f)
         {
             return;
         }
@@ -111,7 +122,7 @@ public class ShipThrusterVfx3D : MonoBehaviour
             return;
         }
 
-        float targetIntensity = shipFlight.IsApplyingThrust ? 1f : 0f;
+        float targetIntensity = ResolveThrusterTargetIntensity();
         float rampStep = thrusterEffects.rampTime > 0f ? Time.deltaTime / thrusterEffects.rampTime : 1f;
         _currentThrusterIntensity = Mathf.MoveTowards(_currentThrusterIntensity, targetIntensity, rampStep);
         float emissionScale = GetActiveEmissionRateScale();
@@ -145,6 +156,21 @@ public class ShipThrusterVfx3D : MonoBehaviour
                 ? InvertColor(originalState.startColor)
                 : originalState.startColor;
         }
+    }
+
+    private float ResolveThrusterTargetIntensity()
+    {
+        if (enemyFlight != null)
+        {
+            return enemyFlight.IsApplyingThrust ? 1f : 0f;
+        }
+
+        if (shipFlight != null)
+        {
+            return shipFlight.IsApplyingThrust ? 1f : 0f;
+        }
+
+        return 0f;
     }
 
     private float GetActiveEmissionRateScale()

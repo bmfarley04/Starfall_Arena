@@ -46,6 +46,14 @@ public class PhysicalProjectileAbility3D : Weapon3D
     public GameObject NetworkProjectilePrefab => physicalProjectile.projectilePrefab;
     public SoundEffect NetworkFireSound => physicalProjectile.fireSound;
 
+    public void ApplyProfile(Class2PlayerBalanceProfile3D.PhysicalProjectileStats stats)
+    {
+        physicalProjectile.cooldown = Mathf.Max(0f, stats.cooldown);
+        physicalProjectile.damage = Mathf.Max(0f, stats.damage);
+        physicalProjectile.speed = Mathf.Max(0f, stats.speed);
+        physicalProjectile.lifetime = Mathf.Max(0f, stats.lifetime);
+    }
+
     protected override void Awake()
     {
         base.Awake();

@@ -45,6 +45,13 @@ public class Class4BurstWeapon3D : ProjectileWeapon3D
         return Mathf.Max(0f, burst.burstCooldown + GetBurstSequenceDuration());
     }
 
+    public void ApplyProfile(Class4PlayerBalanceProfile3D.BurstStats stats)
+    {
+        burst.burstCooldown = Mathf.Max(0f, stats.burstCooldown);
+        burst.burstCount = Mathf.Max(1, stats.burstCount);
+        burst.burstInterval = Mathf.Max(0f, stats.burstInterval);
+    }
+
     public override bool IsReticleSpinActive()
     {
         return IsFireHeld || _isBursting;

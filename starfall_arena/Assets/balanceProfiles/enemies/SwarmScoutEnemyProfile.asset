@@ -1,0 +1,46 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0fd58525c3cd4d28941f38f6457b28b4, type: 3}
+  m_Name: SwarmScoutEnemyProfile
+  m_EditorClassIdentifier: 
+  core:
+    maxHealth: 1
+    maxShield: 0
+    moveSpeed: 70
+    rotationDegreesPerSecond: 200
+    detectionRange: 550
+  projectileWeapons: []
+  beamWeapons: []
+  brain:
+    thinkInterval: 0.04
+    autoLinkRadius: 200
+    intendedSwarmSize: 5
+    requiredSurvivorsForAlert: 5
+    movementPattern: 1
+    orbitRadius: 20
+    orbitThickness: 12
+    radialCorrectionWeight: 1.2
+    tangentialWeight: 1.8
+    verticalAmplitude: 14
+    verticalFrequency: 1.1
+    formationRadius: 26
+    formationOvershootDistance: 180
+    formationSlotCorrectionWeight: 2.4
+    formationForwardWeight: 2
+    formationMinRunStartDistance: 70
+    formationMaxRunDuration: 4.5
+    formationRollDegreesPerSecond: 35
+    alertProbeRange: 450
+    alertWarmupSeconds: 3
+    alertBroadcastRadius: 850
+    alertDuration: 5
+    alertCooldown: 6

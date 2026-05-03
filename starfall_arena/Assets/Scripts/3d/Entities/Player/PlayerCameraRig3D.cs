@@ -25,11 +25,19 @@ public class PlayerCameraRig3D : MonoBehaviour
         aimDampingAtRest = 0.1f,
         aimDampingDuringTurn = 0.25f
     };
+    [Header("Dodge Camera Lag")]
+    [SerializeField] private float dodgeLagExtraDuration = 0.12f;
+    [SerializeField] private float dodgeLagBlendOutDuration = 0.16f;
+    [SerializeField] private float dodgePositionDamping = 0.85f;
+    [SerializeField] private float dodgeRotationDamping = 0.45f;
+    [SerializeField] private float dodgeAimDamping = 0.35f;
 
     private CinemachineFollow _followComponent;
     private CinemachineRotateWithFollowTarget _rotateWithFollowTarget;
     private Vector3 _baseFollowOffset;
     private bool _baseFollowOffsetCaptured;
+    private float _dodgeLagUntil = float.NegativeInfinity;
+    private Vector2 _dodgeLagFollowOffset;
 
     private void Awake()
     {
@@ -64,8 +72,11 @@ public class PlayerCameraRig3D : MonoBehaviour
         float pitchOffsetSignal = Mathf.Clamp(filteredInput.y + (turnRates.x * cameraConfig.pitchRateOffsetContribution), -1f, 1f);
         float steeringAmount = Mathf.Clamp01(Mathf.Max(Mathf.Abs(yawOffsetSignal), Mathf.Abs(pitchOffsetSignal)));
 
-        float targetX = _baseFollowOffset.x + (yawOffsetSignal * cameraConfig.horizontalTurnOffset);
-        float targetY = _baseFollowOffset.y + (pitchOffsetSignal * cameraConfig.verticalTurnOffset);
+        float dodgeLagBlend = GetDodgeLagBlend();
+        float steeringTargetX = _baseFollowOffset.x + (yawOffsetSignal * cameraConfig.horizontalTurnOffset);
+        float steeringTargetY = _baseFollowOffset.y + (pitchOffsetSignal * cameraConfig.verticalTurnOffset);
+        float targetX = Mathf.Lerp(steeringTargetX, _dodgeLagFollowOffset.x, dodgeLagBlend);
+        float targetY = Mathf.Lerp(steeringTargetY, _dodgeLagFollowOffset.y, dodgeLagBlend);
         float offsetLerpSpeed = steeringAmount > 0.05f ? cameraConfig.turnOffsetLerpSpeed : cameraConfig.recenterLerpSpeed;
         float offsetLerpFactor = 1f - Mathf.Exp(-offsetLerpSpeed * Time.deltaTime);
 
@@ -76,13 +87,21 @@ public class PlayerCameraRig3D : MonoBehaviour
         _followComponent.FollowOffset = currentOffset;
 
         var trackerSettings = _followComponent.TrackerSettings;
-        trackerSettings.PositionDamping = Vector3.one * Mathf.Lerp(cameraConfig.followPositionDampingAtRest, cameraConfig.followPositionDampingDuringTurn, steeringAmount);
-        trackerSettings.RotationDamping = Vector3.one * Mathf.Lerp(cameraConfig.followRotationDampingAtRest, cameraConfig.followRotationDampingDuringTurn, steeringAmount);
+        float positionDamping = Mathf.Lerp(cameraConfig.followPositionDampingAtRest, cameraConfig.followPositionDampingDuringTurn, steeringAmount);
+        float rotationDamping = Mathf.Lerp(cameraConfig.followRotationDampingAtRest, cameraConfig.followRotationDampingDuringTurn, steeringAmount);
+        positionDamping = Mathf.Lerp(positionDamping, Mathf.Max(positionDamping, dodgePositionDamping), dodgeLagBlend);
+        rotationDamping = Mathf.Lerp(rotationDamping, Mathf.Max(rotationDamping, dodgeRotationDamping), dodgeLagBlend);
+
+        trackerSettings.PositionDamping = Vector3.one * positionDamping;
+        trackerSettings.RotationDamping = Vector3.one * rotationDamping;
         _followComponent.TrackerSettings = trackerSettings;
 
         if (_rotateWithFollowTarget != null)
         {
-            _rotateWithFollowTarget.Damping = Mathf.Lerp(cameraConfig.aimDampingAtRest, cameraConfig.aimDampingDuringTurn, steeringAmount);
+            float aimDamping = Mathf.Lerp(cameraConfig.aimDampingAtRest, cameraConfig.aimDampingDuringTurn, steeringAmount);
+            aimDamping = Mathf.Lerp(aimDamping, Mathf.Max(aimDamping, dodgeAimDamping), dodgeLagBlend);
+
+            _rotateWithFollowTarget.Damping = aimDamping;
         }
 
         virtualCamera.Lens.FieldOfView = Mathf.Lerp(virtualCamera.Lens.FieldOfView, targetFOV, 1f - Mathf.Exp(-cameraConfig.cameraLerpSpeed * Time.deltaTime));
@@ -117,6 +136,35 @@ public class PlayerCameraRig3D : MonoBehaviour
         }
 
         enabled = isActive;
+    }
+
+    public void BeginDodgeLag(float duration)
+    {
+        if (_followComponent != null)
+        {
+            Vector3 currentOffset = _followComponent.FollowOffset;
+            _dodgeLagFollowOffset = new Vector2(currentOffset.x, currentOffset.y);
+        }
+
+        _dodgeLagUntil = Mathf.Max(_dodgeLagUntil, Time.time + Mathf.Max(0f, duration) + Mathf.Max(0f, dodgeLagExtraDuration));
+    }
+
+    private float GetDodgeLagBlend()
+    {
+        if (Time.time >= _dodgeLagUntil)
+        {
+            return 0f;
+        }
+
+        float blendOutDuration = Mathf.Max(0.0001f, dodgeLagBlendOutDuration);
+        float blendOutStart = _dodgeLagUntil - blendOutDuration;
+        if (Time.time <= blendOutStart)
+        {
+            return 1f;
+        }
+
+        float t = Mathf.Clamp01((Time.time - blendOutStart) / blendOutDuration);
+        return 1f - (t * t * (3f - (2f * t)));
     }
 
     public void SetCameraConfig(PlayerCameraRigConfig3D config)
