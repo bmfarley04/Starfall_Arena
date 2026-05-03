@@ -11828,6 +11828,10 @@ PrefabInstance:
       propertyPath: m_Layer
       value: 8
       objectReference: {fileID: 0}
+    - target: {fileID: 1611613276000414327, guid: e7ebcd4aca27e82408e6befe8f71659a, type: 3}
+      propertyPath: brightness
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 1722808193649683873, guid: e7ebcd4aca27e82408e6befe8f71659a, type: 3}
       propertyPath: m_Layer
       value: 8
@@ -12799,6 +12803,10 @@ PrefabInstance:
     - target: {fileID: 8671382483023772034, guid: e7ebcd4aca27e82408e6befe8f71659a, type: 3}
       propertyPath: m_Layer
       value: 8
+      objectReference: {fileID: 0}
+    - target: {fileID: 8717314931021804331, guid: e7ebcd4aca27e82408e6befe8f71659a, type: 3}
+      propertyPath: m_Intensity
+      value: 3
       objectReference: {fileID: 0}
     - target: {fileID: 8843553468664581292, guid: e7ebcd4aca27e82408e6befe8f71659a, type: 3}
       propertyPath: m_Layer
