@@ -41,9 +41,9 @@ MonoBehaviour:
     maxFiringRange: 700
     approachRangeBuffer: 200
     outOfRangeApproachSpeedScale: 1
-    maxMissileRange: 200
+    maxMissileRange: 600
     missileAimToleranceDegrees: 180
     missileToCannonStaggerDelay: 0.35
-    maxTurretRange: 100
+    maxTurretRange: 700
     turretToCannonStaggerDelay: 0.15
     loseTargetMaxDistance: 0
