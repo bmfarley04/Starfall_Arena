@@ -555,10 +555,7 @@ namespace StarfallArena.UI
 
             _selectedCardIndex = cardIndex;
             LogSelectionDebug("SetSelectedCardIndex applied", buttons[cardIndex], cardIndex);
-            if (EventSystem.current != null)
-            {
-                EventSystem.current.SetSelectedGameObject(buttons[cardIndex].gameObject);
-            }
+            RefreshOwnedSelectionVisuals(buttons[cardIndex]);
         }
 
         /// <summary>
@@ -630,29 +627,10 @@ namespace StarfallArena.UI
                 // onClick → select this augment
                 btn.onClick.AddListener(() => OnAugmentSelected(index));
 
-                // Add EventTrigger for Select / Deselect (controller navigation)
+                // Add EventTrigger entries only for pointer interaction/debug.
                 EventTrigger trigger = btn.gameObject.GetComponent<EventTrigger>();
                 if (trigger == null)
                     trigger = btn.gameObject.AddComponent<EventTrigger>();
-
-                // On Select (hovered via controller)
-                EventTrigger.Entry selectEntry = new EventTrigger.Entry { eventID = EventTriggerType.Select };
-                selectEntry.callback.AddListener(_ =>
-                {
-                    _selectedCardIndex = index;
-                    LogSelectionDebug("EventTrigger Select", btn, index);
-                    OnCardHoverEnter(btn);
-                });
-                trigger.triggers.Add(selectEntry);
-
-                // On Deselect (moved away via controller)
-                EventTrigger.Entry deselectEntry = new EventTrigger.Entry { eventID = EventTriggerType.Deselect };
-                deselectEntry.callback.AddListener(_ =>
-                {
-                    LogSelectionDebug("EventTrigger Deselect", btn, index);
-                    OnCardHoverExit(btn);
-                });
-                trigger.triggers.Add(deselectEntry);
 
                 // On Pointer Enter (mouse fallback)
                 EventTrigger.Entry pointerEnter = new EventTrigger.Entry { eventID = EventTriggerType.PointerEnter };
@@ -662,9 +640,9 @@ namespace StarfallArena.UI
                 EventTrigger.Entry pointerDown = new EventTrigger.Entry { eventID = EventTriggerType.PointerDown };
                 pointerDown.callback.AddListener(_ =>
                 {
-                    // Mouse can still click a card directly, but it never becomes
-                    // the owner of selection state for controller/keyboard flow.
-                    _selectedCardIndex = index;
+                    // Mouse can still click a card directly, but selection ownership
+                    // remains internal to the manager rather than the EventSystem.
+                    SetSelectedCardIndex(index);
                     LogSelectionDebug("EventTrigger PointerDown", btn, index);
                 });
                 trigger.triggers.Add(pointerDown);
@@ -704,6 +682,37 @@ namespace StarfallArena.UI
             _hoverCoroutines[btn] = StartCoroutine(LerpScale(btn.transform, _cardOriginalScales[btn], hoverScaleDuration));
         }
 
+        private void RefreshOwnedSelectionVisuals(Button selectedButton)
+        {
+            Button[] buttons = GetButtonsForTier(currentTier);
+            if (buttons == null)
+            {
+                return;
+            }
+
+            foreach (Button button in buttons)
+            {
+                if (button == null || !button.gameObject.activeSelf)
+                {
+                    continue;
+                }
+
+                if (!_cardOriginalScales.ContainsKey(button))
+                {
+                    _cardOriginalScales[button] = button.transform.localScale;
+                }
+
+                if (button == selectedButton)
+                {
+                    OnCardHoverEnter(button);
+                }
+                else
+                {
+                    OnCardHoverExit(button);
+                }
+            }
+        }
+
         private IEnumerator LerpScale(Transform t, Vector3 target, float duration)
         {
             Vector3 start = t.localScale;
@@ -741,6 +750,7 @@ namespace StarfallArena.UI
             // Lock input to the picking player's gamepad
             SetActiveGamepad(pickingPlayer);
             DisableUIModuleNavigation();
+            ClearEventSystemSelection();
 
             // Select tier based on probabilities
             currentTier = SelectRandomTier();
@@ -806,6 +816,7 @@ namespace StarfallArena.UI
             // PollKeyboardNavigation while selection is showing.
             _activeGamepad = Gamepad.current ?? (Gamepad.all.Count > 0 ? Gamepad.all[0] : null);
             DisableUIModuleNavigation();
+            ClearEventSystemSelection();
 
             selectedAugments = new List<Augment>(augments);
             selectedAugmentVisualTiers = perCardVisualTiers != null ? new List<int>(perCardVisualTiers) : null;
@@ -1007,7 +1018,16 @@ namespace StarfallArena.UI
             selectedAugmentVisualTiers = null;
 
             // Re-enable the UI module navigation for other screens
+            ClearEventSystemSelection();
             EnableUIModuleNavigation();
+        }
+
+        private void ClearEventSystemSelection()
+        {
+            if (EventSystem.current != null)
+            {
+                EventSystem.current.SetSelectedGameObject(null);
+            }
         }
 
         // ===== INPUT MODULE CONTROL =====

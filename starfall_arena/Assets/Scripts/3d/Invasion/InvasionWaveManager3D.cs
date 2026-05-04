@@ -63,12 +63,32 @@ public class InvasionWaveManager3D : MonoBehaviour
     [Serializable]
     private class SubWaveEnemyEntry3D
     {
-        [Tooltip("Enemy prefab assigned to the next available formation slots for this sub-wave. In networked Invasion this prefab must have NetworkObject and be registered with NGO.")]
+        [Tooltip("Enemy prefab assigned to the next available formation slots for this sub-wave. In networked Invasion this prefab must have exactly one root NetworkObject and be registered with NGO.")]
         public GameObject enemyPrefab;
 
-        [Tooltip("How many copies of this enemy prefab are assigned into the generated formation slots for this sub-wave.")]
+        [Tooltip("How many copies of this enemy prefab are assigned into the generated formation slots for this sub-wave. If Spawn As Triumvirate Squad is enabled, this is the number of three-ship squads.")]
         [Min(0)]
         public int count = 1;
+
+        [Header("Triumvirate Squad")]
+        [Tooltip("If enabled, each count spawns one linked three-ship Triumvirate squad from separate top/lower-left/lower-right member prefabs instead of spawning Enemy Prefab directly. Use this for networked Triumvirates because NGO cannot spawn nested NetworkObjects from a runtime prefab.")]
+        public bool spawnAsTriumvirateSquad;
+
+        [Tooltip("Single-member Triumvirate prefab used for the upper formation slot. It must have one root NetworkObject, TriumvirateEnemyBrain3D, Enemy3D, NetEnemyMovement3D, and NetEnemyCombat3D.")]
+        public GameObject triumvirateTopMemberPrefab;
+
+        [Tooltip("Single-member Triumvirate prefab used for the lower-left formation slot. It must be registered in the NetworkManager prefab list for networked Invasion.")]
+        public GameObject triumvirateLowerLeftMemberPrefab;
+
+        [Tooltip("Single-member Triumvirate prefab used for the lower-right formation slot. It must be registered in the NetworkManager prefab list for networked Invasion.")]
+        public GameObject triumvirateLowerRightMemberPrefab;
+
+        [Tooltip("World-space spacing used to place the three separate Triumvirate member prefabs around the generated formation slot before their brain takes over formation movement.")]
+        [Min(0f)]
+        public float triumvirateInitialMemberSpacing = 20f;
+
+        [Tooltip("Prefix used for the runtime squad key assigned to each spawned Triumvirate trio. The manager appends wave-local numbers so nearby squads do not auto-link with each other.")]
+        public string triumvirateRuntimeSquadKeyPrefix = "Triumvirate";
     }
 
     [Serializable]
@@ -194,6 +214,7 @@ public class InvasionWaveManager3D : MonoBehaviour
     private int _defeatedEnemyCount;
     private bool _loggedZeroAuthoredEnemyCount;
     private bool _developerSkipCurrentWaveRequested;
+    private int _runtimeTriumvirateSquadSequence;
 
     public event Func<int, IEnumerator> WaveIntroRequested;
     public event Func<int, IEnumerator> RewardPhaseRequested;
@@ -451,7 +472,15 @@ public class InvasionWaveManager3D : MonoBehaviour
 
                     Vector3 localOffset = slotIndex < _formationOffsets.Count ? _formationOffsets[slotIndex] : Vector3.zero;
                     Vector3 spawnPosition = spawnOrigin + (spawnRotation * localOffset);
-                    SpawnEnemyAt(entry.enemyPrefab, spawnPosition, spawnRotation);
+                    if (entry.spawnAsTriumvirateSquad)
+                    {
+                        SpawnTriumvirateSquad(entry, spawnPosition, spawnRotation);
+                    }
+                    else
+                    {
+                        SpawnEnemyAt(entry.enemyPrefab, spawnPosition, spawnRotation);
+                    }
+
                     slotIndex++;
 
                     bool hasMoreBurstMembers = slotIndex < totalEnemyCount;
@@ -541,6 +570,13 @@ public class InvasionWaveManager3D : MonoBehaviour
                 return null;
             }
 
+            if (HasNestedNetworkObjects(enemyObject, networkObject))
+            {
+                Debug.LogError($"[InvasionWaveManager3D] Networked enemy prefab '{enemyPrefab.name}' has nested NetworkObject components. NGO only supports nested NetworkObjects for scene objects, not dynamically spawned enemy prefabs. Split this enemy into separate root NetworkObject prefabs and spawn/link them explicitly.", enemyObject);
+                Destroy(enemyObject);
+                return null;
+            }
+
             networkObject.Spawn(true);
         }
 
@@ -558,6 +594,88 @@ public class InvasionWaveManager3D : MonoBehaviour
         }
 
         return spawnedEnemies[0];
+    }
+
+    private void SpawnTriumvirateSquad(SubWaveEnemyEntry3D entry, Vector3 squadCenter, Quaternion spawnRotation)
+    {
+        if (entry == null)
+        {
+            return;
+        }
+
+        if (entry.triumvirateTopMemberPrefab == null
+            || entry.triumvirateLowerLeftMemberPrefab == null
+            || entry.triumvirateLowerRightMemberPrefab == null)
+        {
+            Debug.LogWarning("[InvasionWaveManager3D] Triumvirate squad spawn skipped because one or more member prefabs are missing. Assign Top, Lower Left, and Lower Right member prefabs on the sub-wave enemy entry.", this);
+            return;
+        }
+
+        string squadKeyPrefix = string.IsNullOrWhiteSpace(entry.triumvirateRuntimeSquadKeyPrefix)
+            ? "Triumvirate"
+            : entry.triumvirateRuntimeSquadKeyPrefix.Trim();
+        string runtimeSquadKey = $"{squadKeyPrefix}_{++_runtimeTriumvirateSquadSequence}";
+        float spacing = Mathf.Max(0f, entry.triumvirateInitialMemberSpacing);
+        Vector3 right = spawnRotation * Vector3.right;
+        Vector3 up = spawnRotation * Vector3.up;
+        Vector3 topOffset = up * (spacing * 0.667f);
+        Vector3 lowerOffset = up * (spacing * 0.333f);
+        Vector3 lowerLeftOffset = (-right * (spacing * 0.5f)) - lowerOffset;
+        Vector3 lowerRightOffset = (right * (spacing * 0.5f)) - lowerOffset;
+
+        SpawnTriumvirateMember(
+            entry.triumvirateTopMemberPrefab,
+            squadCenter + topOffset,
+            spawnRotation,
+            runtimeSquadKey,
+            TriumvirateEnemyBrain3D.FormationSlotPreference.Top);
+        SpawnTriumvirateMember(
+            entry.triumvirateLowerLeftMemberPrefab,
+            squadCenter + lowerLeftOffset,
+            spawnRotation,
+            runtimeSquadKey,
+            TriumvirateEnemyBrain3D.FormationSlotPreference.LowerLeft);
+        SpawnTriumvirateMember(
+            entry.triumvirateLowerRightMemberPrefab,
+            squadCenter + lowerRightOffset,
+            spawnRotation,
+            runtimeSquadKey,
+            TriumvirateEnemyBrain3D.FormationSlotPreference.LowerRight);
+    }
+
+    private void SpawnTriumvirateMember(GameObject memberPrefab, Vector3 spawnPosition, Quaternion spawnRotation, string runtimeSquadKey, TriumvirateEnemyBrain3D.FormationSlotPreference slotPreference)
+    {
+        SpawnEnemyAt(memberPrefab, spawnPosition, spawnRotation, enemyObject =>
+        {
+            TriumvirateEnemyBrain3D brain = enemyObject.GetComponent<TriumvirateEnemyBrain3D>();
+            if (brain == null)
+            {
+                Debug.LogError($"[InvasionWaveManager3D] Triumvirate member prefab '{memberPrefab.name}' is missing TriumvirateEnemyBrain3D on its root.", enemyObject);
+                return;
+            }
+
+            brain.ConfigureRuntimeSquad(runtimeSquadKey, slotPreference);
+        });
+    }
+
+    private static bool HasNestedNetworkObjects(GameObject spawnedRoot, NetworkObject rootNetworkObject)
+    {
+        NetworkObject[] networkObjects = spawnedRoot.GetComponentsInChildren<NetworkObject>(false);
+        if (networkObjects == null || networkObjects.Length <= 1)
+        {
+            return false;
+        }
+
+        for (int i = 0; i < networkObjects.Length; i++)
+        {
+            NetworkObject networkObject = networkObjects[i];
+            if (networkObject != null && networkObject != rootNetworkObject)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private bool TryResolveSafeSpawnPosition(Vector3 requestedPosition, Quaternion spawnRotation, out Vector3 resolvedPosition)
@@ -697,10 +815,27 @@ public class InvasionWaveManager3D : MonoBehaviour
                 continue;
             }
 
-            total += Mathf.Max(0, entries[i].count) * CountTrackedEnemiesInPrefab(entries[i].enemyPrefab);
+            total += Mathf.Max(0, entries[i].count) * CountTrackedEnemiesForEntry(entries[i]);
         }
 
         return total;
+    }
+
+    private static int CountTrackedEnemiesForEntry(SubWaveEnemyEntry3D entry)
+    {
+        if (entry == null)
+        {
+            return 0;
+        }
+
+        if (!entry.spawnAsTriumvirateSquad)
+        {
+            return CountTrackedEnemiesInPrefab(entry.enemyPrefab);
+        }
+
+        return CountTrackedEnemiesInPrefab(entry.triumvirateTopMemberPrefab)
+            + CountTrackedEnemiesInPrefab(entry.triumvirateLowerLeftMemberPrefab)
+            + CountTrackedEnemiesInPrefab(entry.triumvirateLowerRightMemberPrefab);
     }
 
     private static int CountTrackedEnemiesInPrefab(GameObject enemyPrefab)
