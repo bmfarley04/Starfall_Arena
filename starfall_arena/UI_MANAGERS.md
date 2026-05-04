@@ -30,6 +30,23 @@ Current menu/network note:
 4. synchronized ship select
 5. gameplay scene load (Duel -> normal 2D PvP scene, Invasion -> `3d_invasion`)
 
+## Project Display Framing
+
+The project now enforces a 16:9 presentation frame globally through `ProjectAspectRatioEnforcer`.
+
+Current behavior:
+
+- a persistent runtime object is installed before the first scene loads
+- every active camera is fitted into the current 16:9 safe rect
+- render-texture cameras are left alone because their output is authored by the target texture, not the physical screen
+- existing per-camera viewports are preserved inside that safe rect, so legacy split-screen camera rects still remain relative to the framed area
+- black overlay bars cover the area outside the 16:9 frame and block raycasts there, which keeps `Screen Space - Overlay` UI from visually or interactively escaping the authored frame
+- no scene should need a manually added aspect-ratio script on each camera
+
+Implementation pitfall:
+
+- camera rects alone do not constrain `Screen Space - Overlay` canvases. If future aspect work only changes `Camera.rect`, overlay menus and HUD can still render into ultrawide or tall-screen space. Keep the overlay bars/input blockers as part of the project-wide aspect rule unless all UI canvases are deliberately moved to camera-space inside the safe frame.
+
 ## Main Manager Responsibilities
 
 ### GameDataManager
