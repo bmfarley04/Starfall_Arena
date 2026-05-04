@@ -18826,7 +18826,6 @@ GameObject:
   - component: {fileID: 4193427002829697751}
   - component: {fileID: 841804121361608952}
   - component: {fileID: 4824122047509908658}
-  - component: {fileID: 2028525454733956715}
   - component: {fileID: 2030937905806383272}
   m_Layer: 0
   m_Name: fortressEnemy_Empowered
@@ -19502,34 +19501,6 @@ MonoBehaviour:
   pitchFromMoveIntent: 10
   useRigidbodyVelocity: 1
   drawGizmos: 1
---- !u!114 &2028525454733956715
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8285145228653432002}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d1c2214c65e80b24a8d2d0d28f3f16ea, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::SpawnArrivalEffect3D
-  arrivalEffect:
-    effectPrefab: {fileID: 0}
-    effectAnchor: {fileID: 0}
-    localPositionOffset: {x: 0, y: 0, z: 0}
-    localEulerOffset: {x: 0, y: 0, z: 0}
-    effectScaleMultiplier: 1
-    multiplyByShipScale: 1
-    autoCleanupEffect: 1
-    forceParticleHierarchyScaling: 1
-  reveal:
-    revealDelaySeconds: 0
-    hideVisualsUntilReveal: 0
-    visualRenderers: []
-    disableAssignedCollidersUntilReveal: 0
-    colliders: []
-    behaviours: []
 --- !u!114 &2030937905806383272
 MonoBehaviour:
   m_ObjectHideFlags: 0

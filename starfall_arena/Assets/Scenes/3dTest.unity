@@ -6236,6 +6236,67 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
+--- !u!1001 &1995163116
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 6237992387291366832, guid: 5baf9648cd746c74d891f2fa869e81e8, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -10
+      objectReference: {fileID: 0}
+    - target: {fileID: 6237992387291366832, guid: 5baf9648cd746c74d891f2fa869e81e8, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0.00001
+      objectReference: {fileID: 0}
+    - target: {fileID: 6237992387291366832, guid: 5baf9648cd746c74d891f2fa869e81e8, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -179.38268
+      objectReference: {fileID: 0}
+    - target: {fileID: 6237992387291366832, guid: 5baf9648cd746c74d891f2fa869e81e8, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6237992387291366832, guid: 5baf9648cd746c74d891f2fa869e81e8, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6237992387291366832, guid: 5baf9648cd746c74d891f2fa869e81e8, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6237992387291366832, guid: 5baf9648cd746c74d891f2fa869e81e8, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6237992387291366832, guid: 5baf9648cd746c74d891f2fa869e81e8, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6237992387291366832, guid: 5baf9648cd746c74d891f2fa869e81e8, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6237992387291366832, guid: 5baf9648cd746c74d891f2fa869e81e8, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7922310504078213144, guid: 5baf9648cd746c74d891f2fa869e81e8, type: 3}
+      propertyPath: GlobalObjectIdHash
+      value: 2888177842
+      objectReference: {fileID: 0}
+    - target: {fileID: 7988387970452210014, guid: 5baf9648cd746c74d891f2fa869e81e8, type: 3}
+      propertyPath: m_Name
+      value: tankEnemy_Empowered
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 5baf9648cd746c74d891f2fa869e81e8, type: 3}
 --- !u!1 &2029641326
 GameObject:
   m_ObjectHideFlags: 0
@@ -7662,6 +7723,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: boss2Enemy
       objectReference: {fileID: 0}
+    - target: {fileID: 8311721449157583992, guid: 3abe469261929d94fb24a7cd0c243bfb, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -8340,3 +8405,4 @@ SceneRoots:
   - {fileID: 661275840}
   - {fileID: 3856349670653834411}
   - {fileID: 3949882469108783915}
+  - {fileID: 1995163116}

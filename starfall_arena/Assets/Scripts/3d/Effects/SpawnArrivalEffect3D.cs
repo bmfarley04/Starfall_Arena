@@ -42,7 +42,7 @@ public class SpawnArrivalEffect3D : MonoBehaviour
         public bool disableAssignedCollidersUntilReveal;
         [Tooltip("Colliders disabled until reveal. Assign gameplay/body colliders that should not be hittable before arrival.")]
         public Collider[] colliders;
-        [Tooltip("Behaviours disabled until reveal. Assign enemy brains, movement, and weapons that should not run while hidden.")]
+        [Tooltip("Behaviours disabled until reveal. Assign active gameplay behaviours such as enemy brains, movement, and weapons. These behaviours are re-enabled when reveal completes.")]
         public Behaviour[] behaviours;
     }
 
@@ -325,7 +325,7 @@ public class SpawnArrivalEffect3D : MonoBehaviour
             Behaviour behaviour = reveal.behaviours[i];
             if (behaviour != null && behaviour != this)
             {
-                behaviour.enabled = _behaviourEnabledStates[i];
+                behaviour.enabled = true;
             }
         }
     }

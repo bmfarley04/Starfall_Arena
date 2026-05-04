@@ -9871,7 +9871,6 @@ GameObject:
   - component: {fileID: 2915836954470470553}
   - component: {fileID: 8234217605981732139}
   - component: {fileID: 4484089489357116519}
-  - component: {fileID: 6819227126250425259}
   - component: {fileID: 7922310504078213144}
   - component: {fileID: 3103089949591528708}
   - component: {fileID: 2879590566932571643}
@@ -10267,35 +10266,6 @@ MonoBehaviour:
   useSeparation: 1
   useObstacleAvoidance: 1
   drawGizmos: 1
---- !u!114 &6819227126250425259
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7988387970452210014}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d1c2214c65e80b24a8d2d0d28f3f16ea, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::SpawnArrivalEffect3D
-  arrivalEffect:
-    effectPrefab: {fileID: 130808, guid: 3b5908090b51ae34fa2da7acef3a8f26, type: 3}
-    effectAnchor: {fileID: 0}
-    localPositionOffset: {x: 0, y: 0, z: 0}
-    localEulerOffset: {x: 0, y: 0, z: 0}
-    effectScaleMultiplier: 3
-    multiplyByShipScale: 1
-    autoCleanupEffect: 1
-    forceParticleHierarchyScaling: 1
-  reveal:
-    revealDelaySeconds: 3
-    hideVisualsUntilReveal: 1
-    visualRenderers: []
-    disableAssignedCollidersUntilReveal: 1
-    colliders: []
-    behaviours:
-    - {fileID: 4344046668260539955}
 --- !u!114 &7922310504078213144
 MonoBehaviour:
   m_ObjectHideFlags: 0
