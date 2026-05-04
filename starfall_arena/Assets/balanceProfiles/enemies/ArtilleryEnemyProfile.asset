@@ -26,8 +26,8 @@ MonoBehaviour:
     drainRate: 18
     regenRate: 18
     minimumStartEnergy: 0
-    rotationMultiplier: 0.2
-    postFireRotationPenaltyDuration: 0.3
+    rotationMultiplier: 0.1
+    postFireRotationPenaltyDuration: 0.55
   brain:
     thinkInterval: 0.05
     aimToleranceDegrees: 8
