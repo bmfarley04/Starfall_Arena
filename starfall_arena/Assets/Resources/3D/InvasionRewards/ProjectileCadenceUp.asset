@@ -18,7 +18,7 @@ MonoBehaviour:
   description: Improve weapon energy economy and cooldown recovery.
   generateDescriptionFromPayload: 1
   icon: {fileID: 21300000, guid: e52c306baee5d1c41a61141592f28143, type: 3}
-  eligibleTiers: 7
+  eligibleTiers: -1
   visualStyleOverride: 1
   useVisualStyleOverride: 0
   offerWeight: 1.1

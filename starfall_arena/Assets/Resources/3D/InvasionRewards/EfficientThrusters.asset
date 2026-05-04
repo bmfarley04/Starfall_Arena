@@ -17,7 +17,7 @@ MonoBehaviour:
   displayName: Efficient Thrusters
   description: Gain speed and acceleration after dodging.
   generateDescriptionFromPayload: 1
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 0459b828ff870504e8be567b018306f3, type: 3}
   eligibleTiers: 2
   visualStyleOverride: 1
   useVisualStyleOverride: 0

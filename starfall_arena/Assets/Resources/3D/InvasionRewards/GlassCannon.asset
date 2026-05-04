@@ -18,7 +18,7 @@ MonoBehaviour:
   description: Trade durability for raw damage.
   generateDescriptionFromPayload: 1
   icon: {fileID: 21300000, guid: 0717508c465031b4eac61fd5c550a476, type: 3}
-  eligibleTiers: 7
+  eligibleTiers: -1
   visualStyleOverride: 4
   useVisualStyleOverride: 1
   offerWeight: 0.23

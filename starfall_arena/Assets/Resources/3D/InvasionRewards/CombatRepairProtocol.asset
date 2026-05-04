@@ -17,7 +17,7 @@ MonoBehaviour:
   displayName: Combat Repair Protocol
   description: Repair hull when defeating non-boss enemies.
   generateDescriptionFromPayload: 1
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 8d883554f1d3e76469946e54629e6379, type: 3}
   eligibleTiers: 2
   visualStyleOverride: 1
   useVisualStyleOverride: 0

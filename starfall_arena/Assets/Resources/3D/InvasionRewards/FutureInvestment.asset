@@ -17,7 +17,7 @@ MonoBehaviour:
   displayName: Future Investment
   description: Future normal stat boosts are stronger.
   generateDescriptionFromPayload: 1
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 46e82be8237bb124c92b29d0d283c2e0, type: 3}
   eligibleTiers: 1
   visualStyleOverride: 1
   useVisualStyleOverride: 0

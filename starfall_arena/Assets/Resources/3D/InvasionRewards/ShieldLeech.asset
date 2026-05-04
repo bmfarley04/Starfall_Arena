@@ -17,7 +17,7 @@ MonoBehaviour:
   displayName: Shield Leech
   description: Restore shields from damage dealt.
   generateDescriptionFromPayload: 1
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 46e82be8237bb124c92b29d0d283c2e0, type: 3}
   eligibleTiers: 6
   visualStyleOverride: 1
   useVisualStyleOverride: 0

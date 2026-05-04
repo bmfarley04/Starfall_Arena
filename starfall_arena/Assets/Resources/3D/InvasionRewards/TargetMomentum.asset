@@ -17,7 +17,7 @@ MonoBehaviour:
   displayName: Target Momentum
   description: Consecutive hits on one target increase damage against that target.
   generateDescriptionFromPayload: 1
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 44b2c1f91a896804780529464ef63e74, type: 3}
   eligibleTiers: 4
   visualStyleOverride: 1
   useVisualStyleOverride: 0

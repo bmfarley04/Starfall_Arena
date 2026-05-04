@@ -18,7 +18,7 @@ MonoBehaviour:
   description: Increase maximum hull and shields.
   generateDescriptionFromPayload: 1
   icon: {fileID: 21300000, guid: 8d883554f1d3e76469946e54629e6379, type: 3}
-  eligibleTiers: 7
+  eligibleTiers: -1
   visualStyleOverride: 1
   useVisualStyleOverride: 0
   offerWeight: 1.15
