@@ -1058,6 +1058,7 @@ public class NetMovement3D : NetworkBehaviour
             _cameraRig.SetCameraRigActive(true);
         }
 
+        SetOwnedAudioListenersActive(true);
         BindOwnerCameraAndTracking(gameplayCamera, cinemachineCamera);
         SetWeaponAimCamera(gameplayCamera);
         PlayerHUDManager3D.RebindAllAutoManagers();
@@ -1081,6 +1082,54 @@ public class NetMovement3D : NetworkBehaviour
         if (_cameraRig != null)
         {
             _cameraRig.SetCameraRigActive(false);
+        }
+
+        SetOwnedAudioListenersActive(false);
+    }
+
+    private void SetOwnedAudioListenersActive(bool isActive)
+    {
+        AudioListener[] ownedListeners = GetComponentsInChildren<AudioListener>(true);
+        if (ownedListeners.Length == 0)
+        {
+            return;
+        }
+
+        if (!isActive)
+        {
+            for (int i = 0; i < ownedListeners.Length; i++)
+            {
+                if (ownedListeners[i] != null)
+                {
+                    ownedListeners[i].enabled = false;
+                }
+            }
+
+            return;
+        }
+
+        AudioListener primaryOwnedListener = null;
+        for (int i = 0; i < ownedListeners.Length; i++)
+        {
+            if (ownedListeners[i] != null)
+            {
+                primaryOwnedListener = ownedListeners[i];
+                break;
+            }
+        }
+
+        if (primaryOwnedListener == null)
+        {
+            return;
+        }
+
+        AudioListener[] sceneListeners = FindObjectsByType<AudioListener>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        for (int i = 0; i < sceneListeners.Length; i++)
+        {
+            if (sceneListeners[i] != null)
+            {
+                sceneListeners[i].enabled = sceneListeners[i] == primaryOwnedListener;
+            }
         }
     }
 

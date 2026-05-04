@@ -432,6 +432,7 @@ public abstract class Entity3D : MonoBehaviour
 
     public Quaternion ApplyUprightRecovery(Quaternion currentRotation, float deltaTime, bool hasRotationIntent)
     {
+        currentRotation = SanitizeRotation(currentRotation);
         if (deltaTime <= 0f || !ShouldApplyUprightRecovery(hasRotationIntent))
         {
             return currentRotation;
@@ -536,6 +537,7 @@ public abstract class Entity3D : MonoBehaviour
 
     private static Quaternion RotateTowardsUpright(Quaternion currentRotation, float maxDegreesDelta)
     {
+        currentRotation = SanitizeRotation(currentRotation);
         Vector3 forward = currentRotation * Vector3.forward;
         if (forward.sqrMagnitude <= 0.0001f)
         {
@@ -557,7 +559,36 @@ public abstract class Entity3D : MonoBehaviour
 
         float signedRollDelta = Vector3.SignedAngle(currentUp.normalized, targetUp.normalized, forward);
         float clampedRollDelta = Mathf.Clamp(signedRollDelta, -maxDegreesDelta, maxDegreesDelta);
-        return Quaternion.AngleAxis(clampedRollDelta, forward) * currentRotation;
+        return SanitizeRotation(Quaternion.AngleAxis(clampedRollDelta, forward) * currentRotation);
+    }
+
+    private static Quaternion SanitizeRotation(Quaternion rotation)
+    {
+        if (!IsFinite(rotation.x) || !IsFinite(rotation.y) || !IsFinite(rotation.z) || !IsFinite(rotation.w))
+        {
+            return Quaternion.identity;
+        }
+
+        float magnitudeSquared = rotation.x * rotation.x
+            + rotation.y * rotation.y
+            + rotation.z * rotation.z
+            + rotation.w * rotation.w;
+        if (magnitudeSquared <= 0.000001f)
+        {
+            return Quaternion.identity;
+        }
+
+        float inverseMagnitude = 1f / Mathf.Sqrt(magnitudeSquared);
+        return new Quaternion(
+            rotation.x * inverseMagnitude,
+            rotation.y * inverseMagnitude,
+            rotation.z * inverseMagnitude,
+            rotation.w * inverseMagnitude);
+    }
+
+    private static bool IsFinite(float value)
+    {
+        return !float.IsNaN(value) && !float.IsInfinity(value);
     }
 
     public virtual float ModifyOutgoingDamage(float damage, Entity3D target, DamageSource3D source, int accuracyAttackId)
