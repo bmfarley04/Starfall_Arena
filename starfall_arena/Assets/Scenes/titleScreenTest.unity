@@ -44336,7 +44336,6 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 9e253a16da589164aa71b9afbeac9cfa, type: 2}
   known3DShips:
   - {fileID: 11400000, guid: 7c9e3b1b784102e44b69ce6ee15c2187, type: 2}
-  - {fileID: 11400000, guid: 3932fca80d410704aa99a81cf831a070, type: 2}
   - {fileID: 11400000, guid: c5d1fa71d54b4ee0a6ff742ad53fbc50, type: 2}
   defaultShipRosterMode: 0
   threeDGameplaySceneName: 3dscene

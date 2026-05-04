@@ -18,7 +18,7 @@ MonoBehaviour:
   description: Improve ship speed, acceleration, and turn response.
   generateDescriptionFromPayload: 1
   icon: {fileID: 21300000, guid: 0f1176432e710584e8f9764bb00c2edd, type: 3}
-  eligibleTiers: 7
+  eligibleTiers: -1
   visualStyleOverride: 1
   useVisualStyleOverride: 0
   offerWeight: 1

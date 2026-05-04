@@ -18,7 +18,7 @@ MonoBehaviour:
   description: Reduce incoming damage.
   generateDescriptionFromPayload: 1
   icon: {fileID: 21300000, guid: b634cd65a13fb2a4bb0e7f9531b7aac7, type: 3}
-  eligibleTiers: 7
+  eligibleTiers: -1
   visualStyleOverride: 1
   useVisualStyleOverride: 0
   offerWeight: 0.65
