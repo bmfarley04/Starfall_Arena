@@ -40,6 +40,7 @@ public struct NetInterpolationDiagnostics3D
 public sealed class NetSnapshotInterpolator3D
 {
     private const float DelayRecoveryPerSecond = 20f;
+    private const int TimelineMismatchExtraToleranceTicks = 8;
 
     private NetStateSnapshot3D[] _buffer;
     private bool[] _hasSnapshot;
@@ -52,6 +53,7 @@ public sealed class NetSnapshotInterpolator3D
     private MovementState3D _lastRenderedState;
     private bool _loggedStarvationWarning;
     private bool _loggedOutOfOrderWarning;
+    private bool _loggedTimelineMismatchWarning;
     private NetInterpolationDiagnostics3D _diagnostics;
 
     public NetInterpolationDiagnostics3D Diagnostics => _diagnostics;
@@ -81,6 +83,7 @@ public sealed class NetSnapshotInterpolator3D
         _hasLastRendered = false;
         _loggedStarvationWarning = false;
         _loggedOutOfOrderWarning = false;
+        _loggedTimelineMismatchWarning = false;
         _diagnostics.CurrentBufferDepth = 0;
         _diagnostics.OldestSnapshotTick = -1;
         _diagnostics.NewestSnapshotTick = -1;
@@ -161,7 +164,12 @@ public sealed class NetSnapshotInterpolator3D
         float maxDelayMs = Mathf.Max(minDelayMs, safeSettings.maxVisualDelayMs);
         _currentDelayMs = Mathf.Clamp(_currentDelayMs, minDelayMs, maxDelayMs);
 
-        int resolvedServerTick = serverTick >= 0 ? serverTick : _newestTick;
+        int resolvedServerTick = ResolveSamplingTick(
+            serverTick,
+            tickInterval,
+            safeSettings,
+            logContext,
+            label);
         float renderTickFloat = resolvedServerTick - (_currentDelayMs / 1000f / tickInterval);
         int renderTick = Mathf.FloorToInt(renderTickFloat);
         _diagnostics.RenderTick = renderTick;
@@ -273,6 +281,37 @@ public sealed class NetSnapshotInterpolator3D
     {
         _diagnostics.BufferStarvationEvents++;
         _currentDelayMs = Mathf.Max(minDelayMs, _currentDelayMs - Mathf.Max(1f, minDelayMs * 0.25f));
+    }
+
+    private int ResolveSamplingTick(
+        int serverTick,
+        float tickInterval,
+        NetInterpolationSettings3D settings,
+        Object logContext,
+        string label)
+    {
+        if (serverTick < 0)
+        {
+            return _newestTick;
+        }
+
+        float delayTicks = _currentDelayMs / 1000f / tickInterval;
+        float maxExtrapolationTicks = Mathf.Max(0f, settings.maxExtrapolationMs) / 1000f / tickInterval;
+        int maxExpectedLead = Mathf.CeilToInt(delayTicks + maxExtrapolationTicks) + TimelineMismatchExtraToleranceTicks;
+        if (serverTick <= _newestTick + maxExpectedLead)
+        {
+            return serverTick;
+        }
+
+        if (!_loggedTimelineMismatchWarning)
+        {
+            Debug.LogWarning(
+                $"[{label}] Server tick is far ahead of the newest buffered movement snapshot; sampling from newest snapshot tick instead to avoid permanent interpolation starvation. serverTick={serverTick}, newestTick={_newestTick}, maxExpectedLead={maxExpectedLead}, bufferDepth={_diagnostics.CurrentBufferDepth}",
+                logContext);
+            _loggedTimelineMismatchWarning = true;
+        }
+
+        return _newestTick;
     }
 
     private bool TryFindAtOrBefore(int tick, out NetStateSnapshot3D snapshot)

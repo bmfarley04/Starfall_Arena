@@ -590,7 +590,7 @@ public class NetMovement3D : NetworkBehaviour
         BroadcastStateClientRpc(snapshot);
     }
 
-    [ClientRpc]
+    [ClientRpc(Delivery = RpcDelivery.Unreliable)]
     private void BroadcastStateClientRpc(NetStateSnapshot3D snapshot)
     {
         if (IsOwner)

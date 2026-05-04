@@ -85,7 +85,7 @@ public class NetEnemyMovement3D : NetworkBehaviour
         BroadcastStateClientRpc(CaptureSnapshot(tick));
     }
 
-    [ClientRpc]
+    [ClientRpc(Delivery = RpcDelivery.Unreliable)]
     private void BroadcastStateClientRpc(NetStateSnapshot3D snapshot)
     {
         if (IsServer)
