@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using Unity.Collections;
+using Unity.Cinemachine;
 using TMPro;
 using Unity.Netcode;
 using UnityEngine;
@@ -191,6 +192,8 @@ public class InvasionSceneManager3D : MonoBehaviour
     private Coroutine _activeWaveIntroCoroutine;
     private Coroutine _gameEndPresentationCoroutine;
     private Coroutine _localRescueCountdownCoroutine;
+    private CinemachineCamera _localRescueCinemachineCamera;
+    private byte _localRescueCameraSlot;
     private int _lastWaveIntroSequenceId = -1;
     private readonly int[] _playerLivesRemainingBySlot = new int[3];
     private readonly Coroutine[] _respawnCoroutinesBySlot = new Coroutine[3];
@@ -250,6 +253,10 @@ public class InvasionSceneManager3D : MonoBehaviour
         UnsubscribePlayerDeath(_player2);
         StopRespawnCoroutines();
         StopLocalRescueCountdown();
+        if (_localRescueCameraSlot >= 1 && _localRescueCameraSlot <= 2)
+        {
+            StopLocalRescueCameraFollow(_localRescueCameraSlot);
+        }
 
         if (_networkSessionSubscriptionCoroutine != null)
         {
@@ -1694,6 +1701,7 @@ public class InvasionSceneManager3D : MonoBehaviour
             return;
         }
 
+        TryStartLocalRescueCameraFollow(playerSlot);
         StopLocalRescueCountdown();
         _localRescueCountdownCoroutine = StartCoroutine(RescueCountdownPresentationCoroutine(countdownSeconds));
     }
@@ -1706,6 +1714,7 @@ public class InvasionSceneManager3D : MonoBehaviour
         }
 
         StopLocalRescueCountdown();
+        StopLocalRescueCameraFollow(playerSlot);
     }
 
     private bool ShouldShowRescueCountdownForSlot(byte playerSlot)
@@ -1757,6 +1766,84 @@ public class InvasionSceneManager3D : MonoBehaviour
         {
             waveTextCanvasGroup.alpha = 0f;
         }
+    }
+
+    private void TryStartLocalRescueCameraFollow(byte playerSlot)
+    {
+        if (playerSlot < 1 || playerSlot > 2 || !_rescueRevivePendingBySlot[playerSlot])
+        {
+            return;
+        }
+
+        Player3D teammate = ResolveTrackedOrNetworkPlayer(GetTeammateSlot(playerSlot));
+        if (teammate == null)
+        {
+            return;
+        }
+
+        CinemachineCamera cinemachineCamera = ResolveGameplayCinemachineCamera();
+        if (cinemachineCamera == null)
+        {
+            return;
+        }
+
+        cinemachineCamera.Target.TrackingTarget = teammate.transform;
+        _localRescueCinemachineCamera = cinemachineCamera;
+        _localRescueCameraSlot = playerSlot;
+    }
+
+    private void StopLocalRescueCameraFollow(byte playerSlot)
+    {
+        if (_localRescueCameraSlot != playerSlot)
+        {
+            return;
+        }
+
+        RebindLocalCameraToOwnedPlayerIfAvailable();
+        _localRescueCinemachineCamera = null;
+        _localRescueCameraSlot = 0;
+    }
+
+    private void RebindLocalCameraToOwnedPlayerIfAvailable()
+    {
+        if (TryResolveLocalOwnedPlayerSlot(out int ownedSlot)
+            && NetMovement3D.TryGetPlayerBySlot((byte)ownedSlot, out NetMovement3D movement)
+            && movement != null
+            && movement.IsSpawned
+            && movement.IsOwner)
+        {
+            movement.BindOwnerCameraAndTracking();
+            return;
+        }
+
+        if (_localRescueCinemachineCamera != null)
+        {
+            _localRescueCinemachineCamera.Target.TrackingTarget = null;
+        }
+    }
+
+    private static CinemachineCamera ResolveGameplayCinemachineCamera()
+    {
+        CinemachineCamera[] cinemachineCameras = FindObjectsByType<CinemachineCamera>(FindObjectsSortMode.None);
+        CinemachineCamera fallback = null;
+
+        for (int i = 0; i < cinemachineCameras.Length; i++)
+        {
+            CinemachineCamera candidate = cinemachineCameras[i];
+            if (candidate == null || !candidate.gameObject.activeInHierarchy)
+            {
+                continue;
+            }
+
+            if (candidate.isActiveAndEnabled)
+            {
+                return candidate;
+            }
+
+            fallback ??= candidate;
+        }
+
+        return fallback;
     }
 
     private string FormatRescueCountdownText(float remainingSeconds)
@@ -2386,11 +2473,20 @@ public class InvasionSceneManager3D : MonoBehaviour
 
         if (active == 1)
         {
+            if (playerSlot >= 1 && playerSlot <= 2)
+            {
+                _rescueRevivePendingBySlot[playerSlot] = true;
+            }
+
             StartRescueCountdownPresentation(playerSlot, remainingSeconds);
         }
         else
         {
             StopRescueCountdownPresentation(playerSlot);
+            if (playerSlot >= 1 && playerSlot <= 2)
+            {
+                _rescueRevivePendingBySlot[playerSlot] = false;
+            }
         }
     }
 
