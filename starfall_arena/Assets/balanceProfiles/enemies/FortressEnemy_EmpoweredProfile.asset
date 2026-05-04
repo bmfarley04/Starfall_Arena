@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: FortressEnemy_EmpoweredProfile
   m_EditorClassIdentifier: 
   core:
-    maxHealth: 750
-    maxShield: 1200
+    maxHealth: 3000
+    maxShield: 3000
     moveSpeed: 12
     rotationDegreesPerSecond: 40
     detectionRange: 900
