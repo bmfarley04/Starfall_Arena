@@ -21,7 +21,7 @@ MonoBehaviour:
   projectileWeapons: []
   beamWeapons:
   - damagePerSecond: 22
-    maxDistance: 520
+    maxDistance: 260
     capacity: 320
     drainRate: 22
     regenRate: 20
