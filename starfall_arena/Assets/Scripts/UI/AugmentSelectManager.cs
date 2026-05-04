@@ -774,7 +774,7 @@ namespace StarfallArena.UI
 
             isShowing = true;
             currentPickingPlayer = pickingPlayer;
-            currentTier = tier;
+            currentTier = ResolveDisplayedTier(tier, perCardVisualTiers);
             _useExternalTimer = true;
             _selectedCardIndex = -1;
             _stickNavigated = false;
@@ -1430,6 +1430,20 @@ namespace StarfallArena.UI
                 int sourceIndex = visualTier == 4 ? 0 : i;
                 ApplyCardVisualSnapshot(baseTier, i, GetOriginalCardVisualSnapshot(visualTier, sourceIndex));
             }
+        }
+
+        private int ResolveDisplayedTier(int requestedTier, IReadOnlyList<int> perCardVisualTiers)
+        {
+            int clampedTier = Mathf.Clamp(requestedTier, 1, 4);
+            bool usesPerCardVisuals = perCardVisualTiers != null && perCardVisualTiers.Count > 0;
+            if (clampedTier == 4 && usesPerCardVisuals)
+            {
+                // Tier 4 is a visual template for mixed Invasion offers. Use the Epic row
+                // as the host so the tier 4 art replaces a card slot instead of overlaying the row.
+                return 2;
+            }
+
+            return clampedTier;
         }
 
         private void EnsureOriginalCardVisualsCaptured()

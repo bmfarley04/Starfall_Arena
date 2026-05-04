@@ -89,7 +89,7 @@ public class InvasionRewardPhasePresenter3D : MonoBehaviour
         }
 
         EnsurePresentationHierarchyVisible();
-        augmentSelectManager.ShowNetworkAugmentSelect(playerSlot, ResolveVisualTier(rewardTier), _runtimeAugments, visualTiers);
+        augmentSelectManager.ShowNetworkAugmentSelect(playerSlot, ResolveOfferDisplayTier(rewardTier), _runtimeAugments, visualTiers);
         Canvas.ForceUpdateCanvases();
 
         if (_countdownCoroutine != null)
@@ -243,5 +243,11 @@ public class InvasionRewardPhasePresenter3D : MonoBehaviour
             InvasionRewardTier3D.Tier4 => 4,
             _ => 1
         };
+    }
+
+    private static int ResolveOfferDisplayTier(InvasionRewardTier3D rewardTier)
+    {
+        int visualTier = ResolveVisualTier(rewardTier);
+        return visualTier == 4 ? 2 : visualTier;
     }
 }
