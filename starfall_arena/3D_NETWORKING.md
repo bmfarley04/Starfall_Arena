@@ -157,6 +157,7 @@ Invasion enemies use separate enemy-specific networking:
 
 - `NetEnemyMovement3D`
   - server publishes enemy Rigidbody position/rotation/velocity snapshots
+  - enemy snapshots are throttled by `Snapshot Tick Interval`, defaulting to every other network tick, so Invasion does not spend 50 movement RPCs per second per enemy
   - clients use the same adaptive server-timeline interpolation helper as remote player proxies
   - clients do not run enemy gameplay AI
   - client enemy proxies are kinematic and apply sampled position/rotation only; enemy `Rigidbody.linearVelocity` remains server-owned

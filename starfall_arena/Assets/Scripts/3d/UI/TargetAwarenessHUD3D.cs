@@ -110,8 +110,10 @@ public class TargetAwarenessHUD3D : PlayerHUDBindingTarget3D
     [System.Serializable]
     private struct BracketBoundsConfig3D
     {
-        [Tooltip("Canvas-space padding added around the target's projected mesh bounds before sizing the visible bracket.")]
-        public Vector2 bracketPadding;
+        [Tooltip("Closest-range canvas-space padding added around the target's projected mesh bounds before sizing the visible bracket.")]
+        public Vector2 nearBracketPadding;
+        [Tooltip("Farthest-range canvas-space padding added around the target's projected mesh bounds before sizing the visible bracket. Lower this to keep distant targets tightly framed.")]
+        public Vector2 farBracketPadding;
         [Tooltip("Closest-range minimum bracket size in canvas pixels after projected bounds and padding are applied.")]
         public Vector2 nearMinBracketSize;
         [Tooltip("Farthest-range minimum bracket size in canvas pixels after projected bounds and padding are applied. Lower this to let distant small targets stay visually small.")]
@@ -208,12 +210,13 @@ public class TargetAwarenessHUD3D : PlayerHUDBindingTarget3D
     [Header("Projected Bracket Bounds")]
     [SerializeField] private BracketBoundsConfig3D bracketBounds = new BracketBoundsConfig3D
     {
-        bracketPadding = new Vector2(36f, 28f),
-        nearMinBracketSize = new Vector2(56f, 40f),
-        farMinBracketSize = new Vector2(24f, 18f),
+        nearBracketPadding = new Vector2(24f, 18f),
+        farBracketPadding = new Vector2(6f, 4f),
+        nearMinBracketSize = new Vector2(40f, 28f),
+        farMinBracketSize = new Vector2(12f, 10f),
         maxBracketSize = new Vector2(420f, 280f),
-        nearFallbackBracketSize = new Vector2(88f, 60f),
-        farFallbackBracketSize = new Vector2(34f, 24f)
+        nearFallbackBracketSize = new Vector2(64f, 44f),
+        farFallbackBracketSize = new Vector2(18f, 14f)
     };
 
     private readonly List<TargetRuntime3D> _targets = new();
@@ -514,7 +517,11 @@ public class TargetAwarenessHUD3D : PlayerHUDBindingTarget3D
     {
         if (TryProjectTargetBounds(ref runtime, gameplayCamera, out Vector2 min, out Vector2 max))
         {
-            Vector2 size = max - min + bracketBounds.bracketPadding;
+            Vector2 padding = EvaluateBracketSizeByDistance(
+                bracketBounds.nearBracketPadding,
+                bracketBounds.farBracketPadding,
+                targetDistance);
+            Vector2 size = max - min + padding;
             Vector2 clampedSize = ClampBracketSize(size, targetDistance);
             LogBracketSizing(ref runtime, BracketSizingSource3D.ProjectedBounds, clampedSize, targetDistance);
             return clampedSize;

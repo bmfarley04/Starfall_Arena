@@ -10472,6 +10472,7 @@ MonoBehaviour:
     maxBracketSize: {x: 420, y: 280}
     nearFallbackBracketSize: {x: 88, y: 60}
     farFallbackBracketSize: {x: 34, y: 24}
+    logBracketSizingSource: 1
 --- !u!1 &1510269231
 GameObject:
   m_ObjectHideFlags: 0
