@@ -948,20 +948,23 @@ public class InvasionSceneManager3D : MonoBehaviour
     {
         Player3D player = null;
         float waitForSpawnUntil = Time.realtimeSinceStartup + Mathf.Max(1f, spawnRetryIntervalSeconds * 10f);
-        while (player == null && Time.realtimeSinceStartup < waitForSpawnUntil)
+        while ((player == null || player.CurrentHealth <= 0f) && Time.realtimeSinceStartup < waitForSpawnUntil)
         {
-            player = ResolveTrackedOrNetworkPlayer(playerSlot);
-            if (player == null)
+            player = ResolveLiveNetworkPlayerForSlot(playerSlot);
+            if (player == null || player.CurrentHealth <= 0f)
             {
                 yield return null;
             }
         }
 
-        if (player == null)
+        if (player == null || player.CurrentHealth <= 0f)
         {
             _respawnProtectionVisualCoroutinesBySlot[playerSlot] = null;
             yield break;
         }
+
+        ApplyRewardStateToResolvedPlayer(player, playerSlot);
+        PlayerHUDManager3D.RebindAllAutoManagers();
 
         ShieldController shield = player.GetComponentInChildren<ShieldController>(true);
         float endTime = Time.time + Mathf.Max(0f, duration);
@@ -976,10 +979,49 @@ public class InvasionSceneManager3D : MonoBehaviour
         _respawnProtectionVisualCoroutinesBySlot[playerSlot] = null;
     }
 
+    private void ApplyRewardStateToResolvedPlayer(Player3D player, byte playerSlot)
+    {
+        if (player == null || playerSlot < 1 || playerSlot > 2 || player.CurrentHealth <= 0f)
+        {
+            return;
+        }
+
+        EnsureRewardStateContainers();
+        InvasionPlayerRewardState3D rewardState = _rewardStateBySlot[playerSlot];
+        rewardState?.ApplyToPlayer(player);
+    }
+
+    private Player3D ResolveLiveNetworkPlayerForSlot(byte playerSlot)
+    {
+        Player3D player = ResolveTrackedOrNetworkPlayer(playerSlot);
+        if (player != null && player.CurrentHealth > 0f)
+        {
+            return player;
+        }
+
+        NetMovement3D[] movements = FindObjectsByType<NetMovement3D>(FindObjectsSortMode.None);
+        for (int i = 0; i < movements.Length; i++)
+        {
+            NetMovement3D movement = movements[i];
+            if (movement == null || !movement.IsSpawned || movement.PlayerSlot != playerSlot)
+            {
+                continue;
+            }
+
+            Player3D candidate = movement.GetComponent<Player3D>();
+            if (candidate != null && candidate.CurrentHealth > 0f)
+            {
+                return candidate;
+            }
+        }
+
+        return null;
+    }
+
     private Player3D ResolveTrackedOrNetworkPlayer(byte playerSlot)
     {
         Player3D trackedPlayer = playerSlot == 1 ? _player1 : _player2;
-        if (trackedPlayer != null)
+        if (trackedPlayer != null && trackedPlayer.CurrentHealth > 0f)
         {
             return trackedPlayer;
         }
@@ -1382,7 +1424,7 @@ public class InvasionSceneManager3D : MonoBehaviour
         List<float> statRewardWeights = new List<float>(_effectiveRewardDefinitions.Count);
         Player3D livePlayer = ResolveTrackedOrNetworkPlayer(playerSlot);
         InvasionPlayerRewardState3D rewardState = _rewardStateBySlot[playerSlot];
-        if (livePlayer != null)
+        if (livePlayer != null && rewardState != null && !rewardState.HasBaseSnapshot)
         {
             rewardState.CaptureBaseSnapshot(livePlayer);
         }
