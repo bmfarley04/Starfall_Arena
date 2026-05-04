@@ -5292,7 +5292,7 @@ Transform:
   m_GameObject: {fileID: 6962877402401494773}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 5.72}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -6129,6 +6129,11 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   reconciliationThreshold: 0.1
   logOwnerCorrections: 1
+  enableOwnerMovementDiagnostics: 1
+  correctionLogMinDistance: 0.001
+  correctionSummaryIntervalSeconds: 1
+  logMovementConfigOnSpawn: 1
+  logRigidbodyStateDrift: 1
   interpolationSettings:
     minVisualDelayMs: 80
     maxVisualDelayMs: 120
