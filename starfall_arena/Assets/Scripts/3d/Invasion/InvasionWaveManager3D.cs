@@ -551,6 +551,12 @@ public class InvasionWaveManager3D : MonoBehaviour
             return null;
         }
 
+        if (NetTickUtil.IsActive && enemyPrefab.scene.IsValid())
+        {
+            Debug.LogError($"[InvasionWaveManager3D] Networked enemy spawn skipped because '{enemyPrefab.name}' is a live scene object, not a prefab asset. Runtime-spawned NGO enemies must be instantiated from registered prefab assets so health, visibility, collider, and NetworkBehaviour state start cleanly.", enemyPrefab);
+            return null;
+        }
+
         if (!TryResolveSafeSpawnPosition(spawnPosition, spawnRotation, out Vector3 safeSpawnPosition))
         {
             Debug.LogWarning($"[InvasionWaveManager3D] Enemy spawn skipped because no clear spawn position was found for '{enemyPrefab.name}' near {spawnPosition}. Check Spawn Blocking Layers, Spawn Clearance Radius, and the authored spawn point.", this);

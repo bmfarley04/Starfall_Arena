@@ -573,10 +573,11 @@ public class SplitterEnemyBrain3D : NetworkBehaviour
             Vector3 childForward = ResolveChildForward(spawnPosition);
             Quaternion spawnRotation = Quaternion.LookRotation(childForward, ResolveChildUp(childForward));
             SplitterRole childRole = i == 0 ? SplitterRole.BeamChild : SplitterRole.ProjectileChild;
-            GameObject prefab = splitterPrefab != null ? splitterPrefab : gameObject;
-            if (splitterPrefab == null)
+            GameObject prefab = ResolveSplitPrefab();
+            if (prefab == null)
             {
-                LogSetupWarning("is using its live GameObject as the split source because Splitter Prefab is not assigned. Assign this same prefab asset to avoid cloning runtime-only state.");
+                LogSetupWarning("cannot split because no valid Splitter Prefab was resolved. Assign a registered network prefab asset, not a runtime scene instance.");
+                return;
             }
 
             Enemy3D child = manager.SpawnEnemyAt(prefab, spawnPosition, spawnRotation, spawnedObject => ConfigureChildBeforeNetworkSpawn(spawnedObject, childRole));
@@ -644,6 +645,70 @@ public class SplitterEnemyBrain3D : NetworkBehaviour
         waveManager = FindObjectOfType<InvasionWaveManager3D>();
 #endif
         return waveManager;
+    }
+
+    private GameObject ResolveSplitPrefab()
+    {
+        GameObject configuredPrefab = splitterPrefab != null ? splitterPrefab : gameObject;
+        if (!IsRuntimeSceneObject(configuredPrefab))
+        {
+            return configuredPrefab;
+        }
+
+        if (NetTickUtil.IsActive && _networkObject != null)
+        {
+            GameObject registeredPrefab = ResolveRegisteredNetworkPrefab(_networkObject.PrefabIdHash);
+            if (registeredPrefab != null)
+            {
+                return registeredPrefab;
+            }
+        }
+
+        LogSetupWarning("has a Splitter Prefab reference that points at a live scene instance. Cloning that object would copy death, hidden-renderer, collider, and health state into the children.");
+        return null;
+    }
+
+    private static GameObject ResolveRegisteredNetworkPrefab(uint globalObjectIdHash)
+    {
+        NetworkManager networkManager = NetworkManager.Singleton;
+        if (networkManager == null || networkManager.NetworkConfig == null || networkManager.NetworkConfig.Prefabs == null)
+        {
+            return null;
+        }
+
+        var prefabs = networkManager.NetworkConfig.Prefabs.Prefabs;
+        for (int i = 0; i < prefabs.Count; i++)
+        {
+            NetworkPrefab networkPrefab = prefabs[i];
+            GameObject candidate = networkPrefab != null ? networkPrefab.Prefab : null;
+            if (candidate == null || IsRuntimeSceneObject(candidate) || !candidate.TryGetComponent(out NetworkObject candidateNetworkObject))
+            {
+                continue;
+            }
+
+            if (candidateNetworkObject.PrefabIdHash == globalObjectIdHash)
+            {
+                return candidate;
+            }
+
+            try
+            {
+                if (networkPrefab.SourcePrefabGlobalObjectIdHash == globalObjectIdHash)
+                {
+                    return candidate;
+                }
+            }
+            catch (System.InvalidOperationException)
+            {
+            }
+        }
+
+        return null;
+    }
+
+    private static bool IsRuntimeSceneObject(GameObject candidate)
+    {
+        return candidate != null && candidate.scene.IsValid();
     }
 
     private void ApplyRoleWeaponState()

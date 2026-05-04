@@ -139,6 +139,14 @@ public class NetMovement3D : NetworkBehaviour
     private float _latestOwnerCorrectionDistance;
     private float _largestRecentOwnerCorrectionDistance;
     private float _ownerCorrectionsPerSecond;
+    private int _blockerClampCount;
+    private int _blockerClampsInCurrentSummaryWindow;
+    private float _blockerClampSummaryWindowStartedAt;
+    private float _blockerClampsPerSecond;
+    private float _latestBlockerClampDistance;
+    private float _latestBlockerSweepRadius;
+    private int _lastBlockerClampTick = -1;
+    private string _latestBlockerClampCollider = "none";
     private string _latestOwnerCorrectionLikelyCause = NoOwnerCorrectionCause;
     private string _latestOwnerCorrectionSideEffect = "none";
     private int _lastMovementResetTick = -1;
@@ -154,6 +162,11 @@ public class NetMovement3D : NetworkBehaviour
     public float OwnerCorrectionsPerSecond => _ownerCorrectionsPerSecond;
     public string LatestOwnerCorrectionLikelyCause => _latestOwnerCorrectionLikelyCause;
     public string LatestOwnerCorrectionSideEffect => _latestOwnerCorrectionSideEffect;
+    public int BlockerClampCount => _blockerClampCount;
+    public float BlockerClampsPerSecond => _blockerClampsPerSecond;
+    public float LatestBlockerClampDistance => _latestBlockerClampDistance;
+    public float LatestBlockerSweepRadius => _latestBlockerSweepRadius;
+    public string LatestBlockerClampCollider => _latestBlockerClampCollider;
 
     public override void OnNetworkSpawn()
     {
@@ -938,6 +951,7 @@ public class NetMovement3D : NetworkBehaviour
         RaycastHit nearestHit = BlockerSweepHits[nearestIndex];
         float allowedDistance = Mathf.Max(0f, nearestHit.distance - Mathf.Max(0f, blockerSkinWidth));
         state.Position = startPosition + direction * Mathf.Min(distance, allowedDistance);
+        RegisterBlockerClamp(distance, allowedDistance, radius, nearestHit.collider);
 
         if (Vector3.Dot(state.Velocity, nearestHit.normal) < 0f)
         {
@@ -1626,6 +1640,50 @@ public class NetMovement3D : NetworkBehaviour
         _correctionSummaryWindowStartedAt = now;
     }
 
+    private void RegisterBlockerClamp(float requestedDistance, float allowedDistance, float sweepRadius, Collider hitCollider)
+    {
+        _blockerClampCount++;
+        _blockerClampsInCurrentSummaryWindow++;
+        _latestBlockerClampDistance = Mathf.Max(0f, requestedDistance - allowedDistance);
+        _latestBlockerSweepRadius = sweepRadius;
+        _latestBlockerClampCollider = hitCollider != null ? hitCollider.name : "unknown";
+        _lastBlockerClampTick = NetTickUtil.CurrentTick;
+
+        UpdateBlockerClampSummary();
+    }
+
+    private void UpdateBlockerClampSummary()
+    {
+        if (!enableOwnerMovementDiagnostics || correctionSummaryIntervalSeconds <= 0f)
+        {
+            return;
+        }
+
+        float now = Time.time;
+        if (_blockerClampSummaryWindowStartedAt <= 0f)
+        {
+            _blockerClampSummaryWindowStartedAt = now;
+            return;
+        }
+
+        float elapsed = now - _blockerClampSummaryWindowStartedAt;
+        if (elapsed < correctionSummaryIntervalSeconds)
+        {
+            return;
+        }
+
+        _blockerClampsPerSecond = _blockerClampsInCurrentSummaryWindow / Mathf.Max(0.0001f, elapsed);
+        if (_blockerClampsInCurrentSummaryWindow > 0 && logOwnerCorrections)
+        {
+            Debug.Log(
+                $"[NetMovement3D Blocker Clamp Summary] object={name} slot={PlayerSlot} tick={NetTickUtil.CurrentTick} clamps={_blockerClampsInCurrentSummaryWindow} rate={_blockerClampsPerSecond:0.##}/s latestClamp={_latestBlockerClampDistance:0.###} sweepRadius={_latestBlockerSweepRadius:0.###} collider={_latestBlockerClampCollider}",
+                this);
+        }
+
+        _blockerClampsInCurrentSummaryWindow = 0;
+        _blockerClampSummaryWindowStartedAt = now;
+    }
+
     private void LogMovementConfigIfNeeded(string context)
     {
         if (!enableOwnerMovementDiagnostics || !logMovementConfigOnSpawn)
@@ -1674,6 +1732,7 @@ public class NetMovement3D : NetworkBehaviour
         return IsSideEffectNearTick(_lastCombatVelocityDeltaTick, serverTick, currentTick)
             || IsSideEffectNearTick(_lastCombatWarpTick, serverTick, currentTick)
             || IsSideEffectNearTick(_lastBoundaryCorrectionTick, serverTick, currentTick)
+            || IsSideEffectNearTick(_lastBlockerClampTick, serverTick, currentTick)
             || IsSideEffectNearTick(_lastQueuedDodgeTick, serverTick, currentTick);
     }
 
@@ -1716,6 +1775,7 @@ public class NetMovement3D : NetworkBehaviour
         SetMostRecentMovementSideEffect(ref name, ref tick, "combat velocity delta", _lastCombatVelocityDeltaTick);
         SetMostRecentMovementSideEffect(ref name, ref tick, "combat warp", _lastCombatWarpTick);
         SetMostRecentMovementSideEffect(ref name, ref tick, "boundary correction", _lastBoundaryCorrectionTick);
+        SetMostRecentMovementSideEffect(ref name, ref tick, "blocker clamp", _lastBlockerClampTick);
         SetMostRecentMovementSideEffect(ref name, ref tick, "queued dodge", _lastQueuedDodgeTick);
 
         if (tick < 0)
