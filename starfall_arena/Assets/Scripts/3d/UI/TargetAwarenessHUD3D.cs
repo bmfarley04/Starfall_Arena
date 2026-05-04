@@ -106,12 +106,16 @@ public class TargetAwarenessHUD3D : PlayerHUDBindingTarget3D
     {
         [Tooltip("Canvas-space padding added around the target's projected mesh bounds before sizing the visible bracket.")]
         public Vector2 bracketPadding;
-        [Tooltip("Minimum bracket size in canvas pixels after projected bounds and padding are applied.")]
-        public Vector2 minBracketSize;
+        [Tooltip("Closest-range minimum bracket size in canvas pixels after projected bounds and padding are applied.")]
+        public Vector2 nearMinBracketSize;
+        [Tooltip("Farthest-range minimum bracket size in canvas pixels after projected bounds and padding are applied. Lower this to let distant small targets stay visually small.")]
+        public Vector2 farMinBracketSize;
         [Tooltip("Maximum bracket size in canvas pixels after projected bounds and padding are applied.")]
         public Vector2 maxBracketSize;
-        [Tooltip("Fallback bracket size used when the target has no mesh/skinned renderers and no TargetAwarenessBounds3D override.")]
-        public Vector2 fallbackBracketSize;
+        [Tooltip("Closest-range fallback bracket size used when the target has no mesh/skinned renderers and no TargetAwarenessBounds3D override.")]
+        public Vector2 nearFallbackBracketSize;
+        [Tooltip("Farthest-range fallback bracket size used when the target has no mesh/skinned renderers and no TargetAwarenessBounds3D override.")]
+        public Vector2 farFallbackBracketSize;
     }
 
     [System.Serializable]
@@ -197,9 +201,11 @@ public class TargetAwarenessHUD3D : PlayerHUDBindingTarget3D
     [SerializeField] private BracketBoundsConfig3D bracketBounds = new BracketBoundsConfig3D
     {
         bracketPadding = new Vector2(36f, 28f),
-        minBracketSize = new Vector2(72f, 48f),
+        nearMinBracketSize = new Vector2(56f, 40f),
+        farMinBracketSize = new Vector2(24f, 18f),
         maxBracketSize = new Vector2(420f, 280f),
-        fallbackBracketSize = new Vector2(120f, 80f)
+        nearFallbackBracketSize = new Vector2(88f, 60f),
+        farFallbackBracketSize = new Vector2(34f, 24f)
     };
 
     private readonly List<TargetRuntime3D> _targets = new();
@@ -370,7 +376,7 @@ public class TargetAwarenessHUD3D : PlayerHUDBindingTarget3D
                 : EvaluateScale(scale.indicatorScaleRange, targetDistance),
             BracketScale = EvaluateScale(scale.bracketScaleRange, targetDistance),
             BarScale = EvaluateScale(scale.barScaleRange, targetDistance),
-            BracketSize = ResolveFallbackBracketSize(),
+            BracketSize = ResolveFallbackBracketSize(targetDistance),
             SnapPosition = !runtime.HasPresented
         };
 
@@ -478,7 +484,7 @@ public class TargetAwarenessHUD3D : PlayerHUDBindingTarget3D
             : localPosition;
         if (presentation.State == TargetAwarenessVisibility3D.Bracket)
         {
-            presentation.BracketSize = ResolveProjectedBracketSize(ref runtime, gameplayCamera);
+            presentation.BracketSize = ResolveProjectedBracketSize(ref runtime, gameplayCamera, targetDistance);
         }
 
         presentation.AttackPulse01 = ResolveAttackPulse(ref runtime, presentation.State);
@@ -495,15 +501,15 @@ public class TargetAwarenessHUD3D : PlayerHUDBindingTarget3D
         return runtime.AttackReporter.GetAttackPulse01(BoundPlayer);
     }
 
-    private Vector2 ResolveProjectedBracketSize(ref TargetRuntime3D runtime, Camera gameplayCamera)
+    private Vector2 ResolveProjectedBracketSize(ref TargetRuntime3D runtime, Camera gameplayCamera, float targetDistance)
     {
         if (TryProjectTargetBounds(ref runtime, gameplayCamera, out Vector2 min, out Vector2 max))
         {
             Vector2 size = max - min + bracketBounds.bracketPadding;
-            return ClampBracketSize(size);
+            return ClampBracketSize(size, targetDistance);
         }
 
-        return ResolveFallbackBracketSize();
+        return ResolveFallbackBracketSize(targetDistance);
     }
 
     private bool TryProjectTargetBounds(ref TargetRuntime3D runtime, Camera gameplayCamera, out Vector2 min, out Vector2 max)
@@ -622,9 +628,9 @@ public class TargetAwarenessHUD3D : PlayerHUDBindingTarget3D
         corners[7] = new Vector3(max.x, max.y, max.z);
     }
 
-    private Vector2 ClampBracketSize(Vector2 size)
+    private Vector2 ClampBracketSize(Vector2 size, float targetDistance)
     {
-        Vector2 minSize = new Vector2(Mathf.Max(1f, bracketBounds.minBracketSize.x), Mathf.Max(1f, bracketBounds.minBracketSize.y));
+        Vector2 minSize = EvaluateBracketSizeByDistance(bracketBounds.nearMinBracketSize, bracketBounds.farMinBracketSize, targetDistance);
         Vector2 maxSize = new Vector2(
             Mathf.Max(minSize.x, bracketBounds.maxBracketSize.x),
             Mathf.Max(minSize.y, bracketBounds.maxBracketSize.y));
@@ -634,11 +640,26 @@ public class TargetAwarenessHUD3D : PlayerHUDBindingTarget3D
             Mathf.Clamp(size.y, minSize.y, maxSize.y));
     }
 
-    private Vector2 ResolveFallbackBracketSize()
+    private Vector2 ResolveFallbackBracketSize(float targetDistance)
     {
-        return ClampBracketSize(new Vector2(
-            Mathf.Max(1f, bracketBounds.fallbackBracketSize.x),
-            Mathf.Max(1f, bracketBounds.fallbackBracketSize.y)));
+        Vector2 fallbackSize = EvaluateBracketSizeByDistance(
+            bracketBounds.nearFallbackBracketSize,
+            bracketBounds.farFallbackBracketSize,
+            targetDistance);
+        return ClampBracketSize(fallbackSize, targetDistance);
+    }
+
+    private Vector2 EvaluateBracketSizeByDistance(Vector2 nearSize, Vector2 farSize, float targetDistance)
+    {
+        float minDistance = Mathf.Max(0f, distance.closeHideDistance);
+        float maxDistance = Mathf.Max(minDistance + 0.01f, distance.bracketMaxDistance);
+        float t = Mathf.InverseLerp(minDistance, maxDistance, targetDistance);
+        return Vector2.Lerp(ClampPositiveSize(nearSize), ClampPositiveSize(farSize), t);
+    }
+
+    private static Vector2 ClampPositiveSize(Vector2 size)
+    {
+        return new Vector2(Mathf.Max(1f, size.x), Mathf.Max(1f, size.y));
     }
 
     private static bool IsUsableVisualRenderer(Renderer renderer)

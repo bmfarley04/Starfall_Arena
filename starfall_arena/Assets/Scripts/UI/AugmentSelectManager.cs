@@ -248,7 +248,6 @@ namespace StarfallArena.UI
         private bool _useExternalTimer = false;
         private int _selectedCardIndex = -1;
         private CardVisualSnapshot[][] _originalCardVisuals;
-
         private struct ImageVisualSnapshot
         {
             public bool captured;
@@ -643,11 +642,17 @@ namespace StarfallArena.UI
 
                 // On Pointer Enter (mouse fallback)
                 EventTrigger.Entry pointerEnter = new EventTrigger.Entry { eventID = EventTriggerType.PointerEnter };
-                pointerEnter.callback.AddListener(_ =>
-                {
-                    SetSelectedCardIndex(index);
-                });
+                pointerEnter.callback.AddListener(_ => { });
                 trigger.triggers.Add(pointerEnter);
+
+                EventTrigger.Entry pointerDown = new EventTrigger.Entry { eventID = EventTriggerType.PointerDown };
+                pointerDown.callback.AddListener(_ =>
+                {
+                    // Mouse can still click a card directly, but it never becomes
+                    // the owner of selection state for controller/keyboard flow.
+                    _selectedCardIndex = index;
+                });
+                trigger.triggers.Add(pointerDown);
             }
         }
 

@@ -10467,9 +10467,11 @@ MonoBehaviour:
     barScaleRange: {x: 0.6, y: 0.4}
   bracketBounds:
     bracketPadding: {x: 36, y: 28}
-    minBracketSize: {x: 72, y: 48}
+    nearMinBracketSize: {x: 56, y: 40}
+    farMinBracketSize: {x: 16, y: 12}
     maxBracketSize: {x: 420, y: 280}
-    fallbackBracketSize: {x: 120, y: 80}
+    nearFallbackBracketSize: {x: 88, y: 60}
+    farFallbackBracketSize: {x: 34, y: 24}
 --- !u!1 &1510269231
 GameObject:
   m_ObjectHideFlags: 0
