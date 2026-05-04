@@ -18885,6 +18885,8 @@ MonoBehaviour:
     lateralDriftDamping: 18
     verticalDriftDamping: 16
     velocityAlignmentStrength: 3
+    recoveryDriftDampingMultiplier: 2
+    recoveryVelocityAlignmentStrength: 0
   inputSourceBehaviour: {fileID: 0}
   entity: {fileID: 8525073036041908576}
   frictionEnabled: 1
@@ -19456,7 +19458,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PortalBossSpawn3D
   ShowTopMostFoldoutHeaderGroup: 1
   portalPrefab: {fileID: 1000000000000010001, guid: 976f41ceec924e399424163b5c1e34c6, type: 3}
-  portalUniformScale: 5
+  portalUniformScale: 6
   emergeDistance: 90
   emergeDuration: 3.5
   portalShrinkDuration: 0.75

@@ -14681,6 +14681,7 @@ GameObject:
   - component: {fileID: 86351170985818649}
   - component: {fileID: 4534781545565309400}
   - component: {fileID: 1846608557299346623}
+  - component: {fileID: -2173584119896403012}
   m_Layer: 0
   m_Name: tankEnemy
   m_TagString: Enemy
@@ -15175,6 +15176,27 @@ MonoBehaviour:
   separationStrength: 1
   verticalWeight: 1
   unstickSpeedScale: 0.2
+--- !u!114 &-2173584119896403012
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6067267420352304793}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2a94c91b57b04f1cb44e5b4f11a0d231, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PortalBossSpawn3D
+  ShowTopMostFoldoutHeaderGroup: 1
+  portalPrefab: {fileID: 1000000000000010001, guid: 976f41ceec924e399424163b5c1e34c6, type: 3}
+  portalUniformScale: 4
+  emergeDistance: 80
+  emergeDuration: 4
+  portalShrinkDuration: 0.75
+  visualRenderers: []
+  additionalBehavioursToDisable: []
+  collidersToDisable: []
 --- !u!1 &6236253945820780736
 GameObject:
   m_ObjectHideFlags: 0

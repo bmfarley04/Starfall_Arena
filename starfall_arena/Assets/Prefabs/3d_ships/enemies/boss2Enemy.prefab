@@ -5048,7 +5048,6 @@ GameObject:
   - component: {fileID: 6364644879097331353}
   - component: {fileID: 7123456789012345679}
   - component: {fileID: 7585572008960792029}
-  - component: {fileID: 4630352536319777799}
   - component: {fileID: 2576565563206851298}
   m_Layer: 0
   m_Name: boss2Enemy
@@ -5107,6 +5106,8 @@ MonoBehaviour:
     lateralDriftDamping: 18
     verticalDriftDamping: 16
     velocityAlignmentStrength: 3
+    recoveryDriftDampingMultiplier: 2
+    recoveryVelocityAlignmentStrength: 0
   inputSourceBehaviour: {fileID: 0}
   entity: {fileID: 1458613803562551006}
   frictionEnabled: 1
@@ -6088,6 +6089,7 @@ MonoBehaviour:
     maxExtrapolationMs: 40
     hardSnapDistance: 30
     smoothingCatchUpRate: 0
+  snapshotTickInterval: 2
 --- !u!114 &7123456789012345679
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6102,7 +6104,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PortalBossSpawn3D
   ShowTopMostFoldoutHeaderGroup: 1
   portalPrefab: {fileID: 1000000000000010001, guid: 976f41ceec924e399424163b5c1e34c6, type: 3}
-  portalUniformScale: 4.5
+  portalUniformScale: 10
   emergeDistance: 220
   emergeDuration: 6
   portalShrinkDuration: 0.75
@@ -6146,34 +6148,6 @@ MonoBehaviour:
   pitchFromMoveIntent: 10
   useRigidbodyVelocity: 1
   drawGizmos: 1
---- !u!114 &4630352536319777799
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8311721449157583992}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d1c2214c65e80b24a8d2d0d28f3f16ea, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::SpawnArrivalEffect3D
-  arrivalEffect:
-    effectPrefab: {fileID: 0}
-    effectAnchor: {fileID: 0}
-    localPositionOffset: {x: 0, y: 0, z: 0}
-    localEulerOffset: {x: 0, y: 0, z: 0}
-    effectScaleMultiplier: 1
-    multiplyByShipScale: 1
-    autoCleanupEffect: 1
-    forceParticleHierarchyScaling: 1
-  reveal:
-    revealDelaySeconds: 0
-    hideVisualsUntilReveal: 0
-    visualRenderers: []
-    disableAssignedCollidersUntilReveal: 0
-    colliders: []
-    behaviours: []
 --- !u!114 &2576565563206851298
 MonoBehaviour:
   m_ObjectHideFlags: 0

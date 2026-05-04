@@ -20,7 +20,7 @@ MonoBehaviour:
     detectionRange: 900
   projectileWeapons:
   - cooldown: 13
-    speed: 500
+    speed: 600
     damage: 115
     lifetime: 5
   - cooldown: 7
