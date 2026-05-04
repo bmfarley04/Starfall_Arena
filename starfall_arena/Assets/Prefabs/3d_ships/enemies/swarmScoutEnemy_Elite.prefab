@@ -4878,7 +4878,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 27, y: 1.216, z: 57.4}
-  m_LocalScale: {x: 1.25, y: 1.25, z: 1.25}
+  m_LocalScale: {x: 1.75, y: 1.75, z: 1.75}
   m_ConstrainProportionsScale: 1
   m_Children:
   - {fileID: 7730281047504573123}
@@ -4894,7 +4894,7 @@ Rigidbody:
   serializedVersion: 5
   m_Mass: 1
   m_LinearDamping: 0
-  m_AngularDamping: 2
+  m_AngularDamping: 0
   m_CenterOfMass: {x: 0, y: 0, z: 0}
   m_InertiaTensor: {x: 1, y: 1, z: 1}
   m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
@@ -4923,7 +4923,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 47867542
+  GlobalObjectIdHash: 1341206394
   InScenePlacedSourceGlobalObjectIdHash: 0
   DeferredDespawnTick: 0
   Ownership: 1
@@ -4956,6 +4956,7 @@ MonoBehaviour:
     maxExtrapolationMs: 40
     hardSnapDistance: 30
     smoothingCatchUpRate: 0
+  snapshotTickInterval: 2
 --- !u!114 &2696700321467907448
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5003,6 +5004,8 @@ MonoBehaviour:
     lateralDriftDamping: 18
     verticalDriftDamping: 16
     velocityAlignmentStrength: 3
+    recoveryDriftDampingMultiplier: 2
+    recoveryVelocityAlignmentStrength: 4
   inputSourceBehaviour: {fileID: 0}
   entity: {fileID: 7429828823733125397}
   frictionEnabled: 1
