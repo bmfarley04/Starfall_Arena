@@ -345,6 +345,7 @@ For cosmetic spawn RPCs (projectiles, hazards), also stamp `ServerSpawnTime` on 
 - If your ability mutates the local `Player` or its rigidbody, remember that remote proxies have `Player` disabled — the ability must tolerate running with a disabled `Player` component on those copies, or be driven only on owner + server.
 - For displacement abilities, do not bypass `NetMovement`'s reconciliation by teleporting the rigidbody on a remote copy; route the displacement through the same path ChronoStep/Teleport already use.
 - End-of-duration broadcasts must come from the authority side only. Guard broadcast calls with `HasNetworkPath() && HasAuthority()` so local multiplayer does not attempt to RPC.
+- Anchor input snapshots should use the raw input-held state (not `IsAnchored`), and owner clients should not re-apply a stale `Anchor=true` snapshot after releasing input, or anchor can appear stuck.
 
 ### Ring of Fire (RingOfFireManager)
 

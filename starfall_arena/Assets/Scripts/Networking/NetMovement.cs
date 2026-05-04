@@ -640,7 +640,7 @@ public partial class NetMovement : NetworkBehaviour
             Tick = tick,
             Thrust = _player.IsThrustPressed,
             LookInput = _player.LookInput,
-            Anchor = _player.IsAnchored,
+            Anchor = _player.IsAnchorInputHeld,
             FrictionEnabled = _player.IsFrictionEnabled,
             VisualBankAngle = ownerVisualBankAngle,
             VisualPitchAngle = ownerVisualPitchAngle,
@@ -821,7 +821,12 @@ public partial class NetMovement : NetworkBehaviour
             {
                 _player.ApplyNetworkHealthState(serverState.Health);
                 _player.ApplyNetworkShieldState(serverState.Shield);
-                _player.ForceAnchorState(serverState.Anchor);
+                bool inputHeld = _player.IsAnchorInputHeld;
+                if (inputHeld || !serverState.Anchor)
+                {
+                    // Avoid re-latching anchor on release when server state lags.
+                    _player.ForceAnchorState(serverState.Anchor);
+                }
             }
 
             Reconcile(serverState);
