@@ -580,8 +580,10 @@ public class InvasionSceneManager3D : MonoBehaviour
         SubscribePlayerDeath(player);
         EnsureRewardStateContainers();
         _rewardStateBySlot[playerSlot].CaptureBaseSnapshot(player);
+        bool baseRewardSnapshotApplied = true;
         _rewardStateBySlot[playerSlot].ApplyToPlayer(player);
-        ResetPlayerSpawnMotionAndCamera(player);
+        bool rewardStateApplied = true;
+        bool movementResetRan = ResetPlayerSpawnMotionAndCamera(player);
         if (_rewardPhaseActive)
         {
             SetPlayerIntermissionLocked(player, true);
@@ -595,24 +597,66 @@ public class InvasionSceneManager3D : MonoBehaviour
         {
             _player2 = player;
         }
+
+        LogSpawnedPlayerSetup(player, playerSlot, baseRewardSnapshotApplied, rewardStateApplied, movementResetRan);
     }
 
-    private static void ResetPlayerSpawnMotionAndCamera(Player3D player)
+    private static bool ResetPlayerSpawnMotionAndCamera(Player3D player)
     {
         if (player == null)
         {
-            return;
+            return false;
         }
 
         NetMovement3D netMovement = player.GetComponent<NetMovement3D>();
         if (netMovement != null)
         {
             netMovement.ResetMovementState(player.transform.position, player.transform.rotation, resetCamera: true);
-            return;
+            return true;
         }
 
         player.Flight?.ResetMotionState(clearVelocity: true);
         player.PlayerCameraRig3D?.ResetCameraState(snapToNeutralOffset: true);
+        return true;
+    }
+
+    private void LogSpawnedPlayerSetup(
+        Player3D player,
+        byte playerSlot,
+        bool baseRewardSnapshotApplied,
+        bool rewardStateApplied,
+        bool movementResetRan)
+    {
+        if (player == null)
+        {
+            return;
+        }
+
+        NetworkObject networkObject = player.GetComponent<NetworkObject>();
+        NetMovement3D netMovement = player.GetComponent<NetMovement3D>();
+        string ownerClientId = networkObject != null && networkObject.IsSpawned
+            ? networkObject.OwnerClientId.ToString()
+            : "none";
+        string networkObjectId = networkObject != null && networkObject.IsSpawned
+            ? networkObject.NetworkObjectId.ToString()
+            : "none";
+        string configFingerprint = netMovement != null
+            ? netMovement.BuildMovementConfigFingerprint()
+            : "missing NetMovement3D";
+
+        Debug.Log(
+            $"[InvasionSceneManager3D] Prepared player slot={playerSlot} object={player.name} networkObjectId={networkObjectId} ownerClientId={ownerClientId} position={FormatVector3(player.transform.position)} rotation={FormatQuaternion(player.transform.rotation)} baseRewardSnapshotApplied={baseRewardSnapshotApplied} rewardStateApplied={rewardStateApplied} movementResetRan={movementResetRan} rewardPhaseActive={_rewardPhaseActive} flightConfig={configFingerprint}",
+            player);
+    }
+
+    private static string FormatVector3(Vector3 value)
+    {
+        return $"({value.x:0.###}, {value.y:0.###}, {value.z:0.###})";
+    }
+
+    private static string FormatQuaternion(Quaternion value)
+    {
+        return $"({value.x:0.###}, {value.y:0.###}, {value.z:0.###}, {value.w:0.###})";
     }
 
     private void SubscribePlayerDeath(Player3D player)

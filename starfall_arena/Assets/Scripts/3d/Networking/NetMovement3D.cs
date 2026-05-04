@@ -15,6 +15,7 @@ public class NetMovement3D : NetworkBehaviour
     private const int ServerStateBufferSize = 120;
     private const int RecentMovementSideEffectWindowTicks = 6;
     private const int MaxBlockerSweepHits = 8;
+    private const string NoOwnerCorrectionCause = "none";
 
     private static readonly List<NetMovement3D> ActiveInstances = new List<NetMovement3D>();
     private static readonly RaycastHit[] BlockerSweepHits = new RaycastHit[MaxBlockerSweepHits];
@@ -26,12 +27,39 @@ public class NetMovement3D : NetworkBehaviour
         AuthoritativeSnap
     }
 
+    private struct RigidbodyDiagnosticState
+    {
+        public bool HasBody;
+        public Vector3 Position;
+        public Quaternion Rotation;
+        public Vector3 Velocity;
+        public Vector3 AngularVelocity;
+        public bool IsKinematic;
+        public RigidbodyInterpolation Interpolation;
+    }
+
     [Header("Reconciliation")]
     [Tooltip("Position error in world units before a server correction triggers local replay.")]
     [SerializeField] private float reconciliationThreshold = 0.1f;
 
     [Tooltip("Logs every owner-side reconciliation correction with tick, input, error, and recent movement-side-effect context.")]
     [SerializeField] private bool logOwnerCorrections = true;
+
+    [Header("Owner Movement Diagnostics")]
+    [Tooltip("Enables owner-side movement diagnostics for the current 3D Invasion jitter investigation. When disabled, correction counters still update but verbose correction/config logs are suppressed.")]
+    [SerializeField] private bool enableOwnerMovementDiagnostics = true;
+
+    [Tooltip("Minimum owner correction distance required before a detailed correction log is printed. Raise this to reduce spam from harmless micro-corrections.")]
+    [Min(0f)] [SerializeField] private float correctionLogMinDistance = 0.001f;
+
+    [Tooltip("Seconds between rate-limited correction summary logs for this owner. Set to 0 to disable summary logs.")]
+    [Min(0f)] [SerializeField] private float correctionSummaryIntervalSeconds = 1f;
+
+    [Tooltip("Logs the network movement and ShipFlight3D configuration once when this player spawns, helping compare 3dTest against 3D Invasion setup.")]
+    [SerializeField] private bool logMovementConfigOnSpawn = true;
+
+    [Tooltip("Adds Rigidbody before/after details to owner correction logs so direct physics writes and snap/replay behavior can be inspected.")]
+    [SerializeField] private bool logRigidbodyStateDrift = true;
 
     [Header("Interpolation")]
     [SerializeField] private NetInterpolationSettings3D interpolationSettings = new NetInterpolationSettings3D();
@@ -106,11 +134,26 @@ public class NetMovement3D : NetworkBehaviour
     private NetDodgeKind3D _lastQueuedDodgeKind = NetDodgeKind3D.Generic;
     private Vector3 _lastQueuedDodgeDirection;
     private int _lastQueuedDodgeTick = -1;
+    private int _correctionsInCurrentSummaryWindow;
+    private float _correctionSummaryWindowStartedAt;
+    private float _latestOwnerCorrectionDistance;
+    private float _largestRecentOwnerCorrectionDistance;
+    private float _ownerCorrectionsPerSecond;
+    private string _latestOwnerCorrectionLikelyCause = NoOwnerCorrectionCause;
+    private string _latestOwnerCorrectionSideEffect = "none";
+    private int _lastMovementResetTick = -1;
+    private Vector3 _lastMovementResetPosition;
+    private bool _lastMovementResetCamera;
 
     public byte PlayerSlot => _networkPlayerIndex.Value;
     public NetInterpolationDiagnostics3D InterpolationDiagnostics => _remoteInterpolator.Diagnostics;
     public int OwnerCorrectionCount => _ownerCorrectionCount;
     public float AverageOwnerCorrectionDistance => _ownerCorrectionCount > 0 ? _ownerCorrectionDistanceTotal / _ownerCorrectionCount : 0f;
+    public float LatestOwnerCorrectionDistance => _latestOwnerCorrectionDistance;
+    public float LargestRecentOwnerCorrectionDistance => _largestRecentOwnerCorrectionDistance;
+    public float OwnerCorrectionsPerSecond => _ownerCorrectionsPerSecond;
+    public string LatestOwnerCorrectionLikelyCause => _latestOwnerCorrectionLikelyCause;
+    public string LatestOwnerCorrectionSideEffect => _latestOwnerCorrectionSideEffect;
 
     public override void OnNetworkSpawn()
     {
@@ -163,6 +206,7 @@ public class NetMovement3D : NetworkBehaviour
         }
 
         ApplyMovementLock(_movementLocked.Value);
+        LogMovementConfigIfNeeded("OnNetworkSpawn");
     }
 
     public override void OnGainedOwnership()
@@ -463,6 +507,10 @@ public class NetMovement3D : NetworkBehaviour
     public void ResetMovementState(Vector3 position, Quaternion rotation, bool resetCamera)
     {
         CacheReferences();
+        _lastMovementResetTick = NetTickUtil.CurrentTick;
+        _lastMovementResetPosition = position;
+        _lastMovementResetCamera = resetCamera;
+
         if (_shipFlight != null)
         {
             _ownerFrictionEnabled = _shipFlight.IsFrictionEnabled;
@@ -568,6 +616,7 @@ public class NetMovement3D : NetworkBehaviour
             BaseRotationMultiplier = _player != null ? _player.GetBaseRotationMultiplier() : 1f,
             AbilityRotationMultiplier = _player != null ? _player.GetAbilityRotationMultiplier() : 1f,
             ThrustMultiplier = _player != null ? _player.GetCombinedThrustMultiplier() : 1f,
+            MaxSpeedMultiplier = _player != null ? _player.GetCombinedMaxSpeedMultiplier() : 1f,
             SlowMultiplier = _player != null ? _player.GetSlowMultiplier() : 1f,
             DodgeRequested = !_movementLocked.Value && _pendingDodgeRequested,
             DodgeKind = _pendingDodgeKind,
@@ -704,14 +753,7 @@ public class NetMovement3D : NetworkBehaviour
         MovementState3D replayState = ToMovementState(serverState);
         float dt = GetTickDeltaTime();
         int currentTick = NetTickUtil.CurrentTick;
-        RegisterOwnerCorrection(
-            OwnerCorrectionCause.PositionError,
-            positionError,
-            serverState,
-            predicted,
-            GetBufferedInputForTick(serverState.Tick),
-            predictionMatchesServerTick: true,
-            ticksReplayed: Mathf.Max(0, currentTick - serverState.Tick));
+        RigidbodyDiagnosticState rbBeforeCorrection = CaptureRigidbodyDiagnosticState();
 
         for (int tick = serverState.Tick + 1; tick <= currentTick; tick++)
         {
@@ -733,6 +775,18 @@ public class NetMovement3D : NetworkBehaviour
 
         _ownerState = replayState;
         ApplySimulationState(_ownerState, snap: true);
+        RigidbodyDiagnosticState rbAfterCorrection = CaptureRigidbodyDiagnosticState();
+
+        RegisterOwnerCorrection(
+            OwnerCorrectionCause.PositionError,
+            positionError,
+            serverState,
+            predicted,
+            GetBufferedInputForTick(serverState.Tick),
+            predictionMatchesServerTick: true,
+            ticksReplayed: Mathf.Max(0, currentTick - serverState.Tick),
+            rbBeforeCorrection: rbBeforeCorrection,
+            rbAfterCorrection: rbAfterCorrection);
 
         int latestInputIndex = currentTick % ClientInputBufferSize;
         Vector2 latestLookInput = _inputBuffer[latestInputIndex].Tick == currentTick
@@ -751,20 +805,28 @@ public class NetMovement3D : NetworkBehaviour
         NetInputSnapshot3D input = default,
         bool predictionMatchesServerTick = false)
     {
+        RigidbodyDiagnosticState rbBeforeCorrection = CaptureRigidbodyDiagnosticState();
+        float correctionDistance = _ownerStateInitialized
+            ? Vector3.Distance(_ownerState.Position, snapshot.Position)
+            : 0f;
+
+        _ownerState = ToMovementState(snapshot);
+        ApplySimulationState(_ownerState, snap: true);
+        RigidbodyDiagnosticState rbAfterCorrection = CaptureRigidbodyDiagnosticState();
         if (_ownerStateInitialized)
         {
             RegisterOwnerCorrection(
                 cause,
-                Vector3.Distance(_ownerState.Position, snapshot.Position),
+                correctionDistance,
                 snapshot,
                 predicted,
                 input,
                 predictionMatchesServerTick,
-                ticksReplayed: 0);
+                ticksReplayed: 0,
+                rbBeforeCorrection: rbBeforeCorrection,
+                rbAfterCorrection: rbAfterCorrection);
         }
 
-        _ownerState = ToMovementState(snapshot);
-        ApplySimulationState(_ownerState, snap: true);
         ApplyFlightTelemetry(snapshot.FilteredLookInput, snapshot.ThrustInput, snapshot.FrictionEnabled, _ownerState, GetEffectiveVelocity(_ownerState), GetTickDeltaTime());
     }
 
@@ -1437,12 +1499,23 @@ public class NetMovement3D : NetworkBehaviour
         in NetStateSnapshot3D predicted,
         in NetInputSnapshot3D input,
         bool predictionMatchesServerTick,
-        int ticksReplayed)
+        int ticksReplayed,
+        in RigidbodyDiagnosticState rbBeforeCorrection,
+        in RigidbodyDiagnosticState rbAfterCorrection)
     {
         _ownerCorrectionCount++;
         _ownerCorrectionDistanceTotal += Mathf.Max(0f, distance);
+        _latestOwnerCorrectionDistance = Mathf.Max(0f, distance);
+        _largestRecentOwnerCorrectionDistance = Mathf.Max(_largestRecentOwnerCorrectionDistance, _latestOwnerCorrectionDistance);
+        _correctionsInCurrentSummaryWindow++;
 
-        if (logOwnerCorrections)
+        int currentTick = NetTickUtil.CurrentTick;
+        bool recentSideEffect = HasRecentMovementSideEffect(serverState.Tick, currentTick);
+        _latestOwnerCorrectionLikelyCause = GetLikelyOwnerCorrectionCause(cause, recentSideEffect);
+        _latestOwnerCorrectionSideEffect = GetMostRecentMovementSideEffectSummary(currentTick);
+        UpdateOwnerCorrectionSummary(currentTick);
+
+        if (enableOwnerMovementDiagnostics && logOwnerCorrections && distance >= Mathf.Max(0f, correctionLogMinDistance))
         {
             LogOwnerCorrection(
                 cause,
@@ -1451,7 +1524,9 @@ public class NetMovement3D : NetworkBehaviour
                 in predicted,
                 in input,
                 predictionMatchesServerTick,
-                ticksReplayed);
+                ticksReplayed,
+                in rbBeforeCorrection,
+                in rbAfterCorrection);
         }
     }
 
@@ -1462,7 +1537,9 @@ public class NetMovement3D : NetworkBehaviour
         in NetStateSnapshot3D predicted,
         in NetInputSnapshot3D input,
         bool predictionMatchesServerTick,
-        int ticksReplayed)
+        int ticksReplayed,
+        in RigidbodyDiagnosticState rbBeforeCorrection,
+        in RigidbodyDiagnosticState rbAfterCorrection)
     {
         int currentTick = NetTickUtil.CurrentTick;
         int serverTimelineTick = NetTickUtil.ServerTick;
@@ -1493,17 +1570,103 @@ public class NetMovement3D : NetworkBehaviour
         builder.AppendLine($"object={name} networkObjectId={networkObjectId} ownerClientId={ownerClientId} playerSlot={PlayerSlot} movementLocked={_movementLocked.Value}");
         builder.AppendLine($"serverStateTick={serverState.Tick} localCurrentTick={currentTick} observedServerTick={serverTimelineTick} ticksReplayed={ticksReplayed}");
         builder.AppendLine($"predictionBufferTick={predicted.Tick} predictionMatchesServerTick={predictionMatchesServerTick} inputTick={input.Tick} inputMatchesCorrectionTick={inputMatchesCorrectionTick}");
-        builder.AppendLine($"correctionDistance={correctionDistance:0.###} positionError={positionError:0.###} velocityError={velocityError:0.###} rotationErrorDegrees={rotationError:0.###}");
+        builder.AppendLine($"correctionDistance={correctionDistance:0.###} positionError={positionError:0.###} velocityError={velocityError:0.###} rotationErrorDegrees={rotationError:0.###} correctionsPerSecond={_ownerCorrectionsPerSecond:0.##} totalCorrections={_ownerCorrectionCount}");
         builder.AppendLine($"predictedPosition={FormatVector3(predicted.Position)} serverPosition={FormatVector3(serverState.Position)} currentOwnerPosition={FormatVector3(_ownerState.Position)}");
         builder.AppendLine($"predictedVelocity={FormatVector3(predicted.Velocity)} serverVelocity={FormatVector3(serverState.Velocity)} currentOwnerVelocity={FormatVector3(_ownerState.Velocity)}");
-        builder.AppendLine($"input thrust={input.ThrustInput:0.###} look={FormatVector2(input.LookInput)} friction={input.FrictionEnabled} dodgeRequest={input.DodgeRequested} dodgeKind={input.DodgeKind} dodgeDirection={FormatVector3(input.DodgeDirection)} slowMultiplier={input.SlowMultiplier:0.###}");
+        builder.AppendLine($"input thrust={input.ThrustInput:0.###} look={FormatVector2(input.LookInput)} friction={input.FrictionEnabled} baseRot={input.BaseRotationMultiplier:0.###} abilityRot={input.AbilityRotationMultiplier:0.###} thrustMul={input.ThrustMultiplier:0.###} maxSpeedMul={input.MaxSpeedMultiplier:0.###} slowMul={input.SlowMultiplier:0.###}");
+        builder.AppendLine($"input dodgeRequest={input.DodgeRequested} dodgeKind={input.DodgeKind} dodgeDirection={FormatVector3(input.DodgeDirection)}");
+        builder.AppendLine($"flightConfig={FormatFlightConfig()}");
+        builder.AppendLine($"flightAssist={FormatFlightAssistConfig()}");
+        builder.AppendLine($"movementCollision blockerMask={networkMovementBlockerMask.value} skinWidth={blockerSkinWidth:0.###} minSweepDistance={minimumBlockerSweepDistance:0.####} lockToWorldY={(_shipFlight != null && _shipFlight.LockToWorldYPlane)} lockedWorldY={(_shipFlight != null ? _shipFlight.LockedWorldY : 0f):0.###}");
+        if (logRigidbodyStateDrift)
+        {
+            builder.AppendLine($"rigidbodyBeforeCorrection={FormatRigidbodyState(rbBeforeCorrection)}");
+            builder.AppendLine($"rigidbodyAfterCorrection={FormatRigidbodyState(rbAfterCorrection)}");
+        }
         builder.AppendLine($"recentMovementSideEffect={GetMostRecentMovementSideEffectSummary(currentTick)}");
         builder.AppendLine($"lastCombatVelocityDelta={FormatTickedVector(_lastCombatVelocityDeltaTick, _lastCombatVelocityDelta)}");
         builder.AppendLine($"lastCombatWarp={FormatTickedVector(_lastCombatWarpTick, _lastCombatWarpPosition)}");
         builder.AppendLine($"lastBoundaryCorrection={FormatBoundaryCorrection()}");
         builder.AppendLine($"lastQueuedDodge={FormatQueuedDodge()}");
+        builder.AppendLine($"lastMovementReset={FormatMovementReset(currentTick)}");
 
         Debug.Log(builder.ToString(), this);
+    }
+
+    private void UpdateOwnerCorrectionSummary(int currentTick)
+    {
+        if (!enableOwnerMovementDiagnostics || correctionSummaryIntervalSeconds <= 0f)
+        {
+            return;
+        }
+
+        float now = Time.unscaledTime;
+        if (_correctionSummaryWindowStartedAt <= 0f)
+        {
+            _correctionSummaryWindowStartedAt = now;
+            return;
+        }
+
+        float elapsed = now - _correctionSummaryWindowStartedAt;
+        if (elapsed < correctionSummaryIntervalSeconds)
+        {
+            return;
+        }
+
+        _ownerCorrectionsPerSecond = _correctionsInCurrentSummaryWindow / Mathf.Max(0.001f, elapsed);
+        if (logOwnerCorrections && _correctionsInCurrentSummaryWindow > 0)
+        {
+            Debug.Log(
+                $"[NetMovement3D Correction Summary] object={name} slot={PlayerSlot} tick={currentTick} corrections={_correctionsInCurrentSummaryWindow} rate={_ownerCorrectionsPerSecond:0.##}/s latest={_latestOwnerCorrectionDistance:0.###} largest={_largestRecentOwnerCorrectionDistance:0.###} likelyCause={_latestOwnerCorrectionLikelyCause} sideEffect={_latestOwnerCorrectionSideEffect}",
+                this);
+        }
+
+        _correctionsInCurrentSummaryWindow = 0;
+        _largestRecentOwnerCorrectionDistance = 0f;
+        _correctionSummaryWindowStartedAt = now;
+    }
+
+    private void LogMovementConfigIfNeeded(string context)
+    {
+        if (!enableOwnerMovementDiagnostics || !logMovementConfigOnSpawn)
+        {
+            return;
+        }
+
+        StringBuilder builder = new StringBuilder(900);
+        builder.AppendLine("[NetMovement3D Movement Config]");
+        builder.AppendLine($"context={context} object={name} networkObjectId={(NetworkObject != null ? NetworkObject.NetworkObjectId : 0UL)} ownerClientId={(NetworkObject != null ? NetworkObject.OwnerClientId : 0UL)} playerSlot={PlayerSlot} isOwner={IsOwner} isServer={IsServer}");
+        builder.AppendLine($"tick={NetTickUtil.CurrentTick} serverTick={NetTickUtil.ServerTick} tickRate={NetTickUtil.TickRate} tickInterval={NetTickUtil.TickInterval:0.####} movementLocked={_movementLocked.Value}");
+        builder.AppendLine($"flightConfig={FormatFlightConfig()}");
+        builder.AppendLine($"flightAssist={FormatFlightAssistConfig()}");
+        builder.AppendLine($"movementCollision blockerMask={networkMovementBlockerMask.value} skinWidth={blockerSkinWidth:0.###} minSweepDistance={minimumBlockerSweepDistance:0.####}");
+        builder.AppendLine($"rigidbody={FormatRigidbodyState(CaptureRigidbodyDiagnosticState())}");
+        Debug.Log(builder.ToString(), this);
+    }
+
+    public string BuildMovementConfigFingerprint()
+    {
+        CacheReferences();
+        return $"{FormatFlightConfig()} | {FormatFlightAssistConfig()} | blockerMask={networkMovementBlockerMask.value} skin={blockerSkinWidth:0.###} minSweep={minimumBlockerSweepDistance:0.####}";
+    }
+
+    private RigidbodyDiagnosticState CaptureRigidbodyDiagnosticState()
+    {
+        if (_rb == null)
+        {
+            return default;
+        }
+
+        return new RigidbodyDiagnosticState
+        {
+            HasBody = true,
+            Position = _rb.position,
+            Rotation = _rb.rotation,
+            Velocity = _rb.linearVelocity,
+            AngularVelocity = _rb.angularVelocity,
+            IsKinematic = _rb.isKinematic,
+            Interpolation = _rb.interpolation
+        };
     }
 
     private bool HasRecentMovementSideEffect(int serverTick, int currentTick)
@@ -1582,11 +1745,50 @@ public class NetMovement3D : NetworkBehaviour
         return $"tick={_lastBoundaryCorrectionTick}, position={FormatVector3(_lastBoundaryCorrectionPosition)}, velocity={FormatVector3(_lastBoundaryCorrectionVelocity)}";
     }
 
+    private string FormatMovementReset(int currentTick)
+    {
+        return _lastMovementResetTick < 0
+            ? "none"
+            : $"tick={_lastMovementResetTick}, ticksAgo={Mathf.Max(0, currentTick - _lastMovementResetTick)}, position={FormatVector3(_lastMovementResetPosition)}, resetCamera={_lastMovementResetCamera}";
+    }
+
     private string FormatQueuedDodge()
     {
         return _lastQueuedDodgeTick < 0
             ? "none"
             : $"tick={_lastQueuedDodgeTick}, kind={_lastQueuedDodgeKind}, value={FormatVector3(_lastQueuedDodgeDirection)}";
+    }
+
+    private string FormatFlightConfig()
+    {
+        if (_shipFlight == null)
+        {
+            return "missing ShipFlight3D";
+        }
+
+        ShipFlightConfig3D flight = _shipFlight.FlightConfig;
+        return $"thrust={flight.thrustAcceleration:0.###}, maxSpeed={flight.maxSpeed:0.###}, precisionThreshold={flight.precisionThrottleInputThreshold:0.###}, precisionMaxFraction={flight.precisionThrottleMaxSpeedFraction:0.###}, precisionAccelMul={flight.precisionThrottleAccelerationMultiplier:0.###}, brake={flight.precisionBrakeDeceleration:0.###}, lookResponse={flight.lookInputResponse:0.###}, pitchSpeed={flight.pitchSpeed:0.###}, yawSpeed={flight.yawSpeed:0.###}, pitchAccel={flight.pitchAcceleration:0.###}, pitchDecel={flight.pitchDeceleration:0.###}, yawAccel={flight.yawAcceleration:0.###}, yawDecel={flight.yawDeceleration:0.###}, invertY={flight.invertY}, minRotAtMaxSpeed={flight.minRotationMultiplierAtMaxSpeed:0.###}, lockToWorldY={_shipFlight.LockToWorldYPlane}, lockedWorldY={_shipFlight.LockedWorldY:0.###}";
+    }
+
+    private string FormatFlightAssistConfig()
+    {
+        if (_shipFlight == null)
+        {
+            return "missing ShipFlight3D";
+        }
+
+        ShipFlightAssistConfig3D assist = _shipFlight.FlightAssistConfig;
+        return $"frictionDecel={assist.frictionDeceleration:0.###}, angularDamping={assist.activeAngularDamping:0.###}, lateralDamping={assist.lateralDriftDamping:0.###}, verticalDamping={assist.verticalDriftDamping:0.###}, alignment={assist.velocityAlignmentStrength:0.###}, recoveryDriftMul={assist.recoveryDriftDampingMultiplier:0.###}, recoveryAlignment={assist.recoveryVelocityAlignmentStrength:0.###}, frictionEnabled={_shipFlight.IsFrictionEnabled}, externalSimulation={_shipFlight.IsExternalSimulationEnabled}";
+    }
+
+    private static string FormatRigidbodyState(RigidbodyDiagnosticState state)
+    {
+        if (!state.HasBody)
+        {
+            return "missing Rigidbody";
+        }
+
+        return $"position={FormatVector3(state.Position)}, rotation={FormatQuaternion(state.Rotation)}, velocity={FormatVector3(state.Velocity)}, angularVelocity={FormatVector3(state.AngularVelocity)}, isKinematic={state.IsKinematic}, interpolation={state.Interpolation}";
     }
 
     private static string FormatTickedVector(int tick, Vector3 value)
@@ -1602,6 +1804,11 @@ public class NetMovement3D : NetworkBehaviour
     private static string FormatVector3(Vector3 value)
     {
         return $"({value.x:0.###}, {value.y:0.###}, {value.z:0.###})";
+    }
+
+    private static string FormatQuaternion(Quaternion value)
+    {
+        return $"({value.x:0.###}, {value.y:0.###}, {value.z:0.###}, {value.w:0.###})";
     }
 
     private void ResetRemoteInterpolationState()

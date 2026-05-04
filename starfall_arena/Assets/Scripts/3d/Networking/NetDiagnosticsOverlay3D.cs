@@ -142,7 +142,9 @@ public class NetDiagnosticsOverlay3D : MonoBehaviour
             $"buf={diagnostics.CurrentBufferDepth} delay={diagnostics.CurrentDelayMs:0}ms " +
             $"recv={diagnostics.ReceivedSnapshots} starve={diagnostics.BufferStarvationEvents} " +
             $"extrap={diagnostics.ExtrapolatedFrames} snaps={diagnostics.HardSnaps} " +
-            $"corr={player.OwnerCorrectionCount} avgCorr={player.AverageOwnerCorrectionDistance:0.###}";
+            $"corr={player.OwnerCorrectionCount} rate={player.OwnerCorrectionsPerSecond:0.#}/s " +
+            $"latest={player.LatestOwnerCorrectionDistance:0.###} largest={player.LargestRecentOwnerCorrectionDistance:0.###} " +
+            $"avg={player.AverageOwnerCorrectionDistance:0.###} cause={player.LatestOwnerCorrectionLikelyCause} side={player.LatestOwnerCorrectionSideEffect}";
     }
 
     private static string FormatEnemyLine(NetEnemyMovement3D enemy, NetInterpolationDiagnostics3D diagnostics)

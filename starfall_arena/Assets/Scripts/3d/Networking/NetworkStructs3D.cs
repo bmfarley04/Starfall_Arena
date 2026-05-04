@@ -16,6 +16,7 @@ public struct NetInputSnapshot3D : INetworkSerializable
     public float BaseRotationMultiplier;
     public float AbilityRotationMultiplier;
     public float ThrustMultiplier;
+    public float MaxSpeedMultiplier;
     public float SlowMultiplier;
     public bool DodgeRequested;
     public NetDodgeKind3D DodgeKind;
@@ -30,6 +31,7 @@ public struct NetInputSnapshot3D : INetworkSerializable
         serializer.SerializeValue(ref BaseRotationMultiplier);
         serializer.SerializeValue(ref AbilityRotationMultiplier);
         serializer.SerializeValue(ref ThrustMultiplier);
+        serializer.SerializeValue(ref MaxSpeedMultiplier);
         serializer.SerializeValue(ref SlowMultiplier);
         serializer.SerializeValue(ref DodgeRequested);
         serializer.SerializeValue(ref DodgeKind);

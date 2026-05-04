@@ -83,6 +83,7 @@ public static class MovementSimulation3D
         bool passiveForwardFrictionEnabled = flightAssistEnabled && assist.frictionDeceleration > 0f;
         Quaternion inverseRotation = Quaternion.Inverse(state.Rotation);
         Vector3 localVelocity = inverseRotation * state.Velocity;
+        float maxSpeedMultiplier = input.MaxSpeedMultiplier > 0f ? input.MaxSpeedMultiplier : 1f;
 
         if (effectiveThrustInput > 0.05f)
         {
@@ -93,7 +94,7 @@ public static class MovementSimulation3D
 
             if (isPrecisionThrottle)
             {
-                float precisionMaxSpeed = flight.maxSpeed * flight.precisionThrottleMaxSpeedFraction * input.SlowMultiplier;
+                float precisionMaxSpeed = flight.maxSpeed * flight.precisionThrottleMaxSpeedFraction * maxSpeedMultiplier * input.SlowMultiplier;
                 localVelocity.z = previousForwardSpeed < precisionMaxSpeed
                     ? Mathf.Min(nextForwardSpeed, precisionMaxSpeed)
                     : previousForwardSpeed;
@@ -121,7 +122,7 @@ public static class MovementSimulation3D
         Vector3 worldVelocity = state.Rotation * localVelocity;
         worldVelocity = ApplyVelocityAlignment(worldVelocity, effectiveThrustInput, state, flight, assist, flightAssistEnabled, dt);
 
-        float effectiveMaxSpeed = Mathf.Max(0f, flight.maxSpeed * input.SlowMultiplier);
+        float effectiveMaxSpeed = Mathf.Max(0f, flight.maxSpeed * maxSpeedMultiplier * input.SlowMultiplier);
         if (effectiveMaxSpeed > 0f && worldVelocity.magnitude > effectiveMaxSpeed)
         {
             worldVelocity = worldVelocity.normalized * effectiveMaxSpeed;
