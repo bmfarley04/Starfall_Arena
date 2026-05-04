@@ -6018,7 +6018,7 @@ MonoBehaviour:
   isLocked: 0
   dodge:
     cooldown: 3
-    dodgeDistance: 8
+    dodgeDistance: 14
     slideDuration: 0.35
     primeWindow: 1.5
     directionInputDeadzone: 0.35
