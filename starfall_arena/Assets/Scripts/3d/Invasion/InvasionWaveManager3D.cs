@@ -180,6 +180,7 @@ public class InvasionWaveManager3D : MonoBehaviour
     private int _authoredEnemyCount;
     private int _defeatedEnemyCount;
     private bool _loggedZeroAuthoredEnemyCount;
+    private bool _developerSkipCurrentWaveRequested;
 
     public event Func<int, IEnumerator> WaveIntroRequested;
     public event Func<int, IEnumerator> RewardPhaseRequested;
@@ -223,7 +224,20 @@ public class InvasionWaveManager3D : MonoBehaviour
         }
 
         ResetEnemyDefeatProgress();
+        _developerSkipCurrentWaveRequested = false;
         _waveRoutine = StartCoroutine(RunWaves());
+    }
+
+    public bool RequestDeveloperSkipCurrentWave()
+    {
+        if (_waveRoutine == null || !HasSpawnAuthority())
+        {
+            return false;
+        }
+
+        _developerSkipCurrentWaveRequested = true;
+        ForceClearTrackedEnemies(registerDefeats: true);
+        return true;
     }
 
     private IEnumerator RunWaves()
@@ -231,11 +245,12 @@ public class InvasionWaveManager3D : MonoBehaviour
         int waveCount = WaveCount;
         for (int waveIndex = 0; waveIndex < waveCount; waveIndex++)
         {
+            _developerSkipCurrentWaveRequested = false;
             int waveNumber = waveIndex + 1;
             yield return RunWaveIntro(waveNumber);
-            if (waveStartDelaySeconds > 0f)
+            if (!_developerSkipCurrentWaveRequested && waveStartDelaySeconds > 0f)
             {
-                yield return new WaitForSeconds(waveStartDelaySeconds);
+                yield return WaitForSecondsUnlessDeveloperSkip(waveStartDelaySeconds);
             }
 
             WaveStarted?.Invoke(waveNumber);
@@ -287,11 +302,16 @@ public class InvasionWaveManager3D : MonoBehaviour
         {
             for (int i = 0; i < wave.subWaves.Length; i++)
             {
+                if (_developerSkipCurrentWaveRequested)
+                {
+                    yield break;
+                }
+
                 yield return SpawnSubWave(wave.subWaves[i]);
             }
         }
 
-        if (wave.enableBoss)
+        if (!_developerSkipCurrentWaveRequested && wave.enableBoss)
         {
             yield return SpawnWaveBoss(wave.boss);
         }
@@ -323,11 +343,11 @@ public class InvasionWaveManager3D : MonoBehaviour
         }
 
         int totalEnemyCount = GetTotalEnemyCount(subWave.enemies);
-        if (totalEnemyCount <= 0)
+        if (_developerSkipCurrentWaveRequested || totalEnemyCount <= 0)
         {
-            if (subWave.delayBeforeNextSubWaveSeconds > 0f)
+            if (!_developerSkipCurrentWaveRequested && subWave.delayBeforeNextSubWaveSeconds > 0f)
             {
-                yield return new WaitForSeconds(subWave.delayBeforeNextSubWaveSeconds);
+                yield return WaitForSecondsUnlessDeveloperSkip(subWave.delayBeforeNextSubWaveSeconds);
             }
 
             yield break;
@@ -354,23 +374,28 @@ public class InvasionWaveManager3D : MonoBehaviour
                 int entryCount = Mathf.Max(0, entry.count);
                 for (int memberIndex = 0; memberIndex < entryCount; memberIndex++)
                 {
+                    if (_developerSkipCurrentWaveRequested)
+                    {
+                        yield break;
+                    }
+
                     Vector3 localOffset = slotIndex < _formationOffsets.Count ? _formationOffsets[slotIndex] : Vector3.zero;
                     Vector3 spawnPosition = spawnOrigin + (spawnRotation * localOffset);
                     SpawnEnemyAt(entry.enemyPrefab, spawnPosition, spawnRotation);
                     slotIndex++;
 
                     bool hasMoreBurstMembers = slotIndex < totalEnemyCount;
-                    if (hasMoreBurstMembers && burstIntervalSeconds > 0f)
+                    if (!_developerSkipCurrentWaveRequested && hasMoreBurstMembers && burstIntervalSeconds > 0f)
                     {
-                        yield return new WaitForSeconds(burstIntervalSeconds);
+                        yield return WaitForSecondsUnlessDeveloperSkip(burstIntervalSeconds);
                     }
                 }
             }
         }
 
-        if (subWave.delayBeforeNextSubWaveSeconds > 0f)
+        if (!_developerSkipCurrentWaveRequested && subWave.delayBeforeNextSubWaveSeconds > 0f)
         {
-            yield return new WaitForSeconds(subWave.delayBeforeNextSubWaveSeconds);
+            yield return WaitForSecondsUnlessDeveloperSkip(subWave.delayBeforeNextSubWaveSeconds);
         }
     }
 
@@ -381,13 +406,32 @@ public class InvasionWaveManager3D : MonoBehaviour
             yield break;
         }
 
+        if (_developerSkipCurrentWaveRequested)
+        {
+            yield break;
+        }
+
         if (bossConfig.delayBeforeBossSeconds > 0f)
         {
-            yield return new WaitForSeconds(bossConfig.delayBeforeBossSeconds);
+            yield return WaitForSecondsUnlessDeveloperSkip(bossConfig.delayBeforeBossSeconds);
+        }
+
+        if (_developerSkipCurrentWaveRequested)
+        {
+            yield break;
         }
 
         Transform bossSpawnPoint = ResolveCenterPoint(bossConfig.bossSpawnPoint);
         SpawnEnemyAt(bossConfig.bossPrefab, bossSpawnPoint.position, bossSpawnPoint.rotation);
+    }
+
+    private IEnumerator WaitForSecondsUnlessDeveloperSkip(float seconds)
+    {
+        float endTime = Time.time + Mathf.Max(0f, seconds);
+        while (!_developerSkipCurrentWaveRequested && Time.time < endTime)
+        {
+            yield return null;
+        }
     }
 
     public Enemy3D SpawnEnemyAt(GameObject enemyPrefab, Vector3 spawnPosition, Quaternion spawnRotation)
@@ -935,6 +979,55 @@ public class InvasionWaveManager3D : MonoBehaviour
         _aliveEnemies.Clear();
         _pendingRevealEnemies.Clear();
         AliveEnemyCountChanged?.Invoke(_aliveEnemies.Count);
+    }
+
+    private void ForceClearTrackedEnemies(bool registerDefeats)
+    {
+        for (int i = _aliveEnemies.Count - 1; i >= 0; i--)
+        {
+            ForceRemoveTrackedEnemy(_aliveEnemies[i], registerDefeats);
+        }
+
+        for (int i = _pendingRevealEnemies.Count - 1; i >= 0; i--)
+        {
+            ForceRemoveTrackedEnemy(_pendingRevealEnemies[i], registerDefeats);
+        }
+
+        _aliveEnemies.Clear();
+        _pendingRevealEnemies.Clear();
+        AliveEnemyCountChanged?.Invoke(_aliveEnemies.Count);
+    }
+
+    private void ForceRemoveTrackedEnemy(Enemy3D enemy, bool registerDefeat)
+    {
+        if (enemy == null)
+        {
+            return;
+        }
+
+        enemy.Died -= HandleEnemyDied;
+        enemy.Died -= HandlePendingEnemyDied;
+
+        SpawnArrivalEffect3D arrivalEffect = enemy.GetComponent<SpawnArrivalEffect3D>();
+        if (arrivalEffect != null)
+        {
+            arrivalEffect.Revealed -= HandlePendingEnemyRevealed;
+        }
+
+        UnregisterTrackedEnemyLifecycle(enemy);
+
+        if (registerDefeat)
+        {
+            RegisterEnemyDefeated();
+        }
+
+        if (enemy.TryGetComponent(out NetworkObject networkObject) && NetTickUtil.IsActive && networkObject.IsSpawned)
+        {
+            networkObject.Despawn(true);
+            return;
+        }
+
+        Destroy(enemy.gameObject);
     }
 
     private bool HasOutstandingTrackedEnemies()

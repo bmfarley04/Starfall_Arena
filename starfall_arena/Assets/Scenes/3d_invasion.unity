@@ -5966,6 +5966,8 @@ MonoBehaviour:
   spawnRetryIntervalSeconds: 0.1
   waveTextDisplayDuration: 1.5
   textFadeDuration: 0.3
+  enableDeveloperWaveSkipKey: 1
+  developerWaveSkipKey: 110
 --- !u!1 &784560389
 GameObject:
   m_ObjectHideFlags: 0
@@ -6728,7 +6730,7 @@ PrefabInstance:
     - target: {fileID: 9062759000149341609, guid: 27fb60d9740f85f4a8726ce28999a03d, type: 3}
       propertyPath: returnHoldUI.player2ReturnFill
       value: 
-      objectReference: {fileID: 0}
+      objectReference: {fileID: 1309744353}
     - target: {fileID: 9070755707241654452, guid: 27fb60d9740f85f4a8726ce28999a03d, type: 3}
       propertyPath: m_fontStyle
       value: 0
@@ -10438,9 +10440,9 @@ MonoBehaviour:
     maxDistance: 0
     offscreenScaleRange: {x: 0.3, y: 0.1}
   distance:
-    awarenessRange: 900
+    awarenessRange: 2000
     closeHideDistance: 40
-    bracketMaxDistance: 500
+    bracketMaxDistance: 2000
     thresholdHysteresis: 8
   screenClamp:
     edgeHorizontalPadding: 40
@@ -10459,7 +10461,7 @@ MonoBehaviour:
     occlusionProbeRadius: 0.25
     stateHoldSeconds: 0.08
   scale:
-    distanceRange: {x: 60, y: 900}
+    distanceRange: {x: 60, y: 2000}
     indicatorScaleRange: {x: 0.3, y: 0.1}
     bracketScaleRange: {x: 0.3, y: 0.15}
     barScaleRange: {x: 0.6, y: 0.4}
