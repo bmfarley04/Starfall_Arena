@@ -1872,7 +1872,7 @@ public class InvasionSceneManager3D : MonoBehaviour
                 && movement.IsSpawned
                 && movement.IsOwner)
             {
-                movement.BindOwnerCameraAndTracking();
+                movement.RefreshOwnerPresentationAfterRespawn();
                 return true;
             }
 
