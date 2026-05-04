@@ -279,6 +279,23 @@ namespace StarfallArena.UI
             public TextVisualSnapshot description;
         }
 
+        private sealed class RuntimeCardReplacement
+        {
+            public int tier;
+            public int index;
+            public Button originalButton;
+            public bool originalWasActive;
+            public Vector3 originalScale;
+            public Button button;
+            public Image container;
+            public Image innerContainer;
+            public Image icon;
+            public TextMeshProUGUI name;
+            public TextMeshProUGUI description;
+        }
+
+        private readonly List<RuntimeCardReplacement> _runtimeCardReplacements = new List<RuntimeCardReplacement>(3);
+
         // Selection effect: cached original materials per card so we can restore
         private Dictionary<Image, Material> _originalContainerMaterials = new Dictionary<Image, Material>();
         private Dictionary<Image, Material> _originalIconMaterials = new Dictionary<Image, Material>();
@@ -626,27 +643,35 @@ namespace StarfallArena.UI
 
                 // onClick → select this augment
                 btn.onClick.AddListener(() => OnAugmentSelected(index));
+                WirePointerSelectionEvents(btn, index);
 
-                // Add EventTrigger entries only for pointer interaction/debug.
-                EventTrigger trigger = btn.gameObject.GetComponent<EventTrigger>();
-                if (trigger == null)
-                    trigger = btn.gameObject.AddComponent<EventTrigger>();
-
-                // On Pointer Enter (mouse fallback)
-                EventTrigger.Entry pointerEnter = new EventTrigger.Entry { eventID = EventTriggerType.PointerEnter };
-                pointerEnter.callback.AddListener(_ => LogSelectionDebug("EventTrigger PointerEnter", btn, index));
-                trigger.triggers.Add(pointerEnter);
-
-                EventTrigger.Entry pointerDown = new EventTrigger.Entry { eventID = EventTriggerType.PointerDown };
-                pointerDown.callback.AddListener(_ =>
-                {
-                    // Mouse can still click a card directly, but selection ownership
-                    // remains internal to the manager rather than the EventSystem.
-                    SetSelectedCardIndex(index);
-                    LogSelectionDebug("EventTrigger PointerDown", btn, index);
-                });
-                trigger.triggers.Add(pointerDown);
             }
+        }
+
+        private void WirePointerSelectionEvents(Button btn, int index)
+        {
+            if (btn == null)
+            {
+                return;
+            }
+
+            EventTrigger trigger = btn.gameObject.GetComponent<EventTrigger>();
+            if (trigger == null)
+                trigger = btn.gameObject.AddComponent<EventTrigger>();
+
+            EventTrigger.Entry pointerEnter = new EventTrigger.Entry { eventID = EventTriggerType.PointerEnter };
+            pointerEnter.callback.AddListener(_ => LogSelectionDebug("EventTrigger PointerEnter", btn, index));
+            trigger.triggers.Add(pointerEnter);
+
+            EventTrigger.Entry pointerDown = new EventTrigger.Entry { eventID = EventTriggerType.PointerDown };
+            pointerDown.callback.AddListener(_ =>
+            {
+                // Mouse can still click a card directly, but selection ownership
+                // remains internal to the manager rather than the EventSystem.
+                SetSelectedCardIndex(index);
+                LogSelectionDebug("EventTrigger PointerDown", btn, index);
+            });
+            trigger.triggers.Add(pointerDown);
         }
 
         // ===== HOVER SCALE =====
@@ -1000,6 +1025,7 @@ namespace StarfallArena.UI
             _cardOriginalScales.Clear();
 
             // Reactivate all cards (some may have been deactivated during sequential pick)
+            ClearRuntimeCardReplacements();
             ReactivateAllCards();
 
             // Restore all card materials to originals
@@ -1118,6 +1144,12 @@ namespace StarfallArena.UI
 
         private Image GetContainerForCard(int tier, int index)
         {
+            RuntimeCardReplacement replacement = GetRuntimeCardReplacement(tier, index);
+            if (replacement != null)
+            {
+                return replacement.container;
+            }
+
             Image[] containers = tier switch
             {
                 1 => tier1Containers,
@@ -1131,6 +1163,12 @@ namespace StarfallArena.UI
 
         private Image GetInnerContainerForCard(int tier, int index)
         {
+            RuntimeCardReplacement replacement = GetRuntimeCardReplacement(tier, index);
+            if (replacement != null)
+            {
+                return replacement.innerContainer;
+            }
+
             Image[] containers = tier switch
             {
                 1 => tier1InnerContainers,
@@ -1144,6 +1182,12 @@ namespace StarfallArena.UI
 
         private Image GetIconForCard(int tier, int index)
         {
+            RuntimeCardReplacement replacement = GetRuntimeCardReplacement(tier, index);
+            if (replacement != null)
+            {
+                return replacement.icon;
+            }
+
             return (tier, index) switch
             {
                 (1, 0) => tier1Choice1Icon,
@@ -1162,6 +1206,12 @@ namespace StarfallArena.UI
 
         private TextMeshProUGUI GetNameForCard(int tier, int index)
         {
+            RuntimeCardReplacement replacement = GetRuntimeCardReplacement(tier, index);
+            if (replacement != null)
+            {
+                return replacement.name;
+            }
+
             return (tier, index) switch
             {
                 (1, 0) => tier1Choice1Name,
@@ -1180,6 +1230,12 @@ namespace StarfallArena.UI
 
         private TextMeshProUGUI GetDescriptionForCard(int tier, int index)
         {
+            RuntimeCardReplacement replacement = GetRuntimeCardReplacement(tier, index);
+            if (replacement != null)
+            {
+                return replacement.description;
+            }
+
             return (tier, index) switch
             {
                 (1, 0) => tier1Choice1Description,
@@ -1461,15 +1517,173 @@ namespace StarfallArena.UI
 
         private void ApplyPerCardVisualStyles(int baseTier, int cardCount)
         {
+            ClearRuntimeCardReplacements();
             EnsureOriginalCardVisualsCaptured();
             for (int i = 0; i < cardCount; i++)
             {
                 int visualTier = selectedAugmentVisualTiers != null && i < selectedAugmentVisualTiers.Count
                     ? Mathf.Clamp(selectedAugmentVisualTiers[i], 1, 4)
                     : baseTier;
+
+                if (visualTier == 4 && baseTier != 4)
+                {
+                    if (TryCreateRuntimeCardReplacement(baseTier, i, visualTier, 0, out RuntimeCardReplacement replacement))
+                    {
+                        ApplyRuntimeCardContent(replacement, i);
+                        continue;
+                    }
+                }
+
                 int sourceIndex = visualTier == 4 ? 0 : i;
                 ApplyCardVisualSnapshot(baseTier, i, GetOriginalCardVisualSnapshot(visualTier, sourceIndex));
             }
+        }
+
+        private bool TryCreateRuntimeCardReplacement(int targetTier, int targetIndex, int sourceTier, int sourceIndex, out RuntimeCardReplacement replacement)
+        {
+            replacement = null;
+
+            Button targetButton = GetSerializedButtonForTier(targetTier, targetIndex);
+            Button sourceButton = GetSerializedButtonForTier(sourceTier, sourceIndex);
+            if (targetButton == null || sourceButton == null || targetButton.transform.parent == null)
+            {
+                Debug.LogWarning($"[AugmentSelect] Cannot replace tier {targetTier} card {targetIndex} with tier {sourceTier} visuals because the source or target button is not wired.", this);
+                return false;
+            }
+
+            GameObject clone = Instantiate(sourceButton.gameObject, targetButton.transform.parent);
+            clone.name = $"{sourceButton.gameObject.name}_runtime_slot_{targetIndex + 1}";
+            clone.transform.SetSiblingIndex(targetButton.transform.GetSiblingIndex());
+            clone.transform.localScale = targetButton.transform.localScale;
+            clone.SetActive(targetButton.gameObject.activeSelf);
+
+            Button cloneButton = clone.GetComponent<Button>();
+            if (cloneButton == null)
+            {
+                Destroy(clone);
+                Debug.LogWarning($"[AugmentSelect] Tier {sourceTier} card template does not have a Button component and cannot replace tier {targetTier} card {targetIndex}.", this);
+                return false;
+            }
+
+            int choiceIndex = targetIndex;
+            cloneButton.onClick.RemoveAllListeners();
+            cloneButton.onClick.AddListener(() => OnAugmentSelected(choiceIndex));
+            EventTrigger cloneTrigger = cloneButton.GetComponent<EventTrigger>();
+            if (cloneTrigger != null)
+            {
+                cloneTrigger.triggers.Clear();
+            }
+            WirePointerSelectionEvents(cloneButton, choiceIndex);
+
+            replacement = new RuntimeCardReplacement
+            {
+                tier = targetTier,
+                index = targetIndex,
+                originalButton = targetButton,
+                originalWasActive = targetButton.gameObject.activeSelf,
+                originalScale = targetButton.transform.localScale,
+                button = cloneButton,
+                container = CloneComponentReference(sourceButton.transform, cloneButton.transform, GetContainerForCard(sourceTier, sourceIndex)),
+                innerContainer = CloneComponentReference(sourceButton.transform, cloneButton.transform, GetInnerContainerForCard(sourceTier, sourceIndex)),
+                icon = CloneComponentReference(sourceButton.transform, cloneButton.transform, GetIconForCard(sourceTier, sourceIndex)),
+                name = CloneComponentReference(sourceButton.transform, cloneButton.transform, GetNameForCard(sourceTier, sourceIndex)),
+                description = CloneComponentReference(sourceButton.transform, cloneButton.transform, GetDescriptionForCard(sourceTier, sourceIndex))
+            };
+
+            targetButton.gameObject.SetActive(false);
+            _runtimeCardReplacements.Add(replacement);
+            return true;
+        }
+
+        private void ApplyRuntimeCardContent(RuntimeCardReplacement replacement, int selectedAugmentIndex)
+        {
+            if (replacement == null || selectedAugments == null || selectedAugmentIndex < 0 || selectedAugmentIndex >= selectedAugments.Count)
+            {
+                return;
+            }
+
+            SetUIElements(replacement.icon, replacement.name, replacement.description, selectedAugments[selectedAugmentIndex]);
+        }
+
+        private void ClearRuntimeCardReplacements()
+        {
+            for (int i = _runtimeCardReplacements.Count - 1; i >= 0; i--)
+            {
+                RuntimeCardReplacement replacement = _runtimeCardReplacements[i];
+                if (replacement == null)
+                {
+                    continue;
+                }
+
+                if (replacement.originalButton != null)
+                {
+                    replacement.originalButton.gameObject.SetActive(replacement.originalWasActive);
+                    replacement.originalButton.transform.localScale = replacement.originalScale;
+                }
+
+                if (replacement.button != null)
+                {
+                    _cardOriginalScales.Remove(replacement.button);
+                    if (_hoverCoroutines.TryGetValue(replacement.button, out Coroutine coroutine) && coroutine != null)
+                    {
+                        StopCoroutine(coroutine);
+                    }
+                    _hoverCoroutines.Remove(replacement.button);
+                    Destroy(replacement.button.gameObject);
+                }
+            }
+
+            _runtimeCardReplacements.Clear();
+        }
+
+        private RuntimeCardReplacement GetRuntimeCardReplacement(int tier, int index)
+        {
+            for (int i = 0; i < _runtimeCardReplacements.Count; i++)
+            {
+                RuntimeCardReplacement replacement = _runtimeCardReplacements[i];
+                if (replacement != null && replacement.tier == tier && replacement.index == index)
+                {
+                    return replacement;
+                }
+            }
+
+            return null;
+        }
+
+        private static T CloneComponentReference<T>(Transform sourceRoot, Transform cloneRoot, T sourceComponent) where T : Component
+        {
+            if (sourceRoot == null || cloneRoot == null || sourceComponent == null)
+            {
+                return null;
+            }
+
+            string path = GetRelativePath(sourceRoot, sourceComponent.transform);
+            Transform cloneTransform = string.IsNullOrEmpty(path) ? cloneRoot : cloneRoot.Find(path);
+            return cloneTransform != null ? cloneTransform.GetComponent<T>() : null;
+        }
+
+        private static string GetRelativePath(Transform root, Transform child)
+        {
+            if (root == null || child == null || root == child)
+            {
+                return string.Empty;
+            }
+
+            List<string> parts = new List<string>(4);
+            Transform current = child;
+            while (current != null && current != root)
+            {
+                parts.Add(current.name);
+                current = current.parent;
+            }
+
+            if (current != root)
+            {
+                return string.Empty;
+            }
+
+            parts.Reverse();
+            return string.Join("/", parts);
         }
 
         private int ResolveDisplayedTier(int requestedTier, IReadOnlyList<int> perCardVisualTiers)
@@ -1708,17 +1922,24 @@ namespace StarfallArena.UI
 
             if (targetGroup != null)
             {
-                // Pre-hide all card children so they don't flash before animation
-                int childCount = targetGroup.transform.childCount;
-                for (int i = 0; i < childCount; i++)
+                Button[] buttons = GetButtonsForTier(tier);
+                if (buttons != null)
                 {
-                    Transform child = targetGroup.transform.GetChild(i);
-                    child.localScale = Vector3.one * startScale;
+                    for (int i = 0; i < buttons.Length; i++)
+                    {
+                        if (buttons[i] == null || !buttons[i].gameObject.activeSelf)
+                        {
+                            continue;
+                        }
 
-                    CanvasGroup childCG = child.GetComponent<CanvasGroup>();
-                    if (childCG == null)
-                        childCG = child.gameObject.AddComponent<CanvasGroup>();
-                    childCG.alpha = 0f;
+                        Transform child = buttons[i].transform;
+                        child.localScale = Vector3.one * startScale;
+
+                        CanvasGroup childCG = child.GetComponent<CanvasGroup>();
+                        if (childCG == null)
+                            childCG = child.gameObject.AddComponent<CanvasGroup>();
+                        childCG.alpha = 0f;
+                    }
                 }
 
                 // Now activate the parent — cards are invisible (scale 0, alpha 0)
@@ -1786,17 +2007,21 @@ namespace StarfallArena.UI
             // Fade in player choice + timer text alongside card animation
             StartCoroutine(FadePlayerChoiceUI(1f, playerChoiceFadeDuration));
 
-            // Get the three card transforms (first 3 children)
-            Transform[] cardTransforms = new Transform[3];
-            int childCount = Mathf.Min(3, targetGroup.transform.childCount);
-
-            for (int i = 0; i < childCount; i++)
+            Button[] buttons = GetButtonsForTier(tier);
+            List<Transform> cardTransforms = new List<Transform>(3);
+            if (buttons != null)
             {
-                cardTransforms[i] = targetGroup.transform.GetChild(i);
+                for (int i = 0; i < buttons.Length; i++)
+                {
+                    if (buttons[i] != null && buttons[i].gameObject.activeSelf)
+                    {
+                        cardTransforms.Add(buttons[i].transform);
+                    }
+                }
             }
 
             // Animate each card with staggered timing
-            for (int i = 0; i < cardTransforms.Length; i++)
+            for (int i = 0; i < cardTransforms.Count; i++)
             {
                 if (cardTransforms[i] != null)
                 {
@@ -1813,7 +2038,6 @@ namespace StarfallArena.UI
             targetGroup.blocksRaycasts = true;
 
             // Cache original scales for hover system
-            Button[] buttons = GetButtonsForTier(tier);
             if (buttons != null)
             {
                 foreach (var btn in buttons)
@@ -1920,7 +2144,7 @@ namespace StarfallArena.UI
         /// </summary>
         private Button[] GetButtonsForTier(int tier)
         {
-            return tier switch
+            Button[] serializedButtons = tier switch
             {
                 1 => tier1Buttons,
                 2 => tier2Buttons,
@@ -1928,6 +2152,34 @@ namespace StarfallArena.UI
                 4 => tier4Buttons,
                 _ => tier1Buttons
             };
+
+            if (_runtimeCardReplacements.Count == 0 || serializedButtons == null)
+            {
+                return serializedButtons;
+            }
+
+            Button[] buttons = new Button[serializedButtons.Length];
+            for (int i = 0; i < serializedButtons.Length; i++)
+            {
+                RuntimeCardReplacement replacement = GetRuntimeCardReplacement(tier, i);
+                buttons[i] = replacement != null ? replacement.button : serializedButtons[i];
+            }
+
+            return buttons;
+        }
+
+        private Button GetSerializedButtonForTier(int tier, int index)
+        {
+            Button[] buttons = tier switch
+            {
+                1 => tier1Buttons,
+                2 => tier2Buttons,
+                3 => tier3Buttons,
+                4 => tier4Buttons,
+                _ => tier1Buttons
+            };
+
+            return buttons != null && index >= 0 && index < buttons.Length ? buttons[index] : null;
         }
 
         /// <summary>
