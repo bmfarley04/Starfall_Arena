@@ -40,6 +40,8 @@ public class SiegeCarrierBossBalanceProfile3D : EnemyBalanceProfile3D
         lightningSlowBeamAimRefreshInterval = 0.02f,
         lightningSlowBeamCount = 2,
         lightningSlowBeamLeadSeconds = 0.12f,
+        lightningSlowBeamLagSeconds = 0.18f,
+        lightningSlowBeamLagBlend = 0.65f,
         lightningSlowBeamAimSmoothTime = 0.025f,
         lightningSlowBeamSlowRadius = 1.25f,
         lightningSlowBeamSlowMultiplier = 0.45f,

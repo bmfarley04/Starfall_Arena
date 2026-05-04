@@ -3475,6 +3475,17 @@ MonoBehaviour:
   startOnEnable: 1
   waveEndDelaySeconds: 3
   waveStartDelaySeconds: 0
+  avoidBlockedSpawnPositions: 1
+  spawnBlockingLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  spawnClearanceRadius: 8
+  spawnRelocationAttempts: 12
+  spawnRelocationStep: 15
+  killEnemiesFarOutsideArena: 1
+  arenaEscapeCheckIntervalSeconds: 0.5
+  arenaEscapeKillDistance: 80
+  logArenaEscapeKills: 1
 --- !u!4 &1344907452
 Transform:
   m_ObjectHideFlags: 0
@@ -7609,15 +7620,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5686474993044454713, guid: 3abe469261929d94fb24a7cd0c243bfb, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 21.36143
+      value: -34.1
       objectReference: {fileID: 0}
     - target: {fileID: 5686474993044454713, guid: 3abe469261929d94fb24a7cd0c243bfb, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0
+      value: 19.1
       objectReference: {fileID: 0}
     - target: {fileID: 5686474993044454713, guid: 3abe469261929d94fb24a7cd0c243bfb, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 271.4
+      value: -119.1
       objectReference: {fileID: 0}
     - target: {fileID: 5686474993044454713, guid: 3abe469261929d94fb24a7cd0c243bfb, type: 3}
       propertyPath: m_LocalRotation.w
@@ -7647,29 +7658,9 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 7123456789012345679, guid: 3abe469261929d94fb24a7cd0c243bfb, type: 3}
-      propertyPath: emergeDistance
-      value: 30
-      objectReference: {fileID: 0}
-    - target: {fileID: 7123456789012345679, guid: 3abe469261929d94fb24a7cd0c243bfb, type: 3}
-      propertyPath: emergeDuration
-      value: 6
-      objectReference: {fileID: 0}
-    - target: {fileID: 7123456789012345679, guid: 3abe469261929d94fb24a7cd0c243bfb, type: 3}
-      propertyPath: portalUniformScale
-      value: 12
-      objectReference: {fileID: 0}
-    - target: {fileID: 7123456789012345679, guid: 3abe469261929d94fb24a7cd0c243bfb, type: 3}
-      propertyPath: portalShrinkDuration
-      value: 0.75
-      objectReference: {fileID: 0}
     - target: {fileID: 8311721449157583992, guid: 3abe469261929d94fb24a7cd0c243bfb, type: 3}
       propertyPath: m_Name
       value: boss2Enemy
-      objectReference: {fileID: 0}
-    - target: {fileID: 8311721449157583992, guid: 3abe469261929d94fb24a7cd0c243bfb, type: 3}
-      propertyPath: m_IsActive
-      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

@@ -370,7 +370,11 @@ public abstract class EnemyBalanceProfile3D : ScriptableObject
         [Range(1, 2)] public int lightningSlowBeamCount;
         [Tooltip("Seconds of target-velocity lead added to the lightning beams.")]
         [Min(0f)] public float lightningSlowBeamLeadSeconds;
-        [Tooltip("Small smoothing time for lightning aim. Keep low so the beams stay accurate.")]
+        [Tooltip("Seconds behind the target used by the lightning beam aim point. This gives the beam a readable follow lag like the beam fence attack.")]
+        [Min(0f)] public float lightningSlowBeamLagSeconds;
+        [Tooltip("Blend from the lead-adjusted target point toward the lagged lightning aim point. 0 keeps accurate tracking, 1 uses the full lagged point.")]
+        [Range(0f, 1f)] public float lightningSlowBeamLagBlend;
+        [Tooltip("Small smoothing time for lightning aim. Lower values track the chosen lagged point more tightly; higher values reduce jitter.")]
         [Min(0f)] public float lightningSlowBeamAimSmoothTime;
         [Tooltip("Radius used by the boss brain's slow check along each lightning beam.")]
         [Min(0f)] public float lightningSlowBeamSlowRadius;

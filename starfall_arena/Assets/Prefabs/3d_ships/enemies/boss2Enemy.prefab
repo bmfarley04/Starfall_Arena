@@ -5032,7 +5032,6 @@ GameObject:
   - component: {fileID: 7750781701762828512}
   - component: {fileID: 1566563803515014181}
   - component: {fileID: 6589280690795347110}
-  - component: {fileID: 981214103467688693}
   - component: {fileID: 1220677257115221643}
   - component: {fileID: 1867961828868232370}
   - component: {fileID: 5175858623837805472}
@@ -5048,7 +5047,6 @@ GameObject:
   - component: {fileID: 6364644879097331353}
   - component: {fileID: 7123456789012345679}
   - component: {fileID: 7585572008960792029}
-  - component: {fileID: 2576565563206851298}
   m_Layer: 0
   m_Name: boss2Enemy
   m_TagString: Enemy
@@ -5237,8 +5235,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f74a405f7f52c854eb19ffd022e1a06e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Enemy3D
-  maxHealth: 1000
-  maxShield: 1000
+  maxHealth: 5000
+  maxShield: 5000
   shieldController: {fileID: 8213034826224475691}
   impulseRecoilPitchSensitivity: 1
   uprightRecoveryEnabled: 1
@@ -5307,7 +5305,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 1147018210
+  GlobalObjectIdHash: 2323065197
   InScenePlacedSourceGlobalObjectIdHash: 0
   DeferredDespawnTick: 0
   Ownership: 1
@@ -5346,8 +5344,8 @@ MonoBehaviour:
     targetTag: 
     targetFaction: 1
     cooldown: 0
-    speed: 400
-    damage: 5
+    speed: 250
+    damage: 2
     lifetime: 3
     impactForce: 0
     recoilForce: 0
@@ -5368,43 +5366,6 @@ MonoBehaviour:
   randomizeTurretSelection: 1
   startingTurretIndex: 0
   turretStaggerInterval: 0
---- !u!114 &981214103467688693
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8311721449157583992}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f7de8f699f2375b41a692a9b48fd1e60, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ProjectileTurretYawTracker3D
-  targetSensor: {fileID: 6487050144468943013}
-  turretWeapon: {fileID: 6589280690795347110}
-  turretBindings:
-  - baseYawPivot: {fileID: 0}
-    useBaseXRotation: 0
-    pitchPivot: {fileID: 0}
-  - baseYawPivot: {fileID: 0}
-    useBaseXRotation: 1
-    pitchPivot: {fileID: 0}
-  - baseYawPivot: {fileID: 0}
-    useBaseXRotation: 0
-    pitchPivot: {fileID: 0}
-  - baseYawPivot: {fileID: 0}
-    useBaseXRotation: 1
-    pitchPivot: {fileID: 0}
-  turretPivots: []
-  yawDegreesPerSecond: 240
-  localYawOffsetDegrees: 0
-  maxYawFromRestDegrees: 0
-  pitchDegreesPerSecond: 240
-  localPitchOffsetDegrees: 0
-  invertPitch: 0
-  maxPitchFromRestDegrees: 60
-  targetRefreshInterval: 0.1
-  returnToRestWhenIdle: 1
 --- !u!114 &1220677257115221643
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5457,7 +5418,7 @@ MonoBehaviour:
   aimCollisionMask:
     serializedVersion: 2
     m_Bits: 4294967295
-  maxAimDistance: 1000
+  maxAimDistance: 300
   screenCenterConvergenceDistance: 150
   screenCenterDirectionBlend: 0.35
   muzzleEffectPrefab: {fileID: 0}
@@ -5512,7 +5473,7 @@ MonoBehaviour:
   aimCollisionMask:
     serializedVersion: 2
     m_Bits: 4294967295
-  maxAimDistance: 1000
+  maxAimDistance: 300
   screenCenterConvergenceDistance: 150
   screenCenterDirectionBlend: 0.35
   muzzleEffectPrefab: {fileID: 0}
@@ -5568,7 +5529,7 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 4294967295
   maxAimDistance: 1000
-  screenCenterConvergenceDistance: 150
+  screenCenterConvergenceDistance: 300
   screenCenterDirectionBlend: 0.35
   muzzleEffectPrefab: {fileID: 0}
   muzzleEffectLifetime: 2
@@ -5622,7 +5583,7 @@ MonoBehaviour:
   aimCollisionMask:
     serializedVersion: 2
     m_Bits: 4294967295
-  maxAimDistance: 1000
+  maxAimDistance: 300
   screenCenterConvergenceDistance: 150
   screenCenterDirectionBlend: 0.35
   muzzleEffectPrefab: {fileID: 0}
@@ -5699,9 +5660,9 @@ MonoBehaviour:
     phaseTwoHealthPercent: 0.6
     forcedPatternForTesting: 0
   rake:
-    shotCount: 70
+    shotCount: 50
     shotInterval: 0.01
-    historySeconds: 0.05
+    historySeconds: 0.1
     historyBlend: 0.1
     useLeadAim: 0
     leadProjectileSpeed: 0
@@ -5712,27 +5673,29 @@ MonoBehaviour:
     activeDuration: 3
     maxBeams: 4
     aimRefreshInterval: 0.03
-    convergenceLagSeconds: 0.3
-    convergenceLagBlend: 0
+    convergenceLagSeconds: 0.2
+    convergenceLagBlend: 1
     convergenceAimSmoothTime: 0.025
     allowBehindHardpointAim: 1
   lightningSlowBeam:
     activeDuration: 3
     aimRefreshInterval: 0.02
     beamCount: 2
-    leadSeconds: 0.03
+    leadSeconds: 0
+    lagSeconds: 0.2
+    lagBlend: 0.65
     aimSmoothTime: 0.025
     allowBehindHardpointAim: 1
     slowRadius: 1.25
     collisionMask:
       serializedVersion: 2
       m_Bits: 4294967295
-    slowMultiplier: 0.8
+    slowMultiplier: 0.5
     slowDuration: 0.18
     slowTickInterval: 0.08
   orbitalPillars:
     count: 6
-    ringRadius: 200
+    ringRadius: 300
     gapDegrees: 70
     sphereTravelDuration: 5
     expandDuration: 1
@@ -5793,6 +5756,8 @@ MonoBehaviour:
   lightningSlowBeamAimRefreshInterval: 0.02
   lightningSlowBeamCount: 2
   lightningSlowBeamLeadSeconds: 0.12
+  lightningSlowBeamLagSeconds: 0.18
+  lightningSlowBeamLagBlend: 0.65
   lightningSlowBeamAimSmoothTime: 0.025
   lightningSlowBeamAllowBehindHardpointAim: 1
   lightningSlowBeamSlowRadius: 1.25
@@ -5912,8 +5877,8 @@ MonoBehaviour:
     beamPrefab: {fileID: 100002, guid: 0091e1147861cb94c941accc92a75113, type: 3}
     targetTag: 
     targetFaction: 1
-    damagePerSecond: 10
-    maxDistance: 1000
+    damagePerSecond: 5
+    maxDistance: 500
     recoilForcePerSecond: 0
     impactForce: 0
     offsetDistance: 0
@@ -5967,8 +5932,8 @@ MonoBehaviour:
     beamPrefab: {fileID: 100002, guid: 0091e1147861cb94c941accc92a75113, type: 3}
     targetTag: 
     targetFaction: 1
-    damagePerSecond: 10
-    maxDistance: 1000
+    damagePerSecond: 3
+    maxDistance: 500
     recoilForcePerSecond: 0
     impactForce: 0
     offsetDistance: 0
@@ -6028,7 +5993,7 @@ MonoBehaviour:
     targetFaction: 1
     cooldown: 0
     speed: 400
-    damage: 5
+    damage: 2
     lifetime: 4
     impactForce: 0
     recoilForce: 0
@@ -6104,8 +6069,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PortalBossSpawn3D
   ShowTopMostFoldoutHeaderGroup: 1
   portalPrefab: {fileID: 1000000000000010001, guid: 976f41ceec924e399424163b5c1e34c6, type: 3}
-  portalUniformScale: 10
-  emergeDistance: 220
+  portalUniformScale: 12
+  emergeDistance: 30
   emergeDuration: 6
   portalShrinkDuration: 0.75
   visualRenderers: []
@@ -6148,19 +6113,6 @@ MonoBehaviour:
   pitchFromMoveIntent: 10
   useRigidbodyVelocity: 1
   drawGizmos: 1
---- !u!114 &2576565563206851298
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8311721449157583992}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: bfab71f04e15488aa75cd8ce1856c6d3, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::EnemyBalanceProfileApplier3D
-  profile: {fileID: 11400000, guid: fdf3c62fd8a4ca14ca7e122089aabb7e, type: 2}
 --- !u!1001 &4012592746645055106
 PrefabInstance:
   m_ObjectHideFlags: 0

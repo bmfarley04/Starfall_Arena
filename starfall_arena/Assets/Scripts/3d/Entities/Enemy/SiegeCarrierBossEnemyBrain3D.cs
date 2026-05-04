@@ -220,6 +220,8 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
             aimRefreshInterval = 0.02f,
             beamCount = 2,
             leadSeconds = 0.12f,
+            lagSeconds = 0.18f,
+            lagBlend = 0.65f,
             aimSmoothTime = 0.025f,
             allowBehindHardpointAim = true,
             slowRadius = 1.25f,
@@ -237,6 +239,10 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
         [Range(1, 2)] public int beamCount;
         [Tooltip("Seconds of target-velocity lead added to the lightning beams.")]
         [Min(0f)] public float leadSeconds;
+        [Tooltip("Seconds behind the target used by the lightning beam aim point. This gives the beam a readable follow lag like the beam fence attack.")]
+        [Min(0f)] public float lagSeconds;
+        [Tooltip("Blend from the lead-adjusted target point toward the lagged lightning aim point. 0 keeps the old accurate tracking, 1 uses the full lagged point.")]
+        [Range(0f, 1f)] public float lagBlend;
         [Tooltip("Small smoothing time for lightning aim. Keep low so the slow beams stay threatening and accurate.")]
         [Min(0f)] public float aimSmoothTime;
         [Tooltip("Allows explicit lightning slow-beam aim to point behind a beam hardpoint's Direction Reference.")]
@@ -374,6 +380,8 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
     [SerializeField, HideInInspector] private float lightningSlowBeamAimRefreshInterval = 0.02f;
     [SerializeField, HideInInspector] private int lightningSlowBeamCount = 2;
     [SerializeField, HideInInspector] private float lightningSlowBeamLeadSeconds = 0.12f;
+    [SerializeField, HideInInspector] private float lightningSlowBeamLagSeconds = 0.18f;
+    [SerializeField, HideInInspector] private float lightningSlowBeamLagBlend = 0.65f;
     [SerializeField, HideInInspector] private float lightningSlowBeamAimSmoothTime = 0.025f;
     [SerializeField, HideInInspector] private bool lightningSlowBeamAllowBehindHardpointAim = true;
     [SerializeField, HideInInspector] private float lightningSlowBeamSlowRadius = 1.25f;
@@ -509,6 +517,8 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
         lightningSlowBeam.aimRefreshInterval = Mathf.Max(0.01f, lightningSlowBeam.aimRefreshInterval);
         lightningSlowBeam.beamCount = Mathf.Clamp(lightningSlowBeam.beamCount, 1, 2);
         lightningSlowBeam.leadSeconds = Mathf.Max(0f, lightningSlowBeam.leadSeconds);
+        lightningSlowBeam.lagSeconds = Mathf.Max(0f, lightningSlowBeam.lagSeconds);
+        lightningSlowBeam.lagBlend = Mathf.Clamp01(lightningSlowBeam.lagBlend);
         lightningSlowBeam.aimSmoothTime = Mathf.Max(0f, lightningSlowBeam.aimSmoothTime);
         lightningSlowBeam.slowRadius = Mathf.Max(0f, lightningSlowBeam.slowRadius);
         lightningSlowBeam.slowMultiplier = Mathf.Clamp01(lightningSlowBeam.slowMultiplier);
@@ -581,6 +591,8 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
         lightningSlowBeam.aimRefreshInterval = lightningSlowBeamAimRefreshInterval;
         lightningSlowBeam.beamCount = lightningSlowBeamCount;
         lightningSlowBeam.leadSeconds = lightningSlowBeamLeadSeconds;
+        lightningSlowBeam.lagSeconds = lightningSlowBeamLagSeconds;
+        lightningSlowBeam.lagBlend = lightningSlowBeamLagBlend;
         lightningSlowBeam.aimSmoothTime = lightningSlowBeamAimSmoothTime;
         lightningSlowBeam.allowBehindHardpointAim = lightningSlowBeamAllowBehindHardpointAim;
         lightningSlowBeam.slowRadius = lightningSlowBeamSlowRadius;
@@ -695,6 +707,8 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
         lightningSlowBeam.aimRefreshInterval = Mathf.Max(0.01f, stats.lightningSlowBeamAimRefreshInterval);
         lightningSlowBeam.beamCount = Mathf.Clamp(stats.lightningSlowBeamCount, 1, 2);
         lightningSlowBeam.leadSeconds = Mathf.Max(0f, stats.lightningSlowBeamLeadSeconds);
+        lightningSlowBeam.lagSeconds = Mathf.Max(0f, stats.lightningSlowBeamLagSeconds);
+        lightningSlowBeam.lagBlend = Mathf.Clamp01(stats.lightningSlowBeamLagBlend);
         lightningSlowBeam.aimSmoothTime = Mathf.Max(0f, stats.lightningSlowBeamAimSmoothTime);
         lightningSlowBeam.slowRadius = Mathf.Max(0f, stats.lightningSlowBeamSlowRadius);
         lightningSlowBeam.slowMultiplier = Mathf.Clamp01(stats.lightningSlowBeamSlowMultiplier);
@@ -2336,7 +2350,7 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
             return ResolveDirectionToTarget(target);
         }
 
-        Vector3 targetPoint = target.transform.position + ResolveTargetVelocity(target) * lightningSlowBeam.leadSeconds;
+        Vector3 targetPoint = ResolveLightningSlowBeamAimPoint(target);
         Vector3 provisionalDirection = targetPoint - transform.position;
         if (provisionalDirection.sqrMagnitude <= 0.0001f)
         {
@@ -2377,6 +2391,28 @@ public class SiegeCarrierBossEnemyBrain3D : NetworkBehaviour
         _lightningSmoothedDirections[index] = smoothedDirection.sqrMagnitude > 0.0001f ? smoothedDirection.normalized : rawDirection;
         _lightningLastSmoothTimes[index] = Time.time;
         return _lightningSmoothedDirections[index];
+    }
+
+    private Vector3 ResolveLightningSlowBeamAimPoint(Entity3D target)
+    {
+        if (!IsTargetValid(target))
+        {
+            return ResolveHistoricalTargetPoint(lightningSlowBeam.lagSeconds);
+        }
+
+        Vector3 currentPoint = target.transform.position;
+        Vector3 targetVelocity = ResolveTargetVelocity(target);
+        Vector3 leadPoint = currentPoint + targetVelocity * lightningSlowBeam.leadSeconds;
+        if (lightningSlowBeam.lagBlend <= 0f || lightningSlowBeam.lagSeconds <= 0f)
+        {
+            return leadPoint;
+        }
+
+        Vector3 laggedPoint = _historyCount > 0
+            ? ResolveHistoricalTargetPoint(lightningSlowBeam.lagSeconds)
+            : currentPoint - targetVelocity * lightningSlowBeam.lagSeconds;
+
+        return Vector3.Lerp(leadPoint, laggedPoint, lightningSlowBeam.lagBlend);
     }
 
     private Entity3D ResolveHitEntity(Collider hitCollider)

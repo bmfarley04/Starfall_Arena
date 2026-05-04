@@ -19,6 +19,7 @@ public class InvasionRewardPhasePresenter3D : MonoBehaviour
     private readonly List<InvasionStatRewardDefinition3D> _currentRewards = new List<InvasionStatRewardDefinition3D>(3);
     private Action<int> _selectionCallback;
     private Coroutine _countdownCoroutine;
+    private Coroutine _selectionCommitCoroutine;
     private bool _selectionCommitted;
 
     public bool IsShowing => augmentSelectManager != null && augmentSelectManager.IsShowing;
@@ -145,10 +146,26 @@ public class InvasionRewardPhasePresenter3D : MonoBehaviour
             _countdownCoroutine = null;
         }
 
+        int clampedIndex = Mathf.Clamp(index, 0, Mathf.Max(0, _currentRewards.Count - 1));
+        if (_selectionCommitCoroutine != null)
+        {
+            StopCoroutine(_selectionCommitCoroutine);
+        }
+
+        _selectionCommitCoroutine = StartCoroutine(CommitSelectionRoutine(clampedIndex));
+    }
+
+    private IEnumerator CommitSelectionRoutine(int index)
+    {
+        if (augmentSelectManager != null && augmentSelectManager.IsShowing)
+        {
+            yield return augmentSelectManager.PlayFinalSelectionThenHide(index);
+        }
+
         Action<int> callback = _selectionCallback;
         _selectionCallback = null;
-        callback?.Invoke(Mathf.Clamp(index, 0, Mathf.Max(0, _currentRewards.Count - 1)));
-        augmentSelectManager?.HideAugmentSelect();
+        _selectionCommitCoroutine = null;
+        callback?.Invoke(index);
     }
 
     private void CleanupRuntimeAugments()
@@ -175,6 +192,12 @@ public class InvasionRewardPhasePresenter3D : MonoBehaviour
         {
             StopCoroutine(_countdownCoroutine);
             _countdownCoroutine = null;
+        }
+
+        if (_selectionCommitCoroutine != null)
+        {
+            StopCoroutine(_selectionCommitCoroutine);
+            _selectionCommitCoroutine = null;
         }
     }
 

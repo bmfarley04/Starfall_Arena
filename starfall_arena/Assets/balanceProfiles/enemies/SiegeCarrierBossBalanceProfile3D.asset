@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: SiegeCarrierBossBalanceProfile3D
   m_EditorClassIdentifier: Assembly-CSharp::SiegeCarrierBossBalanceProfile3D
   core:
-    maxHealth: 2000
+    maxHealth: 5000
     maxShield: 5000
     moveSpeed: 20
     rotationDegreesPerSecond: 20
@@ -54,6 +54,8 @@ MonoBehaviour:
     lightningSlowBeamAimRefreshInterval: 0.02
     lightningSlowBeamCount: 2
     lightningSlowBeamLeadSeconds: 0.12
+    lightningSlowBeamLagSeconds: 0.18
+    lightningSlowBeamLagBlend: 0.65
     lightningSlowBeamAimSmoothTime: 0.025
     lightningSlowBeamSlowRadius: 1.25
     lightningSlowBeamSlowMultiplier: 0.45

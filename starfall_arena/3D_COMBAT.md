@@ -100,10 +100,10 @@ Base input rule:
     - keeps a serialized `maxShotsPerPattern` cap so bullet-hell pressure stays readable and performance-bound
     - keeps boss weapon references in a foldout section while weapon components still own projectile prefabs, muzzle FX, cooldown gates, pooling, and network request building
     - the helix spiral barrage delegates spiral math and muzzle sequencing to one assigned `HelixSpiralProjectileWeaponEnemy3D`, while the brain only starts/ticks the boss pattern
-    - the lightning slow-beam pattern uses two assigned `BeamWeapon3D` components for visual/damage authority, then applies the slow from the boss brain with a separate line-of-sight spherecast so only this boss attack gains slow without changing every beam prefab in the project
+    - the lightning slow-beam pattern uses two assigned `BeamWeapon3D` components for visual/damage authority, aims at a profile-tuned lagged/lead target point, then applies the slow from the boss brain with a separate line-of-sight spherecast so only this boss attack gains slow without changing every beam prefab in the project
     - convergence and lightning slow-beam patterns can enable explicit behind-hardpoint aim on their assigned `BeamWeapon3D` components so wide carrier muzzles still aim at the shared boss-selected target point instead of snapping back to hardpoint-forward when the target leaves that muzzle's forward hemisphere
     - the enemy spawn-wave pattern starts every assigned `EnemySpawnerWeapon3D` once, then waits until those spawner sequences finish before advancing to the next boss pattern
-    - active Siege Carrier prefabs that use `EnemyBalanceProfileApplier3D` receive beam convergence lag/smoothing from `SiegeCarrierBossBalanceProfile3D`; tune the profile asset for runtime behavior, because it overwrites the brain component values during scene startup
+    - active Siege Carrier prefabs that use `EnemyBalanceProfileApplier3D` receive beam convergence and lightning slow-beam lag/smoothing from `SiegeCarrierBossBalanceProfile3D`; tune the profile asset for runtime behavior, because it overwrites the brain component values during scene startup
 - `MissileWeaponEnemy3D`
   - stripped-down enemy-only missile launcher that reuses the same minimal volley/cooldown path as `ProjectileWeaponEnemy3D`
   - expects a projectile prefab with `MissileProjectile3D` and supports multi-muzzle launches for enemy salvos
