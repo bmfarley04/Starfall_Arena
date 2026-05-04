@@ -25,7 +25,7 @@ MonoBehaviour:
     lifetime: 5
   beamWeapons:
   - damagePerSecond: 22
-    maxDistance: 480
+    maxDistance: 240
     capacity: 200
     drainRate: 20
     regenRate: 20

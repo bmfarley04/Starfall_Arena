@@ -129,6 +129,7 @@ For early tuning, think in terms of enemy effective pressure:
 - Two players focusing a basic enemy should remove it quickly enough that target prioritization feels rewarding.
 - Basic enemy DPS should start low enough that two or three simultaneous enemies create pressure through attention splitting, not raw unavoidable damage.
 - Enemy projectile speed, range, and aim tolerance are as important as damage. A low-DPS enemy with unavoidable shots can feel harsher than a higher-DPS enemy with readable, dodgeable fire.
+- Enemy beam pressure should be escapable through range control. Current enemy beam profile ranges were cut by roughly half so artillery, duelist, splitter, and Triumvirate beams create local danger zones instead of arena-scale tracking pressure.
 
 ## Wave Scaling Guidance
 
