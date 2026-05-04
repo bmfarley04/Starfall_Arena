@@ -628,7 +628,6 @@ MonoBehaviour:
   deathEffects: {fileID: 9194935005271649546}
   playerInput3D: {fileID: 3261048947178620207}
   playerCameraRig3D: {fileID: 3760524061682020281}
-  playerScreenShake3D: {fileID: 0}
   aimAssist3D: {fileID: 0}
   hudManager3D: {fileID: 0}
   warningSphereAnchor: {fileID: 9023730634269657982}
