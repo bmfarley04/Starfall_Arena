@@ -12,6 +12,12 @@ public class TargetAwarenessHUD3D : PlayerHUDBindingTarget3D
         Teammate
     }
 
+    private enum BracketSizingSource3D
+    {
+        ProjectedBounds,
+        DistanceFallback
+    }
+
     private struct TargetRuntime3D
     {
         public Entity3D Target;
@@ -104,14 +110,22 @@ public class TargetAwarenessHUD3D : PlayerHUDBindingTarget3D
     [System.Serializable]
     private struct BracketBoundsConfig3D
     {
-        [Tooltip("Canvas-space padding added around the target's projected mesh bounds before sizing the visible bracket.")]
-        public Vector2 bracketPadding;
-        [Tooltip("Minimum bracket size in canvas pixels after projected bounds and padding are applied.")]
-        public Vector2 minBracketSize;
+        [Tooltip("Closest-range canvas-space padding added around the target's projected mesh bounds before sizing the visible bracket.")]
+        public Vector2 nearBracketPadding;
+        [Tooltip("Farthest-range canvas-space padding added around the target's projected mesh bounds before sizing the visible bracket. Lower this to keep distant targets tightly framed.")]
+        public Vector2 farBracketPadding;
+        [Tooltip("Closest-range minimum bracket size in canvas pixels after projected bounds and padding are applied.")]
+        public Vector2 nearMinBracketSize;
+        [Tooltip("Farthest-range minimum bracket size in canvas pixels after projected bounds and padding are applied. Lower this to let distant small targets stay visually small.")]
+        public Vector2 farMinBracketSize;
         [Tooltip("Maximum bracket size in canvas pixels after projected bounds and padding are applied.")]
         public Vector2 maxBracketSize;
-        [Tooltip("Fallback bracket size used when the target has no mesh/skinned renderers and no TargetAwarenessBounds3D override.")]
-        public Vector2 fallbackBracketSize;
+        [Tooltip("Closest-range fallback bracket size used when the target has no mesh/skinned renderers and no TargetAwarenessBounds3D override.")]
+        public Vector2 nearFallbackBracketSize;
+        [Tooltip("Farthest-range fallback bracket size used when the target has no mesh/skinned renderers and no TargetAwarenessBounds3D override.")]
+        public Vector2 farFallbackBracketSize;
+        [Tooltip("If enabled, logs when a target's bracket switches between projected bounds sizing and distance fallback sizing. Use this only while debugging HUD sizing.")]
+        public bool logBracketSizingSource;
     }
 
     [System.Serializable]
@@ -196,16 +210,20 @@ public class TargetAwarenessHUD3D : PlayerHUDBindingTarget3D
     [Header("Projected Bracket Bounds")]
     [SerializeField] private BracketBoundsConfig3D bracketBounds = new BracketBoundsConfig3D
     {
-        bracketPadding = new Vector2(36f, 28f),
-        minBracketSize = new Vector2(72f, 48f),
+        nearBracketPadding = new Vector2(24f, 18f),
+        farBracketPadding = new Vector2(6f, 4f),
+        nearMinBracketSize = new Vector2(40f, 28f),
+        farMinBracketSize = new Vector2(12f, 10f),
         maxBracketSize = new Vector2(420f, 280f),
-        fallbackBracketSize = new Vector2(120f, 80f)
+        nearFallbackBracketSize = new Vector2(64f, 44f),
+        farFallbackBracketSize = new Vector2(18f, 14f)
     };
 
     private readonly List<TargetRuntime3D> _targets = new();
     private readonly List<TargetAwarenessWidget3D> _widgetPool = new();
     private readonly RaycastHit[] _occlusionHits = new RaycastHit[16];
     private readonly Vector3[] _boundsWorldCorners = new Vector3[8];
+    private readonly Dictionary<int, BracketSizingSource3D> _lastBracketSizingSourceByTargetId = new();
     private float _nextDiscoveryTime;
     private bool _allowDuelOpponentFallback;
     private bool _isInvasionSceneContext;
@@ -370,7 +388,7 @@ public class TargetAwarenessHUD3D : PlayerHUDBindingTarget3D
                 : EvaluateScale(scale.indicatorScaleRange, targetDistance),
             BracketScale = EvaluateScale(scale.bracketScaleRange, targetDistance),
             BarScale = EvaluateScale(scale.barScaleRange, targetDistance),
-            BracketSize = ResolveFallbackBracketSize(),
+            BracketSize = ResolveFallbackBracketSize(targetDistance),
             SnapPosition = !runtime.HasPresented
         };
 
@@ -478,7 +496,7 @@ public class TargetAwarenessHUD3D : PlayerHUDBindingTarget3D
             : localPosition;
         if (presentation.State == TargetAwarenessVisibility3D.Bracket)
         {
-            presentation.BracketSize = ResolveProjectedBracketSize(ref runtime, gameplayCamera);
+            presentation.BracketSize = ResolveProjectedBracketSize(ref runtime, gameplayCamera, targetDistance);
         }
 
         presentation.AttackPulse01 = ResolveAttackPulse(ref runtime, presentation.State);
@@ -495,15 +513,23 @@ public class TargetAwarenessHUD3D : PlayerHUDBindingTarget3D
         return runtime.AttackReporter.GetAttackPulse01(BoundPlayer);
     }
 
-    private Vector2 ResolveProjectedBracketSize(ref TargetRuntime3D runtime, Camera gameplayCamera)
+    private Vector2 ResolveProjectedBracketSize(ref TargetRuntime3D runtime, Camera gameplayCamera, float targetDistance)
     {
         if (TryProjectTargetBounds(ref runtime, gameplayCamera, out Vector2 min, out Vector2 max))
         {
-            Vector2 size = max - min + bracketBounds.bracketPadding;
-            return ClampBracketSize(size);
+            Vector2 padding = EvaluateBracketSizeByDistance(
+                bracketBounds.nearBracketPadding,
+                bracketBounds.farBracketPadding,
+                targetDistance);
+            Vector2 size = max - min + padding;
+            Vector2 clampedSize = ClampBracketSize(size, targetDistance);
+            LogBracketSizing(ref runtime, BracketSizingSource3D.ProjectedBounds, clampedSize, targetDistance);
+            return clampedSize;
         }
 
-        return ResolveFallbackBracketSize();
+        Vector2 fallbackSize = ResolveFallbackBracketSize(targetDistance);
+        LogBracketSizing(ref runtime, BracketSizingSource3D.DistanceFallback, fallbackSize, targetDistance);
+        return fallbackSize;
     }
 
     private bool TryProjectTargetBounds(ref TargetRuntime3D runtime, Camera gameplayCamera, out Vector2 min, out Vector2 max)
@@ -622,9 +648,9 @@ public class TargetAwarenessHUD3D : PlayerHUDBindingTarget3D
         corners[7] = new Vector3(max.x, max.y, max.z);
     }
 
-    private Vector2 ClampBracketSize(Vector2 size)
+    private Vector2 ClampBracketSize(Vector2 size, float targetDistance)
     {
-        Vector2 minSize = new Vector2(Mathf.Max(1f, bracketBounds.minBracketSize.x), Mathf.Max(1f, bracketBounds.minBracketSize.y));
+        Vector2 minSize = EvaluateBracketSizeByDistance(bracketBounds.nearMinBracketSize, bracketBounds.farMinBracketSize, targetDistance);
         Vector2 maxSize = new Vector2(
             Mathf.Max(minSize.x, bracketBounds.maxBracketSize.x),
             Mathf.Max(minSize.y, bracketBounds.maxBracketSize.y));
@@ -634,11 +660,26 @@ public class TargetAwarenessHUD3D : PlayerHUDBindingTarget3D
             Mathf.Clamp(size.y, minSize.y, maxSize.y));
     }
 
-    private Vector2 ResolveFallbackBracketSize()
+    private Vector2 ResolveFallbackBracketSize(float targetDistance)
     {
-        return ClampBracketSize(new Vector2(
-            Mathf.Max(1f, bracketBounds.fallbackBracketSize.x),
-            Mathf.Max(1f, bracketBounds.fallbackBracketSize.y)));
+        Vector2 fallbackSize = EvaluateBracketSizeByDistance(
+            bracketBounds.nearFallbackBracketSize,
+            bracketBounds.farFallbackBracketSize,
+            targetDistance);
+        return ClampBracketSize(fallbackSize, targetDistance);
+    }
+
+    private Vector2 EvaluateBracketSizeByDistance(Vector2 nearSize, Vector2 farSize, float targetDistance)
+    {
+        float minDistance = Mathf.Max(0f, distance.closeHideDistance);
+        float maxDistance = Mathf.Max(minDistance + 0.01f, distance.bracketMaxDistance);
+        float t = Mathf.InverseLerp(minDistance, maxDistance, targetDistance);
+        return Vector2.Lerp(ClampPositiveSize(nearSize), ClampPositiveSize(farSize), t);
+    }
+
+    private static Vector2 ClampPositiveSize(Vector2 size)
+    {
+        return new Vector2(Mathf.Max(1f, size.x), Mathf.Max(1f, size.y));
     }
 
     private static bool IsUsableVisualRenderer(Renderer renderer)
@@ -647,6 +688,26 @@ public class TargetAwarenessHUD3D : PlayerHUDBindingTarget3D
             && renderer.enabled
             && renderer.gameObject.activeInHierarchy
             && renderer.bounds.size.sqrMagnitude > 0.0001f;
+    }
+
+    private void LogBracketSizing(ref TargetRuntime3D runtime, BracketSizingSource3D source, Vector2 bracketSize, float targetDistance)
+    {
+        if (!bracketBounds.logBracketSizingSource || runtime.Target == null)
+        {
+            return;
+        }
+
+        int targetId = runtime.Target.GetInstanceID();
+        if (_lastBracketSizingSourceByTargetId.TryGetValue(targetId, out BracketSizingSource3D previousSource)
+            && previousSource == source)
+        {
+            return;
+        }
+
+        _lastBracketSizingSourceByTargetId[targetId] = source;
+        Debug.Log(
+            $"[TargetAwarenessHUD3D] Target '{runtime.Target.name}' switched to {source} bracket sizing at distance {targetDistance:F1} with bracket size {bracketSize.x:F1} x {bracketSize.y:F1}.",
+            runtime.Target);
     }
 
     private TargetAwarenessVisibility3D ResolveHeldState(ref TargetRuntime3D runtime, TargetAwarenessVisibility3D desiredState)
@@ -1091,6 +1152,11 @@ public class TargetAwarenessHUD3D : PlayerHUDBindingTarget3D
             }
             else
             {
+                if (runtime.Target != null)
+                {
+                    _lastBracketSizingSourceByTargetId.Remove(runtime.Target.GetInstanceID());
+                }
+
                 runtime.Target = null;
             }
 
@@ -1123,6 +1189,7 @@ public class TargetAwarenessHUD3D : PlayerHUDBindingTarget3D
         }
 
         _targets.Clear();
+        _lastBracketSizingSourceByTargetId.Clear();
     }
 
     private void HideAllTargets()

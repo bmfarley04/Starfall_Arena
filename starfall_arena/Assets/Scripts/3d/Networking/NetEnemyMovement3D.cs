@@ -12,6 +12,9 @@ public class NetEnemyMovement3D : NetworkBehaviour
     [Header("Enemy Interpolation")]
     [SerializeField] private NetInterpolationSettings3D interpolationSettings = new NetInterpolationSettings3D();
 
+    [Tooltip("Server tick interval between enemy movement snapshots. 1 sends every network tick; 2 sends every other tick. Raising this lowers Invasion bandwidth at the cost of slightly more visual interpolation delay.")]
+    [Min(1)] [SerializeField] private int snapshotTickInterval = 2;
+
     private Rigidbody _rb;
     private EnemyAIFlightController3D _enemyFlight;
     private readonly NetSnapshotInterpolator3D _remoteInterpolator = new NetSnapshotInterpolator3D();
@@ -81,11 +84,17 @@ public class NetEnemyMovement3D : NetworkBehaviour
             return;
         }
 
+        int safeSnapshotInterval = Mathf.Max(1, snapshotTickInterval);
+        if (_lastPublishedTick >= 0 && tick - _lastPublishedTick < safeSnapshotInterval)
+        {
+            return;
+        }
+
         _lastPublishedTick = tick;
         BroadcastStateClientRpc(CaptureSnapshot(tick));
     }
 
-    [ClientRpc]
+    [ClientRpc(Delivery = RpcDelivery.Unreliable)]
     private void BroadcastStateClientRpc(NetStateSnapshot3D snapshot)
     {
         if (IsServer)
