@@ -6180,7 +6180,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c29d2ede4b1814f298a7fde1a5fcc258, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AimAssist3D
-  aimAssistEnabled: 0
+  aimAssistEnabled: 1
   strengthPreset: 2
   aimCamera: {fileID: 0}
   owner: {fileID: 7926965533672300583}

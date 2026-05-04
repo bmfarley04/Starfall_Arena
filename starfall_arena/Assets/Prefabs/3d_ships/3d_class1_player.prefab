@@ -362,6 +362,7 @@ GameObject:
   - component: {fileID: 1524455165470484394}
   - component: {fileID: 6190683714811522588}
   - component: {fileID: -7606376376767454836}
+  - component: {fileID: -5498894683790362813}
   m_Layer: 0
   m_Name: 3d_class1_player
   m_TagString: Enemy
@@ -1371,6 +1372,51 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::FactionMember3D
   faction: 1
+--- !u!114 &-5498894683790362813
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2568558604607578100}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c29d2ede4b1814f298a7fde1a5fcc258, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AimAssist3D
+  aimAssistEnabled: 1
+  strengthPreset: 2
+  aimCamera: {fileID: 0}
+  owner: {fileID: 0}
+  playerInput: {fileID: 0}
+  targetMask:
+    serializedVersion: 2
+    m_Bits: 1
+  lineOfSightMask:
+    serializedVersion: 2
+    m_Bits: 257
+  targetFaction: 2
+  minimumDetectionRadius: 1.25
+  lineOfSightPadding: 0.05
+  presets:
+    barelyThere:
+      slowdownMultiplier: 0.92
+      assistConeAngle: 3.5
+      maxAssistRange: 90
+      screenDistanceWeight: 0.85
+      maxAngularCorrection: 1.25
+    subtle:
+      slowdownMultiplier: 0.8
+      assistConeAngle: 6
+      maxAssistRange: 120
+      screenDistanceWeight: 0.75
+      maxAngularCorrection: 2.5
+    light:
+      slowdownMultiplier: 0.68
+      assistConeAngle: 8
+      maxAssistRange: 145
+      screenDistanceWeight: 0.65
+      maxAngularCorrection: 4
 --- !u!1 &4620018556505518856
 GameObject:
   m_ObjectHideFlags: 0
