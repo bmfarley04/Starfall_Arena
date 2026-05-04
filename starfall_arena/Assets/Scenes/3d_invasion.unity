@@ -3847,6 +3847,18 @@ PrefabInstance:
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 2559893300203955093, guid: 3bf52de825bf1664c8401e88f80f4977, type: 3}
+      propertyPath: waves.Array.data[5].subWaves.Array.data[12].enemies.Array.data[1].count
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2559893300203955093, guid: 3bf52de825bf1664c8401e88f80f4977, type: 3}
+      propertyPath: waves.Array.data[5].subWaves.Array.data[14].enemies.Array.data[1].count
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2559893300203955093, guid: 3bf52de825bf1664c8401e88f80f4977, type: 3}
+      propertyPath: waves.Array.data[5].subWaves.Array.data[14].enemies.Array.data[2].count
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2559893300203955093, guid: 3bf52de825bf1664c8401e88f80f4977, type: 3}
       propertyPath: waves.Array.data[0].subWaves.Array.data[2].delayBeforeNextSubWaveSeconds
       value: 12
       objectReference: {fileID: 0}
