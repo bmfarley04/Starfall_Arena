@@ -158,6 +158,8 @@ MonoBehaviour:
     lateralDriftDamping: 18
     verticalDriftDamping: 16
     velocityAlignmentStrength: 3
+    recoveryDriftDampingMultiplier: 2
+    recoveryVelocityAlignmentStrength: 0
   inputSourceBehaviour: {fileID: 0}
   entity: {fileID: 8896239565824103135}
   frictionEnabled: 1
@@ -489,7 +491,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 2645984438
+  GlobalObjectIdHash: 1118876484
   InScenePlacedSourceGlobalObjectIdHash: 0
   DeferredDespawnTick: 0
   Ownership: 1
@@ -588,6 +590,7 @@ MonoBehaviour:
     maxExtrapolationMs: 40
     hardSnapDistance: 30
     smoothingCatchUpRate: 0
+  snapshotTickInterval: 2
 --- !u!114 &2804839289665502894
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -600,7 +603,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 238b149a7cc0c1d4da4692a5e73aec1d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemySeparation3D
-  separationRadius: 8
+  separationRadius: 10
   separationStrength: 1
   verticalWeight: 1
   unstickSpeedScale: 0.2

@@ -124,6 +124,8 @@ MonoBehaviour:
     lateralDriftDamping: 18
     verticalDriftDamping: 16
     velocityAlignmentStrength: 3
+    recoveryDriftDampingMultiplier: 2
+    recoveryVelocityAlignmentStrength: 0
   inputSourceBehaviour: {fileID: 0}
   entity: {fileID: 3969675139743388159}
   frictionEnabled: 1
@@ -475,6 +477,7 @@ MonoBehaviour:
     maxExtrapolationMs: 40
     hardSnapDistance: 30
     smoothingCatchUpRate: 0
+  snapshotTickInterval: 2
 --- !u!114 &4338509371409583380
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -487,7 +490,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 238b149a7cc0c1d4da4692a5e73aec1d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemySeparation3D
-  separationRadius: 8
+  separationRadius: 10
   separationStrength: 1
   verticalWeight: 1
   unstickSpeedScale: 0.2
