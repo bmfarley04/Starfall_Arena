@@ -3839,6 +3839,14 @@ PrefabInstance:
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 2559893300203955093, guid: 3bf52de825bf1664c8401e88f80f4977, type: 3}
+      propertyPath: waves.Array.data[4].subWaves.Array.data[3].enemies.Array.data[0].count
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 2559893300203955093, guid: 3bf52de825bf1664c8401e88f80f4977, type: 3}
+      propertyPath: waves.Array.data[4].subWaves.Array.data[4].enemies.Array.data[0].count
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2559893300203955093, guid: 3bf52de825bf1664c8401e88f80f4977, type: 3}
       propertyPath: waves.Array.data[0].subWaves.Array.data[2].delayBeforeNextSubWaveSeconds
       value: 12
       objectReference: {fileID: 0}
@@ -3873,6 +3881,22 @@ PrefabInstance:
     - target: {fileID: 2559893300203955093, guid: 3bf52de825bf1664c8401e88f80f4977, type: 3}
       propertyPath: waves.Array.data[1].subWaves.Array.data[8].delayBeforeNextSubWaveSeconds
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2559893300203955093, guid: 3bf52de825bf1664c8401e88f80f4977, type: 3}
+      propertyPath: waves.Array.data[4].subWaves.Array.data[4].delayBeforeNextSubWaveSeconds
+      value: 30
+      objectReference: {fileID: 0}
+    - target: {fileID: 2559893300203955093, guid: 3bf52de825bf1664c8401e88f80f4977, type: 3}
+      propertyPath: waves.Array.data[4].subWaves.Array.data[5].delayBeforeNextSubWaveSeconds
+      value: 15
+      objectReference: {fileID: 0}
+    - target: {fileID: 2559893300203955093, guid: 3bf52de825bf1664c8401e88f80f4977, type: 3}
+      propertyPath: waves.Array.data[4].subWaves.Array.data[8].delayBeforeNextSubWaveSeconds
+      value: 15
+      objectReference: {fileID: 0}
+    - target: {fileID: 2559893300203955093, guid: 3bf52de825bf1664c8401e88f80f4977, type: 3}
+      propertyPath: waves.Array.data[4].subWaves.Array.data[9].delayBeforeNextSubWaveSeconds
+      value: 17
       objectReference: {fileID: 0}
     - target: {fileID: 2644385173095867508, guid: 3bf52de825bf1664c8401e88f80f4977, type: 3}
       propertyPath: m_LocalPosition.x

@@ -492,7 +492,7 @@ MonoBehaviour:
   linkAmplitude: 0.45
   linkJitterInterval: 0.05
   finalBeamWeapon: {fileID: 1445180964325999496}
-  netEnemyCombat: {fileID: 0}
+  netEnemyCombat: {fileID: 910000000000000102}
   attackReporter: {fileID: 0}
   chargeTelegraph: {fileID: 0}
   finalBeamRange: 500
