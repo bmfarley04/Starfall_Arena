@@ -15,6 +15,7 @@ Current implemented beginning flow:
 - players enter from the normal title-screen network flow, complete 3D ship select, and load into `3d_invasion`
 - `InvasionSceneManager3D` spawns the two selected player ships once, binds the gameplay HUD, resets/starts `ArenaBoundary3D`, and starts the wave manager
 - `InvasionSceneManager3D` owns player lives and respawns for this mode: each player starts with the configured life count, loses one life on death, respawns at the death position while lives remain, and stays dead once the death leaves that player at zero lives
+- in networked Invasion, when the local player dies while the teammate is still alive, the gameplay camera defaults to the surviving teammate until the local player respawns or the run ends
 - respawned players receive temporary invulnerability through the existing `Player3D.BeginDodgeInvulnerability(...)` damage gate, and the manager pulses the child `ShieldController.OnHit(...)` during that window so the shield stays visibly high-alpha/flashing without changing the shared shield script
 - there is no versus/collaboration intro canvas in this slice
 - the existing round text canvas is reused only for `WAVE 1`, `WAVE 2`, etc.

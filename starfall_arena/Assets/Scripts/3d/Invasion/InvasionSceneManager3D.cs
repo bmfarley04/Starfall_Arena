@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using Unity.Collections;
+using Unity.Cinemachine;
 using TMPro;
 using Unity.Netcode;
 using UnityEngine;
@@ -9,6 +10,7 @@ using UnityEngine;
 public class InvasionSceneManager3D : MonoBehaviour
 {
     private const string LivesMessageName = "StarfallArena.Invasion3D.PlayerLives";
+    private const string SpectateTeammateMessageName = "StarfallArena.Invasion3D.SpectateTeammate";
     private const string RespawnProtectionMessageName = "StarfallArena.Invasion3D.RespawnProtection";
     private const string RewardOffersMessageName = "StarfallArena.Invasion3D.RewardOffers";
     private const string RewardChoiceMessageName = "StarfallArena.Invasion3D.RewardChoice";
@@ -169,6 +171,7 @@ public class InvasionSceneManager3D : MonoBehaviour
     private Coroutine _networkSessionSubscriptionCoroutine;
     private Coroutine _activeWaveIntroCoroutine;
     private Coroutine _gameEndPresentationCoroutine;
+    private Coroutine _spectateTeammateCameraCoroutine;
     private int _lastWaveIntroSequenceId = -1;
     private readonly int[] _playerLivesRemainingBySlot = new int[3];
     private readonly Coroutine[] _respawnCoroutinesBySlot = new Coroutine[3];
@@ -236,6 +239,12 @@ public class InvasionSceneManager3D : MonoBehaviour
         {
             StopCoroutine(_gameEndPresentationCoroutine);
             _gameEndPresentationCoroutine = null;
+        }
+
+        if (_spectateTeammateCameraCoroutine != null)
+        {
+            StopCoroutine(_spectateTeammateCameraCoroutine);
+            _spectateTeammateCameraCoroutine = null;
         }
 
         UnsubscribeNetworkSessionEvents();
@@ -601,6 +610,8 @@ public class InvasionSceneManager3D : MonoBehaviour
         _playerLivesRemainingBySlot[playerSlot] = livesAfterDeath;
         UpdateLifeCounter(ResolveDisplayedLives());
         BroadcastPlayerLives();
+        TrySwitchDeadLocalPlayerToTeammateCamera(playerSlot);
+        BroadcastSpectateTeammate(playerSlot);
 
         if (livesAfterDeath <= 0)
         {
@@ -770,6 +781,126 @@ public class InvasionSceneManager3D : MonoBehaviour
         {
             _player2 = player;
         }
+    }
+
+    private void TrySwitchDeadLocalPlayerToTeammateCamera(byte deadPlayerSlot)
+    {
+        if (!_useNetworkSession || deadPlayerSlot < 1 || deadPlayerSlot > 2)
+        {
+            return;
+        }
+
+        int localSlot = ResolveLocalPlayerSlot();
+        if (localSlot != 0 && localSlot != deadPlayerSlot)
+        {
+            return;
+        }
+
+        if (_spectateTeammateCameraCoroutine != null)
+        {
+            StopCoroutine(_spectateTeammateCameraCoroutine);
+        }
+
+        _spectateTeammateCameraCoroutine = StartCoroutine(SwitchDeadLocalPlayerToTeammateCameraWhenReady(deadPlayerSlot));
+    }
+
+    private IEnumerator SwitchDeadLocalPlayerToTeammateCameraWhenReady(byte deadPlayerSlot)
+    {
+        float retryUntil = Time.realtimeSinceStartup + 0.5f;
+        bool boundCamera = false;
+
+        while (Time.realtimeSinceStartup <= retryUntil)
+        {
+            int localSlot = ResolveLocalPlayerSlot();
+            if (localSlot != 0 && localSlot != deadPlayerSlot)
+            {
+                _spectateTeammateCameraCoroutine = null;
+                yield break;
+            }
+
+            if (TrySwitchDeadLocalPlayerToTeammateCameraNow(deadPlayerSlot))
+            {
+                boundCamera = true;
+            }
+
+            yield return null;
+        }
+
+        if (!boundCamera)
+        {
+            Debug.LogWarning($"[InvasionSceneManager3D] Player {deadPlayerSlot} died, but no live teammate camera target was available for the local player.", this);
+        }
+
+        _spectateTeammateCameraCoroutine = null;
+    }
+
+    private bool TrySwitchDeadLocalPlayerToTeammateCameraNow(byte deadPlayerSlot)
+    {
+        if (!_useNetworkSession || deadPlayerSlot < 1 || deadPlayerSlot > 2)
+        {
+            return false;
+        }
+
+        int localSlot = ResolveLocalPlayerSlot();
+        if (localSlot != deadPlayerSlot)
+        {
+            return false;
+        }
+
+        byte teammateSlot = deadPlayerSlot == 1 ? (byte)2 : (byte)1;
+        if (_playerLivesRemainingBySlot[teammateSlot] <= 0)
+        {
+            return false;
+        }
+
+        Player3D teammate = ResolveTrackedOrNetworkPlayer(teammateSlot);
+        if (teammate == null || !teammate.gameObject.activeInHierarchy)
+        {
+            return false;
+        }
+
+        return TryBindGameplayCameraToTransform(teammate.transform);
+    }
+
+    private bool TryBindGameplayCameraToTransform(Transform target)
+    {
+        if (target == null)
+        {
+            return false;
+        }
+
+        CinemachineCamera camera = ResolveGameplayCinemachineCamera();
+        if (camera == null)
+        {
+            return false;
+        }
+
+        camera.Target.TrackingTarget = target;
+        return true;
+    }
+
+    private static CinemachineCamera ResolveGameplayCinemachineCamera()
+    {
+        CinemachineCamera[] cameras = FindObjectsByType<CinemachineCamera>(FindObjectsSortMode.None);
+        CinemachineCamera fallback = null;
+
+        for (int i = 0; i < cameras.Length; i++)
+        {
+            CinemachineCamera candidate = cameras[i];
+            if (candidate == null || !candidate.gameObject.activeInHierarchy)
+            {
+                continue;
+            }
+
+            if (candidate.isActiveAndEnabled)
+            {
+                return candidate;
+            }
+
+            fallback ??= candidate;
+        }
+
+        return fallback;
     }
 
     private bool AreRequiredClientsConnected()
@@ -2045,6 +2176,7 @@ public class InvasionSceneManager3D : MonoBehaviour
         }
 
         networkManager.CustomMessagingManager.RegisterNamedMessageHandler(LivesMessageName, HandlePlayerLivesMessage);
+        networkManager.CustomMessagingManager.RegisterNamedMessageHandler(SpectateTeammateMessageName, HandleSpectateTeammateMessage);
         networkManager.CustomMessagingManager.RegisterNamedMessageHandler(RespawnProtectionMessageName, HandleRespawnProtectionMessage);
         networkManager.CustomMessagingManager.RegisterNamedMessageHandler(RewardOffersMessageName, HandleRewardOffersMessage);
         networkManager.CustomMessagingManager.RegisterNamedMessageHandler(RewardChoiceMessageName, HandleRewardChoiceMessage);
@@ -2064,6 +2196,7 @@ public class InvasionSceneManager3D : MonoBehaviour
         }
 
         networkManager.CustomMessagingManager.UnregisterNamedMessageHandler(LivesMessageName);
+        networkManager.CustomMessagingManager.UnregisterNamedMessageHandler(SpectateTeammateMessageName);
         networkManager.CustomMessagingManager.UnregisterNamedMessageHandler(RespawnProtectionMessageName);
         networkManager.CustomMessagingManager.UnregisterNamedMessageHandler(RewardOffersMessageName);
         networkManager.CustomMessagingManager.UnregisterNamedMessageHandler(RewardChoiceMessageName);
@@ -2183,6 +2316,38 @@ public class InvasionSceneManager3D : MonoBehaviour
         _playerLivesRemainingBySlot[1] = Mathf.Max(0, player1Lives);
         _playerLivesRemainingBySlot[2] = Mathf.Max(0, player2Lives);
         UpdateLifeCounter(ResolveDisplayedLives());
+    }
+
+    private void BroadcastSpectateTeammate(byte deadPlayerSlot)
+    {
+        NetworkManager networkManager = NetworkManager.Singleton;
+        if (!_useNetworkSession || networkManager == null || !networkManager.IsServer || networkManager.CustomMessagingManager == null)
+        {
+            return;
+        }
+
+        byte teammateSlot = deadPlayerSlot == 1 ? (byte)2 : deadPlayerSlot == 2 ? (byte)1 : (byte)0;
+        if (teammateSlot == 0 || _playerLivesRemainingBySlot[teammateSlot] <= 0 || ResolveTrackedOrNetworkPlayer(teammateSlot) == null)
+        {
+            return;
+        }
+
+        using (FastBufferWriter writer = new FastBufferWriter(sizeof(byte), Allocator.Temp))
+        {
+            writer.WriteValueSafe(deadPlayerSlot);
+            networkManager.CustomMessagingManager.SendNamedMessage(SpectateTeammateMessageName, networkManager.ConnectedClientsIds, writer, NetworkDelivery.ReliableSequenced);
+        }
+    }
+
+    private void HandleSpectateTeammateMessage(ulong senderClientId, FastBufferReader reader)
+    {
+        if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsServer)
+        {
+            return;
+        }
+
+        reader.ReadValueSafe(out byte deadPlayerSlot);
+        TrySwitchDeadLocalPlayerToTeammateCamera(deadPlayerSlot);
     }
 
     private void BroadcastRespawnProtection(byte playerSlot, float duration)
