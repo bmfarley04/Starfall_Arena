@@ -964,6 +964,8 @@ public class InvasionSceneManager3D : MonoBehaviour
         }
 
         ApplyRewardStateToResolvedPlayer(player, playerSlot);
+        RefreshOwnerPresentationAfterResolvedRespawn(player);
+        RecoverHeldOwnerBeamPresentationAfterRespawn(player);
         PlayerHUDManager3D.RebindAllAutoManagers();
 
         ShieldController shield = player.GetComponentInChildren<ShieldController>(true);
@@ -989,6 +991,39 @@ public class InvasionSceneManager3D : MonoBehaviour
         EnsureRewardStateContainers();
         InvasionPlayerRewardState3D rewardState = _rewardStateBySlot[playerSlot];
         rewardState?.ApplyToPlayer(player);
+    }
+
+    private static void RefreshOwnerPresentationAfterResolvedRespawn(Player3D player)
+    {
+        if (player == null || !player.TryGetComponent(out NetMovement3D movement) || !movement.IsSpawned || !movement.IsOwner)
+        {
+            return;
+        }
+
+        movement.RefreshOwnerPresentationAfterRespawn();
+    }
+
+    private static void RecoverHeldOwnerBeamPresentationAfterRespawn(Player3D player)
+    {
+        if (player == null || !player.TryGetComponent(out NetMovement3D movement) || !movement.IsSpawned || !movement.IsOwner)
+        {
+            return;
+        }
+
+        Weapon3D selectedWeapon = player.SelectedWeapon;
+        if (selectedWeapon == null || !selectedWeapon.IsFireHeld || selectedWeapon is not IBeamWeaponNetwork3D beamWeapon)
+        {
+            return;
+        }
+
+        Vector3 aimDirection = selectedWeapon.GetAimRay().direction;
+        if (aimDirection.sqrMagnitude <= 0.0001f)
+        {
+            aimDirection = player.transform.forward;
+        }
+
+        beamWeapon.ApplyNetworkBeamAim(aimDirection.normalized);
+        beamWeapon.ApplyNetworkBeamState(true, authoritative: false, PlayerCombatStats3D.InvalidAttackId);
     }
 
     private Player3D ResolveLiveNetworkPlayerForSlot(byte playerSlot)
