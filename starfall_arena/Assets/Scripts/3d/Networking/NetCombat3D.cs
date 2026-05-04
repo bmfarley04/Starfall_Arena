@@ -23,6 +23,7 @@ public class NetCombat3D : NetworkBehaviour
     private bool _loggedServerMissingProjectileBinding;
     private bool _loggedClientMissingProjectileBinding;
     private bool _loggedReflectedMissingProjectileBinding;
+    private bool _loggedNormalizedNeutralInvasionProjectile;
 
     private void Awake()
     {
@@ -328,6 +329,8 @@ public class NetCombat3D : NetworkBehaviour
             LogWarningOnce(ref _loggedServerMissingProjectileBinding, $"[NetCombat3D] Server rejected projectile fire because visual type {fireRequest.VisualType} could not resolve a source weapon or projectile prefab.");
             return;
         }
+
+        NormalizeAuthoritativePlayerProjectileTargeting(ref fireRequest);
 
         sourceWeapon.SpawnNetworkProjectile(
             projectilePrefab,
@@ -836,6 +839,17 @@ public class NetCombat3D : NetworkBehaviour
         ResolvePlayerTargeting(request.targetFaction, request.targetTag, out Faction3D resolvedTargetFaction, out string resolvedTargetTag);
         request.targetFaction = resolvedTargetFaction;
         request.targetTag = resolvedTargetTag;
+    }
+
+    private void NormalizeAuthoritativePlayerProjectileTargeting(ref NetProjectileFireRequest3D fireRequest)
+    {
+        if (fireRequest.TargetFaction != Faction3D.Neutral || !IsInvasionSceneActive())
+        {
+            return;
+        }
+
+        fireRequest.TargetFaction = Faction3D.EnemyTeam;
+        LogWarningOnce(ref _loggedNormalizedNeutralInvasionProjectile, "[NetCombat3D] Server normalized a neutral player projectile target to EnemyTeam for networked Invasion.");
     }
 
     public void ResolvePlayerTargeting(Faction3D configuredTargetFaction, string configuredTargetTag, out Faction3D resolvedTargetFaction, out string resolvedTargetTag)
