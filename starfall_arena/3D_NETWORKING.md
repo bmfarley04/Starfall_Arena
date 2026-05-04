@@ -176,6 +176,7 @@ Important current implementation constraints:
 - owner presentation recovery must compare the `PlayerInput3D` combat-suppression flag against `NetCombat3D` presence; enabled input components alone do not prove combat input is usable.
 - `NetCombat3D.OnNetworkSpawn()` re-runs owner local-control readiness so spawn-order differences do not leave a client owner stuck in movement-only input.
 - client cosmetic projectile RPCs resolve local proxy bindings from the serialized `Entity3D` weapon slots first, then fall back to root `ProjectileWeapon3D`; missing source weapon or projectile prefab bindings log one-shot warnings instead of failing silently.
+- player beam state and aim messages carry the source beam component index and are replayed to the owning client as cosmetic state as well as to remote peers. The owner still starts beams immediately for responsiveness, but the server echo is a safety net after respawn/rescue presentation rebinding.
 - `Projectile3D` and `LaserBeam3D` now split cosmetic-only instances from server-authoritative gameplay instances.
 - combat velocity changes such as recoil, impact force, tractor pull, and teleport warps must pass through `NetMovement3D` helpers so prediction/reconciliation state is not immediately overwritten.
 - raw combat velocity writes are only for non-networked dynamic Rigidbody fallbacks; networked targets should use `NetMovement3D.ApplyCombatVelocityDelta(...)`, which ignores kinematic proxy bodies while preserving owner/server movement state.

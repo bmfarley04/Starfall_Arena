@@ -1355,6 +1355,17 @@ public class NetMovement3D : NetworkBehaviour
         ConfigureOwnerPresentation();
     }
 
+    public void RefreshOwnerPresentationAfterRespawn()
+    {
+        if (!IsOwner)
+        {
+            return;
+        }
+
+        CacheReferences();
+        ConfigureOwnerPresentation();
+    }
+
     public void BindOwnerCameraAndTracking()
     {
         if (!IsOwner)

@@ -147,7 +147,7 @@ public class ConvergeBeamWeapon3D : Weapon3D, IBeamWeaponNetwork3D
         if (NetTickUtil.IsActive && _netCombat != null && _netCombat.IsOwner)
         {
             Vector3 aimDirection = ResolveOwnerAimDirection();
-            _netCombat.RequestBeamState(true, aimDirection);
+            _netCombat.RequestBeamState(this, true, aimDirection);
             if (!_netCombat.IsServer)
             {
                 StartBeam(authoritative: false, PlayerCombatStats3D.InvalidAttackId);
@@ -165,7 +165,7 @@ public class ConvergeBeamWeapon3D : Weapon3D, IBeamWeaponNetwork3D
     {
         if (NetTickUtil.IsActive && _netCombat != null && _netCombat.IsOwner)
         {
-            _netCombat.RequestBeamState(false, ResolveOwnerAimDirection());
+            _netCombat.RequestBeamState(this, false, ResolveOwnerAimDirection());
         }
 
         StopBeam();
@@ -196,7 +196,7 @@ public class ConvergeBeamWeapon3D : Weapon3D, IBeamWeaponNetwork3D
 
         if (NetTickUtil.IsActive && _netCombat != null && _netCombat.IsSpawned && _netCombat.IsOwner)
         {
-            _netCombat.UpdateBeamAim(ResolveOwnerAimDirection());
+            _netCombat.UpdateBeamAim(this, ResolveOwnerAimDirection());
         }
 
         float recoilForceThisFrame = Mathf.Max(0f, convergeBeam.recoilForcePerSecond) * Mathf.Max(0, _activeBeams.Length) * deltaTime;

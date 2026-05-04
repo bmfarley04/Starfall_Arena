@@ -24,6 +24,8 @@ public class NetCombat3D : NetworkBehaviour
     private bool _loggedClientMissingProjectileBinding;
     private bool _loggedReflectedMissingProjectileBinding;
     private bool _loggedNormalizedNeutralInvasionProjectile;
+    private bool _loggedMissingBeamBinding;
+    private IBeamWeaponNetwork3D[] _beamWeapons;
 
     private void Awake()
     {
@@ -107,6 +109,11 @@ public class NetCombat3D : NetworkBehaviour
 
     public void RequestBeamState(bool isFiring, Vector3 aimDirection)
     {
+        RequestBeamState(GetComponent<IBeamWeaponNetwork3D>(), isFiring, aimDirection);
+    }
+
+    public void RequestBeamState(IBeamWeaponNetwork3D sourceBeam, bool isFiring, Vector3 aimDirection)
+    {
         if (!NetTickUtil.IsActive || !IsSpawned || !IsOwner)
         {
             return;
@@ -116,7 +123,8 @@ public class NetCombat3D : NetworkBehaviour
         {
             Tick = NetTickUtil.CurrentTick,
             IsFiring = isFiring,
-            AimDirection = aimDirection
+            AimDirection = aimDirection,
+            BeamIndex = ResolveBeamWeaponIndex(sourceBeam)
         };
 
         if (IsServer)
@@ -129,6 +137,11 @@ public class NetCombat3D : NetworkBehaviour
     }
 
     public void UpdateBeamAim(Vector3 aimDirection)
+    {
+        UpdateBeamAim(GetComponent<IBeamWeaponNetwork3D>(), aimDirection);
+    }
+
+    public void UpdateBeamAim(IBeamWeaponNetwork3D sourceBeam, Vector3 aimDirection)
     {
         if (!NetTickUtil.IsActive || !IsSpawned || !IsOwner)
         {
@@ -143,7 +156,8 @@ public class NetCombat3D : NetworkBehaviour
         NetAimUpdate3D update = new NetAimUpdate3D
         {
             Tick = NetTickUtil.CurrentTick,
-            AimDirection = aimDirection
+            AimDirection = aimDirection,
+            BeamIndex = ResolveBeamWeaponIndex(sourceBeam)
         };
 
         if (IsServer)
@@ -402,9 +416,10 @@ public class NetCombat3D : NetworkBehaviour
 
     private void HandleBeamStateServer(NetBeamState3D state)
     {
-        IBeamWeaponNetwork3D beam = GetComponent<IBeamWeaponNetwork3D>();
+        IBeamWeaponNetwork3D beam = ResolveBeamWeapon(state.BeamIndex);
         if (beam == null)
         {
+            LogWarningOnce(ref _loggedMissingBeamBinding, $"[NetCombat3D] Server rejected beam state because beam index {state.BeamIndex} could not resolve a player beam weapon.");
             return;
         }
 
@@ -420,14 +435,15 @@ public class NetCombat3D : NetworkBehaviour
     [ClientRpc]
     private void BroadcastBeamStateClientRpc(NetBeamState3D state)
     {
-        if (IsServer || IsOwner)
+        if (IsServer)
         {
             return;
         }
 
-        IBeamWeaponNetwork3D beam = GetComponent<IBeamWeaponNetwork3D>();
+        IBeamWeaponNetwork3D beam = ResolveBeamWeapon(state.BeamIndex);
         if (beam == null)
         {
+            LogWarningOnce(ref _loggedMissingBeamBinding, $"[NetCombat3D] Client received beam state for index {state.BeamIndex}, but this proxy could not resolve a player beam weapon.");
             return;
         }
 
@@ -446,19 +462,19 @@ public class NetCombat3D : NetworkBehaviour
 
     private void HandleBeamAimServer(NetAimUpdate3D update)
     {
-        GetComponent<IBeamWeaponNetwork3D>()?.ApplyNetworkBeamAim(update.AimDirection);
+        ResolveBeamWeapon(update.BeamIndex)?.ApplyNetworkBeamAim(update.AimDirection);
         BroadcastBeamAimClientRpc(update);
     }
 
     [ClientRpc]
     private void BroadcastBeamAimClientRpc(NetAimUpdate3D update)
     {
-        if (IsServer || IsOwner)
+        if (IsServer)
         {
             return;
         }
 
-        GetComponent<IBeamWeaponNetwork3D>()?.ApplyNetworkBeamAim(update.AimDirection);
+        ResolveBeamWeapon(update.BeamIndex)?.ApplyNetworkBeamAim(update.AimDirection);
     }
 
     [ServerRpc]
@@ -936,6 +952,65 @@ public class NetCombat3D : NetworkBehaviour
 
         Debug.LogWarning(message, this);
         flag = true;
+    }
+
+    private void CacheBeamWeapons()
+    {
+        if (_beamWeapons != null && _beamWeapons.Length > 0)
+        {
+            return;
+        }
+
+        MonoBehaviour[] behaviours = GetComponents<MonoBehaviour>();
+        int count = 0;
+        for (int i = 0; i < behaviours.Length; i++)
+        {
+            if (behaviours[i] is IBeamWeaponNetwork3D)
+            {
+                count++;
+            }
+        }
+
+        _beamWeapons = new IBeamWeaponNetwork3D[count];
+        int writeIndex = 0;
+        for (int i = 0; i < behaviours.Length; i++)
+        {
+            if (behaviours[i] is IBeamWeaponNetwork3D beamWeapon)
+            {
+                _beamWeapons[writeIndex++] = beamWeapon;
+            }
+        }
+    }
+
+    private int ResolveBeamWeaponIndex(IBeamWeaponNetwork3D sourceBeam)
+    {
+        CacheBeamWeapons();
+        if (_beamWeapons == null || _beamWeapons.Length == 0 || sourceBeam == null)
+        {
+            return 0;
+        }
+
+        for (int i = 0; i < _beamWeapons.Length; i++)
+        {
+            if (ReferenceEquals(_beamWeapons[i], sourceBeam))
+            {
+                return i;
+            }
+        }
+
+        return 0;
+    }
+
+    private IBeamWeaponNetwork3D ResolveBeamWeapon(int beamIndex)
+    {
+        CacheBeamWeapons();
+        if (_beamWeapons == null || _beamWeapons.Length == 0)
+        {
+            return null;
+        }
+
+        int resolvedIndex = Mathf.Clamp(beamIndex, 0, _beamWeapons.Length - 1);
+        return _beamWeapons[resolvedIndex];
     }
 
     private ProjectileWeapon3D ResolvePrimaryWeapon()
