@@ -19,7 +19,7 @@ MonoBehaviour:
     rotationDegreesPerSecond: 180
     detectionRange: 550
   projectileWeapons:
-  - cooldown: 1.6
+  - cooldown: 1
     speed: 155
     damage: 12
     lifetime: 5
