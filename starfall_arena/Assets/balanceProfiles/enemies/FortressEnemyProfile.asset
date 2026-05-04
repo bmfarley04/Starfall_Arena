@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: FortressEnemyProfile
   m_EditorClassIdentifier: 
   core:
-    maxHealth: 450
-    maxShield: 800
+    maxHealth: 2000
+    maxShield: 2000
     moveSpeed: 14
     rotationDegreesPerSecond: 40
     detectionRange: 850
@@ -28,9 +28,9 @@ MonoBehaviour:
     damage: 20
     lifetime: 5
   - cooldown: 0.3
-    speed: 120
+    speed: 250
     damage: 8
-    lifetime: 5
+    lifetime: 3
   beamWeapons: []
   brain:
     thinkInterval: 0.05
@@ -41,9 +41,9 @@ MonoBehaviour:
     maxFiringRange: 700
     approachRangeBuffer: 200
     outOfRangeApproachSpeedScale: 1
-    maxMissileRange: 200
+    maxMissileRange: 600
     missileAimToleranceDegrees: 180
     missileToCannonStaggerDelay: 0.35
-    maxTurretRange: 100
+    maxTurretRange: 800
     turretToCannonStaggerDelay: 0.15
     loseTargetMaxDistance: 0

@@ -5287,7 +5287,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 2541518690
+  GlobalObjectIdHash: 1300949392
   InScenePlacedSourceGlobalObjectIdHash: 0
   DeferredDespawnTick: 0
   Ownership: 1
@@ -5333,6 +5333,7 @@ MonoBehaviour:
     maxExtrapolationMs: 40
     hardSnapDistance: 30
     smoothingCatchUpRate: 0
+  snapshotTickInterval: 2
 --- !u!114 &3966676150953276079
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -10281,27 +10282,27 @@ PrefabInstance:
     - target: {fileID: 3119522095232658570, guid: 73b31e1a230a5e4499d0594f3cd9fe36, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: adbec81132816ef489d4a0d1fd95de21, type: 2}
+      objectReference: {fileID: 2100000, guid: b4efc49b0b6706b4ab9529ec62407f12, type: 2}
     - target: {fileID: 3119522095553672221, guid: 73b31e1a230a5e4499d0594f3cd9fe36, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: adbec81132816ef489d4a0d1fd95de21, type: 2}
+      objectReference: {fileID: 2100000, guid: b4efc49b0b6706b4ab9529ec62407f12, type: 2}
     - target: {fileID: 3119800423084048637, guid: 73b31e1a230a5e4499d0594f3cd9fe36, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: adbec81132816ef489d4a0d1fd95de21, type: 2}
+      objectReference: {fileID: 2100000, guid: b4efc49b0b6706b4ab9529ec62407f12, type: 2}
     - target: {fileID: 3119977860951545704, guid: 73b31e1a230a5e4499d0594f3cd9fe36, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: adbec81132816ef489d4a0d1fd95de21, type: 2}
+      objectReference: {fileID: 2100000, guid: b4efc49b0b6706b4ab9529ec62407f12, type: 2}
     - target: {fileID: 3119990562817168962, guid: 73b31e1a230a5e4499d0594f3cd9fe36, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: adbec81132816ef489d4a0d1fd95de21, type: 2}
+      objectReference: {fileID: 2100000, guid: b4efc49b0b6706b4ab9529ec62407f12, type: 2}
     - target: {fileID: 3120283991230031913, guid: 73b31e1a230a5e4499d0594f3cd9fe36, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: adbec81132816ef489d4a0d1fd95de21, type: 2}
+      objectReference: {fileID: 2100000, guid: b4efc49b0b6706b4ab9529ec62407f12, type: 2}
     - target: {fileID: 3166113888537641279, guid: 73b31e1a230a5e4499d0594f3cd9fe36, type: 3}
       propertyPath: m_Material
       value: 
@@ -10353,11 +10354,11 @@ PrefabInstance:
     - target: {fileID: 4675996025549701165, guid: 73b31e1a230a5e4499d0594f3cd9fe36, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: adbec81132816ef489d4a0d1fd95de21, type: 2}
+      objectReference: {fileID: 2100000, guid: b4efc49b0b6706b4ab9529ec62407f12, type: 2}
     - target: {fileID: 7948433636031229973, guid: 73b31e1a230a5e4499d0594f3cd9fe36, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: adbec81132816ef489d4a0d1fd95de21, type: 2}
+      objectReference: {fileID: 2100000, guid: b4efc49b0b6706b4ab9529ec62407f12, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects:

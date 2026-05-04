@@ -171,12 +171,25 @@ public class InvasionWaveManager3D : MonoBehaviour
     [Min(0.1f)]
     [SerializeField] private float spawnRelocationStep = 15f;
 
+    [Header("Arena Escape Cleanup")]
+    [Tooltip("If enabled, alive Invasion enemies that drift far outside the active ArenaBoundary3D are killed by the authoritative wave manager so waves cannot stall on unreachable ships.")]
+    [SerializeField] private bool killEnemiesFarOutsideArena = true;
+    [Tooltip("Seconds between arena escape checks. This is intentionally slower than frame rate because it only catches rare out-of-bounds failures.")]
+    [Min(0.05f)]
+    [SerializeField] private float arenaEscapeCheckIntervalSeconds = 0.5f;
+    [Tooltip("World-space distance an alive enemy may be outside the active arena bounds before it is killed. Keep this above zero so harmless wall contacts are not treated as escape failures.")]
+    [Min(0f)]
+    [SerializeField] private float arenaEscapeKillDistance = 80f;
+    [Tooltip("If enabled, logs the enemy name and position when arena escape cleanup kills it.")]
+    [SerializeField] private bool logArenaEscapeKills = true;
+
     private readonly List<Enemy3D> _aliveEnemies = new List<Enemy3D>();
     private readonly List<Enemy3D> _pendingRevealEnemies = new List<Enemy3D>();
     private readonly List<Vector3> _formationOffsets = new List<Vector3>(16);
     private readonly Collider[] _spawnSafetyHits = new Collider[16];
     private float _activeFormationYBias;
     private Coroutine _waveRoutine;
+    private float _nextArenaEscapeCheckTime;
     private int _authoredEnemyCount;
     private int _defeatedEnemyCount;
     private bool _loggedZeroAuthoredEnemyCount;
@@ -216,6 +229,17 @@ public class InvasionWaveManager3D : MonoBehaviour
         ClearTrackedEnemies();
     }
 
+    private void Update()
+    {
+        CleanupArenaEscapedEnemiesIfReady();
+    }
+
+    private void OnValidate()
+    {
+        arenaEscapeCheckIntervalSeconds = Mathf.Max(0.05f, arenaEscapeCheckIntervalSeconds);
+        arenaEscapeKillDistance = Mathf.Max(0f, arenaEscapeKillDistance);
+    }
+
     public void StartWaves()
     {
         if (_waveRoutine != null || !HasSpawnAuthority())
@@ -226,6 +250,52 @@ public class InvasionWaveManager3D : MonoBehaviour
         ResetEnemyDefeatProgress();
         _developerSkipCurrentWaveRequested = false;
         _waveRoutine = StartCoroutine(RunWaves());
+    }
+
+    private void CleanupArenaEscapedEnemiesIfReady()
+    {
+        if (!killEnemiesFarOutsideArena || _aliveEnemies.Count == 0 || !HasSpawnAuthority())
+        {
+            return;
+        }
+
+        if (Time.time < _nextArenaEscapeCheckTime)
+        {
+            return;
+        }
+
+        _nextArenaEscapeCheckTime = Time.time + Mathf.Max(0.05f, arenaEscapeCheckIntervalSeconds);
+
+        if (!ArenaBoundary3D.TryGetActive(out ArenaBoundary3D boundary))
+        {
+            return;
+        }
+
+        Bounds arenaBounds = boundary.CurrentBounds;
+        float killDistanceSqr = arenaEscapeKillDistance * arenaEscapeKillDistance;
+
+        for (int i = _aliveEnemies.Count - 1; i >= 0; i--)
+        {
+            Enemy3D enemy = _aliveEnemies[i];
+            if (!IsTrackedEnemyStillOutstanding(enemy))
+            {
+                RemoveEnemyFromTracking(enemy, enemy != null && enemy.CurrentHealth <= 0f);
+                continue;
+            }
+
+            Vector3 enemyPosition = enemy.transform.position;
+            if (arenaBounds.SqrDistance(enemyPosition) <= killDistanceSqr)
+            {
+                continue;
+            }
+
+            if (logArenaEscapeKills)
+            {
+                Debug.LogWarning($"[InvasionWaveManager3D] Killing escaped enemy '{enemy.name}' at {enemyPosition}. It was more than {arenaEscapeKillDistance:0.##} world units outside the active arena bounds.", enemy);
+            }
+
+            enemy.KillForArenaEscape();
+        }
     }
 
     public bool RequestDeveloperSkipCurrentWave()

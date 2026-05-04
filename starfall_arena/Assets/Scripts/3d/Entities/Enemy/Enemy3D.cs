@@ -72,4 +72,19 @@ public class Enemy3D : Entity3D
         _executionLotteryNextRollTimeByPlayer[playerId] = Time.time + Mathf.Max(0f, perTargetCooldown);
         return true;
     }
+
+    public void KillForArenaEscape()
+    {
+        if (CurrentHealth <= 0f)
+        {
+            return;
+        }
+
+        currentShield = 0f;
+        currentHealth = 0f;
+        OnShieldChanged();
+        OnHealthChanged();
+        lastDamageDirection = Vector3.zero;
+        Die();
+    }
 }
