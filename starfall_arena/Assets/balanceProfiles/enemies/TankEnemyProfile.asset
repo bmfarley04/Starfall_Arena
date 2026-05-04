@@ -13,15 +13,15 @@ MonoBehaviour:
   m_Name: TankEnemyProfile
   m_EditorClassIdentifier: 
   core:
-    maxHealth: 450
-    maxShield: 450
+    maxHealth: 1000
+    maxShield: 1000
     moveSpeed: 18
     rotationDegreesPerSecond: 40
-    detectionRange: 650
+    detectionRange: 1000
   projectileWeapons:
   - cooldown: 9
-    speed: 175
-    damage: 45
+    speed: 300
+    damage: 70
     lifetime: 5
   - cooldown: 10
     speed: 125
