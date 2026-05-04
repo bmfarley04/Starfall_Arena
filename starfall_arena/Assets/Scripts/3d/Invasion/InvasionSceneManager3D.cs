@@ -146,6 +146,12 @@ public class InvasionSceneManager3D : MonoBehaviour
     [Tooltip("Fade duration used when showing or hiding WAVE text.")]
     [SerializeField] private float textFadeDuration = 0.3f;
 
+    [Header("Developer Controls")]
+    [Tooltip("If enabled, the authoritative host can press the configured key to skip the active Invasion wave and enter the normal reward/next-wave flow.")]
+    [SerializeField] private bool enableDeveloperWaveSkipKey = true;
+    [Tooltip("Keyboard key used by the host to skip the active Invasion wave during developer testing.")]
+    [SerializeField] private KeyCode developerWaveSkipKey = KeyCode.N;
+
     private Player3D _player1;
     private Player3D _player2;
     private ShipData _player1Data;
@@ -234,6 +240,19 @@ public class InvasionSceneManager3D : MonoBehaviour
 
         UnsubscribeNetworkSessionEvents();
         UnregisterCustomNetworkMessages();
+    }
+
+    private void Update()
+    {
+        if (!enableDeveloperWaveSkipKey || !_isAuthoritativeController || _gameEnded || waveManager == null)
+        {
+            return;
+        }
+
+        if (Input.GetKeyDown(developerWaveSkipKey) && waveManager.RequestDeveloperSkipCurrentWave())
+        {
+            Debug.Log($"[InvasionSceneManager3D] Developer wave skip requested with {developerWaveSkipKey}. The current wave will use the normal clear/reward flow.", this);
+        }
     }
 
     private void RefreshNetworkMode()
