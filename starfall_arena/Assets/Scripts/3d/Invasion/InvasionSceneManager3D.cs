@@ -15,6 +15,7 @@ public class InvasionSceneManager3D : MonoBehaviour
     private const string RewardAppliedMessageName = "StarfallArena.Invasion3D.RewardApplied";
     private const string InvasionCompletedMessageName = "StarfallArena.Invasion3D.Completed";
     private const string GameEndMessageName = "StarfallArena.Invasion3D.GameEnd";
+    private const string RescueCountdownMessageName = "StarfallArena.Invasion3D.RescueCountdown";
 
     [System.Serializable]
     private struct RespawnConfig3D
@@ -25,6 +26,19 @@ public class InvasionSceneManager3D : MonoBehaviour
         public float invulnerabilitySeconds;
         [Tooltip("Seconds between shield visibility pulses during respawn invulnerability. Lower values keep the shield at a higher alpha.")]
         public float shieldFlashIntervalSeconds;
+    }
+
+    [System.Serializable]
+    private struct RescueReviveConfig3D
+    {
+        [Tooltip("If enabled, a player who dies with no lives remaining can be rescued after their teammate survives for the configured countdown.")]
+        public bool enableLastLifeRescueRevive;
+        [Tooltip("Seconds the surviving teammate must stay alive before a zero-life player is revived near them.")]
+        public float rescueCountdownSeconds;
+        [Tooltip("World-space distance from the surviving teammate used when choosing the rescue revive position.")]
+        public float teammateSpawnOffsetDistance;
+        [Tooltip("Text shown on the dead player's wave canvas while waiting for rescue. {0} is the remaining whole seconds.")]
+        public string countdownTextFormat;
     }
 
     private struct CombatStatsSnapshot
@@ -127,6 +141,13 @@ public class InvasionSceneManager3D : MonoBehaviour
         invulnerabilitySeconds = 3f,
         shieldFlashIntervalSeconds = 0.12f
     };
+    [SerializeField] private RescueReviveConfig3D rescueRevive = new RescueReviveConfig3D
+    {
+        enableLastLifeRescueRevive = true,
+        rescueCountdownSeconds = 30f,
+        teammateSpawnOffsetDistance = 18f,
+        countdownTextFormat = "{0}"
+    };
 
     [Header("Gameplay HUD")]
     [Tooltip("HUD roots that should be active during Invasion gameplay: health, vignette, crosshair, weapon container, ability container, FPS/ping, and enemy tracker.")]
@@ -169,10 +190,13 @@ public class InvasionSceneManager3D : MonoBehaviour
     private Coroutine _networkSessionSubscriptionCoroutine;
     private Coroutine _activeWaveIntroCoroutine;
     private Coroutine _gameEndPresentationCoroutine;
+    private Coroutine _localRescueCountdownCoroutine;
     private int _lastWaveIntroSequenceId = -1;
     private readonly int[] _playerLivesRemainingBySlot = new int[3];
     private readonly Coroutine[] _respawnCoroutinesBySlot = new Coroutine[3];
     private readonly Coroutine[] _respawnProtectionVisualCoroutinesBySlot = new Coroutine[3];
+    private readonly Coroutine[] _rescueReviveCoroutinesBySlot = new Coroutine[3];
+    private readonly bool[] _rescueRevivePendingBySlot = new bool[3];
     private readonly InvasionPlayerRewardState3D[] _rewardStateBySlot = new InvasionPlayerRewardState3D[3];
     private readonly int[][] _pendingRewardOfferIndicesBySlot = new int[3][];
     private readonly bool[] _rewardChoiceReceivedBySlot = new bool[3];
@@ -225,6 +249,7 @@ public class InvasionSceneManager3D : MonoBehaviour
         UnsubscribePlayerDeath(_player1);
         UnsubscribePlayerDeath(_player2);
         StopRespawnCoroutines();
+        StopLocalRescueCountdown();
 
         if (_networkSessionSubscriptionCoroutine != null)
         {
@@ -240,6 +265,12 @@ public class InvasionSceneManager3D : MonoBehaviour
 
         UnsubscribeNetworkSessionEvents();
         UnregisterCustomNetworkMessages();
+    }
+
+    private void OnValidate()
+    {
+        rescueRevive.rescueCountdownSeconds = Mathf.Max(0f, rescueRevive.rescueCountdownSeconds);
+        rescueRevive.teammateSpawnOffsetDistance = Mathf.Max(0f, rescueRevive.teammateSpawnOffsetDistance);
     }
 
     private void Update()
@@ -604,12 +635,19 @@ public class InvasionSceneManager3D : MonoBehaviour
 
         if (livesAfterDeath <= 0)
         {
-            Debug.Log($"[InvasionSceneManager3D] Player {playerSlot} died with no lives remaining and will not respawn.", this);
             if (AreAllPlayersEliminated())
             {
                 EndInvasionAuthoritative(victory: false);
+                return;
             }
 
+            if (TryStartRescueRevive(playerSlot))
+            {
+                Debug.Log($"[InvasionSceneManager3D] Player {playerSlot} died with no lives remaining. Rescue revive countdown started because their teammate is still alive.", this);
+                return;
+            }
+
+            Debug.Log($"[InvasionSceneManager3D] Player {playerSlot} died with no lives remaining and no live teammate was available for rescue revive.", this);
             return;
         }
 
@@ -629,20 +667,7 @@ public class InvasionSceneManager3D : MonoBehaviour
             yield return new WaitForSeconds(delay);
         }
 
-        Player3D respawnedPlayer;
-        if (_useNetworkSession)
-        {
-            ulong ownerClientId = ResolveOwnerClientIdForSlot(playerSlot - 1);
-            ShipData shipData = playerSlot == 1 ? _player1Data : _player2Data;
-            respawnedPlayer = SpawnNetworkPlayer(shipData, deathPosition, deathRotation, ownerClientId, playerSlot);
-        }
-        else
-        {
-            ShipData shipData = playerSlot == 1 ? _player1Data : _player2Data;
-            string playerTag = playerSlot == 1 ? "Player1" : "Player2";
-            respawnedPlayer = SpawnLocalPlayer(shipData, deathPosition, deathRotation, playerTag);
-        }
-
+        Player3D respawnedPlayer = SpawnPlayerForSlot(playerSlot, deathPosition, deathRotation);
         _respawnCoroutinesBySlot[playerSlot] = null;
 
         if (respawnedPlayer == null)
@@ -653,6 +678,161 @@ public class InvasionSceneManager3D : MonoBehaviour
         ApplyRespawnProtection(respawnedPlayer, playerSlot);
         BroadcastRespawnProtection(playerSlot, Mathf.Max(0f, respawn.invulnerabilitySeconds));
         PlayerHUDManager3D.RebindAllAutoManagers();
+    }
+
+    private bool TryStartRescueRevive(byte playerSlot)
+    {
+        if (!rescueRevive.enableLastLifeRescueRevive || playerSlot < 1 || playerSlot > 2)
+        {
+            return false;
+        }
+
+        byte teammateSlot = GetTeammateSlot(playerSlot);
+        if (ResolveTrackedOrNetworkPlayer(teammateSlot) == null)
+        {
+            return false;
+        }
+
+        if (_rescueReviveCoroutinesBySlot[playerSlot] != null)
+        {
+            StopCoroutine(_rescueReviveCoroutinesBySlot[playerSlot]);
+        }
+
+        _rescueRevivePendingBySlot[playerSlot] = true;
+        float countdownSeconds = Mathf.Max(0f, rescueRevive.rescueCountdownSeconds);
+        StartRescueCountdownPresentation(playerSlot, countdownSeconds);
+        BroadcastRescueCountdown(playerSlot, active: true, countdownSeconds);
+        _rescueReviveCoroutinesBySlot[playerSlot] = StartCoroutine(RescueReviveAfterDelay(playerSlot, countdownSeconds));
+        return true;
+    }
+
+    private IEnumerator RescueReviveAfterDelay(byte playerSlot, float countdownSeconds)
+    {
+        float countdownDuration = Mathf.Max(0f, countdownSeconds);
+        float remainingSeconds = countdownDuration;
+        bool countdownVisible = true;
+
+        while (remainingSeconds > 0f)
+        {
+            if (!_rescueRevivePendingBySlot[playerSlot] || _gameEnded)
+            {
+                _rescueReviveCoroutinesBySlot[playerSlot] = null;
+                yield break;
+            }
+
+            if (ResolveTrackedOrNetworkPlayer(GetTeammateSlot(playerSlot)) == null)
+            {
+                remainingSeconds = countdownDuration;
+                if (countdownVisible)
+                {
+                    countdownVisible = false;
+                    BroadcastRescueCountdown(playerSlot, active: false, 0f);
+                    StopRescueCountdownPresentation(playerSlot);
+                }
+
+                yield return null;
+                continue;
+            }
+
+            if (!countdownVisible)
+            {
+                countdownVisible = true;
+                BroadcastRescueCountdown(playerSlot, active: true, remainingSeconds);
+                StartRescueCountdownPresentation(playerSlot, remainingSeconds);
+            }
+
+            remainingSeconds -= Time.deltaTime;
+            yield return null;
+        }
+
+        _rescueReviveCoroutinesBySlot[playerSlot] = null;
+        if (!_rescueRevivePendingBySlot[playerSlot] || _gameEnded)
+        {
+            yield break;
+        }
+
+        RescueRevivePlayerNow(playerSlot);
+    }
+
+    private bool RescueRevivePlayerNow(byte playerSlot)
+    {
+        if (playerSlot < 1 || playerSlot > 2 || !_rescueRevivePendingBySlot[playerSlot] || _gameEnded)
+        {
+            return false;
+        }
+
+        byte teammateSlot = GetTeammateSlot(playerSlot);
+        Player3D teammate = ResolveTrackedOrNetworkPlayer(teammateSlot);
+        if (teammate == null)
+        {
+            return false;
+        }
+
+        _rescueRevivePendingBySlot[playerSlot] = false;
+        StopRescueReviveCoroutine(playerSlot);
+
+        Vector3 spawnPosition = ResolveRescueSpawnPosition(teammate);
+        Quaternion spawnRotation = teammate.transform.rotation;
+        Player3D revivedPlayer = SpawnPlayerForSlot(playerSlot, spawnPosition, spawnRotation);
+        BroadcastRescueCountdown(playerSlot, active: false, 0f);
+        StopRescueCountdownPresentation(playerSlot);
+
+        if (revivedPlayer == null)
+        {
+            return false;
+        }
+
+        ApplyRespawnProtection(revivedPlayer, playerSlot);
+        BroadcastRespawnProtection(playerSlot, Mathf.Max(0f, respawn.invulnerabilitySeconds));
+        PlayerHUDManager3D.RebindAllAutoManagers();
+        return true;
+    }
+
+    private void RescueRevivePendingPlayersForWaveClear()
+    {
+        for (byte playerSlot = 1; playerSlot <= 2; playerSlot++)
+        {
+            if (!_rescueRevivePendingBySlot[playerSlot])
+            {
+                continue;
+            }
+
+            if (!RescueRevivePlayerNow(playerSlot))
+            {
+                Debug.LogWarning($"[InvasionSceneManager3D] Wave cleared while player {playerSlot} was waiting for rescue revive, but no live teammate was available as a spawn anchor.", this);
+            }
+        }
+    }
+
+    private Player3D SpawnPlayerForSlot(byte playerSlot, Vector3 position, Quaternion rotation)
+    {
+        if (_useNetworkSession)
+        {
+            ulong ownerClientId = ResolveOwnerClientIdForSlot(playerSlot - 1);
+            ShipData shipData = playerSlot == 1 ? _player1Data : _player2Data;
+            return SpawnNetworkPlayer(shipData, position, rotation, ownerClientId, playerSlot);
+        }
+
+        ShipData localShipData = playerSlot == 1 ? _player1Data : _player2Data;
+        string playerTag = playerSlot == 1 ? "Player1" : "Player2";
+        return SpawnLocalPlayer(localShipData, position, rotation, playerTag);
+    }
+
+    private Vector3 ResolveRescueSpawnPosition(Player3D teammate)
+    {
+        Vector3 fallbackOffset = -teammate.transform.forward;
+        if (fallbackOffset.sqrMagnitude < 0.0001f)
+        {
+            fallbackOffset = -teammate.transform.right;
+        }
+
+        float offsetDistance = Mathf.Max(0f, rescueRevive.teammateSpawnOffsetDistance);
+        return teammate.transform.position + fallbackOffset.normalized * offsetDistance;
+    }
+
+    private static byte GetTeammateSlot(byte playerSlot)
+    {
+        return playerSlot == 1 ? (byte)2 : (byte)1;
     }
 
     private void ApplyRespawnProtection(Player3D player, byte playerSlot)
@@ -1507,6 +1687,94 @@ public class InvasionSceneManager3D : MonoBehaviour
         yield return FadeCanvasGroup(waveTextCanvasGroup, 1f, 0f, textFadeDuration);
     }
 
+    private void StartRescueCountdownPresentation(byte playerSlot, float countdownSeconds)
+    {
+        if (!ShouldShowRescueCountdownForSlot(playerSlot))
+        {
+            return;
+        }
+
+        StopLocalRescueCountdown();
+        _localRescueCountdownCoroutine = StartCoroutine(RescueCountdownPresentationCoroutine(countdownSeconds));
+    }
+
+    private void StopRescueCountdownPresentation(byte playerSlot)
+    {
+        if (!ShouldShowRescueCountdownForSlot(playerSlot))
+        {
+            return;
+        }
+
+        StopLocalRescueCountdown();
+    }
+
+    private bool ShouldShowRescueCountdownForSlot(byte playerSlot)
+    {
+        if (playerSlot < 1 || playerSlot > 2)
+        {
+            return false;
+        }
+
+        if (!_useNetworkSession)
+        {
+            return true;
+        }
+
+        return ResolveLocalPlayerSlot() == playerSlot;
+    }
+
+    private IEnumerator RescueCountdownPresentationCoroutine(float countdownSeconds)
+    {
+        if (waveText == null || waveTextCanvasGroup == null)
+        {
+            _localRescueCountdownCoroutine = null;
+            yield break;
+        }
+
+        float remaining = Mathf.Max(0f, countdownSeconds);
+        waveTextCanvasGroup.alpha = 1f;
+
+        while (remaining > 0f)
+        {
+            waveText.text = FormatRescueCountdownText(remaining);
+            yield return null;
+            remaining -= Time.unscaledDeltaTime;
+        }
+
+        waveText.text = FormatRescueCountdownText(0f);
+        _localRescueCountdownCoroutine = null;
+    }
+
+    private void StopLocalRescueCountdown()
+    {
+        if (_localRescueCountdownCoroutine != null)
+        {
+            StopCoroutine(_localRescueCountdownCoroutine);
+            _localRescueCountdownCoroutine = null;
+        }
+
+        if (waveTextCanvasGroup != null)
+        {
+            waveTextCanvasGroup.alpha = 0f;
+        }
+    }
+
+    private string FormatRescueCountdownText(float remainingSeconds)
+    {
+        int wholeSeconds = Mathf.Max(0, Mathf.CeilToInt(remainingSeconds));
+        string format = string.IsNullOrWhiteSpace(rescueRevive.countdownTextFormat)
+            ? "{0}"
+            : rescueRevive.countdownTextFormat;
+        try
+        {
+            return string.Format(format, wholeSeconds);
+        }
+        catch (System.FormatException)
+        {
+            return wholeSeconds.ToString();
+        }
+    }
+
     private IEnumerator FadeCanvasGroup(CanvasGroup group, float from, float to, float duration)
     {
         if (group == null)
@@ -1544,6 +1812,8 @@ public class InvasionSceneManager3D : MonoBehaviour
         waveManager.RewardPhaseRequested += PlayRewardPhaseAuthoritative;
         waveManager.AllWavesCleared -= HandleAllWavesCleared;
         waveManager.AllWavesCleared += HandleAllWavesCleared;
+        waveManager.WaveCleared -= HandleWaveCleared;
+        waveManager.WaveCleared += HandleWaveCleared;
         waveManager.AliveEnemyCountChanged -= HandleAliveEnemyCountChanged;
         waveManager.AliveEnemyCountChanged += HandleAliveEnemyCountChanged;
         SyncAliveEnemyCountFromWaveManager();
@@ -1559,7 +1829,18 @@ public class InvasionSceneManager3D : MonoBehaviour
         waveManager.WaveIntroRequested -= PlayWaveIntroAuthoritative;
         waveManager.RewardPhaseRequested -= PlayRewardPhaseAuthoritative;
         waveManager.AllWavesCleared -= HandleAllWavesCleared;
+        waveManager.WaveCleared -= HandleWaveCleared;
         waveManager.AliveEnemyCountChanged -= HandleAliveEnemyCountChanged;
+    }
+
+    private void HandleWaveCleared(int waveNumber)
+    {
+        if (!_isAuthoritativeController || _gameEnded)
+        {
+            return;
+        }
+
+        RescueRevivePendingPlayersForWaveClear();
     }
 
     private void HandleAllWavesCleared()
@@ -2051,6 +2332,7 @@ public class InvasionSceneManager3D : MonoBehaviour
         networkManager.CustomMessagingManager.RegisterNamedMessageHandler(RewardAppliedMessageName, HandleRewardAppliedMessage);
         networkManager.CustomMessagingManager.RegisterNamedMessageHandler(InvasionCompletedMessageName, HandleInvasionCompletedMessage);
         networkManager.CustomMessagingManager.RegisterNamedMessageHandler(GameEndMessageName, HandleGameEndMessage);
+        networkManager.CustomMessagingManager.RegisterNamedMessageHandler(RescueCountdownMessageName, HandleRescueCountdownMessage);
         _customNetworkMessagesRegistered = true;
     }
 
@@ -2070,7 +2352,46 @@ public class InvasionSceneManager3D : MonoBehaviour
         networkManager.CustomMessagingManager.UnregisterNamedMessageHandler(RewardAppliedMessageName);
         networkManager.CustomMessagingManager.UnregisterNamedMessageHandler(InvasionCompletedMessageName);
         networkManager.CustomMessagingManager.UnregisterNamedMessageHandler(GameEndMessageName);
+        networkManager.CustomMessagingManager.UnregisterNamedMessageHandler(RescueCountdownMessageName);
         _customNetworkMessagesRegistered = false;
+    }
+
+    private void BroadcastRescueCountdown(byte playerSlot, bool active, float remainingSeconds)
+    {
+        NetworkManager networkManager = NetworkManager.Singleton;
+        if (!_useNetworkSession || networkManager == null || !networkManager.IsServer || networkManager.CustomMessagingManager == null)
+        {
+            return;
+        }
+
+        using (FastBufferWriter writer = new FastBufferWriter(16, Allocator.Temp))
+        {
+            writer.WriteValueSafe(playerSlot);
+            writer.WriteValueSafe(active ? (byte)1 : (byte)0);
+            writer.WriteValueSafe(Mathf.Max(0f, remainingSeconds));
+            networkManager.CustomMessagingManager.SendNamedMessage(RescueCountdownMessageName, networkManager.ConnectedClientsIds, writer, NetworkDelivery.ReliableSequenced);
+        }
+    }
+
+    private void HandleRescueCountdownMessage(ulong senderClientId, FastBufferReader reader)
+    {
+        if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsServer)
+        {
+            return;
+        }
+
+        reader.ReadValueSafe(out byte playerSlot);
+        reader.ReadValueSafe(out byte active);
+        reader.ReadValueSafe(out float remainingSeconds);
+
+        if (active == 1)
+        {
+            StartRescueCountdownPresentation(playerSlot, remainingSeconds);
+        }
+        else
+        {
+            StopRescueCountdownPresentation(playerSlot);
+        }
     }
 
     private void BroadcastInvasionGameEnd(InvasionGameEndStats stats)
@@ -2420,6 +2741,25 @@ public class InvasionSceneManager3D : MonoBehaviour
                 StopCoroutine(_respawnProtectionVisualCoroutinesBySlot[i]);
                 _respawnProtectionVisualCoroutinesBySlot[i] = null;
             }
+
+            StopRescueReviveCoroutine((byte)i);
+            _rescueRevivePendingBySlot[i] = false;
         }
+    }
+
+    private void StopRescueReviveCoroutine(byte playerSlot)
+    {
+        if (playerSlot < 1 || playerSlot > 2)
+        {
+            return;
+        }
+
+        if (_rescueReviveCoroutinesBySlot[playerSlot] == null)
+        {
+            return;
+        }
+
+        StopCoroutine(_rescueReviveCoroutinesBySlot[playerSlot]);
+        _rescueReviveCoroutinesBySlot[playerSlot] = null;
     }
 }
