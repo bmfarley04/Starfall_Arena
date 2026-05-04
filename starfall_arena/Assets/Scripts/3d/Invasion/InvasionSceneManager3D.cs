@@ -610,8 +610,6 @@ public class InvasionSceneManager3D : MonoBehaviour
         _playerLivesRemainingBySlot[playerSlot] = livesAfterDeath;
         UpdateLifeCounter(ResolveDisplayedLives());
         BroadcastPlayerLives();
-        TrySwitchDeadLocalPlayerToTeammateCamera(playerSlot);
-        BroadcastSpectateTeammate(playerSlot);
 
         if (livesAfterDeath <= 0)
         {
@@ -619,6 +617,11 @@ public class InvasionSceneManager3D : MonoBehaviour
             if (AreAllPlayersEliminated())
             {
                 EndInvasionAuthoritative(victory: false);
+            }
+            else
+            {
+                TrySwitchDeadLocalPlayerToTeammateCamera(playerSlot);
+                BroadcastSpectateTeammate(playerSlot);
             }
 
             return;
