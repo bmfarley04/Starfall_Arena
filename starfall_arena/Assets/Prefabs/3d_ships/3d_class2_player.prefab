@@ -10642,6 +10642,8 @@ MonoBehaviour:
     lateralDriftDamping: 18
     verticalDriftDamping: 16
     velocityAlignmentStrength: 3
+    recoveryDriftDampingMultiplier: 2
+    recoveryVelocityAlignmentStrength: 4
   inputSourceBehaviour: {fileID: 7607067697537861543}
   entity: {fileID: 4860835452147509291}
   frictionEnabled: 1
@@ -10852,7 +10854,7 @@ MonoBehaviour:
   dodgeFlickThreshold: 0.55
   dodgeFlickResetThreshold: 0.35
   dodgeFlickMaxVertical: 0.65
-  logDodgeFlickDebug: 1
+  logDodgeFlickDebug: 0
 --- !u!114 &8106419607673637394
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -10890,6 +10892,8 @@ MonoBehaviour:
   dodgePositionDamping: 0.85
   dodgeRotationDamping: 0.45
   dodgeAimDamping: 0.35
+  neutralFollowOffset: {x: 0, y: 0.8, z: -12}
+  resetBaseOffsetOnCameraBind: 1
 --- !u!114 &2273685839450933136
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -11222,6 +11226,11 @@ MonoBehaviour:
     hardSnapDistance: 30
     smoothingCatchUpRate: 0
   maxCombatRewindTicks: 6
+  networkMovementBlockerMask:
+    serializedVersion: 2
+    m_Bits: 256
+  blockerSkinWidth: 0.05
+  minimumBlockerSweepDistance: 0.001
 --- !u!114 &492492662401554447
 MonoBehaviour:
   m_ObjectHideFlags: 0
