@@ -5757,7 +5757,7 @@ MonoBehaviour:
   dodgeFlickThreshold: 0.45
   dodgeFlickResetThreshold: 0.25
   dodgeFlickMaxVertical: 0.9
-  logDodgeFlickDebug: 1
+  logDodgeFlickDebug: 0
 --- !u!114 &8218329567873975671
 MonoBehaviour:
   m_ObjectHideFlags: 0
