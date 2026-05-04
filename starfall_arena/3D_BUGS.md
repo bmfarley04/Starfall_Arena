@@ -13,6 +13,7 @@ Bug note format:
 ## Invasion Scene Wiring
 
 - Invasion wave prefab changes can be masked by scene prefab-instance overrides. `Assets/Scenes/3d_invasion.unity` previously kept old overrides for `waves.Array.size`, nested sub-wave arrays, and removed spawn-anchor children on an `invasionManager` prefab instance, so the updated prefab looked correct on disk while the scene Inspector showed stale or empty wave data. When changing `Assets/Prefabs/3d_ships/invasionManager.prefab`, inspect the playable scene instance too and revert stale overrides so `InvasionSceneManager3D.waveManager` inherits the prefab-authored wave set.
+- Runtime-spawned network enemy prefabs must not contain nested `NetworkObject` children. `triumvirate.prefab` was authored as a parent group with three child networked ships, which logs "Spawning NetworkObjects with nested NetworkObjects is only supported for scene objects" and leaves the child ships unspawned on clients. Keep each networked enemy ship as its own root `NetworkObject` prefab; for Triumvirates, use `InvasionWaveManager3D`'s `Spawn As Triumvirate Squad` fields to spawn and runtime-link the three member prefabs.
 
 ## Enemy Movement And Steering
 

@@ -57,6 +57,7 @@ Implemented foundation:
 - `RammerEnemyBrain3D` is a fast strike enemy that chases the player at full speed and slams into them on contact for chip damage plus a large knockback, then arcs away to circle back; the knockback routes through the existing `NetMovement3D.ApplyCombatVelocityDelta` recoil hook so the impulse replicates correctly across the network without a new RPC
 - `SplitterEnemyBrain3D` owns the Splitter enemy identity: the parent hybrid chooses between projectile and beam pressure based on range plus a random overlap band, then on death asks `InvasionWaveManager3D` to spawn the same prefab twice as smaller role-locked children
 - `TriumvirateEnemyBrain3D` owns the Triumvirate enemy identity: small linked beam ships form a triangle, reveal cosmetic lightning links, and then fire a survivor-scaled lightning beam where the full three-ship version is the only slow-applying version
+- `InvasionWaveManager3D` can spawn Triumvirate squads as three separate network prefab instances from one sub-wave entry. Enable `Spawn As Triumvirate Squad`, assign top/lower-left/lower-right single-member prefabs, and the manager assigns a unique runtime squad key plus fixed formation slots so nearby squads do not cross-link.
 - `SwarmScoutEnemyBrain3D` owns the Swarm Scout enemy identity: fragile fast flyers move in linked formations, default to a pentagon-style flyby through/past the player, can fall back to orbit behavior through a movement-pattern dropdown, and only alert nearby enemy sensors if the required survivor count remains alive near the player through the warmup
 - `SiegeCarrierBossEnemyBrain3D` owns the second Invasion boss identity: a slow/stationary Siege Carrier that maintains a preferred range band without constantly rotating its hull toward the player, runs one random major bullet-hell-style pattern lane per detected active player up to two simultaneous lanes, mixes targeted projectile pressure with lagging beam convergence, formation missile salvos, a two-hardpoint lightning slow beam, and optional enemy spawn waves, activates boss-centered orbital energy pillars once at the phase-two transition until death/despawn, keeps a hard per-pattern projectile budget, and leaves authored escape lanes instead of flooding the whole arena
 - `NetEnemyMovement3D` makes enemies server-simulated in network sessions
@@ -381,7 +382,8 @@ For a Duelist enemy prefab:
 
 For a Triumvirate enemy prefab:
 
-- add `NetworkObject` if it will spawn in networked Invasion
+- create single-member Triumvirate prefabs for networked Invasion; do not use a parent prefab with three child `NetworkObject` ships, because NGO only supports nested `NetworkObject`s for scene objects and the children will not spawn over the network
+- add `NetworkObject` on the root of each single-member prefab if it will spawn in networked Invasion
 - add `FactionMember3D` and set faction to `EnemyTeam`
 - add `Enemy3D`
 - add `Rigidbody`
@@ -392,11 +394,12 @@ For a Triumvirate enemy prefab:
 - add `TriumvirateEnemyBrain3D`; assign the final beam weapon and `NetEnemyCombat3D`, assign `Link Lightning Prefab` to `enemy_lightning_beam.prefab`, and tune the one/two/three-member damage fields plus full-triad slow fields
 - leave `Keep Formation On World Y Plane` off for the intended vertical triangle with one ship high and two low; only enable it if a local test prefab is deliberately locked to a planar Y flight level
 - use `Log State Changes` and temporary `Log Formation Progress` while testing scene setup so stuck states report whether the squad is forming, linking, charging, firing, or cooling down
-- either assign all three `Squad Members` explicitly after placing/spawning a group, or spawn them close together with the same `Squad Key` and an `Auto Link Radius` large enough for discovery
+- for scene-placed test groups, either assign all three `Squad Members` explicitly or place them close together with the same `Squad Key` and an `Auto Link Radius` large enough for discovery
+- for wave-spawned network groups, use `InvasionWaveManager3D`'s `Spawn As Triumvirate Squad` entry fields instead of explicit prefab child references; assign the top/lower-left/lower-right member prefabs and let the manager generate the runtime squad key
 - add `NetEnemyMovement3D` and `NetEnemyCombat3D` for networked movement plus final beam presentation
 - create an `EnemyBalanceProfile3D` asset, initialize it from the prefab's current health, movement, detection, weapon, and brain tuning, then add `EnemyBalanceProfileApplier3D` on the prefab root and assign the profile before adding the prefab to waves
 - set low `Entity3D` health so the intended counterplay is destroying ships during formation/linking before the full slow beam fires
-- add Triumvirate entries to waves in multiples of three; the brain can degrade to two or one survivor, but the intended enemy identity assumes a three-ship group at spawn
+- add Triumvirate entries to waves as three-member squad entries; the entry `Count` means number of squads when `Spawn As Triumvirate Squad` is enabled. The brain can degrade to two or one survivor, but the intended enemy identity assumes a three-ship group at spawn
 
 For a Swarm Scout enemy prefab:
 

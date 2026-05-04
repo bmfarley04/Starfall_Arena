@@ -477,8 +477,14 @@ MonoBehaviour:
         gridColumns: 3
         yBias: 0.25
       enemies:
-      - enemyPrefab: {fileID: 3197767798142550287, guid: 82a69e3d51aa5024dba97824bdf3c1f9, type: 3}
+      - enemyPrefab: {fileID: 0}
         count: 2
+        spawnAsTriumvirateSquad: 1
+        triumvirateTopMemberPrefab: {fileID: 8494126292770321750, guid: a50f4df4a7b4434aac8e82f0c3270e12, type: 3}
+        triumvirateLowerLeftMemberPrefab: {fileID: 7119631441220946235, guid: c539a081cf314a4e97be33b62b883712, type: 3}
+        triumvirateLowerRightMemberPrefab: {fileID: 5966725600395127208, guid: d68aa18505214c089467530e15a20330, type: 3}
+        triumvirateInitialMemberSpacing: 20
+        triumvirateRuntimeSquadKeyPrefix: Triumvirate
       - enemyPrefab: {fileID: 1837983289991426574, guid: 4c9de6e18a704a44962ff82fb01f0862, type: 3}
         count: 2
       spawnBurstIntervalSeconds: 1.2
@@ -813,8 +819,14 @@ MonoBehaviour:
         gridColumns: 4
         yBias: 0.3
       enemies:
-      - enemyPrefab: {fileID: 3197767798142550287, guid: 82a69e3d51aa5024dba97824bdf3c1f9, type: 3}
+      - enemyPrefab: {fileID: 0}
         count: 2
+        spawnAsTriumvirateSquad: 1
+        triumvirateTopMemberPrefab: {fileID: 8494126292770321750, guid: a50f4df4a7b4434aac8e82f0c3270e12, type: 3}
+        triumvirateLowerLeftMemberPrefab: {fileID: 7119631441220946235, guid: c539a081cf314a4e97be33b62b883712, type: 3}
+        triumvirateLowerRightMemberPrefab: {fileID: 5966725600395127208, guid: d68aa18505214c089467530e15a20330, type: 3}
+        triumvirateInitialMemberSpacing: 20
+        triumvirateRuntimeSquadKeyPrefix: Triumvirate
       - enemyPrefab: {fileID: 1837983289991426574, guid: adef4d23cb9668841be1ca462087f47f, type: 3}
         count: 3
       spawnBurstIntervalSeconds: 0.97499996

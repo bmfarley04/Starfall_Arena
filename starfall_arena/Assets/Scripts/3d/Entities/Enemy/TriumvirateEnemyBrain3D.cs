@@ -18,7 +18,7 @@ public class TriumvirateEnemyBrain3D : NetworkBehaviour
         Cooldown
     }
 
-    private enum FormationSlotPreference
+    public enum FormationSlotPreference
     {
         Auto,
         Top,
@@ -185,6 +185,16 @@ public class TriumvirateEnemyBrain3D : NetworkBehaviour
         fullTriadSlowMultiplier = Mathf.Clamp01(stats.fullTriadSlowMultiplier);
         fullTriadSlowDuration = Mathf.Max(0f, stats.fullTriadSlowDuration);
         fullTriadSlowEngineEmissionScale = Mathf.Clamp01(stats.fullTriadSlowEngineEmissionScale);
+    }
+
+    public void ConfigureRuntimeSquad(string runtimeSquadKey, FormationSlotPreference slotPreference)
+    {
+        squadKey = string.IsNullOrWhiteSpace(runtimeSquadKey) ? "Triumvirate" : runtimeSquadKey;
+        formationSlotPreference = slotPreference;
+        squadMembers = new TriumvirateEnemyBrain3D[0];
+        _assignedFormationSlot = -1;
+        _loggedDuplicateFormationSlot = false;
+        _nextAutoLinkTime = 0f;
     }
 
     private void OnDisable()
