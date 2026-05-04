@@ -12,6 +12,7 @@ The presentation is currently 2.5D:
 - gameplay motion happens in a 2D combat plane
 - `Rigidbody2D` drives physics
 - the camera is currently orthographic
+- the whole project is visually constrained to a 16:9 safe frame at runtime
 
 The project is expected to transition toward a perspective camera later, so visual and camera assumptions should be treated as evolving.
 
@@ -435,6 +436,7 @@ Network execution note:
 - The game is currently duel-first, even though enemy and broader PvE architecture still exists.
 - The active direction is a fully networked duel game; local split-screen behavior should be treated as legacy/secondary unless explicitly needed.
 - The camera is still described in many places as orthographic, but future work should keep perspective-camera migration in mind.
+- `ProjectAspectRatioEnforcer` is the global display-frame owner. Do not add separate per-scene or per-camera 16:9 scripts unless they preserve that manager's safe-frame behavior and overlay UI blocking.
 - Weapon docs must distinguish between projectile-family weapons and beam weapons.
 - Ability behavior is component-based and distributed, so changes often require docs updates in both gameplay and UI/flow docs.
 - Bug note: modular abilities should initialize their cooldown timer in a ready state. If the base `Ability.lastUsedAbility` starts at `0`, newly spawned ships can have abilities appear broken until each cooldown elapses once.

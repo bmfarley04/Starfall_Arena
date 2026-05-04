@@ -43,13 +43,13 @@ Material:
     - _OuterFade: 0.12
     - _OuterRadius: 1
     - _RingFrequency: 9
-    - _RingLineStrength: 0
+    - _RingLineStrength: 0.16
     - _RingSharpness: 0.5
     - _ShadowOcclusionRadius: 0.31
     - _ShadowOcclusionSoftness: 0.035
     - _SpinSpeed: 0.08
     - _SpiralTightness: 8
-    - _VolumetricFill: 0.72
+    - _VolumetricFill: 0.76
     - _WispSharpness: 1.2
     m_Colors:
     - _HotStreakColor: {r: 6.7798715, g: 0, b: 0.10718339, a: 1}
