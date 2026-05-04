@@ -39,7 +39,7 @@ MonoBehaviour:
     projectileAimToleranceDegrees: 8
     beamAimToleranceDegrees: 8
     projectilePreferredDistance: 100
-    beamPreferredDistance: 200
+    beamPreferredDistance: 185
     mixedRangeBeamChance: 0.45
     mixedRangeWidth: 14
     decisionHoldDuration: 1

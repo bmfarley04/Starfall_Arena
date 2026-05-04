@@ -47,7 +47,7 @@ MonoBehaviour:
   brain:
     autoLinkRadius: 300
     autoLinkRetryInterval: 0.5
-    formationDistanceFromTarget: 300
+    formationDistanceFromTarget: 200
     triangleRadius: 30
     anchorFormationNearCurrentSquad: 1
     verticalTriangleWidth: 20

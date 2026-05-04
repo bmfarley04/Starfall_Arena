@@ -33,7 +33,7 @@ MonoBehaviour:
     aimToleranceDegrees: 8
     keepAwayDistance: 100
     retreatFullSpeedDistance: 50
-    optimalRange: 400
+    optimalRange: 200
     rangeBuffer: 5
-    maxEngagementRange: 450
+    maxEngagementRange: 225
     minimumBeamRestartEnergy: 40

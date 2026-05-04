@@ -67,8 +67,8 @@ MonoBehaviour:
       halfWidth: 35
       aimToleranceDegrees: 30
     beamBand:
-      preferredCenter: 400
-      halfWidth: 30
+      preferredCenter: 230
+      halfWidth: 25
       aimToleranceDegrees: 6
     vibesChance: 0.5
     weaponCommitDuration: 1.25
