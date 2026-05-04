@@ -544,16 +544,20 @@ public class InvasionWaveManager3D : MonoBehaviour
             networkObject.Spawn(true);
         }
 
-        Enemy3D enemy = enemyObject.GetComponent<Enemy3D>();
-        if (enemy == null)
+        Enemy3D[] spawnedEnemies = enemyObject.GetComponentsInChildren<Enemy3D>(false);
+        if (spawnedEnemies == null || spawnedEnemies.Length == 0)
         {
-            Debug.LogError($"[InvasionWaveManager3D] Enemy prefab '{enemyPrefab.name}' is missing Enemy3D.", enemyObject);
+            Debug.LogError($"[InvasionWaveManager3D] Enemy prefab '{enemyPrefab.name}' is missing Enemy3D on its root or active children.", enemyObject);
             Destroy(enemyObject);
             return null;
         }
 
-        RegisterSpawnedEnemy(enemy);
-        return enemy;
+        for (int i = 0; i < spawnedEnemies.Length; i++)
+        {
+            RegisterSpawnedEnemy(spawnedEnemies[i]);
+        }
+
+        return spawnedEnemies[0];
     }
 
     private bool TryResolveSafeSpawnPosition(Vector3 requestedPosition, Quaternion spawnRotation, out Vector3 resolvedPosition)
@@ -665,17 +669,49 @@ public class InvasionWaveManager3D : MonoBehaviour
                         continue;
                     }
 
-                    total += GetTotalEnemyCount(subWave.enemies);
+                    total += GetTotalAuthoredEnemyCount(subWave.enemies);
                 }
             }
 
             if (wave.enableBoss && wave.boss != null && wave.boss.bossPrefab != null)
             {
-                total++;
+                total += CountTrackedEnemiesInPrefab(wave.boss.bossPrefab);
             }
         }
 
         return total;
+    }
+
+    private int GetTotalAuthoredEnemyCount(SubWaveEnemyEntry3D[] entries)
+    {
+        if (entries == null)
+        {
+            return 0;
+        }
+
+        int total = 0;
+        for (int i = 0; i < entries.Length; i++)
+        {
+            if (entries[i] == null)
+            {
+                continue;
+            }
+
+            total += Mathf.Max(0, entries[i].count) * CountTrackedEnemiesInPrefab(entries[i].enemyPrefab);
+        }
+
+        return total;
+    }
+
+    private static int CountTrackedEnemiesInPrefab(GameObject enemyPrefab)
+    {
+        if (enemyPrefab == null)
+        {
+            return 0;
+        }
+
+        Enemy3D[] enemies = enemyPrefab.GetComponentsInChildren<Enemy3D>(false);
+        return Mathf.Max(1, enemies != null ? enemies.Length : 0);
     }
 
     private void ResetEnemyDefeatProgress()
