@@ -31,6 +31,11 @@ public class PlayerCameraRig3D : MonoBehaviour
     [SerializeField] private float dodgePositionDamping = 0.85f;
     [SerializeField] private float dodgeRotationDamping = 0.45f;
     [SerializeField] private float dodgeAimDamping = 0.35f;
+    [Header("Respawn Camera Reset")]
+    [Tooltip("Neutral follow offset used when a player respawns or a shared gameplay camera is rebound after spectating/rescue follow.")]
+    [SerializeField] private Vector3 neutralFollowOffset = new Vector3(0f, 0.8f, -12f);
+    [Tooltip("When enabled, binding a gameplay camera snaps its base follow offset back to Neutral Follow Offset instead of inheriting any stale side offset left by the previous tracked ship.")]
+    [SerializeField] private bool resetBaseOffsetOnCameraBind = true;
 
     private CinemachineFollow _followComponent;
     private CinemachineRotateWithFollowTarget _rotateWithFollowTarget;
@@ -116,6 +121,7 @@ public class PlayerCameraRig3D : MonoBehaviour
     {
         virtualCamera = camera;
         CacheCameraComponents();
+        ResetCameraState(snapToNeutralOffset: true);
     }
 
     public void BindTrackingTarget(Transform target)
@@ -126,6 +132,28 @@ public class PlayerCameraRig3D : MonoBehaviour
         }
 
         virtualCamera.Target.TrackingTarget = target;
+    }
+
+    public void ResetCameraState(bool snapToNeutralOffset)
+    {
+        _dodgeLagUntil = float.NegativeInfinity;
+        _dodgeLagFollowOffset = Vector2.zero;
+        _baseFollowOffset = ResolveNeutralFollowOffset();
+        _baseFollowOffsetCaptured = true;
+
+        if (_followComponent == null)
+        {
+            return;
+        }
+
+        Vector3 targetOffset = _baseFollowOffset;
+        float forwardSpeedPercent = shipFlight != null ? shipFlight.ForwardSpeedNormalized : 0f;
+        targetOffset.z = Mathf.Lerp(cameraConfig.minZOffset, cameraConfig.maxZOffset, forwardSpeedPercent);
+
+        if (snapToNeutralOffset)
+        {
+            _followComponent.FollowOffset = targetOffset;
+        }
     }
 
     public void SetCameraRigActive(bool isActive)
@@ -180,9 +208,20 @@ public class PlayerCameraRig3D : MonoBehaviour
 
         if (_followComponent != null)
         {
-            _baseFollowOffset = _followComponent.FollowOffset;
+            _baseFollowOffset = resetBaseOffsetOnCameraBind ? ResolveNeutralFollowOffset() : _followComponent.FollowOffset;
             _baseFollowOffsetCaptured = true;
         }
+    }
+
+    private Vector3 ResolveNeutralFollowOffset()
+    {
+        Vector3 resolved = neutralFollowOffset;
+        if (Mathf.Approximately(resolved.z, 0f))
+        {
+            resolved.z = cameraConfig.minZOffset;
+        }
+
+        return resolved;
     }
 
     private void ValidateCameraConfig()
@@ -288,7 +327,7 @@ public class PlayerCameraRig3D : MonoBehaviour
 
         if (!_baseFollowOffsetCaptured)
         {
-            _baseFollowOffset = new Vector3(0f, 0.8f, -12f);
+            _baseFollowOffset = ResolveNeutralFollowOffset();
         }
     }
 }

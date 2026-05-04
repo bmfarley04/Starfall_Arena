@@ -460,6 +460,74 @@ public class NetMovement3D : NetworkBehaviour
         ResetRemoteInterpolationState();
     }
 
+    public void ResetMovementState(Vector3 position, Quaternion rotation, bool resetCamera)
+    {
+        CacheReferences();
+        if (_shipFlight != null)
+        {
+            _ownerFrictionEnabled = _shipFlight.IsFrictionEnabled;
+            _serverFrictionEnabled = _shipFlight.IsFrictionEnabled;
+        }
+
+        _pendingDodgeRequested = false;
+        _pendingDodgeKind = NetDodgeKind3D.Generic;
+        _pendingDodgeDirection = Vector3.zero;
+        _lastAcceptedDodgeTick = -1;
+        _lastAppliedVisualVelocity = Vector3.zero;
+        _hasLastAppliedVisualVelocity = false;
+        _remoteDodgePresentationActive = false;
+
+        MovementState3D resetState = new MovementState3D
+        {
+            Position = position,
+            Rotation = rotation,
+            Velocity = Vector3.zero,
+            FilteredLookInput = Vector2.zero,
+            TurnRates = Vector2.zero,
+            DodgeVelocity = Vector3.zero,
+            DodgeExitVelocity = Vector3.zero,
+            DodgeRemainingTime = 0f,
+            DodgeDuration = 0f,
+            DodgeKind = NetDodgeKind3D.Generic
+        };
+
+        _ownerState = resetState;
+        _serverState = resetState;
+        _ownerStateInitialized = true;
+        _serverStateInitialized = true;
+
+        if (_rb != null)
+        {
+            _rb.position = position;
+            _rb.rotation = rotation;
+            if (!_rb.isKinematic)
+            {
+                _rb.linearVelocity = Vector3.zero;
+            }
+
+            _rb.angularVelocity = Vector3.zero;
+        }
+
+        transform.SetPositionAndRotation(position, rotation);
+        _shipFlight?.ResetMotionState(clearVelocity: true);
+        _shipFlight?.ApplyExternalSimulationState(
+            Vector2.zero,
+            Vector2.zero,
+            Vector2.zero,
+            0f,
+            _ownerFrictionEnabled,
+            Vector3.zero,
+            Vector3.zero,
+            Vector3.zero);
+
+        if (resetCamera)
+        {
+            _cameraRig?.ResetCameraState(snapToNeutralOffset: true);
+        }
+
+        ResetRemoteInterpolationState();
+    }
+
     private void OwnerTick()
     {
         if (_shipFlight == null)
@@ -750,7 +818,11 @@ public class NetMovement3D : NetworkBehaviour
             dt);
 
         ConstrainPredictedMovementAgainstBlockers(ref state, startPosition);
-        ApplyUprightRecovery(ref state, in input, dt);
+        bool appliedUprightRecovery = ApplyUprightRecovery(ref state, in input, dt);
+        if (appliedUprightRecovery && input.FrictionEnabled)
+        {
+            ApplyUprightRecoveryVelocityCleanup(ref state, _shipFlight.FlightAssistConfig, dt);
+        }
     }
 
     private void ConstrainPredictedMovementAgainstBlockers(ref MovementState3D state, Vector3 startPosition)
@@ -816,18 +888,44 @@ public class NetMovement3D : NetworkBehaviour
         }
     }
 
-    private void ApplyUprightRecovery(ref MovementState3D state, in NetInputSnapshot3D input, float dt)
+    private bool ApplyUprightRecovery(ref MovementState3D state, in NetInputSnapshot3D input, float dt)
     {
         if (_player == null)
         {
-            return;
+            return false;
         }
 
         float recoveryDeadZone = _player.UprightRecoveryInputDeadZone;
         bool hasRotationIntent = input.LookInput.sqrMagnitude > recoveryDeadZone * recoveryDeadZone
             || Mathf.Abs(state.TurnRates.x) > 0.01f
             || Mathf.Abs(state.TurnRates.y) > 0.01f;
+        bool shouldApplyRecovery = _player.ShouldApplyUprightRecovery(hasRotationIntent);
+        if (!shouldApplyRecovery)
+        {
+            return false;
+        }
+
         state.Rotation = _player.ApplyUprightRecovery(state.Rotation, dt, hasRotationIntent);
+        return true;
+    }
+
+    private static void ApplyUprightRecoveryVelocityCleanup(ref MovementState3D state, in ShipFlightAssistConfig3D assist, float dt)
+    {
+        Quaternion inverseRotation = Quaternion.Inverse(state.Rotation);
+        Vector3 localVelocity = inverseRotation * state.Velocity;
+        float recoveryMultiplier = Mathf.Max(1f, assist.recoveryDriftDampingMultiplier);
+        localVelocity.x = Mathf.MoveTowards(localVelocity.x, 0f, assist.lateralDriftDamping * recoveryMultiplier * dt);
+        localVelocity.y = Mathf.MoveTowards(localVelocity.y, 0f, assist.verticalDriftDamping * recoveryMultiplier * dt);
+
+        Vector3 worldVelocity = state.Rotation * localVelocity;
+        if (assist.recoveryVelocityAlignmentStrength > 0f && worldVelocity.sqrMagnitude > 0.0001f)
+        {
+            float lerpFactor = 1f - Mathf.Exp(-assist.recoveryVelocityAlignmentStrength * dt);
+            Vector3 alignedDirection = Vector3.Slerp(worldVelocity.normalized, state.Rotation * Vector3.forward, lerpFactor).normalized;
+            worldVelocity = alignedDirection * worldVelocity.magnitude;
+        }
+
+        state.Velocity = worldVelocity;
     }
 
     private void ApplyDodgeFromInput(ref MovementState3D state, in NetInputSnapshot3D input, bool validateDodge)
@@ -1283,6 +1381,7 @@ public class NetMovement3D : NetworkBehaviour
         if (_cameraRig != null)
         {
             _cameraRig.BindTrackingTarget(transform);
+            _cameraRig.ResetCameraState(snapToNeutralOffset: true);
         }
 
         if (cinemachineCamera != null)
@@ -1538,9 +1637,13 @@ public class NetMovement3D : NetworkBehaviour
             _rb.linearVelocity = Vector3.zero;
         }
 
+        _rb.angularVelocity = Vector3.zero;
+
         if (_ownerStateInitialized)
         {
             _ownerState.Velocity = Vector3.zero;
+            _ownerState.FilteredLookInput = Vector2.zero;
+            _ownerState.TurnRates = Vector2.zero;
             _ownerState.DodgeVelocity = Vector3.zero;
             _ownerState.DodgeExitVelocity = Vector3.zero;
             _ownerState.DodgeRemainingTime = 0f;
@@ -1551,6 +1654,8 @@ public class NetMovement3D : NetworkBehaviour
         if (_serverStateInitialized)
         {
             _serverState.Velocity = Vector3.zero;
+            _serverState.FilteredLookInput = Vector2.zero;
+            _serverState.TurnRates = Vector2.zero;
             _serverState.DodgeVelocity = Vector3.zero;
             _serverState.DodgeExitVelocity = Vector3.zero;
             _serverState.DodgeRemainingTime = 0f;
@@ -1568,6 +1673,7 @@ public class NetMovement3D : NetworkBehaviour
             Vector3.zero,
             Vector3.zero);
 
+        _cameraRig?.ResetCameraState(snapToNeutralOffset: true);
         ResetRemoteInterpolationState();
     }
 

@@ -32,7 +32,9 @@ public class ShipFlight3D : MonoBehaviour
         activeAngularDamping = 2f,
         lateralDriftDamping = 18f,
         verticalDriftDamping = 16f,
-        velocityAlignmentStrength = 3f
+        velocityAlignmentStrength = 3f,
+        recoveryDriftDampingMultiplier = 2f,
+        recoveryVelocityAlignmentStrength = 4f
     };
 
     [SerializeField] private MonoBehaviour inputSourceBehaviour;
@@ -59,6 +61,7 @@ public class ShipFlight3D : MonoBehaviour
     private Vector3 _recoilVelocityDeltaThisStep;
     private Vector3 _lastFixedStepRecoilVelocityDelta;
     private float _effectiveThrustInput;
+    private bool _isUprightRecoveringThisStep;
     private bool _externalSimulationEnabled;
 
     public Rigidbody Rigidbody => _rb;
@@ -152,6 +155,7 @@ public class ShipFlight3D : MonoBehaviour
         _previousVelocity = _rb.linearVelocity;
         _lastFixedStepRecoilVelocityDelta = _recoilVelocityDeltaThisStep;
         _recoilVelocityDeltaThisStep = Vector3.zero;
+        _isUprightRecoveringThisStep = false;
     }
 
     public void SetFlightConfig(ShipFlightConfig3D config)
@@ -188,6 +192,8 @@ public class ShipFlight3D : MonoBehaviour
         flightAssist.lateralDriftDamping = Mathf.Max(0.01f, assistStats.lateralDriftDamping);
         flightAssist.verticalDriftDamping = Mathf.Max(0.01f, assistStats.verticalDriftDamping);
         flightAssist.velocityAlignmentStrength = Mathf.Max(0f, assistStats.velocityAlignmentStrength);
+        flightAssist.recoveryDriftDampingMultiplier = Mathf.Max(0f, assistStats.recoveryDriftDampingMultiplier);
+        flightAssist.recoveryVelocityAlignmentStrength = Mathf.Max(0f, assistStats.recoveryVelocityAlignmentStrength);
 
         ValidateConfigValues();
         if (_rb != null)
@@ -223,6 +229,41 @@ public class ShipFlight3D : MonoBehaviour
         _recentRecoilVelocityDelta = Vector3.zero;
         _recoilVelocityDeltaThisStep = Vector3.zero;
         _lastFixedStepRecoilVelocityDelta = Vector3.zero;
+        _isUprightRecoveringThisStep = false;
+    }
+
+    public void ResetMotionState(bool clearVelocity = true)
+    {
+        _lookInput = Vector2.zero;
+        _filteredLookInput = Vector2.zero;
+        _currentTurnRates = Vector2.zero;
+        _normalizedTurnRates = Vector2.zero;
+        _thrustInput = 0f;
+        _effectiveThrustInput = 0f;
+        _linearAcceleration = Vector3.zero;
+        _localLinearAcceleration = Vector3.zero;
+        _recentRecoilVelocityDelta = Vector3.zero;
+        _recoilVelocityDeltaThisStep = Vector3.zero;
+        _lastFixedStepRecoilVelocityDelta = Vector3.zero;
+        _isUprightRecoveringThisStep = false;
+
+        if (_rb != null)
+        {
+            if (clearVelocity && !_rb.isKinematic)
+            {
+                _rb.linearVelocity = Vector3.zero;
+            }
+
+            _rb.angularVelocity = Vector3.zero;
+            _rb.angularDamping = frictionEnabled ? flightAssist.activeAngularDamping : 0f;
+            _previousVelocity = _rb.linearVelocity;
+            _localVelocity = transform.InverseTransformDirection(_rb.linearVelocity);
+        }
+        else
+        {
+            _previousVelocity = Vector3.zero;
+            _localVelocity = Vector3.zero;
+        }
     }
 
     public void SetLookInput(Vector2 lookInput)
@@ -326,7 +367,9 @@ public class ShipFlight3D : MonoBehaviour
             activeAngularDamping = flightAssist.activeAngularDamping,
             lateralDriftDamping = flightAssist.lateralDriftDamping,
             verticalDriftDamping = flightAssist.verticalDriftDamping,
-            velocityAlignmentStrength = flightAssist.velocityAlignmentStrength
+            velocityAlignmentStrength = flightAssist.velocityAlignmentStrength,
+            recoveryDriftDampingMultiplier = flightAssist.recoveryDriftDampingMultiplier,
+            recoveryVelocityAlignmentStrength = flightAssist.recoveryVelocityAlignmentStrength
         };
     }
 
@@ -388,7 +431,8 @@ public class ShipFlight3D : MonoBehaviour
         bool hasRotationIntent = steeringInput.sqrMagnitude > recoveryDeadZone * recoveryDeadZone
             || Mathf.Abs(_currentTurnRates.x) > 0.01f
             || Mathf.Abs(_currentTurnRates.y) > 0.01f;
-        if (entity != null && entity.ShouldApplyUprightRecovery(hasRotationIntent))
+        _isUprightRecoveringThisStep = entity != null && entity.ShouldApplyUprightRecovery(hasRotationIntent);
+        if (_isUprightRecoveringThisStep)
         {
             _rb.MoveRotation(entity.ApplyUprightRecovery(_rb.rotation, Time.fixedDeltaTime, hasRotationIntent));
             _rb.angularVelocity = Vector3.zero;
@@ -441,10 +485,18 @@ public class ShipFlight3D : MonoBehaviour
         {
             localVelocity.x = Mathf.MoveTowards(localVelocity.x, 0f, flightAssist.lateralDriftDamping * Time.fixedDeltaTime);
             localVelocity.y = Mathf.MoveTowards(localVelocity.y, 0f, flightAssist.verticalDriftDamping * Time.fixedDeltaTime);
+
+            if (_isUprightRecoveringThisStep && flightAssist.recoveryDriftDampingMultiplier > 1f)
+            {
+                float recoveryMultiplier = Mathf.Max(1f, flightAssist.recoveryDriftDampingMultiplier) - 1f;
+                localVelocity.x = Mathf.MoveTowards(localVelocity.x, 0f, flightAssist.lateralDriftDamping * recoveryMultiplier * Time.fixedDeltaTime);
+                localVelocity.y = Mathf.MoveTowards(localVelocity.y, 0f, flightAssist.verticalDriftDamping * recoveryMultiplier * Time.fixedDeltaTime);
+            }
         }
 
         Vector3 worldVelocity = transform.TransformDirection(localVelocity);
         worldVelocity = ApplyVelocityAlignment(worldVelocity, flightAssistEnabled);
+        worldVelocity = ApplyUprightRecoveryVelocityAlignment(worldVelocity, flightAssistEnabled);
 
         float effectiveMaxSpeed = Mathf.Max(0f, flight.maxSpeed * maxSpeedMultiplier * slowMultiplier);
         if (effectiveMaxSpeed > 0f && worldVelocity.magnitude > effectiveMaxSpeed)
@@ -466,6 +518,18 @@ public class ShipFlight3D : MonoBehaviour
         float turnInfluence = Mathf.Clamp01(Mathf.Max(Mathf.Abs(_normalizedTurnRates.x), Mathf.Abs(_normalizedTurnRates.y)));
         float alignmentStrength = flightAssist.velocityAlignmentStrength * _effectiveThrustInput * (0.5f + (0.5f * turnInfluence));
         float lerpFactor = 1f - Mathf.Exp(-alignmentStrength * Time.fixedDeltaTime);
+        Vector3 alignedDirection = Vector3.Slerp(worldVelocity.normalized, transform.forward, lerpFactor).normalized;
+        return alignedDirection * worldVelocity.magnitude;
+    }
+
+    private Vector3 ApplyUprightRecoveryVelocityAlignment(Vector3 worldVelocity, bool flightAssistEnabled)
+    {
+        if (!flightAssistEnabled || !_isUprightRecoveringThisStep || flightAssist.recoveryVelocityAlignmentStrength <= 0f || worldVelocity.sqrMagnitude <= MinSpeedSqrMagnitude)
+        {
+            return worldVelocity;
+        }
+
+        float lerpFactor = 1f - Mathf.Exp(-flightAssist.recoveryVelocityAlignmentStrength * Time.fixedDeltaTime);
         Vector3 alignedDirection = Vector3.Slerp(worldVelocity.normalized, transform.forward, lerpFactor).normalized;
         return alignedDirection * worldVelocity.magnitude;
     }
@@ -629,6 +693,16 @@ public class ShipFlight3D : MonoBehaviour
         if (flightAssist.velocityAlignmentStrength < 0f)
         {
             flightAssist.velocityAlignmentStrength = 0f;
+        }
+
+        if (flightAssist.recoveryDriftDampingMultiplier <= 0f)
+        {
+            flightAssist.recoveryDriftDampingMultiplier = 2f;
+        }
+
+        if (flightAssist.recoveryVelocityAlignmentStrength < 0f)
+        {
+            flightAssist.recoveryVelocityAlignmentStrength = 0f;
         }
     }
 

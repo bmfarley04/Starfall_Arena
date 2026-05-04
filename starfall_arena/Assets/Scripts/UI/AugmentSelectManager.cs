@@ -205,6 +205,9 @@ namespace StarfallArena.UI
         [Tooltip("Enable F1 key to trigger augment select during play (for testing)")]
         [SerializeField] private bool debugEnableKeyTrigger = true;
 
+        [Tooltip("Logs detailed augment-card focus changes, navigation input, and selection fallback decisions for debugging tier-specific UI issues.")]
+        [SerializeField] private bool debugLogSelectionFocus = false;
+
         // ===== EVENTS =====
         /// <summary>
         /// Fired when a player selects an augment. Parameters: chosen augment, choice index (0-2).
@@ -495,6 +498,7 @@ namespace StarfallArena.UI
             }
 
             int btnIndex = activeIndices[nextIndex];
+            LogSelectionDebug($"NavigateCards direction={direction} active=[{string.Join(",", activeIndices)}] currentIndex={currentIndex} nextButtonIndex={btnIndex}");
             SetSelectedCardIndex(btnIndex);
         }
 
@@ -514,6 +518,7 @@ namespace StarfallArena.UI
                 && buttons[_selectedCardIndex].interactable)
             {
                 button = buttons[_selectedCardIndex];
+                LogSelectionDebug($"TryGetButtonForSelectedCard reused selected index {_selectedCardIndex}", button, _selectedCardIndex);
                 return true;
             }
 
@@ -526,9 +531,11 @@ namespace StarfallArena.UI
 
                 SetSelectedCardIndex(i);
                 button = buttons[i];
+                LogSelectionDebug($"TryGetButtonForSelectedCard fell back to first active index {i}", button, i);
                 return true;
             }
 
+            LogSelectionDebug("TryGetButtonForSelectedCard found no active button.");
             return false;
         }
 
@@ -542,10 +549,12 @@ namespace StarfallArena.UI
                 || !buttons[cardIndex].gameObject.activeSelf
                 || !buttons[cardIndex].interactable)
             {
+                LogSelectionDebug($"SetSelectedCardIndex ignored invalid index {cardIndex}");
                 return;
             }
 
             _selectedCardIndex = cardIndex;
+            LogSelectionDebug("SetSelectedCardIndex applied", buttons[cardIndex], cardIndex);
             if (EventSystem.current != null)
             {
                 EventSystem.current.SetSelectedGameObject(buttons[cardIndex].gameObject);
@@ -631,18 +640,23 @@ namespace StarfallArena.UI
                 selectEntry.callback.AddListener(_ =>
                 {
                     _selectedCardIndex = index;
+                    LogSelectionDebug("EventTrigger Select", btn, index);
                     OnCardHoverEnter(btn);
                 });
                 trigger.triggers.Add(selectEntry);
 
                 // On Deselect (moved away via controller)
                 EventTrigger.Entry deselectEntry = new EventTrigger.Entry { eventID = EventTriggerType.Deselect };
-                deselectEntry.callback.AddListener(_ => OnCardHoverExit(btn));
+                deselectEntry.callback.AddListener(_ =>
+                {
+                    LogSelectionDebug("EventTrigger Deselect", btn, index);
+                    OnCardHoverExit(btn);
+                });
                 trigger.triggers.Add(deselectEntry);
 
                 // On Pointer Enter (mouse fallback)
                 EventTrigger.Entry pointerEnter = new EventTrigger.Entry { eventID = EventTriggerType.PointerEnter };
-                pointerEnter.callback.AddListener(_ => { });
+                pointerEnter.callback.AddListener(_ => LogSelectionDebug("EventTrigger PointerEnter", btn, index));
                 trigger.triggers.Add(pointerEnter);
 
                 EventTrigger.Entry pointerDown = new EventTrigger.Entry { eventID = EventTriggerType.PointerDown };
@@ -651,6 +665,7 @@ namespace StarfallArena.UI
                     // Mouse can still click a card directly, but it never becomes
                     // the owner of selection state for controller/keyboard flow.
                     _selectedCardIndex = index;
+                    LogSelectionDebug("EventTrigger PointerDown", btn, index);
                 });
                 trigger.triggers.Add(pointerDown);
             }
@@ -1854,6 +1869,7 @@ namespace StarfallArena.UI
 
             if (defaultIndex >= 0)
             {
+                LogSelectionDebug($"SetDefaultSelection chose index {defaultIndex}");
                 SetSelectedCardIndex(defaultIndex);
             }
         }
@@ -1872,6 +1888,7 @@ namespace StarfallArena.UI
                 Button btn = buttons[i];
                 if (btn != null && btn.gameObject.activeSelf && btn.interactable)
                 {
+                    LogSelectionDebug($"SetDefaultSelectionFirstActive chose index {i}", btn, i);
                     SetSelectedCardIndex(i);
                     return;
                 }
@@ -1910,6 +1927,7 @@ namespace StarfallArena.UI
 
             Augment selectedAugment = selectedAugments[choiceIndex];
             _selectedCardIndex = choiceIndex;
+            LogSelectionDebug($"OnAugmentSelected choiceIndex={choiceIndex} augment={selectedAugment.augmentName}");
             Debug.Log($"Player {currentPickingPlayer} selected augment: {selectedAugment.augmentName}");
 
             // Stop countdown
@@ -1953,6 +1971,20 @@ namespace StarfallArena.UI
                 originalLookup[image] = image.material;
 
             image.material = selectedMaterial;
+        }
+
+        private void LogSelectionDebug(string message, Button button = null, int? buttonIndex = null)
+        {
+            if (!debugLogSelectionFocus)
+            {
+                return;
+            }
+
+            string buttonName = button != null ? button.gameObject.name : "null";
+            string selectedObjectName = EventSystem.current != null && EventSystem.current.currentSelectedGameObject != null
+                ? EventSystem.current.currentSelectedGameObject.name
+                : "null";
+            Debug.Log($"[AugmentSelect][Focus] tier={currentTier} picker={currentPickingPlayer} selectedIndex={_selectedCardIndex} buttonIndex={(buttonIndex.HasValue ? buttonIndex.Value.ToString() : "n/a")} button={buttonName} eventSelected={selectedObjectName} :: {message}", this);
         }
     }
 }

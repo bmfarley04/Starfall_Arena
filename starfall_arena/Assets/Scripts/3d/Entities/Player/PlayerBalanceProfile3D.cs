@@ -38,6 +38,10 @@ public abstract class PlayerBalanceProfile3D : ScriptableObject
         [Min(0.01f)] public float lateralDriftDamping;
         [Min(0.01f)] public float verticalDriftDamping;
         [Min(0f)] public float velocityAlignmentStrength;
+        [Tooltip("Extra side/up drift damping multiplier used only while upright recovery is cleaning up with no steering intent.")]
+        [Min(0f)] public float recoveryDriftDampingMultiplier;
+        [Tooltip("Velocity alignment strength used only during upright recovery, even when the player is not thrusting.")]
+        [Min(0f)] public float recoveryVelocityAlignmentStrength;
     }
 
     [Serializable]

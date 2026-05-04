@@ -61,6 +61,7 @@ These classes should stay narrow and mostly coordinate dedicated 3D systems.
   - shared rigidbody flight
   - assisted pitch/yaw steering driven by filtered input and acceleration-limited turn rates
   - full 3D forward thrust, local drift damping, velocity alignment assist, and max-speed clamping
+  - applies an extra no-input/upright-recovery cleanup pass so respawns, rescue rebinds, and relaxed steering can bleed off stale side/up drift without changing active combat turns
   - supports a precision throttle/brake path: low positive thrust input is capped to a slower forward drift speed with reduced acceleration, while negative thrust input brakes local forward speed toward zero
   - optional world-Y plane lock remains only as a fallback/debug path, not the active player-flight default
   - reusable by local player, AI, or future network drivers

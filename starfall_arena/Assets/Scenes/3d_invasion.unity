@@ -17378,6 +17378,7 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   debugShowOnStart: 0
   debugEnableKeyTrigger: 0
+  debugLogSelectionFocus: 1
 --- !u!114 &4622420606737415282
 MonoBehaviour:
   m_ObjectHideFlags: 0

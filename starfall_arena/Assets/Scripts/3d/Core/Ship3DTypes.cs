@@ -82,6 +82,10 @@ public struct ShipFlightAssistConfig3D
     public float verticalDriftDamping;
     [Tooltip("How strongly the ship's velocity aligns back toward its forward direction while thrusting.")]
     public float velocityAlignmentStrength;
+    [Tooltip("Extra local side/up drift damping applied only while upright recovery is recentring the ship with no steering intent.")]
+    public float recoveryDriftDampingMultiplier;
+    [Tooltip("How strongly velocity is rotated back toward ship-forward during upright recovery, even when the player is not thrusting.")]
+    public float recoveryVelocityAlignmentStrength;
 }
 
 [System.Serializable]

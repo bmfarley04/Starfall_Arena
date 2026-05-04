@@ -324,6 +324,8 @@ public class InvasionPlayerRewardState3D
         assistStats.lateralDriftDamping = Mathf.Max(0.01f, baseSnapshot.flightAssist.lateralDriftDamping * assistDampingMultiplier);
         assistStats.verticalDriftDamping = Mathf.Max(0.01f, baseSnapshot.flightAssist.verticalDriftDamping * assistDampingMultiplier);
         assistStats.velocityAlignmentStrength = Mathf.Max(0f, baseSnapshot.flightAssist.velocityAlignmentStrength * Mathf.Max(0f, 1f + modifiers.flightAssistAlignmentPercent));
+        assistStats.recoveryDriftDampingMultiplier = Mathf.Max(0f, baseSnapshot.flightAssist.recoveryDriftDampingMultiplier);
+        assistStats.recoveryVelocityAlignmentStrength = Mathf.Max(0f, baseSnapshot.flightAssist.recoveryVelocityAlignmentStrength * Mathf.Max(0f, 1f + modifiers.flightAssistAlignmentPercent));
         flight.ApplyProfile(flightStats, assistStats);
     }
 

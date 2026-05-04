@@ -34,9 +34,11 @@ MonoBehaviour:
   flightAssist:
     frictionDeceleration: 3
     activeAngularDamping: 2
-    lateralDriftDamping: 18
-    verticalDriftDamping: 16
-    velocityAlignmentStrength: 3
+    lateralDriftDamping: 24
+    verticalDriftDamping: 22
+    velocityAlignmentStrength: 5
+    recoveryDriftDampingMultiplier: 2.5
+    recoveryVelocityAlignmentStrength: 6
   projectileWeapons:
   - cooldown: 0.25
     speed: 250

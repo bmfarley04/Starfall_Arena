@@ -484,6 +484,7 @@ public class SceneManager3D : MonoBehaviour
 
         stats.ResetStats();
         SubscribePlayerDeath(player);
+        ResetPlayerSpawnMotionAndCamera(player);
         SetPlayerMovementLocked(player, true);
 
         if (playerSlot == 1)
@@ -735,6 +736,24 @@ public class SceneManager3D : MonoBehaviour
         {
             player.PlayerInput3D.enabled = !isLocked;
         }
+    }
+
+    private static void ResetPlayerSpawnMotionAndCamera(Player3D player)
+    {
+        if (player == null)
+        {
+            return;
+        }
+
+        NetMovement3D netMovement = player.GetComponent<NetMovement3D>();
+        if (netMovement != null)
+        {
+            netMovement.ResetMovementState(player.transform.position, player.transform.rotation, resetCamera: true);
+            return;
+        }
+
+        player.Flight?.ResetMotionState(clearVelocity: true);
+        player.PlayerCameraRig3D?.ResetCameraState(snapToNeutralOffset: true);
     }
 
     private void StartArenaBoundaryRound()

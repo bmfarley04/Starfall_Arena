@@ -581,6 +581,7 @@ public class InvasionSceneManager3D : MonoBehaviour
         EnsureRewardStateContainers();
         _rewardStateBySlot[playerSlot].CaptureBaseSnapshot(player);
         _rewardStateBySlot[playerSlot].ApplyToPlayer(player);
+        ResetPlayerSpawnMotionAndCamera(player);
         if (_rewardPhaseActive)
         {
             SetPlayerIntermissionLocked(player, true);
@@ -594,6 +595,24 @@ public class InvasionSceneManager3D : MonoBehaviour
         {
             _player2 = player;
         }
+    }
+
+    private static void ResetPlayerSpawnMotionAndCamera(Player3D player)
+    {
+        if (player == null)
+        {
+            return;
+        }
+
+        NetMovement3D netMovement = player.GetComponent<NetMovement3D>();
+        if (netMovement != null)
+        {
+            netMovement.ResetMovementState(player.transform.position, player.transform.rotation, resetCamera: true);
+            return;
+        }
+
+        player.Flight?.ResetMotionState(clearVelocity: true);
+        player.PlayerCameraRig3D?.ResetCameraState(snapToNeutralOffset: true);
     }
 
     private void SubscribePlayerDeath(Player3D player)

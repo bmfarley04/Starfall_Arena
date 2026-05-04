@@ -5545,11 +5545,13 @@ MonoBehaviour:
     invertY: 1
     minRotationMultiplierAtMaxSpeed: 0.5
   flightAssist:
-    frictionDeceleration: 0.5
+    frictionDeceleration: 1
     activeAngularDamping: 5
-    lateralDriftDamping: 22
-    verticalDriftDamping: 22
-    velocityAlignmentStrength: 5
+    lateralDriftDamping: 26
+    verticalDriftDamping: 26
+    velocityAlignmentStrength: 6
+    recoveryDriftDampingMultiplier: 2.5
+    recoveryVelocityAlignmentStrength: 7
   inputSourceBehaviour: {fileID: 2709859321838343538}
   entity: {fileID: 7926965533672300583}
   frictionEnabled: 1
@@ -5778,14 +5780,14 @@ MonoBehaviour:
     minFOV: 30
     maxFOV: 45
     cameraLerpSpeed: 6
-    horizontalTurnOffset: 2.5
+    horizontalTurnOffset: 1.35
     verticalTurnOffset: 0.2
-    yawRateOffsetContribution: 0.2
-    pitchRateOffsetContribution: 0.5
-    turnOffsetLerpSpeed: 1
-    recenterLerpSpeed: 3
+    yawRateOffsetContribution: 0.08
+    pitchRateOffsetContribution: 0.3
+    turnOffsetLerpSpeed: 4
+    recenterLerpSpeed: 8
     followPositionDampingAtRest: 0.12
-    followPositionDampingDuringTurn: 0.15
+    followPositionDampingDuringTurn: 0.12
     followRotationDampingAtRest: 0.1
     followRotationDampingDuringTurn: 0.25
     aimDampingAtRest: 0.1
@@ -5795,6 +5797,8 @@ MonoBehaviour:
   dodgePositionDamping: 0.85
   dodgeRotationDamping: 0.45
   dodgeAimDamping: 0.35
+  neutralFollowOffset: {x: 0, y: 0.8, z: -12}
+  resetBaseOffsetOnCameraBind: 1
 --- !u!114 &8288383124772000926
 MonoBehaviour:
   m_ObjectHideFlags: 0
