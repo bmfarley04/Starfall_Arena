@@ -683,8 +683,8 @@ MonoBehaviour:
     invertY: 1
     minRotationMultiplierAtMaxSpeed: 0.5
   flightAssist:
-    frictionDeceleration: 3
-    activeAngularDamping: 2
+    frictionDeceleration: 1
+    activeAngularDamping: 5
     lateralDriftDamping: 18
     verticalDriftDamping: 16
     velocityAlignmentStrength: 3
