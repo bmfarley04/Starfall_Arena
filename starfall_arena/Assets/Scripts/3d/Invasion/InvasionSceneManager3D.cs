@@ -192,6 +192,7 @@ public class InvasionSceneManager3D : MonoBehaviour
     private Coroutine _activeWaveIntroCoroutine;
     private Coroutine _gameEndPresentationCoroutine;
     private Coroutine _localRescueCountdownCoroutine;
+    private Coroutine _localRescueCameraRebindCoroutine;
     private CinemachineCamera _localRescueCinemachineCamera;
     private byte _localRescueCameraSlot;
     private int _lastWaveIntroSequenceId = -1;
@@ -255,8 +256,15 @@ public class InvasionSceneManager3D : MonoBehaviour
         StopLocalRescueCountdown();
         if (_localRescueCameraSlot >= 1 && _localRescueCameraSlot <= 2)
         {
-            StopLocalRescueCameraFollow(_localRescueCameraSlot);
+            if (_localRescueCinemachineCamera != null)
+            {
+                _localRescueCinemachineCamera.Target.TrackingTarget = null;
+            }
+
+            _localRescueCinemachineCamera = null;
+            _localRescueCameraSlot = 0;
         }
+        StopLocalRescueCameraRebind();
 
         if (_networkSessionSubscriptionCoroutine != null)
         {
@@ -1708,7 +1716,7 @@ public class InvasionSceneManager3D : MonoBehaviour
 
     private void StopRescueCountdownPresentation(byte playerSlot)
     {
-        if (!ShouldShowRescueCountdownForSlot(playerSlot))
+        if (!ShouldShowRescueCountdownForSlot(playerSlot) && _localRescueCameraSlot != playerSlot)
         {
             return;
         }
@@ -1787,6 +1795,7 @@ public class InvasionSceneManager3D : MonoBehaviour
             return;
         }
 
+        StopLocalRescueCameraRebind();
         cinemachineCamera.Target.TrackingTarget = teammate.transform;
         _localRescueCinemachineCamera = cinemachineCamera;
         _localRescueCameraSlot = playerSlot;
@@ -1799,27 +1808,88 @@ public class InvasionSceneManager3D : MonoBehaviour
             return;
         }
 
-        RebindLocalCameraToOwnedPlayerIfAvailable();
+        CinemachineCamera rescueCamera = _localRescueCinemachineCamera;
         _localRescueCinemachineCamera = null;
         _localRescueCameraSlot = 0;
+        StartLocalRescueCameraRebind(playerSlot, rescueCamera);
     }
 
-    private void RebindLocalCameraToOwnedPlayerIfAvailable()
+    private void StartLocalRescueCameraRebind(byte playerSlot, CinemachineCamera rescueCamera)
     {
-        if (TryResolveLocalOwnedPlayerSlot(out int ownedSlot)
-            && NetMovement3D.TryGetPlayerBySlot((byte)ownedSlot, out NetMovement3D movement)
-            && movement != null
-            && movement.IsSpawned
-            && movement.IsOwner)
+        StopLocalRescueCameraRebind();
+        _localRescueCameraRebindCoroutine = StartCoroutine(RebindLocalCameraToRevivedPlayerWhenReady(playerSlot, rescueCamera));
+    }
+
+    private IEnumerator RebindLocalCameraToRevivedPlayerWhenReady(byte playerSlot, CinemachineCamera rescueCamera)
+    {
+        float timeoutTime = Time.realtimeSinceStartup + Mathf.Max(1f, spawnRetryIntervalSeconds * 20f);
+        while (Time.realtimeSinceStartup <= timeoutTime)
         {
-            movement.BindOwnerCameraAndTracking();
+            if (RebindLocalCameraToRevivedPlayerIfAvailable(playerSlot, rescueCamera))
+            {
+                _localRescueCameraRebindCoroutine = null;
+                yield break;
+            }
+
+            yield return null;
+        }
+
+        if (rescueCamera != null)
+        {
+            rescueCamera.Target.TrackingTarget = null;
+        }
+
+        _localRescueCameraRebindCoroutine = null;
+    }
+
+    private bool RebindLocalCameraToRevivedPlayerIfAvailable(byte playerSlot, CinemachineCamera rescueCamera)
+    {
+        if (_useNetworkSession)
+        {
+            if (TryResolveLocalOwnedPlayerSlot(out int ownedSlot)
+                && ownedSlot == playerSlot
+                && NetMovement3D.TryGetPlayerBySlot(playerSlot, out NetMovement3D movement)
+                && movement != null
+                && movement.IsSpawned
+                && movement.IsOwner)
+            {
+                movement.BindOwnerCameraAndTracking();
+                return true;
+            }
+
+            return false;
+        }
+
+        Player3D revivedPlayer = ResolveTrackedOrNetworkPlayer(playerSlot);
+        if (revivedPlayer == null || rescueCamera == null)
+        {
+            return false;
+        }
+
+        PlayerCameraRig3D cameraRig = revivedPlayer.GetComponent<PlayerCameraRig3D>();
+        if (cameraRig != null)
+        {
+            cameraRig.SetCamera(rescueCamera);
+            cameraRig.SetCameraRigActive(true);
+            cameraRig.BindTrackingTarget(revivedPlayer.transform);
+        }
+        else
+        {
+            rescueCamera.Target.TrackingTarget = revivedPlayer.transform;
+        }
+
+        return true;
+    }
+
+    private void StopLocalRescueCameraRebind()
+    {
+        if (_localRescueCameraRebindCoroutine == null)
+        {
             return;
         }
 
-        if (_localRescueCinemachineCamera != null)
-        {
-            _localRescueCinemachineCamera.Target.TrackingTarget = null;
-        }
+        StopCoroutine(_localRescueCameraRebindCoroutine);
+        _localRescueCameraRebindCoroutine = null;
     }
 
     private static CinemachineCamera ResolveGameplayCinemachineCamera()
