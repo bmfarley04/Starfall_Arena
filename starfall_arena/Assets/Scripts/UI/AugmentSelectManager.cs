@@ -28,6 +28,9 @@ namespace StarfallArena.UI
         [Tooltip("Tier 3 augments (legendary)")]
         [SerializeField] private List<Augment> tier3Augments = new List<Augment>();
 
+        [Tooltip("Optional tier 4 augments. This Invasion-only tier is shown as a single card and is not included in the normal 2D random tier order.")]
+        [SerializeField] private List<Augment> tier4Augments = new List<Augment>();
+
         [Header("Tier Selection Probabilities")]
         [Tooltip("Probability of tier 1 appearing (must sum to 1 with other tiers)")]
         [Range(0f, 1f)]
@@ -86,6 +89,12 @@ namespace StarfallArena.UI
         [SerializeField] private TextMeshProUGUI tier3Choice3Name;
         [SerializeField] private TextMeshProUGUI tier3Choice3Description;
 
+        [Header("Tier 4 UI References - Choice 1")]
+        [Tooltip("Invasion-only tier 4 choice 1 icon. Leave unassigned in 2D scenes.")]
+        [SerializeField] private Image tier4Choice1Icon;
+        [SerializeField] private TextMeshProUGUI tier4Choice1Name;
+        [SerializeField] private TextMeshProUGUI tier4Choice1Description;
+
         [Header("Canvas Groups")]
         [Tooltip("Canvas group containing tier 1 UI")]
         [SerializeField] private CanvasGroup tier1CanvasGroup;
@@ -96,26 +105,35 @@ namespace StarfallArena.UI
         [Tooltip("Canvas group containing tier 3 UI")]
         [SerializeField] private CanvasGroup tier3CanvasGroup;
 
-        [Header("Card Buttons (3 per tier — left, center, right)")]
+        [Tooltip("Optional canvas group containing tier 4 UI. Used by 3D Invasion reward visuals when assigned.")]
+        [SerializeField] private CanvasGroup tier4CanvasGroup;
+
+        [Header("Card Buttons")]
         [SerializeField] private Button[] tier1Buttons = new Button[3];
         [SerializeField] private Button[] tier2Buttons = new Button[3];
         [SerializeField] private Button[] tier3Buttons = new Button[3];
+        [Tooltip("Single Invasion-only tier 4 button. Leave unassigned in 2D scenes.")]
+        [SerializeField] private Button[] tier4Buttons = new Button[1];
 
-        [Header("Card Containers (border Image per card — 3 per tier)")]
+        [Header("Card Containers (border Image per card)")]
         [Tooltip("The 'container' Image child of each tier 1 card (border element)")]
         [SerializeField] private Image[] tier1Containers = new Image[3];
         [Tooltip("The 'container' Image child of each tier 2 card (border element)")]
         [SerializeField] private Image[] tier2Containers = new Image[3];
         [Tooltip("The 'container' Image child of each tier 3 card (border element)")]
         [SerializeField] private Image[] tier3Containers = new Image[3];
+        [Tooltip("The 'container' Image child of the single tier 4 card. Used only when the Invasion-only tier 4 UI is assigned.")]
+        [SerializeField] private Image[] tier4Containers = new Image[1];
 
-        [Header("Inner Card Containers (inner border Image per card - 3 per tier)")]
+        [Header("Inner Card Containers (inner border Image per card)")]
         [Tooltip("The 'inner container' Image child of each tier 1 card (inner border element)")]
         [SerializeField] private Image[] tier1InnerContainers = new Image[3];
         [Tooltip("The 'inner container' Image child of each tier 2 card (inner border element)")]
         [SerializeField] private Image[] tier2InnerContainers = new Image[3];
         [Tooltip("The 'inner container' Image child of each tier 3 card (inner border element)")]
         [SerializeField] private Image[] tier3InnerContainers = new Image[3];
+        [Tooltip("The inner border Image child of the single tier 4 card. Used only when the Invasion-only tier 4 UI is assigned.")]
+        [SerializeField] private Image[] tier4InnerContainers = new Image[1];
 
         [Header("Hover / Selection Scale")]
         [Tooltip("X scale multiplier when a card is hovered/selected")]
@@ -197,6 +215,7 @@ namespace StarfallArena.UI
         private int currentTier;
         private int currentPickingPlayer; // 1 or 2
         private List<Augment> selectedAugments = new List<Augment>(3);
+        private List<int> selectedAugmentVisualTiers;
         private bool isShowing = false;
         private Coroutine _countdownCoroutine;
 
@@ -227,6 +246,36 @@ namespace StarfallArena.UI
         // Stick navigation cooldown (prevents rapid-fire from held stick)
         private bool _stickNavigated = false;
         private bool _useExternalTimer = false;
+        private int _selectedCardIndex = -1;
+        private CardVisualSnapshot[][] _originalCardVisuals;
+
+        private struct ImageVisualSnapshot
+        {
+            public bool captured;
+            public Color color;
+            public Material material;
+            public Image.Type type;
+            public bool preserveAspect;
+        }
+
+        private struct TextVisualSnapshot
+        {
+            public bool captured;
+            public Color color;
+            public Material material;
+            public TMP_FontAsset font;
+            public FontStyles fontStyle;
+            public TextAlignmentOptions alignment;
+        }
+
+        private struct CardVisualSnapshot
+        {
+            public ImageVisualSnapshot container;
+            public ImageVisualSnapshot innerContainer;
+            public ImageVisualSnapshot icon;
+            public TextVisualSnapshot name;
+            public TextVisualSnapshot description;
+        }
 
         // Selection effect: cached original materials per card so we can restore
         private Dictionary<Image, Material> _originalContainerMaterials = new Dictionary<Image, Material>();
@@ -266,6 +315,7 @@ namespace StarfallArena.UI
             WireButtonEvents(tier1Buttons);
             WireButtonEvents(tier2Buttons);
             WireButtonEvents(tier3Buttons);
+            WireButtonEvents(tier4Buttons);
 
             // Create isolated RNG so tier shuffling is not affected by UnityEngine.Random.InitState calls in other systems
             InitializeTierOrderRng();
@@ -293,7 +343,8 @@ namespace StarfallArena.UI
         }
 
         /// <summary>
-        /// Generates a randomized order containing exactly one of each tier (1, 2, 3).
+        /// Generates a randomized order containing exactly one of each normal duel tier.
+        /// Tier 4 is Invasion-only and must be requested explicitly by the reward presenter.
         /// </summary>
         private void GenerateRandomizedGameTierOrder()
         {
@@ -312,7 +363,7 @@ namespace StarfallArena.UI
             }
 
             _gameTierOrderIndex = 0;
-            Debug.Log($"[AugmentSelect] Game tier order: {_gameTierOrder[0]} -> {_gameTierOrder[1]} -> {_gameTierOrder[2]}");
+            Debug.Log($"[AugmentSelect] Game tier order: {string.Join(" -> ", _gameTierOrder)}");
         }
 
         private void Update()
@@ -330,6 +381,16 @@ namespace StarfallArena.UI
             if (isShowing && _activeGamepad != null)
             {
                 PollGamepadNavigation();
+            }
+
+            // Manual keyboard polling for networked mode.
+            // We disable the UIInputModule's move/submit during selection so the
+            // gamepad doesn't drive both manual polling and the EventSystem at once
+            // (which caused the middle card to be skipped). Poll the keyboard here
+            // so KB/M users can still navigate and confirm.
+            if (isShowing)
+            {
+                PollKeyboardNavigation();
             }
         }
 
@@ -368,16 +429,10 @@ namespace StarfallArena.UI
             // --- Submit (A / South button) ---
             if (pad.buttonSouth.wasPressedThisFrame)
             {
-                // Find which card is currently selected and invoke its click
-                GameObject selected = EventSystem.current?.currentSelectedGameObject;
-                if (selected != null)
+                if (TryGetButtonForSelectedCard(out Button selectedButton))
                 {
-                    Button btn = selected.GetComponent<Button>();
-                    if (btn != null && btn.interactable)
-                    {
-                        btn.onClick.Invoke();
-                        return;
-                    }
+                    selectedButton.onClick.Invoke();
+                    return;
                 }
             }
 
@@ -426,20 +481,7 @@ namespace StarfallArena.UI
             }
             if (activeIndices.Count == 0) return;
 
-            // Find current selection index
-            GameObject selected = EventSystem.current?.currentSelectedGameObject;
-            int currentIndex = -1;
-            if (selected != null)
-            {
-                for (int i = 0; i < buttons.Length; i++)
-                {
-                    if (buttons[i] != null && buttons[i].gameObject == selected)
-                    {
-                        currentIndex = activeIndices.IndexOf(i);
-                        break;
-                    }
-                }
-            }
+            int currentIndex = activeIndices.IndexOf(_selectedCardIndex);
 
             // Compute next index
             int nextIndex;
@@ -454,8 +496,94 @@ namespace StarfallArena.UI
             }
 
             int btnIndex = activeIndices[nextIndex];
+            SetSelectedCardIndex(btnIndex);
+        }
+
+        private bool TryGetButtonForSelectedCard(out Button button)
+        {
+            button = null;
+            Button[] buttons = GetButtonsForTier(currentTier);
+            if (buttons == null)
+            {
+                return false;
+            }
+
+            if (_selectedCardIndex >= 0
+                && _selectedCardIndex < buttons.Length
+                && buttons[_selectedCardIndex] != null
+                && buttons[_selectedCardIndex].gameObject.activeSelf
+                && buttons[_selectedCardIndex].interactable)
+            {
+                button = buttons[_selectedCardIndex];
+                return true;
+            }
+
+            for (int i = 0; i < buttons.Length; i++)
+            {
+                if (buttons[i] == null || !buttons[i].gameObject.activeSelf || !buttons[i].interactable)
+                {
+                    continue;
+                }
+
+                SetSelectedCardIndex(i);
+                button = buttons[i];
+                return true;
+            }
+
+            return false;
+        }
+
+        private void SetSelectedCardIndex(int cardIndex)
+        {
+            Button[] buttons = GetButtonsForTier(currentTier);
+            if (buttons == null
+                || cardIndex < 0
+                || cardIndex >= buttons.Length
+                || buttons[cardIndex] == null
+                || !buttons[cardIndex].gameObject.activeSelf
+                || !buttons[cardIndex].interactable)
+            {
+                return;
+            }
+
+            _selectedCardIndex = cardIndex;
             if (EventSystem.current != null)
-                EventSystem.current.SetSelectedGameObject(buttons[btnIndex].gameObject);
+            {
+                EventSystem.current.SetSelectedGameObject(buttons[cardIndex].gameObject);
+            }
+        }
+
+        /// <summary>
+        /// Polls the keyboard for navigation (arrow keys / A,D) and submit (Enter / Space).
+        /// Used so KB/M players can drive augment select while the UIInputModule's
+        /// move/submit are disabled to prevent gamepad double-input.
+        /// </summary>
+        private void PollKeyboardNavigation()
+        {
+            Keyboard kb = Keyboard.current;
+            if (kb == null) return;
+
+            // Submit (Enter / Space)
+            if (kb.enterKey.wasPressedThisFrame || kb.numpadEnterKey.wasPressedThisFrame || kb.spaceKey.wasPressedThisFrame)
+            {
+                if (TryGetButtonForSelectedCard(out Button selectedButton))
+                {
+                    selectedButton.onClick.Invoke();
+                    return;
+                }
+            }
+
+            // Navigation (arrows / A,D)
+            if (kb.leftArrowKey.wasPressedThisFrame || kb.aKey.wasPressedThisFrame)
+            {
+                NavigateCards(-1);
+                return;
+            }
+            if (kb.rightArrowKey.wasPressedThisFrame || kb.dKey.wasPressedThisFrame)
+            {
+                NavigateCards(1);
+                return;
+            }
         }
 
         // ===== CANVAS GROUP HELPER =====
@@ -476,7 +604,7 @@ namespace StarfallArena.UI
         // ===== BUTTON WIRING =====
 
         /// <summary>
-        /// Wires onClick and select/deselect listeners for a set of 3 card buttons.
+        /// Wires onClick and select/deselect listeners for a set of card buttons.
         /// onClick is still wired so both manual polling (A button → onClick.Invoke)
         /// and EventSystem fallback path work.
         /// </summary>
@@ -501,7 +629,11 @@ namespace StarfallArena.UI
 
                 // On Select (hovered via controller)
                 EventTrigger.Entry selectEntry = new EventTrigger.Entry { eventID = EventTriggerType.Select };
-                selectEntry.callback.AddListener(_ => OnCardHoverEnter(btn));
+                selectEntry.callback.AddListener(_ =>
+                {
+                    _selectedCardIndex = index;
+                    OnCardHoverEnter(btn);
+                });
                 trigger.triggers.Add(selectEntry);
 
                 // On Deselect (moved away via controller)
@@ -513,8 +645,7 @@ namespace StarfallArena.UI
                 EventTrigger.Entry pointerEnter = new EventTrigger.Entry { eventID = EventTriggerType.PointerEnter };
                 pointerEnter.callback.AddListener(_ =>
                 {
-                    if (EventSystem.current != null)
-                        EventSystem.current.SetSelectedGameObject(btn.gameObject);
+                    SetSelectedCardIndex(index);
                 });
                 trigger.triggers.Add(pointerEnter);
             }
@@ -584,6 +715,8 @@ namespace StarfallArena.UI
             isShowing = true;
             currentPickingPlayer = pickingPlayer;
             _useExternalTimer = false;
+            _selectedCardIndex = -1;
+            _stickNavigated = false;
 
             // Lock input to the picking player's gamepad
             SetActiveGamepad(pickingPlayer);
@@ -595,6 +728,7 @@ namespace StarfallArena.UI
 
             // Pick randomly from tier
             selectedAugments = SelectRandomAugments(currentTier);
+            selectedAugmentVisualTiers = null;
 
             // Populate UI with selected augments
             PopulateUI(currentTier, selectedAugments);
@@ -622,6 +756,11 @@ namespace StarfallArena.UI
 
         public void ShowNetworkAugmentSelect(int pickingPlayer, int tier, List<Augment> augments)
         {
+            ShowNetworkAugmentSelect(pickingPlayer, tier, augments, null);
+        }
+
+        public void ShowNetworkAugmentSelect(int pickingPlayer, int tier, List<Augment> augments, IReadOnlyList<int> perCardVisualTiers)
+        {
             if (augments == null || augments.Count == 0)
             {
                 Debug.LogWarning("[AugmentSelect] No augments supplied for network selection.");
@@ -637,13 +776,19 @@ namespace StarfallArena.UI
             currentPickingPlayer = pickingPlayer;
             currentTier = tier;
             _useExternalTimer = true;
+            _selectedCardIndex = -1;
+            _stickNavigated = false;
 
             // Networked play: each client has only one local gamepad, so always use it
-            // regardless of slot. We also leave the UIInputModule active (unlike local
-            // split-screen) so KB/M and the local gamepad both drive the EventSystem.
+            // regardless of slot. We disable the UIInputModule (same as local split-screen)
+            // so the gamepad isn't driving both the EventSystem and manual polling — that
+            // double-fires navigation and skips the middle card. KB/M is handled by
+            // PollKeyboardNavigation while selection is showing.
             _activeGamepad = Gamepad.current ?? (Gamepad.all.Count > 0 ? Gamepad.all[0] : null);
+            DisableUIModuleNavigation();
 
             selectedAugments = new List<Augment>(augments);
+            selectedAugmentVisualTiers = perCardVisualTiers != null ? new List<int>(perCardVisualTiers) : null;
             PopulateUI(currentTier, selectedAugments);
             UpdateDisplayedOptionCount(currentTier, selectedAugments.Count);
             UpdatePlayerChoiceUI(pickingPlayer);
@@ -837,6 +982,9 @@ namespace StarfallArena.UI
             isShowing = false;
             _activeGamepad = null;
             _useExternalTimer = false;
+            _selectedCardIndex = -1;
+            _stickNavigated = false;
+            selectedAugmentVisualTiers = null;
 
             // Re-enable the UI module navigation for other screens
             EnableUIModuleNavigation();
@@ -935,6 +1083,7 @@ namespace StarfallArena.UI
                 1 => tier1Containers,
                 2 => tier2Containers,
                 3 => tier3Containers,
+                4 => tier4Containers,
                 _ => tier1Containers
             };
             return (containers != null && index >= 0 && index < containers.Length) ? containers[index] : null;
@@ -947,6 +1096,7 @@ namespace StarfallArena.UI
                 1 => tier1InnerContainers,
                 2 => tier2InnerContainers,
                 3 => tier3InnerContainers,
+                4 => tier4InnerContainers,
                 _ => tier1InnerContainers
             };
             return (containers != null && index >= 0 && index < containers.Length) ? containers[index] : null;
@@ -965,6 +1115,7 @@ namespace StarfallArena.UI
                 (3, 0) => tier3Choice1Icon,
                 (3, 1) => tier3Choice2Icon,
                 (3, 2) => tier3Choice3Icon,
+                (4, 0) => tier4Choice1Icon,
                 _ => null
             };
         }
@@ -982,6 +1133,7 @@ namespace StarfallArena.UI
                 (3, 0) => tier3Choice1Name,
                 (3, 1) => tier3Choice2Name,
                 (3, 2) => tier3Choice3Name,
+                (4, 0) => tier4Choice1Name,
                 _ => null
             };
         }
@@ -999,6 +1151,7 @@ namespace StarfallArena.UI
                 (3, 0) => tier3Choice1Description,
                 (3, 1) => tier3Choice2Description,
                 (3, 2) => tier3Choice3Description,
+                (4, 0) => tier4Choice1Description,
                 _ => null
             };
         }
@@ -1111,6 +1264,7 @@ namespace StarfallArena.UI
             ReactivateButtons(tier1Buttons);
             ReactivateButtons(tier2Buttons);
             ReactivateButtons(tier3Buttons);
+            ReactivateButtons(tier4Buttons);
         }
 
         private void ReactivateButtons(Button[] buttons)
@@ -1138,6 +1292,7 @@ namespace StarfallArena.UI
             SetCanvasGroupVisibility(tier1CanvasGroup, false);
             SetCanvasGroupVisibility(tier2CanvasGroup, false);
             SetCanvasGroupVisibility(tier3CanvasGroup, false);
+            SetCanvasGroupVisibility(tier4CanvasGroup, false);
         }
 
         /// <summary>
@@ -1176,15 +1331,22 @@ namespace StarfallArena.UI
         }
 
         /// <summary>
-        /// Selects 3 random augments from the specified tier without duplicates.
+        /// Selects random augments from the specified tier without duplicates.
+        /// Tier 4 is intentionally capped to a single Invasion-only card.
         /// </summary>
         private List<Augment> SelectRandomAugments(int tier, int count = 3)
         {
+            if (tier == 4)
+            {
+                count = Mathf.Min(count, 1);
+            }
+
             List<Augment> sourceList = tier switch
             {
                 1 => tier1Augments,
                 2 => tier2Augments,
                 3 => tier3Augments,
+                4 => tier4Augments,
                 _ => tier1Augments
             };
 
@@ -1245,10 +1407,144 @@ namespace StarfallArena.UI
                     SetOptionalUIElements(3, 1, augments, tier3Choice2Icon, tier3Choice2Name, tier3Choice2Description);
                     SetOptionalUIElements(3, 2, augments, tier3Choice3Icon, tier3Choice3Name, tier3Choice3Description);
                     break;
+
+                case 4:
+                    SetUIElements(tier4Choice1Icon, tier4Choice1Name, tier4Choice1Description, augments[0]);
+                    break;
             }
+
+            ApplyPerCardVisualStyles(tier, augments.Count);
 
             // Re-enable all card buttons (may have been disabled from previous pick)
             ReEnableCardButtons(tier);
+        }
+
+        private void ApplyPerCardVisualStyles(int baseTier, int cardCount)
+        {
+            EnsureOriginalCardVisualsCaptured();
+            for (int i = 0; i < cardCount; i++)
+            {
+                int visualTier = selectedAugmentVisualTiers != null && i < selectedAugmentVisualTiers.Count
+                    ? Mathf.Clamp(selectedAugmentVisualTiers[i], 1, 4)
+                    : baseTier;
+                int sourceIndex = visualTier == 4 ? 0 : i;
+                ApplyCardVisualSnapshot(baseTier, i, GetOriginalCardVisualSnapshot(visualTier, sourceIndex));
+            }
+        }
+
+        private void EnsureOriginalCardVisualsCaptured()
+        {
+            if (_originalCardVisuals != null)
+            {
+                return;
+            }
+
+            _originalCardVisuals = new CardVisualSnapshot[5][];
+            for (int tier = 1; tier <= 4; tier++)
+            {
+                int count = tier == 4 ? 1 : 3;
+                _originalCardVisuals[tier] = new CardVisualSnapshot[count];
+                for (int i = 0; i < count; i++)
+                {
+                    _originalCardVisuals[tier][i] = CaptureCardVisualSnapshot(tier, i);
+                }
+            }
+        }
+
+        private CardVisualSnapshot GetOriginalCardVisualSnapshot(int tier, int index)
+        {
+            EnsureOriginalCardVisualsCaptured();
+            if (tier < 1 || tier >= _originalCardVisuals.Length || _originalCardVisuals[tier] == null || _originalCardVisuals[tier].Length == 0)
+            {
+                tier = 1;
+                index = 0;
+            }
+
+            index = Mathf.Clamp(index, 0, _originalCardVisuals[tier].Length - 1);
+            return _originalCardVisuals[tier][index];
+        }
+
+        private CardVisualSnapshot CaptureCardVisualSnapshot(int tier, int index)
+        {
+            return new CardVisualSnapshot
+            {
+                container = CaptureImageVisual(GetContainerForCard(tier, index)),
+                innerContainer = CaptureImageVisual(GetInnerContainerForCard(tier, index)),
+                icon = CaptureImageVisual(GetIconForCard(tier, index)),
+                name = CaptureTextVisual(GetNameForCard(tier, index)),
+                description = CaptureTextVisual(GetDescriptionForCard(tier, index))
+            };
+        }
+
+        private void ApplyCardVisualSnapshot(int tier, int index, CardVisualSnapshot snapshot)
+        {
+            ApplyImageVisual(GetContainerForCard(tier, index), snapshot.container);
+            ApplyImageVisual(GetInnerContainerForCard(tier, index), snapshot.innerContainer);
+            ApplyImageVisual(GetIconForCard(tier, index), snapshot.icon);
+            ApplyTextVisual(GetNameForCard(tier, index), snapshot.name);
+            ApplyTextVisual(GetDescriptionForCard(tier, index), snapshot.description);
+        }
+
+        private static ImageVisualSnapshot CaptureImageVisual(Image image)
+        {
+            if (image == null)
+            {
+                return default;
+            }
+
+            return new ImageVisualSnapshot
+            {
+                captured = true,
+                color = image.color,
+                material = image.material,
+                type = image.type,
+                preserveAspect = image.preserveAspect
+            };
+        }
+
+        private static void ApplyImageVisual(Image image, ImageVisualSnapshot snapshot)
+        {
+            if (image == null || !snapshot.captured)
+            {
+                return;
+            }
+
+            image.color = snapshot.color;
+            image.material = snapshot.material;
+            image.type = snapshot.type;
+            image.preserveAspect = snapshot.preserveAspect;
+        }
+
+        private static TextVisualSnapshot CaptureTextVisual(TextMeshProUGUI text)
+        {
+            if (text == null)
+            {
+                return default;
+            }
+
+            return new TextVisualSnapshot
+            {
+                captured = true,
+                color = text.color,
+                material = text.fontSharedMaterial,
+                font = text.font,
+                fontStyle = text.fontStyle,
+                alignment = text.alignment
+            };
+        }
+
+        private static void ApplyTextVisual(TextMeshProUGUI text, TextVisualSnapshot snapshot)
+        {
+            if (text == null || !snapshot.captured)
+            {
+                return;
+            }
+
+            text.color = snapshot.color;
+            text.fontSharedMaterial = snapshot.material;
+            text.font = snapshot.font;
+            text.fontStyle = snapshot.fontStyle;
+            text.alignment = snapshot.alignment;
         }
 
         private void SetOptionalUIElements(int tier, int choiceIndex, List<Augment> augments, Image icon, TextMeshProUGUI nameText, TextMeshProUGUI descriptionText)
@@ -1393,6 +1689,7 @@ namespace StarfallArena.UI
                 1 => tier1CanvasGroup,
                 2 => tier2CanvasGroup,
                 3 => tier3CanvasGroup,
+                4 => tier4CanvasGroup,
                 _ => tier1CanvasGroup
             };
         }
@@ -1517,13 +1814,28 @@ namespace StarfallArena.UI
         private void SetDefaultSelection(int tier)
         {
             Button[] buttons = GetButtonsForTier(tier);
-            Button defaultButton = (buttons != null && buttons.Length > 1 && buttons[1] != null)
-                ? buttons[1]  // center button
-                : null;
-
-            if (defaultButton != null && EventSystem.current != null)
+            int defaultIndex = -1;
+            if (buttons != null && buttons.Length > 1 && buttons[1] != null && buttons[1].gameObject.activeSelf && buttons[1].interactable)
             {
-                EventSystem.current.SetSelectedGameObject(defaultButton.gameObject);
+                defaultIndex = 1;
+            }
+
+            if (defaultIndex < 0 && buttons != null)
+            {
+                for (int i = 0; i < buttons.Length; i++)
+                {
+                    Button button = buttons[i];
+                    if (button != null && button.gameObject.activeSelf && button.interactable)
+                    {
+                        defaultIndex = i;
+                        break;
+                    }
+                }
+            }
+
+            if (defaultIndex >= 0)
+            {
+                SetSelectedCardIndex(defaultIndex);
             }
         }
 
@@ -1536,12 +1848,12 @@ namespace StarfallArena.UI
             Button[] buttons = GetButtonsForTier(tier);
             if (buttons == null) return;
 
-            foreach (var btn in buttons)
+            for (int i = 0; i < buttons.Length; i++)
             {
+                Button btn = buttons[i];
                 if (btn != null && btn.gameObject.activeSelf && btn.interactable)
                 {
-                    if (EventSystem.current != null)
-                        EventSystem.current.SetSelectedGameObject(btn.gameObject);
+                    SetSelectedCardIndex(i);
                     return;
                 }
             }
@@ -1557,6 +1869,7 @@ namespace StarfallArena.UI
                 1 => tier1Buttons,
                 2 => tier2Buttons,
                 3 => tier3Buttons,
+                4 => tier4Buttons,
                 _ => tier1Buttons
             };
         }
@@ -1577,6 +1890,7 @@ namespace StarfallArena.UI
             }
 
             Augment selectedAugment = selectedAugments[choiceIndex];
+            _selectedCardIndex = choiceIndex;
             Debug.Log($"Player {currentPickingPlayer} selected augment: {selectedAugment.augmentName}");
 
             // Stop countdown

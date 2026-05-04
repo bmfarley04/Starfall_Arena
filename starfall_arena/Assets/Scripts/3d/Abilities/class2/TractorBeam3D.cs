@@ -180,6 +180,16 @@ public class TractorBeam3D : Ability3D
         return used;
     }
 
+    public void ApplyProfile(Class2PlayerBalanceProfile3D.TractorBeamStats stats)
+    {
+        tractorBeam.cooldown = Mathf.Max(0f, stats.cooldown);
+        tractorBeam.duration = Mathf.Max(0f, stats.duration);
+        tractorBeam.coneHalfAngle = Mathf.Clamp(stats.coneHalfAngle, 5f, 90f);
+        tractorBeam.coneRange = Mathf.Max(0f, stats.coneRange);
+        tractorBeam.pullSpeed = Mathf.Max(0f, stats.pullSpeed);
+        tractorBeam.stopDistance = Mathf.Max(0f, stats.stopDistance);
+    }
+
     public override void UseAbility(InputValue value)
     {
         if (!value.isPressed)
@@ -354,10 +364,18 @@ public class TractorBeam3D : Ability3D
 
             Vector3 pullVelocity = -directionToTarget * tractorBeam.pullSpeed;
             Vector3 previousVelocity = targetBody.linearVelocity;
-            targetBody.linearVelocity = tractorBeam.freezeTargetMovement
+            Vector3 nextVelocity = tractorBeam.freezeTargetMovement
                 ? pullVelocity
-                : targetBody.linearVelocity + (pullVelocity * Time.fixedDeltaTime);
-            targetBody.GetComponent<NetMovement3D>()?.ApplyCombatVelocityDelta(targetBody.linearVelocity - previousVelocity);
+                : previousVelocity + (pullVelocity * Time.fixedDeltaTime);
+            NetMovement3D netMovement = targetBody.GetComponent<NetMovement3D>();
+            if (netMovement != null)
+            {
+                netMovement.ApplyCombatVelocityDelta(nextVelocity - previousVelocity);
+            }
+            else if (!targetBody.isKinematic)
+            {
+                targetBody.linearVelocity = nextVelocity;
+            }
         }
 
         _currentlyHitTargetIds.RemoveWhere(targetId => !_hitTargetIdsThisFrame.Contains(targetId));

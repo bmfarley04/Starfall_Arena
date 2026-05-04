@@ -11,6 +11,12 @@ using TMPro;
 /// </summary>
 public class TitleScreenManager : MonoBehaviour
 {
+    public enum Test3DFlowDefaultRole
+    {
+        Host = 0,
+        Client = 1
+    }
+
     [System.Serializable]
     public struct SceneFadeConfig
     {
@@ -73,10 +79,13 @@ public class TitleScreenManager : MonoBehaviour
     [Tooltip("First selected button on the main menu (for controller navigation)")]
     [SerializeField] private GameObject mainMenuFirstSelected;
 
-    [Tooltip("Controls screen canvas")]
+    [Tooltip("2D controls screen canvas")]
     [SerializeField] private CanvasGroup controlsCanvas;
 
-    [Tooltip("First selected button on the controls screen (for controller navigation)")]
+    [Tooltip("3D controls screen canvas")]
+    [SerializeField] private CanvasGroup controls3DCanvas;
+
+    [Tooltip("First selected button on the 2D controls screen (for controller navigation)")]
     [SerializeField] private GameObject controlsFirstSelected;
 
     [Tooltip("Ship select screen canvas")]
@@ -100,34 +109,57 @@ public class TitleScreenManager : MonoBehaviour
     [Tooltip("First selected button on the host waiting canvas")]
     [SerializeField] private GameObject hostWaitingFirstSelected;
 
-    [Tooltip("Canvas shown after Host Game where the player chooses 2D or 3D")]
+    [Tooltip("Legacy 2D/3D host-mode canvas. This is no longer used by the main Host Game flow now that 3D duel has been removed.")]
     [SerializeField] private CanvasGroup hostModeSelectCanvas;
 
-    [Tooltip("First selected button on the host mode select canvas")]
+    [Tooltip("Legacy first selected button for the old 2D/3D host-mode canvas.")]
     [SerializeField] private GameObject hostModeSelectFirstSelected;
+
+    [Tooltip("Canvas shown after Host Game where the player selects Duel or Invasion.")]
+    [SerializeField] private CanvasGroup host3DModeSelectCanvas;
+
+    [Tooltip("First selected button on the Duel/Invasion host-mode canvas.")]
+    [SerializeField] private GameObject host3DModeSelectFirstSelected;
+
+    [Header("Title Background Progression")]
+    [Tooltip("If enabled, the title screen swaps to the invasion-complete background after this local player profile has cleared Invasion mode.")]
+    [SerializeField] private bool useInvasionWinTitleBackground = true;
+    [Tooltip("Normal title background root shown before Invasion mode has been cleared.")]
+    [SerializeField] private GameObject defaultTitleBackground;
+    [Tooltip("Alternate title background root shown after Invasion mode has been cleared.")]
+    [SerializeField] private GameObject invasionWonTitleBackground;
 
     [Header("Networking UI")]
     [SerializeField] private TMP_InputField ipAddressInputField;
     [SerializeField] private TextMeshProUGUI networkStatusText;
     [SerializeField] private TextMeshProUGUI hostModeStatusText;
+    [SerializeField] private TextMeshProUGUI hostWaitingStatusText;
 
     [Header("Host Scene Routing")]
     [Tooltip("2D gameplay scene loaded after both players lock in when hosting from title")]
     [SerializeField] private string network2DGameplaySceneName = "SampleScene";
-    [Tooltip("3D gameplay scene loaded after both players lock in when hosting from title")]
+    [Tooltip("Legacy 3D duel scene name. The normal title menu no longer routes here; it remains only for old test hooks/data compatibility.")]
     [SerializeField] private string network3DGameplaySceneName = "3d";
-    [SerializeField] private string host2DStatusLabel = "2D - DUEL";
-    [SerializeField] private string host3DStatusLabel = "3D - DUEL";
+    [Tooltip("3D invasion gameplay scene loaded after both players lock in when hosting from title")]
+    [SerializeField] private string network3DInvasionGameplaySceneName = "3d_invasion";
+    [SerializeField] private string host2DStatusLabel = "DUEL";
+    [SerializeField] private string host3DStatusLabel = "LEGACY 3D - DUEL";
+    [SerializeField] private string host3DInvasionStatusLabel = "3D - INVASION";
+    [SerializeField] private string hostWaitingStatusLabel = "WAITING ON OPPONENT...";
 
     [Header("Host Mode Preview Models")]
     [Tooltip("3D preview model roots shown on the host-mode select canvas. They stay hidden until the canvas transition is fully visible.")]
     [SerializeField] private GameObject[] hostModePreviewModels;
 
     [Header("3D Test Flow")]
-    [Tooltip("3D gameplay scene used by the test-only title shortcuts.")]
-    [SerializeField] private string test3DGameplaySceneName = "3dscene";
+    [Tooltip("Gameplay scene used by the test-only title shortcuts. Set this to 3d_invasion for the co-op invasion test flow.")]
+    [SerializeField] private string test3DGameplaySceneName = "3d_invasion";
     [Tooltip("Direct-connect address used by the client-side 3D test shortcut.")]
     [SerializeField] private string test3DClientAddress = "10.33.102.140";
+    [Tooltip("If enabled, the title scene skips the normal intro and immediately starts the configured 3D invasion test flow on scene load.")]
+    [SerializeField] private bool autoStart3DTestFlowOnSceneStart;
+    [Tooltip("Which side the auto-start 3D test flow should use when the scene opens.")]
+    [SerializeField] private Test3DFlowDefaultRole autoStart3DTestRole = Test3DFlowDefaultRole.Host;
     [Tooltip("Optional override for the host's auto-selected 3D test ship. Falls back to 3d_class1 by ship ID.")]
     [SerializeField] private ShipData test3DHostShip;
     [Tooltip("Optional override for the client's auto-selected 3D test ship. Falls back to 3d_class2 by ship ID.")]
@@ -140,11 +172,15 @@ public class TitleScreenManager : MonoBehaviour
     [SerializeField] private HoldActionButton joinBackButton;
     [SerializeField] private HoldActionButton waitingBackButton;
     [SerializeField] private HoldActionButton hostModeBackButton;
+    [SerializeField] private HoldActionButton host3DModeBackButton;
 
     [Header("Manual Navigation")]
     [SerializeField] private NavigationGroup joinGameNavigation;
     [SerializeField] private NavigationGroup hostWaitingNavigation;
+    [Tooltip("Legacy navigation group for the old 2D/3D host-mode canvas.")]
     [SerializeField] private NavigationGroup hostModeSelectNavigation;
+    [Tooltip("Navigation group for the Duel/Invasion host-mode canvas.")]
+    [SerializeField] private NavigationGroup host3DModeSelectNavigation;
 
     [Header("Intro: Scene Fade In")]
     [SerializeField] private SceneFadeConfig sceneFade;
@@ -163,13 +199,16 @@ public class TitleScreenManager : MonoBehaviour
     private float _submitHoldTime;
     private float _backHoldTime;
     private bool _navigationLatch;
+    private bool _controlsSchemeNavigationLatch;
     private bool _submitTriggeredWhileHeld;
     private HoldActionButton _resolvedControlsBackButton;
+    private HoldActionButton _resolvedControls3DBackButton;
     private string _resolved2DGameplaySceneName = "SampleScene";
     private string _pendingHostModeLabel = string.Empty;
     private bool _isRunning3DTestFlow;
     private bool _is3DTestHostFlow;
     private bool _hasSubmitted3DTestShipSelection;
+    private bool _pendingShipSelectTransition;
     private Coroutine _autoLock3DTestShipCoroutine;
 
     private const string Default3DTestHostShipId = "9219fbe4c7a848e095b199627d5ab9f4";
@@ -207,24 +246,37 @@ public class TitleScreenManager : MonoBehaviour
         ResetHoldVisuals();
 
         _overlayAlpha = 1f;
+        ApplyTitleBackgroundProgression();
 
         // CRITICAL: Deactivate canvas GameObjects to prevent ANY events during intro
         // This prevents EventSystem auto-selection and mouse hover events
         mainMenuCanvas.gameObject.SetActive(false);
         controlsCanvas.gameObject.SetActive(false);
+        if (controls3DCanvas != null) controls3DCanvas.gameObject.SetActive(false);
         shipSelectCanvas.gameObject.SetActive(false);
         if (joinGameCanvas != null) joinGameCanvas.gameObject.SetActive(false);
         if (hostWaitingCanvas != null) hostWaitingCanvas.gameObject.SetActive(false);
         if (hostModeSelectCanvas != null) hostModeSelectCanvas.gameObject.SetActive(false);
+        if (host3DModeSelectCanvas != null) host3DModeSelectCanvas.gameObject.SetActive(false);
 
         // Hide all canvases at start (when we activate them later)
         SetCanvasHidden(mainMenuCanvas);
         SetCanvasHidden(controlsCanvas);
+        SetCanvasHidden(controls3DCanvas);
         SetCanvasHidden(shipSelectCanvas);
         SetCanvasHidden(joinGameCanvas);
         SetCanvasHidden(hostWaitingCanvas);
         SetCanvasHidden(hostModeSelectCanvas);
+        SetCanvasHidden(host3DModeSelectCanvas);
         SetHostModePreviewModelsActive(false);
+
+        if (autoStart3DTestFlowOnSceneStart)
+        {
+            PrepareImmediateTestFlowStart();
+            yield return WaitForAutoStart3DTestFlowReadiness();
+            StartConfigured3DTestFlow();
+            yield break;
+        }
 
         // Phase 1: Scene fades from black
         yield return new WaitForSecondsRealtime(sceneFade.delay);
@@ -235,6 +287,25 @@ public class TitleScreenManager : MonoBehaviour
         {
             yield return new WaitForSecondsRealtime(uiFade.delay);
             yield return RunUIFade();
+        }
+    }
+
+    private void ApplyTitleBackgroundProgression()
+    {
+        if (!useInvasionWinTitleBackground)
+        {
+            return;
+        }
+
+        bool showInvasionWonBackground = PlayerProgressPrefs.HasWonInvasionMode;
+        if (defaultTitleBackground != null)
+        {
+            defaultTitleBackground.SetActive(!showInvasionWonBackground);
+        }
+
+        if (invasionWonTitleBackground != null)
+        {
+            invasionWonTitleBackground.SetActive(showInvasionWonBackground);
         }
     }
 
@@ -304,16 +375,27 @@ public class TitleScreenManager : MonoBehaviour
 
     public void TransitionToControls()
     {
-        if (_activeTransition != null) return;
+        if (_activeTransition != null || mainMenuCanvas == null || controlsCanvas == null) return;
         _activeTransition = StartCoroutine(
             RunTransition(mainMenuCanvas, controlsCanvas, controlsFirstSelected));
     }
 
     public void TransitionToMainMenu()
     {
-        if (_activeTransition != null) return;
+        if (_activeTransition != null || mainMenuCanvas == null) return;
+        CanvasGroup source = GetActiveControlsCanvas();
+        if (source == null)
+        {
+            source = controlsCanvas;
+        }
+
+        if (source == null)
+        {
+            return;
+        }
+
         _activeTransition = StartCoroutine(
-            RunTransition(controlsCanvas, mainMenuCanvas, mainMenuFirstSelected));
+            RunTransition(source, mainMenuCanvas, mainMenuFirstSelected));
     }
 
     public void TransitionToShipSelect()
@@ -361,7 +443,9 @@ public class TitleScreenManager : MonoBehaviour
 
     public void StartHostingFlow()
     {
-        if (hostModeSelectCanvas == null)
+        CanvasGroup hostChoiceCanvas = host3DModeSelectCanvas != null ? host3DModeSelectCanvas : hostModeSelectCanvas;
+        GameObject firstSelected = host3DModeSelectCanvas != null ? host3DModeSelectFirstSelected : hostModeSelectFirstSelected;
+        if (hostChoiceCanvas == null)
         {
             StartHosting2DFlow();
             return;
@@ -374,7 +458,7 @@ public class TitleScreenManager : MonoBehaviour
 
         CanvasGroup source = _activeCanvas ?? mainMenuCanvas;
         _activeTransition = StartCoroutine(
-            RunTransition(source, hostModeSelectCanvas, hostModeSelectFirstSelected));
+            RunTransition(source, hostChoiceCanvas, firstSelected));
     }
 
     public void StartHosting2DFlow()
@@ -385,61 +469,51 @@ public class TitleScreenManager : MonoBehaviour
 
     public void StartHosting3DFlow()
     {
-        _pendingHostModeLabel = host3DStatusLabel;
-        StartHostingForScene(network3DGameplaySceneName);
+        if (host3DModeSelectCanvas == null)
+        {
+            StartHosting2DFlow();
+            return;
+        }
+
+        if (_activeTransition != null)
+        {
+            return;
+        }
+
+        CanvasGroup source = _activeCanvas ?? hostModeSelectCanvas ?? mainMenuCanvas;
+        _activeTransition = StartCoroutine(
+            RunTransition(source, host3DModeSelectCanvas, host3DModeSelectFirstSelected));
+    }
+
+    public void StartHostingDuelFlow()
+    {
+        StartHosting2DFlow();
+    }
+
+    public void StartHosting3DDuelFlow()
+    {
+        StartHostingDuelFlow();
+    }
+
+    public void StartHosting3DInvasionFlow()
+    {
+        _pendingHostModeLabel = host3DInvasionStatusLabel;
+        StartHostingForScene(network3DInvasionGameplaySceneName, network3DGameplaySceneName);
     }
 
     public void start3dhostflow()
     {
-        Reset3DTestFlowState();
-        _isRunning3DTestFlow = true;
-        _is3DTestHostFlow = true;
-        _pendingHostModeLabel = host3DStatusLabel;
-
-        if (!Prepare3DTestShipSelections())
-        {
-            return;
-        }
-
-        StartHostingForScene(test3DGameplaySceneName);
+        Start3DTestFlowAsRole(Test3DFlowDefaultRole.Host);
     }
 
     public void start3dclientflow()
     {
-        Reset3DTestFlowState();
-        _isRunning3DTestFlow = true;
-        _is3DTestHostFlow = false;
+        Start3DTestFlowAsRole(Test3DFlowDefaultRole.Client);
+    }
 
-        if (!Prepare3DTestShipSelections())
-        {
-            return;
-        }
-
-        if (ipAddressInputField != null)
-        {
-            ipAddressInputField.text = test3DClientAddress;
-        }
-
-        _netMgr = NetMgr.Instance;
-        _sessionData = NetworkSessionData.Instance;
-        bool started = _netMgr != null && _netMgr.StartClientForMenu(test3DClientAddress);
-        if (!started)
-        {
-            Reset3DTestFlowState();
-            return;
-        }
-
-        HandleStatusMessageChanged("Connecting to 3D test host...");
-
-        if (joinGameCanvas != null && _activeTransition == null)
-        {
-            CanvasGroup source = _activeCanvas ?? mainMenuCanvas;
-            if (source != joinGameCanvas)
-            {
-                _activeTransition = StartCoroutine(
-                    RunTransition(source, joinGameCanvas, joinGameFirstSelected));
-            }
-        }
+    public void StartConfigured3DTestFlow()
+    {
+        Start3DTestFlowAsRole(autoStart3DTestRole);
     }
 
     public void TransitionToOnlineMenuFromHostMode()
@@ -451,6 +525,17 @@ public class TitleScreenManager : MonoBehaviour
 
         _activeTransition = StartCoroutine(
             RunTransition(hostModeSelectCanvas, mainMenuCanvas, mainMenuFirstSelected));
+    }
+
+    public void TransitionToHostModeSelectFrom3DMode()
+    {
+        if (_activeTransition != null || host3DModeSelectCanvas == null || mainMenuCanvas == null)
+        {
+            return;
+        }
+
+        _activeTransition = StartCoroutine(
+            RunTransition(host3DModeSelectCanvas, mainMenuCanvas, mainMenuFirstSelected));
     }
 
     public void StartJoinFlow()
@@ -483,6 +568,10 @@ public class TitleScreenManager : MonoBehaviour
         else if (_activeCanvas == hostModeSelectCanvas)
         {
             TransitionCanvas(hostModeSelectCanvas, mainMenuCanvas, mainMenuFirstSelected);
+        }
+        else if (_activeCanvas == host3DModeSelectCanvas)
+        {
+            TransitionCanvas(host3DModeSelectCanvas, mainMenuCanvas, mainMenuFirstSelected);
         }
     }
 
@@ -603,7 +692,9 @@ public class TitleScreenManager : MonoBehaviour
         SetButtonsEnabled(to, true);
 
         RefreshSelection(selectAfter);
+        PrimeControlsSchemeNavigationLatch();
         _activeTransition = null;
+        TryRunPendingShipSelectTransition();
     }
 
     private void Update()
@@ -614,13 +705,20 @@ public class TitleScreenManager : MonoBehaviour
             return;
         }
 
+        TryRunPendingShipSelectTransition();
+        Ensure3DTestFlowAdvancesPastJoinScreen();
+
         if (_activeCanvas == null || _activeCanvas == shipSelectCanvas)
         {
             ResetHoldVisuals();
             return;
         }
 
-        if (_activeCanvas != mainMenuCanvas)
+        if (IsControlsCanvasActive())
+        {
+            HandleControlsSchemeNavigation();
+        }
+        else if (_activeCanvas != mainMenuCanvas)
         {
             HandleManualNavigation();
         }
@@ -699,6 +797,10 @@ public class TitleScreenManager : MonoBehaviour
         {
             TransitionToMainMenu();
         }
+        else if (_activeCanvas == controls3DCanvas)
+        {
+            TransitionToMainMenu();
+        }
         else if (_activeCanvas == hostModeSelectCanvas)
         {
             TransitionToOnlineMenuFromHostMode();
@@ -763,16 +865,18 @@ public class TitleScreenManager : MonoBehaviour
                 ApplyShipRosterForGameplayScene(_sessionData.GameplaySceneName);
                 if (_isRunning3DTestFlow)
                 {
+                    QueueShipSelectTransitionFromCurrent();
+                    HandleStatusMessageChanged("Connected. Auto-selecting 3D test ships...");
                     Begin3DTestAutoLock();
                     return;
                 }
 
-                TransitionToShipSelectFromCurrent();
+                QueueShipSelectTransitionFromCurrent();
                 break;
             case NetworkMatchState.LoadingGameplay:
                 if (_isRunning3DTestFlow)
                 {
-                    HandleStatusMessageChanged("Loading 3D test duel...");
+                    HandleStatusMessageChanged("Loading 3D test gameplay...");
                 }
                 break;
             case NetworkMatchState.Disconnected:
@@ -802,6 +906,14 @@ public class TitleScreenManager : MonoBehaviour
         }
     }
 
+    private void SetHostWaitingStatus(string statusLabel)
+    {
+        if (hostWaitingStatusText != null)
+        {
+            hostWaitingStatusText.text = statusLabel ?? string.Empty;
+        }
+    }
+
     private void TransitionToShipSelectFromCurrent()
     {
         if (_activeTransition != null || shipSelectCanvas == null) return;
@@ -811,6 +923,55 @@ public class TitleScreenManager : MonoBehaviour
 
         _activeTransition = StartCoroutine(
             RunTransition(source, shipSelectCanvas, shipSelectFirstSelected));
+    }
+
+    private void QueueShipSelectTransitionFromCurrent()
+    {
+        _pendingShipSelectTransition = true;
+        TryRunPendingShipSelectTransition();
+    }
+
+    private void TryRunPendingShipSelectTransition()
+    {
+        if (!_pendingShipSelectTransition)
+        {
+            return;
+        }
+
+        if (_activeTransition != null || shipSelectCanvas == null)
+        {
+            return;
+        }
+
+        CanvasGroup source = _activeCanvas ?? mainMenuCanvas;
+        if (source == shipSelectCanvas)
+        {
+            _pendingShipSelectTransition = false;
+            return;
+        }
+
+        _pendingShipSelectTransition = false;
+        _activeTransition = StartCoroutine(
+            RunTransition(source, shipSelectCanvas, shipSelectFirstSelected));
+    }
+
+    private void Ensure3DTestFlowAdvancesPastJoinScreen()
+    {
+        if (!_isRunning3DTestFlow || _is3DTestHostFlow || _sessionData == null)
+        {
+            return;
+        }
+
+        if (_sessionData.CurrentState != NetworkMatchState.ShipSelect &&
+            _sessionData.CurrentState != NetworkMatchState.LoadingGameplay)
+        {
+            return;
+        }
+
+        if (_activeCanvas == joinGameCanvas || _activeCanvas == hostWaitingCanvas || _activeCanvas == mainMenuCanvas)
+        {
+            QueueShipSelectTransitionFromCurrent();
+        }
     }
 
     private void TransitionCanvas(CanvasGroup from, CanvasGroup to, GameObject firstSelected)
@@ -844,9 +1005,9 @@ public class TitleScreenManager : MonoBehaviour
 
     private HoldActionButton GetActiveBackButton()
     {
-        if (_activeCanvas == controlsCanvas)
+        if (_activeCanvas == controlsCanvas || _activeCanvas == controls3DCanvas)
         {
-            return GetControlsBackButton();
+            return GetControlsBackButton(_activeCanvas);
         }
 
         if (_activeCanvas == joinGameCanvas)
@@ -859,6 +1020,11 @@ public class TitleScreenManager : MonoBehaviour
             return hostModeBackButton;
         }
 
+        if (_activeCanvas == host3DModeSelectCanvas)
+        {
+            return host3DModeBackButton;
+        }
+
         if (_activeCanvas == hostWaitingCanvas)
         {
             return waitingBackButton;
@@ -867,19 +1033,24 @@ public class TitleScreenManager : MonoBehaviour
         return default;
     }
 
-    private HoldActionButton GetControlsBackButton()
+    private HoldActionButton GetControlsBackButton(CanvasGroup canvas)
     {
-        if (_resolvedControlsBackButton.target != null)
+        if (canvas == controlsCanvas && _resolvedControlsBackButton.target != null)
         {
             return _resolvedControlsBackButton;
         }
 
-        if (controlsCanvas == null)
+        if (canvas == controls3DCanvas && _resolvedControls3DBackButton.target != null)
+        {
+            return _resolvedControls3DBackButton;
+        }
+
+        if (canvas == null)
         {
             return default;
         }
 
-        RectTransform[] controlsChildren = controlsCanvas.GetComponentsInChildren<RectTransform>(true);
+        RectTransform[] controlsChildren = canvas.GetComponentsInChildren<RectTransform>(true);
         foreach (RectTransform child in controlsChildren)
         {
             if (child == null || !child.name.Equals("Back", System.StringComparison.OrdinalIgnoreCase))
@@ -893,12 +1064,19 @@ public class TitleScreenManager : MonoBehaviour
                 fillImage = child.GetComponentInChildren<Image>(true);
             }
 
-            _resolvedControlsBackButton = new HoldActionButton
+            HoldActionButton resolvedButton = new HoldActionButton
             {
                 target = child.gameObject,
                 fillImage = fillImage
             };
 
+            if (canvas == controls3DCanvas)
+            {
+                _resolvedControls3DBackButton = resolvedButton;
+                return _resolvedControls3DBackButton;
+            }
+
+            _resolvedControlsBackButton = resolvedButton;
             return _resolvedControlsBackButton;
         }
 
@@ -987,6 +1165,44 @@ public class TitleScreenManager : MonoBehaviour
         RefreshSelection(group.targets[currentIndex]);
     }
 
+    private bool HandleControlsSchemeNavigation()
+    {
+        CanvasGroup activeControlsCanvas = GetActiveControlsCanvas();
+        if (activeControlsCanvas == null)
+        {
+            _controlsSchemeNavigationLatch = false;
+            return false;
+        }
+
+        int direction = ResolveControlsSchemeNavigationDirection();
+        if (direction == 0)
+        {
+            _controlsSchemeNavigationLatch = false;
+            return false;
+        }
+
+        if (_controlsSchemeNavigationLatch)
+        {
+            return true;
+        }
+
+        _controlsSchemeNavigationLatch = true;
+
+        if (direction > 0 && activeControlsCanvas == controlsCanvas && controls3DCanvas != null)
+        {
+            TransitionToControls3D();
+            return true;
+        }
+
+        if (direction < 0 && activeControlsCanvas == controls3DCanvas)
+        {
+            TransitionToControls2D();
+            return true;
+        }
+
+        return true;
+    }
+
     private NavigationGroup GetActiveNavigationGroup()
     {
         if (_activeCanvas == joinGameCanvas)
@@ -1004,7 +1220,177 @@ public class TitleScreenManager : MonoBehaviour
             return hostModeSelectNavigation;
         }
 
+        if (_activeCanvas == host3DModeSelectCanvas)
+        {
+            return host3DModeSelectNavigation;
+        }
+
         return default;
+    }
+
+    private CanvasGroup GetActiveControlsCanvas()
+    {
+        if (_activeCanvas == controlsCanvas)
+        {
+            return controlsCanvas;
+        }
+
+        if (_activeCanvas == controls3DCanvas)
+        {
+            return controls3DCanvas;
+        }
+
+        return null;
+    }
+
+    private void TransitionToControls3D()
+    {
+        if (_activeTransition != null || controlsCanvas == null || controls3DCanvas == null)
+        {
+            return;
+        }
+
+        _activeTransition = StartCoroutine(
+            RunControlsSchemeTransition(controlsCanvas, controls3DCanvas));
+    }
+
+    private void TransitionToControls2D()
+    {
+        if (_activeTransition != null || controlsCanvas == null || controls3DCanvas == null)
+        {
+            return;
+        }
+
+        _activeTransition = StartCoroutine(
+            RunControlsSchemeTransition(controls3DCanvas, controlsCanvas));
+    }
+
+    private IEnumerator RunControlsSchemeTransition(CanvasGroup from, CanvasGroup to)
+    {
+        if (from == null || to == null)
+        {
+            yield break;
+        }
+
+        EventSystem.current.SetSelectedGameObject(null);
+
+        from.interactable = false;
+        from.blocksRaycasts = false;
+        SetButtonsEnabled(from, false);
+
+        to.gameObject.SetActive(true);
+        to.alpha = 0f;
+        to.interactable = false;
+        to.blocksRaycasts = false;
+        SetButtonsEnabled(to, false);
+
+        RectTransform fromRect = (RectTransform)from.transform;
+        RectTransform toRect = (RectTransform)to.transform;
+        Vector2 fromStartPosition = fromRect.anchoredPosition;
+        Vector2 toRestPosition = toRect.anchoredPosition;
+        float slideDistance = ResolveControlsSlideDistance(fromRect, toRect);
+        float slideDirection = from == controlsCanvas ? 1f : -1f;
+        Vector2 fromTargetPosition = fromStartPosition + Vector2.left * slideDistance * slideDirection;
+        Vector2 toStartPosition = toRestPosition + Vector2.right * slideDistance * slideDirection;
+
+        toRect.anchoredPosition = toStartPosition;
+
+        float duration = Mathf.Max(0.01f, menuTransition.enterDuration);
+        float elapsed = 0f;
+        while (elapsed < duration)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            float t = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(elapsed / duration));
+
+            from.alpha = 1f - t;
+            to.alpha = t;
+            fromRect.anchoredPosition = Vector2.Lerp(fromStartPosition, fromTargetPosition, t);
+            toRect.anchoredPosition = Vector2.Lerp(toStartPosition, toRestPosition, t);
+
+            yield return null;
+        }
+
+        from.alpha = 0f;
+        to.alpha = 1f;
+        fromRect.anchoredPosition = fromStartPosition;
+        toRect.anchoredPosition = toRestPosition;
+        from.gameObject.SetActive(false);
+        to.interactable = true;
+        to.blocksRaycasts = true;
+
+        _activeCanvas = to;
+        SetButtonsEnabled(to, true);
+        RefreshSelection(GetControlsDefaultSelection(to));
+        PrimeControlsSchemeNavigationLatch();
+        _activeTransition = null;
+    }
+
+    private void PrimeControlsSchemeNavigationLatch()
+    {
+        _controlsSchemeNavigationLatch = ResolveControlsSchemeNavigationDirection() != 0;
+    }
+
+    private static float ResolveControlsSlideDistance(RectTransform fromRect, RectTransform toRect)
+    {
+        float fromWidth = fromRect != null ? fromRect.rect.width : 0f;
+        float toWidth = toRect != null ? toRect.rect.width : 0f;
+        float distance = Mathf.Max(Screen.width, fromWidth, toWidth);
+        return Mathf.Max(1f, distance);
+    }
+
+    private int ResolveControlsSchemeNavigationDirection()
+    {
+        bool leftPressed = false;
+        bool rightPressed = false;
+
+        if (Gamepad.current != null)
+        {
+            leftPressed = Gamepad.current.leftShoulder.isPressed;
+            rightPressed = Gamepad.current.rightShoulder.isPressed;
+        }
+
+        if (Keyboard.current != null)
+        {
+            leftPressed |= Keyboard.current.qKey.isPressed;
+            rightPressed |= Keyboard.current.eKey.isPressed;
+        }
+
+        if (leftPressed == rightPressed)
+        {
+            return 0;
+        }
+
+        return rightPressed ? 1 : -1;
+    }
+
+    private GameObject GetControlsDefaultSelection(CanvasGroup canvas)
+    {
+        if (canvas == null)
+        {
+            return null;
+        }
+
+        if (canvas == controlsCanvas && controlsFirstSelected != null)
+        {
+            return controlsFirstSelected;
+        }
+
+        TitleScreenButton[] buttons = canvas.GetComponentsInChildren<TitleScreenButton>(true);
+        foreach (TitleScreenButton button in buttons)
+        {
+            if (button != null && button.gameObject.activeInHierarchy)
+            {
+                return button.gameObject;
+            }
+        }
+
+        HoldActionButton backButton = GetControlsBackButton(canvas);
+        return backButton.target;
+    }
+
+    private bool IsControlsCanvasActive()
+    {
+        return _activeCanvas == controlsCanvas || _activeCanvas == controls3DCanvas;
     }
 
     private static int ResolveNavigationDirection(Vector2 navigationInput)
@@ -1032,10 +1418,18 @@ public class TitleScreenManager : MonoBehaviour
     {
         ResetFillIfInactive(joinBackButton.fillImage, activeImage);
         ResetFillIfInactive(hostModeBackButton.fillImage, activeImage);
+        ResetFillIfInactive(host3DModeBackButton.fillImage, activeImage);
         ResetFillIfInactive(waitingBackButton.fillImage, activeImage);
+        ResetFillIfInactive(_resolvedControlsBackButton.fillImage, activeImage);
+        ResetFillIfInactive(_resolvedControls3DBackButton.fillImage, activeImage);
     }
 
     private void StartHostingForScene(string sceneName)
+    {
+        StartHostingForScene(sceneName, sceneName);
+    }
+
+    private void StartHostingForScene(string sceneName, string rosterSceneName)
     {
         if (hostWaitingCanvas == null || _activeTransition != null)
         {
@@ -1063,10 +1457,15 @@ public class TitleScreenManager : MonoBehaviour
         }
 
         SetHostModeStatus(_pendingHostModeLabel);
+        SetHostWaitingStatus(
+            string.Equals(resolvedScene, network3DInvasionGameplaySceneName, System.StringComparison.OrdinalIgnoreCase)
+                ? "WAITING ON TEAMMATE..."
+                : hostWaitingStatusLabel);
 
         _sessionData = NetworkSessionData.Instance;
         _sessionData?.SetGameplaySceneName(resolvedScene);
-        ApplyShipRosterForGameplayScene(resolvedScene);
+        string resolvedRosterScene = string.IsNullOrWhiteSpace(rosterSceneName) ? resolvedScene : rosterSceneName.Trim();
+        ApplyShipRosterForGameplayScene(resolvedRosterScene);
 
         _netMgr = NetMgr.Instance;
         if (_netMgr == null || !_netMgr.StartHostForMenu())
@@ -1127,6 +1526,45 @@ public class TitleScreenManager : MonoBehaviour
         GameDataManager.Instance.SetShipRosterForGameplayScene(sceneName);
     }
 
+    private void PrepareImmediateTestFlowStart()
+    {
+        _overlayAlpha = 0f;
+
+        if (mainMenuCanvas != null)
+        {
+            mainMenuCanvas.gameObject.SetActive(true);
+            mainMenuCanvas.alpha = 1f;
+            mainMenuCanvas.interactable = false;
+            mainMenuCanvas.blocksRaycasts = false;
+            SetButtonsEnabled(mainMenuCanvas, false);
+            _activeCanvas = mainMenuCanvas;
+        }
+    }
+
+    private IEnumerator WaitForAutoStart3DTestFlowReadiness()
+    {
+        const float readinessTimeoutSeconds = 1f;
+        float elapsed = 0f;
+
+        while (elapsed < readinessTimeoutSeconds)
+        {
+            if (NetMgr.Instance != null &&
+                NetworkSessionData.Instance != null &&
+                Unity.Netcode.NetworkManager.Singleton != null)
+            {
+                _netMgr = NetMgr.Instance;
+                _sessionData = NetworkSessionData.Instance;
+                yield break;
+            }
+
+            elapsed += Time.unscaledDeltaTime;
+            yield return null;
+        }
+
+        _netMgr = NetMgr.Instance;
+        _sessionData = NetworkSessionData.Instance;
+    }
+
     private void SetHostModePreviewModelsActive(bool active)
     {
         if (hostModePreviewModels == null)
@@ -1158,6 +1596,76 @@ public class TitleScreenManager : MonoBehaviour
         ApplyShipRosterForGameplayScene(test3DGameplaySceneName);
         GameDataManager.Instance?.SetSelectedShips(hostShip, clientShip);
         return true;
+    }
+
+    private void Start3DTestFlowAsRole(Test3DFlowDefaultRole role)
+    {
+        Reset3DTestFlowState();
+        _isRunning3DTestFlow = true;
+        _is3DTestHostFlow = role == Test3DFlowDefaultRole.Host;
+
+        if (!Prepare3DTestShipSelections())
+        {
+            return;
+        }
+
+        if (_is3DTestHostFlow)
+        {
+            _pendingHostModeLabel = Resolve3DTestHostModeLabel();
+            StartHostingForScene(test3DGameplaySceneName, network3DGameplaySceneName);
+            return;
+        }
+
+        Start3DTestClientFlow();
+    }
+
+    private void Start3DTestClientFlow()
+    {
+        if (ipAddressInputField != null)
+        {
+            ipAddressInputField.text = test3DClientAddress;
+        }
+
+        _netMgr = NetMgr.Instance;
+        _sessionData = NetworkSessionData.Instance;
+        bool started = _netMgr != null && _netMgr.StartClientForMenu(test3DClientAddress);
+        if (!started)
+        {
+            Reset3DTestFlowState();
+            return;
+        }
+
+        HandleStatusMessageChanged(Resolve3DTestClientConnectStatus());
+
+        if (joinGameCanvas != null && _activeTransition == null)
+        {
+            CanvasGroup source = _activeCanvas ?? mainMenuCanvas;
+            if (source != joinGameCanvas)
+            {
+                _activeTransition = StartCoroutine(
+                    RunTransition(source, joinGameCanvas, joinGameFirstSelected));
+            }
+        }
+    }
+
+    private string Resolve3DTestHostModeLabel()
+    {
+        return Is3DInvasionSceneName(test3DGameplaySceneName) ? host3DInvasionStatusLabel : host3DStatusLabel;
+    }
+
+    private string Resolve3DTestClientConnectStatus()
+    {
+        return Is3DInvasionSceneName(test3DGameplaySceneName)
+            ? "Connecting to 3D invasion test host..."
+            : "Connecting to 3D test host...";
+    }
+
+    private bool Is3DInvasionSceneName(string sceneName)
+    {
+        return string.Equals(
+            sceneName?.Trim(),
+            network3DInvasionGameplaySceneName?.Trim(),
+            System.StringComparison.OrdinalIgnoreCase);
     }
 
     private ShipData Resolve3DTestShip(bool hostShip)
@@ -1204,7 +1712,7 @@ public class TitleScreenManager : MonoBehaviour
                 Prepare3DTestShipSelections();
                 _sessionData.RequestShipSelection(selectedShip.ShipId, true);
                 _hasSubmitted3DTestShipSelection = true;
-                HandleStatusMessageChanged("3D test ship locked. Waiting for duel load...");
+                HandleStatusMessageChanged("3D test ship locked. Waiting for scene load...");
                 _autoLock3DTestShipCoroutine = null;
                 yield break;
             }
@@ -1220,6 +1728,7 @@ public class TitleScreenManager : MonoBehaviour
         _isRunning3DTestFlow = false;
         _is3DTestHostFlow = false;
         _hasSubmitted3DTestShipSelection = false;
+        _pendingShipSelectTransition = false;
 
         if (_autoLock3DTestShipCoroutine != null)
         {

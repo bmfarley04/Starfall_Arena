@@ -102,18 +102,7 @@ public class PlayerAbilitySelectionHUD3D : PlayerHUDBindingTarget3D
 
     private void BindRenderCamera()
     {
-        if (targetCanvas == null)
-        {
-            return;
-        }
-
-        Camera mainCamera = Camera.main;
-        if (mainCamera == null)
-        {
-            return;
-        }
-
-        targetCanvas.worldCamera = mainCamera;
+        HUDCanvasCameraResolver3D.BindCanvasToBestCamera(targetCanvas);
     }
 
     private void SubscribeToAbilityAvailability(Player3D player)

@@ -1,0 +1,49 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: blue_plasma_pillar_core_volume
+  m_Shader: {fileID: 4800000, guid: 53b63154e2384992ba52cba35a1ddf96, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs: []
+    m_Ints: []
+    m_Floats:
+    - _Brightness: 0.7
+    - _CloudContrast: 2.02
+    - _CloudScale: 16.1
+    - _CloudSpeed: 2
+    - _DarkPocketStrength: 1
+    - _DarkPocketThreshold: 1
+    - _FresnelPower: 3.33
+    - _FresnelStrength: 3.11
+    - _LayerIntensity: 0.72
+    - _LayerMode: 0
+    - _Opacity: 0.17
+    - _PulseSpeed: 0.85
+    - _PulseStrength: 0.08
+    - _Reveal: 1
+    - _TwistStrength: 2.65
+    - _VerticalScale: 0.62
+    m_Colors:
+    - _CoreColor: {r: 7.8, g: 8.9, b: 10.5, a: 1}
+    - _RimColor: {r: 5.2, g: 8, b: 11, a: 1}
+    - _ShellColor: {r: 1.4, g: 2.8, b: 5.8, a: 1}
+  m_BuildTextureStacks: []
+  m_AllowLocking: 1

@@ -21,6 +21,16 @@ public abstract class Entity3D : MonoBehaviour
     [Tooltip("Multiplier for how much recoil/impulse affects visual pitch independent of thrust pitch.")]
     [SerializeField] protected float impulseRecoilPitchSensitivity = 1f;
 
+    [Header("Upright Recovery")]
+    [Tooltip("If enabled, the entity gently rolls back upright after recent combat and manual rotation have settled.")]
+    [SerializeField] private bool uprightRecoveryEnabled = true;
+    [Tooltip("Seconds after taking damage or firing before upright recovery can begin.")]
+    [SerializeField] private float uprightRecoveryDelay = 2.5f;
+    [Tooltip("Maximum roll correction speed once upright recovery is active.")]
+    [SerializeField] private float uprightRecoveryDegreesPerSecond = 90f;
+    [Tooltip("Look/turn input below this value is treated as idle for upright recovery.")]
+    [SerializeField] private float uprightRecoveryInputDeadZone = 0.05f;
+
     [Header("Weapons")]
     [SerializeField] protected Weapon3D[] weapons = new Weapon3D[3];
     [SerializeField] protected int selectedWeaponIndex;
@@ -41,8 +51,10 @@ public abstract class Entity3D : MonoBehaviour
     protected float currentSlowMultiplier = 1f;
     protected float slowEndTime;
     protected NetCombat3D netCombat3D;
+    protected NetEnemyCombat3D netEnemyCombat3D;
 
     private bool _isDead;
+    private float _uprightRecoverySuppressedUntil;
 
     public event Action<Entity3D> Died;
 
@@ -62,6 +74,36 @@ public abstract class Entity3D : MonoBehaviour
     public float ImpulseRecoilPitchSensitivity => impulseRecoilPitchSensitivity;
     public float CurrentSlowMultiplier => GetSlowMultiplier();
     public bool IsSlowed => Time.time < slowEndTime && currentSlowMultiplier < 1f;
+    public bool UprightRecoveryEnabled => uprightRecoveryEnabled;
+    public float UprightRecoveryInputDeadZone => uprightRecoveryInputDeadZone;
+
+    public void OverrideMaxHealthAndShield(float newMaxHealth, float newMaxShield, bool refillCurrentValues)
+    {
+        maxHealth = Mathf.Max(1f, newMaxHealth);
+        maxShield = Mathf.Max(0f, newMaxShield);
+
+        if (refillCurrentValues)
+        {
+            currentHealth = maxHealth;
+            currentShield = maxShield;
+        }
+        else
+        {
+            currentHealth = Mathf.Clamp(currentHealth, 0f, maxHealth);
+            currentShield = Mathf.Clamp(currentShield, 0f, GetCurrentShieldLimit());
+        }
+
+        OnHealthChanged();
+        OnShieldChanged();
+    }
+
+    public void SetCurrentDurability(float health, float shield)
+    {
+        currentHealth = Mathf.Clamp(health, 0f, maxHealth);
+        currentShield = Mathf.Clamp(shield, 0f, GetCurrentShieldLimit());
+        OnHealthChanged();
+        OnShieldChanged();
+    }
 
     public Ability3D GetAbility(int index)
     {
@@ -161,6 +203,11 @@ public abstract class Entity3D : MonoBehaviour
         return multiplier;
     }
 
+    public float GetCombinedMaxSpeedMultiplier()
+    {
+        return Mathf.Max(0f, GetExternalMaxSpeedMultiplier());
+    }
+
     public float GetWeaponThrustMultiplier()
     {
         float multiplier = 1f;
@@ -200,6 +247,7 @@ public abstract class Entity3D : MonoBehaviour
         shipSpeedFx ??= GetComponent<ShipSpeedFx3D>();
         deathEffects ??= GetComponent<DeathEffects3D>();
         netCombat3D ??= GetComponent<NetCombat3D>();
+        netEnemyCombat3D ??= GetComponent<NetEnemyCombat3D>();
         shieldController ??= GetComponentInChildren<ShieldController>(true);
         CacheCombatSlotsIfNeeded();
         selectedWeaponIndex = Mathf.Clamp(selectedWeaponIndex, 0, Mathf.Max(0, weapons.Length - 1));
@@ -220,10 +268,19 @@ public abstract class Entity3D : MonoBehaviour
         lastDamageDirection = Vector3.zero;
         currentSlowMultiplier = 1f;
         slowEndTime = 0f;
+        RecordCombatActivity();
+    }
+
+    protected virtual void OnValidate()
+    {
+        uprightRecoveryDelay = Mathf.Max(0f, uprightRecoveryDelay);
+        uprightRecoveryDegreesPerSecond = Mathf.Max(0f, uprightRecoveryDegreesPerSecond);
+        uprightRecoveryInputDeadZone = Mathf.Max(0f, uprightRecoveryInputDeadZone);
     }
 
     public virtual void TakeDamage(float damage, Vector3 hitPoint, Entity3D attacker = null, DamageSource3D source = DamageSource3D.Projectile, int accuracyAttackId = PlayerCombatStats3D.InvalidAttackId)
     {
+        damage = ModifyIncomingDamage(damage, attacker, source, accuracyAttackId);
         if (damage <= 0f || currentHealth <= 0f || _isDead)
         {
             return;
@@ -237,6 +294,7 @@ public abstract class Entity3D : MonoBehaviour
         float previousShield = currentShield;
         float previousHealth = currentHealth;
 
+        RecordCombatActivity();
         lastDamageDirection = ResolveDamageDirection(hitPoint);
 
         if (currentShield > 0f)
@@ -282,6 +340,7 @@ public abstract class Entity3D : MonoBehaviour
 
     public virtual void TakeDirectDamage(float damage, Vector3 hitPoint, Entity3D attacker = null, int accuracyAttackId = PlayerCombatStats3D.InvalidAttackId)
     {
+        damage = ModifyIncomingDamage(damage, attacker, DamageSource3D.Direct, accuracyAttackId);
         if (damage <= 0f || currentHealth <= 0f || _isDead)
         {
             return;
@@ -295,6 +354,7 @@ public abstract class Entity3D : MonoBehaviour
         float previousShield = currentShield;
         float previousHealth = currentHealth;
 
+        RecordCombatActivity();
         lastDamageDirection = ResolveDamageDirection(hitPoint);
         currentHealth = Mathf.Max(0f, currentHealth - damage);
         OnHealthChanged();
@@ -335,6 +395,42 @@ public abstract class Entity3D : MonoBehaviour
         return currentSlowMultiplier;
     }
 
+    public void RecordCombatActivity(float extraDelay = 0f)
+    {
+        float recoveryDelay = Mathf.Max(0f, uprightRecoveryDelay + extraDelay);
+        _uprightRecoverySuppressedUntil = Mathf.Max(_uprightRecoverySuppressedUntil, Time.time + recoveryDelay);
+    }
+
+    public bool ShouldApplyUprightRecovery(bool hasRotationIntent)
+    {
+        if (!uprightRecoveryEnabled || _isDead || hasRotationIntent || Time.time < _uprightRecoverySuppressedUntil)
+        {
+            return false;
+        }
+
+        for (int i = 0; i < weapons.Length; i++)
+        {
+            Weapon3D weapon = weapons[i];
+            if (weapon != null && (weapon.IsFireHeld || weapon.IsReticleSpinActive()))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    public Quaternion ApplyUprightRecovery(Quaternion currentRotation, float deltaTime, bool hasRotationIntent)
+    {
+        if (deltaTime <= 0f || !ShouldApplyUprightRecovery(hasRotationIntent))
+        {
+            return currentRotation;
+        }
+
+        float maxDegreesDelta = Mathf.Max(0f, uprightRecoveryDegreesPerSecond) * deltaTime;
+        return RotateTowardsUpright(currentRotation, maxDegreesDelta);
+    }
+
     protected virtual void Die()
     {
         if (_isDead)
@@ -366,6 +462,7 @@ public abstract class Entity3D : MonoBehaviour
         if (NetTickUtil.IsActive && TryGetComponent(out NetworkObject networkObject) && networkObject.IsSpawned)
         {
             netCombat3D?.BroadcastDeath(transform.position, transform.rotation, lastDamageDirection);
+            netEnemyCombat3D?.BroadcastDeath(transform.position, transform.rotation, lastDamageDirection);
             if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsServer)
             {
                 networkObject.Despawn(true);
@@ -381,7 +478,7 @@ public abstract class Entity3D : MonoBehaviour
         float previousHealth = currentHealth;
         float previousShield = currentShield;
         currentHealth = Mathf.Clamp(state.Health, 0f, maxHealth);
-        currentShield = Mathf.Clamp(state.Shield, 0f, maxShield);
+        currentShield = Mathf.Clamp(state.Shield, 0f, GetCurrentShieldLimit());
 
         if (!Mathf.Approximately(previousHealth, currentHealth))
         {
@@ -427,6 +524,55 @@ public abstract class Entity3D : MonoBehaviour
         return damageDirection.sqrMagnitude > 0.0001f ? damageDirection.normalized : Vector3.zero;
     }
 
+    private static Quaternion RotateTowardsUpright(Quaternion currentRotation, float maxDegreesDelta)
+    {
+        Vector3 forward = currentRotation * Vector3.forward;
+        if (forward.sqrMagnitude <= 0.0001f)
+        {
+            return currentRotation;
+        }
+
+        forward.Normalize();
+        Vector3 targetUp = Vector3.ProjectOnPlane(Vector3.up, forward);
+        if (targetUp.sqrMagnitude <= 0.0001f)
+        {
+            return currentRotation;
+        }
+
+        Vector3 currentUp = Vector3.ProjectOnPlane(currentRotation * Vector3.up, forward);
+        if (currentUp.sqrMagnitude <= 0.0001f)
+        {
+            return currentRotation;
+        }
+
+        float signedRollDelta = Vector3.SignedAngle(currentUp.normalized, targetUp.normalized, forward);
+        float clampedRollDelta = Mathf.Clamp(signedRollDelta, -maxDegreesDelta, maxDegreesDelta);
+        return Quaternion.AngleAxis(clampedRollDelta, forward) * currentRotation;
+    }
+
+    public virtual float ModifyOutgoingDamage(float damage, Entity3D target, DamageSource3D source, int accuracyAttackId)
+    {
+        return Mathf.Max(0f, damage);
+    }
+
+    public virtual void OnDamageDealtToTarget(Entity3D target, float appliedDamage, DamageSource3D source, int accuracyAttackId)
+    {
+    }
+
+    public virtual void OnEnemyKilledByDamage(Enemy3D enemy, float appliedDamage, DamageSource3D source, int accuracyAttackId)
+    {
+    }
+
+    protected virtual float ModifyIncomingDamage(float damage, Entity3D attacker, DamageSource3D source, int accuracyAttackId)
+    {
+        return Mathf.Max(0f, damage);
+    }
+
+    protected virtual float GetCurrentShieldLimit()
+    {
+        return maxShield;
+    }
+
     private void RecordDamageStats(Entity3D attacker, float previousHealth, float previousShield, DamageSource3D source, int accuracyAttackId)
     {
         float appliedDamage = Mathf.Max(0f, (previousHealth + previousShield) - (currentHealth + currentShield));
@@ -445,6 +591,17 @@ public abstract class Entity3D : MonoBehaviour
         }
 
         attackerStats.RecordDamageDealt(appliedDamage);
+        if (currentHealth <= 0f && this is Enemy3D)
+        {
+            attackerStats.RecordEnemyKilled();
+        }
+
+        attacker.OnDamageDealtToTarget(this, appliedDamage, source, accuracyAttackId);
+        if (currentHealth <= 0f && this is Enemy3D killedEnemy)
+        {
+            attacker.OnEnemyKilledByDamage(killedEnemy, appliedDamage, source, accuracyAttackId);
+        }
+
         if (accuracyAttackId != PlayerCombatStats3D.InvalidAttackId)
         {
             attackerStats.RegisterAttackHit(accuracyAttackId);
@@ -538,15 +695,20 @@ public abstract class Entity3D : MonoBehaviour
         return 1f;
     }
 
+    protected virtual float GetExternalMaxSpeedMultiplier()
+    {
+        return 1f;
+    }
+
     private void BroadcastNetworkCombatState(Vector3 hitPoint, DamageSource3D source, float previousShield)
     {
-        if (!NetTickUtil.IsActive || netCombat3D == null || !netCombat3D.IsServer)
+        if (!NetTickUtil.IsActive)
         {
             return;
         }
 
         bool isSlowed = IsSlowed;
-        netCombat3D.BroadcastCombatState(new NetCombatState3D
+        NetCombatState3D state = new NetCombatState3D
         {
             Health = currentHealth,
             Shield = currentShield,
@@ -556,6 +718,16 @@ public abstract class Entity3D : MonoBehaviour
             ShieldBreak = previousShield > 0f && currentShield <= 0f,
             SlowMultiplier = isSlowed ? GetSlowMultiplier() : 1f,
             SlowRemainingTime = isSlowed ? Mathf.Max(0f, slowEndTime - Time.time) : 0f
-        });
+        };
+
+        if (netCombat3D != null && netCombat3D.IsServer)
+        {
+            netCombat3D.BroadcastCombatState(state);
+        }
+
+        if (netEnemyCombat3D != null && netEnemyCombat3D.IsServer)
+        {
+            netEnemyCombat3D.BroadcastCombatState(state);
+        }
     }
 }

@@ -75,7 +75,7 @@ Material:
     - _AlphaCutoff: 0.5
     - _Blend: 2
     - _BlendOp: 0
-    - _Boost: 1
+    - _Boost: 3
     - _CameraFadingEnabled: 0
     - _CameraFarFadeDistance: 2
     - _CameraNearFadeDistance: 1

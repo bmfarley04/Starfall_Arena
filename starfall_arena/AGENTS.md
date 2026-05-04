@@ -34,6 +34,10 @@ Load the smallest relevant set of docs for the task. If it is noted that we are 
   - Read for 3D architecture, system responsibilities, script placement, and cross-system implementation rules.
 - `3D_COMBAT.md`
   - Read for 3D weapons, abilities, aiming, projectiles, beams, and combat HUD expectations.
+- `3D_invasion.md`
+  - Read for the 3D Invasion PvE mode, wave ownership, faction rules, editor wiring, and current implementation state.
+- `3D_AI.md`
+  - Read for 3D enemy AI architecture, sensors, steering/pathing, behavior modules, and enemy archetype guidance.
 - `3D_BUGS.md`
   - Read for recurring 3D translation bugs, regressions, and implementation pitfalls.
 - `GAME_SYSTEMS.md`
@@ -53,6 +57,10 @@ Load the smallest relevant set of docs for the task. If it is noted that we are 
   - If the fix appears to require changing non-3D code, ask the user for permission before editing outside `Assets/Scripts/3d`
 - Working on player movement, duel flow, combat feel, damage, shields, projectiles, abilities, or augments:
   - Read `GAME_SYSTEMS.md`
+- Working on 3D Invasion, PvE waves, 3D enemies, enemy AI, enemy projectiles, or player-vs-enemy faction filtering:
+  - Read `3D.md` first
+  - Then read `3D_invasion.md` and `3D_AI.md`
+  - Also read `3D_COMBAT.md`, `3D_NETWORKING.md`, and `3D_BUGS.md` if the task affects projectiles, damage, networking, or recurring pitfalls
 - Working on menus, ship select, augment select, HUD, round flow, or manager responsibilities:
   - Read `UI_MANAGERS.md`
 - Working on Netcode for GameObjects, prediction, interpolation, reconciliation, spawning, or future projectile sync:
@@ -104,6 +112,10 @@ When updating docs:
 
 When writing or changing code in this repo:
 
+- when you're in plan mode/asked to make a plan, ask EXTENSIVE questions to the user to prevent any miscommunication. highlight what parameters to expose, any edge cases, how to architect the system (simplicity vs complexity), etc. You should probalby be asking at least 6-9 questions per plan mode. Your questions should leave very little ambiguity as to the design intentions and how things should look/behave. 
+- MAKE SURE TO ADD TOOLTIPS TO ANY PARAMETERS WHICH MIGHT BE UNCLEAR
+- FOCUS ON CLEAR NAMING CONVENTIONS FOR SERIALZIED PARAMETERS
+- you tend to vastly over-engineer things and complicate solutions - be aggressive with making sure we are preferring the simplest implementation to get the desired goal. Challenge me and ask me questions about how I want to implement a system so that it's easy for me to edit as the game developer. 
 - prefer the simplest solution that fully solves the stated task
 - when a task is explicitly scoped to the 3D implementation path, do not edit non-3D gameplay scripts without first getting the user's permission
 - prioritize readability and maintainability over cleverness

@@ -13,7 +13,8 @@ public class ProjectileWeapon3D : Weapon3D
         impactForce = 0f,
         recoilForce = 0f,
         energyCost = 18f,
-        targetTag = "Enemy"
+        targetTag = "Enemy",
+        targetFaction = Faction3D.Neutral
     };
 
     [Header("Audio")]
@@ -27,6 +28,27 @@ public class ProjectileWeapon3D : Weapon3D
     public void SetWeaponConfig(ProjectileWeaponConfig3D config)
     {
         weaponConfig = config;
+    }
+
+    public void ApplyProfile(PlayerBalanceProfile3D.ProjectileWeaponStats stats)
+    {
+        weaponConfig.cooldown = Mathf.Max(0f, stats.cooldown);
+        weaponConfig.speed = Mathf.Max(0f, stats.speed);
+        weaponConfig.damage = Mathf.Max(0f, stats.damage);
+        weaponConfig.lifetime = Mathf.Max(0f, stats.lifetime);
+        weaponConfig.energyCost = Mathf.Max(0f, stats.energyCost);
+    }
+
+    public PlayerBalanceProfile3D.ProjectileWeaponStats CaptureProfileStats()
+    {
+        return new PlayerBalanceProfile3D.ProjectileWeaponStats
+        {
+            cooldown = weaponConfig.cooldown,
+            speed = weaponConfig.speed,
+            damage = weaponConfig.damage,
+            lifetime = weaponConfig.lifetime,
+            energyCost = weaponConfig.energyCost
+        };
     }
 
     public bool TryFire()
@@ -43,6 +65,52 @@ public class ProjectileWeapon3D : Weapon3D
         }
 
         if (!FireProjectilePattern(request, weaponConfig, fireSound))
+        {
+            return false;
+        }
+
+        _nextFireTime = Time.time + Mathf.Max(0f, weaponConfig.cooldown);
+        StartCooldown();
+        return true;
+    }
+
+    public bool TryFireAtFaction(Faction3D targetFaction, string targetTagOverride = null)
+    {
+        if (Time.time < _nextFireTime)
+        {
+            return false;
+        }
+
+        ProjectileFireRequest3D request = BuildDefaultFireRequest(weaponConfig);
+        request.targetFaction = targetFaction;
+        if (targetTagOverride != null)
+        {
+            request.targetTag = targetTagOverride;
+        }
+
+        if (request.projectilePrefab == null || !TrySpendResource(weaponConfig.energyCost))
+        {
+            return false;
+        }
+
+        if (!FireProjectilePattern(request, weaponConfig, fireSound))
+        {
+            return false;
+        }
+
+        _nextFireTime = Time.time + Mathf.Max(0f, weaponConfig.cooldown);
+        StartCooldown();
+        return true;
+    }
+
+    public bool CanFireNow()
+    {
+        return Time.time >= _nextFireTime && CanSpendResource(weaponConfig.energyCost);
+    }
+
+    public bool TryConsumeFireGate()
+    {
+        if (!CanFireNow() || !TrySpendResource(weaponConfig.energyCost))
         {
             return false;
         }

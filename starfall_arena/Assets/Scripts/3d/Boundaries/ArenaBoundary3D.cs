@@ -1,6 +1,9 @@
 using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 [DisallowMultipleComponent]
 [RequireComponent(typeof(NetworkObject))]
@@ -123,6 +126,15 @@ public class ArenaBoundary3D : NetworkBehaviour
     [SerializeField] private float minY = -35f;
     [SerializeField] private float maxY = 35f;
     [SerializeField] private float wallThickness = 3f;
+
+    [Header("Gizmos")]
+    [Tooltip("Draws the arena boundary gizmo in the Scene view even when this object is not selected.")]
+    [SerializeField] private bool drawBoundaryGizmos = true;
+    [Tooltip("Draws the text labels for the start/current boundary gizmo.")]
+    [SerializeField] private bool drawBoundaryLabels = true;
+    [SerializeField] private Color startBoundsGizmoColor = new Color(0.2f, 0.9f, 1f, 0.45f);
+    [SerializeField] private Color currentBoundsGizmoColor = new Color(1f, 0.35f, 0.1f, 0.85f);
+    [SerializeField] private Color blockerGizmoColor = new Color(1f, 0.9f, 0.15f, 0.35f);
 
     [Header("Shrink")]
     [Tooltip("Starts the generated boundary when this component enables. Leave on for standalone arena testing; SceneManager3D can still reset/start/stop it during rounds.")]
@@ -329,6 +341,11 @@ public class ArenaBoundary3D : NetworkBehaviour
         ValidateConfig();
     }
 
+    private void OnDrawGizmos()
+    {
+        DrawBoundaryGizmos();
+    }
+
     public static bool TryGetActive(out ArenaBoundary3D boundary)
     {
         boundary = _activeBoundary;
@@ -405,6 +422,131 @@ public class ArenaBoundary3D : NetworkBehaviour
             Mathf.Clamp(position.x, center.x - halfWidth, center.x + halfWidth),
             Mathf.Clamp(position.y, _currentMinY + yMargin, _currentMaxY - yMargin),
             Mathf.Clamp(position.z, center.y - halfLength, center.y + halfLength));
+    }
+
+    public Bounds GetCurrentWorldBounds(float margin = 0f)
+    {
+        margin = Mathf.Max(0f, margin);
+        float halfWidth = Mathf.Max(0f, (_currentWidth * 0.5f) - margin);
+        float halfLength = Mathf.Max(0f, (_currentLength * 0.5f) - margin);
+        float minBoundsY = Mathf.Min(_currentMinY + margin, _currentMaxY);
+        float maxBoundsY = Mathf.Max(_currentMaxY - margin, minBoundsY);
+        Vector3 boundsCenter = new Vector3(
+            center.x,
+            (minBoundsY + maxBoundsY) * 0.5f,
+            center.y);
+        Vector3 boundsSize = new Vector3(
+            halfWidth * 2f,
+            Mathf.Max(0f, maxBoundsY - minBoundsY),
+            halfLength * 2f);
+        return new Bounds(boundsCenter, boundsSize);
+    }
+
+    private void DrawBoundaryGizmos()
+    {
+        if (!drawBoundaryGizmos)
+        {
+            return;
+        }
+
+        ValidateConfig();
+
+        Bounds startBounds = GetBounds(startWidth, startLength, minY, maxY);
+        DrawBoundsGizmo(startBounds, startBoundsGizmoColor);
+
+        bool hasRuntimeDimensions = _currentWidth > 0f && _currentLength > 0f && !Mathf.Approximately(_currentMinY, _currentMaxY);
+        if (Application.isPlaying && hasRuntimeDimensions)
+        {
+            Bounds currentBounds = GetBounds(_currentWidth, _currentLength, _currentMinY, _currentMaxY);
+            DrawBoundsGizmo(currentBounds, currentBoundsGizmoColor);
+            DrawBlockerGizmos(currentBounds);
+            DrawBoundaryLabel(currentBounds, "Current", _currentSizePercent);
+        }
+        else
+        {
+            DrawBlockerGizmos(startBounds);
+            DrawBoundaryLabel(startBounds, "Start", 100f);
+        }
+
+        Gizmos.color = Color.white;
+        Gizmos.DrawWireSphere(startBounds.center, Mathf.Max(0.5f, Mathf.Min(startBounds.size.x, startBounds.size.y, startBounds.size.z) * 0.015f));
+        Gizmos.DrawLine(
+            new Vector3(startBounds.min.x, startBounds.center.y, startBounds.center.z),
+            new Vector3(startBounds.max.x, startBounds.center.y, startBounds.center.z));
+        Gizmos.DrawLine(
+            new Vector3(startBounds.center.x, startBounds.min.y, startBounds.center.z),
+            new Vector3(startBounds.center.x, startBounds.max.y, startBounds.center.z));
+        Gizmos.DrawLine(
+            new Vector3(startBounds.center.x, startBounds.center.y, startBounds.min.z),
+            new Vector3(startBounds.center.x, startBounds.center.y, startBounds.max.z));
+    }
+
+    private Bounds GetBounds(float width, float length, float boundsMinY, float boundsMaxY)
+    {
+        float safeWidth = Mathf.Max(MinDimension, width);
+        float safeLength = Mathf.Max(MinDimension, length);
+        float safeMinY = Mathf.Min(boundsMinY, boundsMaxY);
+        float safeMaxY = Mathf.Max(boundsMinY, boundsMaxY);
+        float height = Mathf.Max(MinDimension, safeMaxY - safeMinY);
+        return new Bounds(
+            new Vector3(center.x, (safeMinY + safeMaxY) * 0.5f, center.y),
+            new Vector3(safeWidth, height, safeLength));
+    }
+
+    private static void DrawBoundsGizmo(Bounds bounds, Color color)
+    {
+        Color previousColor = Gizmos.color;
+        Gizmos.color = color;
+        Gizmos.DrawWireCube(bounds.center, bounds.size);
+        Gizmos.color = new Color(color.r, color.g, color.b, color.a * 0.08f);
+        Gizmos.DrawCube(bounds.center, bounds.size);
+        Gizmos.color = previousColor;
+    }
+
+    private void DrawBlockerGizmos(Bounds bounds)
+    {
+        Color previousColor = Gizmos.color;
+        Gizmos.color = blockerGizmoColor;
+
+        float thickness = Mathf.Max(0.01f, wallThickness);
+        Gizmos.DrawWireCube(
+            new Vector3(bounds.center.x, bounds.center.y, bounds.max.z),
+            new Vector3(bounds.size.x, bounds.size.y, thickness));
+        Gizmos.DrawWireCube(
+            new Vector3(bounds.center.x, bounds.center.y, bounds.min.z),
+            new Vector3(bounds.size.x, bounds.size.y, thickness));
+        Gizmos.DrawWireCube(
+            new Vector3(bounds.max.x, bounds.center.y, bounds.center.z),
+            new Vector3(thickness, bounds.size.y, bounds.size.z));
+        Gizmos.DrawWireCube(
+            new Vector3(bounds.min.x, bounds.center.y, bounds.center.z),
+            new Vector3(thickness, bounds.size.y, bounds.size.z));
+        Gizmos.DrawWireCube(
+            new Vector3(bounds.center.x, bounds.max.y, bounds.center.z),
+            new Vector3(bounds.size.x, thickness, bounds.size.z));
+        Gizmos.DrawWireCube(
+            new Vector3(bounds.center.x, bounds.min.y, bounds.center.z),
+            new Vector3(bounds.size.x, thickness, bounds.size.z));
+
+        Gizmos.color = previousColor;
+    }
+
+    private void DrawBoundaryLabel(Bounds bounds, string label, float sizePercent)
+    {
+#if UNITY_EDITOR
+        if (!drawBoundaryLabels)
+        {
+            return;
+        }
+
+        Vector3 labelPosition = bounds.center + Vector3.up * ((bounds.size.y * 0.5f) + 4f);
+        Handles.color = Color.white;
+        Handles.Label(
+            labelPosition,
+            $"{label} Arena Boundary\n" +
+            $"W {bounds.size.x:0.#} / H {bounds.size.y:0.#} / L {bounds.size.z:0.#}\n" +
+            $"Center ({bounds.center.x:0.#}, {bounds.center.y:0.#}, {bounds.center.z:0.#})  Size {sizePercent:0.#}%");
+#endif
     }
 
     private void UpdateShrink()

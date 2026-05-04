@@ -1,0 +1,473 @@
+# 3D_invasion.md
+
+This document owns the 3D Invasion mode notes.
+
+Invasion is a 3D PvE mode where two player ships fight finite waves of alien enemies. It lives in the `3d_invasion` scene path and is now the only 3D gameplay branch exposed by the title host flow.
+
+For wave numbers, enemy stats, reward payloads, player ship baselines, boss pressure, and other tuning-sensitive mechanics, also read `3D_invasion_balancing.md`.
+
+## Mode Flow
+
+Networked 3D Invasion is planned as a two-player cooperative PvE mode with roughly five finite waves for the current target. The enemy roster comes from the enemies documented in `3D_AI.md`; wave composition is authored on `InvasionWaveManager3D`.
+
+Current implemented beginning flow:
+
+- players enter from the normal title-screen network flow, complete 3D ship select, and load into `3d_invasion`
+- `InvasionSceneManager3D` spawns the two selected player ships once, binds the gameplay HUD, resets/starts `ArenaBoundary3D`, and starts the wave manager
+- `InvasionSceneManager3D` owns player lives and respawns for this mode: each player starts with the configured life count, loses one life on death, respawns at the death position while lives remain, and stays dead once the death leaves that player at zero lives
+- respawned players receive temporary invulnerability through the existing `Player3D.BeginDodgeInvulnerability(...)` damage gate, and the manager pulses the child `ShieldController.OnHit(...)` during that window so the shield stays visibly high-alpha/flashing without changing the shared shield script
+- there is no versus/collaboration intro canvas in this slice
+- the existing round text canvas is reused only for `WAVE 1`, `WAVE 2`, etc.
+- countdown UI is not used
+- player HUD elements stay active during gameplay: health, vignette, crosshair, weapon container, ability container, FPS/ping, enemy tracker, optional enemy counter, and optional heart/life counter
+- win trackers, round-end screens, and end-of-wave stat summaries are not used
+- the shared game-end screen manager is reused for Invasion completion/failure: final wave clear shows victory, full team wipe shows defeat, and the existing record field is supplied with the local player's enemy-kill count
+- between cleared waves, Invasion now enters a dedicated reward intermission before the next `WAVE N` intro. Players are movement/input locked, each player gets their own three-card stat-draft offer, and gameplay resumes only after both picks resolve.
+- during that reward intermission, the normal gameplay HUD roots are hidden so the upgrade presentation can take visual priority; the HUD is restored before the next `WAVE N` intro/gameplay beat resumes
+- players are not repositioned, despawned between waves, or movement-locked by the Invasion scene manager
+- when the final configured wave is cleared, `InvasionSceneManager3D` records the local profile's Invasion completion flag in `PlayerPrefs`; in networked Invasion the host also sends completion and game-end messages so connected clients save the same flag locally and show the same end screen
+- if both players run out of lives, Invasion ends in defeat instead of leaving a dead team in an active wave
+- when Invasion ends, players are movement/combat locked and the arena boundary stops immediately. Victory can optionally wait for a short authored delay before gameplay HUD roots are hidden and the reused game-end canvas appears; defeat presentation is immediate.
+
+Important scene-manager pitfall:
+
+- `SceneManager3D` is PvP duel-shaped: it waits on the versus screen, locks movement for countdown, ends rounds on player death, stops combat, hides HUD for round-end/game-end screens, applies win tracking, and despawns/repositions players between rounds.
+- Do not reuse `SceneManager3D` directly for Invasion. Doing so would drag PvP round cleanup into a wave-owned PvE mode and fight `InvasionWaveManager3D`, which must remain the owner of wave progression and alive-enemy tracking.
+
+## Current First Slice
+
+Implemented foundation:
+
+- `FactionMember3D` gives 3D combat objects an explicit team identity: `Neutral`, `PlayerTeam`, or `EnemyTeam`
+- 3D projectiles now carry a target faction in addition to the older target tag
+- faction checks are preferred for PvE projectile damage, with tags retained only as a compatibility fallback
+- `Enemy3D` remains a narrow coordinator over focused enemy systems
+- `EnemyAIFlightController3D` is a simple enemy Rigidbody motor: rotate toward a world-space direction, then move forward
+- `EnemyTargetSensor3D` selects the nearest visible player-team entity
+- `EnemyObstacleAvoidance3D` uses non-alloc 3D physics probes to steer around asteroids/world obstacles
+- `BasicShooterEnemyBrain3D` chases the nearest visible player, slows near the target to avoid orbiting, and fires at `PlayerTeam` when aimed and off cooldown
+- `ArtilleryBeamEnemyBrain3D` holds a longer standoff range, kites backward when pressured, and sustains a faction-targeted beam only while it still has line-of-sight and aim on a player-team target
+- `ArtilleryFortressEnemyBrain3D` is a limited-range siege enemy that mostly anchors, slowly creeps into cannon range when close enough to engage, lead-aims a slow heavy cannonball, locks its fire direction during charge windup, optionally fires close-range guided missiles and staggered laser-bolt turrets, and replicates the charge telegraph to clients
+- `SuicideDroneEnemyBrain3D` is a dedicated kamikaze brain that always drives at the nearest player at full speed and detonates on contact/proximity using server-authoritative direct damage
+- `TankEnemyBrain3D` is a slow, high-HP heavy that advances to a wide hold-band, then sits and pressures the player with two independent weapons: a slow heavy cannon and a homing missile launcher; it reuses `ProjectileWeapon3D` for both slots and `MissileProjectile3D` as the missile prefab
+- `RammerEnemyBrain3D` is a fast strike enemy that chases the player at full speed and slams into them on contact for chip damage plus a large knockback, then arcs away to circle back; the knockback routes through the existing `NetMovement3D.ApplyCombatVelocityDelta` recoil hook so the impulse replicates correctly across the network without a new RPC
+- `SplitterEnemyBrain3D` owns the Splitter enemy identity: the parent hybrid chooses between projectile and beam pressure based on range plus a random overlap band, then on death asks `InvasionWaveManager3D` to spawn the same prefab twice as smaller role-locked children
+- `TriumvirateEnemyBrain3D` owns the Triumvirate enemy identity: small linked beam ships form a triangle, reveal cosmetic lightning links, and then fire a survivor-scaled lightning beam where the full three-ship version is the only slow-applying version
+- `SwarmScoutEnemyBrain3D` owns the Swarm Scout enemy identity: fragile fast flyers move in linked formations, default to a pentagon-style flyby through/past the player, can fall back to orbit behavior through a movement-pattern dropdown, and only alert nearby enemy sensors if the required survivor count remains alive near the player through the warmup
+- `SiegeCarrierBossEnemyBrain3D` owns the second Invasion boss identity: a slow/stationary Siege Carrier that maintains a preferred range band without constantly rotating its hull toward the player, runs one random major bullet-hell-style pattern lane per detected active player up to two simultaneous lanes, mixes targeted projectile pressure with lagging beam convergence, formation missile salvos, a two-hardpoint lightning slow beam, and optional enemy spawn waves, activates boss-centered orbital energy pillars once at the phase-two transition until death/despawn, keeps a hard per-pattern projectile budget, and leaves authored escape lanes instead of flooding the whole arena
+- `NetEnemyMovement3D` makes enemies server-simulated in network sessions
+- `NetEnemyCombat3D` makes enemy projectile damage server-authoritative and broadcasts client cosmetics
+- enemy beam prefabs may now use an optional `BeamVisualDriver3D` such as `ForgeBeamVisualDriver3D` for presentation, but enemy beam gameplay still stays inside `LaserBeam3D` / `NetEnemyCombat3D`
+- `EnemySpawnerWeapon3D` is a prefab-local enemy spawning weapon for Invasion enemies. It spawns one configured enemy prefab at a configured spawn point, repeats for the configured count, and spaces the sequence by `Delay Between Spawns`. It delegates spawning to `InvasionWaveManager3D.SpawnEnemyAt(...)` so network spawning and alive-enemy wave tracking stay centralized. Multiple `EnemySpawnerWeapon3D` components may live on the same enemy or carrier prefab.
+- `SpawnArrivalEffect3D` is an optional prefab-local one-shot spawn presentation component for Invasion enemies. It can spawn an authored arrival VFX prefab, scale it per ship, hide renderers until reveal, and temporarily disable assigned colliders/brains/weapons so enemies do not act before they visually arrive.
+- enemies with `SpawnArrivalEffect3D` stay in a pending-arrival state until the reveal finishes. During that pending window they do not contribute to `InvasionWaveManager3D.AliveEnemyCount`, do not appear on `TargetAwarenessHUD3D`, and do not satisfy "enemy exists" HUD expectations until the ship is actually visible/playable after the arrival beat.
+- `PortalBossSpawn3D` is a prefab-local boss entrance component for large Invasion enemies that should emerge from `Portal3D`. It moves the real boss root from behind the portal to the authored spawn point, disables gameplay during the entrance, and expects the portal prefab to include its own depth-mask disk so only the portion inside the portal silhouette is hidden while the boss exits.
+- `InvasionWaveManager3D` is a finite-wave spawner with nested wave -> sub-wave -> formation authoring
+- `InvasionWaveManager3D` exposes generic defeated-enemy progress for visual systems such as `BlackHoleMenaceVisual3D`: authored sub-wave enemy counts plus enabled bosses define the total, enemy deaths advance the defeated count, and progress is clamped from 0 to 1
+- `InvasionWaveManager3D` now separates wave timing into two authored delays: an end delay after a wave is fully cleared before the next intro is requested, and a start delay after `WAVE N` presentation before enemy spawning begins. The same start delay applies to wave 1 as well, so the first wave does not bypass spawn timing just because there was no prior clear.
+- each wave now owns ordered timed sub-waves plus one optional separate boss block
+- each sub-wave generates one preset formation (`Line`, `Wedge`, `Ring`, or `Grid`) around an authored center spawn point and fills those slots sequentially by enemy-entry order
+- each sub-wave can optionally add simple vertical variation through a `Y Bias` value, which converts part of the formation's secondary-axis spread into local Y offset while keeping the same preset layout
+- sub-waves advance by authored delay after their burst finishes, not by waiting for all earlier enemies to die, so overlapping live enemy groups inside one wave are expected
+- all formation members and optional bosses still spawn through `InvasionWaveManager3D.SpawnEnemyAt(...)` so network spawning, alive-enemy tracking, HUD enemy counts, and death-spawn child tracking stay centralized
+- `InvasionWaveManager3D.SpawnEnemyAt(...)` now validates requested spawn positions before instantiating the enemy. If the authored point overlaps a configured spawn-blocking layer such as asteroids, debris, crippled ships, or other solid world blockers, the manager samples nearby alternate positions; if none are clear, it skips that spawn with a warning instead of creating an enemy embedded in geometry.
+- `InvasionSceneManager3D` is the dedicated beginning-flow manager for networked Invasion. It owns player spawning, per-player life counts, death-position respawns, respawn invulnerability presentation, gameplay HUD activation, wave text presentation, optional enemy counter presentation, optional heart/life counter presentation, UI canvas camera/sorting setup, and arena boundary startup.
+- `InvasionSceneManager3D` now also owns Invasion end flow. It accumulates per-slot run stats across respawned ship instances, reuses `GameEndScreenManager` for local victory/defeat presentation, and sends an Invasion-only custom game-end payload to clients so co-op completion can show the same victory/defeat result screen on both machines while keeping each player's stats local. The `Victory Screen Delay Seconds` field delays only the Victory canvas/HUD swap after final wave clear; it does not delay defeat.
+- `PlayerCombatStats3D` tracks shots fired, shots hit, enemies killed, damage dealt, and damage taken on the gameplay-authoritative side. Invasion accumulates those per live ship instance because respawns destroy/despawn the old player object.
+- `InvasionSceneManager3D` only owns top-level HUD visibility and canvas camera/sorting setup. Actual player HUD data binding still happens through `PlayerHUDManager3D` on the HUD objects themselves, and the ship-specific weapon/ability HUD is runtime-instantiated by `PlayerWeaponAbilityHUDSpawner3D` after a player bind succeeds. The teammate health/shield HUD follows the same local-HUD pattern: it binds from the local player to the other same-faction `Player3D` proxy and reads that proxy's replicated combat state locally instead of adding separate HUD RPCs.
+- `TargetAwarenessHUD3D` should be wired to `EnemyTeam` in Invasion and tuned with a finite awareness range so the enemy tracker only reacts to nearby hostile ships instead of every alive entity in the scene. It can also show the other player through its teammate indicator path, using a separate offscreen edge-icon group and a separate onscreen bracket group. Teammates never reuse hostile health bars, shield bars, attack flashes, boss icon behavior, or hostile offscreen art, and their tracking has its own optional distance cap plus an offscreen scale range.
+- Bug note: network Invasion clients must not rely only on the one-shot wave-start presentation event to enable gameplay HUD. If the scene manager subscribes after that event/RPC fires, the client can look like HUD binding failed even though the real problem is that every gameplay HUD root stayed inactive. Recover HUD visibility from replicated session state (`RoundTransition` / `InMatch`) as well.
+- Bug note: do not subscribe to replicated network session HUD events before `SetInitialUiState()` runs. In `InvasionSceneManager3D`, subscribing first can correctly re-enable client HUD from replicated state and then immediately hide it again when the initial-state pass calls `SetGameplayHudActive(false)`, which looks like a client-only HUD binding failure even though the bind itself succeeded.
+- Bug note: if a HUD canvas root is active but completely invisible in Scene/Game view, inspect its root `RectTransform.localScale` before chasing binding code. `heartCanvas`, `enemyCounterCanvas`, `waveCanvas`, and `teammateCanvas` all regressed with a root scale of `(0,0,0)`, which kept the manager references, active state, and text updates working while making the canvases impossible to see.
+- Bug note: the Invasion enemy counter must resync from `InvasionWaveManager3D.AliveEnemyCount` immediately after `InvasionSceneManager3D` subscribes to wave-manager events. If the wave manager already started spawning because `Start On Enable` was left on or another setup path ran earlier, the initial `AliveEnemyCountChanged` events are already gone, which makes the first spawned enemy or pre-placed boss look uncounted until some later spawn/death triggers another broadcast.
+- Bug note: enemy `NetworkObject` despawn alone is not enough to keep remote clients in sync during combat. In Invasion, enemies used `NetEnemyCombat3D` for attack replication but only player `NetCombat3D` objects were broadcasting `NetCombatState3D`, so clients could see enemies disappear on death without ever receiving intermediate health/shield updates. Enemy damageable entities must broadcast combat-state changes through their own network broker as well.
+- Bug note: player beam weapons in networked Invasion must not reuse duel-only target-tag resolution on the authoritative runtime. `BeamWeapon3D` and `ConvergeBeamWeapon3D` previously saw neutral `"Enemy"` targeting and rewrote it to the opposite player tag through `NetCombat3D.GetEnemyTag()`, so the local client beam cosmetic looked correct while the server damage beam silently searched for `Player1`/`Player2` instead of enemies. Resolve player beam targets through the shared player-targeting helper so generic enemy targeting upgrades to `EnemyTeam` when PvE enemies are present.
+- Bug note: the network wave-intro path must not rely on the host receiving its own replicated wave-start presentation event in order to show `WAVE N`. In `InvasionSceneManager3D`, the host should play `ShowWaveText(...)` directly after `BroadcastWaveStartServer(...)`, while clients use `OnWaveStartPresentationChanged`. Late client scene subscriptions also need recovery from the last replicated wave payload during `RoundTransition`, or the first wave intro can be missed entirely even though wave spawning continues correctly.
+- Bug note: Invasion arrival VFX must not register an enemy as "alive" the same frame the prefab is instantiated if `SpawnArrivalEffect3D` still hides/locks that ship for a reveal delay. The old path added the enemy to wave tracking immediately, which made the enemy counter and target-awareness indicator show invisible not-yet-playable enemies and could also let future logic confuse "spawn requested" with "enemy entered play." Keep unrevealed arrivals in a pending bucket until `SpawnArrivalEffect3D` reports reveal completion, then promote them into alive-enemy tracking and HUD discovery.
+- Bug note: host wave-clear and reward progression must not depend only on the `Enemy3D.Died` subscription path. In networked Invasion, a last-hit that originated from the remote client could still finish as a server-authoritative despawn/teardown timing path, and if the wave manager missed that one callback it would keep a stale tracked enemy forever, which blocked the host reward phase even though the arena was already clear. Keep a destroy/despawn fallback (`InvasionTrackedEnemyLifecycle3D`) and prune dead/disabled/unspawned enemies from the tracked lists before deciding whether a wave is still active.
+- Bug note: the host reward picker must not rely only on `NetworkSessionData.GetLocalSlotIndex()` to decide which local player slot should open cards. In Invasion gameplay, that session lookup can be briefly stale even while the host already owns the spawned player object, which let the client receive reward offers while the host never opened its own local picker. `InvasionSceneManager3D.ResolveLocalPlayerSlot()` should prefer the live owned spawned player object first, then fall back to owner-client-id/session checks, and the host should warn/fall back to Player 1 rather than silently skipping its picker.
+- Bug note: `EnsureRewardStateContainers()` must only create or resize reward arrays, not clear already-built offers. During a network reward phase, the host builds Player 1 offers and then Player 2 offers; clearing both slots during the Player 2 build leaves Player 1 with only `-1` entries, so the host auto-resolves an invalid reward and never shows cards while the client still sees its valid Player 2 offer.
+- Bug note: the reused augment visuals can fail silently if the shared `upgradeSelector` / `AugmentCanvas` hierarchy is still inactive while `AugmentSelectManager.ShowNetworkAugmentSelect(...)` only re-enables the chosen tier child canvas. In that state the host can have a valid local reward choice and an active presenter, but no cards render because the parent presentation roots never re-enter the active hierarchy. `InvasionRewardPhasePresenter3D` should force the shared presentation root and any child `Canvas` objects active before handing off to the old augment UI shell.
+- Bug note: Invasion-only visual tiers still use the shared `AugmentSelectManager` lookup paths. `tier4` is intentionally a single-card tier, so wire only the first button/card references on the manager; missing the button, outer container, inner container, icon, title, or description can let the card appear while navigation, material highlights, or text/icon population still targets the wrong object.
+- Bug note: CRAIZAN CONTRACT visual handling must be per card, not per offer. Treating `Tier4` as the whole reward tier either collapses offers to one card or forces three contract-styled cards; instead keep the offer's Common/Epic/High tier for normal cards and copy the single tier 4 card style only onto contract slots.
+- Bug note: Invasion run stats must not be read only from the currently alive player object at game end. Respawns create a fresh player ship and reset that instance's `PlayerCombatStats3D`, so kills, damage, and accuracy from earlier lives disappear unless `InvasionSceneManager3D` accumulates the dead instance's stats before spawning the replacement.
+
+## Title Screen Entry
+
+- the title-screen host flow now branches directly through a Duel/Invasion select canvas before matchmaking starts
+- the Duel branch loads the normal 2D PvP scene, while the Invasion branch loads `3d_invasion`; the removed 3D duel branch should not be restored through title routing
+- invasion still uses the 3D ship roster; the title flow should not fall back to the 2D roster just because the scene token differs from the duel scene
+- test-only title shortcuts may also target `3d_invasion`, but they should still wait for the normal network `ShipSelect` state before auto-locking their fixed test ships; skipping that visible state makes the join flow look frozen even when the session is progressing correctly
+- the title scene can now optionally auto-start that same 3D invasion test flow on scene load and pick host or client from a serialized default role, so repeated local invasion/network setup does not require manual menu navigation every run
+- when that auto-start path runs as a client, the title flow must keep retrying the move out of the join/IP canvas if the network session reaches `ShipSelect` before the join transition animation finishes; otherwise the client appears stuck on the join UI even though the invasion test flow is already live underneath it
+- the auto-start invasion test helper should wait for the menu/network singletons to finish scene startup before launching the client path; calling the same helper too early from title-scene `Start()` is not reliably equivalent to pressing the test-client button after the scene is already idle
+- the title scene can optionally swap its background roots based on the saved Invasion completion flag. Wire the normal background to `Default Title Background` and the post-clear background to `Invasion Won Title Background` on `TitleScreenManager`.
+
+## Mode Ownership
+
+Networked Invasion is server authoritative:
+
+- the server/host spawns enemies and waves
+- the server runs enemy AI and owns enemy Rigidbody movement
+- the server spawns gameplay projectiles and applies damage
+- clients interpolate enemy movement and show cosmetic projectile spawns
+- client-side enemy copies must not run AI or apply gameplay damage
+
+Do not reuse `NetMovement3D` for enemies. It is player-owner prediction/reconciliation code.
+
+Do not reuse `NetCombat3D.ResolveEnemyTag()` for PvE. That helper is duel-shaped and resolves the opposite player slot.
+
+## Friendly Fire Policy
+
+The current Invasion default is no ally damage:
+
+- player projectiles should not damage player-team entities
+- enemy projectiles should not damage enemy-team entities
+- enemy projectiles target `PlayerTeam`
+- player projectiles target `EnemyTeam` or use the existing `"Enemy"` tag fallback until prefabs are explicitly faction-wired
+
+Unity tags do not carry enough meaning for PvE teams. New Invasion work should use `FactionMember3D` for gameplay filtering and keep tags only for compatibility/readability.
+
+Important tag pitfall:
+
+- the project currently has `Player1`, `Player2`, and `Enemy`
+- it does not have a generic `"Player"` tag in `ProjectSettings/TagManager.asset`
+- enemy targeting or projectile code must not look for `"Player"` in the 3D path
+
+## Wave Direction
+
+The current wave manager supports finite configured waves with timed sub-wave sequencing. Later additions should build on that shape:
+
+- `InvasionWaveManager3D` owns wave order, timed sub-wave sequencing, optional boss spawning, alive-enemy tracking, wave-clear detection, and inter-wave delay
+- each wave should be authored as ordered sub-waves plus an optional separate boss block, not as one flat enemy list
+- each sub-wave should use one authored center spawn point plus one preset formation (`Line`, `Wedge`, `Ring`, or `Grid`) plus an optional `Y Bias` instead of spawning every enemy at one exact point
+- sub-wave members should fill generated formation slots sequentially by entry order, so mixed enemy types can share one layout without per-slot manual authoring
+- sub-waves advance by their authored delay after the burst completes, not by arena-clear; the overall wave still waits for all tracked enemies, tracked child spawns, and the optional boss to die before clearing
+- `InvasionWaveManager3D` owns both wave timing beats: the delay from a cleared wave to the next wave intro, and the delay from wave-intro text to actual spawning
+- `InvasionSceneManager3D` owns the synchronized `WAVE N` text beat before each wave, using `NetworkSessionData.BroadcastWaveStartServer(...)` in network sessions
+- the optional enemy counter should read `InvasionWaveManager3D`'s tracked alive-enemy count through `InvasionSceneManager3D`; do not make enemies or individual AI brains update HUD directly
+- scoring and objective variants are planned work
+- difficulty and stat tuning guidance lives in `3D_invasion_balancing.md`; update that file whenever wave numbers, reward strength, enemy stats, player baselines, boss pressure, or tuning-sensitive mechanics change
+- the current reward implementation is a run-only 3D Invasion reward layer, not a full port of duel augments. It uses 3D-owned reward definitions/state and reuses the old 2D augment-card visuals only as presentation.
+- reward tiers are deterministic for the six reward screens in a seven-wave run: wave 1 reward = `Common`, wave 2 reward = `Epic`, wave 3 reward = `High`, then repeat for waves 4-6. Wave 7 is the boss and does not open another reward phase.
+- each reward asset declares its category, eligible Common/Epic/High tiers, offer weight, repeat rules, visual style override, instant payload, and persistent numeric payloads. Generated reward descriptions should come from the resolved payload so tuning changes are visible on cards.
+- normal stat rewards are repeatable and grouped into five tuning buckets: damage, energy/cooldown, tank, projectile handling, and ship handling. Every generated offer should include at least one normal stat reward so the player always has a reliable scaling pick.
+- CRAIZAN CONTRACT rewards are repeatable trade-off cards that are mechanically eligible in Common/Epic/High offers but use per-card tier 4 visuals. Tier 4 is a reusable visual treatment, not a full one-card or three-card reward tier. Offers may contain at most two contracts and must never be all contracts.
+- the reward presenter maps normal offer tiers onto the old augment UI shells directly: `Common -> tier 1`, `Epic -> tier 2`, `High -> tier 3`. Contract cards carry per-card visual metadata so they can borrow the single tier 4 card style inside an otherwise tier 1-3 offer.
+- rewards are inserted after a wave is fully cleared and before the normal inter-wave delay plus next-wave intro. The final configured wave does not open another reward phase.
+- the reward phase temporarily hides the gameplay HUD through `InvasionSceneManager3D.SetGameplayHudActive(false)` on both host and clients, then restores it once both picks resolve so the next-wave intro can reuse the normal HUD-visible flow
+
+### Reward Strength Progression
+
+Use these as tuning targets for a seven-wave Invasion run with rewards after waves 1-6 and the boss on wave 7:
+
+- after rewards 1-2, the player should feel modestly improved but still vulnerable. A typical build should be roughly `+10-25%` stronger in one or two chosen axes, so early weak enemies still matter but begin to feel more manageable.
+- after rewards 3-4, the player should feel meaningfully online. A typical build should be roughly `+35-70%` stronger in its focused combat role, enough to support denser waves, stronger enemy variants, or more mixed pressure.
+- after rewards 5-6, the player should feel specialized and powerful. A focused build can reasonably reach roughly `+80-140%` effective strength in its main axis, while unfocused builds should still have several useful improvements rather than feeling flat.
+- normal stat damage alone should usually end a run around `+30-75%` damage depending on how often it is chosen and whether `Future Investment` was taken early. It should not multiply reward-by-reward; all percent bonuses add into one total before applying.
+- CRAIZAN CONTRACTS intentionally allow higher peaks, especially damage, energy throughput, durability, or handling, but those peaks should come with obvious survival or control costs. Enemy balance should assume contracts can create sharper builds than normal stat cards, not that every player will take them.
+- survivability progression should come from several additive channels: max hull/shield, incoming damage reduction, shield regeneration, reactive shields, overcharge, repairs, and extra life. Avoid tuning enemies around only max-health growth, because defensive builds may be strong through recovery or mitigation instead.
+- sustain and momentum perks are intentionally modest but reliable: `Combat Repair Protocol` repairs hull on non-boss kills, `Shield Leech` restores shield from confirmed applied damage, `Efficient Thrusters` gives a short speed/acceleration boost after generic dodges, and `Target Momentum` rewards repeated hits on one target. These do not require bespoke VFX and should stay readable through existing HUD/stat behavior.
+- the boss wave should assume the player has six rewards, but not assume a perfect build. Boss baseline tuning should feel fair against a mixed build, while optional hazards/add pressure can challenge high-roll contract or focused builds.
+
+Keep menu/mode-entry integration separate from this foundation unless the task specifically asks for it.
+
+## Editor Wiring
+
+For the first basic shooter enemy prefab:
+
+- add `NetworkObject` if it will spawn in networked Invasion
+- add `FactionMember3D` and set faction to `EnemyTeam`
+- add `Enemy3D`
+- add `Rigidbody`
+- `ShipFlight3D` may still exist because `Enemy3D` inherits shared `Entity3D`, but `Enemy3D` disables it at runtime so it does not fight enemy movement
+- add `EnemyAIFlightController3D`
+- add `EnemyTargetSensor3D`
+- add `EnemyPatrol3D` so the enemy searches the arena when players are outside detection range; it generates runtime waypoints from the active `ArenaBoundary3D` or its fallback `5000 x 5000 x 5000` bounds, so no manual scene waypoint placement is needed
+- add `EnemyObstacleAvoidance3D` and set `Obstacle Mask` to asteroids/world-geometry layers
+- add `BasicShooterEnemyBrain3D`
+- add `ProjectileWeaponEnemy3D`; the brain's aim tolerance gates when shots are allowed, and the brain supplies the target direction when firing so the projectile does not inherit the allowed facing error at long range
+- optional: add `ProjectileChargeTelegraph3D` plus `EnemyProjectileChargeAttack3D` when this basic enemy should visibly wind up before firing. Keep the charge driver's `Weapon Type` set to `Projectile`, assign `Projectile Weapon Component` to the projectile or missile weapon, assign `Charge Telegraph`, and tune `Charge Duration`; the brain will use the driver automatically when it is present.
+- when that telegraph should use the warning sphere, enable `Use Warning Sphere` on `ProjectileChargeTelegraph3D`, assign the warning sphere prefab, and tune `Warning Sphere End Scale Multiplier`; the charge driver will keep the chosen player target locked while the sphere follows that player's explicit warning anchor live
+- optional `ShipThrusterVfx3D` can stay on enemies; it reads `EnemyAIFlightController3D.IsMovingForward` when present
+- optional: add `SpawnArrivalEffect3D` when the enemy should warp in before appearing. Assign `Assets/Asset Packs/FORGE3D/Sci-Fi Effects/Effects/Warp Jump/WarpJumpIn_red_linear.prefab` as the arrival effect prefab, tune the prefab root scale and `Effect Scale Multiplier` per ship size, keep `Force Particle Hierarchy Scaling` enabled for Forge warp prefabs, keep `Multiply By Ship Scale` enabled for scaled variants, set `Reveal Delay Seconds` to the moment the ship should appear, and assign any gameplay colliders/brains/weapons that should stay disabled until reveal.
+- add `NetEnemyMovement3D` and `NetEnemyCombat3D` for networked enemies
+- create an `EnemyBalanceProfile3D` asset, initialize it from the prefab's current health, movement, detection, weapon, and brain tuning, then add `EnemyBalanceProfileApplier3D` on the prefab root and assign the profile before adding the prefab to waves
+- set the root tag to `Enemy` for compatibility, but do not rely on that tag for new PvE damage rules
+
+For a suicide drone enemy prefab:
+
+- add `NetworkObject` if it will spawn in networked Invasion
+- add `FactionMember3D` and set faction to `EnemyTeam`
+- add `Enemy3D`
+- add `Rigidbody`
+- add `EnemyAIFlightController3D`
+- add `EnemyTargetSensor3D`
+- add `EnemyPatrol3D` for no-target arena search behavior
+- optionally add `EnemyObstacleAvoidance3D` if the drone should weave around asteroids instead of beelining
+- add `SuicideDroneEnemyBrain3D`
+- add `NetEnemyMovement3D` for networked movement replication
+- do not add `ProjectileWeapon3D` or `NetEnemyCombat3D` unless the drone also has a separate ranged attack
+- create an `EnemyBalanceProfile3D` asset, initialize it from the prefab's current health, movement, detection, weapon, and brain tuning, then add `EnemyBalanceProfileApplier3D` on the prefab root and assign the profile before adding the prefab to waves
+- set the root tag to `Enemy` for compatibility, but keep target/damage filtering faction-driven
+
+For an artillery beam enemy prefab:
+
+- add `NetworkObject` if it will spawn in networked Invasion
+- add `FactionMember3D` and set faction to `EnemyTeam`
+- add `Enemy3D`
+- add `Rigidbody`
+- add `EnemyAIFlightController3D`
+- add `EnemyTargetSensor3D`
+- add `EnemyPatrol3D` for no-target arena search behavior
+- optionally add `EnemyObstacleAvoidance3D` if the artillery ship should path around asteroids while closing distance
+- add `ArtilleryBeamEnemyBrain3D`
+- add `BeamWeapon3D`; set its `targetFaction` to `PlayerTeam` and keep `targetTag` empty unless you intentionally need legacy fallback
+- if you want the Forge line-renderer look, use `Assets/Prefabs/Weapons/Projectiles/3d/projectiles/enemies/beam/enemy_beam_forge_red.prefab` as the beam prefab instead of the older cylinder-based enemy beam
+- add `NetEnemyMovement3D` and `NetEnemyCombat3D` for networked movement plus beam cosmetic replication
+- create an `EnemyBalanceProfile3D` asset, initialize it from the prefab's current health, movement, detection, weapon, and brain tuning, then add `EnemyBalanceProfileApplier3D` on the prefab root and assign the profile before adding the prefab to waves
+- set the root tag to `Enemy` for compatibility, but keep target/damage filtering faction-driven
+
+For an artillery fortress enemy prefab:
+
+- add `NetworkObject` if it will spawn in networked Invasion
+- add `FactionMember3D` and set faction to `EnemyTeam`
+- add `Enemy3D`
+- add `Rigidbody` with gravity off
+- add `EnemyAIFlightController3D`; tune `moveSpeed` low, roughly `20-30`, and `rotationDegreesPerSecond` low, roughly `35-60`, so the fortress can creep into range without becoming a chaser
+- add `EnemyTargetSensor3D`; set `detectionRadius` to at least `maxFiringRange + approachRangeBuffer` so the fortress can acquire targets before they enter cannon range
+- add `EnemyPatrol3D` for no-target arena search behavior; keep its `patrolSpeedScale` low if the fortress should feel like it is sweeping slowly rather than roaming aggressively
+- add `ProjectileWeaponEnemy3D`; configure it as the slow heavy cannon with high damage, long lifetime, long cooldown, `targetFaction = PlayerTeam`, empty `targetTag`, and a muzzle wired to the visible barrel
+- optionally add `StaggeredMissileWeaponEnemy3D` for a guided missile rack; assign each launcher Transform to `weaponConfig.muzzles`, use a projectile prefab with `MissileProjectile3D` in guided mode, set `targetFaction = PlayerTeam`, leave `targetTag` empty, tune the inherited missile weapon cooldown as the full rack activation cooldown (for example `8-10s`), tune `launcherStaggerInterval` as the spacing between individual launcher shots (for example `0.5-1s`), and enable `Randomize Launcher Selection` if missiles should pick a random launcher each shot instead of looping
+- optionally add `MissileLauncherYawTracker3D`; assign the same launcher transforms as `launcherPivots` or leave them empty to auto-use the missile weapon's muzzles, keep `Yaw Only` enabled, start with `yawDegreesPerSecond = 180`, set `localYawOffsetDegrees` only if the model's launcher-forward axis is not local +Z, and set `maxYawFromRestDegrees` to `0` for unlimited yaw or a small clamp if the model should not swivel too far
+- optionally add one or more `StaggeredProjectileWeaponEnemy3D` components for small close-range laser-bolt turrets; assign turret muzzle transforms to `weaponConfig.muzzles`, set `targetFaction = PlayerTeam`, tune the inherited cooldown as the full turret-rack activation cooldown, tune `turretStaggerInterval` as the delay between individual turret bolts, and enable `Randomize Turret Selection` if bolts should pick a random turret each shot instead of looping
+- optionally add `ProjectileTurretYawTracker3D`; for two-part turrets, add one `Turret Binding` per turret, assign the yawing base to `Base Yaw Pivot`, assign its child barrel/head to `Pitch Pivot`, enable `Use Base X Rotation` only for side-mounted bases whose horizontal swivel axis is local X instead of local Y, tune `localYawOffsetDegrees` if the base forward axis is not local +Z, tune `localPitchOffsetDegrees` or `Invert Pitch` if the barrel elevates the wrong way, and clamp `maxYawFromRestDegrees` / `maxPitchFromRestDegrees` if the model should not swivel too far. If `Turret Bindings` is empty, the component falls back to legacy yaw-only `turretPivots` or the turret weapon's muzzles.
+- add `ProjectileChargeTelegraph3D`; assign the ship/body renderers, ensure the material supports emission, keep `Add To Shared Material Emission` off if this fortress should override the shared material's normal glow, leave `Use Charge Color Override` off to preserve the material's emission color while scaling intensity, set `Idle Emission Intensity` to a small nonzero value for a dim idle glow or `0` to leave the original emission color untouched at idle, and set `Max Charge Emission Intensity` around `4-5`; optionally assign a child VFX root or light for a stronger charge tell. Existing prefabs that still carry `ArtilleryFortressChargeTelegraph3D` remain valid through the compatibility wrapper.
+- when the fortress charge should use the warning sphere, enable `Use Warning Sphere` on that telegraph, assign the warning sphere prefab, and tune `Warning Sphere End Scale Multiplier`; the fortress will keep the chosen target entity fixed for the whole charge but refresh its aim solution against that same target live until release
+- add `ArtilleryFortressEnemyBrain3D`; assign the cannon weapon, optional missile weapon, optional close-range turret weapons, and charge telegraph if auto-assignment does not find them; start with `maxFiringRange = 200`, `approachRangeBuffer = 100`, `outOfRangeApproachSpeedScale = 0.2`, `maxMissileRange = 100-120`, `missileAimToleranceDegrees = 45`, `missileToCannonStaggerDelay = 0.35`, `maxTurretRange = 80-100`, and `turretToCannonStaggerDelay = 0.15`
+- add `NetEnemyMovement3D` and `NetEnemyCombat3D` for networked movement plus replicated projectile fire and charge presentation
+- optional: add `PortalBossSpawn3D` when this fortress should arrive through a dimensional portal instead of simply appearing. Assign `Assets/Prefabs/3d_effects/Portal3D.prefab`, tune `Portal Uniform Scale` large enough to cover the fortress silhouette from the gameplay camera, tune `Emerge Distance` / `Emerge Duration` for the intended slow drift, and tune `Portal Shrink Duration` if the close-out should linger longer or snap away faster after the boss tail clears. Leave the optional override arrays empty unless this prefab gains unusual extra gameplay scripts or collider wiring later.
+- create an `EnemyBalanceProfile3D` asset, initialize it from the prefab's current health, movement, detection, weapon, and brain tuning, then add `EnemyBalanceProfileApplier3D` on the prefab root and assign the profile before adding the prefab to waves
+- set the root tag to `Enemy` for compatibility, but keep target/damage filtering faction-driven
+- set high `maxHealth` on `Entity3D` so the fortress survives a real assault
+
+For a tank enemy prefab:
+
+- add `NetworkObject` if it will spawn in networked Invasion
+- add `FactionMember3D` and set faction to `EnemyTeam`
+- add `Enemy3D`
+- add `Rigidbody` (gravity off; tune drag for the slow lumbering feel)
+- add `EnemyAIFlightController3D`; tune `moveSpeed` low and `rotationDegreesPerSecond` low so the tank visibly turns slowly and players can strafe around it
+- add `EnemyTargetSensor3D`
+- add `EnemyPatrol3D` for no-target arena search behavior
+- optionally add `EnemyObstacleAvoidance3D` if the tank should weave around asteroids while advancing
+- add **two** `ProjectileWeapon3D` components on the same root: one configured as the slow heavy cannon (slow projectile speed, high damage, short-to-medium cooldown), one configured as the homing missile launcher (longer cooldown, projectile prefab is a `MissileProjectile3D` variant). Set both weapons' `targetFaction` to `PlayerTeam` and use `MuzzleForward` aiming. Wire each weapon's muzzle Transform to its own visible barrel/launcher on the model.
+- add `TankEnemyBrain3D` and assign both weapon references in its inspector (cannon slot and missile slot are explicitly serialized, since `GetComponent<ProjectileWeapon3D>()` would only resolve the first one)
+- add `NetEnemyMovement3D` and `NetEnemyCombat3D` for networked movement plus replicated fire
+- create an `EnemyBalanceProfile3D` asset, initialize it from the prefab's current health, movement, detection, weapon, and brain tuning, then add `EnemyBalanceProfileApplier3D` on the prefab root and assign the profile before adding the prefab to waves
+- set the root tag to `Enemy` for compatibility, but keep target/damage filtering faction-driven
+- set a high `maxHealth` on `Entity3D` to lean into the tank identity
+
+For a flamethrower enemy prefab:
+
+- add `NetworkObject` if it will spawn in networked Invasion
+- add `FactionMember3D` and set faction to `EnemyTeam`
+- add `Enemy3D`
+- add `Rigidbody` with gravity off
+- add `EnemyAIFlightController3D`; start with moderate `moveSpeed` and a strong `rotationDegreesPerSecond` so the enemy can keep the flame lane on the player without feeling impossible to shake
+- add `EnemyTargetSensor3D`; start with detection range around `180-250`
+- add `EnemyPatrol3D` for no-target arena search behavior
+- add `EnemyStrafeMover3D`; this is required for the active-flame orbit because the enemy must face the player while sliding laterally
+- optionally add `EnemySeparation3D` so multiple flamethrowers do not stack in the same pocket
+- optionally add `EnemyObstacleAvoidance3D` if the enemy should route around asteroids while closing distance
+- add `EnemyFlamethrowerWeapon3D`; assign `Assets/Prefabs/3d_weapons/projectiles/enemies/3d_flamethrower.prefab` as the flame visual prefab, assign a muzzle whose local forward points down the intended flame lane, set `Target Faction = PlayerTeam`, and keep `Target Tag` empty
+- optional: add `ProjectileChargeTelegraph3D` plus `EnemyProjectileChargeAttack3D` when the flamethrower should visibly wind up before a burst. Set the charge driver's `Weapon Type` to `Flamethrower`, assign `Flamethrower Weapon` to `EnemyFlamethrowerWeapon3D`, assign `Charge Telegraph`, and tune `Charge Duration`; `FlamethrowerEnemyBrain3D` will use the driver automatically when it is present.
+- add `FlamethrowerEnemyBrain3D`; start with `Preferred Range Min = 20`, `Preferred Range Max = 30`, `Too Close Retreat Distance = 14`, `Full Approach Distance = 55`, `Aim Tolerance Degrees = 22`, `Flame Orbit Strafe Speed = 10`, and `Flame Orbit Direction Change Interval = 3`
+- add `NetEnemyMovement3D` and `NetEnemyCombat3D` for networked movement plus replicated flame visual state; only the server applies cone damage
+- create a `FlamethrowerEnemyBalanceProfile3D` asset, assign it through `EnemyBalanceProfileApplier3D`, and keep prefab-only wiring such as the flame prefab, muzzle, masks, visuals, audio, collision, and network references on the prefab
+- set the root tag to `Enemy` for compatibility, but keep target/damage filtering faction-driven
+
+For a glass cannon interceptor enemy prefab:
+
+- add `NetworkObject` if it will spawn in networked Invasion
+- add `FactionMember3D` and set faction to `EnemyTeam`
+- add `Enemy3D`
+- add `Rigidbody` (gravity off, low drag)
+- add `EnemyAIFlightController3D`; tune `moveSpeed` very high and `rotationDegreesPerSecond` high so the ship can relocate quickly, then snap into a firing posture before its burst
+- add `EnemyTargetSensor3D`
+- add `EnemyPatrol3D` for no-target arena search behavior
+- optionally add `EnemySeparation3D` if multiple interceptors may spawn together and should not stack on the same perch
+- optionally add `EnemyObstacleAvoidance3D` if the interceptor needs to steer around asteroids during repositioning
+- add `ProjectileWeaponEnemy3D`; configure it as the short-burst gun with roughly 10 damage, 0.2s cooldown, fast hitscan-like projectile speed, and `targetFaction = PlayerTeam`; the interceptor brain will gate firing by nose tolerance and launch shots toward the target
+- add `GlassCannonInterceptorEnemyBrain3D`; start with `preferredRangeMin = 40`, `preferredRangeMax = 50`, `shotsPerBurst = 3`, `preBurstSettleDuration = 0.35`, and `postBurstRecoverDuration = 0.3`
+- add `NetEnemyMovement3D` and `NetEnemyCombat3D` for networked movement plus replicated projectile fire
+- create an `EnemyBalanceProfile3D` asset, initialize it from the prefab's current health, movement, detection, weapon, and brain tuning, then add `EnemyBalanceProfileApplier3D` on the prefab root and assign the profile before adding the prefab to waves
+- set the root tag to `Enemy` for compatibility, but keep target/damage filtering faction-driven
+- set `Entity3D` max health to 15 so a single normal player shot can one-shot it
+
+For a rammer enemy prefab:
+
+- add `NetworkObject` if it will spawn in networked Invasion
+- add `FactionMember3D` and set faction to `EnemyTeam`
+- add `Enemy3D`
+- add `Rigidbody` (gravity off, low drag for fast pursuit feel)
+- add `EnemyAIFlightController3D`; tune `moveSpeed` high and `rotationDegreesPerSecond` high so it can actually arc back around for another pass after a hit
+- add `EnemyTargetSensor3D`
+- add `EnemyPatrol3D` for no-target arena search behavior
+- optionally add `EnemyObstacleAvoidance3D` if the rammer should weave around asteroids while charging
+- add `RammerEnemyBrain3D`; tune `knockbackVelocity` first since that single value drives the whole feel of the enemy
+- add `NetEnemyMovement3D` for networked movement replication; `NetEnemyCombat3D` is **not** required since the rammer has no projectile weapons (and the knockback hook lives on the player's `NetMovement3D`, not on the enemy)
+- rammers are deprecated and currently excluded from `EnemyBalanceProfile3D` extraction; do not add deprecated rammer prefabs to active waves until that path is revived deliberately
+- set the root tag to `Enemy` for compatibility, but keep target/damage filtering faction-driven
+- set moderate `maxHealth` on `Entity3D` (lower than the tank - this is a fast strike unit, not a bruiser)
+
+For a Splitter enemy prefab:
+
+- add `NetworkObject` if it will spawn in networked Invasion
+- add `FactionMember3D` and set faction to `EnemyTeam`
+- add `Enemy3D`
+- add `Rigidbody`
+- add `EnemyAIFlightController3D`
+- add `EnemyTargetSensor3D`
+- add `EnemyPatrol3D` for no-target arena search behavior; spawned children inherit the same patrol fallback
+- add `ProjectileWeaponEnemy3D`; configure it for the closer-range projectile pressure, with `targetFaction = PlayerTeam`
+- add `BeamWeapon3D`; configure it for farther-range laser pressure, with `targetFaction = PlayerTeam`
+- add `SplitterEnemyBrain3D`
+- assign `Splitter Prefab` to this same prefab asset; this is a self-reference to one prefab, not a second child prefab
+- assign the projectile weapon, beam weapon, flight controller, target sensor, and `NetEnemyCombat3D` if auto-assignment does not find them
+- keep `Split Count = 2` for the intended current design
+- tune `Child Scale Multiplier`, `Child Move Speed Multiplier`, `Child Max Health`, and `Child Max Shield` on the brain; spawned children inherit the same prefab but are shrunk, sped up, and refilled to those child stats
+- child `0` becomes beam-only and child `1` becomes projectile-only; their unused weapon component is disabled by the brain
+- tune `Projectile Preferred Distance`, `Beam Preferred Distance`, `Mixed Range Beam Chance`, and `Mixed Range Width` to control how often the parent chooses each weapon when both are reasonable
+- tune `Projectile Convergence Distance` so multi-muzzle projectile volleys cross at the intended distance in front of the Splitter instead of flying parallel from widely spaced hardpoints
+- enable `Log Weapon Choices` temporarily when debugging weapon selection; it reports whether the Splitter chose projectile or beam and whether that choice fired or was blocked
+- add `NetEnemyMovement3D` and `NetEnemyCombat3D` for networked movement plus replicated projectile/beam fire
+- create an `EnemyBalanceProfile3D` asset, initialize it from the prefab's current health, movement, detection, weapon, and brain tuning, then add `EnemyBalanceProfileApplier3D` on the prefab root and assign the profile before adding the prefab to waves
+- set the root tag to `Enemy` for compatibility, but keep target/damage filtering faction-driven
+- add the Splitter prefab to `InvasionWaveManager3D` wave entries; spawned children are added to the same alive-enemy tracking automatically and must be cleared before the wave completes
+
+For a Duelist enemy prefab:
+
+- add `NetworkObject` if it will spawn in networked Invasion
+- add `FactionMember3D` and set faction to `EnemyTeam`
+- add `Enemy3D`
+- add `Rigidbody` (gravity off, low drag for clean strafe response)
+- add `EnemyAIFlightController3D`; tune `moveSpeed` mid-to-high for clean repositioning between perches and `rotationDegreesPerSecond` high enough that the duelist can track the player while strafing laterally
+- add `EnemyStrafeMover3D`; this is what enables true sideways/vertical strafe motion. Set `Max Strafe Speed` higher than the brain's `Dodge Speed` so the cap never clips the dodge, leave `Combine With Flight Thrust` on, and match `Lock To World Y Plane` to the flight controller's flag if you are testing in a planar scene
+- add `EnemyTargetSensor3D`; set `Detection Range` to at least `Beam Preferred Center + Beam Half Width` (default ~250m) so the duelist can acquire targets out at full beam range
+- add `EnemyPatrol3D` for no-target arena search behavior; patrol stops the strafe overlay before taking over so the duelist does not slide while searching
+- optionally add `EnemySeparation3D` if multiple duelists may spawn together and should not stack on the same flank
+- optionally add `EnemyObstacleAvoidance3D` if the duelist needs to weave around asteroids while repositioning
+- add `ProjectileWeaponEnemy3D`; configure as the close-range projectile pressure (fast bolts, short cooldown), `targetFaction = PlayerTeam`
+- add `MissileWeaponEnemy3D`; configure as the mid-range guided missile, `targetFaction = PlayerTeam`, and make sure its projectile prefab carries `MissileProjectile3D`
+- add `BeamWeapon3D`; configure as the long-range beam, `targetFaction = PlayerTeam`. Use `Direction Reference` if the model's beam muzzle local forward is not the intended shot lane
+- add `DuelistEnemyBrain3D`; auto-assignment will pick up the three weapons, the flight controller, the strafe mover, the target sensor, and `NetEnemyCombat3D`. Required wiring you must do by hand:
+  - set `Projectile Layers` to the layers your projectile prefabs live on under `Assets/Prefabs/3d_weapons/projectiles/` (the threat scan only reacts to projectiles on those layers)
+  - confirm `Preferred Range Min/Max` (defaults `100`/`200`) and the per-weapon `Preferred Center` / `Half Width` bands match the engagement distance you want
+  - tune `Vibes Chance` if the duelist feels too predictable (or too erratic) about which weapon it picks
+  - tune `Dodge Chance Per Threat` and `Dodge Cooldown` to set how often dodges actually fire when projectiles come in
+- add `NetEnemyMovement3D` and `NetEnemyCombat3D` for networked movement plus replicated projectile and beam fire
+- create an `EnemyBalanceProfile3D` asset, initialize it from the prefab's current health, movement, detection, weapon, and brain tuning, then add `EnemyBalanceProfileApplier3D` on the prefab root and assign the profile before adding the prefab to waves
+- set the root tag to `Enemy` for compatibility, but keep target/damage filtering faction-driven
+- set moderate `Entity3D` max health; the duelist is a flanker, not a tank, but it should survive longer than a glass-cannon interceptor
+- register the duelist prefab in `Assets/DefaultNetworkPrefabs.asset` for NGO before adding it to wave entries
+
+For a Triumvirate enemy prefab:
+
+- add `NetworkObject` if it will spawn in networked Invasion
+- add `FactionMember3D` and set faction to `EnemyTeam`
+- add `Enemy3D`
+- add `Rigidbody`
+- add `EnemyAIFlightController3D`
+- add `EnemyTargetSensor3D`
+- add `EnemyPatrol3D` for no-target arena search behavior; the coordinator lets all surviving squad members patrol independently until a player is reacquired, then formation logic takes movement back
+- add `BeamWeapon3D`; assign `enemy_lightning_beam.prefab`, set `targetFaction = PlayerTeam`, and set the weapon's `damagePerSecond = 0` if `TriumvirateEnemyBrain3D` is owning one/two/three-member damage scaling
+- add `TriumvirateEnemyBrain3D`; assign the final beam weapon and `NetEnemyCombat3D`, assign `Link Lightning Prefab` to `enemy_lightning_beam.prefab`, and tune the one/two/three-member damage fields plus full-triad slow fields
+- leave `Keep Formation On World Y Plane` off for the intended vertical triangle with one ship high and two low; only enable it if a local test prefab is deliberately locked to a planar Y flight level
+- use `Log State Changes` and temporary `Log Formation Progress` while testing scene setup so stuck states report whether the squad is forming, linking, charging, firing, or cooling down
+- either assign all three `Squad Members` explicitly after placing/spawning a group, or spawn them close together with the same `Squad Key` and an `Auto Link Radius` large enough for discovery
+- add `NetEnemyMovement3D` and `NetEnemyCombat3D` for networked movement plus final beam presentation
+- create an `EnemyBalanceProfile3D` asset, initialize it from the prefab's current health, movement, detection, weapon, and brain tuning, then add `EnemyBalanceProfileApplier3D` on the prefab root and assign the profile before adding the prefab to waves
+- set low `Entity3D` health so the intended counterplay is destroying ships during formation/linking before the full slow beam fires
+- add Triumvirate entries to waves in multiples of three; the brain can degrade to two or one survivor, but the intended enemy identity assumes a three-ship group at spawn
+
+For a Swarm Scout enemy prefab:
+
+- add `NetworkObject` if it will spawn in networked Invasion
+- add `FactionMember3D` and set faction to `EnemyTeam`
+- add `Enemy3D`
+- add `Rigidbody` with gravity off
+- add `EnemyAIFlightController3D`; tune `moveSpeed` and `rotationDegreesPerSecond` very high, and set `moveWhenFacingAngle` wide enough that scouts keep moving through aggressive turns
+- add `EnemyTargetSensor3D` with enough detection range to find players before entering orbit
+- add `EnemyPatrol3D` for no-target search behavior; the brain also keeps its last/fallback heading if patrol is unavailable so the scout does not intentionally idle
+- optionally add `EnemySeparation3D` and `EnemyObstacleAvoidance3D` if swarms need local spreading or asteroid steering
+- add `SwarmScoutEnemyBrain3D`; use `Movement Pattern = Formation Flyby` for the pentagon pass-through behavior, or switch to `Orbit Helix` as the fallback if the flyby needs more tuning
+- start with `Intended Swarm Size = 5`, `Formation Radius = 26`, `Formation Overshoot Distance = 180`, `Required Survivors For Alert = 5`, `Alert Broadcast Radius = 1400`, `Alert Warmup Seconds = 3`, and `Alert Duration = 6`
+- add `NetEnemyMovement3D`; `NetEnemyCombat3D` is not required because scouts do not fire weapons
+- create a `SwarmScoutEnemyBalanceProfile3D` asset, assign it through `EnemyBalanceProfileApplier3D`, and keep prefab-only wiring such as visuals, audio, collision, network references, and death effects on the prefab
+- set the root tag to `Enemy` for compatibility, but keep target/damage filtering faction-driven
+- add Swarm Scout entries to waves in clustered counts of five with little or no spawn delay so the linked movement and full-survivor alert gate read correctly
+
+For a Siege Carrier boss prefab:
+
+- add `NetworkObject` if it will spawn in networked Invasion
+- add `FactionMember3D` and set faction to `EnemyTeam`
+- add `Enemy3D`
+- if the prefab carries an attached boss health bar canvas, add `BossHealthBar3D` on the boss root and wire its `Enemy3D`, `CanvasGroup`, `Canvas`, `SegmentedBar`, and optional TMP health text references directly on the prefab. For `Screen Space - Camera` canvases, leave the component's UI camera override empty unless you need a manual override so it can bind to the shared `UICamera` at runtime through the normal HUD camera resolver.
+- boss bars should stay hidden until their spawn intro is actually complete. If the boss uses `SpawnArrivalEffect3D`, assign that reveal source on `BossHealthBar3D`; if it uses `PortalBossSpawn3D`, assign that instead. The boss bar reveal should be event-driven off the intro completion path, not a guessed hardcoded delay.
+- the boss bar should not pop on the first frame it becomes eligible to show. `BossHealthBar3D` now supports a short fade-in plus optional vertical settle offset so the bar can ease into place after the spawn intro while still reusing `SegmentedBar` for the same durability depletion plus white damage flash as the player HUD.
+- `BossHealthBar3D` is also the boss marker for HUD filtering. Any enemy carrying it should use the boss-specific target-awareness path instead of the normal target-awareness brackets/bars. Bosses only use the dedicated offscreen boss tracker icon, never the normal target-awareness bracket or health/shield presentation, and that boss tracker stays hidden until the same reveal-complete gate used by the boss bar.
+- add `Rigidbody` with gravity off
+- add `EnemyAIFlightController3D`; start with `moveSpeed` around `15` and a slow-to-moderate turn rate so the boss reads as a heavy carrier when it relocates, not a chase enemy
+- add `EnemyTargetSensor3D`; set detection range at least to `max(preferredRangeMax, engagementRange) + approachRangeBuffer`
+- add `EnemyPatrol3D` for no-target search behavior, with low patrol speed if the boss should only drift between sightings
+- add `NetEnemyMovement3D` and `NetEnemyCombat3D` for networked movement plus replicated projectile/beam presentation
+- add `SiegeCarrierBossEnemyBrain3D`; wire separate projectile weapon component arrays for lagging rake and optional formation missile salvos, wire `BeamWeapon3D` components for the lagging beam convergence pattern, wire exactly two lightning `BeamWeapon3D` components for the slow-beam pattern, and optionally wire `EnemySpawnerWeapon3D` components into the enemy spawn-wave weapon array. The brain runs one pattern lane with one active player and adds a second distinct random pattern lane only while a second active player-team target is detected.
+- add `PortalBossSpawn3D` when the carrier should enter through the shared portal asset. Assign `Assets/Prefabs/3d_effects/Portal3D.prefab`, keep the portal scale generous enough to cover the carrier silhouette during emergence, use the component's authored spawn point as the final post-intro boss location, and tune `Portal Shrink Duration` if the portal should hang for a beat after the carrier fully clears it.
+- optional: add `FormationMissileSalvoWeaponEnemy3D` for the missile bloom pattern. Assign eight launcher/muzzle transforms if the model has them, or fewer if the salvo should cycle through repeated launch points. Set `Missile Count` to `8`, configure `Target Faction = PlayerTeam`, keep `Target Tag` empty, and use a projectile prefab with `MissileProjectile3D`.
+- add optional `ProjectileChargeTelegraph3D` components paired to the beam convergence weapons if the model has warning lights or beam emitters that should glow during the beam telegraph; add separate optional telegraphs for the lightning slow-beam weapons if those two emitters should warn before firing
+- add either `Assets/Prefabs/3d_effects/SiegeCarrierOrbitalEnergyPillarVisual3D.prefab` for the preserved red/white V1 look or an equivalent `OrbitalEnergyPillarBluePlasmaVisual3D` child for the blue/white V2 plasma look under the boss prefab, then assign that component to the brain's orbital pillar visual field; set the visual driver's `Launched Sphere Prefab` / `Blue Launched Sphere Prefab` to the authored sphere prefab the carrier should shoot, and tune `Pillar Initial Growth Height`, `Pillar Height Growth Power`, and the sphere transform flash fields so the cylinders visibly grow up/down out of the settled spheres
+- create a `SiegeCarrierBossBalanceProfile3D` asset, assign it through `EnemyBalanceProfileApplier3D`, and tune the boss health, slow movement, preferred range min/max, plane bias, detection range, pattern cooldowns, shot budget, lane counts, phase-two orbital pillar count/radius/timings/damage, formation missile budget cost, beam telegraph, active duration, convergence lag, and beam aim smoothing there
+- configure all boss projectile and beam weapons with `targetFaction = PlayerTeam` and empty `targetTag`; tune the two lightning beam weapons to moderate damage per second, while the slow multiplier/duration/radius live on the boss brain/profile
+- optional: add one or more `EnemySpawnerWeapon3D` components when the boss/carrier should release subordinate enemies. Assign the enemy prefab, count, spawn point, and delay between spawns per component, then add those components to the boss brain's Enemy Spawn Wave Weapons array so the spawn wave joins the normal pattern rotation. Leave `Spawn On Enable` off when the boss brain owns timing. Each spawned prefab still needs normal Invasion enemy wiring and NGO registration if used in a networked session.
+- keep the root tag as `Enemy` for compatibility until every player weapon path is fully faction-authored
+- register the boss prefab in NGO network prefabs before adding it to a boss/elite wave entry
+
+For player prefabs used in Invasion:
+
+- add `FactionMember3D`
+- set faction to `PlayerTeam`
+- assign `Player3D.Warning Sphere Anchor` to a child transform centered on the rendered ship model, not the gameplay root
+- assign the matching `PlayerBalanceProfile3D` asset through `PlayerBalanceProfileApplier3D` before using the prefab in Invasion, so PvE tuning stays in the profile instead of drifting across prefab inspector fields
+- set player projectile weapon configs that should damage enemies to `targetFaction = EnemyTeam`
+- keep existing `Player1` / `Player2` tags for slot compatibility
+
+For `3d_invasion`:
+
+- add `InvasionSceneManager3D`
+- assign player 1 and player 2 spawn points
+- assign the two fallback 3D `ShipData` assets
+- assign `InvasionWaveManager3D`
+- assign `InvasionRewardPhasePresenter3D` and wire its `AugmentSelectManager` reference so the old augment-card visuals can present the new Invasion reward draft. In `3d_invasion`, also wire `AugmentSelectManager` tier 4 references to the first card under `upgradeSelector -> AugmentCanvas -> tier4`; that single card is reused as the per-card CRAIZAN CONTRACT visual source.
+- optionally assign authored `InvasionStatRewardDefinition3D` assets on `InvasionSceneManager3D`. If none are assigned, the manager auto-loads every `InvasionStatRewardDefinition3D` asset found under `Assets/Resources/3D/InvasionRewards`, so the reward pool stays data-driven. The default catalog currently contains 25 assets: five repeatable stat boosts, permanent upgrades, one-time bonuses, and four repeatable CRAIZAN CONTRACTS.
+- each reward asset contains category, eligible reward tiers, optional visual style override, offer weight, repeat/eligibility rules, generated-description toggle, and editable numeric payloads. CRAIZAN CONTRACT assets should keep `Category = Craizan Contract`, `Eligible Reward Tiers = All`, `Use Visual Style Override = true`, and `Visual Style Override = Tier4`.
+- assign the reused round canvas group/text as the Wave UI references
+- optionally enable `Use Enemy Counter`, assign the enemy counter canvas/root, assign its TMP text, and tune the counter text format
+- optionally enable `Use Life Counter`, assign the heart/life counter canvas group, assign its TMP text, set `Starting Player Lives`, and tune the counter text format. `{0}` displays the local player's lives in network sessions or the lowest remaining player lives in non-network sessions; `{1}` and `{2}` display player 1 and player 2 lives respectively.
+- tune `Respawn Rules` on `InvasionSceneManager3D`: `Respawn Delay Seconds` controls how long the death presentation is allowed to breathe before the replacement ship appears, `Invulnerability Seconds` controls the temporary post-respawn damage immunity, and `Shield Flash Interval Seconds` controls how aggressively the manager pulses `ShieldController.OnHit(...)` for the visible high-alpha shield flash.
+- tune `Between-Wave Rewards` on `InvasionSceneManager3D`: enable/disable the reward system, set how many cards appear per offer, tune `Max Craizan Contracts Per Offer` to cap contract cards, tune `Reward Presentation Delay Seconds` for the pause after a wave clear before the reward cards appear, tune `Reward Post Presentation Delay Seconds` for the small pause after the reward screen closes and before the next-wave intro handoff, and either assign an explicit reward list in the inspector or maintain the shared default asset pool under `Assets/Resources/3D/InvasionRewards`.
+- Invasion reward tiers cycle across cleared waves as `Common`, `Epic`, `High`, then repeat. CRAIZAN CONTRACTS can appear in any of those tier groups and borrow tier 4 visuals per card.
+- assign gameplay HUD roots for health, vignette, crosshair, weapon container, ability container, FPS/ping, enemy tracker, and the enemy counter canvas if it should activate with the rest of gameplay HUD. The life counter is controlled through its canvas group instead of a root active toggle.
+- assign UI canvases and optional UI camera so network HUD sorting is deterministic
+- do not let child HUD scripts silently reassign those canvases back to `Camera.main`; the scene-level UI camera should remain the single source of truth for screen-space HUD canvas camera binding
+- assign `ArenaBoundary3D` so the scene manager can reset/start it once when gameplay begins
+- do not wire versus, countdown, win tracker, or round-end UI into this manager
+- assign the reused `GameEndScreenManager` if Invasion should show the end canvas after final wave clear or full team wipe. In the shared manager, the legacy Player 1 serialized canvas fields are now treated as the Victory screen and the legacy Player 2 serialized canvas fields are now treated as the Defeat screen, preserving existing Unity references while matching the current UI design. Victory/Defeat labels are static canvas text/art and do not need manager references. The canvas' final-record label should be authored/read as an enemy-kill count for Invasion because the manager receives a mode-specific record-text override. Tune `Victory Screen Delay Seconds` on `InvasionSceneManager3D` to control how long final-wave victory breathes before the screen appears.
+- add `InvasionWaveManager3D`
+- leave `Start On Enable` off when `InvasionSceneManager3D` owns the scene flow; otherwise waves can begin before players are spawned and before `WAVE N` presentation is subscribed
+- author each wave as ordered sub-waves with center spawn points, formation presets, optional `Y Bias`, enemy entries, burst timing, and optional separate boss settings
+- tune `Spawn Safety` on `InvasionWaveManager3D`: keep `Avoid Blocked Spawn Positions` enabled, set `Spawn Blocking Layers` to the solid asteroid/debris/crippled-ship/world-blocker layers used by the scene, set `Spawn Clearance Radius` large enough for the largest normal enemy spawn footprint, and raise `Spawn Relocation Attempts` / `Spawn Relocation Step` only if authored spawn points sit close to dense obstacle fields.
+- optional: add `BlackHoleMenaceVisual3D` to the scene black hole root, keep its `Accretion Disk Renderer` assigned to the disk child, assign this `InvasionWaveManager3D`, and use `Preview Menace Percent` to tune the blue-to-red run progression in edit mode
+- add roughly five finite wave entries for the current target, starting with at least one basic shooter test wave
+- `Assets/Prefabs/3d_ships/invasionManager.prefab` currently ships with a boss-free five-wave sample set for testing. It exercises basic, suicide, artillery, tank, duelist, splitter, swarm scout, fortress, and triumvirate prefabs across line, wedge, ring, and grid formations, and uses authored child spawn anchors on the prefab for varied spawn centers/facing instead of leaving every sub-wave at the manager root.
+- ensure networked enemy prefabs are registered with NGO before network spawning

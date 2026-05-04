@@ -1,0 +1,58 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: orbital_energy_pillar_shell
+  m_Shader: {fileID: 4800000, guid: caf6153cdfbf4d39a9a6dcd1e76cc568, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs: []
+    m_Ints: []
+    m_Floats:
+    - _Brightness: 20
+    - _CoreFill: 0.271
+    - _CrackleScale: 74.2
+    - _CrackleSharpness: 12
+    - _CrackleSpeed: 20
+    - _CrackleStrength: 6
+    - _CrackleThreshold: 0.473
+    - _DarkGapSoftness: 0.19
+    - _DarkGapStrength: 0.565
+    - _DarkGapThreshold: 0.308
+    - _FresnelPower: 2.32
+    - _FresnelStrength: 0.43
+    - _HaloFill: 0.144
+    - _LayerIntensity: 1
+    - _LayerMode: 1
+    - _NoiseContrast: 2.03
+    - _NoiseScale: 40
+    - _NoiseSpeed: 2
+    - _Opacity: 0.112
+    - _PulseSpeed: 1.5
+    - _PulseStrength: 0.28
+    - _Reveal: 1
+    - _ShellFill: 1
+    - _VerticalBandScale: 0.01
+    - _VerticalBandStrength: 1
+    m_Colors:
+    - _CoreColor: {r: 1.4980391, g: 0, b: 0.014907873, a: 1}
+    - _CrackleColor: {r: 1.4980394, g: 0, b: 0.024161901, a: 1}
+    - _EdgeColor: {r: 2.0000005, g: 0, b: 0.0065612807, a: 1}
+  m_BuildTextureStacks: []
+  m_AllowLocking: 1

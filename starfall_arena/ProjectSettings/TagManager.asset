@@ -18,8 +18,8 @@ TagManager:
   - UI
   - 
   - Projectile1
-  - 
-  - 
+  - blocker
+  - colliders
   - 
   - 
   - 

@@ -61,6 +61,7 @@ These classes should stay narrow and mostly coordinate dedicated 3D systems.
   - shared rigidbody flight
   - assisted pitch/yaw steering driven by filtered input and acceleration-limited turn rates
   - full 3D forward thrust, local drift damping, velocity alignment assist, and max-speed clamping
+  - supports a precision throttle/brake path: low positive thrust input is capped to a slower forward drift speed with reduced acceleration, while negative thrust input brakes local forward speed toward zero
   - optional world-Y plane lock remains only as a fallback/debug path, not the active player-flight default
   - reusable by local player, AI, or future network drivers
 - `ShipVisualTilt3D`
@@ -83,27 +84,47 @@ These classes should stay narrow and mostly coordinate dedicated 3D systems.
 - `ShipSplitOffsetRig3D`
   - shared split-state offset coordinator for grouped ship pieces
   - caches each piece's authored local position and applies inspector-configured additive local offsets while the split state is active
+- `BlackHoleMenaceVisual3D`
+  - optional visual-only black hole controller for 3D Invasion
+  - drives the accretion disk `_MidColor`, `_OuterColor`, and `_HotStreakColor` from a blue start palette toward a red/orange final palette as enemy defeat progress increases
+  - also tints the singularity shader's `_OffscreenDiskArcColor` and `_PhotonRingColor` from the current hot-streak color so the lensed wrap/photon ring stays aligned with menace color progression
+  - blends authored disk colors through a tunable mid-menace palette instead of directly lerping blue to red, which avoids the unwanted purple midpoint without washing the disk fully white at 50% menace
+  - keeps `_InnerColor` pure white through an exposed HDR intensity value
+  - uses a runtime material instance plus the same renderer property-block override path in play mode and edit mode so preview and runtime color application stay visually consistent without dirtying shared material assets
+  - syncs menace progress through a server-written NetworkVariable when the black hole root has a `NetworkObject`
+- `DistantAngularSizeStabilizer3D`
+  - visual-only helper for distant perspective-camera set pieces such as the Invasion black hole
+  - counter-scales the prefab as it moves off the camera forward axis so normal perspective edge growth does not make a fixed background object swell when the player turns
+  - captures the scene instance's current local scale at runtime by default, so prefab or scene scale overrides such as a black-hole root scale of 200 remain the centered baseline
+  - if `Capture Current Scale On Awake` is disabled, keep `Centered Local Scale` equal to the authored prefab scale and tune `Compensation Strength` down only if some natural perspective growth is desired
 
 ### Player-only 3D systems
 
 - `PlayerInput3D`
   - local input adapter
   - feeds movement and weapon systems instead of movement reading raw input directly
+  - maps left-stick Y from the look command into precision forward drift / braking while keeping left trigger as the primary full-thrust control
   - when the active `PlayerInput` control scheme is `key+mouse`, free-look is sourced from locked mouse delta instead of an unlocked pointer position
 - `PlayerCameraRig3D`
   - Cinemachine follow-offset, damping, and FOV behavior
   - intentionally allows turn-driven off-center framing so hard maneuvers can push the ship across the screen before the camera recenters
   - only belongs on the local player path
+- `PlayerScreenShake3D`
+  - local-player Cinemachine impulse feedback controller for high-speed flight pulses and confirmed incoming damage
+  - reads speed from `ShipFlight3D` and receives hit-shake requests from `Player3D` after real shield/hull damage has been applied
+  - gates impulses to the local network owner so remote player proxies do not shake the viewer's camera
 - `Player3D`
   - owns local-player-only 3D coordination, victim-side hit audio, and the dedicated `OnAnchor` input state
   - Anchor is a hold input that suppresses thrust while applying a configurable rotation multiplier for fast facing changes
   - while Anchor is active, `Player3D` can also drive split-state presentation rigs
+  - owns the generic left-stick flick dodge path; this must stay separate from any class-specific dodge ability component in cooldown, movement resolution, and presentation routing
   - owns player shield regeneration timing/rate config (`regenDelay`, `regenRate`) and applies regen with server authority in networked matches
 - `PlayerCombatStats3D`
   - lightweight 3D combat-stat counter attached to spawned 3D players by `SceneManager3D`
-  - tracks shots fired, shots hit, damage dealt, and damage taken for shared round-end/game-end UI
+  - tracks shots fired, shots hit, enemies killed, damage dealt, and damage taken for shared round-end/game-end UI and Invasion completion stats
   - uses tracked attack ids so one trigger pull, beam activation, or multi-muzzle volley counts as one accuracy attempt and at most one hit
   - records stats only on the gameplay-authoritative side, which is the server during networked matches
+  - Invasion accumulates these counters per player slot across respawns because each respawn uses a fresh player object
 - `PlayerHUDManager3D`
   - shared local-player binding source for scene HUD objects in the 3D path
   - resolves the correct player once and broadcasts that binding to dedicated HUD element scripts
@@ -133,6 +154,8 @@ These classes should stay narrow and mostly coordinate dedicated 3D systems.
   - binds through `PlayerHUDManager3D`, pools one canvas widget per active target, and reads replicated proxy transform/health/shield state without sending network messages
   - transitions between edge indicator, floating far/occluded indicator, close visible hidden state, and mid-range visible bracket states
   - uses screen-space ellipse clamping with independently tunable top/bottom padding for offscreen indicators and occlusion checks to avoid showing brackets/bars through world geometry
+  - sizes visible brackets from projected active `MeshRenderer`/`SkinnedMeshRenderer` bounds, or from an optional `TargetAwarenessBounds3D` local-box override on unusual enemy prefabs
+  - reads `TargetAwarenessAttackReporter3D` locally so offscreen attack brackets can pulse only for enemies that recently or actively attacked the bound local player
 - `GigablastChargeEdgeGlow3D`
   - local-player fullscreen Gigablast edge-glow controller
   - reads the charged-shot progress and drives shader globals for the 3D charge-screen effect
@@ -150,7 +173,25 @@ These classes should stay narrow and mostly coordinate dedicated 3D systems.
 ### Enemy-only 3D systems
 
 - `EnemyAIFlightController3D`
-  - produces the same movement-intent shape as player input so enemies can reuse `ShipFlight3D`
+  - simple enemy Rigidbody motor
+  - rotates toward AI-authored world-space move direction and moves forward along the enemy's facing direction
+  - intentionally contains no target selection, pathing, or attack logic
+- `EnemyTargetSensor3D`
+  - selects the nearest visible target in a configured `Faction3D`
+  - current Invasion use targets `PlayerTeam`
+- `EnemyObstacleAvoidance3D`
+  - adjusts free-flight steering with non-alloc 3D spherecast probes against asteroid/world obstacle layers
+- `BasicShooterEnemyBrain3D`
+  - first Invasion enemy brain
+  - directly pursues the nearest visible player and fires at `PlayerTeam` when aimed and off cooldown
+- `SiegeCarrierBossEnemyBrain3D`
+  - boss-pattern coordinator for rakes, beam convergence, missile salvos, lightning slow beams, and orbital energy pillars
+  - owns the orbital pillar presentation directly by pooling a launch spear prefab and blue pillar prefab; the old separate pillar visual component and its spark/link/lightning runtime meshes are removed
+  - treats orbital pillars as a persistent phase-two transition layer: pillars keep a fixed ring radius around the carrier, slowly orbit the boss, and do not use active/fade duration tuning
+- `NetEnemyMovement3D`
+  - server Rigidbody-state replication for networked Invasion enemies
+- `NetEnemyCombat3D`
+  - server-authoritative enemy projectile spawning/damage with client cosmetic projectile broadcasts
 
 ### Compatibility path
 
@@ -198,7 +239,7 @@ Current folder contract:
 
 - `Core`
   - shared 3D base types and config/data definitions
-  - examples: `Entity3D`, `Ship3DTypes`
+  - examples: `Entity3D`, `Ship3DTypes`, `FactionMember3D`
 - `Entities/Player`
   - player-only 3D entity coordination, input, and local camera ownership
   - examples: `Player3D`, `PlayerInput3D`, `PlayerCameraRig3D`, `PlayerHUDManager3D`
@@ -207,7 +248,15 @@ Current folder contract:
   - examples: `PlayerAimReticle3D`, `PlayerHealthShieldHUD3D`, `PlayerLowHealthVignetteHUD3D`, `PlayerWeaponSelectionHUD3D`, `PlayerWeaponAbilityHUDSpawner3D`
 - `Entities/Enemy`
   - enemy-only 3D entity coordination and AI flight intent
-  - examples: `Enemy3D`, `EnemyAIFlightController3D`
+  - examples: `Enemy3D`, `EnemyAIFlightController3D`, `EnemyTargetSensor3D`, `EnemyObstacleAvoidance3D`, `BasicShooterEnemyBrain3D`
+- `Invasion`
+  - 3D Invasion mode flow and wave helpers
+  - examples: `InvasionWaveManager3D`
+- `Environment`
+  - local-only authored environment population and static obstacle helpers
+  - examples: `AsteroidFieldSpawner3D`, `AsteroidBackdropSpawner3D`
+  - prefer explicit seeded generation for local obstacle fields when layout determinism matters for testing, iteration, or future network-safe scene reconstruction
+  - prefer a separate visual-only backdrop spawner for outside-arena dressing so distant scenery does not inherit gameplay colliders or obstacle-placement costs
 - `Flight`
   - shared 3D ship movement and reusable flight behavior
   - examples: `ShipFlight3D`
@@ -219,7 +268,7 @@ Current folder contract:
   - examples: `Ability3D`, `Weapon3D`, `ProjectileWeapon3D`, `Teleport3D`, `TractorBeam3D`
 - `Effects`
   - shared ship presentation and combat/VFX support scripts
-  - examples: `ShipVisualTilt3D`, `ShipThrusterVfx3D`, `ShipSpeedFx3D`, `DeathEffects3D`, `ShipPartScatter3D`, `TimedEffectCleanup3D`
+  - examples: `ShipVisualTilt3D`, `ShipThrusterVfx3D`, `ShipSpeedFx3D`, `PlayerScreenShake3D`, `DeathEffects3D`, `ShipPartScatter3D`, `TimedEffectCleanup3D`
 - `Effects/ShaderControllers`
   - shader-driven 3D effect controllers
   - examples: `LightningBolt3D`, `SplitStateLightningRig3D`
@@ -243,16 +292,78 @@ When adding a new 3D script, place it under the subsystem it serves first. Do no
 
 ## Black Hole Effect Shader Authoring
 
-- the 3D black hole effect uses two materials: `Starfall/3D/BlackHole/AccretionDisk` for a flat local-XZ disk/ring and `Starfall/3D/BlackHole/SingularityLensing` for an inflated sphere around the event horizon
+- the 3D black hole effect uses two core materials: `Starfall/3D/BlackHole/AccretionDisk` for a flat local-XZ disk/ring and `Starfall/3D/BlackHole/SingularityLensing` for the inflated full screen-space lensing sphere around the event horizon
+- the current prefab uses `SingularityLensing` again so the event-horizon sphere can sample `_CameraOpaqueTexture`, bend the already-rendered accretion disk, black out the event horizon, and draw the photon ring/halo in one full implementation
+- the active `BlackHole_SingularityLensing.mat` is tuned from the older high-contrast `BlackHole_SingularityLensing 1.mat` visual profile while keeping the newer queue, foreground rejection, offscreen arc, menace, and scaling infrastructure
+- `SingularitySimple` remains available as a stable gameplay-background fallback: it avoids full scene-color/depth/lens-source sampling while still drawing a black core, photon ring, subtle menace-tinted horizon arc, procedural rear disk wrap, optional narrow screen-sampled wrap, and outer halo
+- use `SingularitySimple` when the full screen-space lensing path creates unacceptable sampling artifacts or foreground/UI interference
+- `Starfall/3D/BlackHole/SingularityLensingLegacy` and `BlackHole_SingularityLensing_Legacy.mat` are explicit preserved copies of the previous screen-space lensing implementation for comparison or rollback
 - the accretion disk shader is additive, but intentionally renders in the opaque render-queue range so URP includes it in `_CameraOpaqueTexture`; this is required for the singularity shader to bend the disk image in screen space
 - because the disk renders before the skybox for lensing capture, it keeps depth writes enabled and clips faint pixels with `Depth Clip Threshold`; otherwise the skybox overwrites the disk anywhere there is no opaque object already behind it
+- the disk shader owns a `Black Hole Shadow Occlusion Radius` center mask so bright opaque/captured disk lanes do not leak through the transparent singularity shell and bloom inside the event horizon
 - the singularity/lensing shader renders after the disk, samples `_CameraOpaqueTexture`, bends samples radially around the sphere center, blacks out the event horizon, and adds a tunable HDR photon ring for bloom
+- the singularity shader early-returns pure event-horizon color inside the black core before sampling scene color; `Debug View Mode` values `1`, `2`, and `3` visualize the horizon mask, lens mask, and disk-light horizon mask for diagnosing intermittent lens artifacts
+- in the current Unity 6 / URP 17 path, URP copies `_CameraOpaqueTexture` after the skybox, so skybox stars and nebulae are available for the black hole lensing pass when the active renderer asset has opaque texture enabled
+- `BlackHoleLensSourceRendererFeature` is the preferred Invasion black-hole lensing path: it renders only the configured lens-source layers into `_BlackHoleLensSourceTexture`, and the singularity shader bends that texture instead of the full camera color when the feature is active
+- keep gameplay ships, HUD/cursors, normal asteroids, and other non-background objects out of the lens-source layer mask; the black-hole accretion disk prefab child currently uses `Background1` so the real disk can be bent without also bending the player or UI
+- skybox pixels are intentionally not captured by this layer-filtered path; add any future lensable starfield/nebula cards or meshes to `Background1`/`Background2` if they should bend, while leaving gameplay objects on their normal layers
+- transparent background-only particles such as `StarParticle_Mat` should render before the singularity shell, currently queue 2800 / `Transparent-200`, so the black hole can cover them while normal gameplay transparencies still render later
+- the singularity/lensing material renders at queue 2900 (`Transparent-100`) so it can bend captured background/disk color before normal transparent gameplay VFX, ship flames, world reticles, and HUD-like overlays draw on top of it
+- screen-space lensing cannot sample accretion-disk pixels that are physically off-screen; the singularity shader therefore has a small `Offscreen Disk Arc` fallback that appears only when the bent source UV leaves the camera frame, while the normal on-screen look still comes from the captured lens-source texture
+- `BlackHoleMenaceVisual3D` also tints the singularity shader's `Offscreen Disk Arc HDR Color` from the current menace hot-streak color, so the fallback arc follows the same blue-to-red progression as the real accretion disk
+- bent lens-source UVs must fade out at the screen edge instead of clamping to the nearest edge pixel; clamping can smear a bright disk/photon pixel across the lens and cause tiny white flashes while the camera moves
+- singularity shaders compute their lens/core radius from scaled world radius, camera-to-object distance, and projection focal length instead of projecting local axis offsets; this keeps the black hole from swelling when a perspective camera turns and the object moves toward the screen edge
+- the black-hole prefab also uses `DistantAngularSizeStabilizer3D` on the root so the real disk and sphere meshes counter-scale with the same off-axis compensation as the shader masks
+- foreground rejection uses `_CameraDepthTexture` to gate bent samples against the current lens fragment's eye depth; keep the active renderer/camera depth texture available when `Foreground Rejection` is above 0, otherwise the lens cannot reliably distinguish behind-the-hole skybox/background pixels from ships, asteroids, cursors, and other foreground objects
+- `_CameraOpaqueTexture` is still not a true final-frame grab: transparent VFX rendered after the opaque texture copy will not be bent by the singularity unless a dedicated renderer feature copies scene color later and the shader is changed to sample that custom texture
 - `Bend Strength` can be negative to pull scene samples inward toward the event horizon; this is the useful direction for lifting the rear disk into the upper/lower Einstein-ring arcs
 - the `Lensed Disk Arc` controls add an art-directed procedural horizon band with repeated lane lines and noise similar to the flat disk, making the rear accretion disk read above and below the black core even when the pure screen-space bend samples the disk's central hole
 - the lensed disk arc has matching spin, infall, and spiral controls; keep those close to the accretion disk material values so the wrapped arcs animate like the same disk light rather than a separate static halo
+- the disk material now has explicit relativistic-look controls: `One-Side Hot Boost`, `Far-Side Dimming`, `Hot-Side Focus`, and `Hot Side Angle` are the primary knobs for Doppler-style brightness asymmetry
+- the disk material also separates `Discrete Ring Line Strength` from `Soft Volumetric Fill`; keep line strength low when the disk starts reading like a vinyl record or Saturn-like ring stack instead of turbulent plasma
+- `Back-Half Inner Fade`, `Back-Half Fade Reach`, and `Back-Half Angle` are art-direction controls that hide the inner rear disk enough for the singularity's lensed arc to read as bent light instead of a flat ring running through the black core; the active blue/red accretion materials keep this fade strong and aimed at the upper/rear half
+- the singularity material's `Lensed Background Brightening` boosts screen-sampled skybox/scene color near the lensing shear so sparse starfields show visible gravitational arcs instead of only a black cutout
+- keep `Disk Arc Intensity` conservative when the real screen-sampled disk is visible; a low soft value can help sell the top/bottom lensed wrap, but a bright or sharply striped arc turns back into a painted decal
+- the lensed source thickening is a small brightest-sample gather around the bent scene UV, so tune it conservatively; it costs extra scene-color samples only on the singularity shell and should stay focused near the photon ring rather than becoming a broad fullscreen blur
+- `BlackHoleMenaceVisual3D` belongs on the black hole root when Invasion should color-shift the disk over the run; assign its accretion disk renderer and the scene's `InvasionWaveManager3D`
+- menace progress uses `InvasionWaveManager3D`'s authored enemy total as the denominator and defeated enemies as the numerator; runtime child-spawn kills may advance the numerator, but the denominator intentionally remains the authored wave total
+- menace colors use Start, Mid, and Final palettes; keep the Mid palette warm/amber if the transition should feel threatening without passing through purple or pure white
+- menace only tints accretion/singularity colors and does not change lensing strength, disk geometry, damage, gravity, wave rules, or enemy behavior
 - author the singularity sphere slightly larger than the visible black core; tune `Event Horizon Radius` on the material to decide how much of that sphere is pure black versus lensing falloff
 - the disk shader is quad-friendly: it converts centered UVs to polar coordinates, uses polar angle/radius for circular swirl motion, and masks the square corners away; keep the black hole centered at UV `(0.5, 0.5)`
 - the current PC/3D URP path has opaque texture enabled; any renderer asset used for this effect must keep opaque texture enabled or the lensing shader will not have a valid scene color source
+
+## White Dwarf Star Shader Authoring
+
+- the 3D white dwarf centerpiece uses three materials: `Starfall/3D/WhiteDwarf/CoreSurface` for the opaque emissive sphere, `Starfall/3D/WhiteDwarf/CoronaShell` for the inflated additive atmosphere, and optional `Starfall/3D/WhiteDwarf/CompactLensing` for near-field screen-space shimmer
+- `Assets/Prefabs/3d_effects/WhiteDwarfStar3D.prefab` wires these layers as `Core`, `CoronaShell`, and `LensingShell`; the lensing renderer starts disabled and is intended only for close gameplay-centerpiece shots
+- `WhiteDwarfStarVisual3D` pushes `_ExternalPulseIntensity` through material property blocks so shared material assets are not duplicated at runtime; keep this effect visual-only unless a separate gameplay system explicitly owns hazards or gravity
+- tune visible size through child transform scale, not shader displacement, so combat readability bounds and any future gameplay volumes stay predictable
+- bloom is not owned by the shader; the materials output HDR values, but the active camera must render post-processing and the scene/global volume must have Bloom intensity above zero
+- optional lensing samples `_CameraOpaqueTexture`; use `PC_RPAsset.asset` or another URP asset with opaque texture enabled when enabling the lensing shell, because the default `UniversalRP.asset` keeps opaque texture disabled
+- the v1 color profile is material-driven white/cyan HDR tuning; a planned 1D blackbody LUT can be added later if multiple authored star temperatures become a real content need
+
+## Pulsar Effect Authoring
+
+- the 3D pulsar centerpiece uses `Starfall/3D/Pulsar/CoreSurface` for the opaque emissive neutron-star sphere and `Starfall/3D/Pulsar/Jet` for two additive transparent polar jet cylinders
+- `Assets/Prefabs/3d_effects/Pulsar3D.prefab` wires the root `PulsarVisual3D`, a `Core` sphere, and `NorthJet` / `SouthJet` children with trigger `CapsuleCollider` volumes matched to the visible jet cylinders
+- keep pulsar rotation on `PulsarVisual3D` / transform rotation instead of baking the spin entirely into shader math; this keeps the visible beam direction, trigger volumes, and future gameplay hit checks aligned
+- `PulsarVisual3D` pushes `_ExternalPulseIntensity` into each assigned shared material; the prefab uses separate north/south jet materials so `_OutwardSign` can be baked per jet without requiring material property blocks during prefab import
+- the jet shader supports an optional seamless noise texture, but still has procedural noise so the prefab remains usable if the texture is replaced or temporarily missing
+- tune visible size through child transform scale and the `PulsarVisual3D` gameplay query radii/length, not shader displacement, so future damage volumes stay predictable
+- this prefab is currently visual plus trigger-volume authoring; any actual damage, networking authority, or scoring behavior should be owned by a separate gameplay system before it is treated as a match hazard
+- bloom is not owned by the shader; the materials output HDR values, but the active camera must render post-processing and the scene/global volume must have Bloom intensity above zero
+
+## Portal Effect Authoring
+
+- the reusable 3D portal effect is a visual-only prefab at `Assets/Prefabs/3d_effects/Portal3D.prefab`; it does not own teleport logic, triggers, damage, networking, audio, or scene flow
+- the prefab uses two thin quad layers with `Starfall/3D/PortalDisk`: `InnerSurface` for a near-black center that gradients to dark purple near the edge, and `OuterRim` for the bright purple-white HDR edge glow
+- the base portal intentionally has no inner swirl/noise animation; keep the center calm so the effect reads like a dark portal surface instead of a cartoon vortex
+- the rim can use shader-time angular segment modulation to read as spinning; keep that motion on `OuterRim` and avoid moving texture/noise in the inner surface
+- the inner surface should remain opaque inside its circular mask so scene objects and skybox do not show through the portal center; use the rim material for bloom-heavy glow, not inner transparency
+- scale and rotate the prefab transform for placement; keep the disk fixed in world space unless a future task explicitly asks for billboarding or gameplay-facing behavior
+- bloom is not owned by the prefab; tune the HDR material brightness together with the active camera and scene/global Bloom settings
+- avoid adding particles, screen-space distortion, opaque-texture sampling, or gameplay trigger behavior to the base portal prefab unless the effect is intentionally expanded by a later task
 
 ## Change Classification Rule
 

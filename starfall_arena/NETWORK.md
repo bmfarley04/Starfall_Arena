@@ -130,6 +130,11 @@ The active network gameplay scene now assumes:
 - game-end presentation must also be broadcast explicitly and remapped to local-player perspective on each client
 - local result presentation should be derived from `payload.WinningPlayer` versus the local slot, while the actual game-end canvas selection can still stay slot-based (`player1` on host, `player2` on remote client)
 
+Enemy combat-state note:
+
+- player `Entity3D` combat replication currently routes through `NetCombat3D`, but networked enemies need an equivalent health/shield/death broadcast path through `NetEnemyCombat3D`
+- replicating only enemy spawn/despawn or attack cosmetics is not sufficient for remote HUD/UI, because clients also need intermediate `NetCombatState3D` updates when the server changes enemy health, shield, shield-break state, or slow state
+
 ### NetMovement
 
 `NetMovement` is the main implemented networked gameplay system right now.
@@ -422,6 +427,7 @@ The existing movement implementation is a real first step toward that architectu
 - `NetStateSnapshot` now carries both shield and health so augment-driven healing / max-health changes stay visible on non-authoritative copies instead of living only on the server.
 - `NetStateSnapshot` now also carries anchor state so anchor-gated augments like Regenerator and Bubble Shield can evaluate consistently on server copies and remote proxies.
 - Bug note: if a networked augment seems to work only for the host, check both halves of the integration: the server copy must execute the runtime even when `Player` is disabled, and the client copies must receive the augment loadout/state explicitly because NGO does not replicate those `AugmentController` runtimes for you.
+- Bug note: lethal damage must broadcast the final authoritative combat state before calling `Die()` / despawning the player's `NetworkObject`. If death/despawn happens first, clients can receive death effects while missing the final shield-hit or shield-break visual state, which makes alpha shield flashing appear host-only on kill shots.
 - Bug note: augment visuals that depend on shared runtime state should be replicated as state, not as a one-off particle spawn. Anchor-gated augments (Regenerator, Bubble Shield) rely on authoritative anchor in `NetStateSnapshot` so server copies and remote proxies evaluate the same state. Burner now replicates burn application state to target proxies so they can run the same burn tick visuals locally while damage stays server-authoritative. AutoCounter active windows are server-authoritative and broadcast so client copies do not free-run their own timers.
 - Bug note: the title-screen join flow can be triggered by more than one UI/input path on the same client. Guard repeated join presses while `_awaitingClientConnect` is true, otherwise a second `StartClientForMenu()` call will hit NGO after the first call already set `IsListening` and falsely report that a session is already active.
 - Bug note: if 2D and 3D use different ship rosters, the selected gameplay scene/mode must be synchronized to clients before ship select opens. Leaving clients on a local default roster can show invalid options that do not match the host's intended mode.

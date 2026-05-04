@@ -1,0 +1,12 @@
+fileFormatVersion: 2
+guid: 706e20a88b6696f4db41105f7866eb3a
+ShaderImporter:
+  defaultTextures: []
+  userData: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 4160
+  packageName: Space Graphics Toolkit
+  packageVersion: 4.2.14
+  assetPath: Assets/Plugins/CW/SpaceGraphicsToolkit/Features/Starfield/Required/Shaders/Starfield.shader
+  uploadId: 774634

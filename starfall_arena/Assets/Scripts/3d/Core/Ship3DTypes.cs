@@ -15,6 +15,13 @@ public interface IPooledObject3D
     void OnDespawnedToPool();
 }
 
+public enum Faction3D : byte
+{
+    Neutral = 0,
+    PlayerTeam = 1,
+    EnemyTeam = 2
+}
+
 public enum ProjectileAimMode3D
 {
     MuzzleForward,
@@ -27,6 +34,17 @@ public struct ShipFlightConfig3D
     [Header("Engine Parameters")]
     public float thrustAcceleration;
     public float maxSpeed;
+    [Tooltip("Positive thrust input at or below this value is treated as precision throttle instead of full thrust.")]
+    [Range(0f, 1f)]
+    public float precisionThrottleInputThreshold;
+    [Tooltip("Maximum forward speed fraction allowed while using precision throttle.")]
+    [Range(0f, 1f)]
+    public float precisionThrottleMaxSpeedFraction;
+    [Tooltip("Acceleration multiplier used for precision throttle so left-stick forward input drifts instead of launching.")]
+    [Range(0f, 1f)]
+    public float precisionThrottleAccelerationMultiplier;
+    [Tooltip("Deceleration applied when negative thrust input requests braking toward a stop.")]
+    public float precisionBrakeDeceleration;
 
     [Header("Input Response")]
     [Tooltip("How quickly raw look input converges toward the assisted steering intent.")]
@@ -52,7 +70,7 @@ public struct ShipFlightConfig3D
 public struct ShipFlightAssistConfig3D
 {
     [Header("Flight Assist (Friction)")]
-    [Tooltip("How fast velocity bleeds off when not thrusting (units/s^2). Does not affect max speed while thrusting.")]
+    [Tooltip("How fast forward velocity bleeds off when not thrusting (units/s^2). When set to 0, passive linear assist is skipped so coasting preserves world-space momentum instead of being re-damped through the ship's local axes.")]
     public float frictionDeceleration;
     [Tooltip("Angular damping applied to rotation when friction is active.")]
     public float activeAngularDamping;
@@ -211,16 +229,27 @@ public struct PlayerCameraRigConfig3D
 public struct ProjectileWeaponConfig3D
 {
     [Header("Projectile")]
+    [Tooltip("Projectile prefab spawned by this weapon. The prefab must contain a Projectile3D-derived component.")]
     public GameObject projectilePrefab;
+    [Tooltip("One or more muzzle transforms. When left empty, the weapon falls back to its own transform.")]
     public Transform[] muzzles;
+    [Tooltip("Legacy tag fallback used by older duel projectile paths when no explicit faction is supplied.")]
     public string targetTag;
+    [Tooltip("Preferred gameplay target faction for this projectile. Enemy AI weapons should usually target PlayerTeam.")]
+    public Faction3D targetFaction;
 
     [Header("Combat")]
+    [Tooltip("Seconds between shots or volleys.")]
     public float cooldown;
+    [Tooltip("Projectile travel speed before inherited ship velocity is added.")]
     public float speed;
+    [Tooltip("Damage dealt on hit before shields/hull split the result.")]
     public float damage;
+    [Tooltip("Maximum projectile lifetime in seconds before despawn.")]
     public float lifetime;
+    [Tooltip("Optional impact force passed into projectile hit handling.")]
     public float impactForce;
+    [Tooltip("Optional recoil impulse applied back to the firing ship.")]
     public float recoilForce;
     [Tooltip("Overheat added per base projectile fired. This is ignored by ability-specific projectile requests for now.")]
     public float energyCost;
@@ -232,6 +261,7 @@ public struct ProjectileFireRequest3D
     public Transform[] muzzles;
     public Transform spawnAnchor;
     public string targetTag;
+    public Faction3D targetFaction;
     public float speed;
     public float damage;
     public float lifetime;
@@ -240,11 +270,14 @@ public struct ProjectileFireRequest3D
     public float forwardOffset;
     public float verticalOffset;
     public bool canPierce;
+    public int maxPierceCount;
     public float pierceMultiplier;
     public bool appliesSlow;
     public float slowMultiplier;
     public float slowDuration;
     public float slowEngineEmissionScale;
+    public float projectileScaleMultiplier;
+    public int accuracyAttackIdOverride;
     public System.Action<Projectile3D> onProjectileSpawned;
 }
 

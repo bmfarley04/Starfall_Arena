@@ -45,6 +45,12 @@ The current 3D networking path should not be described as a full networked match
 
 New 3D-specific networking code lives under `Assets/Scripts/3d/Networking`.
 
+Current tick timing:
+
+- the active `NetworkManager` prefab is configured for `50hz`
+- Unity's fixed timestep is also effectively `0.02s`, so the current 3D network movement path should be tuned around 50 server snapshots per second
+- older 60hz notes are historical intent, not the current runtime truth
+
 ### `NetMovement3D`
 
 `NetMovement3D` preserves the same movement authority model as the 2D path:
@@ -58,7 +64,19 @@ New 3D-specific networking code lives under `Assets/Scripts/3d/Networking`.
   - re-simulates the same 3D movement tick authoritatively
   - publishes authoritative state snapshots
 - remote non-owner
-  - interpolates between authoritative snapshots
+  - buffers authoritative snapshots on the server tick timeline
+  - renders at a small adaptive visual delay behind `NetTickUtil.ServerTick`
+  - interpolates between the snapshots surrounding that render tick instead of always blending the newest two packets
+  - briefly extrapolates from the newest snapshot only within a capped window, then holds/snaps for discontinuities
+
+Movement-affecting 3D abilities must be replayable from movement input history when they need owner prediction. Class 4 dodge is encoded as a one-tick dodge request plus direction in `NetInputSnapshot3D`, so owner prediction, server simulation, and reconciliation replay all start the dash from the same tick. Combat RPCs may play presentation, but they must not inject dodge movement outside `NetMovement3D`.
+
+Networked player prediction clamps against authored arena blockers:
+
+- `NetMovement3D` sweeps the predicted player body along each simulated tick displacement before applying the position
+- the default blocker mask targets the project `blocker` layer used by asteroids and destroyed-ship debris
+- when the sweep hits, prediction stops at the hit surface and projects velocity along the blocker normal so the ship can slide instead of continuing through the obstacle
+- keep this mask narrow; broad masks can make prediction snag on projectiles, VFX, HUD colliders, or non-solid gameplay volumes
 
 Important phase-1 constraint:
 
@@ -133,6 +151,24 @@ It keeps movement and combat authority separate:
 
 The 3D path intentionally uses brokered cosmetic projectile and beam instances instead of making every projectile or beam an NGO-spawned `NetworkObject`. This keeps fast raycast/sweep weapons responsive while avoiding per-shot network-object overhead.
 
+### Invasion enemy networking
+
+Invasion enemies use separate enemy-specific networking:
+
+- `NetEnemyMovement3D`
+  - server publishes enemy Rigidbody position/rotation/velocity snapshots
+  - clients use the same adaptive server-timeline interpolation helper as remote player proxies
+  - clients do not run enemy gameplay AI
+  - client enemy proxies are kinematic and apply sampled position/rotation only; enemy `Rigidbody.linearVelocity` remains server-owned
+- `NetEnemyCombat3D`
+  - server spawns enemy gameplay projectiles and owns damage
+  - clients receive cosmetic projectile spawns
+  - enemy combat uses target factions instead of the player-duel `ResolveEnemyTag()` path
+
+Do not reuse `NetMovement3D` or `MovementSimulation3D` for enemies. They are owner-predicted player movement paths. Enemy movement defaults to a simple server-owned Rigidbody motor plus snapshot interpolation.
+
+Do not route enemy PvE projectiles through `NetCombat3D.ResolveEnemyTag()`, because that method intentionally resolves the opposite player slot for duels.
+
 Important current implementation constraints:
 
 - `NetCombat3D` must be present on networked 3D player prefabs, or `NetMovement3D` keeps owner combat input suppressed.
@@ -141,8 +177,13 @@ Important current implementation constraints:
 - client cosmetic projectile RPCs resolve local proxy bindings from the serialized `Entity3D` weapon slots first, then fall back to root `ProjectileWeapon3D`; missing source weapon or projectile prefab bindings log one-shot warnings instead of failing silently.
 - `Projectile3D` and `LaserBeam3D` now split cosmetic-only instances from server-authoritative gameplay instances.
 - combat velocity changes such as recoil, impact force, tractor pull, and teleport warps must pass through `NetMovement3D` helpers so prediction/reconciliation state is not immediately overwritten.
+- raw combat velocity writes are only for non-networked dynamic Rigidbody fallbacks; networked targets should use `NetMovement3D.ApplyCombatVelocityDelta(...)`, which ignores kinematic proxy bodies while preserving owner/server movement state.
+- owner-predicted ability movement must enter the movement input stream. Do not apply dash-style movement only through combat RPCs or direct Rigidbody writes, because reconciliation cannot reproduce that side channel during replay.
 - slow state is treated as server-owned during network movement simulation; the server copy overrides the owner's submitted slow multiplier.
 - beam and tractor-beam aim must be replicated, not resolved from a local camera on the server or on remote proxies. The owner sends its center-screen aim direction with the initial activation RPC and with per-tick `UpdateBeamAim` / `UpdateTractorBeamAim` updates. `LaserBeam3D` and `TractorBeam3D` consume that replicated direction on every non-owner peer so damage casts and cone pulls match what the firing player actually aimed at. The owner's local cosmetic instance keeps using its own camera so local fire stays responsive.
+- `NetMovement3D.logOwnerCorrections` intentionally defaults on during the current jitter investigation. Every owner-side reconciliation correction logs a `[NetMovement3D Correction]` `Debug.Log` entry with prediction-buffer status, tick context, input at the corrected tick, error magnitudes, movement-lock/player-slot state, and recent combat/warp/boundary/dodge side effects.
+- `NetDiagnosticsOverlay3D` is an optional local playtest overlay for movement networking. Add it to a scene object when diagnosing jitter; it reports snapshot buffer depth, adaptive delay, starvation, extrapolated frames, hard snaps, and owner correction counts for spawned 3D players/enemies.
+- `NetCombat3D` projectile visual-type history must stay sized to the full `NetProjectileVisualType3D` enum range. If new visual types are added without growing the accepted-tick history, multiple visual types can collapse into the same cooldown/deduplication slot.
 
 ### Local camera binding
 

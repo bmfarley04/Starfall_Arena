@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class BeamWeapon3D : Weapon3D
+public class BeamWeapon3D : Weapon3D, IBeamWeaponNetwork3D
 {
     [System.Serializable]
     public struct BeamWeaponConfig3D
@@ -8,6 +8,7 @@ public class BeamWeapon3D : Weapon3D
         [Header("Beam Settings")]
         public GameObject beamPrefab;
         public string targetTag;
+        public Faction3D targetFaction;
         public float damagePerSecond;
         public float maxDistance;
         public float recoilForcePerSecond;
@@ -17,8 +18,12 @@ public class BeamWeapon3D : Weapon3D
         public float verticalOffset;
         [Tooltip("Optional muzzle transform for beam origin. Falls back to the entity transform if unset.")]
         public Transform muzzle;
+        [Tooltip("Optional transform whose +Z/forward axis defines beam aim and cast direction. Use this when the muzzle is positioned correctly but its local forward points away from the intended shot lane.")]
+        public Transform directionReference;
         [Tooltip("Rotation speed multiplier when beam is active (0.3 = 70% slower)")]
         public float rotationMultiplier;
+        [Tooltip("How long the rotation penalty should linger after the beam stops, to prevent instant pivot-and-refire behavior.")]
+        public float postFireRotationPenaltyDuration;
 
         [Header("Beam Capacity")]
         [Tooltip("Maximum beam capacity (100 units)")]
@@ -27,6 +32,8 @@ public class BeamWeapon3D : Weapon3D
         public float drainRate;
         [Tooltip("How fast beam capacity regenerates when not firing (units per second)")]
         public float regenRate;
+        [Tooltip("Minimum remaining beam energy required before the weapon is allowed to start firing again.")]
+        public float minimumStartEnergy;
 
         [Header("Sound Effects")]
         [Tooltip("Looping sound played while the beam is firing.")]
@@ -37,14 +44,20 @@ public class BeamWeapon3D : Weapon3D
     [SerializeField] private BeamWeaponConfig3D beam;
     [SerializeField] private AudioSource beamLoopAudioSource;
 
-    private LaserBeam3D _activeBeam;
+    private IBeamRuntime3D _activeBeam;
+    private MonoBehaviour _activeBeamComponent;
     private NetCombat3D _netCombat;
     private bool _activeBeamAuthoritative = true;
     private Vector3 _pendingNetworkAim;
     private bool _hasPendingNetworkAim;
+    private bool _allowExplicitAimBehindForward;
     private int _activeBeamAttackId = PlayerCombatStats3D.InvalidAttackId;
+    private float _rotationPenaltyUntilTime = float.NegativeInfinity;
 
     private bool UsesBeamCapacity => beam.capacity > 0f && beam.drainRate > 0f;
+    public bool IsBeamActive => _activeBeam != null;
+    public float MaxDistance => Mathf.Max(0f, beam.maxDistance);
+    public BeamWeaponConfig3D BeamConfig => beam;
 
     protected override void Awake()
     {
@@ -107,35 +120,118 @@ public class BeamWeapon3D : Weapon3D
         }
     }
 
-    private Vector3 ResolveOwnerAimDirection()
+    public bool CanStartBeamNow()
     {
-        Camera cam = AimCamera;
-        if (cam != null)
+        if (beam.beamPrefab == null || _activeBeam != null)
         {
-            Ray centerRay = cam.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
-            if (centerRay.direction.sqrMagnitude > 0.0001f)
-            {
-                return centerRay.direction.normalized;
-            }
+            return false;
         }
 
+        if (!UsesBeamCapacity)
+        {
+            return true;
+        }
+
+        float remainingEnergy = GetRemainingBeamEnergy();
+        float minimumStartEnergy = Mathf.Clamp(beam.minimumStartEnergy, 0f, Mathf.Max(0f, beam.capacity));
+        float firstFrameCost = Mathf.Max(beam.drainRate * Time.fixedDeltaTime, 0f);
+        float requiredEnergy = Mathf.Max(minimumStartEnergy, firstFrameCost);
+        return remainingEnergy + 0.001f >= requiredEnergy;
+    }
+
+    public void ApplyProfile(EnemyBalanceProfile3D.BeamWeaponStats stats)
+    {
+        beam.damagePerSecond = Mathf.Max(0f, stats.damagePerSecond);
+        beam.maxDistance = Mathf.Max(0f, stats.maxDistance);
+        beam.capacity = Mathf.Max(0f, stats.capacity);
+        beam.drainRate = Mathf.Max(0f, stats.drainRate);
+        beam.regenRate = Mathf.Max(0f, stats.regenRate);
+        beam.minimumStartEnergy = Mathf.Max(0f, stats.minimumStartEnergy);
+        beam.rotationMultiplier = Mathf.Max(0f, stats.rotationMultiplier);
+        beam.postFireRotationPenaltyDuration = Mathf.Max(0f, stats.postFireRotationPenaltyDuration);
+    }
+
+    public void ApplyProfile(PlayerBalanceProfile3D.BeamWeaponStats stats)
+    {
+        beam.damagePerSecond = Mathf.Max(0f, stats.damagePerSecond);
+        beam.maxDistance = Mathf.Max(0f, stats.maxDistance);
+        beam.capacity = Mathf.Max(0f, stats.capacity);
+        beam.drainRate = Mathf.Max(0f, stats.drainRate);
+        beam.regenRate = Mathf.Max(0f, stats.regenRate);
+        beam.minimumStartEnergy = Mathf.Max(0f, stats.minimumStartEnergy);
+        beam.rotationMultiplier = Mathf.Max(0f, stats.rotationMultiplier);
+        beam.postFireRotationPenaltyDuration = Mathf.Max(0f, stats.postFireRotationPenaltyDuration);
+    }
+
+    public PlayerBalanceProfile3D.BeamWeaponStats CaptureProfileStats()
+    {
+        return new PlayerBalanceProfile3D.BeamWeaponStats
+        {
+            damagePerSecond = beam.damagePerSecond,
+            maxDistance = beam.maxDistance,
+            capacity = beam.capacity,
+            drainRate = beam.drainRate,
+            regenRate = beam.regenRate,
+            minimumStartEnergy = beam.minimumStartEnergy,
+            rotationMultiplier = beam.rotationMultiplier,
+            postFireRotationPenaltyDuration = beam.postFireRotationPenaltyDuration
+        };
+    }
+
+    public float GetRemainingBeamEnergy()
+    {
+        if (!UsesBeamCapacity)
+        {
+            return 0f;
+        }
+
+        return Mathf.Max(0f, beam.capacity - CurrentResourceUsage);
+    }
+
+    public Vector3 GetBeamForwardDirection()
+    {
+        Transform directionSource = ResolveBeamDirectionSource();
+        if (directionSource != null && directionSource.forward.sqrMagnitude > 0.0001f)
+        {
+            return directionSource.forward.normalized;
+        }
+
+        return transform.forward.sqrMagnitude > 0.0001f ? transform.forward.normalized : Vector3.forward;
+    }
+
+    public Vector3 GetBeamOrigin(Vector3 aimDirection)
+    {
         Transform muzzle = beam.muzzle != null ? beam.muzzle : Owner != null ? Owner.transform : transform;
-        if (muzzle != null && muzzle.forward.sqrMagnitude > 0.0001f)
+        Vector3 normalizedDirection = aimDirection.sqrMagnitude > 0.0001f
+            ? aimDirection.normalized
+            : GetBeamForwardDirection();
+
+        if (muzzle == null)
         {
-            return muzzle.forward.normalized;
+            return transform.position + (normalizedDirection * beam.offsetDistance) + (transform.up * beam.verticalOffset);
         }
 
-        return transform.forward;
+        return muzzle.position + (normalizedDirection * beam.offsetDistance) + (muzzle.up * beam.verticalOffset);
+    }
+
+    protected override Vector3 ResolveOwnerAimDirection()
+    {
+        if (NetTickUtil.IsActive
+            && _netCombat != null
+            && _netCombat.IsSpawned
+            && !_netCombat.IsOwner
+            && _hasPendingNetworkAim
+            && _pendingNetworkAim.sqrMagnitude > 0.0001f)
+        {
+            return _pendingNetworkAim.normalized;
+        }
+
+        return base.ResolveOwnerAimDirection();
     }
 
     protected override void OnFirePressed()
     {
-        if (_activeBeam != null || beam.beamPrefab == null)
-        {
-            return;
-        }
-
-        if (UsesBeamCapacity && !CanSpendResource(beam.drainRate * Time.fixedDeltaTime))
+        if (!CanStartBeamNow())
         {
             return;
         }
@@ -175,7 +271,8 @@ public class BeamWeapon3D : Weapon3D
 
     public override float GetRotationMultiplier()
     {
-        return _activeBeam != null ? beam.rotationMultiplier : 1f;
+        bool shouldApplyPenalty = _activeBeam != null || Time.time < _rotationPenaltyUntilTime;
+        return shouldApplyPenalty ? beam.rotationMultiplier : 1f;
     }
 
     public override bool IsReticleSpinActive()
@@ -216,6 +313,16 @@ public class BeamWeapon3D : Weapon3D
         }
     }
 
+    public void SetAllowExplicitAimBehindForward(bool allowExplicitAimBehindForward)
+    {
+        _allowExplicitAimBehindForward = allowExplicitAimBehindForward;
+
+        if (_activeBeam is IBeamAimConstraint3D aimConstraint)
+        {
+            aimConstraint.SetAllowExplicitAimBehindForward(allowExplicitAimBehindForward);
+        }
+    }
+
     public void ApplyNetworkBeamState(bool isFiring, bool authoritative, int accuracyAttackId)
     {
         if (isFiring)
@@ -230,6 +337,11 @@ public class BeamWeapon3D : Weapon3D
 
     private void StartBeam(bool authoritative, int accuracyAttackId)
     {
+        if (_activeBeam == null && !CanStartBeamNow())
+        {
+            return;
+        }
+
         if (_activeBeam != null)
         {
             _activeBeamAuthoritative = authoritative;
@@ -242,8 +354,20 @@ public class BeamWeapon3D : Weapon3D
         }
 
         GameObject beamObj = Instantiate(beam.beamPrefab, Vector3.zero, Quaternion.identity);
-        _activeBeam = beamObj.GetComponent<LaserBeam3D>();
-        if (_activeBeam == null)
+        _activeBeam = null;
+        _activeBeamComponent = null;
+        MonoBehaviour[] beamBehaviours = beamObj.GetComponents<MonoBehaviour>();
+        for (int i = 0; i < beamBehaviours.Length; i++)
+        {
+            if (beamBehaviours[i] is IBeamRuntime3D runtime)
+            {
+                _activeBeam = runtime;
+                _activeBeamComponent = beamBehaviours[i];
+                break;
+            }
+        }
+
+        if (_activeBeam == null || _activeBeamComponent == null)
         {
             Destroy(beamObj);
             return;
@@ -251,16 +375,15 @@ public class BeamWeapon3D : Weapon3D
 
         Transform muzzle = beam.muzzle != null ? beam.muzzle : Owner != null ? Owner.transform : transform;
         string resolvedTargetTag = beam.targetTag;
-        if (authoritative && NetTickUtil.IsActive && _netCombat != null && _netCombat.IsSpawned)
+        Faction3D resolvedTargetFaction = beam.targetFaction;
+        if (NetTickUtil.IsActive && _netCombat != null && _netCombat.IsSpawned)
         {
-            string enemyTag = _netCombat.GetEnemyTag();
-            if (!string.IsNullOrEmpty(enemyTag))
-            {
-                resolvedTargetTag = enemyTag;
-            }
+            _netCombat.ResolvePlayerTargeting(beam.targetFaction, beam.targetTag, out resolvedTargetFaction, out resolvedTargetTag);
         }
+
         _activeBeam.Initialize(
             resolvedTargetTag,
+            resolvedTargetFaction,
             beam.damagePerSecond,
             beam.maxDistance,
             beam.recoilForcePerSecond,
@@ -270,6 +393,14 @@ public class BeamWeapon3D : Weapon3D
             beam.offsetDistance,
             beam.verticalOffset,
             AimCamera);
+        if (_activeBeam is IBeamDirectionSource3D directionSourceConsumer)
+        {
+            directionSourceConsumer.SetBeamDirectionSource(ResolveBeamDirectionSource());
+        }
+        if (_activeBeam is IBeamAimConstraint3D aimConstraint)
+        {
+            aimConstraint.SetAllowExplicitAimBehindForward(_allowExplicitAimBehindForward);
+        }
 
         _activeBeamAuthoritative = authoritative;
         _activeBeamAttackId = authoritative ? accuracyAttackId : PlayerCombatStats3D.InvalidAttackId;
@@ -286,6 +417,7 @@ public class BeamWeapon3D : Weapon3D
             _activeBeam.SetNetworkAim(_pendingNetworkAim);
         }
         _activeBeam.StartFiring();
+        Owner?.RecordCombatActivity();
         StartBeamLoopSound();
     }
 
@@ -294,13 +426,24 @@ public class BeamWeapon3D : Weapon3D
         if (_activeBeam != null)
         {
             _activeBeam.StopFiring();
-            Destroy(_activeBeam.gameObject);
+            Destroy(_activeBeamComponent.gameObject);
             _activeBeam = null;
+            _activeBeamComponent = null;
+        }
+
+        if (beam.postFireRotationPenaltyDuration > 0f)
+        {
+            _rotationPenaltyUntilTime = Time.time + beam.postFireRotationPenaltyDuration;
+        }
+        else
+        {
+            _rotationPenaltyUntilTime = float.NegativeInfinity;
         }
 
         _activeBeamAuthoritative = true;
         _activeBeamAttackId = PlayerCombatStats3D.InvalidAttackId;
         _hasPendingNetworkAim = false;
+        Owner?.RecordCombatActivity();
         StopBeamLoopSound();
     }
 
@@ -333,5 +476,20 @@ public class BeamWeapon3D : Weapon3D
         }
 
         beamLoopAudioSource.Stop();
+    }
+
+    private Transform ResolveBeamDirectionSource()
+    {
+        if (beam.directionReference != null)
+        {
+            return beam.directionReference;
+        }
+
+        if (beam.muzzle != null)
+        {
+            return beam.muzzle;
+        }
+
+        return Owner != null ? Owner.transform : transform;
     }
 }

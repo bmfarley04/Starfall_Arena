@@ -1,0 +1,83 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5264d5998ad642c5a3f4574cc10fcabf, type: 3}
+  m_Name: DuelistEnemy_EliteProfile
+  m_EditorClassIdentifier: Assembly-CSharp::DuelistEnemyBalanceProfile3D
+  core:
+    maxHealth: 145
+    maxShield: 180
+    moveSpeed: 52
+    rotationDegreesPerSecond: 130
+    detectionRange: 700
+  projectileWeapons:
+  - cooldown: 1
+    speed: 230
+    damage: 9
+    lifetime: 5
+  - cooldown: 3.25
+    speed: 165
+    damage: 14
+    lifetime: 5
+  beamWeapons:
+  - damagePerSecond: 24
+    maxDistance: 520
+    capacity: 300
+    drainRate: 20
+    regenRate: 20
+    minimumStartEnergy: 20
+    rotationMultiplier: 0.2
+    postFireRotationPenaltyDuration: 0.3
+  brain:
+    thinkInterval: 0.06
+    preferredRangeMin: 50
+    preferredRangeMax: 500
+    perchArrivalDistance: 12
+    maxRepositionDuration: 4
+    perchRefreshInterval: 3.5
+    perchCommitDuration: 1.2
+    perchStrafeSpeed: 28
+    lateralPerchBias: 1
+    verticalPerchBias: 0.6
+    outwardPerchBias: 0.3
+    forwardArcAvoidanceWeight: 0.7
+    perchCandidateCount: 8
+    strafeRollInterval: 1.2
+    orbitStrafeSpeed: 18
+    orbitVerticalTiltAmount: 0.75
+    orbitWeaveSpeed: 18
+    orbitWeaveRerollInterval: 1.2
+    perchMovementWeight: 0.7
+    outOfRangeApproachSpeedScale: 1
+    closeRangeRetreatSpeedScale: 0.75
+    projectileBand:
+      preferredCenter: 100
+      halfWidth: 30
+      aimToleranceDegrees: 8
+    missileBand:
+      preferredCenter: 220
+      halfWidth: 35
+      aimToleranceDegrees: 30
+    beamBand:
+      preferredCenter: 400
+      halfWidth: 30
+      aimToleranceDegrees: 6
+    vibesChance: 0.5
+    weaponCommitDuration: 1.25
+    minimumBeamRestartEnergy: 20
+    threatScanInterval: 0.15
+    threatScanRadius: 60
+    dodgeChancePerThreat: 0.45
+    dodgeCooldown: 1
+    dodgeDuration: 0.2
+    dodgeSpeed: 100
+    threatHeadingDotThreshold: 0.6
+    threatScanBufferSize: 16

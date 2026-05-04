@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Unity.Netcode;
 using UnityEngine;
 
 public interface IProjectileImpactHandler3D
@@ -20,6 +21,7 @@ public class Projectile3D : MonoBehaviour, IPooledObject3D
 
     [Header("Runtime")]
     public string targetTag;
+    public Faction3D TargetFaction { get; set; }
 
     [Header("Impact FX")]
     [SerializeField] private GameObject hitEffectPrefab;
@@ -48,7 +50,14 @@ public class Projectile3D : MonoBehaviour, IPooledObject3D
     protected int _spawnServerTick = -1;
     protected int _accuracyAttackId = PlayerCombatStats3D.InvalidAttackId;
     protected bool _isCosmeticOnly;
+    protected bool _serverAuthoritativeGameplay;
     protected NetProjectileVisualType3D _visualType = NetProjectileVisualType3D.Primary;
+    protected float _projectileScaleMultiplier = 1f;
+    protected bool _canPierce;
+    protected int _remainingPierces;
+    protected float _pierceDamageMultiplier = 1f;
+    private float _runtimeHitscanRadiusBonus;
+    private Collider[] _ownedColliders;
 
     public Vector3 Direction => _direction;
     public float Speed => _velocity.magnitude;
@@ -56,6 +65,7 @@ public class Projectile3D : MonoBehaviour, IPooledObject3D
     public float ImpactForce => _impactForce;
     public float RemainingLifetime => Mathf.Max(0f, _lifetime - _age);
     public NetProjectileVisualType3D VisualType => _visualType;
+    public float ProjectileScaleMultiplier => _projectileScaleMultiplier;
 
     protected virtual void Update()
     {
@@ -99,6 +109,8 @@ public class Projectile3D : MonoBehaviour, IPooledObject3D
 
     public virtual void Initialize(Vector3 direction, Vector3 shipVelocity, float speed, float damage, float lifetime, float impactForce, Entity3D shooter = null, int accuracyAttackId = PlayerCombatStats3D.InvalidAttackId)
     {
+        EnsureProjectileCollidersAreTriggers();
+
         _damage = damage;
         _lifetime = lifetime;
         _impactForce = impactForce;
@@ -112,6 +124,9 @@ public class Projectile3D : MonoBehaviour, IPooledObject3D
         _slowDuration = 0f;
         _slowEngineEmissionScale = 1f;
         _hitEntityIds.Clear();
+        _canPierce = false;
+        _remainingPierces = 0;
+        _pierceDamageMultiplier = 1f;
 
         transform.rotation = Quaternion.LookRotation(_direction, Vector3.up);
     }
@@ -128,9 +143,24 @@ public class Projectile3D : MonoBehaviour, IPooledObject3D
         _spawnServerTick = NetTickUtil.IsActive ? NetTickUtil.ServerTick : requestedFireTick;
     }
 
+    public void SetServerAuthoritativeGameplay(bool serverAuthoritativeGameplay)
+    {
+        _serverAuthoritativeGameplay = serverAuthoritativeGameplay;
+    }
+
     public void SetNetworkVisualType(NetProjectileVisualType3D visualType)
     {
         _visualType = visualType;
+    }
+
+    public void SetProjectileScaleMultiplier(float scaleMultiplier)
+    {
+        _projectileScaleMultiplier = scaleMultiplier > 0f ? scaleMultiplier : 1f;
+    }
+
+    public void SetHitscanRadiusBonus(float radiusBonus)
+    {
+        _runtimeHitscanRadiusBonus = Mathf.Max(0f, radiusBonus);
     }
 
     public void EnableSlow(float slowMultiplier, float slowDuration, float slowEngineEmissionScale = 1f)
@@ -141,16 +171,35 @@ public class Projectile3D : MonoBehaviour, IPooledObject3D
         _slowEngineEmissionScale = Mathf.Clamp01(slowEngineEmissionScale);
     }
 
+    public virtual void EnablePiercing(int maxPierceCount, float damageMultiplierPerPierce)
+    {
+        _canPierce = maxPierceCount > 0 && damageMultiplierPerPierce > 0f;
+        _remainingPierces = _canPierce ? Mathf.Max(0, maxPierceCount) : 0;
+        _pierceDamageMultiplier = _canPierce ? Mathf.Max(0f, damageMultiplierPerPierce) : 1f;
+    }
+
+    public virtual void EnablePiercing(float damageMultiplierPerPierce)
+    {
+        EnablePiercing(1, damageMultiplierPerPierce);
+    }
+
     public void OnSpawnedFromPool()
     {
         _age = 0f;
         _hitEntityIds.Clear();
+        _canPierce = false;
+        _remainingPierces = 0;
+        _pierceDamageMultiplier = 1f;
+        _runtimeHitscanRadiusBonus = 0f;
         _networkAuthority = null;
         _requestedFireTick = -1;
         _spawnServerTick = -1;
         _accuracyAttackId = PlayerCombatStats3D.InvalidAttackId;
         _isCosmeticOnly = false;
+        _serverAuthoritativeGameplay = false;
+        TargetFaction = Faction3D.Neutral;
         _visualType = NetProjectileVisualType3D.Primary;
+        _projectileScaleMultiplier = 1f;
     }
 
     public void OnDespawnedToPool()
@@ -161,12 +210,19 @@ public class Projectile3D : MonoBehaviour, IPooledObject3D
         _slowDuration = 0f;
         _slowEngineEmissionScale = 1f;
         _hitEntityIds.Clear();
+        _canPierce = false;
+        _remainingPierces = 0;
+        _pierceDamageMultiplier = 1f;
+        _runtimeHitscanRadiusBonus = 0f;
         _networkAuthority = null;
         _requestedFireTick = -1;
         _spawnServerTick = -1;
         _accuracyAttackId = PlayerCombatStats3D.InvalidAttackId;
         _isCosmeticOnly = false;
+        _serverAuthoritativeGameplay = false;
+        TargetFaction = Faction3D.Neutral;
         _visualType = NetProjectileVisualType3D.Primary;
+        _projectileScaleMultiplier = 1f;
     }
 
     protected virtual void ApplyDamageToEntity(Entity3D damageable, Vector3 hitPoint, Collider collider)
@@ -176,7 +232,10 @@ public class Projectile3D : MonoBehaviour, IPooledObject3D
             return;
         }
 
-        damageable.TakeDamage(_damage, hitPoint, _shooter, DamageSource3D.Projectile, _accuracyAttackId);
+        float resolvedDamage = _shooter != null
+            ? _shooter.ModifyOutgoingDamage(_damage, damageable, DamageSource3D.Projectile, _accuracyAttackId)
+            : _damage;
+        damageable.TakeDamage(resolvedDamage, hitPoint, _shooter, DamageSource3D.Projectile, _accuracyAttackId);
         ApplyImpactForce(collider);
     }
 
@@ -191,8 +250,15 @@ public class Projectile3D : MonoBehaviour, IPooledObject3D
         if (targetRb != null && _impactForce > 0f)
         {
             Vector3 velocityDelta = _direction.normalized * _impactForce;
-            targetRb.linearVelocity += velocityDelta;
-            targetRb.GetComponent<NetMovement3D>()?.ApplyCombatVelocityDelta(velocityDelta);
+            NetMovement3D netMovement = targetRb.GetComponent<NetMovement3D>();
+            if (netMovement != null)
+            {
+                netMovement.ApplyCombatVelocityDelta(velocityDelta);
+            }
+            else if (!targetRb.isKinematic)
+            {
+                targetRb.linearVelocity += velocityDelta;
+            }
         }
     }
 
@@ -202,7 +268,7 @@ public class Projectile3D : MonoBehaviour, IPooledObject3D
 
         int hitCount = Physics.SphereCastNonAlloc(
             origin,
-            Mathf.Max(0f, hitscanRadius),
+            Mathf.Max(0f, hitscanRadius + _runtimeHitscanRadiusBonus),
             _direction,
             HitBuffer,
             stepDistance,
@@ -236,7 +302,7 @@ public class Projectile3D : MonoBehaviour, IPooledObject3D
     {
         nearestHit = default;
 
-        float overlapRadius = Mathf.Max(0.001f, hitscanRadius);
+        float overlapRadius = Mathf.Max(0.001f, hitscanRadius + _runtimeHitscanRadiusBonus);
         int overlapCount = Physics.OverlapSphereNonAlloc(
             origin,
             overlapRadius,
@@ -317,6 +383,23 @@ public class Projectile3D : MonoBehaviour, IPooledObject3D
             return false;
         }
 
+        Projectile3D otherProjectile = collider.GetComponentInParent<Projectile3D>();
+        if (otherProjectile != null)
+        {
+            return false;
+        }
+
+        Entity3D hitEntity = ResolveHitEntity(collider);
+        if (_canPierce && hitEntity != null && _hitEntityIds.Contains(hitEntity.GetInstanceID()))
+        {
+            return false;
+        }
+
+        if (hitEntity != null && HasTargetFilter() && !IsMatchingTarget(hitEntity))
+        {
+            return false;
+        }
+
         return true;
     }
 
@@ -338,6 +421,11 @@ public class Projectile3D : MonoBehaviour, IPooledObject3D
         Entity3D damageable = ResolveHitEntity(other);
         if (damageable != null && IsMatchingTarget(damageable))
         {
+            if (_canPierce && !TryRegisterEntityHit(damageable))
+            {
+                return;
+            }
+
             ApplyDamageToEntity(damageable, hit.point, other);
             if (CanApplyGameplay() && _appliesSlow)
             {
@@ -346,6 +434,12 @@ public class Projectile3D : MonoBehaviour, IPooledObject3D
                 {
                     damageable.ThrusterVfx?.ApplyTemporaryEmissionRateScale(_slowEngineEmissionScale, _slowDuration);
                 }
+            }
+
+            if (TryContinueAfterPierce())
+            {
+                SpawnHitEffect(hit);
+                return;
             }
         }
 
@@ -359,7 +453,16 @@ public class Projectile3D : MonoBehaviour, IPooledObject3D
         Entity3D damageable = ResolveHitEntity(other);
         if (damageable != null && IsMatchingTarget(damageable))
         {
+            if (_canPierce && !TryRegisterEntityHit(damageable))
+            {
+                return;
+            }
+
             ApplyDamageToEntity(damageable, hit.point, other);
+            if (TryContinueAfterPierce())
+            {
+                return;
+            }
         }
 
         DespawnSelf();
@@ -442,9 +545,31 @@ public class Projectile3D : MonoBehaviour, IPooledObject3D
 
     protected bool IsMatchingTarget(Entity3D entity)
     {
-        return entity != null
-            && !string.IsNullOrEmpty(targetTag)
-            && entity.CompareTag(targetTag);
+        if (entity == null)
+        {
+            return false;
+        }
+
+        if (TargetFaction != Faction3D.Neutral)
+        {
+            if (FactionMember3D.AreAllied(_shooter, entity))
+            {
+                return false;
+            }
+
+            Faction3D entityFaction = FactionMember3D.ResolveFaction(entity);
+            if (entityFaction != Faction3D.Neutral)
+            {
+                return entityFaction == TargetFaction;
+            }
+        }
+
+        return !string.IsNullOrEmpty(targetTag) && entity.CompareTag(targetTag);
+    }
+
+    private bool HasTargetFilter()
+    {
+        return TargetFaction != Faction3D.Neutral || !string.IsNullOrEmpty(targetTag);
     }
 
     protected bool CanApplyGameplay()
@@ -459,7 +584,14 @@ public class Projectile3D : MonoBehaviour, IPooledObject3D
             return true;
         }
 
-        return _networkAuthority != null && _networkAuthority.IsServer;
+        if (_networkAuthority != null && _networkAuthority.IsServer)
+        {
+            return true;
+        }
+
+        return _serverAuthoritativeGameplay
+            && NetworkManager.Singleton != null
+            && NetworkManager.Singleton.IsServer;
     }
 
     protected void SpawnHitEffect(RaycastHit hit)
@@ -487,9 +619,34 @@ public class Projectile3D : MonoBehaviour, IPooledObject3D
         return target != null && _hitEntityIds.Add(target.GetInstanceID());
     }
 
+    protected bool TryContinueAfterPierce()
+    {
+        if (!_canPierce || _remainingPierces <= 0 || _pierceDamageMultiplier <= 0f)
+        {
+            return false;
+        }
+
+        _remainingPierces--;
+        _damage *= _pierceDamageMultiplier;
+        return true;
+    }
+
     protected void DespawnSelf()
     {
         GameObjectPool3D.Despawn(gameObject);
+    }
+
+    private void EnsureProjectileCollidersAreTriggers()
+    {
+        _ownedColliders ??= GetComponentsInChildren<Collider>(true);
+        for (int i = 0; i < _ownedColliders.Length; i++)
+        {
+            Collider ownedCollider = _ownedColliders[i];
+            if (ownedCollider != null)
+            {
+                ownedCollider.isTrigger = true;
+            }
+        }
     }
 
     private bool TryProcessLagCompensatedHit(Vector3 from, Vector3 to)

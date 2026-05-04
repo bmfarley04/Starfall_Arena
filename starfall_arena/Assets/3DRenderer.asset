@@ -26,7 +26,8 @@ MonoBehaviour:
     probeVolumeBlendStatesCS: {fileID: 0}
   m_RendererFeatures:
   - {fileID: 6451207289043496512}
-  m_RendererFeatureMap: 97c04d0d77bd4b73
+  - {fileID: 2962719435015326848}
+  m_RendererFeatureMap: 97c04d0d77bd4b73800c3c05a1b11d29
   m_UseNativeRenderPass: 0
   xrSystemData: {fileID: 0}
   postProcessData: {fileID: 11400000, guid: 41439944d30ece34e96484bdb6645b55, type: 2}
@@ -55,6 +56,24 @@ MonoBehaviour:
   m_DepthTextureFormat: 0
   m_AccurateGbufferNormals: 0
   m_IntermediateTextureMode: 1
+--- !u!114 &2962719435015326848
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9f4a7c2e2e354c02bcdd14d3e750d4cf, type: 3}
+  m_Name: BlackHoleLensSourceRendererFeature
+  m_EditorClassIdentifier: 
+  m_Active: 1
+  lensSourceLayerMask:
+    serializedVersion: 2
+    m_Bits: 6291456
+  captureEvent: 300
+  includeTransparentObjects: 0
 --- !u!114 &6451207289043496512
 MonoBehaviour:
   m_ObjectHideFlags: 0

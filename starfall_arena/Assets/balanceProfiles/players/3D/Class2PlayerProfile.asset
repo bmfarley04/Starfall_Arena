@@ -1,0 +1,68 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 311a0dd6f03f4724a2daf224f4c8d332, type: 3}
+  m_Name: Class2PlayerProfile
+  m_EditorClassIdentifier: 
+  core:
+    maxHealth: 100
+    maxShield: 100
+    shieldRegenDelay: 5
+    shieldRegenRate: 20
+    anchorEnabled: 1
+    anchorRotationMultiplier: 3
+    anchorThrustMultiplier: 0.3
+  flight:
+    thrustAcceleration: 40
+    maxSpeed: 60
+    lookInputResponse: 10
+    pitchSpeed: 1
+    yawSpeed: 1
+    pitchAcceleration: 12
+    pitchDeceleration: 16
+    yawAcceleration: 12
+    yawDeceleration: 16
+    minRotationMultiplierAtMaxSpeed: 0.5
+  flightAssist:
+    frictionDeceleration: 3
+    activeAngularDamping: 2
+    lateralDriftDamping: 18
+    verticalDriftDamping: 16
+    velocityAlignmentStrength: 3
+  projectileWeapons:
+  - cooldown: 0.25
+    speed: 250
+    damage: 5
+    lifetime: 5
+    energyCost: 18
+  beamWeapons: []
+  classStats:
+    empoweredShot:
+      cooldown: 1.5
+      damageMultiplier: 1
+      speedMultiplier: 1
+      lifetime: 0
+      slowMultiplier: 0.5
+      slowDuration: 1
+    physicalProjectile:
+      cooldown: 2
+      damage: 60
+      speed: 700
+      lifetime: 5
+    shieldCooldown: 6
+    shieldActiveDuration: 1.5
+    tractorBeam:
+      cooldown: 3
+      duration: 3
+      coneHalfAngle: 5
+      coneRange: 100
+      pullSpeed: 20
+      stopDistance: 10

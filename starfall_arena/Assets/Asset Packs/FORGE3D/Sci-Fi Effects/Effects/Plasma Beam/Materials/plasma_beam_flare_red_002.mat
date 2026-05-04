@@ -38,7 +38,7 @@ Material:
     serializedVersion: 3
     m_TexEnvs:
     - _BaseMap:
-        m_Texture: {fileID: 2800000, guid: 847f839c8f2c02948a0443b9b2f44d4b, type: 3}
+        m_Texture: {fileID: 2800000, guid: 7d1fd12a97b17224286e1ae8871aab0d, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _BumpMap:
@@ -76,7 +76,7 @@ Material:
     - _AlphaToMask: 0
     - _Blend: 2
     - _BlendOp: 0
-    - _Boost: 5
+    - _Boost: 1
     - _CameraFadingEnabled: 0
     - _CameraFarFadeDistance: 2
     - _CameraNearFadeDistance: 1
@@ -91,7 +91,7 @@ Material:
     - _DstBlendAlpha: 1
     - _FlipbookBlending: 0
     - _FlipbookMode: 0
-    - _InvFade: 3
+    - _InvFade: 2
     - _Mode: 0
     - _QueueControl: 0
     - _QueueOffset: 0
@@ -107,7 +107,7 @@ Material:
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
     - _BaseColorAddSubDiff: {r: 0, g: 0, b: 0, a: 0}
     - _CameraFadeParams: {r: 0, g: Infinity, b: 0, a: 0}
-    - _Color: {r: 5.9921575, g: 5.9921575, b: 5.9921575, a: 1}
+    - _Color: {r: 8, g: 8, b: 8, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
     - _Offset: {r: 0, g: 0, b: 0, a: 0}
     - _SoftParticleFadeParams: {r: 0, g: 1, b: 0, a: 0}
