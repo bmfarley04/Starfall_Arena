@@ -72,6 +72,9 @@ public struct NetStateSnapshot : INetworkSerializable
     /// <summary>Authoritative visual pitch angle for the 3D ship model.</summary>
     public float VisualPitchAngle;
 
+    /// <summary>Authoritative anchor state so anchor-gated augments evaluate consistently.</summary>
+    public bool Anchor;
+
     /// <summary>Anchor drag accumulator (needed for reconciliation replay).</summary>
     public float AnchorDragAccumulator;
 
@@ -98,6 +101,7 @@ public struct NetStateSnapshot : INetworkSerializable
         serializer.SerializeValue(ref Velocity);
         serializer.SerializeValue(ref VisualBankAngle);
         serializer.SerializeValue(ref VisualPitchAngle);
+        serializer.SerializeValue(ref Anchor);
         serializer.SerializeValue(ref AnchorDragAccumulator);
         serializer.SerializeValue(ref FrictionTimer);
         serializer.SerializeValue(ref FrictionEnabled);

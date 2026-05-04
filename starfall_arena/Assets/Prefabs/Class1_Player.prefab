@@ -5285,7 +5285,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Class1
   currentRound: 0
-  augments: []
+  augments:
+  - {fileID: 11400000, guid: 6474bdcf81eee8d4b812cf9fbe9ff1e8, type: 2}
   maxHealth: 100
   maxShield: 100
   shieldController: {fileID: 487621983904113540}
@@ -5575,7 +5576,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 3291421995
+  GlobalObjectIdHash: 160676601
   InScenePlacedSourceGlobalObjectIdHash: 0
   DeferredDespawnTick: 0
   Ownership: 1

@@ -1186,6 +1186,8 @@ public sealed class BurnerRuntime : AugmentRuntimeBase
         if (!IsActiveByRounds()) return;
         if (!HasAuthority()) return;
 
+        string sourceId = ResolveBurnSourceId();
+
         int targetId = target.GetInstanceID();
         if (_reapplyTimers.TryGetValue(targetId, out float nextAllowedTime) && Time.time < nextAllowedTime)
         {
@@ -1199,14 +1201,43 @@ public sealed class BurnerRuntime : AugmentRuntimeBase
         }
 
         burnController.ApplyBurn(
-            Definition.augmentID,
+            sourceId,
             player,
             _definition.burnDamagePerSecond,
             _definition.burnDuration,
             _definition.burnTickInterval,
             _definition.burnTickEffectPrefab,
             _definition.burnTickRandomRadius);
+
+        if (NetTickUtil.IsActive && _netMovement != null && _netMovement.IsServer)
+        {
+            NetMovement targetMovement = target.GetComponent<NetMovement>();
+            targetMovement?.BroadcastBurnApplied(
+                sourceId,
+                Definition.augmentID,
+                _netMovement.NetworkObjectId,
+                _definition.burnDamagePerSecond,
+                _definition.burnDuration,
+                _definition.burnTickInterval,
+                _definition.burnTickRandomRadius);
+        }
+
         _reapplyTimers[targetId] = Time.time + Mathf.Max(0.01f, _definition.reapplyThrottle);
+    }
+
+    private string ResolveBurnSourceId()
+    {
+        if (player == null)
+        {
+            return Definition.augmentID;
+        }
+
+        if (NetTickUtil.IsActive && _netMovement != null && _netMovement.IsSpawned)
+        {
+            return $"{Definition.augmentID}_{_netMovement.NetworkObjectId}";
+        }
+
+        return $"{Definition.augmentID}_{player.GetInstanceID()}";
     }
 
     private bool HasAuthority()
@@ -1228,6 +1259,7 @@ public sealed class AutoCounterRuntime : AugmentRuntimeBase
     private float _nextCastTime;
     private float _deactivateTime;
     private bool _isActive;
+    private bool _lastBroadcastActiveState;
     private GameObject _readyGlowEffectInstance;
 
     public AutoCounterRuntime(AutoCounter definition) : base(definition)
@@ -1253,6 +1285,7 @@ public sealed class AutoCounterRuntime : AugmentRuntimeBase
         _nextCastTime = Time.time;
         _deactivateTime = -999f;
         _isActive = false;
+        _lastBroadcastActiveState = false;
         _reflector.SetActive(false);
     }
 
@@ -1260,41 +1293,60 @@ public sealed class AutoCounterRuntime : AugmentRuntimeBase
     {
         if (player == null || _reflector == null) return;
 
+        bool authoritative = HasAuthority();
+
         if (!IsActiveByRounds())
         {
-            if (_isActive)
+            SetLocalActiveState(false);
+
+            if (authoritative)
             {
-                _reflector.SetActive(false);
-                _isActive = false;
+                BroadcastActiveStateIfChanged();
             }
 
-            SetAttachedEffectActive(ref _readyGlowEffectInstance, _definition.readyGlowPrefab, false, "AutoCounterReadyGlow");
+            return;
+        }
+
+        if (!authoritative)
+        {
+            ApplyCurrentVisualState();
             return;
         }
 
         if (!_isActive)
         {
-            SetAttachedEffectActive(ref _readyGlowEffectInstance, _definition.readyGlowPrefab, false, "AutoCounterReadyGlow");
+            ApplyCurrentVisualState();
 
             if (Time.time >= _nextCastTime)
             {
-                _isActive = true;
+                SetLocalActiveState(true);
                 _deactivateTime = Time.time + Mathf.Max(0.05f, _definition.activeDuration);
-                _reflector.SetActive(true);
-                SetAttachedEffectActive(ref _readyGlowEffectInstance, _definition.readyGlowPrefab, true, "AutoCounterReadyGlow");
             }
+
+            BroadcastActiveStateIfChanged();
             return;
         }
 
-        SetAttachedEffectActive(ref _readyGlowEffectInstance, _definition.readyGlowPrefab, true, "AutoCounterReadyGlow");
+        ApplyCurrentVisualState();
 
         if (Time.time >= _deactivateTime)
         {
-            _isActive = false;
-            _reflector.SetActive(false);
+            SetLocalActiveState(false);
             _nextCastTime = Time.time + Mathf.Max(0.05f, _definition.autocastInterval);
-            SetAttachedEffectActive(ref _readyGlowEffectInstance, _definition.readyGlowPrefab, false, "AutoCounterReadyGlow");
         }
+
+        BroadcastActiveStateIfChanged();
+    }
+
+    public void OnNetworkActiveStateUpdated(bool isActive)
+    {
+        if (HasAuthority())
+        {
+            return;
+        }
+
+        bool shouldBeActive = IsActiveByRounds() && isActive;
+        SetLocalActiveState(shouldBeActive);
     }
 
     private void HandleProjectileReflected(ProjectileScript projectile, Vector2 hitPoint)
@@ -1330,6 +1382,44 @@ public sealed class AutoCounterRuntime : AugmentRuntimeBase
         SetAttachedEffectActive(ref _readyGlowEffectInstance, _definition.readyGlowPrefab, false, "AutoCounterReadyGlow");
 
         _isActive = false;
+    }
+
+    private bool HasAuthority()
+    {
+        if (!NetTickUtil.IsActive)
+        {
+            return true;
+        }
+
+        return _netMovement != null && _netMovement.IsServer;
+    }
+
+    private void SetLocalActiveState(bool active)
+    {
+        _isActive = active;
+        ApplyCurrentVisualState();
+    }
+
+    private void ApplyCurrentVisualState()
+    {
+        _reflector.SetActive(_isActive);
+        SetAttachedEffectActive(ref _readyGlowEffectInstance, _definition.readyGlowPrefab, _isActive, "AutoCounterReadyGlow");
+    }
+
+    private void BroadcastActiveStateIfChanged()
+    {
+        if (_netMovement == null || !_netMovement.IsServer)
+        {
+            return;
+        }
+
+        if (_isActive == _lastBroadcastActiveState)
+        {
+            return;
+        }
+
+        _lastBroadcastActiveState = _isActive;
+        _netMovement.BroadcastAutoCounterState(_isActive);
     }
 }
 

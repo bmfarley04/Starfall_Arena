@@ -258,6 +258,7 @@ public sealed class BindingLinkVisualController : MonoBehaviour
         bolt.name = $"BindingBolt_{_sourceId}_{targetId}";
         bolt.transform.localPosition = Vector3.zero;
         bolt.transform.localRotation = Quaternion.identity;
+        bolt.SetActive(false);
 
         Transform startAnchor = new GameObject("BindingBoltStart").transform;
         startAnchor.SetParent(bolt.transform, false);
@@ -546,7 +547,6 @@ public sealed class BurnerDebuffController : MonoBehaviour
     private void Update()
     {
         if (_target == null || _activeBurns.Count == 0) return;
-        if (!HasDamageAuthority()) return;
 
         float totalTickDamage = 0f;
         List<string> expired = null;
@@ -592,7 +592,7 @@ public sealed class BurnerDebuffController : MonoBehaviour
             }
         }
 
-        if (totalTickDamage <= 0f) return;
+        if (totalTickDamage <= 0f || !HasDamageAuthority()) return;
 
         _target.TakeDamage(totalTickDamage, 0f, _target.transform.position, DamageSource.Other, firstOwner);
         try
@@ -880,7 +880,8 @@ public sealed class FlyersSwarmController : MonoBehaviour
 
         UpdateTarget();
 
-        float orbitRadius = Mathf.Max(0.1f, _config.orbitRadius);
+        float shipSize = Mathf.Max(0.01f, _owner.ShipSize);
+        float orbitRadius = Mathf.Max(0.1f, _config.orbitRadius * shipSize);
         float orbitSpeed = _config.orbitSpeed;
         float hitRadius = Mathf.Max(0.05f, _config.hitRadius);
         float homingSpeed = Mathf.Max(0.1f, _config.homingSpeed);

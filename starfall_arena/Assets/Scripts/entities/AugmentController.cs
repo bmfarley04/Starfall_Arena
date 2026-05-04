@@ -213,6 +213,17 @@ public class AugmentController : MonoBehaviour
         }
     }
 
+    public void NotifyAutoCounterStateUpdated(bool isActive)
+    {
+        foreach (IAugmentRuntime runtime in _runtimes)
+        {
+            if (runtime is AutoCounterRuntime autoCounterRuntime)
+            {
+                autoCounterRuntime.OnNetworkActiveStateUpdated(isActive);
+            }
+        }
+    }
+
     public void OnContact(Collision2D collision)
     {
         foreach (IAugmentRuntime runtime in _runtimes)

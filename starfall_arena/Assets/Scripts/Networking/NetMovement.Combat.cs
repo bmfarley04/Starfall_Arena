@@ -297,6 +297,97 @@ public partial class NetMovement
         BroadcastCombatStateClientRpc(health, shield, hitPoint, (int)source, shieldHit, shieldBreak, impactForce, slowMultiplier, slowRemainingTime, evasionTriggered, artificialFairyTriggered);
     }
 
+    public void BroadcastBurnApplied(string sourceId, string augmentId, ulong ownerNetworkObjectId, float dps, float duration, float tickInterval, float tickEffectRandomRadius)
+    {
+        if (!IsServer)
+        {
+            return;
+        }
+
+        BroadcastBurnAppliedClientRpc(sourceId, augmentId, ownerNetworkObjectId, dps, duration, tickInterval, tickEffectRandomRadius);
+    }
+
+    [ClientRpc]
+    private void BroadcastBurnAppliedClientRpc(string sourceId, string augmentId, ulong ownerNetworkObjectId, float dps, float duration, float tickInterval, float tickEffectRandomRadius)
+    {
+        if (IsServer || string.IsNullOrWhiteSpace(sourceId))
+        {
+            return;
+        }
+
+        if (_player == null)
+        {
+            _player = GetComponent<Player>();
+        }
+
+        if (_player == null)
+        {
+            return;
+        }
+
+        Burner burner = null;
+        if (GameDataManager.Instance != null)
+        {
+            burner = GameDataManager.Instance.GetAugmentById(augmentId) as Burner;
+        }
+
+        BurnerDebuffController burnController = _player.GetComponent<BurnerDebuffController>();
+        if (burnController == null)
+        {
+            burnController = _player.gameObject.AddComponent<BurnerDebuffController>();
+        }
+
+        burnController.ApplyBurn(
+            sourceId,
+            ResolvePlayerByNetworkObjectId(ownerNetworkObjectId),
+            dps,
+            duration,
+            tickInterval,
+            burner != null ? burner.burnTickEffectPrefab : null,
+            tickEffectRandomRadius);
+    }
+
+    public void BroadcastAutoCounterState(bool isActive)
+    {
+        if (!IsServer)
+        {
+            return;
+        }
+
+        BroadcastAutoCounterStateClientRpc(isActive);
+    }
+
+    [ClientRpc]
+    private void BroadcastAutoCounterStateClientRpc(bool isActive)
+    {
+        if (IsServer)
+        {
+            return;
+        }
+
+        if (_player == null)
+        {
+            _player = GetComponent<Player>();
+        }
+
+        _player?.NotifyNetworkAutoCounterState(isActive);
+    }
+
+    private Player ResolvePlayerByNetworkObjectId(ulong networkObjectId)
+    {
+        if (!NetTickUtil.IsActive || NetworkManager == null || NetworkManager.SpawnManager == null)
+        {
+            return null;
+        }
+
+        if (!NetworkManager.SpawnManager.SpawnedObjects.TryGetValue(networkObjectId, out NetworkObject networkObject) || networkObject == null)
+        {
+            return null;
+        }
+
+        return networkObject.GetComponent<Player>();
+    }
+
     [ClientRpc]
     private void BroadcastCombatStateClientRpc(float health, float shield, Vector2 hitPoint, int source, bool shieldHit, bool shieldBreak, float impactForce, float slowMultiplier, float slowRemainingTime, bool evasionTriggered, bool artificialFairyTriggered)
     {

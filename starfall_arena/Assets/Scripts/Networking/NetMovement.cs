@@ -640,7 +640,7 @@ public partial class NetMovement : NetworkBehaviour
             Tick = tick,
             Thrust = _player.IsThrustPressed,
             LookInput = _player.LookInput,
-            Anchor = _player.IsAnchored,
+            Anchor = _player.IsAnchorInputHeld,
             FrictionEnabled = _player.IsFrictionEnabled,
             VisualBankAngle = ownerVisualBankAngle,
             VisualPitchAngle = ownerVisualPitchAngle,
@@ -693,6 +693,7 @@ public partial class NetMovement : NetworkBehaviour
             Velocity = velocity,
             VisualBankAngle = predictedVisualBankAngle,
             VisualPitchAngle = predictedVisualPitchAngle,
+            Anchor = input.Anchor,
             AnchorDragAccumulator = _ownerAnchorDragAccumulator,
             FrictionTimer = _ownerFrictionTimer,
             FrictionEnabled = input.FrictionEnabled,
@@ -758,6 +759,7 @@ public partial class NetMovement : NetworkBehaviour
         {
             _player.ApplyExternalVisualTiltState(input.VisualBankAngle, input.VisualPitchAngle);
             _player.ApplyNetworkThrustState(input.Thrust);
+            _player.ForceAnchorState(input.Anchor);
         }
 
         PublishAuthoritativeState(
@@ -792,6 +794,7 @@ public partial class NetMovement : NetworkBehaviour
             Velocity = velocity,
             VisualBankAngle = visualBankAngle,
             VisualPitchAngle = visualPitchAngle,
+            Anchor = _player != null && _player.IsAnchored,
             AnchorDragAccumulator = anchorDragAccumulator,
             FrictionTimer = frictionTimer,
             FrictionEnabled = _player != null && _player.IsFrictionEnabled,
@@ -818,6 +821,12 @@ public partial class NetMovement : NetworkBehaviour
             {
                 _player.ApplyNetworkHealthState(serverState.Health);
                 _player.ApplyNetworkShieldState(serverState.Shield);
+                bool inputHeld = _player.IsAnchorInputHeld;
+                if (inputHeld || !serverState.Anchor)
+                {
+                    // Avoid re-latching anchor on release when server state lags.
+                    _player.ForceAnchorState(serverState.Anchor);
+                }
             }
 
             Reconcile(serverState);
@@ -886,6 +895,7 @@ public partial class NetMovement : NetworkBehaviour
                 Velocity = velocity,
                 VisualBankAngle = serverState.VisualBankAngle,
                 VisualPitchAngle = serverState.VisualPitchAngle,
+                Anchor = input.Anchor,
                 AnchorDragAccumulator = anchorDragAccumulator,
                 FrictionTimer = frictionTimer,
                 FrictionEnabled = input.FrictionEnabled,
@@ -970,6 +980,7 @@ public partial class NetMovement : NetworkBehaviour
             float prevShield = _remoteLastShield < 0f ? to.Shield : _remoteLastShield;
             _player.ApplyNetworkHealthState(to.Health);
             _player.ApplyNetworkShieldState(to.Shield);
+            _player.ForceAnchorState(to.Anchor);
 
             bool isRegenerating = to.Shield > prevShield && to.Shield < _player.maxShield;
             if (_player.shieldController != null)

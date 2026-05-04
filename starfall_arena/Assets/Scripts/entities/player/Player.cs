@@ -189,6 +189,7 @@ public abstract class Player : Entity
     private AudioSource _beamHitLoopSource;
     private float _originalRotationSpeed;
     private bool _isAnchored = false;
+    private bool _anchorInputHeld = false;
     private float _anchorDragAccumulator = 0f;
     private PlayerInput _playerInput;
     private int _nextAttackId = 1;
@@ -196,6 +197,7 @@ public abstract class Player : Entity
 
     // Public getter so augments and other systems can check whether the player is anchored
     public bool IsAnchored => _isAnchored;
+    public bool IsAnchorInputHeld => _anchorInputHeld;
 
     // ===== READ-ONLY INPUT STATE (for external systems like NetMovement) =====
     public bool IsThrustPressed => _isThrustPressed;
@@ -674,7 +676,8 @@ public abstract class Player : Entity
     // Anchor
     void OnAnchor(InputValue value)
     {
-        ForceAnchorState(value.isPressed);
+        _anchorInputHeld = value.isPressed;
+        ForceAnchorState(_anchorInputHeld);
     }
 
     public void ForceAnchorState(bool anchored)
@@ -1148,6 +1151,7 @@ public abstract class Player : Entity
         if (_isAnchored)
         {
             _isAnchored = false;
+            _anchorInputHeld = false;
             movement.rotationSpeed = _originalRotationSpeed;
             _anchorDragAccumulator = 0f;
             thrusters.invertColors = false;

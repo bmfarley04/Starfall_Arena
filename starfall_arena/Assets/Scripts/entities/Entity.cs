@@ -794,6 +794,11 @@ public abstract class Entity : MonoBehaviour
         _augmentController?.NotifyArtificialFairyTriggered();
     }
 
+    public void NotifyNetworkAutoCounterState(bool isActive)
+    {
+        _augmentController?.NotifyAutoCounterStateUpdated(isActive);
+    }
+
     public void SetIncomingDamageIgnored(bool ignored)
     {
         _ignoreIncomingDamage = ignored;
