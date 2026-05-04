@@ -45,11 +45,11 @@ public class TriumvirateEnemyBrain3D : NetworkBehaviour
     [Header("Formation")]
     [Tooltip("Optional fixed slot for this squad member. Leave Auto to let the coordinator assign a stable slot when the squad first forms.")]
     [SerializeField] private FormationSlotPreference formationSlotPreference = FormationSlotPreference.Auto;
-    [Tooltip("Distance from the target where the triangle center should settle before linking when Anchor Formation Near Current Squad is disabled.")]
+    [Tooltip("Distance from the target where the triangle center should settle before linking. Also used as the fallback distance when Anchor Formation Near Current Squad starts outside beam-safe range.")]
     [SerializeField] private float formationDistanceFromTarget = 32f;
     [Tooltip("Radius of the triangle each surviving member tries to occupy.")]
     [SerializeField] private float triangleRadius = 8f;
-    [Tooltip("If true, the squad forms its triangle around its current group center instead of first relocating to Formation Distance From Target.")]
+    [Tooltip("If true, the squad forms around its current group center when already inside final beam range. If too far away, it relocates to Formation Distance From Target before linking.")]
     [SerializeField] private bool anchorFormationNearCurrentSquad = true;
     [Tooltip("Horizontal spacing between the two lower ships in the vertical triangle formation.")]
     [SerializeField] private float verticalTriangleWidth = 8f;
@@ -292,9 +292,7 @@ public class TriumvirateEnemyBrain3D : NetworkBehaviour
         Vector3 centerDirection = (squadCenter - targetPosition).sqrMagnitude > 0.0001f
             ? (squadCenter - targetPosition).normalized
             : -target.transform.forward;
-        Vector3 center = anchorFormationNearCurrentSquad
-            ? squadCenter
-            : targetPosition + centerDirection * Mathf.Max(1f, formationDistanceFromTarget);
+        Vector3 center = ResolveFormationCenter(targetPosition, squadCenter, centerDirection);
         Vector3 toTarget = (targetPosition - center).sqrMagnitude > 0.0001f
             ? (targetPosition - center).normalized
             : transform.forward;
@@ -569,6 +567,73 @@ public class TriumvirateEnemyBrain3D : NetworkBehaviour
             : _survivorCountAtBeamStart == 2
                 ? twoMemberDamagePerSecond
                 : oneMemberDamagePerSecond;
+    }
+
+    private Vector3 ResolveFormationCenter(Vector3 targetPosition, Vector3 squadCenter, Vector3 centerDirection)
+    {
+        float desiredDistance = Mathf.Max(1f, formationDistanceFromTarget);
+        float maximumSafeCenterDistance = ResolveMaximumSafeFormationCenterDistance();
+        if (!anchorFormationNearCurrentSquad)
+        {
+            return targetPosition + centerDirection * Mathf.Min(desiredDistance, maximumSafeCenterDistance);
+        }
+
+        float currentCenterDistance = Vector3.Distance(targetPosition, squadCenter);
+        if (currentCenterDistance <= maximumSafeCenterDistance)
+        {
+            return squadCenter;
+        }
+
+        return targetPosition + centerDirection * Mathf.Min(desiredDistance, maximumSafeCenterDistance);
+    }
+
+    private float ResolveMaximumSafeFormationCenterDistance()
+    {
+        float effectiveBeamRange = Mathf.Max(0f, finalBeamRange);
+        for (int i = 0; i < _activeMembers.Count; i++)
+        {
+            TriumvirateEnemyBrain3D member = _activeMembers[i];
+            if (member == null || !member.IsAlive || member.finalBeamWeapon == null)
+            {
+                continue;
+            }
+
+            float weaponRange = member.finalBeamWeapon.MaxDistance;
+            if (weaponRange > 0f)
+            {
+                effectiveBeamRange = effectiveBeamRange > 0f ? Mathf.Min(effectiveBeamRange, weaponRange) : weaponRange;
+            }
+        }
+
+        float safetyReserve = ResolveMaximumFormationSlotOffset()
+            + Mathf.Max(0f, finalBeamHitscanRadius)
+            + Mathf.Max(0f, formationTolerance);
+        return Mathf.Max(1f, effectiveBeamRange - safetyReserve);
+    }
+
+    private float ResolveMaximumFormationSlotOffset()
+    {
+        int count = Mathf.Max(1, _activeMembers.Count);
+        if (count <= 1)
+        {
+            return 0f;
+        }
+
+        if (keepFormationOnWorldYPlane)
+        {
+            return Mathf.Max(0f, triangleRadius);
+        }
+
+        float halfWidth = Mathf.Max(0f, verticalTriangleWidth) * 0.5f;
+        if (count == 2)
+        {
+            return halfWidth;
+        }
+
+        float upperOffset = Mathf.Max(0f, verticalTriangleHeight) * (2f / 3f);
+        float lowerOffset = Mathf.Max(0f, verticalTriangleHeight) * (1f / 3f);
+        float lowerSlotOffset = Mathf.Sqrt((halfWidth * halfWidth) + (lowerOffset * lowerOffset));
+        return Mathf.Max(upperOffset, lowerSlotOffset);
     }
 
     private void BuildLinkSequence()
